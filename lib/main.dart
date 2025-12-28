@@ -5,13 +5,13 @@ import 'package:window_manager/window_manager.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();
 
   await windowManager.ensureInitialized();
 
   WindowOptions options = const WindowOptions(
-    size: Size(800, 600),
-    minimumSize: Size(600, 400), 
+    size: Size(1000, 800),
+    minimumSize: Size(600, 400),
     center: true,
   );
 
