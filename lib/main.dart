@@ -1,6 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:window_manager/window_manager.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+WidgetsFlutterBinding.ensureInitialized();
+
+  await windowManager.ensureInitialized();
+
+  WindowOptions options = const WindowOptions(
+    size: Size(800, 600),
+    minimumSize: Size(600, 400), 
+    center: true,
+  );
+
+  windowManager.waitUntilReadyToShow(options, () async {
+    await windowManager.show();
+    await windowManager.focus();
+  });
   runApp(const MyApp());
 }
 
@@ -11,10 +29,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Financial Literacy App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       home: const StartPage(),
     );
   }
@@ -43,9 +58,7 @@ class StartPage extends StatelessWidget {
             builder: (context, constraints) {
               return SingleChildScrollView(
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight,
-                  ),
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: IntrinsicHeight(
                     child: Padding(
                       padding: EdgeInsets.symmetric(
@@ -57,7 +70,7 @@ class StartPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           const Spacer(flex: 1),
-                          
+
                           // App Icon/Logo - FIXED AND CENTERED
                           Center(
                             child: Container(
@@ -95,8 +108,10 @@ class StartPage extends StatelessWidget {
                               ),
                             ),
                           ),
-                          SizedBox(height: constraints.maxHeight > 700 ? 20 : 12),
-                          
+                          SizedBox(
+                            height: constraints.maxHeight > 700 ? 20 : 12,
+                          ),
+
                           // App Title
                           Text(
                             'Budget Buddy Financial Literacy',
@@ -108,8 +123,10 @@ class StartPage extends StatelessWidget {
                               letterSpacing: 1.2,
                             ),
                           ),
-                          SizedBox(height: constraints.maxHeight > 700 ? 10 : 6),
-                          
+                          SizedBox(
+                            height: constraints.maxHeight > 700 ? 10 : 6,
+                          ),
+
                           // Subtitle
                           const Text(
                             'Learn. Play. Grow.',
@@ -120,44 +137,61 @@ class StartPage extends StatelessWidget {
                               fontStyle: FontStyle.italic,
                             ),
                           ),
-                          SizedBox(height: constraints.maxHeight > 700 ? 40 : 20),
-                          
+                          SizedBox(
+                            height: constraints.maxHeight > 700 ? 40 : 20,
+                          ),
+
                           // Feature Cards
                           _buildFeatureCard(
                             icon: Icons.school,
                             title: 'Interactive Lessons',
-                            description: 'Gamified financial education designed for youth',
+                            description:
+                                'Gamified financial education designed for youth',
                             isCompact: constraints.maxHeight < 700,
                           ),
-                          SizedBox(height: constraints.maxHeight > 700 ? 16 : 10),
-                          
+                          SizedBox(
+                            height: constraints.maxHeight > 700 ? 16 : 10,
+                          ),
+
                           _buildFeatureCard(
                             icon: Icons.lightbulb,
                             title: 'Practical Skills',
-                            description: 'Real-world money management strategies',
+                            description:
+                                'Real-world money management strategies',
                             isCompact: constraints.maxHeight < 700,
                           ),
-                          SizedBox(height: constraints.maxHeight > 700 ? 16 : 10),
-                          
+                          SizedBox(
+                            height: constraints.maxHeight > 700 ? 16 : 10,
+                          ),
+
                           _buildFeatureCard(
                             icon: Icons.trending_up,
                             title: 'Track Progress',
                             description: 'Watch your financial knowledge grow',
                             isCompact: constraints.maxHeight < 700,
                           ),
-                          SizedBox(height: constraints.maxHeight > 700 ? 40 : 20),
-                          
+                          SizedBox(
+                            height: constraints.maxHeight > 700 ? 40 : 20,
+                          ),
+
                           // Start Button
                           ElevatedButton(
                             onPressed: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const HomePage()),
+                                MaterialPageRoute(
+                                  builder: (context) => const HomePage(),
+                                ),
                               );
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
-                              foregroundColor: const Color.fromARGB(255, 96, 170, 36),
+                              foregroundColor: const Color.fromARGB(
+                                255,
+                                96,
+                                170,
+                                36,
+                              ),
                               padding: EdgeInsets.symmetric(
                                 vertical: constraints.maxHeight > 700 ? 16 : 12,
                               ),
@@ -175,8 +209,10 @@ class StartPage extends StatelessWidget {
                               ),
                             ),
                           ),
-                          SizedBox(height: constraints.maxHeight > 700 ? 20 : 12),
-                          
+                          SizedBox(
+                            height: constraints.maxHeight > 700 ? 20 : 12,
+                          ),
+
                           // Credits
                           const Text(
                             'Developed with ❤️ by the App Team',
@@ -186,7 +222,7 @@ class StartPage extends StatelessWidget {
                               color: Colors.white60,
                             ),
                           ),
-                          
+
                           const Spacer(flex: 1),
                         ],
                       ),
@@ -212,18 +248,11 @@ class StartPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: isCompact ? 32 : 40,
-            color: Colors.white,
-          ),
+          Icon(icon, size: isCompact ? 32 : 40, color: Colors.white),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -285,9 +314,7 @@ class HomePage extends StatelessWidget {
             builder: (context, constraints) {
               return SingleChildScrollView(
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight,
-                  ),
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24.0),
@@ -324,7 +351,7 @@ class HomePage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 40),
-                          
+
                           // Navigation Buttons
                           ElevatedButton.icon(
                             onPressed: () {
@@ -339,9 +366,16 @@ class HomePage extends StatelessWidget {
                             label: const Text('Start Learning'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
-                              foregroundColor: const Color.fromARGB(255, 96, 170, 36),
+                              foregroundColor: const Color.fromARGB(
+                                255,
+                                96,
+                                170,
+                                36,
+                              ),
                               padding: EdgeInsets.symmetric(
-                                horizontal: constraints.maxWidth > 600 ? 48 : 32,
+                                horizontal: constraints.maxWidth > 600
+                                    ? 48
+                                    : 32,
                                 vertical: 16,
                               ),
                               shape: RoundedRectangleBorder(
@@ -350,16 +384,17 @@ class HomePage extends StatelessWidget {
                               elevation: 8,
                             ),
                           ),
-                          
+
                           const SizedBox(height: 16),
-                          
+
                           // New button to learning page
                           OutlinedButton.icon(
                             onPressed: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const DartLearningPage(),
+                                  builder: (context) =>
+                                      const DartLearningPage(),
                                 ),
                               );
                             },
@@ -367,9 +402,14 @@ class HomePage extends StatelessWidget {
                             label: const Text('Learn Dart & Flutter'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.white,
-                              side: const BorderSide(color: Colors.white, width: 2),
+                              side: const BorderSide(
+                                color: Colors.white,
+                                width: 2,
+                              ),
                               padding: EdgeInsets.symmetric(
-                                horizontal: constraints.maxWidth > 600 ? 48 : 32,
+                                horizontal: constraints.maxWidth > 600
+                                    ? 48
+                                    : 32,
                                 vertical: 16,
                               ),
                               shape: RoundedRectangleBorder(
@@ -440,7 +480,7 @@ class DartLearningPage extends StatelessWidget {
               'Dart is the programming language, and Flutter is the framework (toolkit) for building apps. Let\'s learn together!',
             ),
             const SizedBox(height: 30),
-            
+
             // Lesson 1: Variables
             _buildLessonCard(
               context,
@@ -458,13 +498,14 @@ class DartLearningPage extends StatelessWidget {
                 );
               },
             ),
-            
+
             // Lesson 2: Widgets
             _buildLessonCard(
               context,
               lessonNumber: '2',
               title: 'Widgets & UI',
-              description: 'Everything in Flutter is a widget - let\'s explore!',
+              description:
+                  'Everything in Flutter is a widget - let\'s explore!',
               icon: Icons.widgets,
               color: Colors.purple,
               onTap: () {
@@ -476,7 +517,7 @@ class DartLearningPage extends StatelessWidget {
                 );
               },
             ),
-            
+
             // Lesson 3: Navigation
             _buildLessonCard(
               context,
@@ -494,7 +535,7 @@ class DartLearningPage extends StatelessWidget {
                 );
               },
             ),
-            
+
             const SizedBox(height: 20),
           ],
         ),
@@ -539,9 +580,7 @@ class DartLearningPage extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -553,10 +592,7 @@ class DartLearningPage extends StatelessWidget {
               Container(
                 width: 50,
                 height: 50,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                 child: Center(
                   child: Text(
                     lessonNumber,
@@ -569,7 +605,7 @@ class DartLearningPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              
+
               // Content
               Expanded(
                 child: Column(
@@ -585,15 +621,12 @@ class DartLearningPage extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ),
               ),
-              
+
               // Arrow Icon
               Icon(icon, color: color, size: 32),
             ],
@@ -626,7 +659,7 @@ class VariablesLesson extends StatelessWidget {
               'Variables are containers that store data. Think of them as labeled boxes where you put information.',
             ),
             const SizedBox(height: 20),
-            
+
             _buildTitle('Basic Data Types:'),
             _buildCodeExample('''// String - text
 String name = 'John';
@@ -639,11 +672,13 @@ double price = 9.99;
 
 // bool - true/false
 bool isStudent = true;'''),
-            
+
             const SizedBox(height: 20),
             _buildTitle('Try It Yourself! 💪'),
-            _buildText('The code above shows 4 common data types. Each variable has a type, a name, and a value.'),
-            
+            _buildText(
+              'The code above shows 4 common data types. Each variable has a type, a name, and a value.',
+            ),
+
             const SizedBox(height: 20),
             _buildTitle('Key Points:'),
             _buildBullet('Use descriptive names (age, not x)'),
@@ -670,10 +705,7 @@ bool isStudent = true;'''),
   Widget _buildText(String text) {
     return Padding(
       padding: const EdgeInsets.only(top: 8.0),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 16, height: 1.5),
-      ),
+      child: Text(text, style: const TextStyle(fontSize: 16, height: 1.5)),
     );
   }
 
@@ -702,7 +734,10 @@ bool isStudent = true;'''),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('• ', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const Text(
+            '• ',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
           Expanded(child: Text(text, style: const TextStyle(fontSize: 16))),
         ],
       ),
@@ -732,14 +767,30 @@ class WidgetsLesson extends StatelessWidget {
               'In Flutter, EVERYTHING you see is a widget. Buttons, text, images, even layouts - all widgets!',
             ),
             const SizedBox(height: 20),
-            
+
             _buildTitle('Common Widgets:'),
             _buildWidgetExample('Text', 'Displays text', Icons.text_fields),
-            _buildWidgetExample('Container', 'A box that can hold other widgets', Icons.square),
-            _buildWidgetExample('Column', 'Stacks widgets vertically', Icons.view_column),
-            _buildWidgetExample('Row', 'Stacks widgets horizontally', Icons.view_week),
-            _buildWidgetExample('ElevatedButton', 'A clickable button', Icons.smart_button),
-            
+            _buildWidgetExample(
+              'Container',
+              'A box that can hold other widgets',
+              Icons.square,
+            ),
+            _buildWidgetExample(
+              'Column',
+              'Stacks widgets vertically',
+              Icons.view_column,
+            ),
+            _buildWidgetExample(
+              'Row',
+              'Stacks widgets horizontally',
+              Icons.view_week,
+            ),
+            _buildWidgetExample(
+              'ElevatedButton',
+              'A clickable button',
+              Icons.smart_button,
+            ),
+
             const SizedBox(height: 20),
             _buildTitle('Example Code:'),
             _buildCodeExample('''Column(
@@ -752,7 +803,7 @@ class WidgetsLesson extends StatelessWidget {
     ),
   ],
 )'''),
-            
+
             const SizedBox(height: 20),
             _buildTitle('Key Concepts:'),
             _buildBullet('child = ONE widget inside'),
@@ -778,10 +829,7 @@ class WidgetsLesson extends StatelessWidget {
   Widget _buildText(String text) {
     return Padding(
       padding: const EdgeInsets.only(top: 8.0),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 16, height: 1.5),
-      ),
+      child: Text(text, style: const TextStyle(fontSize: 16, height: 1.5)),
     );
   }
 
@@ -821,7 +869,10 @@ class WidgetsLesson extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('• ', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const Text(
+            '• ',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
           Expanded(child: Text(text, style: const TextStyle(fontSize: 16))),
         ],
       ),
@@ -851,7 +902,7 @@ class NavigationLesson extends StatelessWidget {
               'Navigation lets you move from one screen to another, like switching pages in a book.',
             ),
             const SizedBox(height: 20),
-            
+
             _buildTitle('Navigator.push (Go Forward):'),
             _buildCodeExample('''Navigator.push(
   context,
@@ -859,11 +910,11 @@ class NavigationLesson extends StatelessWidget {
     builder: (context) => NewPage(),
   ),
 );'''),
-            
+
             const SizedBox(height: 20),
             _buildTitle('Navigator.pop (Go Back):'),
             _buildCodeExample('''Navigator.pop(context);'''),
-            
+
             const SizedBox(height: 20),
             _buildTitle('Try It Now! 👇'),
             Center(
@@ -871,19 +922,23 @@ class NavigationLesson extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const DemoPage(),
-                    ),
+                    MaterialPageRoute(builder: (context) => const DemoPage()),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
+                  ),
                 ),
-                child: const Text('Go to Demo Page', style: TextStyle(fontSize: 18)),
+                child: const Text(
+                  'Go to Demo Page',
+                  style: TextStyle(fontSize: 18),
+                ),
               ),
             ),
-            
+
             const SizedBox(height: 20),
             _buildTitle('Key Points:'),
             _buildBullet('context = information about where you are'),
@@ -910,10 +965,7 @@ class NavigationLesson extends StatelessWidget {
   Widget _buildText(String text) {
     return Padding(
       padding: const EdgeInsets.only(top: 8.0),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 16, height: 1.5),
-      ),
+      child: Text(text, style: const TextStyle(fontSize: 16, height: 1.5)),
     );
   }
 
@@ -942,7 +994,10 @@ class NavigationLesson extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('• ', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const Text(
+            '• ',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
           Expanded(child: Text(text, style: const TextStyle(fontSize: 16))),
         ],
       ),
@@ -972,6 +1027,26 @@ class DemoPage extends StatelessWidget {
               style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () async {
+                final Uri url = Uri.parse(
+                  'https://www.youtube.com/watch?v=1ukSR1GRtMU&list=PL4cUxeGkcC9jLYyp2Aoh6hcWuxFDX6PBJ&index=1',
+                );
+                if (!await launchUrl(url)) {
+                  throw 'Could not launch $url';
+                }
+              },
+              child: const Text(
+                'Copy and paste this link for a guide on guide',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+
             const Text(
               'You successfully navigated to a new page!',
               style: TextStyle(fontSize: 16),
@@ -983,7 +1058,10 @@ class DemoPage extends StatelessWidget {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
               ),
               child: const Text('Go Back', style: TextStyle(fontSize: 18)),
             ),
