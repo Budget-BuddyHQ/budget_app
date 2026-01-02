@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:async';
 import 'dart:math';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -476,7 +477,12 @@ class LessonsPage extends StatelessWidget {
                     "Select one of the following on the list",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Color.fromARGB(200, 100, 100, 100), // FIXED: was (200, 200, 200, 200)
+                      color: Color.fromARGB(
+                        200,
+                        100,
+                        100,
+                        100,
+                      ), // FIXED: was (200, 200, 200, 200)
                       fontSize: 18,
                     ),
                   ),
@@ -568,7 +574,6 @@ class LessonsPage extends StatelessWidget {
 // REPLACE YOUR MiniGamePage WITH THIS NEW COIN COLLECTOR GAME:
 // ============================================================================
 
-
 class CoinCollectorGame extends StatefulWidget {
   const CoinCollectorGame({super.key});
 
@@ -611,8 +616,10 @@ class _CoinCollectorGameState extends State<CoinCollectorGame> {
     });
 
     // Spawn coins every 800ms
-    _coinSpawnTimer = Timer.periodic(const Duration(milliseconds: 800), (timer) {
-      if (_isPlaying && _coins.length < 8) {
+    _coinSpawnTimer = Timer.periodic(const Duration(milliseconds: 500), (
+      timer,
+    ) {
+      if (_isPlaying && _coins.length < 12) {
         _spawnCoin();
       }
     });
@@ -620,12 +627,14 @@ class _CoinCollectorGameState extends State<CoinCollectorGame> {
 
   void _spawnCoin() {
     setState(() {
-      _coins.add(Coin(
-        id: DateTime.now().millisecondsSinceEpoch,
-        x: _random.nextDouble() * 0.8,
-        y: _random.nextDouble() * 0.7,
-        value: _random.nextBool() ? 1 : 5, // Random $1 or $5 coins
-      ));
+      _coins.add(
+        Coin(
+          id: DateTime.now().millisecondsSinceEpoch,
+          x: _random.nextDouble() * 0.8,
+          y: _random.nextDouble() * 0.7,
+          value: _random.nextBool() ? 1 : 5, // Random $1 or $5 coins
+        ),
+      );
     });
   }
 
@@ -644,7 +653,7 @@ class _CoinCollectorGameState extends State<CoinCollectorGame> {
     });
     _gameTimer?.cancel();
     _coinSpawnTimer?.cancel();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -691,10 +700,7 @@ class _CoinCollectorGameState extends State<CoinCollectorGame> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.orange.shade100,
-              Colors.orange.shade300,
-            ],
+            colors: [Colors.orange.shade100, Colors.orange.shade300],
           ),
         ),
         child: SafeArea(
@@ -725,7 +731,11 @@ class _CoinCollectorGameState extends State<CoinCollectorGame> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.monetization_on, color: Colors.amber, size: 28),
+                          const Icon(
+                            Icons.monetization_on,
+                            color: Colors.amber,
+                            size: 28,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             '\$$_score',
@@ -802,7 +812,9 @@ class _CoinCollectorGameState extends State<CoinCollectorGame> {
                                             shape: BoxShape.circle,
                                             boxShadow: [
                                               BoxShadow(
-                                                color: Colors.black.withOpacity(0.2),
+                                                color: Colors.black.withOpacity(
+                                                  0.2,
+                                                ),
                                                 blurRadius: 8,
                                                 offset: const Offset(0, 2),
                                               ),
