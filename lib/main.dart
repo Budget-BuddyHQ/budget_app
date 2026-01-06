@@ -72,7 +72,7 @@ class StartPage extends StatelessWidget {
                         children: [
                           const Spacer(flex: 1),
 
-                          // App Icon/Logo - FIXED AND CENTERED
+                          // App Icon/Logo - FIXED
                           Center(
                             child: Container(
                               width: constraints.maxWidth > 600 ? 120 : 100,
@@ -96,13 +96,15 @@ class StartPage extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(17),
                                 child: Image.asset(
                                   'assets/images/logo.png',
-                                  fit: BoxFit.cover,
+                                  fit: BoxFit.contain, // Changed from cover to contain
                                   errorBuilder: (context, error, stackTrace) {
-                                    // Fallback if image doesn't load
-                                    return const Icon(
-                                      Icons.account_balance_wallet,
-                                      size: 60,
-                                      color: Color.fromARGB(255, 96, 170, 36),
+                                    // Fallback icon if image doesn't load
+                                    return const Center(
+                                      child: Icon(
+                                        Icons.account_balance_wallet,
+                                        size: 60,
+                                        color: Color.fromARGB(255, 96, 170, 36),
+                                      ),
                                     );
                                   },
                                 ),
@@ -242,28 +244,34 @@ class StartPage extends StatelessWidget {
     required IconData icon,
     required String title,
     required String description,
-    bool isCompact = false,
+    required bool isCompact,
   }) {
     return Container(
       padding: EdgeInsets.all(isCompact ? 12 : 16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.3),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
-          Icon(icon, size: isCompact ? 32 : 40, color: Colors.white),
+          Icon(
+            icon,
+            size: isCompact ? 32 : 40,
+            color: Colors.white,
+          ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: isCompact ? 14 : 16,
+                    fontSize: isCompact ? 16 : 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -272,11 +280,9 @@ class StartPage extends StatelessWidget {
                 Text(
                   description,
                   style: TextStyle(
-                    fontSize: isCompact ? 12 : 13,
+                    fontSize: isCompact ? 12 : 14,
                     color: Colors.white70,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -407,6 +413,37 @@ class HomePage extends StatelessWidget {
                                 color: Colors.white,
                                 width: 2,
                               ),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: constraints.maxWidth > 600
+                                    ? 48
+                                    : 32,
+                                vertical: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const CoinCollectorGame(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.code),
+                            label: const Text('Mini Game: Coin Collector'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: const BorderSide(
+                                color: Colors.white,
+                                width: 2,
+                              ),
+                              backgroundColor: Colors.orange.withOpacity(0.2),
                               padding: EdgeInsets.symmetric(
                                 horizontal: constraints.maxWidth > 600
                                     ? 48
@@ -566,15 +603,6 @@ class LessonsPage extends StatelessWidget {
     );
   }
 }
-
-// ============================================================================
-// REMOVE THE OLD _BuildLessonsPage function entirely
-// ============================================================================
-
-// ============================================================================
-// REPLACE YOUR MiniGamePage WITH THIS NEW COIN COLLECTOR GAME:
-// ============================================================================
-
 class CoinCollectorGame extends StatefulWidget {
   const CoinCollectorGame({super.key});
 
@@ -1536,65 +1564,4 @@ class DemoPage extends StatelessWidget {
   }
 }
 
-// NEW PAGE: Mini Game Page
-class MiniGamePage extends StatefulWidget {
-  const MiniGamePage({super.key});
 
-  @override
-  State<MiniGamePage> createState() => _MiniGamePageState();
-}
-
-class _MiniGamePageState extends State<MiniGamePage> {
-  int _score = 0;
-
-  void _incrementScore() {
-    setState(() {
-      _score++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mini Game'),
-        backgroundColor: Colors.orange,
-        foregroundColor: Colors.white,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Click the button to increase your score!',
-              style: TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Score: $_score',
-              style: const TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                color: Colors.orange,
-              ),
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: _incrementScore,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
-                textStyle: const TextStyle(fontSize: 20),
-              ),
-              child: const Text('Click Me!'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
