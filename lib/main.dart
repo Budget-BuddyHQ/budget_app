@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:async';
 import 'dart:math';
+import 'screens/learning_path_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -358,7 +359,7 @@ class HomePage extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const LessonsPage(),
+                                  builder: (context) => const LearningPathScreen(),
                                 ),
                               );
                             },
