@@ -113,111 +113,97 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              const Color.fromARGB(255, 96, 170, 36),
-              const Color.fromARGB(255, 230, 245, 220),
-            ],
+      body: Stack(
+        children: [
+          _buildMainContent(
+            lessons: lessons,
+            positions: positions,
+            progress: progress,
           ),
+          _buildResizableLessonSheet(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainContent({
+    required List<Lesson> lessons,
+    required List<Offset> positions,
+    required double progress,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color.fromARGB(255, 96, 170, 36),
+            const Color.fromARGB(255, 230, 245, 220),
+          ],
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Progress indicator
-              Container(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildProgressIndicator(
-                      icon: Icons.school,
-                      label: 'Lessons',
-                      value: '${_progressionService.completedCount}/${_progressionService.totalCount}',
-                    ),
-                    _buildProgressIndicator(
-                      icon: Icons.trending_up,
-                      label: 'Progress',
-                      value: '${(progress * 100).toInt()}%',
-                    ),
-                  ],
-                ),
-              ),
-
-              // Skill tree visualization
-              Expanded(
-                child: Stack(
-                  children: [
-                    // Background grid pattern
-                    _buildGridBackground(),
-
-                    // Connection lines
-                    ...List.generate(
-                      lessons.length - 1,
-                      (index) {
-                        final isCompleted = _progressionService
-                                .getLessonStatus(lessons[index].id) ==
-                            LessonStatus.completed;
-                        return _buildConnectionLine(
-                          positions[index],
-                          positions[index + 1],
-                          isCompleted,
-                        );
-                      },
-                    ),
-
-                    // Lesson nodes
-                    ...lessons.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final lesson = entry.value;
-                      final status =
-                          _progressionService.getLessonStatus(lesson.id);
-
-                      return SkillTreeNode(
-                        lesson: lesson,
-                        status: status,
-                        position: positions[index],
-                        onTap: () => _handleLessonTap(lesson),
-                      );
-                    }),
-                  ],
-                ),
-              ),
-
-              // Lesson list at bottom
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Progress indicator
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildProgressIndicator(
+                    icon: Icons.school,
+                    label: 'Lessons',
+                    value:
+                        '${_progressionService.completedCount}/${_progressionService.totalCount}',
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Your Lessons',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ...lessons.map((lesson) {
-                      final status =
-                          _progressionService.getLessonStatus(lesson.id);
-                      return _buildLessonListItem(lesson, status);
-                    }),
-                  ],
-                ),
+                  _buildProgressIndicator(
+                    icon: Icons.trending_up,
+                    label: 'Progress',
+                    value: '${(progress * 100).toInt()}%',
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+
+            // Skill tree visualization
+            Expanded(
+              child: Stack(
+                children: [
+                  _buildGridBackground(),
+
+                  ...List.generate(lessons.length - 1, (index) {
+                    final isCompleted =
+                        _progressionService.getLessonStatus(
+                          lessons[index].id,
+                        ) ==
+                        LessonStatus.completed;
+
+                    return _buildConnectionLine(
+                      positions[index],
+                      positions[index + 1],
+                      isCompleted,
+                    );
+                  }),
+
+                  ...lessons.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final lesson = entry.value;
+                    final status = _progressionService.getLessonStatus(
+                      lesson.id,
+                    );
+
+                    return SkillTreeNode(
+                      lesson: lesson,
+                      status: status,
+                      position: positions[index],
+                      onTap: () => _handleLessonTap(lesson),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -233,10 +219,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.2),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
       ),
       child: Row(
         children: [
@@ -247,10 +230,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
             children: [
               Text(
                 label,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
               ),
               Text(
                 value,
@@ -268,9 +248,115 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   }
 
   Widget _buildGridBackground() {
-    return CustomPaint(
-      painter: _GridPainter(),
-      size: Size.infinite,
+    return CustomPaint(painter: _GridPainter(), size: Size.infinite);
+  }
+
+  Widget _buildResizableLessonSheet() {
+    final lessons = _progressionService.lessons;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.25,
+      minChildSize: 0.20,
+      maxChildSize: 0.70,
+      snap: true,
+      snapSizes: const [0.25, 0.70],
+      builder: (context, scrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 10,
+                color: Colors.black.withOpacity(0.15),
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // LARGER DRAG AREA - This is the key fix!
+              // Make the entire top section draggable, not just the handle
+              Container(
+                padding: const EdgeInsets.only(
+                  top: 12,
+                  bottom: 12,
+                  left: 16,
+                  right: 16,
+                ),
+                // Add background color to make it obvious
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // Drag handle - visual indicator
+                    Container(
+                      width: 50,
+                      height: 5,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade400,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    // Title
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Your Lessons',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        // Optional: Add an icon to indicate draggability
+                        Icon(Icons.drag_handle, color: Colors.grey.shade400),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const Divider(height: 1),
+
+              // Scrollable lesson list
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(16),
+                  physics:
+                      const ClampingScrollPhysics(), // Better scroll behavior
+                  itemCount: lessons.length,
+                  itemBuilder: (context, index) {
+                    final lesson = lessons[index];
+                    final status = _progressionService.getLessonStatus(
+                      lesson.id,
+                    );
+                    return _buildLessonListItem(lesson, status);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDragHandle() {
+    return Container(
+      width: 50,
+      height: 5,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(3),
+      ),
     );
   }
 
@@ -336,10 +422,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                   ),
                   Text(
                     statusText,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: iconColor,
-                    ),
+                    style: TextStyle(fontSize: 12, color: iconColor),
                   ),
                 ],
               ),
@@ -394,20 +477,12 @@ class _GridPainter extends CustomPainter {
 
     // Draw vertical lines
     for (double x = 0; x < size.width; x += spacing) {
-      canvas.drawLine(
-        Offset(x, 0),
-        Offset(x, size.height),
-        paint,
-      );
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
 
     // Draw horizontal lines
     for (double y = 0; y < size.height; y += spacing) {
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        paint,
-      );
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
   }
 
