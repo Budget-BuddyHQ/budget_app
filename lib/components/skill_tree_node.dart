@@ -19,20 +19,31 @@ class SkillTreeNode extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Determine colors based on status using the app's color palette
-    Color backgroundColor;
+    Color? backgroundColor;
     Color borderColor;
     Color iconColor;
     IconData icon;
+    Gradient? gradient;
 
     switch (status) {
       case LessonStatus.completed:
-        backgroundColor = const Color.fromARGB(255, 161, 236, 64).withOpacity(0.3);
+        gradient = LinearGradient(
+          colors: [
+            const Color.fromARGB(255, 96, 170, 36),
+            const Color.fromARGB(255, 161, 236, 64),
+          ],
+        );
         borderColor = const Color.fromARGB(255, 96, 170, 36);
-        iconColor = const Color.fromARGB(255, 96, 170, 36);
+        iconColor = Colors.white;
         icon = Icons.check_circle;
         break;
       case LessonStatus.available:
-        backgroundColor = const Color.fromARGB(255, 25, 210, 155).withOpacity(0.2);
+        gradient = LinearGradient(
+          colors: [
+            const Color.fromARGB(255, 25, 210, 155),
+            const Color.fromARGB(255, 96, 170, 36),
+          ],
+        );
         borderColor = const Color.fromARGB(255, 25, 210, 155);
         iconColor = Colors.white;
         icon = Icons.play_arrow;
@@ -50,30 +61,66 @@ class SkillTreeNode extends StatelessWidget {
       top: position.dy,
       child: GestureDetector(
         onTap: status == LessonStatus.available ? onTap : null,
-        child: Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: borderColor,
-              width: status == LessonStatus.available ? 3 : 2,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.elasticOut,
+          builder: (context, value, child) {
+            return Transform.scale(
+              scale: value,
+              child: child,
+            );
+          },
+          child: Container(
+            width: 90,
+            height: 90,
+            decoration: BoxDecoration(
+              gradient: gradient,
+              color: status == LessonStatus.locked ?  backgroundColor : null,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: borderColor,
+                width: status == LessonStatus.available ? 4 : 3,
+              ),
+              boxShadow: status == LessonStatus.available
+                  ? [
+                      BoxShadow(
+                        color: borderColor.withOpacity(0.5),
+                        blurRadius: 15,
+                        spreadRadius: 3,
+                      ),
+                    ]
+                  : status == LessonStatus.completed
+                      ? [
+                          BoxShadow(
+                            color: borderColor.withOpacity(0.3),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ]
+                      : null,
             ),
-            boxShadow: status == LessonStatus.available
-                ? [
-                    BoxShadow(
-                      color: borderColor.withOpacity(0.4),
-                      blurRadius: 8,
-                      spreadRadius: 2,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: iconColor,
+                  size: 35,
+                ),
+                if (status != LessonStatus.locked) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${lesson.order}',
+                    style: TextStyle(
+                      color: iconColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
                     ),
-                  ]
-                : null,
-          ),
-          child: Icon(
-            icon,
-            color: iconColor,
-            size: 40,
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),

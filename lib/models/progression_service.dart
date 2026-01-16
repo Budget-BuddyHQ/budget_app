@@ -44,6 +44,36 @@ class ProgressionService extends ChangeNotifier {
         order: 5,
         prerequisites: ['lesson_4'],
       ),
+      Lesson(
+        id: 'lesson_6',
+        title: 'Credit and Debt Management',
+        order: 6,
+        prerequisites: ['lesson_5'],
+      ),
+      Lesson(
+        id: 'lesson_7',
+        title: 'Introduction to Investing',
+        order: 7,
+        prerequisites: ['lesson_6'],
+      ),
+      Lesson(
+        id: 'lesson_8',
+        title: 'Banking and Financial Tools',
+        order: 8,
+        prerequisites: ['lesson_7'],
+      ),
+      Lesson(
+        id: 'lesson_9',
+        title: 'Emergency Planning',
+        order: 9,
+        prerequisites: ['lesson_8'],
+      ),
+      Lesson(
+        id: 'lesson_10',
+        title: 'Long-Term Financial Goals',
+        order: 10,
+        prerequisites: ['lesson_9'],
+      ),
     ]);
     _updateLessonStatuses();
   }

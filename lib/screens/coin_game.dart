@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:window_manager/window_manager.dart';
 import 'dart:async';
 import 'dart:math';
 
