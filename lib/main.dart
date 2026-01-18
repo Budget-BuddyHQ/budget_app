@@ -6,7 +6,7 @@ import '../screens/coin_game.dart';
 import 'screens/budget_simulation.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  
   await windowManager.ensureInitialized();
 
   WindowOptions options = const WindowOptions(
