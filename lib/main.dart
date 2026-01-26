@@ -4,6 +4,7 @@ import 'package:window_manager/window_manager.dart';
 import 'screens/learning_path_screen.dart';
 import '../screens/coin_game.dart';
 import 'screens/budget_simulation.dart';
+import 'screens/login_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -213,6 +214,39 @@ class StartPage extends StatelessWidget {
                           ),
                           SizedBox(
                             height: constraints.maxHeight > 700 ? 20 : 12,
+                          ),
+
+                          // Login Button
+                          OutlinedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const LoginPage(),
+                                ),
+                              );
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: const BorderSide(
+                                color: Colors.white,
+                                width: 2,
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                vertical: constraints.maxHeight > 700 ? 16 : 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            child: Text(
+                              'Log In',
+                              style: TextStyle(
+                                fontSize: constraints.maxWidth > 600 ? 18 : 16,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
                           ),
 
                           // Credits
