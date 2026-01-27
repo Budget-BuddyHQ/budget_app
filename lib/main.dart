@@ -198,7 +198,7 @@ class StartPage extends StatelessWidget {
                                 170,
                                 36,
                               ),
-                              minimumSize: Size(600, 600),
+                              minimumSize: Size(50, 50),
                               padding: EdgeInsets.symmetric(
                                 vertical: constraints.maxHeight > 700 ? 16 : 12,
                               ),
