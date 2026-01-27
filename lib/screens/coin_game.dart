@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'dart:async';
 import 'dart:math';
-
+import 'practice.dart';
 
 class CoinCollectorGame extends StatefulWidget {
   const CoinCollectorGame({super.key});
@@ -135,6 +136,8 @@ class _CoinCollectorGameState extends State<CoinCollectorGame> {
         child: SafeArea(
           child: Column(
             children: [
+              // Start Button
+              
               // Score and Time Display
               Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -160,6 +163,37 @@ class _CoinCollectorGameState extends State<CoinCollectorGame> {
                       ),
                       child: Row(
                         children: [
+                          Container(
+                padding: EdgeInsets.all(20),
+                margin: EdgeInsets.all(40),
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PracticeScreen(),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color.fromARGB(255, 96, 170, 36),
+                    maximumSize: Size(750, 200),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    elevation: 8,
+                  ),
+                  child: Text(
+                    'Go to practice Screen',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                ),
+              ),
                           const Icon(
                             Icons.monetization_on,
                             color: Colors.amber,
@@ -194,6 +228,7 @@ class _CoinCollectorGameState extends State<CoinCollectorGame> {
                           ),
                         ],
                       ),
+
                       child: Row(
                         children: [
                           const Icon(Icons.timer, color: Colors.blue, size: 28),
@@ -241,7 +276,12 @@ class _CoinCollectorGameState extends State<CoinCollectorGame> {
                                             shape: BoxShape.circle,
                                             boxShadow: [
                                               BoxShadow(
-                                                color: const Color.fromRGBO(0, 0, 0, 0.2),
+                                                color: const Color.fromRGBO(
+                                                  0,
+                                                  0,
+                                                  0,
+                                                  0.2,
+                                                ),
                                                 blurRadius: 8,
                                                 offset: const Offset(0, 2),
                                               ),
@@ -303,6 +343,7 @@ class _CoinCollectorGameState extends State<CoinCollectorGame> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.orange,
                                 foregroundColor: Colors.white,
+                                minimumSize: Size(100, 50),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 48,
                                   vertical: 16,
