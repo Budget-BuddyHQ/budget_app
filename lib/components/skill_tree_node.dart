@@ -49,7 +49,7 @@ class SkillTreeNode extends StatelessWidget {
         icon = Icons.play_arrow;
         break;
       case LessonStatus.locked:
-        backgroundColor = Colors.grey.withOpacity(0.2);
+        backgroundColor = const Color.fromRGBO(158, 158, 158, 0.2);
         borderColor = Colors.grey.shade400;
         iconColor = Colors.grey.shade600;
         icon = Icons.lock;
@@ -60,7 +60,7 @@ class SkillTreeNode extends StatelessWidget {
       left: position.dx,
       top: position.dy,
       child: GestureDetector(
-        onTap: status == LessonStatus.available ? onTap : null,
+        onTap: (status == LessonStatus.available || status == LessonStatus.completed) ? onTap : null,
         child: TweenAnimationBuilder<double>(
           tween: Tween(begin: 0.0, end: 1.0),
           duration: const Duration(milliseconds: 500),
@@ -85,7 +85,7 @@ class SkillTreeNode extends StatelessWidget {
               boxShadow: status == LessonStatus.available
                   ? [
                       BoxShadow(
-                        color: borderColor.withOpacity(0.5),
+                        color: borderColor.withAlpha((255 * 0.5).round()),
                         blurRadius: 15,
                         spreadRadius: 3,
                       ),
@@ -93,7 +93,7 @@ class SkillTreeNode extends StatelessWidget {
                   : status == LessonStatus.completed
                       ? [
                           BoxShadow(
-                            color: borderColor.withOpacity(0.3),
+                            color: borderColor.withAlpha((255 * 0.3).round()),
                             blurRadius: 10,
                             spreadRadius: 2,
                           ),
