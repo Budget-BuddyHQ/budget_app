@@ -3,9 +3,12 @@ import 'package:window_manager/window_manager.dart';
 import 'screens/learning_path_screen.dart';
 import '../screens/coin_game.dart';
 import 'screens/budget_simulation.dart';
+import 'screens/login_page.dart';
+import 'screens/practice.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   await windowManager.ensureInitialized();
 
   WindowOptions options = const WindowOptions(
@@ -179,7 +182,6 @@ class StartPage extends StatelessWidget {
 
                           // Start Button
                           ElevatedButton(
-
                             onPressed: () {
                               Navigator.push(
                                 context,
@@ -196,7 +198,7 @@ class StartPage extends StatelessWidget {
                                 170,
                                 36,
                               ),
-                              minimumSize: Size(600,600),
+                              minimumSize: Size(600, 600),
                               padding: EdgeInsets.symmetric(
                                 vertical: constraints.maxHeight > 700 ? 16 : 12,
                               ),
@@ -323,7 +325,10 @@ class StartPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color.fromRGBO(255, 255, 255, 0.2),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: const Color.fromRGBO(255, 255, 255, 0.3), width: 1),
+        border: Border.all(
+          color: const Color.fromRGBO(255, 255, 255, 0.3),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
@@ -477,7 +482,12 @@ class HomePage extends StatelessWidget {
                                 color: Colors.white,
                                 width: 2,
                               ),
-                              backgroundColor: const Color.fromRGBO(255, 152, 0, 0.2),
+                              backgroundColor: const Color.fromRGBO(
+                                255,
+                                152,
+                                0,
+                                0.2,
+                              ),
                               padding: EdgeInsets.symmetric(
                                 horizontal: constraints.maxWidth > 600
                                     ? 48
@@ -508,7 +518,12 @@ class HomePage extends StatelessWidget {
                                 color: Colors.white,
                                 width: 2,
                               ),
-                              backgroundColor: const Color.fromRGBO(0, 150, 136, 0.2),
+                              backgroundColor: const Color.fromRGBO(
+                                0,
+                                150,
+                                136,
+                                0.2,
+                              ),
                               padding: EdgeInsets.symmetric(
                                 horizontal: constraints.maxWidth > 600
                                     ? 48
