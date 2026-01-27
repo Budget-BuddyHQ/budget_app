@@ -4,8 +4,6 @@ import 'screens/learning_path_screen.dart';
 import '../screens/coin_game.dart';
 import 'screens/budget_simulation.dart';
 import 'screens/login_page.dart';
-import 'screens/practice.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
