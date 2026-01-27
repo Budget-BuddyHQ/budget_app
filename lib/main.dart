@@ -4,6 +4,8 @@ import 'screens/learning_path_screen.dart';
 import '../screens/coin_game.dart';
 import 'screens/budget_simulation.dart';
 import 'screens/login_page.dart';
+import 'screens/practice.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -178,42 +180,6 @@ class StartPage extends StatelessWidget {
                             height: constraints.maxHeight > 700 ? 40 : 20,
                           ),
 
-                          // Start Button
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const PracticeScreen(),
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: const Color.fromARGB(
-                                255,
-                                96,
-                                170,
-                                36,
-                              ),
-                              minimumSize: Size(50, 50),
-                              padding: EdgeInsets.symmetric(
-                                vertical: constraints.maxHeight > 700 ? 16 : 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              elevation: 8,
-                            ),
-                            child: Text(
-                              'Go to practice Screen',
-                              style: TextStyle(
-                                fontSize: constraints.maxWidth > 600 ? 16 : 14,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.1,
-                              ),
-                            ),
-                          ),
                           SizedBox(
                             height: constraints.maxHeight > 700 ? 20 : 12,
                           ),
