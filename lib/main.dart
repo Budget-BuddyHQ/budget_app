@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
 import 'screens/learning_path_screen.dart';
 import '../screens/coin_game.dart';
 import 'screens/budget_simulation.dart';
+import 'screens/practice.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -30,6 +31,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Financial Literacy App',
       theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+      debugShowCheckedModeBanner: false,
       home: const StartPage(),
     );
   }
@@ -85,7 +87,7 @@ class StartPage extends StatelessWidget {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
+                                    color: const Color.fromRGBO(0, 0, 0, 0.2),
                                     blurRadius: 10,
                                     offset: const Offset(0, 4),
                                   ),
@@ -95,7 +97,8 @@ class StartPage extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(17),
                                 child: Image.asset(
                                   'assets/images/logo.png',
-                                  fit: BoxFit.contain, // Changed from cover to contain
+                                  fit: BoxFit
+                                      .contain, // Changed from cover to contain
                                   errorBuilder: (context, error, stackTrace) {
                                     // Fallback icon if image doesn't load
                                     return const Center(
@@ -178,6 +181,45 @@ class StartPage extends StatelessWidget {
 
                           // Start Button
                           ElevatedButton(
+
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const PracticeScreen(),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color.fromARGB(
+                                255,
+                                96,
+                                170,
+                                36,
+                              ),
+                              minimumSize: Size(600,600),
+                              padding: EdgeInsets.symmetric(
+                                vertical: constraints.maxHeight > 700 ? 16 : 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              elevation: 8,
+                            ),
+                            child: Text(
+                              'Go to practice Screen',
+                              style: TextStyle(
+                                fontSize: constraints.maxWidth > 600 ? 16 : 14,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.1,
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height: constraints.maxHeight > 700 ? 20 : 12,
+                          ),
+                          ElevatedButton(
                             onPressed: () {
                               Navigator.push(
                                 context,
@@ -248,20 +290,13 @@ class StartPage extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(isCompact ? 12 : 16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: const Color.fromRGBO(255, 255, 255, 0.2),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: const Color.fromRGBO(255, 255, 255, 0.3), width: 1),
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: isCompact ? 32 : 40,
-            color: Colors.white,
-          ),
+          Icon(icon, size: isCompact ? 32 : 40, color: Colors.white),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -364,7 +399,8 @@ class HomePage extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const LearningPathScreen(),
+                                  builder: (context) =>
+                                      const LearningPathScreen(),
                                 ),
                               );
                             },
@@ -410,7 +446,7 @@ class HomePage extends StatelessWidget {
                                 color: Colors.white,
                                 width: 2,
                               ),
-                              backgroundColor: Colors.orange.withOpacity(0.2),
+                              backgroundColor: const Color.fromRGBO(255, 152, 0, 0.2),
                               padding: EdgeInsets.symmetric(
                                 horizontal: constraints.maxWidth > 600
                                     ? 48
@@ -441,7 +477,7 @@ class HomePage extends StatelessWidget {
                                 color: Colors.white,
                                 width: 2,
                               ),
-                              backgroundColor: Colors.teal.withOpacity(0.2),
+                              backgroundColor: const Color.fromRGBO(0, 150, 136, 0.2),
                               padding: EdgeInsets.symmetric(
                                 horizontal: constraints.maxWidth > 600
                                     ? 48
@@ -577,7 +613,7 @@ class LessonsPage extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: const Color.fromRGBO(255, 255, 255, 0.9),
         borderRadius: BorderRadius.circular(12),
         boxShadow: const [
           BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),

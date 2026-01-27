@@ -230,7 +230,7 @@ class _BudgetSimulationScreenState extends State<BudgetSimulationScreen>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: balanceColor.withOpacity(0.3),
+            color: balanceColor.withAlpha((255 * 0.3).round()),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -315,7 +315,7 @@ class _BudgetSimulationScreenState extends State<BudgetSimulationScreen>
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: const Color.fromRGBO(0, 0, 0, 0.1),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -329,7 +329,7 @@ class _BudgetSimulationScreenState extends State<BudgetSimulationScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
+                  color: color.withAlpha((255 * 0.2).round()),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 24),
@@ -394,7 +394,7 @@ class _BudgetSimulationScreenState extends State<BudgetSimulationScreen>
             borderRadius: BorderRadius.circular(15),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: const Color.fromRGBO(0, 0, 0, 0.1),
                 blurRadius: 5,
                 offset: const Offset(0, 2),
               ),
@@ -490,9 +490,9 @@ class _BudgetSimulationScreenState extends State<BudgetSimulationScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: tipColor.withOpacity(0.1),
+        color: tipColor.withAlpha((255 * 0.1).round()),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: tipColor.withOpacity(0.3), width: 2),
+        border: Border.all(color: tipColor.withAlpha((255 * 0.3).round()), width: 2),
       ),
       child: Row(
         children: [
