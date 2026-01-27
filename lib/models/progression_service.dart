@@ -133,8 +133,6 @@ class ProgressionService extends ChangeNotifier {
   /// Update all lesson statuses based on completion and prerequisites
   void _updateLessonStatuses() {
     for (var lesson in _lessons) {
-      final status = getLessonStatus(lesson.id);
-      // Note: We can't directly modify the status field since it's final
       // The status is computed dynamically via getLessonStatus
     }
   }
