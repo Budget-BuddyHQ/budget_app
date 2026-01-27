@@ -1,5 +1,6 @@
 // lib/screens/login_page.dart
 import 'package:flutter/material.dart';
+import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -58,13 +59,15 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _handleSignUp() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Sign up tapped (not implemented yet).'),
-      ),
-    );
-  }
+
+
+void _handleSignUp() {
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const SignUpPage()),
+  );
+}
+
 
   @override
   void dispose() {
