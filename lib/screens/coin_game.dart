@@ -152,7 +152,7 @@ class _CoinCollectorGameState extends State<CoinCollectorGame> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: const Color.fromRGBO(0, 0, 0, 0.1),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -188,7 +188,7 @@ class _CoinCollectorGameState extends State<CoinCollectorGame> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: const Color.fromRGBO(0, 0, 0, 0.1),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -241,9 +241,7 @@ class _CoinCollectorGameState extends State<CoinCollectorGame> {
                                             shape: BoxShape.circle,
                                             boxShadow: [
                                               BoxShadow(
-                                                color: Colors.black.withOpacity(
-                                                  0.2,
-                                                ),
+                                                color: const Color.fromRGBO(0, 0, 0, 0.2),
                                                 blurRadius: 8,
                                                 offset: const Offset(0, 2),
                                               ),

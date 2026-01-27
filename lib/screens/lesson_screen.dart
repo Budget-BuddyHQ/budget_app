@@ -422,28 +422,41 @@ class LessonScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 24),
 
-                      // Lesson sections
-                      ...sections.map((section) {
-                        return _buildSection(
+                      // Lesson sections with entrance animations
+                      ...sections.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final section = entry.value;
+                        return _buildAnimatedSection(
                           section['title']!,
                           section['content']!,
+                          index,
                         );
                       }),
+
+                      // Spacer to allow content to scroll above fixed button
+                      const SizedBox(height: 120),
                     ],
                   ),
                 ),
               ),
 
-              // Complete button
+              // Complete button with glassmorphism
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white.withOpacity(0.95),
+                      Colors.white,
+                    ],
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, -2),
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 20,
+                      offset: const Offset(0, -4),
                     ),
                   ],
                 ),
@@ -454,11 +467,13 @@ class LessonScreen extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color.fromARGB(255, 96, 170, 36),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 18),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      elevation: 8,
+                      elevation: 12,
+                      shadowColor: const Color.fromARGB(255, 96, 170, 36)
+                          .withOpacity(0.5),
                     ),
                     child: const Text(
                       'Complete Lesson',
@@ -477,6 +492,27 @@ class LessonScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildAnimatedSection(String title, String content, int index) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 400 + (index * 100)),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 30 * (1 - value)),
+            child: Transform.scale(
+              scale: 0.9 + (0.1 * value),
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: _buildSection(title, content),
+    );
+  }
+
   Widget _buildSection(String title, String content) {
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
@@ -487,8 +523,8 @@ class LessonScreen extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
