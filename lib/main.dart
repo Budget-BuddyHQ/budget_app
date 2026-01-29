@@ -220,9 +220,8 @@ class StartPage extends StatelessWidget {
                           SizedBox(
                             height: constraints.maxHeight > 700 ? 20 : 12,
                           ),
-
                           // Login Button
-                          OutlinedButton(
+                         OutlinedButton(
                             onPressed: () {
                               Navigator.push(
                                 context,
@@ -253,7 +252,7 @@ class StartPage extends StatelessWidget {
                               ),
                             ),
                           ),
-
+                          
                           // Credits
                           const Text(
                             'Developed with ❤️ by the App Team',
