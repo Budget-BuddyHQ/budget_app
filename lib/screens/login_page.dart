@@ -1,6 +1,7 @@
 // lib/screens/login_page.dart
 import 'package:flutter/material.dart';
 import 'signup_page.dart';
+import 'forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -36,12 +37,11 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _handleForgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Forgot password tapped (not implemented yet).'),
-      ),
-    );
-  }
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+  );
+}
 
   void _handleAppleSignIn() {
     ScaffoldMessenger.of(context).showSnackBar(
