@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/lesson.dart';
 import '../models/progression_service.dart';
 import 'lesson_screen.dart';
+import '../components/skill_tree_node.dart';
 
 class LearningPathScreen extends StatefulWidget {
   const LearningPathScreen({super.key});
@@ -12,12 +13,11 @@ class LearningPathScreen extends StatefulWidget {
 }
 
 class _LearningPathScreenState extends State<LearningPathScreen>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late ProgressionService _progressionService;
   bool _isTopBarVisible = true;
   bool _isBottomSheetVisible = true;
   late AnimationController _backgroundController;
-  late AnimationController _pulseController;
 
   // Controller for the interactive map view
   final TransformationController _transformationController =
@@ -36,11 +36,6 @@ class _LearningPathScreenState extends State<LearningPathScreen>
       duration: const Duration(seconds: 20),
     )..repeat();
 
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-
     // Center the view initially (optional, slight delay to ensure build is done)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _transformationController.value = Matrix4.identity()
@@ -54,7 +49,6 @@ class _LearningPathScreenState extends State<LearningPathScreen>
     _transformationController.dispose();
     _bottomSheetController.dispose();
     _backgroundController.dispose();
-    _pulseController.dispose();
     super.dispose();
   }
 
@@ -136,11 +130,9 @@ class _LearningPathScreenState extends State<LearningPathScreen>
       painter: _ConnectionLinePainter(
         path: path,
         color: isCompleted
-            ? const Color(0xFF76FF03) // Vibrant Lime for completed path
-            : const Color(
-                0xFF2E4A3D,
-              ).withOpacity(0.3), // Deep Forest for locked
-        strokeWidth: isCompleted ? 12.0 : 6.0, // Thicker, more game-like path
+            ? const Color.fromARGB(255, 96, 170, 36)
+            : Colors.grey.withOpacity(0.5),
+        strokeWidth: isCompleted ? 6.0 : 4.0,
         isCompleted: isCompleted,
       ),
     );
@@ -178,7 +170,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1B3329), // Deep Forest Background
+      backgroundColor: const Color(0xFFF5F5F7), // Light grey backing
       appBar: AppBar(
         title: const Text('Financial Literacy'),
         backgroundColor: const Color(0xFF2E4A3D), // Deep Forest Green
@@ -207,7 +199,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
                       animation: _backgroundController,
                       builder: (context, child) {
                         return CustomPaint(
-                          painter: _OrganicBackgroundPainter(
+                          painter: _GridPatternPainter(
                             progress: _backgroundController.value,
                           ),
                         );
@@ -237,11 +229,11 @@ class _LearningPathScreenState extends State<LearningPathScreen>
                       lesson.id,
                     );
 
-                    return _buildNode(
+                    return SkillTreeNode(
                       lesson: lesson,
                       status: status,
                       position: nodePositions[index],
-                      index: index,
+                      onTap: () => _handleLessonTap(lesson),
                     );
                   }),
                 ],
@@ -272,90 +264,6 @@ class _LearningPathScreenState extends State<LearningPathScreen>
   }
 
   // --- WIDGET HELPERS ---
-
-  Widget _buildNode({
-    required Lesson lesson,
-    required LessonStatus status,
-    required Offset position,
-    required int index,
-  }) {
-    final isLocked = status == LessonStatus.locked;
-    final isCompleted = status == LessonStatus.completed;
-    final isAvailable = status == LessonStatus.available;
-
-    return Positioned(
-      left: position.dx,
-      top: position.dy,
-      child: GestureDetector(
-        onTap: () => _handleLessonTap(lesson),
-        child: AnimatedBuilder(
-          animation: _pulseController,
-          builder: (context, child) {
-            double scale = 1.0;
-            double elevation = 4.0;
-            Color shadowColor = Colors.black26;
-
-            if (isAvailable) {
-              scale = 1.0 + (_pulseController.value * 0.1);
-              elevation = 8.0 + (_pulseController.value * 4.0);
-              shadowColor = const Color(0xFF76FF03).withOpacity(0.6);
-            }
-
-            return Transform.scale(
-              scale: scale,
-              child: Container(
-                width: 100, // Larger touch target
-                height: 100,
-                decoration: BoxDecoration(
-                  // Island / Milestone Pin Design
-                  shape: BoxShape.rectangle,
-                  borderRadius: BorderRadius.circular(30),
-                  color: isLocked
-                      ? const Color(0xFF2E4A3D).withOpacity(0.5)
-                      : (isCompleted
-                            ? const Color(0xFF2E4A3D) // Completed Island
-                            : const Color(0xFF76FF03)),
-                  border: Border.all(
-                    color: isAvailable ? Colors.white : Colors.transparent,
-                    width: isAvailable ? 4 : 0,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: shadowColor,
-                      blurRadius: elevation,
-                      offset: Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: isLocked
-                      ? Icon(
-                          Icons.lock,
-                          color: Colors.white.withOpacity(0.3),
-                          size: 32,
-                        )
-                      : (isCompleted
-                            ? const Icon(
-                                Icons.check,
-                                color: Color(0xFF76FF03),
-                                size: 40,
-                              )
-                            : Text(
-                                "${index + 1}",
-                                style: const TextStyle(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1B3329),
-                                ),
-                              )),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
 
   Widget _buildResizableLessonSheet() {
     final lessons = _progressionService.lessons;
@@ -446,7 +354,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF2E4A3D),
+                                color: const Color.fromARGB(255, 96, 170, 36),
                               ),
                             ),
                           ],
@@ -528,12 +436,12 @@ class _LearningPathScreenState extends State<LearningPathScreen>
     switch (status) {
       case LessonStatus.completed:
         icon = Icons.check_circle;
-        color = const Color(0xFF2E4A3D); // Forest Green
+        color = const Color.fromARGB(255, 96, 170, 36);
         bgColor = Colors.white;
         break;
       case LessonStatus.available:
         icon = Icons.play_circle_fill;
-        color = const Color(0xFF76FF03); // Lime
+        color = const Color.fromARGB(255, 33, 150, 243);
         bgColor = Colors.white;
         break;
       case LessonStatus.locked:
@@ -621,11 +529,11 @@ class _LearningPathScreenState extends State<LearningPathScreen>
   Widget _buildGlassmorphicProgressBar(double progress) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF2E4A3D).withOpacity(0.95),
+        color: const Color.fromARGB(255, 96, 170, 36).withOpacity(0.9),
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: const Color.fromARGB(255, 96, 170, 36).withOpacity(0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -653,7 +561,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
                   child: LinearProgressIndicator(
                     value: progress,
                     minHeight: 8,
-                    backgroundColor: Colors.white.withOpacity(0.2),
+                    backgroundColor: Colors.black.withOpacity(0.2),
                     valueColor: const AlwaysStoppedAnimation<Color>(
                       Color(0xFF76FF03),
                     ),
@@ -679,38 +587,32 @@ class _LearningPathScreenState extends State<LearningPathScreen>
 
 // --- PAINTER CLASSES ---
 
-// 1. ORGANIC BACKGROUND PAINTER (Replaces Grid)
-class _OrganicBackgroundPainter extends CustomPainter {
+// 1. GRID PAINTER (Restored)
+class _GridPatternPainter extends CustomPainter {
   final double progress;
 
-  _OrganicBackgroundPainter({this.progress = 0.0});
+  _GridPatternPainter({this.progress = 0.0});
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.03)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
+      ..color = Colors.grey.withOpacity(0.08)
+      ..strokeWidth = 1.0;
 
-    // Draw subtle contour lines instead of grid
-    final path = Path();
-    for (double i = 0; i < size.height; i += 100) {
-      path.moveTo(0, i);
-      for (double x = 0; x <= size.width; x += 50) {
-        path.quadraticBezierTo(
-          x + 25,
-          i + 20 * (1 + progress), // Animate wave height
-          x + 50,
-          i,
-        );
-      }
-      canvas.drawPath(path, paint);
-      path.reset();
+    const double spacing = 40.0;
+    final double offset = progress * spacing;
+
+    for (double x = -spacing + offset; x < size.width; x += spacing) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+
+    for (double y = -spacing + offset; y < size.height; y += spacing) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _OrganicBackgroundPainter oldDelegate) =>
+  bool shouldRepaint(covariant _GridPatternPainter oldDelegate) =>
       oldDelegate.progress != progress;
 }
 
@@ -741,7 +643,7 @@ class _ConnectionLinePainter extends CustomPainter {
       canvas.drawPath(path, paint);
     } else {
       // Dashed line effect for incomplete paths
-      final dashWidth = 10.0;
+      final dashWidth = 12.0;
       final dashSpace = 8.0;
       final pathMetrics = path.computeMetrics();
 

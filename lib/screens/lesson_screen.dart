@@ -86,7 +86,11 @@ class _LessonScreenState extends State<LessonScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${widget.lesson.title} completed! 🎉'),
+<<<<<<< Updated upstream
         backgroundColor: const Color(0xFF2E4A3D),
+=======
+        backgroundColor: const Color.fromARGB(255, 96, 170, 36),
+>>>>>>> Stashed changes
         duration: const Duration(seconds: 2),
       ),
     );
@@ -469,9 +473,15 @@ class _LessonScreenState extends State<LessonScreen>
                 begin: _topAlignmentAnimation.value,
                 end: _bottomAlignmentAnimation.value,
                 colors: [
+<<<<<<< Updated upstream
                   const Color(0xFF2E4A3D), // Deep Forest
                   const Color(0xFF1B3329), // Darker Forest
                   const Color(0xFF2E4A3D),
+=======
+                  const Color.fromARGB(255, 25, 210, 155),
+                  const Color.fromARGB(255, 96, 170, 36),
+                  const Color.fromARGB(255, 25, 210, 155),
+>>>>>>> Stashed changes
                 ],
               ),
             ),
@@ -506,7 +516,16 @@ class _LessonScreenState extends State<LessonScreen>
                           child: Icon(
                             icon,
                             size: 80,
+<<<<<<< Updated upstream
                             color: const Color(0xFF2E4A3D),
+=======
+                            color: const Color.fromARGB(
+                              255,
+                              96,
+                              170,
+                              36,
+                            ).withOpacity(0.8),
+>>>>>>> Stashed changes
                           ),
                         ),
                       ),
@@ -559,7 +578,16 @@ class _LessonScreenState extends State<LessonScreen>
                         borderRadius: BorderRadius.circular(30),
                       ),
                       elevation: 12,
+<<<<<<< Updated upstream
                       shadowColor: const Color(0xFF76FF03).withOpacity(0.5),
+=======
+                      shadowColor: const Color.fromARGB(
+                        255,
+                        96,
+                        170,
+                        36,
+                      ).withOpacity(0.5),
+>>>>>>> Stashed changes
                     ),
                     child: const Text(
                       'Complete Lesson',
