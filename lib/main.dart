@@ -321,7 +321,6 @@ class _StartPageState extends State<StartPage>
                               ),
                             ),
                           ),
-
                           // Credits
                           const Text(
                             'Developed with ❤️ by the App Team',
