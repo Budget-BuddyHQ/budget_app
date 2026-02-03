@@ -1,4 +1,5 @@
 // lib/screens/signup_page.dart
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -8,14 +9,34 @@ class SignUpPage extends StatefulWidget {
   State<SignUpPage> createState() => _SignUpPageState();
 }
 
-class _SignUpPageState extends State<SignUpPage> {
+class _SignUpPageState extends State<SignUpPage>
+    with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  late AnimationController _animController;
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _animController.dispose();
+    super.dispose();
+  }
 
   void _handleSignUp() {
     final email = _emailController.text.trim();
@@ -31,21 +52,25 @@ class _SignUpPageState extends State<SignUpPage> {
 
     if (password.length < 8) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password must be at least 8 characters.')),
+        const SnackBar(
+          content: Text('Password must be at least 8 characters.'),
+        ),
       );
       return;
     }
 
     if (password != confirm) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Passwords do not match.')));
       return;
     }
 
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please agree to the Terms & Conditions.')),
+        const SnackBar(
+          content: Text('Please agree to the Terms & Conditions.'),
+        ),
       );
       return;
     }
@@ -57,13 +82,17 @@ class _SignUpPageState extends State<SignUpPage> {
 
   void _handlePrivacyPolicy() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Privacy Policy tapped (not implemented yet).')),
+      const SnackBar(
+        content: Text('Privacy Policy tapped (not implemented yet).'),
+      ),
     );
   }
 
   void _handleTerms() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Terms & Conditions tapped (not implemented yet).')),
+      const SnackBar(
+        content: Text('Terms & Conditions tapped (not implemented yet).'),
+      ),
     );
   }
 
@@ -72,16 +101,10 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    const brandGreen = Color.fromARGB(255, 96, 170, 36);
+    // Growth Palette
+    const deepForest = Color(0xFF1B3329);
+    const limeAccent = Color(0xFF76FF03);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -96,11 +119,7 @@ class _SignUpPageState extends State<SignUpPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color.fromARGB(255, 25, 210, 155),
-              Color.fromARGB(255, 96, 170, 36),
-              Color.fromARGB(255, 161, 236, 64),
-            ],
+            colors: [deepForest, Color(0xFF2E4A3D), Color(0xFF0F2018)],
           ),
         ),
         child: SafeArea(
@@ -109,118 +128,136 @@ class _SignUpPageState extends State<SignUpPage> {
               constraints: const BoxConstraints(maxWidth: 520),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24.0),
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.95),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.12),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 8),
-
-                      const Text(
-                        'Sign up to Budget Buddy',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Mascot / Header
+                    _buildAnimatedItem(
+                      0,
+                      Center(
+                        child: Container(
+                          height: 100,
+                          width: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.1),
+                            border: Border.all(
+                              color: limeAccent.withOpacity(0.5),
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: limeAccent.withOpacity(0.2),
+                                blurRadius: 20,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(15.0),
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => Icon(
+                                Icons.person_add,
+                                size: 40,
+                                color: limeAccent,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 24),
 
-                      const SizedBox(height: 6),
+                    _buildAnimatedItem(
+                      1,
+                      const Text(
+                        'Join the Squad',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ),
 
+                    const SizedBox(height: 8),
+
+                    _buildAnimatedItem(
+                      2,
                       Text(
-                        'Create your account',
+                        'Start your financial adventure today.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey.shade700,
+                          color: Colors.white.withOpacity(0.7),
                         ),
                       ),
+                    ),
 
-                      const SizedBox(height: 24),
+                    const SizedBox(height: 32),
 
-                      // Email
-                      TextField(
+                    // Glassmorphic Inputs
+                    _buildAnimatedItem(
+                      3,
+                      _buildGlassTextField(
                         controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          labelText: 'Email address',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
+                        label: 'Email address',
+                        icon: Icons.email_outlined,
                       ),
+                    ),
 
-                      const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                      // Password
-                      TextField(
+                    _buildAnimatedItem(
+                      4,
+                      _buildGlassTextField(
                         controller: _passwordController,
+                        label: 'Password',
+                        icon: Icons.lock_outline,
+                        isPassword: true,
                         obscureText: _obscurePassword,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          suffixIcon: IconButton(
-                            tooltip: _obscurePassword ? 'Show password' : 'Hide password',
-                            icon: Icon(
-                              _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                            ),
-                            onPressed: () {
-                              setState(() => _obscurePassword = !_obscurePassword);
-                            },
-                          ),
+                        onTogglePassword: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
                         ),
                       ),
+                    ),
 
-                      const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                      // Confirm Password
-                      TextField(
+                    _buildAnimatedItem(
+                      5,
+                      _buildGlassTextField(
                         controller: _confirmPasswordController,
+                        label: 'Confirm Password',
+                        icon: Icons.lock_outline,
+                        isPassword: true,
                         obscureText: _obscureConfirmPassword,
-                        decoration: InputDecoration(
-                          labelText: 'Retype password',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          suffixIcon: IconButton(
-                            tooltip: _obscureConfirmPassword
-                                ? 'Show password'
-                                : 'Hide password',
-                            icon: Icon(
-                              _obscureConfirmPassword
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                            ),
-                            onPressed: () {
-                              setState(() =>
-                                  _obscureConfirmPassword = !_obscureConfirmPassword);
-                            },
-                          ),
+                        onTogglePassword: () => setState(
+                          () => _obscureConfirmPassword =
+                              !_obscureConfirmPassword,
                         ),
                       ),
+                    ),
 
-                      const SizedBox(height: 14),
+                    const SizedBox(height: 20),
 
-                      // Agree to terms + privacy policy
+                    // Agree to terms
+                    _buildAnimatedItem(
+                      6,
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Checkbox(
                             value: _agreeToTerms,
-                            activeColor: brandGreen,
+                            activeColor: limeAccent,
+                            checkColor: deepForest,
+                            side: BorderSide(
+                              color: Colors.white.withOpacity(0.5),
+                            ),
                             onChanged: (v) {
                               setState(() => _agreeToTerms = v ?? false);
                             },
@@ -232,24 +269,29 @@ class _SignUpPageState extends State<SignUpPage> {
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   const Text('I agree to the '),
-                                  InkWell(
+
+                                  GestureDetector(
                                     onTap: _handleTerms,
                                     child: const Text(
                                       'Terms & Conditions',
                                       style: TextStyle(
+                                        color: limeAccent,
+                                        fontWeight: FontWeight.bold,
                                         decoration: TextDecoration.underline,
-                                        fontWeight: FontWeight.w600,
+                                        decorationColor: limeAccent,
                                       ),
                                     ),
                                   ),
                                   const Text(' and '),
-                                  InkWell(
+                                  GestureDetector(
                                     onTap: _handlePrivacyPolicy,
                                     child: const Text(
                                       'Privacy Policy',
                                       style: TextStyle(
+                                        color: limeAccent,
+                                        fontWeight: FontWeight.bold,
                                         decoration: TextDecoration.underline,
-                                        fontWeight: FontWeight.w600,
+                                        decorationColor: limeAccent,
                                       ),
                                     ),
                                   ),
@@ -260,50 +302,134 @@ class _SignUpPageState extends State<SignUpPage> {
                           ),
                         ],
                       ),
+                    ),
 
-                      const SizedBox(height: 10),
+                    const SizedBox(height: 24),
 
-                      // Primary button (dark, to contrast with green theme)
+                    // Primary button
+                    _buildAnimatedItem(
+                      7,
                       ElevatedButton(
                         onPressed: _handleSignUp,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: brandGreen,
-                          foregroundColor: Colors.white,
+                          backgroundColor: limeAccent,
+                          foregroundColor: deepForest,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
-                          elevation: 6,
+                          elevation: 8,
+                          shadowColor: limeAccent.withOpacity(0.5),
                         ),
                         child: const Text(
                           'Sign up',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            letterSpacing: 0.4,
+                            letterSpacing: 1.0,
                           ),
                         ),
                       ),
+                    ),
 
-                      const SizedBox(height: 14),
+                    const SizedBox(height: 24),
 
-                      // Already have account? Log in
+                    // Already have account? Log in
+                    _buildAnimatedItem(
+                      8,
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Text(
-                            'Already have an account? ',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            'Already a member? ',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                           TextButton(
                             onPressed: _handleGoToLogin,
-                            child: const Text('Log in'),
+                            child: const Text(
+                              'Log in',
+                              style: TextStyle(
+                                color: limeAccent,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnimatedItem(int index, Widget child) {
+    return SlideTransition(
+      position: Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero)
+          .animate(
+            CurvedAnimation(
+              parent: _animController,
+              curve: Interval(index * 0.1, 1.0, curve: Curves.easeOutCubic),
+            ),
+          ),
+      child: FadeTransition(
+        opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(
+            parent: _animController,
+            curve: Interval(index * 0.1, 1.0, curve: Curves.easeOut),
+          ),
+        ),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildGlassTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool isPassword = false,
+    bool obscureText = false,
+    VoidCallback? onTogglePassword,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.2)),
+          ),
+          child: TextField(
+            controller: controller,
+            obscureText: obscureText,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: label,
+              labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+              prefixIcon: Icon(icon, color: Colors.white70),
+              suffixIcon: isPassword
+                  ? IconButton(
+                      icon: Icon(
+                        obscureText ? Icons.visibility_off : Icons.visibility,
+                        color: Colors.white70,
+                      ),
+                      onPressed: onTogglePassword,
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 16,
               ),
             ),
           ),
