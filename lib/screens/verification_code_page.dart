@@ -1,11 +1,9 @@
 // lib/screens/verification_code_page.dart
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class VerificationCodePage extends StatefulWidget {
-  const VerificationCodePage({
-    super.key,
-    required this.initialEmail,
-  });
+  const VerificationCodePage({super.key, required this.initialEmail});
 
   final String initialEmail;
 
@@ -13,9 +11,11 @@ class VerificationCodePage extends StatefulWidget {
   State<VerificationCodePage> createState() => _VerificationCodePageState();
 }
 
-class _VerificationCodePageState extends State<VerificationCodePage> {
+class _VerificationCodePageState extends State<VerificationCodePage>
+    with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _codeController = TextEditingController();
+  late AnimationController _animController;
 
   bool _showTipBox = false;
 
@@ -23,6 +23,10 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
   void initState() {
     super.initState();
     _emailController.text = widget.initialEmail; // prefill from Forgot Password
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..forward();
   }
 
   void _handleVerify() {
@@ -31,7 +35,9 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
 
     if (email.isEmpty || code.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your email and verification code.')),
+        const SnackBar(
+          content: Text('Please enter your email and verification code.'),
+        ),
       );
       return;
     }
@@ -47,7 +53,9 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('New code requested (not implemented yet).')),
+      const SnackBar(
+        content: Text('New code requested (not implemented yet).'),
+      ),
     );
   }
 
@@ -59,12 +67,14 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
   void dispose() {
     _emailController.dispose();
     _codeController.dispose();
+    _animController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    const brandGreen = Color.fromARGB(255, 96, 170, 36);
+    const deepForest = Color(0xFF1B3329);
+    const limeAccent = Color(0xFF76FF03);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -79,11 +89,7 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color.fromARGB(255, 25, 210, 155),
-              Color.fromARGB(255, 96, 170, 36),
-              Color.fromARGB(255, 161, 236, 64),
-            ],
+            colors: [deepForest, Color(0xFF2E4A3D), Color(0xFF0F2018)],
           ),
         ),
         child: SafeArea(
@@ -92,75 +98,74 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
               constraints: const BoxConstraints(maxWidth: 520),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24.0),
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.95),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.12),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 20),
+                    _buildAnimatedItem(
+                      0,
+                      const Icon(
+                        Icons.mark_email_unread_outlined,
+                        size: 80,
+                        color: Colors.white,
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 8),
+                    ),
+                    const SizedBox(height: 20),
 
+                    _buildAnimatedItem(
+                      1,
                       const Text(
                         'We emailed you a code',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
+                    ),
 
-                      const SizedBox(height: 10),
+                    const SizedBox(height: 10),
 
+                    _buildAnimatedItem(
+                      2,
                       Text(
                         'Enter the verification code sent to',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.grey.shade700,
-                        ),
+                        style: TextStyle(fontSize: 15, color: Colors.white70),
                       ),
+                    ),
 
-                      const SizedBox(height: 12),
+                    const SizedBox(height: 30),
 
-                      // Editable email (pre-filled from Forgot Password)
-                      TextField(
+                    // Editable email
+                    _buildAnimatedItem(
+                      3,
+                      _buildGlassTextField(
                         controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          labelText: 'Email address',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          suffixIcon: const Icon(Icons.edit),
-                        ),
+                        label: 'Email address',
+                        icon: Icons.email,
+                        isReadOnly: true, // Assuming we just want to show it
                       ),
+                    ),
 
-                      const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                      // Verification code input
-                      TextField(
+                    // Verification code input
+                    _buildAnimatedItem(
+                      4,
+                      _buildGlassTextField(
                         controller: _codeController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Enter verification code',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
+                        label: 'Enter 6-digit code',
+                        icon: Icons.lock_clock,
+                        isNumber: true,
                       ),
+                    ),
 
-                      const SizedBox(height: 14),
+                    const SizedBox(height: 24),
 
+                    _buildAnimatedItem(
+                      5,
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Wrap(
@@ -170,88 +175,151 @@ class _VerificationCodePageState extends State<VerificationCodePage> {
                               "Didn't get the code? ",
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey.shade800,
+                                color: Colors.white70,
                               ),
                             ),
-                            InkWell(
+                            GestureDetector(
                               onTap: _handleSendNewCode,
                               child: const Text(
                                 'Send a new code',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
+                                  color: limeAccent,
                                   decoration: TextDecoration.underline,
+                                  decorationColor: limeAccent,
                                 ),
                               ),
                             ),
                           ],
                         ),
                       ),
+                    ),
 
-                      if (_showTipBox) ...[
-                        const SizedBox(height: 14),
-
-                        // Tip box (only appears after clicking "Send a new code")
+                    if (_showTipBox) ...[
+                      const SizedBox(height: 14),
+                      _buildAnimatedItem(
+                        6,
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
+                            color: Colors.white.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Colors.grey.shade300,
+                              color: limeAccent.withOpacity(0.3),
                             ),
                           ),
                           child: const Text(
                             "Sent! Tip: If you still can't see the email, check your spam folder or contact budgetbuddy@gmail.com.",
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 13,
-                              height: 1.3,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: TextStyle(fontSize: 13, color: Colors.white),
                           ),
                         ),
-                      ],
+                      ),
+                    ],
 
-                      const SizedBox(height: 16),
+                    const SizedBox(height: 32),
 
-                      // Verify button (green)
+                    // Verify button
+                    _buildAnimatedItem(
+                      7,
                       ElevatedButton(
                         onPressed: _handleVerify,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: brandGreen,
-                          foregroundColor: Colors.white,
+                          backgroundColor: limeAccent,
+                          foregroundColor: deepForest,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
-                          elevation: 6,
+                          elevation: 8,
+                          shadowColor: limeAccent.withOpacity(0.5),
                         ),
                         child: const Text(
                           'Verify',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            letterSpacing: 0.4,
+                            letterSpacing: 1.0,
                           ),
                         ),
                       ),
+                    ),
 
-                      const SizedBox(height: 10),
+                    const SizedBox(height: 16),
 
-                      // Back button (outlined)
+                    // Back button
+                    _buildAnimatedItem(
+                      8,
                       TextButton(
-                        onPressed:_handleBack, 
-                          child: const Text(
-                            'Back',
-                            style: TextStyle(
-                              fontSize: 14,
-                            ),
-                          ),
+                        onPressed: _handleBack,
+                        child: const Text(
+                          'Back',
+                          style: TextStyle(fontSize: 14, color: Colors.white70),
                         ),
-                    ],
-                  ),
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnimatedItem(int index, Widget child) {
+    return SlideTransition(
+      position: Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero)
+          .animate(
+            CurvedAnimation(
+              parent: _animController,
+              curve: Interval(index * 0.1, 1.0, curve: Curves.easeOutCubic),
+            ),
+          ),
+      child: FadeTransition(
+        opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(
+            parent: _animController,
+            curve: Interval(index * 0.1, 1.0, curve: Curves.easeOut),
+          ),
+        ),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildGlassTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool isNumber = false,
+    bool isReadOnly = false,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.2)),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+            readOnly: isReadOnly,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: label,
+              labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+              prefixIcon: Icon(icon, color: Colors.white70),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 16,
               ),
             ),
           ),

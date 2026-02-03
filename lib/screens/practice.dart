@@ -1,5 +1,5 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:budget_app/main.dart';
 
 class PracticeScreen extends StatefulWidget {
   const PracticeScreen({super.key});
@@ -8,13 +8,71 @@ class PracticeScreen extends StatefulWidget {
   State<PracticeScreen> createState() => _PracticeScreenState();
 }
 
-class _PracticeScreenState extends State<PracticeScreen> {
+class _PracticeScreenState extends State<PracticeScreen>
+    with SingleTickerProviderStateMixin {
   int i = 0;
   int _currentIndex = 0;
+  late AnimationController _bgController;
+  late Animation<Alignment> _topAlignmentAnimation;
+  late Animation<Alignment> _bottomAlignmentAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _bgController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat(reverse: true);
+
+    _topAlignmentAnimation = TweenSequence<Alignment>([
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topLeft, end: Alignment.topRight),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topRight, end: Alignment.bottomRight),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomRight, end: Alignment.bottomLeft),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomLeft, end: Alignment.topLeft),
+        weight: 1,
+      ),
+    ]).animate(_bgController);
+
+    _bottomAlignmentAnimation = TweenSequence<Alignment>([
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomRight, end: Alignment.bottomLeft),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomLeft, end: Alignment.topLeft),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topLeft, end: Alignment.topRight),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topRight, end: Alignment.bottomRight),
+        weight: 1,
+      ),
+    ]).animate(_bgController);
+  }
+
+  @override
+  void dispose() {
+    _bgController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text("Practice Screen"),
         leading: IconButton(
@@ -35,6 +93,15 @@ class _PracticeScreenState extends State<PracticeScreen> {
             );
             */
           },
+        ),
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(color: Colors.black.withOpacity(0.1)),
+          ),
         ),
         actions: [
           IconButton(

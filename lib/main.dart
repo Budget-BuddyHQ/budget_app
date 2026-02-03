@@ -4,7 +4,6 @@ import 'screens/learning_path_screen.dart';
 import '../screens/coin_game.dart';
 import 'screens/budget_simulation.dart';
 import 'screens/login_page.dart';
-import 'screens/practice.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,24 +37,93 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class StartPage extends StatelessWidget {
+class StartPage extends StatefulWidget {
   const StartPage({super.key});
+
+  @override
+  State<StartPage> createState() => _StartPageState();
+}
+
+class _StartPageState extends State<StartPage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _bgController;
+  late Animation<Alignment> _topAlignmentAnimation;
+  late Animation<Alignment> _bottomAlignmentAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _bgController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat(reverse: true);
+
+    _topAlignmentAnimation = TweenSequence<Alignment>([
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topLeft, end: Alignment.topRight),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topRight, end: Alignment.bottomRight),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomRight, end: Alignment.bottomLeft),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomLeft, end: Alignment.topLeft),
+        weight: 1,
+      ),
+    ]).animate(_bgController);
+
+    _bottomAlignmentAnimation = TweenSequence<Alignment>([
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomRight, end: Alignment.bottomLeft),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomLeft, end: Alignment.topLeft),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topLeft, end: Alignment.topRight),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topRight, end: Alignment.bottomRight),
+        weight: 1,
+      ),
+    ]).animate(_bgController);
+  }
+
+  @override
+  void dispose() {
+    _bgController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color.fromARGB(255, 25, 210, 155),
-              Color.fromARGB(255, 96, 170, 36),
-              Color.fromARGB(255, 161, 236, 64),
-            ],
-          ),
-        ),
+      body: AnimatedBuilder(
+        animation: _bgController,
+        builder: (context, child) {
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: _topAlignmentAnimation.value,
+                end: _bottomAlignmentAnimation.value,
+                colors: [
+                  const Color(0xFF1B3329), // Darker Deep Forest
+                  const Color(0xFF2E4A3D), // Forest Green
+                  const Color(0xFF0F2018), // Almost Black Green
+                ],
+              ),
+            ),
+            child: child,
+          );
+        },
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -74,23 +142,19 @@ class StartPage extends StatelessWidget {
                         children: [
                           const Spacer(flex: 1),
 
-                          // App Icon/Logo - FIXED
+                          // App Icon/Logo - CLEANER
                           Center(
                             child: Container(
                               width: constraints.maxWidth > 600 ? 120 : 100,
                               height: constraints.maxWidth > 600 ? 120 : 100,
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: const Color.fromARGB(179, 0, 0, 0),
-                                  width: 3,
-                                ),
+                                borderRadius: BorderRadius.circular(24),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color.fromRGBO(0, 0, 0, 0.2),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
                                   ),
                                 ],
                               ),
@@ -106,7 +170,7 @@ class StartPage extends StatelessWidget {
                                       child: Icon(
                                         Icons.account_balance_wallet,
                                         size: 60,
-                                        color: Color.fromARGB(255, 96, 170, 36),
+                                        color: Color(0xFF2E4A3D),
                                       ),
                                     );
                                   },
@@ -183,6 +247,8 @@ class StartPage extends StatelessWidget {
                           SizedBox(
                             height: constraints.maxHeight > 700 ? 20 : 12,
                           ),
+
+                          // Started button
                           ElevatedButton(
                             onPressed: () {
                               Navigator.push(
@@ -194,14 +260,9 @@ class StartPage extends StatelessWidget {
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
-                              foregroundColor: const Color.fromARGB(
-                                255,
-                                96,
-                                170,
-                                36,
-                              ),
+                              foregroundColor: const Color(0xFF2E4A3D),
                               padding: EdgeInsets.symmetric(
-                                vertical: constraints.maxHeight > 700 ? 16 : 12,
+                                vertical: constraints.maxHeight > 500 ? 12 : 8,
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(30),
@@ -211,7 +272,7 @@ class StartPage extends StatelessWidget {
                             child: Text(
                               'Get Started',
                               style: TextStyle(
-                                fontSize: constraints.maxWidth > 600 ? 20 : 18,
+                                fontSize: constraints.maxWidth > 400 ? 16 : 12,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 1.1,
                               ),
@@ -221,38 +282,46 @@ class StartPage extends StatelessWidget {
                             height: constraints.maxHeight > 700 ? 20 : 12,
                           ),
                           // Login Button
-                         OutlinedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const LoginPage(),
+                          Container(
+                            margin: EdgeInsetsGeometry.directional(bottom: 20),
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const LoginPage(),
+                                  ),
+                                );
+                              },
+
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: const BorderSide(
+                                  color: Colors.white,
+                                  width: 2,
                                 ),
-                              );
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: const BorderSide(
-                                color: Colors.white,
-                                width: 2,
+                                padding: EdgeInsets.symmetric(
+                                  vertical: constraints.maxHeight > 700
+                                      ? 16
+                                      : 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
                               ),
-                              padding: EdgeInsets.symmetric(
-                                vertical: constraints.maxHeight > 700 ? 16 : 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: Text(
-                              'Log In',
-                              style: TextStyle(
-                                fontSize: constraints.maxWidth > 600 ? 18 : 16,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.8,
+                              child: Text(
+                                'Log In',
+                                style: TextStyle(
+                                  fontSize: constraints.maxWidth > 600
+                                      ? 18
+                                      : 16,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.8,
+                                ),
                               ),
                             ),
                           ),
-                          
+
                           // Credits
                           const Text(
                             'Developed with ❤️ by the App Team',
@@ -286,12 +355,9 @@ class StartPage extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(isCompact ? 12 : 16),
       decoration: BoxDecoration(
-        color: const Color.fromRGBO(255, 255, 255, 0.2),
+        color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: const Color.fromRGBO(255, 255, 255, 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
       ),
       child: Row(
         children: [
@@ -326,29 +392,100 @@ class StartPage extends StatelessWidget {
   }
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _bgController;
+  late Animation<Alignment> _topAlignmentAnimation;
+  late Animation<Alignment> _bottomAlignmentAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _bgController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat(reverse: true);
+
+    _topAlignmentAnimation = TweenSequence<Alignment>([
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topLeft, end: Alignment.topRight),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topRight, end: Alignment.bottomRight),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomRight, end: Alignment.bottomLeft),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomLeft, end: Alignment.topLeft),
+        weight: 1,
+      ),
+    ]).animate(_bgController);
+
+    _bottomAlignmentAnimation = TweenSequence<Alignment>([
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomRight, end: Alignment.bottomLeft),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomLeft, end: Alignment.topLeft),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topLeft, end: Alignment.topRight),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topRight, end: Alignment.bottomRight),
+        weight: 1,
+      ),
+    ]).animate(_bgController);
+  }
+
+  @override
+  void dispose() {
+    _bgController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home Page'),
-        backgroundColor: const Color.fromARGB(255, 96, 170, 36),
+        title: const Text('Dashboard'),
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color.fromARGB(255, 96, 170, 36),
-              Color.fromARGB(255, 230, 245, 220),
-            ],
-          ),
-        ),
+      extendBodyBehindAppBar: true,
+      body: AnimatedBuilder(
+        animation: _bgController,
+        builder: (context, child) {
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: _topAlignmentAnimation.value,
+                end: _bottomAlignmentAnimation.value,
+                colors: [
+                  const Color(0xFF1B3329),
+                  const Color(0xFF2E4A3D),
+                  const Color(0xFF0F2018),
+                ],
+              ),
+            ),
+            child: child,
+          );
+        },
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -361,12 +498,30 @@ class HomePage extends StatelessWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.check_circle,
-                            size: constraints.maxWidth > 600 ? 80 : 60,
-                            color: Colors.white,
+                          // Hero Placeholder (White Screen)
+                          Container(
+                            height: 200,
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 30),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.account_balance_wallet,
+                                size: 80,
+                                color: const Color(0xFF2E4A3D),
+                              ),
+                            ),
                           ),
-                          const SizedBox(height: 20),
                           Text(
                             'Welcome to Budget Buddy!',
                             textAlign: TextAlign.center,
@@ -406,13 +561,8 @@ class HomePage extends StatelessWidget {
                             icon: const Icon(Icons.play_arrow),
                             label: const Text('Start Learning'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: const Color.fromARGB(
-                                255,
-                                96,
-                                170,
-                                36,
-                              ),
+                              backgroundColor: const Color(0xFF76FF03),
+                              foregroundColor: const Color(0xFF1B3329),
                               padding: EdgeInsets.symmetric(
                                 horizontal: constraints.maxWidth > 600
                                     ? 48
@@ -427,7 +577,7 @@ class HomePage extends StatelessWidget {
                           ),
 
                           const SizedBox(height: 16),
-                          OutlinedButton.icon(
+                          ElevatedButton.icon(
                             onPressed: () {
                               Navigator.push(
                                 context,
@@ -439,18 +589,9 @@ class HomePage extends StatelessWidget {
                             },
                             icon: const Icon(Icons.code),
                             label: const Text('Mini Game: Coin Collector'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: const BorderSide(
-                                color: Colors.white,
-                                width: 2,
-                              ),
-                              backgroundColor: const Color.fromRGBO(
-                                255,
-                                152,
-                                0,
-                                0.2,
-                              ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.orange,
                               padding: EdgeInsets.symmetric(
                                 horizontal: constraints.maxWidth > 600
                                     ? 48
@@ -460,10 +601,11 @@ class HomePage extends StatelessWidget {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(30),
                               ),
+                              elevation: 4,
                             ),
                           ),
                           const SizedBox(height: 16),
-                          OutlinedButton.icon(
+                          ElevatedButton.icon(
                             onPressed: () {
                               Navigator.push(
                                 context,
@@ -475,18 +617,9 @@ class HomePage extends StatelessWidget {
                             },
                             icon: const Icon(Icons.sim_card),
                             label: const Text('Budget Simulator'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: const BorderSide(
-                                color: Colors.white,
-                                width: 2,
-                              ),
-                              backgroundColor: const Color.fromRGBO(
-                                0,
-                                150,
-                                136,
-                                0.2,
-                              ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.teal,
                               padding: EdgeInsets.symmetric(
                                 horizontal: constraints.maxWidth > 600
                                     ? 48
@@ -496,6 +629,7 @@ class HomePage extends StatelessWidget {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(30),
                               ),
+                              elevation: 4,
                             ),
                           ),
                         ],
@@ -513,30 +647,101 @@ class HomePage extends StatelessWidget {
 }
 
 // NEW PAGE: Lessons Page
-class LessonsPage extends StatelessWidget {
+class LessonsPage extends StatefulWidget {
   const LessonsPage({super.key});
+
+  @override
+  State<LessonsPage> createState() => _LessonsPageState();
+}
+
+class _LessonsPageState extends State<LessonsPage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _bgController;
+  late Animation<Alignment> _topAlignmentAnimation;
+  late Animation<Alignment> _bottomAlignmentAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _bgController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat(reverse: true);
+
+    _topAlignmentAnimation = TweenSequence<Alignment>([
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topLeft, end: Alignment.topRight),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topRight, end: Alignment.bottomRight),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomRight, end: Alignment.bottomLeft),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomLeft, end: Alignment.topLeft),
+        weight: 1,
+      ),
+    ]).animate(_bgController);
+
+    _bottomAlignmentAnimation = TweenSequence<Alignment>([
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomRight, end: Alignment.bottomLeft),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomLeft, end: Alignment.topLeft),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topLeft, end: Alignment.topRight),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topRight, end: Alignment.bottomRight),
+        weight: 1,
+      ),
+    ]).animate(_bgController);
+  }
+
+  @override
+  void dispose() {
+    _bgController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Financial Lessons'),
-        backgroundColor: const Color.fromARGB(252, 96, 170, 36),
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: Center(
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color.fromARGB(200, 28, 250, 118),
-                Colors.lightGreenAccent,
-              ],
+      body: AnimatedBuilder(
+        animation: _bgController,
+        builder: (context, child) {
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: _topAlignmentAnimation.value,
+                end: _bottomAlignmentAnimation.value,
+                colors: [
+                  const Color(0xFF1B3329),
+                  const Color(0xFF2E4A3D),
+                  const Color(0xFF0F2018),
+                ],
+              ),
             ),
-          ),
+            child: child,
+          );
+        },
+        child: SafeArea(
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -544,27 +749,26 @@ class LessonsPage extends StatelessWidget {
                 const SizedBox(height: 20),
                 // Top header text - FIXED COLOR
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   margin: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.white, width: 2),
-                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.white.withOpacity(0.2),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Text(
                     "Select one of the following on the list",
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Color.fromARGB(
-                        200,
-                        100,
-                        100,
-                        100,
-                      ), // FIXED: was (200, 200, 200, 200)
+                      color: Colors.white,
                       fontSize: 18,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -596,13 +800,14 @@ class LessonsPage extends StatelessWidget {
                     icon: const Icon(Icons.games),
                     label: const Text('Play Coin Collector Game'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.orange,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       minimumSize: const Size(double.infinity, 50),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(30),
                       ),
+                      elevation: 4,
                     ),
                   ),
                 ),
@@ -619,27 +824,38 @@ class LessonsPage extends StatelessWidget {
   // Reusable lesson card
   Widget _buildLessonCard(String title, String description) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color.fromRGBO(255, 255, 255, 0.9),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color.fromARGB(255, 40, 40, 40),
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             description,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16),
+            style: const TextStyle(
+              fontSize: 16,
+              color: Color(0xFF555555),
+              height: 1.5,
+            ),
           ),
         ],
       ),

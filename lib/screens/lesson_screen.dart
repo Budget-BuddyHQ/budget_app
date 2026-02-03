@@ -1,9 +1,11 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import '../models/lesson.dart';
 import '../models/progression_service.dart';
 
 /// Screen for displaying and completing a lesson with detailed content
-class LessonScreen extends StatelessWidget {
+class LessonScreen extends StatefulWidget {
   final Lesson lesson;
   final ProgressionService progressionService;
 
@@ -13,22 +15,85 @@ class LessonScreen extends StatelessWidget {
     required this.progressionService,
   });
 
+  @override
+  State<LessonScreen> createState() => _LessonScreenState();
+}
+
+class _LessonScreenState extends State<LessonScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _bgController;
+  late Animation<Alignment> _topAlignmentAnimation;
+  late Animation<Alignment> _bottomAlignmentAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _bgController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat(reverse: true);
+
+    _topAlignmentAnimation = TweenSequence<Alignment>([
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topLeft, end: Alignment.topRight),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topRight, end: Alignment.bottomRight),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomRight, end: Alignment.bottomLeft),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomLeft, end: Alignment.topLeft),
+        weight: 1,
+      ),
+    ]).animate(_bgController);
+
+    _bottomAlignmentAnimation = TweenSequence<Alignment>([
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomRight, end: Alignment.bottomLeft),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.bottomLeft, end: Alignment.topLeft),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topLeft, end: Alignment.topRight),
+        weight: 1,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: Alignment.topRight, end: Alignment.bottomRight),
+        weight: 1,
+      ),
+    ]).animate(_bgController);
+  }
+
+  @override
+  void dispose() {
+    _bgController.dispose();
+    super.dispose();
+  }
+
   void _completeLesson(BuildContext context) {
-    progressionService.completeLesson(lesson.id);
+    widget.progressionService.completeLesson(widget.lesson.id);
     Navigator.pop(context);
-    
+
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${lesson.title} completed! 🎉'),
-        backgroundColor: const Color.fromARGB(255, 96, 170, 36),
+        content: Text('${widget.lesson.title} completed! 🎉'),
+        backgroundColor: const Color(0xFF2E4A3D),
         duration: const Duration(seconds: 2),
       ),
     );
   }
 
   Map<String, dynamic> _getLessonContent() {
-    switch (lesson.id) {
+    switch (widget.lesson.id) {
       case 'lesson_1':
         return {
           'icon': Icons.account_balance_wallet,
@@ -364,7 +429,7 @@ class LessonScreen extends StatelessWidget {
           'icon': Icons.school,
           'sections': [
             {
-              'title': lesson.title,
+              'title': widget.lesson.title,
               'content': 'Lesson content coming soon!',
             },
           ],
@@ -379,23 +444,40 @@ class LessonScreen extends StatelessWidget {
     final icon = content['icon'] as IconData;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(lesson.title),
-        backgroundColor: const Color.fromARGB(255, 25, 210, 155),
+        title: Text(
+          widget.lesson.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              const Color.fromARGB(255, 25, 210, 155),
-              const Color.fromARGB(255, 230, 245, 220),
-            ],
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(color: Colors.black.withOpacity(0.1)),
           ),
         ),
+      ),
+      body: AnimatedBuilder(
+        animation: _bgController,
+        builder: (context, child) {
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: _topAlignmentAnimation.value,
+                end: _bottomAlignmentAnimation.value,
+                colors: [
+                  const Color(0xFF2E4A3D), // Deep Forest
+                  const Color(0xFF1B3329), // Darker Forest
+                  const Color(0xFF2E4A3D),
+                ],
+              ),
+            ),
+            child: child,
+          );
+        },
         child: SafeArea(
           child: Column(
             children: [
@@ -405,22 +487,30 @@ class LessonScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header with icon
-                      Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                          ),
+                      // Header Placeholder (White Screen)
+                      Container(
+                        height: 200,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Center(
                           child: Icon(
                             icon,
-                            size: 60,
-                            color: Colors.white,
+                            size: 80,
+                            color: const Color(0xFF2E4A3D),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 32),
 
                       // Lesson sections with entrance animations
                       ...sections.asMap().entries.map((entry) {
@@ -447,15 +537,12 @@ class LessonScreen extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.white.withOpacity(0.95),
-                      Colors.white,
-                    ],
+                    colors: [Colors.white.withOpacity(0.8), Colors.white],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 20,
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
                   ],
@@ -465,15 +552,14 @@ class LessonScreen extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () => _completeLesson(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 96, 170, 36),
-                      foregroundColor: Colors.white,
+                      backgroundColor: const Color(0xFF76FF03), // Lime
+                      foregroundColor: const Color(0xFF1B3329), // Dark Text
                       padding: const EdgeInsets.symmetric(vertical: 18),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
                       elevation: 12,
-                      shadowColor: const Color.fromARGB(255, 96, 170, 36)
-                          .withOpacity(0.5),
+                      shadowColor: const Color(0xFF76FF03).withOpacity(0.5),
                     ),
                     child: const Text(
                       'Complete Lesson',
@@ -502,10 +588,7 @@ class LessonScreen extends StatelessWidget {
           opacity: value,
           child: Transform.translate(
             offset: Offset(0, 30 * (1 - value)),
-            child: Transform.scale(
-              scale: 0.9 + (0.1 * value),
-              child: child,
-            ),
+            child: Transform.scale(scale: 0.9 + (0.1 * value), child: child),
           ),
         );
       },
@@ -519,11 +602,12 @@ class LessonScreen extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 12,
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
@@ -536,7 +620,7 @@ class LessonScreen extends StatelessWidget {
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Color.fromARGB(255, 96, 170, 36),
+              color: Color.fromARGB(255, 40, 40, 40),
             ),
           ),
           const SizedBox(height: 12),
@@ -545,7 +629,7 @@ class LessonScreen extends StatelessWidget {
             style: const TextStyle(
               fontSize: 16,
               height: 1.6,
-              color: Colors.black87,
+              color: Color(0xFF555555),
             ),
           ),
         ],
