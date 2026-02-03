@@ -247,40 +247,6 @@ class _StartPageState extends State<StartPage>
                           SizedBox(
                             height: constraints.maxHeight > 700 ? 20 : 12,
                           ),
-
-                          // Started button
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const HomePage(),
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: const Color(0xFF2E4A3D),
-                              padding: EdgeInsets.symmetric(
-                                vertical: constraints.maxHeight > 500 ? 12 : 8,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              elevation: 8,
-                            ),
-                            child: Text(
-                              'Get Started',
-                              style: TextStyle(
-                                fontSize: constraints.maxWidth > 400 ? 16 : 12,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.1,
-                              ),
-                            ),
-                          ),
-                          SizedBox(
-                            height: constraints.maxHeight > 700 ? 20 : 12,
-                          ),
                           // Login Button
                           Container(
                             margin: EdgeInsetsGeometry.directional(bottom: 20),
