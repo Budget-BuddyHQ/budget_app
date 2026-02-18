@@ -4,22 +4,26 @@ import 'screens/learning_path_screen.dart';
 import '../screens/coin_game.dart';
 import 'screens/budget_simulation.dart';
 import 'screens/login_page.dart';
+import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await windowManager.ensureInitialized();
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    await windowManager.ensureInitialized();
 
-  WindowOptions options = const WindowOptions(
-    size: Size(1000, 800),
-    minimumSize: Size(450, 400),
-    center: true,
-  );
+    WindowOptions options = const WindowOptions(
+      size: Size(1000, 800),
+      minimumSize: Size(450, 400),
+      center: true,
+    );
 
-  windowManager.waitUntilReadyToShow(options, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  });
+    windowManager.waitUntilReadyToShow(options, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
+  
   runApp(const MyApp());
 }
 
