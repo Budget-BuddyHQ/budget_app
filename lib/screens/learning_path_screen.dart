@@ -576,7 +576,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w900,
-              fontSize: 16,
+              fontSize: 14,
             ),
           ),
         ],
