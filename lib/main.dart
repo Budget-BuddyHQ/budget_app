@@ -8,18 +8,8 @@ import 'screens/login_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await windowManager.ensureInitialized();
 
-  WindowOptions options = const WindowOptions(
-    size: Size(1000, 800),
-    minimumSize: Size(450, 400),
-    center: true,
-  );
 
-  windowManager.waitUntilReadyToShow(options, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  });
   runApp(const MyApp());
 }
 
