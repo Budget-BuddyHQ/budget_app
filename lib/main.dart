@@ -216,11 +216,11 @@ class _StartPageState extends State<StartPage>
                             icon: Icons.school,
                             title: 'Interactive Lessons',
                             description:
-                                'Gamified financial education designed for youth',
+                                'Gamified financial education',
                             isCompact: constraints.maxHeight < 700,
                           ),
                           SizedBox(
-                            height: constraints.maxHeight > 700 ? 16 : 10,
+                            height: constraints.maxHeight > 700 ? 12 : 8,
                           ),
 
                           _buildFeatureCard(
@@ -231,7 +231,7 @@ class _StartPageState extends State<StartPage>
                             isCompact: constraints.maxHeight < 700,
                           ),
                           SizedBox(
-                            height: constraints.maxHeight > 700 ? 16 : 10,
+                            height: constraints.maxHeight > 700 ? 12 : 8,
                           ),
 
                           _buildFeatureCard(
@@ -241,7 +241,7 @@ class _StartPageState extends State<StartPage>
                             isCompact: constraints.maxHeight < 700,
                           ),
                           SizedBox(
-                            height: constraints.maxHeight > 700 ? 40 : 20,
+                            height: constraints.maxHeight > 700 ? 30 : 20,
                           ),
 
                           SizedBox(
@@ -296,7 +296,6 @@ class _StartPageState extends State<StartPage>
                               color: Colors.white60,
                             ),
                           ),
-
                           const Spacer(flex: 1),
                         ],
                       ),
@@ -318,11 +317,18 @@ class _StartPageState extends State<StartPage>
     required bool isCompact,
   }) {
     return Container(
-      padding: EdgeInsets.all(isCompact ? 12 : 16),
+      padding: EdgeInsets.all(isCompact ? 16 : 20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -469,7 +475,7 @@ class _HomePageState extends State<HomePage>
                             width: double.infinity,
                             margin: const EdgeInsets.only(bottom: 30),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Colors.white.withOpacity(0.9),
                               borderRadius: BorderRadius.circular(24),
                               boxShadow: [
                                 BoxShadow(
@@ -494,6 +500,13 @@ class _HomePageState extends State<HomePage>
                               fontSize: constraints.maxWidth > 600 ? 28 : 24,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  offset: const Offset(0, 2),
+                                  blurRadius: 4,
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -506,7 +519,8 @@ class _HomePageState extends State<HomePage>
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.white70,
+                                color: Colors.white,
+                                height: 1.5,
                               ),
                             ),
                           ),
@@ -532,12 +546,16 @@ class _HomePageState extends State<HomePage>
                                 horizontal: constraints.maxWidth > 600
                                     ? 48
                                     : 32,
-                                vertical: 16,
+                                vertical: 18,
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(30),
                               ),
-                              elevation: 8,
+                              elevation: 10,
+                              textStyle: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
 
@@ -556,7 +574,7 @@ class _HomePageState extends State<HomePage>
                             label: const Text('Mini Game: Coin Collector'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
-                              foregroundColor: Colors.orange,
+                              foregroundColor: const Color(0xFF2E4A3D),
                               padding: EdgeInsets.symmetric(
                                 horizontal: constraints.maxWidth > 600
                                     ? 48
@@ -567,6 +585,10 @@ class _HomePageState extends State<HomePage>
                                 borderRadius: BorderRadius.circular(30),
                               ),
                               elevation: 4,
+                              textStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -584,7 +606,7 @@ class _HomePageState extends State<HomePage>
                             label: const Text('Budget Simulator'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
-                              foregroundColor: Colors.teal,
+                              foregroundColor: const Color(0xFF2E4A3D),
                               padding: EdgeInsets.symmetric(
                                 horizontal: constraints.maxWidth > 600
                                     ? 48
@@ -595,6 +617,10 @@ class _HomePageState extends State<HomePage>
                                 borderRadius: BorderRadius.circular(30),
                               ),
                               elevation: 4,
+                              textStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
@@ -792,7 +818,7 @@ class _LessonsPageState extends State<LessonsPage>
       padding: const EdgeInsets.all(20),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white.withOpacity(0.95),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
