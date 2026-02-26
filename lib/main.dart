@@ -1,3 +1,5 @@
+
+import 'package:budget_app/screens/town_square_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'screens/learning_path_screen.dart';
@@ -31,10 +33,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Financial Literacy App',
-      theme: ThemeData(primarySwatch: Colors.green, useMaterial3: true),
+      title: 'Budget Buddy',
+      theme: ThemeData(primarySwatch: Colors.green, useMaterial3: true, fontFamily: 'sans-serif'),
       debugShowCheckedModeBanner: false,
-      home: const StartPage(),
+      home: const StartPage(), // Initial Route is now the sign-in page
+      routes: {
+        '/town_square': (context) => const HomePage(),
+      },
     );
   }
 }
@@ -573,191 +578,5 @@ class _HomePageState extends State<HomePage>
   }
 }
 
-// NEW PAGE: Lessons Page
-class LessonsPage extends StatefulWidget {
-  const LessonsPage({super.key});
 
-  @override
-  State<LessonsPage> createState() => _LessonsPageState();
-}
 
-class _LessonsPageState extends State<LessonsPage>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _bgController;
-  late Animation<Alignment> _topAlignmentAnimation;
-  late Animation<Alignment> _bottomAlignmentAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _bgController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 10),
-    )..repeat(reverse: true);
-
-    _topAlignmentAnimation = TweenSequence<Alignment>([
-      TweenSequenceItem(
-        tween: Tween(begin: Alignment.topLeft, end: Alignment.topRight),
-        weight: 1,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: Alignment.topRight, end: Alignment.bottomRight),
-        weight: 1,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: Alignment.bottomRight, end: Alignment.bottomLeft),
-        weight: 1,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: Alignment.bottomLeft, end: Alignment.topLeft),
-        weight: 1,
-      ),
-    ]).animate(_bgController);
-
-    _bottomAlignmentAnimation = TweenSequence<Alignment>([
-      TweenSequenceItem(
-        tween: Tween(begin: Alignment.bottomRight, end: Alignment.bottomLeft),
-        weight: 1,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: Alignment.bottomLeft, end: Alignment.topLeft),
-        weight: 1,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: Alignment.topLeft, end: Alignment.topRight),
-        weight: 1,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: Alignment.topRight, end: Alignment.bottomRight),
-        weight: 1,
-      ),
-    ]).animate(_bgController);
-  }
-
-  @override
-  void dispose() {
-    _bgController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: const Text('Financial Lessons'),
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: AnimatedBuilder(
-        animation: _bgController,
-        builder: (context, child) {
-          return Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: _topAlignmentAnimation.value,
-                end: _bottomAlignmentAnimation.value,
-                colors: [
-                  const Color(0xFF1B3329),
-                  const Color(0xFF2E4A3D),
-                  const Color(0xFF0F2018),
-                ],
-              ),
-            ),
-            child: child,
-          );
-        },
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 20),
-                // Top header text - FIXED COLOR
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 1,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Text(
-                    "Select one of the following on the list",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-
-                // Lesson Cards
-                _buildLessonCard(
-                  "Lesson 1",
-                  "Introduction to Budgeting and Money Management",
-                ),
-                _buildLessonCard("Lesson 2", "Saving Tips for Beginners"),
-                _buildLessonCard(
-                  "Lesson 3",
-                  "Investing Basics: Start Early for Long-Term Growth", // FIXED: shortened description
-                ),
-
-                const SizedBox(height: 30),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Reusable lesson card
-  Widget _buildLessonCard(String title, String description) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color.fromARGB(255, 40, 40, 40),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            description,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Color(0xFF555555),
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
