@@ -1,6 +1,7 @@
 // lib/screens/signup_page.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'goals_setup_page.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -36,48 +37,6 @@ class _SignUpPageState extends State<SignUpPage>
     _confirmPasswordController.dispose();
     _animController.dispose();
     super.dispose();
-  }
-
-  void _handleSignUp() {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
-    final confirm = _confirmPasswordController.text;
-
-    if (email.isEmpty || password.isEmpty || confirm.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill out all fields.')),
-      );
-      return;
-    }
-
-    if (password.length < 8) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password must be at least 8 characters.'),
-        ),
-      );
-      return;
-    }
-
-    if (password != confirm) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Passwords do not match.')));
-      return;
-    }
-
-    if (!_agreeToTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please agree to the Terms & Conditions.'),
-        ),
-      );
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sign up pressed (not implemented yet).')),
-    );
   }
 
   void _handlePrivacyPolicy() {
@@ -310,7 +269,60 @@ class _SignUpPageState extends State<SignUpPage>
                     _buildAnimatedItem(
                       7,
                       ElevatedButton(
-                        onPressed: _handleSignUp,
+                        onPressed: () {
+                          final email = _emailController.text.trim();
+                          final password = _passwordController.text;
+                          final confirm = _confirmPasswordController.text;
+
+                          if (email.isEmpty ||
+                              password.isEmpty ||
+                              confirm.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please fill out all fields.'),
+                              ),
+                            );
+                            return;
+                          }
+
+                          if (password.length < 8) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Password must be at least 8 characters.',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
+                          if (password != confirm) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Passwords do not match.'),
+                              ),
+                            );
+                            return;
+                          }
+
+                          if (!_agreeToTerms) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Please agree to the Terms & Conditions.',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const GoalsSetupPage(),
+                            ),
+                          );
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: limeAccent,
                           foregroundColor: deepForest,
