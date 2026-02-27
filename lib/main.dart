@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'screens/learning_path_screen.dart';
 import 'screens/login_page.dart';
+import 'screens/signup_page.dart';
 import 'dart:io';
 
 void main() async {
@@ -253,46 +254,79 @@ class _StartPageState extends State<StartPage>
                           SizedBox(
                             height: constraints.maxHeight > 700 ? 20 : 12,
                           ),
-                          // Login Button
-                          Container(
-                            margin: EdgeInsetsGeometry.directional(bottom: 20),
-                            child: OutlinedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const LoginPage(),
+                          // Login + Sign Up Buttons
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 20),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const LoginPage(),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF4F7D68), // Sage green
+                                  foregroundColor: Colors.white,
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: constraints.maxHeight > 700 ? 16 : 12,
                                   ),
-                                );
-                              },
-
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                side: const BorderSide(
-                                  color: Colors.white,
-                                  width: 2,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                  elevation: 10,
+                                  shadowColor: const Color(0xFF4F7D68).withOpacity(0.45),
                                 ),
-                                padding: EdgeInsets.symmetric(
-                                  vertical: constraints.maxHeight > 700
-                                      ? 16
-                                      : 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                              ),
-                              child: Text(
-                                'Log In',
-                                style: TextStyle(
-                                  fontSize: constraints.maxWidth > 600
-                                      ? 18
-                                      : 16,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.8,
+                                child: Text(
+                                  'Log In',
+                                  style: TextStyle(
+                                    fontSize: constraints.maxWidth > 600 ? 18 : 16,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.8,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const SignUpPage(),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF4F7D68), // Same sage green
+                                  foregroundColor: Colors.white,
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: constraints.maxHeight > 700 ? 16 : 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                  elevation: 10,
+                                  shadowColor: const Color(0xFF4F7D68).withOpacity(0.45),
+                                ),
+                                child: Text(
+                                  'Sign Up',
+                                  style: TextStyle(
+                                    fontSize: constraints.maxWidth > 600 ? 18 : 16,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                           // Credits
                           const Text(
                             'Developed with ❤️ by the App Team',
