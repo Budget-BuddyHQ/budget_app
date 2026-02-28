@@ -8,7 +8,7 @@ class _GameData {
 }
 
 class TownSquareScreen extends StatefulWidget {
-  const TownSquareScreen({Key? key}) : super(key: key);
+  const TownSquareScreen({super.key});
 
   @override
   _TownSquareScreenState createState() => _TownSquareScreenState();
@@ -95,7 +95,7 @@ class _TownSquareScreenState extends State<TownSquareScreen>
           border: Border.all(color: const Color(0xFF4a2e1b), width: 2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withValues(alpha: 0.4),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -112,7 +112,7 @@ class _TownSquareScreenState extends State<TownSquareScreen>
                 // Progress Glow
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.yellow.withOpacity(0.6),
+                    color: Colors.yellow.withValues(alpha: 0.6),
                     blurRadius: 12,
                     spreadRadius: 1,
                   ),
@@ -192,7 +192,7 @@ class _TownSquareScreenState extends State<TownSquareScreen>
                     height: buildingHeight,
                     decoration: BoxDecoration(
                       color: baseColor,
-                      border: Border.all(color: Colors.black.withOpacity(0.3)),
+                      border: Border.all(color: Colors.black.withValues(alpha: 0.3)),
                     ),
                   ),
                 ),
@@ -223,7 +223,7 @@ class _TownSquareScreenState extends State<TownSquareScreen>
 }
 
 class _FloatingIcon extends StatelessWidget {
-  const _FloatingIcon({Key? key, required this.icon}) : super(key: key);
+  const _FloatingIcon({super.key, required this.icon});
   final IconData icon;
 
   @override
@@ -240,10 +240,10 @@ class _FloatingIcon extends StatelessWidget {
       },
       child: Icon(
         icon,
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: 0.9),
         size: 32,
         shadows: [
-          Shadow(color: Colors.black.withOpacity(0.5), blurRadius: 8),
+          Shadow(color: Colors.black.withValues(alpha: 0.5),blurRadius: 8),
         ],
       ),
     );
@@ -282,7 +282,7 @@ class _RoofPainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     final Paint borderPaint = Paint()
-      ..color = Colors.black.withOpacity(0.3)
+      ..color = Colors.black.withValues(alpha: 0.3)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
     canvas.drawPath(path, borderPaint);

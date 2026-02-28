@@ -114,7 +114,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                           height: 1.5,
                         ),
                       ),
@@ -145,7 +145,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                             borderRadius: BorderRadius.circular(30),
                           ),
                           elevation: 8,
-                          shadowColor: limeAccent.withOpacity(0.5),
+                          shadowColor: limeAccent.withValues(alpha: 0.5),
                         ),
                         child: const Text(
                           'Send Code',
@@ -199,16 +199,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.2)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           ),
           child: TextField(
             controller: controller,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               labelText: label,
-              labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+              labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
               prefixIcon: Icon(icon, color: Colors.white70),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
