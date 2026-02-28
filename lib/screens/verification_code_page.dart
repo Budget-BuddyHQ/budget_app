@@ -203,10 +203,10 @@ class _VerificationCodePageState extends State<VerificationCodePage>
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: limeAccent.withOpacity(0.3),
+                              color: limeAccent.withValues(alpha: 0.3),
                             ),
                           ),
                           child: const Text(
@@ -233,7 +233,7 @@ class _VerificationCodePageState extends State<VerificationCodePage>
                             borderRadius: BorderRadius.circular(30),
                           ),
                           elevation: 8,
-                          shadowColor: limeAccent.withOpacity(0.5),
+                          shadowColor: limeAccent.withValues(alpha: 0.5),
                         ),
                         child: const Text(
                           'Verify',
@@ -303,9 +303,9 @@ class _VerificationCodePageState extends State<VerificationCodePage>
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.2)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           ),
           child: TextField(
             controller: controller,
@@ -314,7 +314,7 @@ class _VerificationCodePageState extends State<VerificationCodePage>
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               labelText: label,
-              labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+              labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
               prefixIcon: Icon(icon, color: Colors.white70),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
