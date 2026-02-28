@@ -87,14 +87,14 @@ class _LoginPageState extends State<LoginPage>
                           width: 120,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                             border: Border.all(
-                              color: limeAccent.withOpacity(0.5),
+                              color: limeAccent.withValues(alpha: 0.5),
                               width: 2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: limeAccent.withOpacity(0.2),
+                                color: limeAccent.withValues(alpha: 0.2),
                                 blurRadius: 25,
                                 spreadRadius: 5,
                               ),
@@ -105,7 +105,7 @@ class _LoginPageState extends State<LoginPage>
                             child: Image.asset(
                               'assets/images/logo.png',
                               fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => Icon(
+                              errorBuilder: (_, _, _,) => Icon(
                                 Icons.account_balance_wallet,
                                 size: 50,
                                 color: limeAccent,
@@ -139,7 +139,7 @@ class _LoginPageState extends State<LoginPage>
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                         ),
                       ),
                     ),
@@ -211,7 +211,7 @@ class _LoginPageState extends State<LoginPage>
                             borderRadius: BorderRadius.circular(30),
                           ),
                           elevation: 8,
-                          shadowColor: limeAccent.withOpacity(0.5),
+                          shadowColor: limeAccent.withValues(alpha: 0.5),
                         ),
                         child: const Text(
                           'Log In',
@@ -305,9 +305,9 @@ class _LoginPageState extends State<LoginPage>
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.2)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           ),
           child: TextField(
             controller: controller,
@@ -315,7 +315,7 @@ class _LoginPageState extends State<LoginPage>
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               labelText: label,
-              labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+              labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
               prefixIcon: Icon(icon, color: Colors.white70),
               suffixIcon: isPassword
                   ? IconButton(
