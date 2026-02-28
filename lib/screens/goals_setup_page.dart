@@ -231,9 +231,9 @@ class _GoalsSetupPageState extends State<GoalsSetupPage>
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.10),
+            color: Colors.white.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withOpacity(0.20)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           ),
           child: child,
         ),
@@ -280,12 +280,12 @@ class _GoalChip extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
           color: selected
-              ? limeAccent.withOpacity(0.20)
-              : Colors.white.withOpacity(0.08),
+              ? limeAccent.withValues(alpha: 0.2)
+              : Colors.white.withValues(alpha: 0.08),
           border: Border.all(
             color: selected
-                ? limeAccent.withOpacity(0.75)
-                : Colors.white.withOpacity(0.18),
+                ? limeAccent.withValues(alpha: 0.75)
+                :  Colors.white.withValues(alpha: 0.18),
           ),
         ),
         child: Row(

@@ -460,10 +460,10 @@ class _LessonScreenState extends State<LessonScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -532,7 +532,7 @@ class _LessonScreenState extends State<LessonScreen>
         flexibleSpace: ClipRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(color: Colors.black.withOpacity(0.1)),
+            child: Container(color: Colors.black.withValues(alpha: 0.1)),
           ),
         ),
       ),
@@ -573,11 +573,11 @@ class _LessonScreenState extends State<LessonScreen>
                         height: 200,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.95),
+                          color: Colors.white.withValues(alpha: 0.95),
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -625,9 +625,9 @@ class _LessonScreenState extends State<LessonScreen>
                       MediaQuery.of(context).padding.bottom + 24,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.85),
+                      color: Colors.white.withValues(alpha: 0.85),
                       border: Border(
-                        top: BorderSide(color: Colors.white.withOpacity(0.5)),
+                        top: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
                       ),
                     ),
                     child: SizedBox(
@@ -647,7 +647,7 @@ class _LessonScreenState extends State<LessonScreen>
                             96,
                             170,
                             36,
-                          ).withOpacity(0.5),
+                          ).withValues(alpha: 0.5),
                         ),
                         child: Text(
                           _isCompleted

@@ -1,5 +1,4 @@
 
-import 'package:budget_app/screens/town_square_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'screens/learning_path_screen.dart';
@@ -147,7 +146,7 @@ class _StartPageState extends State<StartPage>
                                 borderRadius: BorderRadius.circular(24),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: Colors.black.withValues(alpha: 0.1),
                                     blurRadius: 20,
                                     offset: const Offset(0, 10),
                                   ),
@@ -266,7 +265,7 @@ class _StartPageState extends State<StartPage>
                                     borderRadius: BorderRadius.circular(30),
                                   ),
                                   elevation: 10,
-                                  shadowColor: const Color(0xFF4F7D68).withOpacity(0.45),
+                                  shadowColor: const Color(0xFF4F7D68).withValues(alpha: 0.45),
                                 ),
                                 child: Text(
                                   'Log In',
@@ -299,7 +298,7 @@ class _StartPageState extends State<StartPage>
                                     borderRadius: BorderRadius.circular(30),
                                   ),
                                   elevation: 10,
-                                  shadowColor: const Color(0xFF4F7D68).withOpacity(0.45),
+                                  shadowColor: const Color(0xFF4F7D68).withValues(alpha: 0.45),
                                 ),
                                 child: Text(
                                   'Sign Up',
@@ -346,12 +345,12 @@ class _StartPageState extends State<StartPage>
     return Container(
       padding: EdgeInsets.all(isCompact ? 16 : 20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -502,11 +501,11 @@ class _HomePageState extends State<HomePage>
                             width: double.infinity,
                             margin: const EdgeInsets.only(bottom: 30),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                               borderRadius: BorderRadius.circular(24),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withValues(alpha: 0.1),
                                   blurRadius: 20,
                                   offset: const Offset(0, 10),
                                 ),
@@ -529,7 +528,7 @@ class _HomePageState extends State<HomePage>
                               color: Colors.white,
                               shadows: [
                                 Shadow(
-                                  color: Colors.black.withOpacity(0.2),
+                                  color: Colors.black.withValues(alpha: 0.2),
                                   offset: const Offset(0, 2),
                                   blurRadius: 4,
                                 ),
