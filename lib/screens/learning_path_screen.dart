@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/lesson.dart';
 import '../models/progression_service.dart';
@@ -39,7 +38,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
     // Center the view initially (optional, slight delay to ensure build is done)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _transformationController.value = Matrix4.identity()
-        ..translate(0.0, -100.0); // Start slightly scrolled down
+        ..translateByDouble(0.0, -100.0, 0.0, 1.0);// Start slightly scrolled down
     });
   }
 
@@ -84,14 +83,14 @@ class _LearningPathScreenState extends State<LearningPathScreen>
       double horizontalPercent;
       int patternStep = i % 4;
 
-      if (patternStep == 0)
+      if (patternStep == 0) {
         horizontalPercent = 0.5;
-      else if (patternStep == 1)
-        horizontalPercent = 0.75;
+      } else if (patternStep == 1)
+        {horizontalPercent = 0.75;}
       else if (patternStep == 2)
-        horizontalPercent = 0.5;
+        {horizontalPercent = 0.5;}
       else
-        horizontalPercent = 0.25;
+        {horizontalPercent = 0.25;}
 
       final x = 40 + (horizontalPercent * safeWidth) - 45; // -45 to center node
 
@@ -131,7 +130,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
         path: path,
         color: isCompleted
             ? const Color.fromARGB(255, 96, 170, 36)
-            : Colors.grey.withOpacity(0.5),
+            : Colors.grey.withValues(alpha: 0.5),
         strokeWidth: isCompleted ? 6.0 : 4.0,
         isCompleted: isCompleted,
       ),
@@ -296,7 +295,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: 0.15),
                 blurRadius: 15,
                 spreadRadius: 2,
                 offset: const Offset(0, -2),
@@ -458,7 +457,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -471,7 +470,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
           decoration: BoxDecoration(
             color: status == LessonStatus.locked
                 ? Colors.grey[100]
-                : color.withOpacity(0.1),
+                : color.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: color, size: 24),
@@ -529,11 +528,11 @@ class _LearningPathScreenState extends State<LearningPathScreen>
   Widget _buildGlassmorphicProgressBar(double progress) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 96, 170, 36).withOpacity(0.9),
+        color: const Color.fromARGB(255, 96, 170, 36).withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: const Color.fromARGB(255, 96, 170, 36).withOpacity(0.3),
+            color: const Color.fromARGB(255, 96, 170, 36).withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -561,7 +560,7 @@ class _LearningPathScreenState extends State<LearningPathScreen>
                   child: LinearProgressIndicator(
                     value: progress,
                     minHeight: 8,
-                    backgroundColor: Colors.black.withOpacity(0.2),
+                    backgroundColor: Colors.black.withValues(alpha: 0.2),
                     valueColor: const AlwaysStoppedAnimation<Color>(
                       Color(0xFF76FF03),
                     ),
@@ -596,7 +595,7 @@ class _GridPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.grey.withOpacity(0.08)
+      ..color = Colors.grey.withValues(alpha: 0.08)
       ..strokeWidth = 1.0;
 
     const double spacing = 40.0;
