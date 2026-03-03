@@ -1,10 +1,10 @@
-
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'screens/learning_path_screen.dart';
 import 'screens/login_page.dart';
 import 'screens/signup_page.dart';
 import 'dart:io';
+import 'screens/town_square_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,12 +34,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Budget Buddy',
-      theme: ThemeData(primarySwatch: Colors.green, useMaterial3: true, fontFamily: 'sans-serif'),
+      theme: ThemeData(
+        primarySwatch: Colors.green,
+        useMaterial3: true,
+        fontFamily: 'sans-serif',
+      ),
       debugShowCheckedModeBanner: false,
       home: const StartPage(), // Initial Route is now the sign-in page
-      routes: {
-        '/town_square': (context) => const HomePage(),
-      },
+      routes: {'/town_square': (context) => const HomePage()},
     );
   }
 }
@@ -254,78 +256,96 @@ class _StartPageState extends State<StartPage>
                             height: constraints.maxHeight > 700 ? 20 : 12,
                           ),
                           // Login + Sign Up Buttons
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 20),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const LoginPage(),
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 20),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const LoginPage(),
+                                        ),
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(
+                                        0xFF4F7D68,
+                                      ), // Sage green
+                                      foregroundColor: Colors.white,
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: constraints.maxHeight > 700
+                                            ? 16
+                                            : 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
+                                      elevation: 10,
+                                      shadowColor: const Color(
+                                        0xFF4F7D68,
+                                      ).withValues(alpha: 0.45),
                                     ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF4F7D68), // Sage green
-                                  foregroundColor: Colors.white,
-                                  padding: EdgeInsets.symmetric(
-                                    vertical: constraints.maxHeight > 700 ? 16 : 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                  elevation: 10,
-                                  shadowColor: const Color(0xFF4F7D68).withValues(alpha: 0.45),
-                                ),
-                                child: Text(
-                                  'Log In',
-                                  style: TextStyle(
-                                    fontSize: constraints.maxWidth > 600 ? 18 : 16,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const SignUpPage(),
+                                    child: Text(
+                                      'Log In',
+                                      style: TextStyle(
+                                        fontSize: constraints.maxWidth > 600
+                                            ? 18
+                                            : 16,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.8,
+                                      ),
                                     ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF4F7D68), // Same sage green
-                                  foregroundColor: Colors.white,
-                                  padding: EdgeInsets.symmetric(
-                                    vertical: constraints.maxHeight > 700 ? 16 : 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                  elevation: 10,
-                                  shadowColor: const Color(0xFF4F7D68).withValues(alpha: 0.45),
-                                ),
-                                child: Text(
-                                  'Sign Up',
-                                  style: TextStyle(
-                                    fontSize: constraints.maxWidth > 600 ? 18 : 16,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.8,
                                   ),
                                 ),
-                              ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const SignUpPage(),
+                                        ),
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(
+                                        0xFF4F7D68,
+                                      ), // Same sage green
+                                      foregroundColor: Colors.white,
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: constraints.maxHeight > 700
+                                            ? 16
+                                            : 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
+                                      elevation: 10,
+                                      shadowColor: const Color(
+                                        0xFF4F7D68,
+                                      ).withValues(alpha: 0.45),
+                                    ),
+                                    child: Text(
+                                      'Sign Up',
+                                      style: TextStyle(
+                                        fontSize: constraints.maxWidth > 600
+                                            ? 18
+                                            : 16,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
                           // Credits
                           const Text(
                             'Developed with ❤️ by the App Team',
@@ -360,7 +380,10 @@ class _StartPageState extends State<StartPage>
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -597,6 +620,40 @@ class _HomePageState extends State<HomePage>
                               ),
                             ),
                           ),
+                          // Start page
+                          const SizedBox(height: 40),
+                          // this is the town square page
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const TownSquareScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.play_arrow),
+                            label: const Text('Start Playing'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color.fromARGB(255, 171, 255, 103),
+                              foregroundColor: const Color(0xFF1B3329),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: constraints.maxWidth > 600
+                                    ? 48
+                                    : 32,
+                                vertical: 18,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              elevation: 10,
+                              textStyle: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -610,6 +667,3 @@ class _HomePageState extends State<HomePage>
     );
   }
 }
-
-
-
