@@ -14,55 +14,109 @@ class TownSquareScreen extends StatefulWidget {
   _TownSquareScreenState createState() => _TownSquareScreenState();
 }
 
-// 3. Technical Fix: Use TickerProviderStateMixin for multiple animations
 class _TownSquareScreenState extends State<TownSquareScreen>
     with TickerProviderStateMixin {
   final _GameData _gameData = _GameData();
+  late AnimationController _turtleController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Animation for the Turtle "Breathing"
+    _turtleController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _turtleController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF3a7d44), // Fallback color
       body: Stack(
         children: [
-          // 2. The Ground: Tiled texture background
-          _buildTiledBackground(),
-
-          // The Isometric UI
-          Stack(
-            children: [
-              // Further-away items are drawn first
-              _buildIsometricBuilding(
-                name: "Ancient Library",
-                icon: Icons.menu_book,
-                baseColor: const Color(0xFFa0522d), // Sienna brown
-                roofColor: const Color(0xFF8b4513), // Saddle brown
-                top: 150,
-                left: 30,
-                onTap: () => _showSnackBar("Entering the Library for a lesson..."),
-              ),
-              _buildIsometricBuilding(
-                name: "The Great Bank",
-                icon: Icons.account_balance,
-                baseColor: const Color(0xFFc0c0c0), // Silver
-                roofColor: const Color(0xFFffd700), // Gold
-                top: 100,
-                left: MediaQuery.of(context).size.width / 2 - 60,
-                isLarge: true,
-                onTap: () => _showSnackBar("Visiting the Great Bank..."),
-              ),
-              _buildIsometricBuilding(
-                name: "Bounty Board",
-                icon: Icons.assignment,
-                baseColor: const Color(0xFFd2b48c), // Tan
-                roofColor: const Color(0xFFcd853f), // Peru
-                top: 250,
-                left: MediaQuery.of(context).size.width - 130,
-                onTap: () => _showSnackBar("Checking the Bounty Board..."),
-              ),
-            ],
+          // 1. PERFORMANCE FIX: RepaintBoundary
+          // This tells Flutter to cache this complex background as a single image.
+          // It stops the "Lag" immediately.
+          const RepaintBoundary(
+            child: _CachedBackground(),
           ),
 
-          // 4. Top Bar (The Stats)
+          // 2. The Isometric World (Scrollable for "Big World" feel)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 1.2, // Wider world
+              height: MediaQuery.of(context).size.height,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // --- Buildings ---
+                  
+                  // The Library (Back Left)
+                  _ProdigyBuilding(
+                    top: 180,
+                    left: 40,
+                    label: "Library",
+                    icon: Icons.auto_stories,
+                    roofColor: const Color(0xFF8D6E63), // Brown
+                    wallColor: const Color(0xFFD7CCC8), // Tan
+                    onTap: () => _showSnackBar("Entering the Library..."),
+                  ),
+
+                  // The Bounty Board (Far Right)
+                  _ProdigyBuilding(
+                    top: 280,
+                    left: 300,
+                    label: "Quests",
+                    icon: Icons.assignment_late,
+                    roofColor: const Color(0xFFE65100), // Orange
+                    wallColor: const Color(0xFFFFCC80), // Light Orange
+                    scale: 0.8,
+                    onTap: () => _showSnackBar("Checking Quests..."),
+                  ),
+
+                  // The Great Bank (Center - Main Attraction)
+                  _ProdigyBuilding(
+                    top: 120,
+                    left: 160,
+                    label: "The Bank",
+                    icon: Icons.account_balance,
+                    roofColor: const Color(0xFFFFD700), // Gold
+                    wallColor: const Color(0xFFECEFF1), // Marble White
+                    isLarge: true,
+                    onTap: () => _showSnackBar("Visiting the Bank..."),
+                  ),
+
+                  // --- The Mascot (Turtle) ---
+                  Positioned(
+                    top: 350,
+                    left: 180,
+                    child: AnimatedBuilder(
+                      animation: _turtleController,
+                      builder: (context, child) {
+                        return Transform.translate(
+                          // Simple "Breathing" up/down motion
+                          offset: Offset(0, _turtleController.value * 10),
+                          child: child,
+                        );
+                      },
+                      child: _buildTurtleMascot(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // 3. UI Overlay (Top Bar)
           _buildTopStatsBar(),
         ],
       ),
@@ -71,259 +125,270 @@ class _TownSquareScreenState extends State<TownSquareScreen>
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-      backgroundColor: Colors.blueGrey.shade800,
-      duration: const Duration(seconds: 2),
+      content: Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+      backgroundColor: const Color(0xFF2E7D32),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      duration: const Duration(seconds: 1),
     ));
   }
 
   Widget _buildTopStatsBar() {
     return Positioned(
-      top: 40,
+      top: 50,
       left: 20,
       right: 20,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          // Wood-grain texture simulation
-          gradient: const LinearGradient(
-            colors: [Color(0xFF6f4e37), Color(0xFF5a3e2b)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: const Color(0xFF4a2e1b), width: 2),
+          color: const Color(0xFF4E342E), // Dark Wood
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF8D6E63), width: 3),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
+              color: Colors.black.withOpacity(0.5),
+              offset: const Offset(0, 5),
               blurRadius: 10,
-              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Level indicator with Progress Glow
+            // Level Badge
+            Row(
+              children: [
+                const Icon(Icons.star, color: Colors.yellow, size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  'Lvl ${_gameData.kingdomLevel}',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Roboto'), // Use a game font if you have one
+                ),
+              ],
+            ),
+            // Coin Counter
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                // Progress Glow
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.yellow.withValues(alpha: 0.6),
-                    blurRadius: 12,
-                    spreadRadius: 1,
-                  ),
-                ],
+                color: Colors.black.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.shield, color: Colors.yellow, size: 24),
-                  const SizedBox(width: 8),
+                  const Icon(Icons.monetization_on, color: Colors.amberAccent, size: 20),
+                  const SizedBox(width: 6),
                   Text(
-                    'Lvl: ${_gameData.kingdomLevel}',
+                    '${_gameData.shellCoins}',
                     style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                        color: Colors.amberAccent,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
-            ),
-            // Shell-Coins display
-            Row(
-              children: [
-                const Text(
-                  'Shell-Coins:',
-                  style: TextStyle(color: Colors.white70, fontSize: 16),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${_gameData.shellCoins}',
-                  style: const TextStyle(
-                    color: Colors.yellowAccent,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
             ),
           ],
         ),
       ),
     );
   }
+  
+  Widget _buildTurtleMascot() {
+    return Column(
+      children: [
+        Container(
+          height: 60,
+          width: 60,
+          decoration: BoxDecoration(
+            color: Colors.greenAccent.shade400,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: [
+               BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: const Offset(0,5))
+            ]
+          ),
+          child: const Center(child: Icon(Icons.mood, size: 40, color: Colors.white)),
+        ),
+        Container(
+          margin: const EdgeInsets.only(top: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(10)
+          ),
+          child: const Text("You", style: TextStyle(color: Colors.white, fontSize: 10)),
+        )
+      ],
+    );
+  }
+}
 
-  Widget _buildIsometricBuilding({
-    required String name,
-    required IconData icon,
-    required Color baseColor,
-    required Color roofColor,
-    required double top,
-    required double left,
-    required VoidCallback onTap,
-    bool isLarge = false,
-  }) {
-    final double buildingWidth = isLarge ? 120 : 90;
-    final double buildingHeight = isLarge ? 100 : 70;
-    final double roofHeight = 30;
+// --- NEW COMPONENT: 2.5D Building Block ---
+class _ProdigyBuilding extends StatelessWidget {
+  final double top;
+  final double left;
+  final String label;
+  final IconData icon;
+  final Color roofColor;
+  final Color wallColor;
+  final bool isLarge;
+  final double scale;
+  final VoidCallback onTap;
+
+  const _ProdigyBuilding({
+    required this.top,
+    required this.left,
+    required this.label,
+    required this.icon,
+    required this.roofColor,
+    required this.wallColor,
+    required this.onTap,
+    this.isLarge = false,
+    this.scale = 1.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    double size = isLarge ? 100 : 70;
+    size = size * scale;
 
     return Positioned(
       top: top,
       left: left,
       child: GestureDetector(
         onTap: onTap,
-        child: Tooltip(
-          message: name,
-          child: SizedBox(
-            width: buildingWidth,
-            height: buildingHeight + roofHeight + 30, // Extra space for floating icon
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                // Building Base
-                Positioned(
-                  bottom: 0,
-                  child: Container(
-                    width: buildingWidth,
-                    height: buildingHeight,
+        child: Column(
+          children: [
+            // Floating Label
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              margin: const EdgeInsets.only(bottom: 4),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                label,
+                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+              ),
+            ),
+            
+            // The Building Stack
+            SizedBox(
+              height: size * 1.2,
+              width: size,
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  // Shadow
+                  Container(
+                    height: 15,
+                    width: size * 0.8,
                     decoration: BoxDecoration(
-                      color: baseColor,
-                      border: Border.all(color: Colors.black.withValues(alpha: 0.3)),
+                      color: Colors.black.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                ),
-                // Building Roof
-                Positioned(
-                  top: 20,
-                  left: -buildingWidth * 0.1,
-                  child: _IsometricRoof(
-                    width: buildingWidth * 1.2,
-                    height: roofHeight,
-                    color: roofColor,
+                  
+                  // Main Block (Wall)
+                  Container(
+                    height: size * 0.8,
+                    width: size * 0.9,
+                    margin: const EdgeInsets.only(bottom: 5),
+                    decoration: BoxDecoration(
+                      color: wallColor,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.black12, width: 2),
+                      boxShadow: [
+                         BoxShadow(color: Colors.black26, offset: const Offset(4, 4), blurRadius: 0)
+                      ]
+                    ),
+                    child: Center(
+                      child: Icon(icon, size: size * 0.4, color: Colors.black12),
+                    ),
                   ),
-                ),
-                 // 3. Floating Icon
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: _FloatingIcon(icon: icon),
-                ),
-              ],
+
+                  // Roof (The "3D" Pop)
+                  Positioned(
+                    top: 0,
+                    child: Container(
+                      height: size * 0.4,
+                      width: size,
+                      decoration: BoxDecoration(
+                        color: roofColor,
+                        borderRadius: BorderRadius.circular(12),
+                         border: Border.all(color: Colors.white24, width: 2),
+                         boxShadow: [
+                           BoxShadow(color: Colors.black26, offset: const Offset(0, 4), blurRadius: 4)
+                         ]
+                      ),
+                      child: Center(
+                        child: Icon(icon, color: Colors.white.withOpacity(0.9), size: size * 0.4),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _FloatingIcon extends StatelessWidget {
-  const _FloatingIcon({super.key, required this.icon});
-  final IconData icon;
+// --- OPTIMIZED BACKGROUND ---
+class _CachedBackground extends StatelessWidget {
+  const _CachedBackground();
 
   @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: -10),
-      duration: const Duration(seconds: 2),
-      curve: Curves.easeInOut,
-      builder: (context, value, child) {
-        return Transform.translate(
-          offset: Offset(0, value),
-          child: child,
-        );
-      },
-      child: Icon(
-        icon,
-        color: Colors.white.withValues(alpha: 0.9),
-        size: 32,
-        shadows: [
-          Shadow(color: Colors.black.withValues(alpha: 0.5),blurRadius: 8),
-        ],
+    // We create the custom paint here once.
+    return CustomPaint(
+      painter: _TiledBackgroundPainter(),
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
       ),
     );
   }
 }
 
-class _IsometricRoof extends StatelessWidget {
-  final double width;
-  final double height;
-  final Color color;
-
-  const _IsometricRoof({required this.width, required this.height, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(width, height),
-      painter: _RoofPainter(color),
-    );
-  }
-}
-
-class _RoofPainter extends CustomPainter {
-  final Color color;
-  _RoofPainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()..color = color;
-    final Path path = Path()
-      ..moveTo(size.width / 2, 0)
-      ..lineTo(size.width, size.height * 0.5)
-      ..lineTo(size.width / 2, size.height)
-      ..lineTo(0, size.height * 0.5)
-      ..close();
-    canvas.drawPath(path, paint);
-
-    final Paint borderPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.3)
-      ..strokeWidth = 1
-      ..style = PaintingStyle.stroke;
-    canvas.drawPath(path, borderPaint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
-}
-
-Widget _buildTiledBackground() {
-  return CustomPaint(
-    painter: _TiledBackgroundPainter(),
-    child: Container(),
-  );
-}
-
 class _TiledBackgroundPainter extends CustomPainter {
+  // Define positions ONCE so they don't move on repaint.
+  // In a real app, pass these in via constructor.
+  // For now, we use a fixed seed for 'randomness' that stays the same.
+
   @override
   void paint(Canvas canvas, Size size) {
-    // Base grass color
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), Paint()..color = const Color(0xFF3a7d44));
+    final paint = Paint()..color = const Color(0xFF4CAF50); // Base Grass
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
 
-    finalPaint(color, opacity) => Paint()
-      ..color = color.withOpacity(opacity)
-      ..style = PaintingStyle.fill;
+    // Grid Pattern (Prodigy style tiles)
+    final gridPaint = Paint()
+      ..color = Colors.black.withOpacity(0.05)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
 
-    // Draw textured patches
-    for (int i = 0; i < 50; i++) {
-      final x = math.Random().nextDouble() * size.width;
-      final y = math.Random().nextDouble() * size.height;
-      final radius = math.Random().nextDouble() * 30 + 10;
-      // Grass texture
-      canvas.drawCircle(Offset(x, y), radius, finalPaint(const Color(0xFF4a8d54), 0.5));
+    double tileSize = 60;
+    for (double x = 0; x < size.width; x += tileSize) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
     }
-     for (int i = 0; i < 15; i++) {
-      final x = math.Random().nextDouble() * size.width;
-      final y = math.Random().nextDouble() * size.height;
-      final radius = math.Random().nextDouble() * 10 + 5;
-      // Stone clusters
-      canvas.drawCircle(Offset(x, y), radius, finalPaint(Colors.grey.shade600, 0.8));
-      canvas.drawCircle(Offset(x + 5, y + 5), radius * 0.8, finalPaint(Colors.grey.shade500, 0.9));
+    for (double y = 0; y < size.height; y += tileSize) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    // Decor Elements (Fixed Seed)
+    final random = math.Random(42); // FIXED SEED = No Jittering/Lag
+    
+    for (int i = 0; i < 20; i++) {
+      double x = random.nextDouble() * size.width;
+      double y = random.nextDouble() * size.height;
+      canvas.drawCircle(Offset(x, y), 4, Paint()..color = const Color(0xFF388E3C)); // Dark grass tuft
     }
   }
 
