@@ -4,7 +4,7 @@ import 'screens/learning_path_screen.dart';
 import 'screens/login_page.dart';
 import 'screens/signup_page.dart';
 import 'dart:io';
-import 'screens/town_square_screen.dart';
+import 'screens/Gameplay/town_square_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
