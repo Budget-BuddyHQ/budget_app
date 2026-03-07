@@ -104,10 +104,8 @@ class _GoalsSetupPageState extends State<GoalsSetupPage>
     }
 
     if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Goals saved (navigation not wired yet).')),
-    );
+    
+    Navigator.pushReplacementNamed(context, '/home');
   }
 
   @override
