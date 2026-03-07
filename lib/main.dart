@@ -41,7 +41,10 @@ class MyApp extends StatelessWidget {
       ),
       debugShowCheckedModeBanner: false,
       home: const StartPage(), // Initial Route is now the sign-in page
-      routes: {'/town_square': (context) => const HomePage()},
+      routes: {
+                '/home': (context) => const HomePage(),
+                '/town_square': (context) => const TownSquareScreen(),
+              },
     );
   }
 }
