@@ -18,8 +18,10 @@ class _GoalsSetupPageState extends State<GoalsSetupPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
 
-  static const deepForest = Color(0xFF1B3329);
-  static const limeAccent = Color(0xFF76FF03);
+  static const Color deepForest = Color(0xFF1B3329);
+  static const Color forestGreen = Color(0xFF2E4A3D);
+  static const Color darkGreen = Color(0xFF0F2018);
+  static const Color limeAccent = Color(0xFF76FF03);
 
   final List<_GoalOption> _goals = const [
     _GoalOption(
@@ -94,7 +96,9 @@ class _GoalsSetupPageState extends State<GoalsSetupPage>
   Future<void> _handleContinue() async {
     if (_selectedGoalIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least one goal.')),
+        const SnackBar(
+          content: Text('Please select at least one goal.'),
+        ),
       );
       return;
     }
@@ -104,12 +108,22 @@ class _GoalsSetupPageState extends State<GoalsSetupPage>
     }
 
     if (!mounted) return;
-    
+
     Navigator.pushReplacementNamed(context, '/home');
+  }
+
+  String get _selectionLabel {
+    final count = _selectedGoalIds.length;
+    if (count == 0) return 'Select at least one goal';
+    if (count == 1) return '1 goal selected';
+    return '$count goals selected';
   }
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final bool isWide = width > 700;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -123,52 +137,109 @@ class _GoalsSetupPageState extends State<GoalsSetupPage>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [deepForest, Color(0xFF2E4A3D), Color(0xFF0F2018)],
+            colors: [deepForest, forestGreen, darkGreen],
           ),
         ),
         child: SafeArea(
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 640),
+              constraints: const BoxConstraints(maxWidth: 680),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    const SizedBox(height: 20),
                     _buildAnimatedItem(
                       0,
-                      const Text(
-                        'What are you working toward?',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                      Column(
+                        children: [
+                          Text(
+                            'What are you working toward?',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: isWide ? 34 : 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              height: 1.15,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 560),
+                            child: const Text(
+                              'Choose one or more goals so we can personalize your financial learning experience.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Colors.white70,
+                                height: 1.5,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            _selectionLabel,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: _selectedGoalIds.isEmpty
+                                  ? Colors.white60
+                                  : limeAccent,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
                     _buildAnimatedItem(
                       1,
                       _buildGlassCard(
-                        child: Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: _goals.map((goal) {
-                            final selected =
-                                _selectedGoalIds.contains(goal.id);
-                            return _GoalChip(
-                              title: goal.title,
-                              icon: goal.icon,
-                              selected: selected,
-                              onTap: () => _toggleGoal(goal.id),
-                              limeAccent: limeAccent,
-                            );
-                          }).toList(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'Select your priorities',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'You can choose more than one.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                                height: 1.4,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              spacing: 12,
+                              runSpacing: 12,
+                              children: _goals.map((goal) {
+                                final bool selected =
+                                    _selectedGoalIds.contains(goal.id);
+
+                                return _GoalChip(
+                                  title: goal.title,
+                                  icon: goal.icon,
+                                  selected: selected,
+                                  onTap: () => _toggleGoal(goal.id),
+                                  limeAccent: limeAccent,
+                                );
+                              }).toList(),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 22),
                     _buildAnimatedItem(
                       2,
                       ElevatedButton(
@@ -176,9 +247,11 @@ class _GoalsSetupPageState extends State<GoalsSetupPage>
                         style: ElevatedButton.styleFrom(
                           backgroundColor: limeAccent,
                           foregroundColor: deepForest,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          elevation: 10,
+                          shadowColor: limeAccent.withValues(alpha: 0.35),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+                            borderRadius: BorderRadius.circular(34),
                           ),
                         ),
                         child: const Text(
@@ -186,7 +259,21 @@ class _GoalsSetupPageState extends State<GoalsSetupPage>
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            letterSpacing: 0.2,
                           ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildAnimatedItem(
+                      3,
+                      const Text(
+                        'We’ll use your selections to tailor lessons, tools, and recommendations.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: Colors.white54,
+                          height: 1.4,
                         ),
                       ),
                     ),
@@ -201,19 +288,27 @@ class _GoalsSetupPageState extends State<GoalsSetupPage>
   }
 
   Widget _buildAnimatedItem(int index, Widget child) {
+    final start = (index * 0.12).clamp(0.0, 0.8);
+    final end = (start + 0.45).clamp(0.0, 1.0);
+
     return SlideTransition(
-      position: Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero)
-          .animate(
+      position: Tween<Offset>(
+        begin: const Offset(0, 0.12),
+        end: Offset.zero,
+      ).animate(
         CurvedAnimation(
           parent: _animController,
-          curve: Interval(index * 0.15, 1.0, curve: Curves.easeOutCubic),
+          curve: Interval(start, end, curve: Curves.easeOutCubic),
         ),
       ),
       child: FadeTransition(
-        opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+        opacity: Tween<double>(
+          begin: 0,
+          end: 1,
+        ).animate(
           CurvedAnimation(
             parent: _animController,
-            curve: Interval(index * 0.15, 1.0, curve: Curves.easeOut),
+            curve: Interval(start, end, curve: Curves.easeOut),
           ),
         ),
         child: child,
@@ -223,15 +318,25 @@ class _GoalsSetupPageState extends State<GoalsSetupPage>
 
   Widget _buildGlassCard({required Widget child}) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+            color: Colors.white.withValues(alpha: 0.11),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.14),
+              width: 1.1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
           child: child,
         ),
@@ -269,38 +374,55 @@ class _GoalChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-          color: selected
-              ? limeAccent.withValues(alpha: 0.2)
-              : Colors.white.withValues(alpha: 0.08),
-          border: Border.all(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
             color: selected
-                ? limeAccent.withValues(alpha: 0.75)
-                :  Colors.white.withValues(alpha: 0.18),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon,
-                size: 18,
-                color: selected ? limeAccent : Colors.white70),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
+                ? limeAccent.withValues(alpha: 0.17)
+                : Colors.white.withValues(alpha: 0.06),
+            border: Border.all(
+              color: selected
+                  ? limeAccent.withValues(alpha: 0.78)
+                  : Colors.white.withValues(alpha: 0.12),
+              width: 1.15,
             ),
-          ],
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: limeAccent.withValues(alpha: 0.14),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: selected ? limeAccent : Colors.white70,
+              ),
+              const SizedBox(width: 9),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
