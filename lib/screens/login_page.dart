@@ -1,8 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../main.dart';
-import 'signup_page.dart';
 import 'forgot_password_page.dart';
+import 'main_game_screen.dart';
+import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -38,10 +38,17 @@ class _LoginPageState extends State<LoginPage>
   }
 
   void _handleLogin() {
-    // Navigate to Home Page on success
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const HomePage()),
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const MainGameScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curve =
+              CurvedAnimation(parent: animation, curve: Curves.easeInOut);
+          return FadeTransition(opacity: curve, child: child);
+        },
+      ),
     );
   }
 
@@ -82,33 +89,36 @@ class _LoginPageState extends State<LoginPage>
                     _buildAnimatedItem(
                       0,
                       Center(
-                        child: Container(
-                          height: 120,
-                          width: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.1),
-                            border: Border.all(
-                              color: limeAccent.withValues(alpha: 0.5),
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: limeAccent.withValues(alpha: 0.2),
-                                blurRadius: 25,
-                                spreadRadius: 5,
+                        child: Hero(
+                          tag: 'budget-buddy-logo',
+                          child: Container(
+                            height: 120,
+                            width: 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: 0.1),
+                              border: Border.all(
+                                color: limeAccent.withValues(alpha: 0.5),
+                                width: 2,
                               ),
-                            ],
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(20.0),
-                            child: Image.asset(
-                              'assets/images/logo.png',
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, _, _,) => Icon(
-                                Icons.account_balance_wallet,
-                                size: 50,
-                                color: limeAccent,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: limeAccent.withValues(alpha: 0.2),
+                                  blurRadius: 25,
+                                  spreadRadius: 5,
+                                ),
+                              ],
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(20.0),
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, _, _,) => Icon(
+                                  Icons.account_balance_wallet,
+                                  size: 50,
+                                  color: limeAccent,
+                                ),
                               ),
                             ),
                           ),
