@@ -1,7 +1,7 @@
 // lib/screens/signup_page.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'goals_setup_page.dart';
+import 'login_page.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -56,7 +56,18 @@ class _SignUpPageState extends State<SignUpPage>
   }
 
   void _handleGoToLogin() {
-    Navigator.pop(context); // assumes you came here from LoginPage
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const LoginPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curve =
+              CurvedAnimation(parent: animation, curve: Curves.easeInOut);
+          return FadeTransition(opacity: curve, child: child);
+        },
+      ),
+    );
   }
 
   @override
@@ -68,7 +79,7 @@ class _SignUpPageState extends State<SignUpPage>
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Sign Up'),
+        title: const Text('Get Started'),
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -318,8 +329,20 @@ class _SignUpPageState extends State<SignUpPage>
 
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => const GoalsSetupPage(),
+                            PageRouteBuilder(
+                              pageBuilder: (context, animation, secondaryAnimation) =>
+                                  const LoginPage(),
+                              transitionsBuilder:
+                                  (context, animation, secondaryAnimation, child) {
+                                final curve = CurvedAnimation(
+                                  parent: animation,
+                                  curve: Curves.easeInOut,
+                                );
+                                return FadeTransition(
+                                  opacity: curve,
+                                  child: child,
+                                );
+                              },
                             ),
                           );
                         },
@@ -334,7 +357,7 @@ class _SignUpPageState extends State<SignUpPage>
                           shadowColor: limeAccent.withValues(alpha: 0.5),
                         ),
                         child: const Text(
-                          'Sign up',
+                          'Get Started',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
