@@ -78,7 +78,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                     borderRadius: BorderRadius.circular(28),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.25),
+                                        color: Colors.black.withValues(alpha: 0.25),
                                         blurRadius: 24,
                                         offset: const Offset(0, 14),
                                       ),
@@ -114,7 +114,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                   color: Colors.white,
                                   shadows: [
                                     Shadow(
-                                      color: Colors.black.withOpacity(0.5),
+                                      color: Colors.black.withValues(alpha: 0.5),
                                       blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     ),
@@ -194,7 +194,7 @@ class _WelcomeBackground extends StatelessWidget {
                 center: Alignment(0.3, -0.4 + glowShift),
                 radius: 0.9,
                 colors: [
-                  const Color(0xFF78E08F).withOpacity(0.25),
+                  const Color(0xFF78E08F).withValues(alpha: 0.25),
                   Colors.transparent,
                 ],
               ),
@@ -206,7 +206,7 @@ class _WelcomeBackground extends StatelessWidget {
           top: 120,
           child: _GlowOrb(
             size: 220,
-            color: const Color(0xFF3CCB74).withOpacity(0.25),
+            color: const Color(0xFF3CCB74).withValues(alpha: 0.25),
           ),
         ),
         Positioned(
@@ -214,7 +214,7 @@ class _WelcomeBackground extends StatelessWidget {
           bottom: 80,
           child: _GlowOrb(
             size: 200,
-            color: const Color(0xFFF4D06F).withOpacity(0.18),
+            color: const Color(0xFFF4D06F).withValues(alpha: 0.18),
           ),
         ),
       ],
@@ -258,7 +258,7 @@ class _WelcomeActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final background = primary
         ? const Color(0xFF3CCB74)
-        : Colors.white.withOpacity(0.08);
+        : Colors.white.withValues(alpha: 0.08);
     final textColor = primary ? const Color(0xFF0F2E1E) : Colors.white;
 
     return SizedBox(
@@ -273,7 +273,7 @@ class _WelcomeActionButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
           ),
           elevation: primary ? 10 : 2,
-          shadowColor: Colors.black.withOpacity(0.4),
+          shadowColor: Colors.black.withValues(alpha: 0.4),
         ),
         child: Text(
           label,

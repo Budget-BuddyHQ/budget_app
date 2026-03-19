@@ -39,7 +39,7 @@ class LeaderboardScreen extends StatelessWidget {
             Expanded(
               child: ListView.separated(
                 itemCount: leaders.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final leader = leaders[index];
                   return _LeaderboardRow(leader: leader);
@@ -67,12 +67,12 @@ class _LeaderboardRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF163526).withOpacity(0.9),
+        color: const Color(0xFF163526).withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: highlightBorder, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
+            color: Colors.black.withValues(alpha: 0.25),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -83,7 +83,7 @@ class _LeaderboardRow extends StatelessWidget {
           Text(
             '#${leader.rank}',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -129,7 +129,7 @@ class _LeaderboardRow extends StatelessWidget {
           Text(
             leader.points.toString(),
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               fontWeight: FontWeight.bold,
             ),
           ),
