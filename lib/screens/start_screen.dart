@@ -82,7 +82,7 @@ class _StartScreenState extends State<StartScreen>
                                     borderRadius: BorderRadius.circular(24),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.25),
+                                        color: Colors.black.withValues(alpha: 0.25),
                                         blurRadius: 20,
                                         offset: const Offset(0, 10),
                                       ),
@@ -116,7 +116,7 @@ class _StartScreenState extends State<StartScreen>
                                   'Your forest of financial mastery awaits.',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.85),
+                                    color: Colors.white.withValues(alpha: 0.85),
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.3,
@@ -162,7 +162,7 @@ class _StartScreenState extends State<StartScreen>
                                 Text(
                                   'Press to enter the Town Square',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.75),
+                                    color: Colors.white.withValues(alpha: 0.75),
                                     fontSize: 13,
                                   ),
                                 ),
@@ -177,7 +177,7 @@ class _StartScreenState extends State<StartScreen>
                                 'Tip: Every lesson completed strengthens your kingdom.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.65),
+                                  color: Colors.white.withValues(alpha: 0.65),
                                   fontSize: 12,
                                 ),
                               ),
@@ -252,7 +252,7 @@ class _ParallaxBackground extends StatelessWidget {
                 center: const Alignment(0.2, -0.4),
                 radius: 1.0,
                 colors: [
-                  const Color(0xFF59C173).withOpacity(0.25),
+                  const Color(0xFF59C173).withValues(alpha: 0.25),
                   Colors.transparent,
                 ],
               ),
@@ -272,12 +272,12 @@ class _MapHintPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final linePaint = Paint()
-      ..color = const Color(0xFF8CCF9A).withOpacity(0.12)
+      ..color = const Color(0xFF8CCF9A).withValues(alpha: 0.12)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 
     final dotPaint = Paint()
-      ..color = const Color(0xFFE0F7E8).withOpacity(0.18)
+      ..color = const Color(0xFFE0F7E8).withValues(alpha: 0.18)
       ..style = PaintingStyle.fill;
 
     final tile = 90.0;
@@ -329,7 +329,7 @@ class _RpgTitle extends StatelessWidget {
             foreground: Paint()
               ..style = PaintingStyle.stroke
               ..strokeWidth = 2
-              ..color = Colors.black.withOpacity(0.85),
+              ..color = Colors.black.withValues(alpha: 0.85),
           ),
         ),
         Text(
@@ -364,12 +364,12 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
+        color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.15)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
+            color: Colors.black.withValues(alpha: 0.25),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -392,7 +392,7 @@ class _StatCard extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.75),
+              color: Colors.white.withValues(alpha: 0.75),
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -473,7 +473,7 @@ class _GlowingGameButtonState extends State<GlowingGameButton>
         final glow = _glowController.value;
         final pressOffset = _pressed ? 4.0 : 0.0;
         final glowColor =
-            const Color(0xFF9CFF7A).withOpacity(0.25 + glow * 0.35);
+            const Color(0xFF9CFF7A).withValues(alpha: 0.25 + glow * 0.35);
 
         return MouseRegion(
           onEnter: (_) => _setHover(true),
@@ -517,13 +517,13 @@ class _GlowingGameButtonState extends State<GlowingGameButton>
                           spreadRadius: 1 + glow * 2,
                         ),
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.25),
+                          color: Colors.black.withValues(alpha: 0.25),
                           blurRadius: 8,
                           offset: const Offset(0, 6),
                         ),
                       ],
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         width: 1.2,
                       ),
                     ),
