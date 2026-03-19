@@ -82,9 +82,9 @@ class _PrivacyPolicyPage extends State<PrivacyPolicyPage>
                     child: Container(
                       padding: const EdgeInsets.all(30),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -164,10 +164,10 @@ class _PrivacyPolicyPage extends State<PrivacyPolicyPage>
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.white38),
         filled: true,
-        fillColor: Colors.black.withOpacity(0.2),
+        fillColor: Colors.black.withValues(alpha: 0.2),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
@@ -189,7 +189,7 @@ class _PrivacyPolicyPage extends State<PrivacyPolicyPage>
 class _ParticlePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white.withOpacity(0.05);
+    final paint = Paint()..color = Colors.white.withValues(alpha: 0.05);
     canvas.drawCircle(Offset(size.width * 0.2, size.height * 0.2), 100, paint);
     canvas.drawCircle(Offset(size.width * 0.8, size.height * 0.7), 150, paint);
   }
