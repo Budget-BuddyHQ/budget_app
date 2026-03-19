@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'user_profile_screen.dart';
 
 class MainGameScreen extends StatelessWidget {
   const MainGameScreen({super.key});
@@ -316,7 +317,7 @@ class _MetricCard extends StatelessWidget {
             Container(
               height: 6,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: FractionallySizedBox(
@@ -435,7 +436,7 @@ class _BudgetBattleCard extends StatelessWidget {
                 onPressed: () {},
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,
-                  side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                   padding: const EdgeInsets.symmetric(
                     vertical: 10,
                     horizontal: 14,
@@ -494,7 +495,7 @@ class _ProgressBarRow extends StatelessWidget {
         Container(
           height: 8,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15),
+            color: Colors.white.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(6),
           ),
           child: FractionallySizedBox(
@@ -545,7 +546,7 @@ class _LeaderboardTable extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.06),
+              color: Colors.white.withValues(alpha: 0.06),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
             ),
             child: Row(
@@ -583,7 +584,7 @@ class _LeaderRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: highlight ? const Color(0xFF2B5A4A) : Colors.transparent,
         border: Border(
-          top: BorderSide(color: Colors.white.withOpacity(0.06)),
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
         ),
       ),
       child: Row(
@@ -627,12 +628,24 @@ class _BottomNav extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: const [
-          _NavItem(label: 'Home', icon: Icons.home, active: true),
-          _NavItem(label: 'Budget', icon: Icons.attach_money, active: false),
-          _NavItem(label: 'Invest', icon: Icons.trending_up, active: false),
-          _NavItem(label: 'Challenges', icon: Icons.emoji_events, active: false),
-          _NavItem(label: 'Profile', icon: Icons.person, active: false),
+        children: [
+          const _NavItem(label: 'Home', icon: Icons.home, active: true),
+          const _NavItem(label: 'Budget', icon: Icons.attach_money, active: false),
+          const _NavItem(label: 'Invest', icon: Icons.trending_up, active: false),
+          const _NavItem(label: 'Challenges', icon: Icons.emoji_events, active: false),
+          _NavItem(
+            label: 'Profile',
+            icon: Icons.person,
+            active: false,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const UserProfileScreen(),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -643,30 +656,36 @@ class _NavItem extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool active;
+  final VoidCallback? onTap;
 
   const _NavItem({
     required this.label,
     required this.icon,
     required this.active,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final color = active ? const Color(0xFF85EFAC) : Colors.white70;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: color, size: 18),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
