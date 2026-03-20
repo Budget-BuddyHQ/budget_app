@@ -1,7 +1,9 @@
 // lib/screens/signup_page.dart
 import 'dart:ui';
+import 'package:budget_app/screens/goals_setup_page.dart';
 import 'package:flutter/material.dart';
 import 'login_page.dart';
+import 'goals_setup_page.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -331,7 +333,7 @@ class _SignUpPageState extends State<SignUpPage>
                             context,
                             PageRouteBuilder(
                               pageBuilder: (context, animation, secondaryAnimation) =>
-                                  const LoginPage(),
+                                  const GoalsSetupPage(),
                               transitionsBuilder:
                                   (context, animation, secondaryAnimation, child) {
                                 final curve = CurvedAnimation(
