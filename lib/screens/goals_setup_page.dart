@@ -1,6 +1,7 @@
 // lib/screens/goals_setup_page.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'main_game_screen.dart';
 
 class GoalsSetupPage extends StatefulWidget {
   const GoalsSetupPage({
@@ -109,7 +110,12 @@ class _GoalsSetupPageState extends State<GoalsSetupPage>
 
     if (!mounted) return;
 
-    Navigator.pushReplacementNamed(context, '/home');
+    Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(
+    builder: (context) => const MainGameScreen(),
+  ),
+);
   }
 
   String get _selectionLabel {
