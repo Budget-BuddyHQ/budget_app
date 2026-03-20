@@ -16,8 +16,8 @@ class _PrivacyPolicyPage extends State<PrivacyPolicyPage>
   final _confirmPasswordController = TextEditingController();
   late AnimationController _animController;
 
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
+  final bool _obscurePassword = true;
+  final bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
   
   late final Animation<double> _fadeAnimation = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
