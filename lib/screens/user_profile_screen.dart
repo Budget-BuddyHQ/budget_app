@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import './Gameplay/game_hub_screen.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
@@ -640,6 +641,18 @@ class _BottomNavProfile extends StatelessWidget {
             label: 'Challenges',
             icon: Icons.emoji_events,
             active: false,
+          ),
+          // TODO: YOU ARE CURRENTLY MAKING A ICON FOR THE GAMES IN THE PROFILE TAB
+          _NavItem(
+            label: 'Games',
+            icon: Icons.gamepad,
+            active: false,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const GameHubScreen()),
+              );
+            },
           ),
           const _NavItem(label: 'Profile', icon: Icons.person, active: true),
         ],
