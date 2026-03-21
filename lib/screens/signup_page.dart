@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:budget_app/screens/goals_setup_page.dart';
 import 'package:flutter/material.dart';
 import 'login_page.dart';
-import 'goals_setup_page.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});

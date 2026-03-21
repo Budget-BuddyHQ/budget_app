@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'main_game_screen.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
@@ -137,10 +136,7 @@ class UserProfileScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    _AccountCard(
-                      background: cardBg,
-                      border: cardBorder,
-                    ),
+                    _AccountCard(background: cardBg, border: cardBorder),
                   ],
                 ),
               ),
@@ -163,7 +159,7 @@ class _ProfileTopBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1F4E3B),
         borderRadius: BorderRadius.circular(20),
-      )
+      ),
     );
   }
 }
@@ -193,11 +189,7 @@ class _ProfileHeaderCard extends StatelessWidget {
           const CircleAvatar(
             radius: 34,
             backgroundColor: Color(0xFF85EFAC),
-            child: Icon(
-              Icons.person,
-              size: 36,
-              color: Color(0xFF1A4D3D),
-            ),
+            child: Icon(Icons.person, size: 36, color: Color(0xFF1A4D3D)),
           ),
           const SizedBox(height: 12),
           const Text(
@@ -220,10 +212,7 @@ class _ProfileHeaderCard extends StatelessWidget {
           const SizedBox(height: 6),
           const Text(
             'Current Balance: \$2450',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Colors.white70, fontSize: 12),
           ),
           const SizedBox(height: 14),
           SizedBox(
@@ -300,10 +289,7 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 10,
-            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 10),
           ),
         ],
       ),
@@ -338,18 +324,12 @@ class _LevelProgressCard extends StatelessWidget {
         children: [
           const Text(
             'Level 7 → Level 8',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           const Text(
             'You need 320 more points to reach the next title.',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Colors.white70, fontSize: 12),
           ),
           const SizedBox(height: 12),
           Container(
@@ -374,10 +354,7 @@ class _LevelProgressCard extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: Text(
               '68%',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Colors.white70, fontSize: 12),
             ),
           ),
         ],
@@ -463,10 +440,7 @@ class _ProgressRow extends StatelessWidget {
             ),
             Text(
               percentText,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
           ],
         ),
@@ -516,11 +490,7 @@ class _BadgesCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _BadgeItem(
-            icon: Icons.savings,
-            label: 'Smart Saver',
-            accent: accent,
-          ),
+          _BadgeItem(icon: Icons.savings, label: 'Smart Saver', accent: accent),
           _BadgeItem(
             icon: Icons.menu_book,
             label: 'Fast Learner',
@@ -560,10 +530,7 @@ class _BadgeItem extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 11,
-          ),
+          style: const TextStyle(color: Colors.white70, fontSize: 11),
         ),
       ],
     );
@@ -574,10 +541,7 @@ class _AccountCard extends StatelessWidget {
   final Color background;
   final Color border;
 
-  const _AccountCard({
-    required this.background,
-    required this.border,
-  });
+  const _AccountCard({required this.background, required this.border});
 
   @override
   Widget build(BuildContext context) {
@@ -593,15 +557,8 @@ class _AccountCard extends StatelessWidget {
             icon: Icons.notifications_none,
             label: 'Notification Settings',
           ),
-          _AccountTile(
-            icon: Icons.lock_outline,
-            label: 'Privacy Settings',
-          ),
-          _AccountTile(
-            icon: Icons.logout,
-            label: 'Log Out',
-            isLast: true,
-          ),
+          _AccountTile(icon: Icons.lock_outline, label: 'Privacy Settings'),
+          _AccountTile(icon: Icons.logout, label: 'Log Out', isLast: true),
         ],
       ),
     );
@@ -627,30 +584,28 @@ class _AccountTile extends StatelessWidget {
         border: isLast
             ? null
             : Border(
-                bottom: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.08),
-                ),
+                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
               ),
       ),
       child: Row(
-              children: [
-                Icon(icon, color: Colors.white70, size: 18),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                const Icon(Icons.chevron_right, color: Colors.white54, size: 18),
-              ],
+        children: [
+          Icon(icon, color: Colors.white70, size: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          );
-        }
-      }
+          ),
+          const Icon(Icons.chevron_right, color: Colors.white54, size: 18),
+        ],
+      ),
+    );
+  }
+}
 
 class _BottomNavProfile extends StatelessWidget {
   const _BottomNavProfile();
@@ -659,9 +614,7 @@ class _BottomNavProfile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1F4E3B),
-      ),
+      decoration: const BoxDecoration(color: Color(0xFF1F4E3B)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
@@ -673,9 +626,21 @@ class _BottomNavProfile extends StatelessWidget {
               Navigator.pop(context);
             },
           ),
-          const _NavItem(label: 'Budget', icon: Icons.attach_money, active: false),
-          const _NavItem(label: 'Invest', icon: Icons.trending_up, active: false),
-          const _NavItem(label: 'Challenges', icon: Icons.emoji_events, active: false),
+          const _NavItem(
+            label: 'Budget',
+            icon: Icons.attach_money,
+            active: false,
+          ),
+          const _NavItem(
+            label: 'Invest',
+            icon: Icons.trending_up,
+            active: false,
+          ),
+          const _NavItem(
+            label: 'Challenges',
+            icon: Icons.emoji_events,
+            active: false,
+          ),
           const _NavItem(label: 'Profile', icon: Icons.person, active: true),
         ],
       ),
