@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../goals_setup_page.dart';
 
 class PrivacyPolicyPage extends StatefulWidget {
   const PrivacyPolicyPage({super.key});
@@ -17,7 +16,7 @@ class _PrivacyPolicyPage extends State<PrivacyPolicyPage>
   late AnimationController _animController;
 
   final bool _obscurePassword = true;
-  final bool _obscureConfirmPassword = true;
+  
   bool _agreeToTerms = false;
   
   late final Animation<double> _fadeAnimation = CurvedAnimation(parent: _animController, curve: Curves.easeIn);

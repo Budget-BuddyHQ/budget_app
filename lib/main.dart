@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'screens/leaderboard_screen.dart';
@@ -9,24 +9,27 @@ import 'screens/signup_page.dart';
 import 'screens/welcome_screen.dart';
 
 void main() async {
+
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    await windowManager.ensureInitialized();
+  if (!kIsWeb && Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    try {
+      await windowManager.ensureInitialized();
+      const options = WindowOptions(
+        size: Size(1000, 800),
+        minimumSize: Size(450, 400),
+        center: true,
+      );
+      windowManager.waitUntilReadyToShow(options, () async {
+        await windowManager.show();
+        await windowManager.focus();
+      });
+    } catch (e) {
+      debugPrint('Window manager has failed! $e');
+    }
 
-    const options = WindowOptions(
-      size: Size(1000, 800),
-      minimumSize: Size(450, 400),
-      center: true,
-    );
-
-    windowManager.waitUntilReadyToShow(options, () async {
-      await windowManager.show();
-      await windowManager.focus();
-    });
+    runApp(const MyApp());
   }
-
-  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -37,7 +40,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Budget Buddy',
       theme: ThemeData(
-        primarySwatch: Colors.green,
+        colorSchemeSeed: Colors.green,
         useMaterial3: true,
         fontFamily: 'sans-serif',
       ),
