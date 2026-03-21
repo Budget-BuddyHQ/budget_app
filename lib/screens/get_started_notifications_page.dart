@@ -1,10 +1,10 @@
 // lib/screens/goals_setup_page.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'main_game_screen.dart';
+import 'get_started_confidence_page.dart';
 
-class GoalsSetupPage extends StatefulWidget {
-  const GoalsSetupPage({
+class GetStartedNotificationsPage extends StatefulWidget {
+  const GetStartedNotificationsPage({
     super.key,
     this.onContinue,
   });
@@ -12,10 +12,12 @@ class GoalsSetupPage extends StatefulWidget {
   final Future<void> Function(List<String> selectedGoalIds)? onContinue;
 
   @override
-  State<GoalsSetupPage> createState() => _GoalsSetupPageState();
+  State<GetStartedNotificationsPage> createState() =>
+    _GetStartedNotificationsPageState();
 }
 
-class _GoalsSetupPageState extends State<GoalsSetupPage>
+class _GetStartedNotificationsPageState
+    extends State<GetStartedNotificationsPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
 
@@ -114,7 +116,7 @@ class _GoalsSetupPageState extends State<GoalsSetupPage>
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const MainGameScreen(),
+            const GetStartedConfidencePage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           final curve =
               CurvedAnimation(parent: animation, curve: Curves.easeInOut);
@@ -137,10 +139,10 @@ class _GoalsSetupPageState extends State<GoalsSetupPage>
         ),
         child: SafeArea(
           child: Center(
-            child: SizedBox(
-              width: double.infinity,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -205,61 +207,55 @@ class _GoalsSetupPageState extends State<GoalsSetupPage>
 
                     _buildAnimatedItem(
                       3,
-                        _buildGlassCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildSectionLabel('What are your priorities?'),
-                              const SizedBox(height: 14),
-                              GridView.count(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                childAspectRatio: 2.6,
-                                children: _goals.map((goal) {
-                                  final selected = _selectedGoalIds.contains(goal.id);
+                      _buildGlassCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionLabel('What are your priorities?'),
+                            const SizedBox(height: 14),
+                            Wrap(
+                              spacing: 10,
+                              runSpacing: 10,
+                              children: _goals.map((goal) {
+                                final selected =
+                                    _selectedGoalIds.contains(goal.id);
 
-                                  return _GoalChip(
-                                    title: goal.title,
-                                    icon: goal.icon,
-                                    selected: selected,
-                                    onTap: () => _toggleGoal(goal.id),
-                                    limeAccent: limeAccent,
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          ),
+                                return _GoalChip(
+                                  title: goal.title,
+                                  icon: goal.icon,
+                                  selected: selected,
+                                  onTap: () => _toggleGoal(goal.id),
+                                  limeAccent: limeAccent,
+                                );
+                              }).toList(),
+                            ),
+                          ],
                         ),
                       ),
+                    ),
 
                     const SizedBox(height: 20),
 
                     _buildAnimatedItem(
                       4,
-                      FractionallySizedBox(
-                        widthFactor: 0.96,
-                        child: ElevatedButton(
-                          onPressed: _handleContinue,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: limeAccent,
-                            foregroundColor: deepForest,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            elevation: 8,
-                            shadowColor: limeAccent.withValues(alpha: 0.45),
+                      ElevatedButton(
+                        onPressed: _handleContinue,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: limeAccent,
+                          foregroundColor: deepForest,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
                           ),
-                          child: const Text(
-                            'Continue',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.8,
-                            ),
+                          elevation: 8,
+                          shadowColor: limeAccent.withValues(alpha: 0.45),
+                        ),
+                        child: const Text(
+                          'Continue',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.8,
                           ),
                         ),
                       ),
@@ -329,8 +325,7 @@ class _GoalsSetupPageState extends State<GoalsSetupPage>
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(20),
@@ -382,8 +377,7 @@ class _GoalChip extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             color: selected
@@ -397,7 +391,7 @@ class _GoalChip extends StatelessWidget {
             ),
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.max,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
@@ -405,11 +399,9 @@ class _GoalChip extends StatelessWidget {
                 color: selected ? limeAccent : Colors.white70,
               ),
               const SizedBox(width: 8),
-              Expanded(
+              Flexible(
                 child: Text(
                   title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
