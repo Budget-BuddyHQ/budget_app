@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'user_profile_screen.dart';
-
+import '../screens/Gameplay/game_hub_screen.dart';
 class MainGameScreen extends StatelessWidget {
   const MainGameScreen({super.key});
 
@@ -633,6 +633,20 @@ class _BottomNav extends StatelessWidget {
           const _NavItem(label: 'Budget', icon: Icons.attach_money, active: false),
           const _NavItem(label: 'Invest', icon: Icons.trending_up, active: false),
           const _NavItem(label: 'Challenges', icon: Icons.emoji_events, active: false),
+          _NavItem(
+            label: 'Games',
+            icon: Icons.gamepad,
+            active: false,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const GameHubScreen(),
+                ),
+              );
+            },
+          ),
+
           _NavItem(
             label: 'Profile',
             icon: Icons.person,

@@ -7,12 +7,13 @@ import 'screens/login_page.dart';
 import 'screens/main_game_screen.dart';
 import 'screens/signup_page.dart';
 import 'screens/welcome_screen.dart';
+import 'screens/Gameplay/DashboardScreen.dart';
 
 void main() async {
-
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (!kIsWeb && Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+  // Desktop window setup
+  if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     try {
       await windowManager.ensureInitialized();
       const options = WindowOptions(
@@ -25,12 +26,14 @@ void main() async {
         await windowManager.focus();
       });
     } catch (e) {
-      debugPrint('Window manager has failed! $e');
+      debugPrint('Window manager failed: $e');
     }
-
-    runApp(const MyApp());
   }
+
+  // ALWAYS run the app on ALL platforms
+  runApp(const MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -52,6 +55,8 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/game': (context) => const MainGameScreen(),
         '/leaderboard': (context) => const LeaderboardScreen(),
+        '/dashboard': (context) => const DashboardScreen(),
+
       },
     );
   }
