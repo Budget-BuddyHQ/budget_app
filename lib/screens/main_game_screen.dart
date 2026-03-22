@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'user_profile_screen.dart';
 import '../screens/Gameplay/game_hub_screen.dart';
+import 'NavBarClass/custom_bottom_nav.dart';
+
 class MainGameScreen extends StatelessWidget {
   const MainGameScreen({super.key});
 
@@ -13,6 +15,7 @@ class MainGameScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: background,
+      bottomNavigationBar: const CustomBottomNav(activeIndex: 0),
       body: SafeArea(
         child: Column(
           children: [
@@ -28,10 +31,7 @@ class MainGameScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _DailyInsightCard(
-                      background: cardBg,
-                      border: cardBorder,
-                    ),
+                    _DailyInsightCard(background: cardBg, border: cardBorder),
                     const SizedBox(height: 16),
                     const Text(
                       "Week's Progress Metrics",
@@ -140,7 +140,6 @@ class MainGameScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const _BottomNav(),
           ],
         ),
       ),
@@ -192,10 +191,7 @@ class _DailyInsightCard extends StatelessWidget {
   final Color background;
   final Color border;
 
-  const _DailyInsightCard({
-    required this.background,
-    required this.border,
-  });
+  const _DailyInsightCard({required this.background, required this.border});
 
   @override
   Widget build(BuildContext context) {
@@ -214,7 +210,11 @@ class _DailyInsightCard extends StatelessWidget {
               CircleAvatar(
                 radius: 16,
                 backgroundColor: Color(0xFF85EFAC),
-                child: Icon(Icons.lightbulb, size: 18, color: Color(0xFF1A4D3D)),
+                child: Icon(
+                  Icons.lightbulb,
+                  size: 18,
+                  color: Color(0xFF1A4D3D),
+                ),
               ),
               SizedBox(width: 10),
               Text(
@@ -530,7 +530,12 @@ class _LeaderboardTable extends StatelessWidget {
     final rows = [
       _LeaderRow(rank: '🥇', name: 'MoneyMaster99', points: '2,450'),
       _LeaderRow(rank: '🥈', name: 'BudgetPro', points: '2,280'),
-      _LeaderRow(rank: '🥉', name: 'Username3189 (You)', points: '2,150', highlight: true),
+      _LeaderRow(
+        rank: '🥉',
+        name: 'Username3189 (You)',
+        points: '2,150',
+        highlight: true,
+      ),
       _LeaderRow(rank: '4', name: 'SaverSally', points: '2,020'),
       _LeaderRow(rank: '5', name: 'InvestorMax', points: '1,890'),
     ];
@@ -547,13 +552,33 @@ class _LeaderboardTable extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.06),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(14),
+              ),
             ),
             child: Row(
               children: const [
-                SizedBox(width: 30, child: Text('#', style: TextStyle(color: Colors.white70, fontSize: 11))),
-                Expanded(child: Text('User', style: TextStyle(color: Colors.white70, fontSize: 11))),
-                SizedBox(width: 60, child: Text('Points', style: TextStyle(color: Colors.white70, fontSize: 11), textAlign: TextAlign.right)),
+                SizedBox(
+                  width: 30,
+                  child: Text(
+                    '#',
+                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'User',
+                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                  ),
+                ),
+                SizedBox(
+                  width: 60,
+                  child: Text(
+                    'Points',
+                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                    textAlign: TextAlign.right,
+                  ),
+                ),
               ],
             ),
           ),
@@ -608,94 +633,6 @@ class _LeaderRow extends StatelessWidget {
               points,
               textAlign: TextAlign.right,
               style: const TextStyle(color: Colors.white70),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BottomNav extends StatelessWidget {
-  const _BottomNav();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1F4E3B),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          const _NavItem(label: 'Home', icon: Icons.home, active: true),
-          const _NavItem(label: 'Budget', icon: Icons.attach_money, active: false),
-          const _NavItem(label: 'Invest', icon: Icons.trending_up, active: false),
-          const _NavItem(label: 'Challenges', icon: Icons.emoji_events, active: false),
-          _NavItem(
-            label: 'Games',
-            icon: Icons.gamepad,
-            active: false,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const GameHubScreen(),
-                ),
-              );
-            },
-          ),
-
-          _NavItem(
-            label: 'Profile',
-            icon: Icons.person,
-            active: false,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const UserProfileScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool active;
-  final VoidCallback? onTap;
-
-  const _NavItem({
-    required this.label,
-    required this.icon,
-    required this.active,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? const Color(0xFF85EFAC) : Colors.white70;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
             ),
           ),
         ],

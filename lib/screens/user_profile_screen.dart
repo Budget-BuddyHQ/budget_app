@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import './Gameplay/game_hub_screen.dart';
+import 'NavBarClass/custom_bottom_nav.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
@@ -13,6 +14,7 @@ class UserProfileScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: background,
+      bottomNavigationBar: const CustomBottomNav(activeIndex: 5,),
       body: SafeArea(
         child: Column(
           children: [
@@ -142,7 +144,6 @@ class UserProfileScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const _BottomNavProfile(),
           ],
         ),
       ),
@@ -602,97 +603,6 @@ class _AccountTile extends StatelessWidget {
             ),
           ),
           const Icon(Icons.chevron_right, color: Colors.white54, size: 18),
-        ],
-      ),
-    );
-  }
-}
-
-class _BottomNavProfile extends StatelessWidget {
-  const _BottomNavProfile();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-      decoration: const BoxDecoration(color: Color(0xFF1F4E3B)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavItem(
-            label: 'Home',
-            icon: Icons.home,
-            active: false,
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          const _NavItem(
-            label: 'Budget',
-            icon: Icons.attach_money,
-            active: false,
-          ),
-          const _NavItem(
-            label: 'Invest',
-            icon: Icons.trending_up,
-            active: false,
-          ),
-          const _NavItem(
-            label: 'Challenges',
-            icon: Icons.emoji_events,
-            active: false,
-          ),
-          // TODO: YOU ARE CURRENTLY MAKING A ICON FOR THE GAMES IN THE PROFILE TAB
-          _NavItem(
-            label: 'Games',
-            icon: Icons.gamepad,
-            active: false,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const GameHubScreen()),
-              );
-            },
-          ),
-          const _NavItem(label: 'Profile', icon: Icons.person, active: true),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool active;
-  final VoidCallback? onTap;
-
-  const _NavItem({
-    required this.label,
-    required this.icon,
-    required this.active,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? const Color(0xFF85EFAC) : Colors.white70;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
         ],
       ),
     );
