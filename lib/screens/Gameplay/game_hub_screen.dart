@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../reusable_widgets/custom_bottom_nav.dart';
+import 'bill_dodger_game.dart';
+
 
 class GameHubScreen extends StatelessWidget {
   const GameHubScreen({super.key});
@@ -38,8 +40,13 @@ class GameHubScreen extends StatelessWidget {
               title: "Epic Mini‑Games",
               icon: Icons.sports_esports,
               onTap: () {
-                // TODO: Navigate to mini‑games screen
-              },
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const BillDodgerGameScreen(),
+                    ),
+                  );
+                }
             ),
 
             const SizedBox(height: 15),
