@@ -1,7 +1,7 @@
 // lib/screens/get_started_confidence_page.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'main_game_screen.dart';
+import '../Gameplay/main_game_screen.dart';
 
 class TurtleThumbShape extends SliderComponentShape {
   final double thumbRadius;

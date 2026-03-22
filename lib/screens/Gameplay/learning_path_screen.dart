@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/lesson.dart';
-import '../models/progression_service.dart';
+import '../../models/lesson.dart';
+import '../../models/progression_service.dart';
 import 'lesson_screen.dart';
-import '../components/skill_tree_node.dart';
+import '../../components/skill_tree_node.dart';
 
 class LearningPathScreen extends StatefulWidget {
   const LearningPathScreen({super.key});

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'user_profile_screen.dart';
-import '../screens/Gameplay/game_hub_screen.dart';
-import 'NavBarClass/custom_bottom_nav.dart';
+import '../profile/user_profile_screen.dart';
+import 'game_hub_screen.dart';
+import '../reusable_widgets/custom_bottom_nav.dart';
 
 class MainGameScreen extends StatelessWidget {
   const MainGameScreen({super.key});

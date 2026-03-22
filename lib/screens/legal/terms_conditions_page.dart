@@ -1,4 +1,4 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../goals_setup_page.dart';
+import '../profile/goals_setup_page.dart';
 
