@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'forgot_password_page.dart';
-import 'main_game_screen.dart';
 import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {

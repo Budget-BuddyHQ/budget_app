@@ -1,14 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
-import 'screens/leaderboard_screen.dart';
-import 'screens/login_page.dart';
-import 'screens/main_game_screen.dart';
-import 'screens/signup_page.dart';
-import 'screens/welcome_screen.dart';
 
 void main() async {
-
 
 }
 

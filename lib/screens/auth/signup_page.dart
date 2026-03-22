@@ -1,9 +1,7 @@
 // lib/screens/signup_page.dart
 import 'dart:ui';
-import 'package:budget_app/screens/goals_setup_page.dart';
 import 'package:flutter/material.dart';
 import 'login_page.dart';
-import 'get_started_1.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});

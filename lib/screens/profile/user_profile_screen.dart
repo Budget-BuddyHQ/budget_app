@@ -140,7 +140,6 @@ class UserProfileScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const _BottomNavProfile(),
           ],
         ),
       ),
@@ -574,65 +573,3 @@ class _AccountTile extends StatelessWidget {
       ),
       child: Row(
             ),
-
-class _BottomNavProfile extends StatelessWidget {
-  const _BottomNavProfile();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavItem(
-            label: 'Home',
-            icon: Icons.home,
-            active: false,
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          const _NavItem(label: 'Profile', icon: Icons.person, active: true),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool active;
-  final VoidCallback? onTap;
-
-  const _NavItem({
-    required this.label,
-    required this.icon,
-    required this.active,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? const Color(0xFF85EFAC) : Colors.white70;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
