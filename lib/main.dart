@@ -7,7 +7,6 @@ import 'screens/login_page.dart';
 import 'screens/main_game_screen.dart';
 import 'screens/signup_page.dart';
 import 'screens/welcome_screen.dart';
-import 'screens/Gameplay/DashboardScreen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,7 +54,6 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/game': (context) => const MainGameScreen(),
         '/leaderboard': (context) => const LeaderboardScreen(),
-        '/dashboard': (context) => const DashboardScreen(),
 
       },
     );
