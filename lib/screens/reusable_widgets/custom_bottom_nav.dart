@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../Gameplay/game_hub_screen.dart';
 import '../profile/user_profile_screen.dart';
 import '../Gameplay/main_game_screen.dart';
-import 'package:boxicons/boxicons.dart';
 
 class CustomBottomNav extends StatelessWidget {
   final int activeIndex;
@@ -54,7 +53,7 @@ class CustomBottomNav extends StatelessWidget {
           ),
           _NavItem(
             label: 'Play',
-            icon: Boxicons.bxs_joystick,
+            icon: Icons.sports_esports,
             active: activeIndex == 4,
             activeColor: activeColor,
             onTap: () {
