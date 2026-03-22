@@ -5,8 +5,13 @@ import '../main_game_screen.dart';
 
 class CustomBottomNav extends StatelessWidget {
   final int activeIndex;
+  final Color activeColor;
 
-  const CustomBottomNav({super.key, required this.activeIndex});
+  const CustomBottomNav({
+    super.key,
+    required this.activeIndex,
+    this.activeColor = const Color(0xFF85EFAC),
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +25,7 @@ class CustomBottomNav extends StatelessWidget {
             label: 'Home',
             icon: Icons.home,
             active: activeIndex == 0,
+            activeColor: activeColor,
             onTap: () {
               Navigator.pushReplacement(
                 context,
@@ -31,21 +37,25 @@ class CustomBottomNav extends StatelessWidget {
             label: 'Budget',
             icon: Icons.attach_money,
             active: activeIndex == 1,
+            activeColor: activeColor,
           ),
           _NavItem(
             label: 'Invest',
             icon: Icons.trending_up,
             active: activeIndex == 2,
+            activeColor: activeColor,
           ),
           _NavItem(
             label: 'Challenges',
             icon: Icons.emoji_events,
             active: activeIndex == 3,
+            activeColor: activeColor,
           ),
           _NavItem(
             label: 'Games',
             icon: Icons.gamepad,
             active: activeIndex == 4,
+            activeColor: activeColor,
             onTap: () {
               Navigator.push(
                 context,
@@ -57,6 +67,7 @@ class CustomBottomNav extends StatelessWidget {
             label: 'Profile',
             icon: Icons.person,
             active: activeIndex == 5,
+            activeColor: activeColor,
             onTap: () {
               Navigator.push(
                 context,
@@ -75,17 +86,19 @@ class _NavItem extends StatelessWidget {
   final IconData icon;
   final bool active;
   final VoidCallback? onTap;
+  final Color activeColor;
 
   const _NavItem({
     required this.label,
     required this.icon,
     required this.active,
+    required this.activeColor,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? Colors.white : Colors.white70;
+    final color = active ? activeColor : Colors.white70;
 
     return GestureDetector(
       onTap: onTap,

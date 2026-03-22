@@ -13,9 +13,10 @@ class MainGameScreen extends StatelessWidget {
     const cardBorder = Color(0xFF3B6B59);
     const accent = Color(0xFF85EFAC);
 
+
     return Scaffold(
       backgroundColor: background,
-      bottomNavigationBar: const CustomBottomNav(activeIndex: 0),
+      bottomNavigationBar: const CustomBottomNav(activeIndex: 0, ),
       body: SafeArea(
         child: Column(
           children: [
