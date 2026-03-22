@@ -53,7 +53,7 @@ class CustomBottomNav extends StatelessWidget {
             activeColor: activeColor,
           ),
           _NavItem(
-            label: 'Games',
+            label: 'Play',
             icon: Boxicons.bxs_joystick,
             active: activeIndex == 4,
             activeColor: activeColor,
