@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../NavBarClass/custom_bottom_nav.dart';
 
 class GameHubScreen extends StatelessWidget {
   const GameHubScreen({super.key});
@@ -7,6 +8,7 @@ class GameHubScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1B3329),
+      bottomNavigationBar: const CustomBottomNav(activeIndex: 4),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
