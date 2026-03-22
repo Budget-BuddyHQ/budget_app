@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../Gameplay/game_hub_screen.dart';
-import '../user_profile_screen.dart';
-import '../main_game_screen.dart';
+import '../profile/user_profile_screen.dart';
+import '../Gameplay/main_game_screen.dart';
 
 class CustomBottomNav extends StatelessWidget {
   final int activeIndex;

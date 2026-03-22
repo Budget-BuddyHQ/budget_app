@@ -1,8 +1,8 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import '../models/lesson.dart';
-import '../models/progression_service.dart';
+import '../../models/lesson.dart';
+import '../../models/progression_service.dart';
 
 /// Screen for displaying and completing a lesson with detailed content
 class LessonScreen extends StatefulWidget {

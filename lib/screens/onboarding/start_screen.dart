@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'Gameplay/town_square_screen.dart';
+import '../Gameplay/town_square_screen.dart';
 
 class StartScreen extends StatefulWidget {
   const StartScreen({super.key});

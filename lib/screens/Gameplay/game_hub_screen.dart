@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../NavBarClass/custom_bottom_nav.dart';
+import '../reusable_widgets/custom_bottom_nav.dart';
 
 class GameHubScreen extends StatelessWidget {
   const GameHubScreen({super.key});

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../main_game_screen.dart';
+import 'main_game_screen.dart';
 
 class TownSquareScreen extends StatelessWidget {
   const TownSquareScreen({super.key});

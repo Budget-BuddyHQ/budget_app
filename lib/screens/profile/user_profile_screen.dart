@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import './Gameplay/game_hub_screen.dart';
-import 'NavBarClass/custom_bottom_nav.dart';
+import '../Gameplay/game_hub_screen.dart';
+import '../reusable_widgets/custom_bottom_nav.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
