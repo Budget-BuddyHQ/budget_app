@@ -1,7 +1,7 @@
 // lib/screens/goals_setup_page.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'main_game_screen.dart';
+import '../Gameplay/main_game_screen.dart';
 
 class GoalsSetupPage extends StatefulWidget {
   const GoalsSetupPage({
