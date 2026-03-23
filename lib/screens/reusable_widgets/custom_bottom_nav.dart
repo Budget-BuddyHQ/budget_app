@@ -1,114 +1,74 @@
 import 'package:flutter/material.dart';
-import '../Gameplay/game_hub_screen.dart';
-import '../profile/user_profile_screen.dart';
-import '../Gameplay/main_game_screen.dart';
 
 class CustomBottomNav extends StatelessWidget {
-  final int activeIndex;
-  final Color activeColor;
-
   const CustomBottomNav({
     super.key,
     required this.activeIndex,
+    this.onSelected,
     this.activeColor = const Color(0xFF85EFAC),
   });
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 25),
-      decoration: const BoxDecoration(color: Color(0xFF1F4E3B)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavItem(
-            label: 'Home',
-            icon: Icons.home,
-            active: activeIndex == 0,
-            activeColor: activeColor,
-            onTap: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const MainGameScreen()),
-              );
-            },
-          ),
-          _NavItem(
-            label: 'Budget',
-            icon: Icons.attach_money,
-            active: activeIndex == 1,
-            activeColor: activeColor,
-          ),
-          _NavItem(
-            label: 'Invest',
-            icon: Icons.trending_up,
-            active: activeIndex == 2,
-            activeColor: activeColor,
-          ),
-          _NavItem(
-            label: 'Challenges',
-            icon: Icons.emoji_events,
-            active: activeIndex == 3,
-            activeColor: activeColor,
-          ),
-          _NavItem(
-            label: 'Play',
-            icon: Icons.sports_esports,
-            active: activeIndex == 4,
-            activeColor: activeColor,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const GameHubScreen()),
-              );
-            },
-          ),
-          _NavItem(
-            label: 'Profile',
-            icon: Icons.person,
-            active: activeIndex == 5,
-            activeColor: activeColor,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const UserProfileScreen()),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool active;
-  final VoidCallback? onTap;
+  final int activeIndex;
+  final ValueChanged<int>? onSelected;
   final Color activeColor;
 
-  const _NavItem({
-    required this.label,
-    required this.icon,
-    required this.active,
-    required this.activeColor,
-    this.onTap,
-  });
-
   @override
   Widget build(BuildContext context) {
-    final color = active ? activeColor : Colors.white70;
+    const items = <({String label, IconData icon})>[
+      (label: 'Home', icon: Icons.home),
+      (label: 'Budget', icon: Icons.attach_money),
+      (label: 'Invest', icon: Icons.trending_up),
+      (label: 'Challenges', icon: Icons.emoji_events),
+      (label: 'Profile', icon: Icons.person),
+    ];
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color),
-          const SizedBox(height: 4),
-          Text(label, style: TextStyle(color: color, fontSize: 12)),
-        ],
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF1F4E3B),
+        border: Border(
+          top: BorderSide(color: Colors.white10),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: List<Widget>.generate(items.length, (index) {
+            final item = items[index];
+            final active = activeIndex == index;
+            final color = active ? activeColor : Colors.white70;
+
+            return Expanded(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onSelected == null ? null : () => onSelected!(index),
+                  radius: 48,
+                  borderRadius: BorderRadius.circular(20),
+                  splashColor: activeColor.withValues(alpha: 0.16),
+                  highlightColor: activeColor.withValues(alpha: 0.08),
+                  child: SizedBox(
+                    height: 74,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(item.icon, color: color, size: 20),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.label,
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 11,
+                            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
       ),
     );
   }

@@ -3,10 +3,11 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'screens/Gameplay/leaderboard_screen.dart';
+import 'screens/Gameplay/dashboard_shell.dart';
 import 'screens/auth/login_page.dart';
-import 'screens/Gameplay/main_game_screen.dart';
 import 'screens/auth/signup_page.dart';
 import 'screens/onboarding/welcome_screen.dart';
+import 'services/database_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +29,8 @@ void main() async {
       debugPrint('Window manager failed: $e');
     }
   }
+
+  await DatabaseService.instance.initialize();
 
   // ALWAYS run the app on ALL platforms
   runApp(const MyApp());
@@ -52,7 +55,7 @@ class MyApp extends StatelessWidget {
         '/welcome': (context) => const WelcomeScreen(),
         '/signup': (context) => const SignUpPage(),
         '/login': (context) => const LoginPage(),
-        '/game': (context) => const MainGameScreen(),
+        '/game': (context) => const DashboardShell(),
         '/leaderboard': (context) => const LeaderboardScreen(),
 
       },

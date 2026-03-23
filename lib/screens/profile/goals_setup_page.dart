@@ -1,7 +1,7 @@
 // lib/screens/goals_setup_page.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../Gameplay/main_game_screen.dart';
+import '../Gameplay/dashboard_shell.dart';
 
 class GoalsSetupPage extends StatefulWidget {
   const GoalsSetupPage({
@@ -114,7 +114,7 @@ class _GoalsSetupPageState extends State<GoalsSetupPage>
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const MainGameScreen(),
+            const DashboardShell(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           final curve =
               CurvedAnimation(parent: animation, curve: Curves.easeInOut);

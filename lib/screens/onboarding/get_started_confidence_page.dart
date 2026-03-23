@@ -1,7 +1,11 @@
 // lib/screens/get_started_confidence_page.dart
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../Gameplay/main_game_screen.dart';
+
+import '../../models/user_progress_state.dart';
+import '../../services/database_service.dart';
+import '../Gameplay/dashboard_shell.dart';
 
 class TurtleThumbShape extends SliderComponentShape {
   final double thumbRadius;
@@ -93,11 +97,39 @@ class _GetStartedConfidencePageState extends State<GetStartedConfidencePage>
   }
 
   void _handleContinue() {
+    final user = UserProgressState.instance;
+    final personalityType = _personalityTypeFromConfidence();
+    final spendingHabits = <String, dynamic>{
+      'confidence_score': _confidenceValue,
+      'risk_tolerance': _confidenceValue >= 3 ? 'higher' : 'steady',
+      'missed_questions': <String>[],
+    };
+
+    user.applyRemoteProgress(
+      gold: user.gold,
+      xp: user.xp,
+      literacyScore: user.literacyPoints,
+      personalityType: personalityType,
+      spendingHabits: spendingHabits,
+    );
+    unawaited(
+      DatabaseService.instance.syncGameplayResults(
+        <String, dynamic>{
+          'id': user.userId,
+          'gold': user.gold,
+          'xp': user.xp,
+          'literacy_score': user.literacyPoints,
+          'personality_type': personalityType,
+          'spending_habits': spendingHabits,
+        },
+      ),
+    );
+
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const MainGameScreen(),
+            const DashboardShell(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           final curve =
               CurvedAnimation(parent: animation, curve: Curves.easeInOut);
@@ -113,6 +145,16 @@ class _GetStartedConfidencePageState extends State<GetStartedConfidencePage>
     if (_confidenceValue <= 3) return 'Pretty comfortable';
     if (_confidenceValue <= 4) return 'Very confident';
     return 'Money pro';
+  }
+
+  String _personalityTypeFromConfidence() {
+    if (_confidenceValue <= 1.5) {
+      return 'Saver';
+    }
+    if (_confidenceValue <= 3.0) {
+      return 'Spender';
+    }
+    return 'Risk-Taker';
   }
 
   @override
