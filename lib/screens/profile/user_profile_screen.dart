@@ -1,3 +1,4 @@
+import 'package:budget_app/models/user_progress_state.dart';
 import 'package:flutter/material.dart';
 import '../Gameplay/game_hub_screen.dart';
 import '../reusable_widgets/custom_bottom_nav.dart';

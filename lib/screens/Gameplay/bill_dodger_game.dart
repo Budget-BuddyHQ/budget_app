@@ -462,6 +462,11 @@ Widget build(BuildContext context) {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  _ControlsCard(
+                    onLeft: _moveLeft,
+                    onRight: _moveRight,
+                  ),
+                  const SizedBox(height: 16),
                   _PriceGuideCard(
                     startingMoney: startingMoney,
                     bonusAmount: bonusAmount,
@@ -539,7 +544,7 @@ class _TopStatsBar extends StatelessWidget {
   final int score;
   final int timeLeft;
 
-  @override //here 
+  @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
