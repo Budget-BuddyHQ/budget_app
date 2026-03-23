@@ -27,9 +27,10 @@ import 'react_game_screen.dart';
       return;
     }
 
-    final syncMessage = result.syncResult.queued
-        ? 'Cloud save queued while offline.'
-        : 'Progress synced.';
+    final syncMessage = result.syncResult.message ??
+        (result.syncResult.synced
+            ? 'Progress saved to Postgres.'
+            : 'Progress saved locally.');
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -41,6 +42,7 @@ import 'react_game_screen.dart';
     );
   }
 
+      bottomNavigationBar: const CustomBottomNav(activeIndex: 3),
           'Game Hub',
       body: ListView(
         children: [

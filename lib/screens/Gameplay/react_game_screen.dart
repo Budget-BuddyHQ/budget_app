@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -5,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../models/user_progress_state.dart';
-import '../../services/progression_service.dart';
+import '../../services/database_service.dart';
 
 class ReactGameCloseResult {
   const ReactGameCloseResult({
@@ -20,7 +21,7 @@ class ReactGameCloseResult {
   final int goldEarned;
   final int xpEarned;
   final int literacyPointsEarned;
-  final ProgressionSyncResult syncResult;
+  final DatabaseSyncResult syncResult;
 }
 
 class ReactGameScreen extends StatefulWidget {
@@ -31,8 +32,6 @@ class ReactGameScreen extends StatefulWidget {
     required this.playerLevel,
     required this.userId,
     this.reactAppBaseUrl = 'https://your-react-game-app.vercel.app',
-    this.base44BaseUrl = 'https://api.base44.app/v1',
-    this.base44ApiKey = 'REPLACE_WITH_BASE44_API_KEY',
   });
 
   final String gameId;
@@ -40,8 +39,6 @@ class ReactGameScreen extends StatefulWidget {
   final int playerLevel;
   final String userId;
   final String reactAppBaseUrl;
-  final String base44BaseUrl;
-  final String base44ApiKey;
 
   @override
   State<ReactGameScreen> createState() => _ReactGameScreenState();
@@ -49,11 +46,13 @@ class ReactGameScreen extends StatefulWidget {
 
 class _ReactGameScreenState extends State<ReactGameScreen> {
   late final WebViewController _controller;
-  late final ProgressionService _progressionService;
 
   bool _isLoading = true;
   bool _didHandleGameOver = false;
+  bool _isSyncingCloud = false;
   String? _loadError;
+  String? _cloudSyncMessage;
+  Timer? _syncMessageTimer;
 
   bool get _supportsWebView {
     if (kIsWeb) {
@@ -67,11 +66,6 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
   @override
   void initState() {
     super.initState();
-    _progressionService = ProgressionService(
-      baseUrl: widget.base44BaseUrl,
-      userId: widget.userId,
-      apiKey: widget.base44ApiKey,
-    );
 
     if (_supportsWebView) {
       _controller = WebViewController()
@@ -108,7 +102,7 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
 
   @override
   void dispose() {
-    _progressionService.dispose();
+    _syncMessageTimer?.cancel();
     super.dispose();
   }
 
@@ -129,37 +123,16 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
       return;
     }
 
-    Map<String, dynamic>? payload;
-    try {
-      final decoded = jsonDecode(message.message);
-      if (decoded is Map<String, dynamic>) {
-        payload = decoded;
-      }
-    } catch (_) {
-      // Ignore malformed bridge messages.
-      return;
-    }
-
+    final payload = _decodePayload(message.message);
     if (payload == null) {
       return;
     }
 
-    final status = (payload['status'] ?? '').toString().toLowerCase().trim();
-    const gameOverStatuses = <String>{
-      'win',
-      'won',
-      'loss',
-      'lose',
-      'lost',
-      'complete',
-      'completed',
-      'game_over',
-    };
-    if (!gameOverStatuses.contains(status)) {
-      return;
-    }
-
-    _didHandleGameOver = true;
+    final status = (payload['status'] ?? '')
+        .toString()
+        .toLowerCase()
+        .trim();
+    final userProgress = UserProgressState.instance;
 
     final goldEarned = _readInt(payload['gold_earned']);
     final xpEarned = _readInt(payload['xp_earned']);
@@ -167,20 +140,29 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
       payload['literacy_points_earned'] ?? payload['literacy_points'],
     );
 
-    final userProgress = UserProgressState.instance;
-    userProgress.applyGameRewards(
-      goldEarned: goldEarned,
-      xpEarned: xpEarned,
-      literacyPointsEarned: literacyPointsEarned,
-    );
+    if (_isTerminalStatus(status)) {
+      _didHandleGameOver = true;
+      userProgress.applyGameRewards(
+        goldEarned: goldEarned,
+        xpEarned: xpEarned,
+        literacyPointsEarned: literacyPointsEarned,
+      );
+    }
 
-    final syncResult = await _progressionService.syncProgression(
-      userProgress.gold,
-      userProgress.xp,
-      userProgress.literacyPoints,
-    );
+    final syncPayload = <String, dynamic>{
+      ...payload,
+      'id': widget.userId,
+      'user_id': widget.userId,
+      'gold': userProgress.gold,
+      'xp': userProgress.xp,
+      'literacy_score': userProgress.literacyPoints,
+      'personality_type': payload['personality_type'] ?? userProgress.personalityType,
+      'spending_habits': payload['spending_habits'] ?? userProgress.spendingHabits,
+    };
 
-    if (!mounted) {
+    final syncResult = await _syncGameplayPayload(syncPayload);
+
+    if (!mounted || !_isTerminalStatus(status)) {
       return;
     }
 
@@ -193,6 +175,83 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
         syncResult: syncResult,
       ),
     );
+  }
+
+  Map<String, dynamic>? _decodePayload(String rawMessage) {
+    try {
+      final decoded = jsonDecode(rawMessage);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      if (decoded is Map) {
+        return decoded.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
+      }
+    } catch (_) {
+      return null;
+    }
+    return null;
+  }
+
+  bool _isTerminalStatus(String status) {
+    const gameOverStatuses = <String>{
+      'win',
+      'won',
+      'loss',
+      'lose',
+      'lost',
+      'complete',
+      'completed',
+      'game_over',
+    };
+    return gameOverStatuses.contains(status);
+  }
+
+  Future<DatabaseSyncResult> _syncGameplayPayload(
+    Map<String, dynamic> payload,
+  ) async {
+    _syncMessageTimer?.cancel();
+    if (mounted) {
+      setState(() {
+        _isSyncingCloud = true;
+        _cloudSyncMessage = 'Saving to Cloud...';
+      });
+    }
+    UserProgressState.instance.setCloudSyncState(
+      isSyncing: true,
+      message: 'Saving to Cloud...',
+    );
+
+    final result = await DatabaseService.instance.syncGameplayResults(payload);
+    final finalMessage = result.message ??
+        (result.synced ? 'Saved to Cloud.' : 'Saved locally only.');
+
+    if (mounted) {
+      setState(() {
+        _isSyncingCloud = false;
+        _cloudSyncMessage = finalMessage;
+      });
+    }
+    UserProgressState.instance.setCloudSyncState(
+      isSyncing: false,
+      message: finalMessage,
+    );
+
+    _syncMessageTimer = Timer(const Duration(seconds: 2), () {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _cloudSyncMessage = null;
+      });
+      UserProgressState.instance.setCloudSyncState(
+        isSyncing: false,
+        message: null,
+      );
+    });
+
+    return result;
   }
 
   int _readInt(dynamic value) {
@@ -251,7 +310,76 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
                 ),
               ),
             ),
+          Positioned(
+            top: 16,
+            right: 16,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              child: (_isSyncingCloud || _cloudSyncMessage != null)
+                  ? _CloudSyncBadge(
+                      key: ValueKey<String>(
+                        '${_isSyncingCloud}_${_cloudSyncMessage ?? ''}',
+                      ),
+                      message: _cloudSyncMessage ?? 'Saving to Cloud...',
+                      isLoading: _isSyncingCloud,
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _CloudSyncBadge extends StatelessWidget {
+  const _CloudSyncBadge({
+    super.key,
+    required this.message,
+    required this.isLoading,
+  });
+
+  final String message;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFF103225).withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 14,
+              width: 14,
+              child: isLoading
+                  ? const CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF85EFAC),
+                    )
+                  : const Icon(
+                      Icons.cloud_done,
+                      size: 14,
+                      color: Color(0xFF85EFAC),
+                    ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              message,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
