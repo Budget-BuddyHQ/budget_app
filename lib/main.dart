@@ -1,8 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
+import 'screens/Gameplay/dashboard_shell.dart';
+import 'services/database_service.dart';
 
 void main() async {
+
+  await DatabaseService.instance.initialize();
 
 }
 
@@ -23,7 +27,7 @@ class MyApp extends StatelessWidget {
         '/welcome': (context) => const WelcomeScreen(),
         '/signup': (context) => const SignUpPage(),
         '/login': (context) => const LoginPage(),
-        '/game': (context) => const MainGameScreen(),
+        '/game': (context) => const DashboardShell(),
         '/leaderboard': (context) => const LeaderboardScreen(),
       },
     );
