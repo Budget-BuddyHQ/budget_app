@@ -22,7 +22,7 @@ class UserProfileScreen extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: background,
-          bottomNavigationBar: const CustomBottomNav(activeIndex: 5),
+          bottomNavigationBar: const CustomBottomNav(activeIndex: 4),
           body: SafeArea(
             child: Column(
               children: [

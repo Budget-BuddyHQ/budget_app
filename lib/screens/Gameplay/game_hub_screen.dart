@@ -34,9 +34,10 @@ class GameHubScreen extends StatelessWidget {
       return;
     }
 
-    final syncMessage = result.syncResult.queued
-        ? 'Cloud save queued while offline.'
-        : 'Progress synced.';
+    final syncMessage = result.syncResult.message ??
+        (result.syncResult.synced
+            ? 'Progress saved to Postgres.'
+            : 'Progress saved locally.');
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -52,7 +53,7 @@ class GameHubScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1A4D3D),
-      bottomNavigationBar: const CustomBottomNav(activeIndex: 4),
+      bottomNavigationBar: const CustomBottomNav(activeIndex: 3),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
