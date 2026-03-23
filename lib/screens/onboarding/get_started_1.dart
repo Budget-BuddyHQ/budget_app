@@ -1,6 +1,5 @@
 // lib/screens/get_started_page.dart
 import 'dart:ui';
-import 'package:budget_app/screens/profile/goals_setup_page.dart';
 import 'package:flutter/material.dart';
 import 'get_started_notifications_page.dart';
 

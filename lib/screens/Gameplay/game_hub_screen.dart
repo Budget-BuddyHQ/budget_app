@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../models/user_progress_state.dart';
 import '../reusable_widgets/custom_bottom_nav.dart';
+
 import 'react_game_screen.dart';
+
+
+
 
 class GameHubScreen extends StatelessWidget {
   const GameHubScreen({super.key});
@@ -68,6 +72,7 @@ class GameHubScreen extends StatelessWidget {
               fontSize: 22,
               fontWeight: FontWeight.bold,
             ),
+
           ),
           const SizedBox(height: 20),
           _GameTile(
