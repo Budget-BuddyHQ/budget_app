@@ -1,6 +1,5 @@
 // lib/screens/signup_page.dart
 import 'dart:ui';
-import 'package:budget_app/screens/profile/goals_setup_page.dart';
 import 'package:flutter/material.dart';
 import 'login_page.dart';
 import '../onboarding/get_started_1.dart';

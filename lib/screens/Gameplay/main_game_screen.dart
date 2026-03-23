@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../profile/user_profile_screen.dart';
-import 'game_hub_screen.dart';
 import '../reusable_widgets/custom_bottom_nav.dart';
 
 class MainGameScreen extends StatelessWidget {
