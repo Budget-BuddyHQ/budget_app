@@ -1,8 +1,48 @@
 import 'package:flutter/material.dart';
+
+import '../../models/user_progress_state.dart';
 import '../reusable_widgets/custom_bottom_nav.dart';
+import 'react_game_screen.dart';
 
 class GameHubScreen extends StatelessWidget {
   const GameHubScreen({super.key});
+
+  Future<void> _launchGame(
+    BuildContext context, {
+    required String gameId,
+    required String difficulty,
+  }) async {
+    final userProgress = UserProgressState.instance;
+
+    final result = await Navigator.push<ReactGameCloseResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReactGameScreen(
+          gameId: gameId,
+          difficulty: difficulty,
+          playerLevel: userProgress.level,
+          userId: userProgress.userId,
+        ),
+      ),
+    );
+
+    if (!context.mounted || result == null) {
+      return;
+    }
+
+    final syncMessage = result.syncResult.queued
+        ? 'Cloud save queued while offline.'
+        : 'Progress synced.';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${result.status.toUpperCase()}: +${result.goldEarned} gold, '
+          '+${result.xpEarned} XP. $syncMessage',
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,78 +54,79 @@ class GameHubScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          "Game Hub",
+          'Game Hub',
           style: TextStyle(color: Colors.white),
         ),
       ),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Choose Your Activity",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+        children: [
+          const Text(
+            'Choose Your Activity',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 20),
-
-            // Mini‑Games Section
-            _GameTile(
-              title: "Epic Mini‑Games",
-              icon: Icons.sports_esports,
-              onTap: () {
-                // TODO: Navigate to mini‑games screen
-              },
+          ),
+          const SizedBox(height: 20),
+          _GameTile(
+            title: 'Epic Mini-Games',
+            icon: Icons.sports_esports,
+            subtitle: 'Fast rounds for gold and XP',
+            onTap: () => _launchGame(
+              context,
+              gameId: 'epic_mini_games',
+              difficulty: 'normal',
             ),
-
-            const SizedBox(height: 15),
-
-            // Learning Section
-            _GameTile(
-              title: "Lessons & Quests",
-              icon: Icons.menu_book,
-              onTap: () {
-                // TODO: Navigate to lessons screen
-              },
+          ),
+          const SizedBox(height: 15),
+          _GameTile(
+            title: 'Lessons and Quests',
+            icon: Icons.menu_book,
+            subtitle: 'Scenario-based decision missions',
+            onTap: () => _launchGame(
+              context,
+              gameId: 'lessons_and_quests',
+              difficulty: 'easy',
             ),
-
-            const SizedBox(height: 15),
-
-            // Challenges Section
-            _GameTile(
-              title: "Daily Challenges",
-              icon: Icons.emoji_events,
-              onTap: () {
-                // TODO: Navigate to challenge screen
-              },
+          ),
+          const SizedBox(height: 15),
+          _GameTile(
+            title: 'Daily Challenges',
+            icon: Icons.emoji_events,
+            subtitle: 'High reward challenge of the day',
+            onTap: () => _launchGame(
+              context,
+              gameId: 'daily_challenge',
+              difficulty: 'hard',
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _GameTile extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final VoidCallback onTap;
-
   const _GameTile({
     required this.title,
+    required this.subtitle,
     required this.icon,
     required this.onTap,
   });
 
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
-      child: Container(
+      borderRadius: BorderRadius.circular(16),
+      child: Ink(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: const Color(0xFF254E3F),
@@ -96,12 +137,24 @@ class _GameTile extends StatelessWidget {
           children: [
             Icon(icon, color: Colors.white, size: 32),
             const SizedBox(width: 20),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
               ),
             ),
           ],
