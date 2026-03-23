@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 
-
 import '../../models/user_progress_state.dart';
-
 import '../reusable_widgets/custom_bottom_nav.dart';
 import '../reusable_widgets/progress_metrics_widgets.dart';
 import 'react_game_screen.dart';
 
 class MainGameScreen extends StatelessWidget {
-  const MainGameScreen({super.key});
+  const MainGameScreen({
+    super.key,
+    this.activeTabIndex = 0,
+    this.onNavSelected,
+  });
+
+  final int activeTabIndex;
+  final ValueChanged<int>? onNavSelected;
 
   Future<void> _openReactGame(
     BuildContext context, {
@@ -33,9 +38,10 @@ class MainGameScreen extends StatelessWidget {
       return;
     }
 
-    final syncText = result.syncResult.queued
-        ? 'Cloud save queued (${result.syncResult.queuedCount}) while offline.'
-        : 'Progress synced to Base44.';
+    final syncText = result.syncResult.message ??
+        (result.syncResult.synced
+            ? 'Progress saved to Postgres.'
+            : 'Progress saved locally.');
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -63,7 +69,12 @@ class MainGameScreen extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: background,
-          bottomNavigationBar: const CustomBottomNav(activeIndex: 0),
+          bottomNavigationBar: onNavSelected == null
+              ? null
+              : CustomBottomNav(
+                  activeIndex: activeTabIndex,
+                  onSelected: onNavSelected,
+                ),
           body: SafeArea(
             child: Column(
               children: [
@@ -83,6 +94,15 @@ class MainGameScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _DailyInsightCard(background: cardBg, border: cardBorder),
+                        const SizedBox(height: 14),
+                        _WizardAdviceCard(
+                          background: cardBg,
+                          border: cardBorder,
+                          accent: accent,
+                          personalityType: user.personalityType,
+                          advice: user.wizardAdvice,
+                          syncStatus: user.cloudStatusMessage,
+                        ),
                         const SizedBox(height: 16),
                         const Text(
                           "Week's Progress Metrics",
@@ -122,7 +142,14 @@ class MainGameScreen extends StatelessWidget {
                               subtitle: 'This Month',
                               icon: Icons.trending_up,
                               accent: accent,
-                              sparklinePoints: const [0.24, 0.34, 0.31, 0.53, 0.47, 0.72],
+                              sparklinePoints: const [
+                                0.24,
+                                0.34,
+                                0.31,
+                                0.53,
+                                0.47,
+                                0.72,
+                              ],
                             ),
                           ],
                         ),
@@ -357,6 +384,88 @@ class _DailyInsightCard extends StatelessWidget {
   }
 }
 
+class _WizardAdviceCard extends StatelessWidget {
+  const _WizardAdviceCard({
+    required this.background,
+    required this.border,
+    required this.accent,
+    required this.personalityType,
+    required this.advice,
+    required this.syncStatus,
+  });
+
+  final Color background;
+  final Color border;
+  final Color accent;
+  final String personalityType;
+  final String advice;
+  final String? syncStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_awesome, color: accent, size: 18),
+              const SizedBox(width: 8),
+              const Text(
+                'Wizard\'s Advice',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  personalityType,
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            advice,
+            style: const TextStyle(
+              color: Colors.white,
+              height: 1.4,
+            ),
+          ),
+          if (syncStatus != null && syncStatus!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              syncStatus!,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _BudgetBattleCard extends StatelessWidget {
   const _BudgetBattleCard({
     required this.background,
@@ -457,7 +566,12 @@ class _LeaderboardTable extends StatelessWidget {
     const rows = [
       _LeaderRow(rank: '1', name: 'MoneyMaster99', points: '2,450'),
       _LeaderRow(rank: '2', name: 'BudgetPro', points: '2,280'),
-      _LeaderRow(rank: '3', name: 'Username3189 (You)', points: '2,150', highlight: true),
+      _LeaderRow(
+        rank: '3',
+        name: 'Username3189 (You)',
+        points: '2,150',
+        highlight: true,
+      ),
       _LeaderRow(rank: '4', name: 'SaverSally', points: '2,020'),
       _LeaderRow(rank: '5', name: 'InvestorMax', points: '1,890'),
     ];
