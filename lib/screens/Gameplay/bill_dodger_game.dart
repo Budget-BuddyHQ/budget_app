@@ -43,7 +43,6 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
   int money = 1200;
   int score = 0;
   int timeLeft = 45;
-  int laneIndex = 1; // 0,1,2
   bool gameStarted = false;
   bool gameOver = false;
   bool showInstructions = true;
@@ -77,7 +76,6 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
       money = startingMoney;
       score = 0;
       timeLeft = startingTime;
-      laneIndex = 1;
       _items.clear();
     });
 
@@ -130,9 +128,7 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
       final bool verticalHit =
           item.y + itemHeight >= playerY && item.y <= playerY + playerSize;
 
-      final bool sameLane = item.lane == laneIndex;
 
-      if (verticalHit && sameLane && !item.resolved) {
         item.resolved = true;
 
         if (item.type == BillType.need) {
@@ -195,16 +191,10 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
 
   void _moveLeft() {
     if (!gameStarted) return;
-    setState(() {
-      laneIndex = max(0, laneIndex - 1);
-    });
   }
 
   void _moveRight() {
     if (!gameStarted) return;
-    setState(() {
-      laneIndex = min(2, laneIndex + 1);
-    });
   }
 
   String _moneyText(int value) {
@@ -350,7 +340,6 @@ Widget build(BuildContext context) {
                                 }),
 
                                 Positioned(
-                                  left: _laneLeft(laneIndex, playAreaWidth) + 10,
                                   top: playAreaHeight - playerSize - 16,
                                   child: _TurtlePlayer(size: playerSize),
                                 ),
