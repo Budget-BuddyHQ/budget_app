@@ -43,7 +43,10 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
   int money = 1200;
   int score = 0;
   int timeLeft = 45;
-  int laneIndex = 1; // 0,1,2
+  double playerX = 1.0; // continuous position across 3 lanes
+  double playerVelocity = 0.0;
+  bool movingLeft = false;
+  bool movingRight = false;
   bool gameStarted = false;
   bool gameOver = false;
   bool showInstructions = true;
@@ -77,7 +80,10 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
       money = startingMoney;
       score = 0;
       timeLeft = startingTime;
-      laneIndex = 1;
+      playerX = 1.0;
+      playerVelocity = 0.0;
+      movingLeft = false;
+      movingRight = false;
       _items.clear();
     });
 
@@ -122,7 +128,28 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
       item.y += speed;
     }
 
+    // Continuous player movement with velocity and easing
+    if (movingLeft) {
+      playerVelocity -= 0.005;
+    }
+    if (movingRight) {
+      playerVelocity += 0.005;
+    }
+
+    playerVelocity = playerVelocity.clamp(-0.16, 0.16);
+    playerX += playerVelocity;
+    playerX = playerX.clamp(0.0, 2.0);
+
+    // Friction / gradual stop
+    if (!movingLeft && !movingRight) {
+      playerVelocity *= 0.92;
+      if (playerVelocity.abs() < 0.002) {
+        playerVelocity = 0.0;
+      }
+    }
+
     final double playerY = playAreaHeight - playerSize - 16;
+    final double playerLeft = _playerLeft(playerX, MediaQuery.of(context).size.width - 32);
 
     final List<FallingBillItem> toRemove = [];
 
@@ -130,9 +157,10 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
       final bool verticalHit =
           item.y + itemHeight >= playerY && item.y <= playerY + playerSize;
 
-      final bool sameLane = item.lane == laneIndex;
+      final double itemLeft = _laneLeft(item.lane, MediaQuery.of(context).size.width - 32);
+      final bool horizontalHit = playerLeft < itemLeft + itemWidth && playerLeft + playerSize > itemLeft;
 
-      if (verticalHit && sameLane && !item.resolved) {
+      if (verticalHit && horizontalHit && !item.resolved) {
         item.resolved = true;
 
         if (item.type == BillType.need) {
@@ -195,16 +223,21 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
 
   void _moveLeft() {
     if (!gameStarted) return;
-    setState(() {
-      laneIndex = max(0, laneIndex - 1);
-    });
+    movingLeft = true;
+    movingRight = false;
+    playerVelocity = (playerVelocity - 0.02).clamp(-0.16, 0.16);
   }
 
   void _moveRight() {
     if (!gameStarted) return;
-    setState(() {
-      laneIndex = min(2, laneIndex + 1);
-    });
+    movingRight = true;
+    movingLeft = false;
+    playerVelocity = (playerVelocity + 0.02).clamp(-0.16, 0.16);
+  }
+
+  void _stopMovement() {
+    movingLeft = false;
+    movingRight = false;
   }
 
   String _moneyText(int value) {
@@ -297,6 +330,14 @@ Widget build(BuildContext context) {
                                 _moveRight();
                                 return KeyEventResult.handled;
                               }
+                            } else if (event is KeyUpEvent) {
+                              if (event.logicalKey ==
+                                      LogicalKeyboardKey.arrowLeft ||
+                                  event.logicalKey ==
+                                      LogicalKeyboardKey.arrowRight) {
+                                _stopMovement();
+                                return KeyEventResult.handled;
+                              }
                             }
                             return KeyEventResult.ignored;
                           },
@@ -350,7 +391,7 @@ Widget build(BuildContext context) {
                                 }),
 
                                 Positioned(
-                                  left: _laneLeft(laneIndex, playAreaWidth) + 10,
+                                  left: _playerLeft(playerX, playAreaWidth),
                                   top: playAreaHeight - playerSize - 16,
                                   child: _TurtlePlayer(size: playerSize),
                                 ),
@@ -485,6 +526,11 @@ Widget build(BuildContext context) {
   double _laneLeft(int lane, double playAreaWidth) {
     final double totalLaneWidth = playAreaWidth / 3;
     return lane * totalLaneWidth + (totalLaneWidth - itemWidth) / 2;
+  }
+
+  double _playerLeft(double playerX, double playAreaWidth) {
+    final double totalLaneWidth = playAreaWidth / 3;
+    return playerX * totalLaneWidth + (totalLaneWidth - playerSize) / 2 + 10;
   }
 }
 
