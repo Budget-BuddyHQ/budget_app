@@ -1,19 +1,22 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:window_manager/window_manager.dart';
-import 'screens/Gameplay/leaderboard_screen.dart';
+
 import 'screens/Gameplay/dashboard_shell.dart';
+import 'screens/Gameplay/leaderboard_screen.dart';
 import 'screens/auth/login_page.dart';
 import 'screens/auth/signup_page.dart';
 import 'screens/onboarding/welcome_screen.dart';
 import 'services/database_service.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Desktop window setup
-  if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+  if (!kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.windows ||
+          defaultTargetPlatform == TargetPlatform.linux ||
+          defaultTargetPlatform == TargetPlatform.macOS)) {
     try {
       await windowManager.ensureInitialized();
       const options = WindowOptions(
@@ -21,21 +24,48 @@ void main() async {
         minimumSize: Size(450, 400),
         center: true,
       );
+
       windowManager.waitUntilReadyToShow(options, () async {
         await windowManager.show();
         await windowManager.focus();
       });
-    } catch (e) {
-      debugPrint('Window manager failed: $e');
+    } catch (error) {
+      debugPrint('Window manager failed: $error');
     }
   }
 
-  await DatabaseService.instance.initialize();
+  const supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://YOUR-PROJECT.supabase.co',
+  );
+  const supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue: 'YOUR_SUPABASE_ANON_KEY',
+  );
 
-  // ALWAYS run the app on ALL platforms
+  final hasRealSupabaseConfig =
+      !supabaseUrl.contains('YOUR-PROJECT') &&
+      !supabaseAnonKey.contains('YOUR_SUPABASE');
+
+  if (hasRealSupabaseConfig) {
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+    );
+  } else {
+    debugPrint(
+      'Supabase credentials missing. Replace the placeholder values or pass '
+      '--dart-define=SUPABASE_URL=... and --dart-define=SUPABASE_ANON_KEY=...',
+    );
+  }
+
+  await DatabaseService.instance.initialize(
+    supabaseUrl: hasRealSupabaseConfig ? supabaseUrl : '',
+    supabaseAnonKey: hasRealSupabaseConfig ? supabaseAnonKey : '',
+  );
+
   runApp(const MyApp());
 }
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -57,7 +87,6 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/game': (context) => const DashboardShell(),
         '/leaderboard': (context) => const LeaderboardScreen(),
-
       },
     );
   }
