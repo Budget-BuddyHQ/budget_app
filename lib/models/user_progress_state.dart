@@ -24,8 +24,10 @@ class UserProgressState extends ChangeNotifier {
   int _xp = 850;
   int _literacyPoints = 850;
   int _level = 7;
+  String _username = 'Username3189';
   String _personalityType = 'Spender';
   Map<String, dynamic> _spendingHabits = <String, dynamic>{
+    'username': 'Username3189',
     'risk_tolerance': 'balanced',
     'impulse_spend_score': 0.62,
     'missed_questions': <String>[],
@@ -63,6 +65,7 @@ class UserProgressState extends ChangeNotifier {
   int get xp => _xp;
   int get literacyPoints => _literacyPoints;
   int get level => _level;
+  String get username => _username;
   String get personalityType => _personalityType;
   Map<String, dynamic> get spendingHabits => Map.unmodifiable(_spendingHabits);
   List<LedgerEntry> get ledgerEntries => List.unmodifiable(_ledgerEntries);
@@ -92,34 +95,57 @@ class UserProgressState extends ChangeNotifier {
     }
   }
 
-  /// Adds rewards returned from React minigames and recomputes level from XP.
   void applyGameRewards({
     required int goldEarned,
     required int xpEarned,
     required int literacyPointsEarned,
   }) {
-    _gold += goldEarned;
-    _xp += xpEarned;
-    _literacyPoints += literacyPointsEarned;
+    applyEconomyAction(
+      goldDelta: goldEarned,
+      xpDelta: xpEarned,
+      literacyDelta: literacyPointsEarned,
+      label: 'React Challenge Reward',
+      meta: 'Just now',
+    );
+  }
+
+  bool applyEconomyAction({
+    required int goldDelta,
+    required String label,
+    String meta = 'Just now',
+    int xpDelta = 0,
+    int literacyDelta = 0,
+  }) {
+    if (goldDelta < 0 && _gold + goldDelta < 0) {
+      return false;
+    }
+
+    _gold += goldDelta;
+    _xp += xpDelta;
+    _literacyPoints += literacyDelta;
     _level = _levelFromXp(_xp);
-    if (goldEarned != 0) {
+
+    if (goldDelta != 0) {
       _ledgerEntries.insert(
         0,
         LedgerEntry(
-          label: 'React Challenge Reward',
-          amount: '${goldEarned >= 0 ? '+' : ''}$goldEarned gold',
-          meta: 'Just now',
-          isCredit: goldEarned >= 0,
+          label: label,
+          amount: '${goldDelta >= 0 ? '+' : ''}$goldDelta gold',
+          meta: meta,
+          isCredit: goldDelta >= 0,
         ),
       );
     }
+
     notifyListeners();
+    return true;
   }
 
   void applyRemoteProgress({
     required int gold,
     required int xp,
     required int literacyScore,
+    String? username,
     String? personalityType,
     Map<String, dynamic>? spendingHabits,
   }) {
@@ -128,12 +154,24 @@ class UserProgressState extends ChangeNotifier {
     _literacyPoints = literacyScore;
     _level = _levelFromXp(_xp);
 
+    if (username != null && username.trim().isNotEmpty) {
+      _username = username.trim();
+      _spendingHabits = <String, dynamic>{
+        ..._spendingHabits,
+        'username': _username,
+      };
+    }
+
     if (personalityType != null && personalityType.trim().isNotEmpty) {
       _personalityType = personalityType.trim();
     }
 
     if (spendingHabits != null && spendingHabits.isNotEmpty) {
       _spendingHabits = Map<String, dynamic>.from(spendingHabits);
+      final embeddedUsername = _spendingHabits['username']?.toString().trim();
+      if (embeddedUsername != null && embeddedUsername.isNotEmpty) {
+        _username = embeddedUsername;
+      }
     }
 
     notifyListeners();
@@ -149,8 +187,6 @@ class UserProgressState extends ChangeNotifier {
   }
 
   int _levelFromXp(int totalXp) {
-    // Simple level curve: 150 XP per level.
-    final computedLevel = (totalXp ~/ 150).clamp(1, 999) as int;
-    return computedLevel;
+    return (totalXp ~/ 150).clamp(1, 999) as int;
   }
 }

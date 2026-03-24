@@ -116,6 +116,7 @@ class _GetStartedConfidencePageState extends State<GetStartedConfidencePage>
       DatabaseService.instance.syncGameplayResults(
         <String, dynamic>{
           'id': user.userId,
+          'username': user.username,
           'gold': user.gold,
           'xp': user.xp,
           'literacy_score': user.literacyPoints,
