@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../models/user_progress_state.dart';
@@ -24,8 +25,8 @@ class ReactGameCloseResult {
   final DatabaseSyncResult syncResult;
 }
 
-class ReactGameScreen extends StatefulWidget {
-  const ReactGameScreen({
+class ReactChallengeScreen extends StatefulWidget {
+  const ReactChallengeScreen({
     super.key,
     required this.gameId,
     required this.difficulty,
@@ -41,11 +42,24 @@ class ReactGameScreen extends StatefulWidget {
   final String reactAppBaseUrl;
 
   @override
-  State<ReactGameScreen> createState() => _ReactGameScreenState();
+  State<ReactChallengeScreen> createState() => _ReactChallengeScreenState();
 }
 
-class _ReactGameScreenState extends State<ReactGameScreen> {
-  late final WebViewController _controller;
+class ReactGameScreen extends ReactChallengeScreen {
+  const ReactGameScreen({
+    super.key,
+    required super.gameId,
+    required super.difficulty,
+    required super.playerLevel,
+    required super.userId,
+    super.reactAppBaseUrl,
+  });
+}
+
+class _ReactChallengeScreenState extends State<ReactChallengeScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _loadingController;
+  WebViewController? _controller;
 
   bool _isLoading = true;
   bool _didHandleGameOver = false;
@@ -54,7 +68,7 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
   String? _cloudSyncMessage;
   Timer? _syncMessageTimer;
 
-  bool get _supportsWebView {
+  bool get _supportsEmbeddedWebView {
     if (kIsWeb) {
       return false;
     }
@@ -66,21 +80,30 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
   @override
   void initState() {
     super.initState();
+    _loadingController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
 
-    if (_supportsWebView) {
+    if (_supportsEmbeddedWebView) {
       _controller = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setBackgroundColor(Colors.transparent)
         ..setNavigationDelegate(
           NavigationDelegate(
             onPageStarted: (_) {
               if (mounted) {
-                setState(() => _isLoading = true);
+                setState(() {
+                  _isLoading = true;
+                  _loadError = null;
+                });
               }
             },
-            onPageFinished: (_) {
+            onPageFinished: (_) async {
               if (mounted) {
                 setState(() => _isLoading = false);
               }
+              await _injectBridgeHelpers();
             },
             onWebResourceError: (error) {
               if (mounted) {
@@ -102,6 +125,7 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
 
   @override
   void dispose() {
+    _loadingController.dispose();
     _syncMessageTimer?.cancel();
     super.dispose();
   }
@@ -118,6 +142,28 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
     return uri.replace(queryParameters: query);
   }
 
+  Future<void> _injectBridgeHelpers() async {
+    if (_controller == null) {
+      return;
+    }
+
+    try {
+      await _controller!.runJavaScript('''
+        window.BudgetBuddyFlutter = {
+          postMessage: function(payload) {
+            if (typeof payload === 'string') {
+              BudgetBuddyBridge.postMessage(payload);
+              return;
+            }
+            BudgetBuddyBridge.postMessage(JSON.stringify(payload));
+          }
+        };
+      ''');
+    } catch (_) {
+      // Bridge shim is best-effort only.
+    }
+  }
+
   Future<void> _onBridgeMessage(JavaScriptMessage message) async {
     if (_didHandleGameOver) {
       return;
@@ -128,10 +174,7 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
       return;
     }
 
-    final status = (payload['status'] ?? '')
-        .toString()
-        .toLowerCase()
-        .trim();
+    final status = (payload['status'] ?? '').toString().toLowerCase().trim();
     final userProgress = UserProgressState.instance;
 
     final goldEarned = _readInt(payload['gold_earned']);
@@ -153,6 +196,7 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
       ...payload,
       'id': widget.userId,
       'user_id': widget.userId,
+      'username': userProgress.username,
       'gold': userProgress.gold,
       'xp': userProgress.xp,
       'literacy_score': userProgress.literacyPoints,
@@ -218,6 +262,7 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
         _cloudSyncMessage = 'Saving to Cloud...';
       });
     }
+
     UserProgressState.instance.setCloudSyncState(
       isSyncing: true,
       message: 'Saving to Cloud...',
@@ -233,6 +278,7 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
         _cloudSyncMessage = finalMessage;
       });
     }
+
     UserProgressState.instance.setCloudSyncState(
       isSyncing: false,
       message: finalMessage,
@@ -254,6 +300,25 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
     return result;
   }
 
+  Future<void> _launchBrowserFallback(BuildContext context) async {
+    final uri = _buildReactGameUri();
+    final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.platformDefault,
+      webOnlyWindowName: '_blank',
+    );
+
+    if (!mounted || launched) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Unable to open the React challenge in the browser.'),
+      ),
+    );
+  }
+
   int _readInt(dynamic value) {
     if (value is int) {
       return value;
@@ -269,16 +334,70 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_supportsWebView) {
+    if (!_supportsEmbeddedWebView) {
       return Scaffold(
-        appBar: AppBar(title: const Text('React Challenge')),
-        body: const Center(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Text(
-              'WebView is supported on Android, iOS, and macOS. '
-              'Run this screen on a supported mobile platform.',
-              textAlign: TextAlign.center,
+        backgroundColor: const Color(0xFF1A4D3D),
+        appBar: AppBar(
+          title: const Text('React Challenge'),
+          backgroundColor: const Color(0xFF1A4D3D),
+          foregroundColor: Colors.white,
+        ),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF254E3F),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF3B6B59)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.open_in_browser,
+                      color: Color(0xFF85EFAC),
+                      size: 42,
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Launch React Challenge',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      kIsWeb
+                          ? 'Flutter web uses a browser fallback here. Open the React challenge in a new tab, then return once the game is connected.'
+                          : 'This platform does not embed the challenge view yet, so we\'re opening the React app in your browser instead.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white70, height: 1.4),
+                    ),
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => _launchBrowserFallback(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF85EFAC),
+                          foregroundColor: const Color(0xFF1A4D3D),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text('Open Challenge'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -286,27 +405,36 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF07150F),
       appBar: AppBar(
         title: const Text('React Challenge'),
         backgroundColor: const Color(0xFF1A4D3D),
         foregroundColor: Colors.white,
       ),
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          if (_loadError == null) WebViewWidget(controller: _controller),
-          if (_isLoading)
-            const Center(
-              child: CircularProgressIndicator(color: Color(0xFF85EFAC)),
-            ),
+          if (_controller != null && _loadError == null)
+            WebViewWidget(controller: _controller!),
           if (_loadError != null)
             Center(
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Text(
-                  'Unable to load game: $_loadError',
+                  'Unable to load challenge: $_loadError',
                   style: const TextStyle(color: Colors.white),
                   textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          if (_isLoading)
+            Positioned.fill(
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: 0.38),
+                child: Center(
+                  child: _ChallengeLoadingOverlay(
+                    controller: _loadingController,
+                  ),
                 ),
               ),
             ),
@@ -327,6 +455,63 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ChallengeLoadingOverlay extends StatelessWidget {
+  const _ChallengeLoadingOverlay({
+    required this.controller,
+  });
+
+  final AnimationController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF103225).withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (context, _) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Preparing Challenge',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List<Widget>.generate(3, (index) {
+                  final wave = (controller.value + (index * 0.18)) % 1.0;
+                  final size = 8 + (wave * 8);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Container(
+                      height: size,
+                      width: size,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF85EFAC),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
