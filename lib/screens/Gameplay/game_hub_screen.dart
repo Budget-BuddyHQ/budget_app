@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../controllers/user_stats_controller.dart';
 import '../reusable_widgets/custom_bottom_nav.dart';
-
+import 'dashboard_shell.dart';
 import 'react_game_screen.dart';
 
 
@@ -11,6 +11,46 @@ import 'react_game_screen.dart';
 
 class GameHubScreen extends StatelessWidget {
   const GameHubScreen({super.key});
+
+  void _onNavSelected(BuildContext context, int index) {
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const DashboardShell(initialIndex: 0),
+          ),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const DashboardShell(initialIndex: 1),
+          ),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const DashboardShell(initialIndex: 2),
+          ),
+        );
+        break;
+      case 3:
+        // Already on Challenges screen.
+        break;
+      case 4:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const DashboardShell(initialIndex: 4),
+          ),
+        );
+        break;
+    }
+  }
 
   Future<void> _launchGame(
     BuildContext context, {
@@ -49,7 +89,10 @@ class GameHubScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1A4D3D),
-      bottomNavigationBar: const CustomBottomNav(activeIndex: 3),
+      bottomNavigationBar: CustomBottomNav(
+        activeIndex: 3,
+        onSelected: (index) => _onNavSelected(context, index),
+      ),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
@@ -72,6 +115,13 @@ class GameHubScreen extends StatelessWidget {
 
           ),
           const SizedBox(height: 20),
+          _GameTile(
+            title: 'Bill Dodger',
+            icon: Icons.pets,
+            subtitle: 'Collect needs, dodge wants',
+            onTap: () => Navigator.of(context).pushNamed('/bill_dodger'),
+          ),
+          const SizedBox(height: 15),
           _GameTile(
             title: 'Epic Mini-Games',
             icon: Icons.sports_esports,
