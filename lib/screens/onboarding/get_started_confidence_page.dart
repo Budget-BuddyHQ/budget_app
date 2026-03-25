@@ -2,9 +2,9 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../models/user_progress_state.dart';
-import '../../services/database_service.dart';
+import '../../controllers/user_stats_controller.dart';
 import '../Gameplay/dashboard_shell.dart';
 
 class TurtleThumbShape extends SliderComponentShape {
@@ -97,7 +97,6 @@ class _GetStartedConfidencePageState extends State<GetStartedConfidencePage>
   }
 
   void _handleContinue() {
-    final user = UserProgressState.instance;
     final personalityType = _personalityTypeFromConfidence();
     final spendingHabits = <String, dynamic>{
       'confidence_score': _confidenceValue,
@@ -105,25 +104,11 @@ class _GetStartedConfidencePageState extends State<GetStartedConfidencePage>
       'missed_questions': <String>[],
     };
 
-    user.applyRemoteProgress(
-      gold: user.gold,
-      xp: user.xp,
-      literacyScore: user.literacyPoints,
-      personalityType: personalityType,
-      spendingHabits: spendingHabits,
-    );
     unawaited(
-      DatabaseService.instance.syncGameplayResults(
-        <String, dynamic>{
-          'id': user.userId,
-          'username': user.username,
-          'gold': user.gold,
-          'xp': user.xp,
-          'literacy_score': user.literacyPoints,
-          'personality_type': personalityType,
-          'spending_habits': spendingHabits,
-        },
-      ),
+      context.read<UserStatsController>().updateOnboardingProfile(
+            personalityType: personalityType,
+            spendingHabits: spendingHabits,
+          ),
     );
 
     Navigator.pushReplacement(

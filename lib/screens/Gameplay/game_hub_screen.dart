@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../models/user_progress_state.dart';
+import '../../controllers/user_stats_controller.dart';
 import '../reusable_widgets/custom_bottom_nav.dart';
 
 import 'react_game_screen.dart';
@@ -16,7 +17,7 @@ class GameHubScreen extends StatelessWidget {
     required String gameId,
     required String difficulty,
   }) async {
-    final userProgress = UserProgressState.instance;
+    final stats = context.read<UserStatsController>().stats;
 
     final result = await Navigator.push<ReactGameCloseResult>(
       context,
@@ -24,8 +25,8 @@ class GameHubScreen extends StatelessWidget {
         builder: (_) => ReactGameScreen(
           gameId: gameId,
           difficulty: difficulty,
-          playerLevel: userProgress.level,
-          userId: userProgress.userId,
+          playerLevel: stats.level,
+          userId: stats.id,
         ),
       ),
     );
@@ -34,16 +35,11 @@ class GameHubScreen extends StatelessWidget {
       return;
     }
 
-    final syncMessage = result.syncResult.message ??
-        (result.syncResult.synced
-            ? 'Progress saved to Postgres.'
-            : 'Progress saved locally.');
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           '${result.status.toUpperCase()}: +${result.goldEarned} gold, '
-          '+${result.xpEarned} XP. $syncMessage',
+          '+${result.xpEarned} XP. ${result.syncState.message}',
         ),
       ),
     );
