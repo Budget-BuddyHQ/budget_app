@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../models/user_progress_state.dart';
+import '../../controllers/user_stats_controller.dart';
 import '../reusable_widgets/custom_bottom_nav.dart';
 import '../reusable_widgets/progress_metrics_widgets.dart';
-import 'react_game_screen.dart';
+import 'react_challenge_screen.dart';
 
 class MainGameScreen extends StatelessWidget {
   const MainGameScreen({
@@ -20,16 +21,16 @@ class MainGameScreen extends StatelessWidget {
     required String gameId,
     required String difficulty,
   }) async {
-    final userProgress = UserProgressState.instance;
+    final stats = context.read<UserStatsController>().stats;
 
     final result = await Navigator.push<ReactGameCloseResult>(
       context,
       MaterialPageRoute(
-        builder: (_) => ReactGameScreen(
+        builder: (_) => ReactChallengeScreen(
           gameId: gameId,
           difficulty: difficulty,
-          playerLevel: userProgress.level,
-          userId: userProgress.userId,
+          playerLevel: stats.level,
+          userId: stats.id,
         ),
       ),
     );
@@ -38,16 +39,11 @@ class MainGameScreen extends StatelessWidget {
       return;
     }
 
-    final syncText = result.syncResult.message ??
-        (result.syncResult.synced
-            ? 'Progress saved to Postgres.'
-            : 'Progress saved locally.');
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           '${result.status.toUpperCase()}: +${result.goldEarned} gold, '
-          '+${result.xpEarned} XP. $syncText',
+          '+${result.xpEarned} XP. ${result.syncState.message}',
         ),
       ),
     );
@@ -60,12 +56,14 @@ class MainGameScreen extends StatelessWidget {
     const cardBorder = Color(0xFF3B6B59);
     const accent = Color(0xFF85EFAC);
 
-    return AnimatedBuilder(
-      animation: UserProgressState.instance,
-      builder: (context, _) {
-        final user = UserProgressState.instance;
-        final savingsRate = ((user.gold / 3400) * 100).clamp(1, 100).toDouble();
-        final roi = ((user.xp / 80) - 1.0).clamp(-20, 35).toDouble();
+    return Consumer<UserStatsController>(
+      builder: (context, controller, _) {
+        final stats = controller.stats;
+        final savingsRate = ((stats.gold / 3400) * 100).clamp(1, 100).toDouble();
+        final roi = ((stats.portfolioHistory.lastOrNull ?? 0.55) * 25) - 5;
+        final weeklyGoals = (stats.gold / 3800).clamp(0.08, 1.0).toDouble();
+        final overallCompletion =
+            ((stats.literacyPoints + stats.xp) / 2400).clamp(0.08, 1.0).toDouble();
 
         return Scaffold(
           backgroundColor: background,
@@ -76,147 +74,149 @@ class MainGameScreen extends StatelessWidget {
                   onSelected: onNavSelected,
                 ),
           body: SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _TopBar(
-                    currentBalance: user.gold,
-                    levelTitle: user.levelTitle,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _DailyInsightCard(background: cardBg, border: cardBorder),
-                        const SizedBox(height: 14),
-                        _WizardAdviceCard(
-                          background: cardBg,
-                          border: cardBorder,
-                          accent: accent,
-                          personalityType: user.personalityType,
-                          advice: user.wizardAdvice,
-                          syncStatus: user.cloudStatusMessage,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          "Week's Progress Metrics",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        ResponsiveMetricGrid(
-                          children: [
-                            FinanceMetricCard(
-                              background: cardBg,
-                              border: cardBorder,
-                              title: 'Savings Rate',
-                              value: '${savingsRate.toStringAsFixed(0)}%',
-                              subtitle: 'of goal',
-                              icon: Icons.savings,
-                              accent: accent,
-                              progressValue: savingsRate / 100,
-                            ),
-                            FinanceMetricCard(
-                              background: cardBg,
-                              border: cardBorder,
-                              title: 'Literacy Points',
-                              value: _withCommas(user.literacyPoints),
-                              subtitle: 'Knowledge Score',
-                              icon: Icons.psychology,
-                              accent: accent,
-                            ),
-                            FinanceMetricCard(
-                              background: cardBg,
-                              border: cardBorder,
-                              title: 'Investment ROI',
-                              value: '${roi >= 0 ? '+' : ''}${roi.toStringAsFixed(1)}%',
-                              subtitle: 'This Month',
-                              icon: Icons.trending_up,
-                              accent: accent,
-                              sparklinePoints: const [
-                                0.24,
-                                0.34,
-                                0.31,
-                                0.53,
-                                0.47,
-                                0.72,
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
-                        const Text(
-                          'Daily Challenge',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        _BudgetBattleCard(
-                          background: cardBg,
-                          border: cardBorder,
-                          accent: accent,
-                          onStartChallenge: () => _openReactGame(
-                            context,
-                            gameId: 'daily_budget_battle',
-                            difficulty: 'normal',
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        const Text(
-                          'Progress Bar',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        const ProgressBarInfoRow(
-                          label: 'Current Weekly Goals',
-                          value: 0.65,
-                          percentText: '65%',
-                          accent: accent,
-                        ),
-                        const SizedBox(height: 10),
-                        const ProgressBarInfoRow(
-                          label: 'Overall Completion',
-                          value: 0.42,
-                          percentText: '42%',
-                          accent: accent,
-                        ),
-                        const SizedBox(height: 18),
-                        const Text(
-                          'Leaderboard',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        _LeaderboardTable(
-                          background: cardBg,
-                          border: cardBorder,
-                          accent: accent,
-                        ),
-                      ],
+            child: controller.isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF85EFAC),
                     ),
+                  )
+                : Column(
+                    children: [
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _TopBar(
+                          currentBalance: stats.gold,
+                          levelTitle: stats.levelTitle,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const _DailyInsightCard(
+                                background: cardBg,
+                                border: cardBorder,
+                              ),
+                              const SizedBox(height: 14),
+                              _WizardAdviceCard(
+                                background: cardBg,
+                                border: cardBorder,
+                                accent: accent,
+                                personalityType: stats.personalityType,
+                                advice: stats.wizardAdvice,
+                                syncStatus: controller.statusMessage,
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                "Week's Progress Metrics",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              ResponsiveMetricGrid(
+                                children: [
+                                  FinanceMetricCard(
+                                    background: cardBg,
+                                    border: cardBorder,
+                                    title: 'Savings Rate',
+                                    value: '${savingsRate.toStringAsFixed(0)}%',
+                                    subtitle: 'of goal',
+                                    icon: Icons.savings,
+                                    accent: accent,
+                                    progressValue: savingsRate / 100,
+                                  ),
+                                  FinanceMetricCard(
+                                    background: cardBg,
+                                    border: cardBorder,
+                                    title: 'Literacy Points',
+                                    value: _withCommas(stats.literacyPoints),
+                                    subtitle: 'Knowledge Score',
+                                    icon: Icons.psychology,
+                                    accent: accent,
+                                  ),
+                                  FinanceMetricCard(
+                                    background: cardBg,
+                                    border: cardBorder,
+                                    title: 'Investment ROI',
+                                    value: '${roi >= 0 ? '+' : ''}${roi.toStringAsFixed(1)}%',
+                                    subtitle: 'This Month',
+                                    icon: Icons.trending_up,
+                                    accent: accent,
+                                    sparklinePoints: stats.portfolioHistory,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 18),
+                              const Text(
+                                'Daily Challenge',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              _BudgetBattleCard(
+                                background: cardBg,
+                                border: cardBorder,
+                                accent: accent,
+                                onStartChallenge: () => _openReactGame(
+                                  context,
+                                  gameId: 'daily_budget_battle',
+                                  difficulty: 'normal',
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              const Text(
+                                'Progress Bar',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              ProgressBarInfoRow(
+                                label: 'Current Weekly Goals',
+                                value: weeklyGoals,
+                                percentText: '${(weeklyGoals * 100).round()}%',
+                                accent: accent,
+                              ),
+                              const SizedBox(height: 10),
+                              ProgressBarInfoRow(
+                                label: 'Overall Completion',
+                                value: overallCompletion,
+                                percentText: '${(overallCompletion * 100).round()}%',
+                                accent: accent,
+                              ),
+                              const SizedBox(height: 18),
+                              const Text(
+                                'Leaderboard',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              _LeaderboardTable(
+                                background: cardBg,
+                                border: cardBorder,
+                                accent: accent,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         );
       },
@@ -364,13 +364,45 @@ class _DailyInsightCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=900&q=80',
-              height: 140,
-              width: double.infinity,
-              fit: BoxFit.cover,
+          Container(
+            height: 140,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF476A5A),
+                  Color(0xFF86C79E),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Stack(
+              children: [
+                const Positioned(
+                  left: 20,
+                  bottom: 18,
+                  child: Icon(
+                    Icons.savings,
+                    size: 72,
+                    color: Colors.white70,
+                  ),
+                ),
+                Positioned.fill(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 16),
+                      child: Icon(
+                        Icons.spa,
+                        size: 72,
+                        color: Colors.white.withOpacity(0.82),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 10),
@@ -428,7 +460,7 @@ class _WizardAdviceCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.15),
+                  color: accent.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -531,7 +563,7 @@ class _BudgetBattleCard extends StatelessWidget {
                 onPressed: () {},
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                  side: BorderSide(color: Colors.white.withOpacity(0.3)),
                   padding: const EdgeInsets.symmetric(
                     vertical: 10,
                     horizontal: 14,
@@ -587,7 +619,7 @@ class _LeaderboardTable extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.06),
+              color: Colors.white.withOpacity(0.06),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(14),
               ),
@@ -645,7 +677,7 @@ class _LeaderRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: highlight ? const Color(0xFF2B5A4A) : Colors.transparent,
         border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          top: BorderSide(color: Colors.white.withOpacity(0.06)),
         ),
       ),
       child: Row(
@@ -675,4 +707,8 @@ class _LeaderRow extends StatelessWidget {
       ),
     );
   }
+}
+
+extension on List<double> {
+  double? get lastOrNull => isEmpty ? null : last;
 }

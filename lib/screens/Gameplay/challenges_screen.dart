@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../models/user_progress_state.dart';
+import '../../controllers/user_stats_controller.dart';
 import '../reusable_widgets/custom_bottom_nav.dart';
-import 'react_game_screen.dart';
+import 'react_challenge_screen.dart';
 
 class ChallengesScreen extends StatelessWidget {
   const ChallengesScreen({
@@ -15,15 +16,17 @@ class ChallengesScreen extends StatelessWidget {
   final ValueChanged<int>? onNavSelected;
 
   Future<void> _openDailyBattle(BuildContext context) async {
-    final user = UserProgressState.instance;
+    final controller = context.read<UserStatsController>();
+    final stats = controller.stats;
+
     final result = await Navigator.push<ReactGameCloseResult>(
       context,
       MaterialPageRoute(
         builder: (_) => ReactChallengeScreen(
-          gameId: 'upcoming_daily_battle',
+          gameId: 'daily_budget_battle',
           difficulty: 'medium',
-          playerLevel: user.level,
-          userId: user.userId,
+          playerLevel: stats.level,
+          userId: stats.id,
         ),
       ),
     );
@@ -32,16 +35,11 @@ class ChallengesScreen extends StatelessWidget {
       return;
     }
 
-    final syncText = result.syncResult.message ??
-        (result.syncResult.synced
-            ? 'Progress saved to Postgres.'
-            : 'Progress saved locally.');
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           '${result.status.toUpperCase()}: +${result.goldEarned} gold, '
-          '+${result.xpEarned} XP. $syncText',
+          '+${result.xpEarned} XP. ${result.syncState.message}',
         ),
       ),
     );
@@ -103,9 +101,9 @@ class ChallengesScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: const Color(0xFF3B6B59)),
                 ),
-                child: Column(
+                child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
                       'Upcoming Boss Battles',
                       style: TextStyle(
@@ -116,7 +114,7 @@ class ChallengesScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 6),
                     Text(
-                      'Take on daily tasks and harder boss battles to build gold, XP, and literacy points.',
+                      'Take on daily tasks and tougher finance bosses to grow gold, XP, and literacy points.',
                       style: TextStyle(color: Colors.white70, height: 1.4),
                     ),
                   ],
@@ -144,7 +142,7 @@ class ChallengesScreen extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
+                          color: const Color(0xFF85EFAC).withOpacity(0.16),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
