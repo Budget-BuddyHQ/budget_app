@@ -3,7 +3,11 @@ import 'package:provider/provider.dart';
 
 import '../../controllers/user_stats_controller.dart';
 import '../reusable_widgets/custom_bottom_nav.dart';
+
 import 'react_challenge_screen.dart';
+
+import 'react_game_screen.dart';
+
 
 class ChallengesScreen extends StatelessWidget {
   const ChallengesScreen({
@@ -127,9 +131,7 @@ class ChallengesScreen extends StatelessWidget {
             return Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF254E3F),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFF3B6B59)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,9 +177,6 @@ class ChallengesScreen extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerRight,
                     child: ElevatedButton(
-                      onPressed: card.usesReactBridge
-                          ? () => _openDailyBattle(context)
-                          : () => _showComingSoon(context, card.title),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF85EFAC),
                         foregroundColor: const Color(0xFF1A4D3D),
@@ -189,7 +188,6 @@ class ChallengesScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text('Start'),
                     ),
                   ),
                 ],
