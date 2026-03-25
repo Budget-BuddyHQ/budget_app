@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/user_progress_state.dart';
 import '../reusable_widgets/custom_bottom_nav.dart';
+import 'bill_dodger_game.dart';
 import 'react_game_screen.dart';
 
 class ChallengesScreen extends StatelessWidget {
@@ -58,6 +59,12 @@ class ChallengesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const challengeCards = <_ChallengeCardData>[
+      _ChallengeCardData(
+        title: 'Bill Dodger',
+        description: 'Collect needs and dodge wants in a fast-moving lane game.',
+        reward: 200,
+        isBillDodger: true,
+      ),
       _ChallengeCardData(
         title: 'Daily Budget Battle',
         description: 'Spot 3 wasteful purchases before the timer runs out.',
@@ -129,9 +136,15 @@ class ChallengesScreen extends StatelessWidget {
             return Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF254E3F),
+                color: card.isBillDodger
+                    ? const Color(0xFF2C6B52)
+                    : const Color(0xFF254E3F),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFF3B6B59)),
+                border: Border.all(
+                    color: card.isBillDodger
+                        ? const Color(0xFF85EFAC)
+                        : const Color(0xFF3B6B59),
+                    width: card.isBillDodger ? 2 : 1),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,9 +190,16 @@ class ChallengesScreen extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerRight,
                     child: ElevatedButton(
-                      onPressed: card.usesReactBridge
-                          ? () => _openDailyBattle(context)
-                          : () => _showComingSoon(context, card.title),
+                      onPressed: card.isBillDodger
+                          ? () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const BillDodgerGameScreen(),
+                                ),
+                              )
+                          : card.usesReactBridge
+                              ? () => _openDailyBattle(context)
+                              : () => _showComingSoon(context, card.title),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF85EFAC),
                         foregroundColor: const Color(0xFF1A4D3D),
@@ -191,7 +211,7 @@ class ChallengesScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text('Start'),
+                      child: Text(card.isBillDodger ? 'Play' : 'Start'),
                     ),
                   ),
                 ],
@@ -210,10 +230,12 @@ class _ChallengeCardData {
     required this.description,
     required this.reward,
     this.usesReactBridge = false,
+    this.isBillDodger = false,
   });
 
   final String title;
   final String description;
   final int reward;
   final bool usesReactBridge;
+  final bool isBillDodger;
 }
