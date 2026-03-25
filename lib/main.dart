@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'controllers/user_stats_controller.dart';
+import 'screens/Gameplay/bill_dodger_game.dart';
 import 'screens/Gameplay/dashboard_shell.dart';
 import 'screens/Gameplay/leaderboard_screen.dart';
 import 'screens/auth/login_page.dart';
@@ -95,6 +96,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/game': (context) => const DashboardShell(),
         '/leaderboard': (context) => const LeaderboardScreen(),
+        '/bill_dodger': (context) => const BillDodgerGameScreen(),
       },
     );
   }
