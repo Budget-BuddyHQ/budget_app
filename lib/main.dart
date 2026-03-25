@@ -1,14 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'controllers/user_stats_controller.dart';
 import 'screens/Gameplay/dashboard_shell.dart';
 import 'screens/Gameplay/leaderboard_screen.dart';
 import 'screens/auth/login_page.dart';
 import 'screens/auth/signup_page.dart';
 import 'screens/onboarding/welcome_screen.dart';
-import 'services/database_service.dart';
+import 'services/supabase_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,28 +45,34 @@ Future<void> main() async {
     defaultValue: 'YOUR_SUPABASE_ANON_KEY',
   );
 
-  final hasRealSupabaseConfig =
-      !supabaseUrl.contains('YOUR-PROJECT') &&
-      !supabaseAnonKey.contains('YOUR_SUPABASE');
+  try {
+    final hasRealSupabaseConfig =
+        !supabaseUrl.contains('YOUR-PROJECT') &&
+        !supabaseAnonKey.contains('YOUR_SUPABASE');
 
-  if (hasRealSupabaseConfig) {
-    await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey,
-    );
-  } else {
-    debugPrint(
-      'Supabase credentials missing. Replace the placeholder values or pass '
-      '--dart-define=SUPABASE_URL=... and --dart-define=SUPABASE_ANON_KEY=...',
-    );
+    if (hasRealSupabaseConfig) {
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseAnonKey,
+      );
+    }
+  } catch (error) {
+    debugPrint('Supabase bootstrap skipped, using cached local data: $error');
   }
 
-  await DatabaseService.instance.initialize(
-    supabaseUrl: hasRealSupabaseConfig ? supabaseUrl : '',
-    supabaseAnonKey: hasRealSupabaseConfig ? supabaseAnonKey : '',
+  await SupabaseService.instance.initialize(
+    supabaseUrl: supabaseUrl,
+    supabaseAnonKey: supabaseAnonKey,
   );
 
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider<UserStatsController>(
+      create: (_) => UserStatsController(
+        service: SupabaseService.instance,
+      )..initialize(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
