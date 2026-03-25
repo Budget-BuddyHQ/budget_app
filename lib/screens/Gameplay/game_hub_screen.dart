@@ -1,7 +1,6 @@
 import 'package:provider/provider.dart';
 
 import '../../controllers/user_stats_controller.dart';
-
 import 'react_game_screen.dart';
 
 
@@ -38,7 +37,6 @@ import 'react_game_screen.dart';
     );
   }
 
-      bottomNavigationBar: const CustomBottomNav(activeIndex: 3),
           'Game Hub',
       body: ListView(
         children: [
