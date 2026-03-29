@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../models/user_progress_state.dart';
+import '../../services/base44_config.dart';
 import '../../services/progression_service.dart';
 
 class ReactGameCloseResult {
@@ -30,15 +32,17 @@ class ReactGameScreen extends StatefulWidget {
     required this.difficulty,
     required this.playerLevel,
     required this.userId,
+    this.pageTitle,
     this.reactAppBaseUrl = 'https://your-react-game-app.vercel.app',
-    this.base44BaseUrl = 'https://api.base44.app/v1',
-    this.base44ApiKey = 'REPLACE_WITH_BASE44_API_KEY',
+    this.base44BaseUrl = Base44Config.baseUrl,
+    this.base44ApiKey = Base44Config.apiKey,
   });
 
   final String gameId;
   final String difficulty;
   final int playerLevel;
   final String userId;
+  final String? pageTitle;
   final String reactAppBaseUrl;
   final String base44BaseUrl;
   final String base44ApiKey;
@@ -50,10 +54,12 @@ class ReactGameScreen extends StatefulWidget {
 class _ReactGameScreenState extends State<ReactGameScreen> {
   late final WebViewController _controller;
   late final ProgressionService _progressionService;
+  Timer? _loadTimeoutTimer;
 
   bool _isLoading = true;
   bool _didHandleGameOver = false;
   String? _loadError;
+  static const Duration _loadTimeout = Duration(seconds: 20);
 
   bool get _supportsWebView {
     if (kIsWeb) {
@@ -79,16 +85,22 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
         ..setNavigationDelegate(
           NavigationDelegate(
             onPageStarted: (_) {
+              _startLoadTimeout();
               if (mounted) {
-                setState(() => _isLoading = true);
+                setState(() {
+                  _isLoading = true;
+                  _loadError = null;
+                });
               }
             },
             onPageFinished: (_) {
+              _clearLoadTimeout();
               if (mounted) {
                 setState(() => _isLoading = false);
               }
             },
             onWebResourceError: (error) {
+              _clearLoadTimeout();
               if (mounted) {
                 setState(() {
                   _isLoading = false;
@@ -103,13 +115,35 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
           onMessageReceived: _onBridgeMessage,
         )
         ..loadRequest(_buildReactGameUri());
+
+      _startLoadTimeout();
     }
   }
 
   @override
   void dispose() {
+    _clearLoadTimeout();
     _progressionService.dispose();
     super.dispose();
+  }
+
+  void _startLoadTimeout() {
+    _clearLoadTimeout();
+    _loadTimeoutTimer = Timer(_loadTimeout, () {
+      if (!mounted || !_isLoading) {
+        return;
+      }
+      setState(() {
+        _isLoading = false;
+        _loadError =
+            'The game server is taking too long to respond. Check the React app URL or try again.';
+      });
+    });
+  }
+
+  void _clearLoadTimeout() {
+    _loadTimeoutTimer?.cancel();
+    _loadTimeoutTimer = null;
   }
 
   Uri _buildReactGameUri() {
@@ -229,7 +263,7 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('React Challenge'),
+        title: Text(widget.pageTitle ?? _titleForGame(widget.gameId)),
         backgroundColor: const Color(0xFF1A4D3D),
         foregroundColor: Colors.white,
       ),
@@ -244,15 +278,45 @@ class _ReactGameScreenState extends State<ReactGameScreen> {
             Center(
               child: Padding(
                 padding: const EdgeInsets.all(20),
-                child: Text(
-                  'Unable to load game: $_loadError',
-                  style: const TextStyle(color: Colors.white),
-                  textAlign: TextAlign.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Unable to load game: $_loadError',
+                      style: const TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _isLoading = true;
+                          _loadError = null;
+                        });
+                        _startLoadTimeout();
+                        _controller.loadRequest(_buildReactGameUri());
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
                 ),
               ),
             ),
         ],
       ),
     );
+  }
+
+  String _titleForGame(String gameId) {
+    switch (gameId) {
+      case 'daily_budget_battle':
+        return 'Budget Battle';
+      case 'bill_dodger':
+        return 'Bill Dodger';
+      case 'crypto_vault':
+        return 'Crypto Vault';
+      default:
+        return 'React Challenge';
+    }
   }
 }
