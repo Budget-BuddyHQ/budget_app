@@ -2,7 +2,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
+import 'screens/Gameplay/bill_dodger_game.dart';
+import 'screens/Gameplay/game_hub_screen.dart';
 import 'screens/Gameplay/leaderboard_screen.dart';
+import 'screens/Gameplay/town_square_screen.dart';
 import 'screens/auth/login_page.dart';
 import 'screens/Gameplay/main_game_screen.dart';
 import 'screens/auth/signup_page.dart';
@@ -52,9 +55,12 @@ class MyApp extends StatelessWidget {
         '/welcome': (context) => const WelcomeScreen(),
         '/signup': (context) => const SignUpPage(),
         '/login': (context) => const LoginPage(),
-        '/game': (context) => const MainGameScreen(),
+        '/game': (context) => const TownSquareScreen(),
+        '/dashboard': (context) => const MainGameScreen(),
+        '/town': (context) => const TownSquareScreen(),
+        '/hub': (context) => const GameHubScreen(),
+        '/bill-dodger': (context) => const BillDodgerGameScreen(),
         '/leaderboard': (context) => const LeaderboardScreen(),
-
       },
     );
   }
