@@ -1,14 +1,63 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:window_manager/window_manager.dart';
+
+import 'controllers/user_stats_controller.dart';
 import 'screens/Gameplay/bill_dodger_game.dart';
+import 'screens/Gameplay/dashboard_shell.dart';
 import 'screens/Gameplay/game_hub_screen.dart';
 import 'screens/Gameplay/town_square_screen.dart';
+import 'services/supabase_service.dart';
 
-void main() async {
+Future<void> main() async {
 
+  if (!kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.windows ||
+          defaultTargetPlatform == TargetPlatform.linux ||
+          defaultTargetPlatform == TargetPlatform.macOS)) {
+
+    } catch (error) {
+      debugPrint('Window manager failed: $error');
+  const supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://YOUR-PROJECT.supabase.co',
+  );
+  const supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue: 'YOUR_SUPABASE_ANON_KEY',
+  );
+
+  try {
+    final hasRealSupabaseConfig =
+        !supabaseUrl.contains('YOUR-PROJECT') &&
+        !supabaseAnonKey.contains('YOUR_SUPABASE');
+
+    if (hasRealSupabaseConfig) {
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseAnonKey,
+      );
+    }
+  } catch (error) {
+    debugPrint('Supabase bootstrap skipped, using cached local data: $error');
+  }
+
+  await SupabaseService.instance.initialize(
+    supabaseUrl: supabaseUrl,
+    supabaseAnonKey: supabaseAnonKey,
+  );
+
+  runApp(
+    ChangeNotifierProvider<UserStatsController>(
+      create: (_) => UserStatsController(
+        service: SupabaseService.instance,
+      )..initialize(),
+      child: const MyApp(),
+    ),
+  );
 }
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -26,8 +75,8 @@ class MyApp extends StatelessWidget {
         '/welcome': (context) => const WelcomeScreen(),
         '/signup': (context) => const SignUpPage(),
         '/login': (context) => const LoginPage(),
-        '/game': (context) => const TownSquareScreen(),
-        '/dashboard': (context) => const MainGameScreen(),
+        '/game': (context) => const DashboardShell(),
+        '/dashboard': (context) => const DashboardShell(initialIndex: 0),
         '/town': (context) => const TownSquareScreen(),
         '/hub': (context) => const GameHubScreen(),
         '/bill-dodger': (context) => const BillDodgerGameScreen(),

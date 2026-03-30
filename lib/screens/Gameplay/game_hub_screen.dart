@@ -1,16 +1,23 @@
+import 'package:provider/provider.dart';
 
-import '../../models/user_progress_state.dart';
+import '../../controllers/user_stats_controller.dart';
 import 'bill_dodger_game.dart';
 import 'learning_path_screen.dart';
 import 'react_game_screen.dart';
 import 'town_square_screen.dart';
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DashboardShell(initialIndex: index.clamp(0, 4).toInt()),
+      ),
+    );
   Future<void> _launchReactGame(
     BuildContext context, {
     required String gameId,
     required String difficulty,
     required String title,
   }) async {
-    final userProgress = UserProgressState.instance;
+    final stats = context.read<UserStatsController>().stats;
 
     final result = await Navigator.push<ReactGameCloseResult>(
       context,
@@ -18,9 +25,8 @@ import 'town_square_screen.dart';
         builder: (_) => ReactGameScreen(
           gameId: gameId,
           difficulty: difficulty,
-          playerLevel: userProgress.level,
-          userId: userProgress.userId,
-          pageTitle: title,
+          playerLevel: stats.level,
+          userId: stats.id,
         ),
       ),
     );
@@ -29,15 +35,11 @@ import 'town_square_screen.dart';
       return;
     }
 
-    final syncMessage = result.syncResult.queued
-        ? 'Cloud save queued while offline.'
-        : 'Progress synced.';
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           '$title complete: +${result.goldEarned} gold, '
-          '+${result.xpEarned} XP. $syncMessage',
+          '+${result.xpEarned} XP. ${result.syncState.message}',
         ),
       ),
     );
@@ -53,15 +55,11 @@ import 'town_square_screen.dart';
       return;
     }
 
-    final syncMessage = result.syncResult.queued
-        ? 'Cloud save queued while offline.'
-        : 'Progress synced.';
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           'Bill Dodger: +${result.goldEarned} gold, '
-          '+${result.xpEarned} XP. $syncMessage',
+          '+${result.xpEarned} XP. ${result.syncState.message}',
         ),
       ),
     );
@@ -107,7 +105,7 @@ import 'town_square_screen.dart';
             const SizedBox(height: 14),
             _HubCard(
               title: 'Budget Battle',
-              subtitle: 'React minigame challenge with cloud-saved rewards',
+              subtitle: 'React minigame challenge with synced rewards',
               icon: Icons.bolt_rounded,
               accent: const Color(0xFF85EFAC),
               onTap: () => _launchReactGame(
