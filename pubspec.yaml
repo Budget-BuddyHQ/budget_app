@@ -29,6 +29,10 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+
     - assets/images/logo.png
     - assets/UI1/src/assets/
     - assets/web/react_challenge/index.html
+    - assets/images/
+    - assets/web_game/
+

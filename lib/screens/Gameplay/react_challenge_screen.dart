@@ -3,10 +3,10 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../../services/local_web_game_server.dart';
 import '../../controllers/user_stats_controller.dart';
 import '../../services/supabase_service.dart';
 
@@ -56,9 +56,8 @@ class ReactGameScreen extends ReactChallengeScreen {
 
 class _ReactChallengeScreenState extends State<ReactChallengeScreen>
     with SingleTickerProviderStateMixin {
-  static const _assetPath = 'assets/web/react_challenge/index.html';
-
   late final AnimationController _loadingController;
+  final LocalWebGameServer _localServer = LocalWebGameServer();
   WebViewController? _webViewController;
 
   bool _isLoading = true;
@@ -97,17 +96,20 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
   void dispose() {
     _messageTimer?.cancel();
     _loadingController.dispose();
+    unawaited(_localServer.stop());
     super.dispose();
   }
 
   Future<void> _loadEmbeddedChallenge() async {
     try {
-      final template = await rootBundle.loadString(_assetPath);
-      final html = template
-          .replaceAll('__GAME_ID__', widget.gameId)
-          .replaceAll('__DIFFICULTY__', widget.difficulty)
-          .replaceAll('__PLAYER_LEVEL__', widget.playerLevel.toString())
-          .replaceAll('__USER_ID__', widget.userId);
+      final launchUri = await _localServer.start(
+        queryParameters: <String, String>{
+          'gameId': widget.gameId,
+          'difficulty': widget.difficulty,
+          'playerLevel': widget.playerLevel.toString(),
+          'userId': widget.userId,
+        },
+      );
 
       final controller = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -143,10 +145,10 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
           ),
         )
         ..addJavaScriptChannel(
-          'BudgetBuddyBridge',
+          'GameBridge',
           onMessageReceived: _onBridgeMessage,
         )
-        ..loadHtmlString(html, baseUrl: 'https://budgetbuddy.local');
+        ..loadRequest(launchUri);
 
       if (!mounted) {
         return;
@@ -204,8 +206,8 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
     _didHandleGameOver = true;
 
     final userStatsController = context.read<UserStatsController>();
-    final goldEarned = _readInt(payload['gold_earned']);
-    final xpEarned = _readInt(payload['xp_earned']);
+    final goldEarned = _readInt(payload['gold_earned'] ?? payload['gold']);
+    final xpEarned = _readInt(payload['xp_earned'] ?? payload['xp']);
     final literacyEarned = _readInt(
       payload['literacy_points_earned'] ?? payload['literacy_points'],
     );
@@ -221,6 +223,9 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
     final actionResult = await userStatsController.applyChallengePayload(
       <String, dynamic>{
         ...payload,
+        'gold_earned': goldEarned,
+        'xp_earned': xpEarned,
+        'literacy_points_earned': literacyEarned,
         'title': payload['title'] ?? 'React Challenge Reward',
         'description': payload['description'] ??
             'Mini-game rewards synced from the local React challenge.',
@@ -235,6 +240,16 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
       _isSyncing = false;
       _cloudMessage = actionResult.message;
     });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          status == 'victory'
+              ? 'Victory! Rewards saved: +$goldEarned gold, +$xpEarned XP.'
+              : 'Battle finished. Rewards saved: +$goldEarned gold, +$xpEarned XP.',
+        ),
+      ),
+    );
 
     _messageTimer = Timer(const Duration(seconds: 2), () {
       if (!mounted) {
@@ -258,6 +273,8 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
 
   bool _isTerminalStatus(String status) {
     const terminalStatuses = <String>{
+      'victory',
+      'defeat',
       'win',
       'won',
       'loss',
@@ -283,65 +300,101 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
     return 0;
   }
 
+  Future<bool> _confirmExit() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF214C3D),
+              title: const Text(
+                'Exit battle?',
+                style: TextStyle(color: Colors.white),
+              ),
+              content: const Text(
+                'Leaving now will close the active Budget Battle session.',
+                style: TextStyle(color: Colors.white70),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Stay'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: const Text('Exit'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_supportsEmbeddedWebView) {
-      return _NativeChallengeFallback(
-        onComplete: (payload) => _handlePayload(payload),
+      return WillPopScope(
+        onWillPop: _confirmExit,
+        child: _NativeChallengeFallback(
+          onComplete: (payload) => _handlePayload(payload),
+        ),
       );
     }
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF07150F),
-      appBar: AppBar(
-        title: const Text('React Challenge'),
-        backgroundColor: const Color(0xFF1A4D3D),
-        foregroundColor: Colors.white,
-      ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (_webViewController != null && _loadError == null)
-            WebViewWidget(controller: _webViewController!),
-          if (_loadError != null)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  _loadError!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-            ),
-          if (_isLoading)
-            Positioned.fill(
-              child: ColoredBox(
-                color: Colors.black.withOpacity(0.38),
-                child: Center(
-                  child: _ChallengeLoadingOverlay(
-                    controller: _loadingController,
+    return WillPopScope(
+      onWillPop: _confirmExit,
+      child: Scaffold(
+        backgroundColor: const Color(0xFF07150F),
+        appBar: AppBar(
+          title: const Text('React Challenge'),
+          backgroundColor: const Color(0xFF1A4D3D),
+          foregroundColor: Colors.white,
+        ),
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (_webViewController != null && _loadError == null)
+              WebViewWidget(controller: _webViewController!),
+            if (_loadError != null)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    _loadError!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white),
                   ),
                 ),
               ),
+            if (_isLoading)
+              Positioned.fill(
+                child: ColoredBox(
+                  color: Colors.black.withOpacity(0.38),
+                  child: Center(
+                    child: _ChallengeLoadingOverlay(
+                      controller: _loadingController,
+                    ),
+                  ),
+                ),
+              ),
+            Positioned(
+              top: 16,
+              right: 16,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child: (_isSyncing || _cloudMessage != null)
+                    ? _CloudSyncBadge(
+                        key: ValueKey<String>(
+                          '${_isSyncing}_${_cloudMessage ?? ''}',
+                        ),
+                        message: _cloudMessage ?? 'Saving to Cloud...',
+                        isLoading: _isSyncing,
+                      )
+                    : const SizedBox.shrink(),
+              ),
             ),
-          Positioned(
-            top: 16,
-            right: 16,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              child: (_isSyncing || _cloudMessage != null)
-                  ? _CloudSyncBadge(
-                      key: ValueKey<String>(
-                        '${_isSyncing}_${_cloudMessage ?? ''}',
-                      ),
-                      message: _cloudMessage ?? 'Saving to Cloud...',
-                      isLoading: _isSyncing,
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -401,10 +454,10 @@ class _NativeChallengeFallback extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: () => onComplete(
                         const <String, dynamic>{
-                          'status': 'completed',
-                          'gold_earned': 120,
-                          'xp_earned': 90,
-                          'literacy_points_earned': 30,
+                          'status': 'victory',
+                          'gold': 120,
+                          'xp': 90,
+                          'literacy_points': 30,
                           'title': 'Fallback Challenge Reward',
                           'description': 'Completed the native fallback challenge.',
                         },
