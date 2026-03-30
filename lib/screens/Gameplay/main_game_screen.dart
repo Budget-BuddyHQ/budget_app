@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../controllers/user_stats_controller.dart';
+import '../../services/ui_asset_catalog.dart';
 import '../reusable_widgets/custom_bottom_nav.dart';
+  
+import 'react_challenge_screen.dart';
 import 'bill_dodger_game.dart';
 import 'game_hub_screen.dart';
-import 'react_game_screen.dart';
 import 'town_square_screen.dart';
 
-class MainGameScreen extends StatelessWidget {
+
+class MainGameScreen extends StatefulWidget {
   const MainGameScreen({
     super.key,
     this.activeTabIndex = 0,
@@ -18,17 +21,20 @@ class MainGameScreen extends StatelessWidget {
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
 
+  @override
+  State<MainGameScreen> createState() => _MainGameScreenState();
+}
+
+class _MainGameScreenState extends State<MainGameScreen> {
   Future<void> _openReactGame(
     BuildContext context, {
     required String gameId,
     required String difficulty,
   }) async {
     final stats = context.read<UserStatsController>().stats;
-
-    final result = await Navigator.push<ReactGameCloseResult>(
-      context,
+    final result = await Navigator.of(context).push<ReactGameCloseResult>(
       MaterialPageRoute(
-        builder: (_) => ReactGameScreen(
+        builder: (_) => ReactChallengeScreen(
           gameId: gameId,
           difficulty: difficulty,
           playerLevel: stats.level,
@@ -37,7 +43,7 @@ class MainGameScreen extends StatelessWidget {
       ),
     );
 
-    if (!context.mounted || result == null) {
+    if (!mounted || result == null) {
       return;
     }
 
@@ -46,8 +52,7 @@ class MainGameScreen extends StatelessWidget {
         behavior: SnackBarBehavior.floating,
         backgroundColor: const Color(0xFF0E362B),
         content: Text(
-          '${result.status.toUpperCase()}: +${result.goldEarned} gold, '
-          '+${result.xpEarned} XP. ${result.syncState.message}',
+          '${result.status.toUpperCase()}: +${result.goldEarned} gold, +${result.xpEarned} XP. ${result.syncState.message}',
         ),
       ),
     );
@@ -77,6 +82,7 @@ class MainGameScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+  
     return Consumer<UserStatsController>(
       builder: (context, controller, _) {
         final stats = controller.stats;
@@ -89,11 +95,11 @@ class MainGameScreen extends StatelessWidget {
         return Scaffold(
           extendBody: true,
           backgroundColor: const Color(0xFF041A14),
-          bottomNavigationBar: onNavSelected == null
+          bottomNavigationBar: widget.onNavSelected == null
               ? null
               : CustomBottomNav(
-                  activeIndex: activeTabIndex,
-                  onSelected: onNavSelected,
+                  activeIndex: widget.activeTabIndex,
+                  onSelected: widget.onNavSelected!,
                 ),
           body: Stack(
             children: [
@@ -328,7 +334,7 @@ class _DashboardHeader extends StatelessWidget {
                       style: TextStyle(color: Color(0xFF85EFAC)),
                     ),
                     TextSpan(
-                      text: MainGameScreen._withCommas(currentBalance),
+                      text: _withCommas(currentBalance),
                       style: const TextStyle(color: Colors.white),
                     ),
                   ],
@@ -349,8 +355,15 @@ class _DashboardHeader extends StatelessWidget {
       ],
     );
   }
+
+  String _withCommas(int value) {
+    final raw = value.toString();
+    final regExp = RegExp(r'\B(?=(\d{3})+(?!\d))');
+    return raw.replaceAllMapped(regExp, (match) => ',');
+  }
 }
 
+  
 class _QuickLaunchSection extends StatelessWidget {
   const _QuickLaunchSection({
     required this.onTownSquare,
@@ -758,7 +771,7 @@ class _WealthGrowthCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '+ \$${MainGameScreen._withCommas(weeklyGain)}',
+                '+ \$${_withCommas(weeklyGain)}',
                 style: const TextStyle(
                   color: Color(0xFF85EFAC),
                   fontWeight: FontWeight.w900,
@@ -781,6 +794,12 @@ class _WealthGrowthCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _withCommas(int value) {
+    final raw = value.toString();
+    final regExp = RegExp(r'\B(?=(\d{3})+(?!\d))');
+    return raw.replaceAllMapped(regExp, (match) => ',');
   }
 }
 
@@ -980,6 +999,7 @@ class _GlowingActionButton extends StatelessWidget {
     );
   }
 }
+  
 
 class _MiniAccentButton extends StatelessWidget {
   const _MiniAccentButton({
@@ -1068,3 +1088,5 @@ class _AreaSparklinePainter extends CustomPainter {
         oldDelegate.fillColor != fillColor;
   }
 }
+ 
+   

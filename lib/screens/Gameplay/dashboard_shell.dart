@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../profile/user_profile_screen.dart';
 import 'budget_screen.dart';
 import 'challenges_screen.dart';
+import 'dashboard_screen.dart';
 import 'invest_screen.dart';
-import 'main_game_screen.dart';
 
 class DashboardShell extends StatefulWidget {
   const DashboardShell({
@@ -42,7 +42,7 @@ class _DashboardShellState extends State<DashboardShell> {
     return IndexedStack(
       index: _currentIndex,
       children: [
-        MainGameScreen(
+        DashboardScreen(
           activeTabIndex: 0,
           onNavSelected: _selectTab,
         ),
