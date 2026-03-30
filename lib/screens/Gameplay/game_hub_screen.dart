@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../models/user_progress_state.dart';
+import '../../controllers/user_stats_controller.dart';
 import '../reusable_widgets/custom_bottom_nav.dart';
 import 'bill_dodger_game.dart';
+import 'dashboard_shell.dart';
 import 'learning_path_screen.dart';
 import 'react_game_screen.dart';
 import 'town_square_screen.dart';
@@ -10,13 +12,22 @@ import 'town_square_screen.dart';
 class GameHubScreen extends StatelessWidget {
   const GameHubScreen({super.key});
 
+  void _onNavSelected(BuildContext context, int index) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DashboardShell(initialIndex: index.clamp(0, 4).toInt()),
+      ),
+    );
+  }
+
   Future<void> _launchReactGame(
     BuildContext context, {
     required String gameId,
     required String difficulty,
     required String title,
   }) async {
-    final userProgress = UserProgressState.instance;
+    final stats = context.read<UserStatsController>().stats;
 
     final result = await Navigator.push<ReactGameCloseResult>(
       context,
@@ -24,9 +35,8 @@ class GameHubScreen extends StatelessWidget {
         builder: (_) => ReactGameScreen(
           gameId: gameId,
           difficulty: difficulty,
-          playerLevel: userProgress.level,
-          userId: userProgress.userId,
-          pageTitle: title,
+          playerLevel: stats.level,
+          userId: stats.id,
         ),
       ),
     );
@@ -35,15 +45,11 @@ class GameHubScreen extends StatelessWidget {
       return;
     }
 
-    final syncMessage = result.syncResult.queued
-        ? 'Cloud save queued while offline.'
-        : 'Progress synced.';
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           '$title complete: +${result.goldEarned} gold, '
-          '+${result.xpEarned} XP. $syncMessage',
+          '+${result.xpEarned} XP. ${result.syncState.message}',
         ),
       ),
     );
@@ -59,15 +65,11 @@ class GameHubScreen extends StatelessWidget {
       return;
     }
 
-    final syncMessage = result.syncResult.queued
-        ? 'Cloud save queued while offline.'
-        : 'Progress synced.';
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           'Bill Dodger: +${result.goldEarned} gold, '
-          '+${result.xpEarned} XP. $syncMessage',
+          '+${result.xpEarned} XP. ${result.syncState.message}',
         ),
       ),
     );
@@ -77,7 +79,10 @@ class GameHubScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF081F18),
-      bottomNavigationBar: const CustomBottomNav(activeIndex: 4),
+      bottomNavigationBar: CustomBottomNav(
+        activeIndex: 3,
+        onSelected: (index) => _onNavSelected(context, index),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 132),
@@ -121,7 +126,7 @@ class GameHubScreen extends StatelessWidget {
             const SizedBox(height: 14),
             _HubCard(
               title: 'Budget Battle',
-              subtitle: 'React minigame challenge with cloud-saved rewards',
+              subtitle: 'React minigame challenge with synced rewards',
               icon: Icons.bolt_rounded,
               accent: const Color(0xFF85EFAC),
               onTap: () => _launchReactGame(
