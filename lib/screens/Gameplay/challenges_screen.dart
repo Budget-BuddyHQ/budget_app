@@ -1,0 +1,243 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../controllers/user_stats_controller.dart';
+import '../reusable_widgets/custom_bottom_nav.dart';
+
+import 'react_challenge_screen.dart';
+
+import 'bill_dodger_game.dart';
+import 'react_game_screen.dart';
+
+
+class ChallengesScreen extends StatelessWidget {
+  const ChallengesScreen({
+    super.key,
+    this.activeTabIndex = 3,
+    this.onNavSelected,
+  });
+
+  final int activeTabIndex;
+  final ValueChanged<int>? onNavSelected;
+
+  Future<void> _openDailyBattle(BuildContext context) async {
+    final controller = context.read<UserStatsController>();
+    final stats = controller.stats;
+
+    final result = await Navigator.push<ReactGameCloseResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReactChallengeScreen(
+          gameId: 'daily_budget_battle',
+          difficulty: 'medium',
+          playerLevel: stats.level,
+          userId: stats.id,
+        ),
+      ),
+    );
+
+    if (!context.mounted || result == null) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${result.status.toUpperCase()}: +${result.goldEarned} gold, '
+          '+${result.xpEarned} XP. ${result.syncState.message}',
+        ),
+      ),
+    );
+  }
+
+  void _showComingSoon(BuildContext context, String title) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$title is queued next for full mini-game wiring.'),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const challengeCards = <_ChallengeCardData>[
+      _ChallengeCardData(
+        title: 'Bill Dodger',
+        description: 'Collect needs and dodge wants in a fast-moving lane game.',
+        reward: 200,
+        isBillDodger: true,
+      ),
+      _ChallengeCardData(
+        title: 'Daily Budget Battle',
+        description: 'Spot 3 wasteful purchases before the timer runs out.',
+        reward: 180,
+        usesReactBridge: true,
+      ),
+      _ChallengeCardData(
+        title: 'Emergency Fund Boss',
+        description: 'Protect your gold stash from surprise expenses.',
+        reward: 240,
+      ),
+      _ChallengeCardData(
+        title: 'Credit Score Gauntlet',
+        description: 'Choose the smartest moves to keep your score climbing.',
+        reward: 210,
+      ),
+      _ChallengeCardData(
+        title: 'Subscription Slayer',
+        description: 'Cancel hidden fees before they drain your treasury.',
+        reward: 150,
+      ),
+    ];
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF1A4D3D),
+      bottomNavigationBar: onNavSelected == null
+          ? null
+          : CustomBottomNav(
+              activeIndex: activeTabIndex,
+              onSelected: onNavSelected,
+            ),
+      body: SafeArea(
+        child: ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+          itemCount: challengeCards.length + 1,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF254E3F),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFF3B6B59)),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Upcoming Boss Battles',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'Take on daily tasks and tougher finance bosses to grow gold, XP, and literacy points.',
+                      style: TextStyle(color: Colors.white70, height: 1.4),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            final card = challengeCards[index - 1];
+
+            return Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: card.isBillDodger
+                    ? const Color(0xFF2C6B52)
+                    : const Color(0xFF254E3F),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                    color: card.isBillDodger
+                        ? const Color(0xFF85EFAC)
+                        : const Color(0xFF3B6B59),
+                    width: card.isBillDodger ? 2 : 1),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF85EFAC).withOpacity(0.16),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          '${card.reward} gold',
+                          style: const TextStyle(
+                            color: Color(0xFF85EFAC),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      const Icon(Icons.emoji_events, color: Color(0xFFF4D06F)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    card.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    card.description,
+                    style: const TextStyle(color: Colors.white70, height: 1.4),
+                  ),
+                  const SizedBox(height: 14),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton(
+                      onPressed: card.isBillDodger
+                          ? () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const BillDodgerGameScreen(),
+                                ),
+                              )
+                          : card.usesReactBridge
+                              ? () => _openDailyBattle(context)
+                              : () => _showComingSoon(context, card.title),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF85EFAC),
+                        foregroundColor: const Color(0xFF1A4D3D),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(card.isBillDodger ? 'Play' : 'Start'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ChallengeCardData {
+  const _ChallengeCardData({
+    required this.title,
+    required this.description,
+    required this.reward,
+    this.usesReactBridge = false,
+    this.isBillDodger = false,
+  });
+
+  final String title;
+  final String description;
+  final int reward;
+  final bool usesReactBridge;
+  final bool isBillDodger;
+}

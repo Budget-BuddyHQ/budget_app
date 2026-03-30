@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../models/user_progress_state.dart';
-import '../reusable_widgets/custom_bottom_nav.dart';
+import '../../controllers/user_stats_controller.dart';
+import '../../services/supabase_service.dart';
 import 'bill_dodger_game.dart';
+import 'dashboard_shell.dart';
 import 'game_hub_screen.dart';
 import 'leaderboard_screen.dart';
 import 'learning_path_screen.dart';
-import 'main_game_screen.dart';
 import 'react_game_screen.dart';
 
 class TownSquareScreen extends StatelessWidget {
@@ -18,16 +19,15 @@ class TownSquareScreen extends StatelessWidget {
     required String difficulty,
     required String title,
   }) async {
-    final user = UserProgressState.instance;
+    final stats = context.read<UserStatsController>().stats;
     final result = await Navigator.push<ReactGameCloseResult>(
       context,
       MaterialPageRoute(
         builder: (_) => ReactGameScreen(
           gameId: gameId,
           difficulty: difficulty,
-          playerLevel: user.level,
-          userId: user.userId,
-          pageTitle: title,
+          playerLevel: stats.level,
+          userId: stats.id,
         ),
       ),
     );
@@ -36,15 +36,11 @@ class TownSquareScreen extends StatelessWidget {
       return;
     }
 
-    final syncText = result.syncResult.queued
-        ? 'Cloud save queued while offline.'
-        : 'Progress synced.';
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           '$title complete: +${result.goldEarned} gold, '
-          '+${result.xpEarned} XP. $syncText',
+          '+${result.xpEarned} XP. ${result.syncState.message}',
         ),
       ),
     );
@@ -60,15 +56,11 @@ class TownSquareScreen extends StatelessWidget {
       return;
     }
 
-    final syncText = result.syncResult.queued
-        ? 'Cloud save queued while offline.'
-        : 'Progress synced.';
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           'Bill Dodger: +${result.goldEarned} gold, '
-          '+${result.xpEarned} XP. $syncText',
+          '+${result.xpEarned} XP. ${result.syncState.message}',
         ),
       ),
     );
@@ -76,27 +68,27 @@ class TownSquareScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: UserProgressState.instance,
-      builder: (context, _) {
-        final user = UserProgressState.instance;
+    return Consumer<UserStatsController>(
+      builder: (context, controller, _) {
+        final stats = controller.stats;
 
         return Scaffold(
           backgroundColor: const Color(0xFF071B16),
-          bottomNavigationBar: const CustomBottomNav(activeIndex: 4),
           body: Stack(
             children: [
               const _TownBackdrop(),
               SafeArea(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 132),
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 40),
                   children: [
-                    _TownHeader(user: user),
+                    _TownHeader(stats: stats),
                     const SizedBox(height: 22),
                     _WorldMapHero(
-                      onDashboard: () => Navigator.push(
+                      onDashboard: () => Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (_) => const MainGameScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const DashboardShell(initialIndex: 0),
+                        ),
                       ),
                       onBillDodger: () => _launchBillDodger(context),
                       onReactArena: () => _launchReactGame(
@@ -118,18 +110,22 @@ class TownSquareScreen extends StatelessWidget {
                     const SizedBox(height: 14),
                     _TownDestinationCard(
                       title: 'Budget Academy',
-                      subtitle: 'Study lessons, unlock nodes, and level up your knowledge tree.',
+                      subtitle:
+                          'Study lessons, unlock nodes, and level up your knowledge tree.',
                       icon: Icons.school_rounded,
                       accent: const Color(0xFF7FE7C4),
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const LearningPathScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const LearningPathScreen(),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
                     _TownDestinationCard(
                       title: 'Bill Dodger Alley',
-                      subtitle: 'Fast reflex minigame for practicing needs versus wants.',
+                      subtitle:
+                          'Fast reflex minigame for practicing needs versus wants.',
                       icon: Icons.receipt_long_rounded,
                       accent: const Color(0xFFFFC36B),
                       onTap: () => _launchBillDodger(context),
@@ -137,7 +133,8 @@ class TownSquareScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     _TownDestinationCard(
                       title: 'Challenge Portal',
-                      subtitle: 'Enter the React-powered challenge arena with cloud-saved rewards.',
+                      subtitle:
+                          'Enter the React-powered challenge arena with synced rewards.',
                       icon: Icons.auto_awesome_rounded,
                       accent: const Color(0xFF85EFAC),
                       onTap: () => _launchReactGame(
@@ -150,7 +147,8 @@ class TownSquareScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     _TownDestinationCard(
                       title: 'Guild Hall',
-                      subtitle: 'Browse every game screen and future mode from one place.',
+                      subtitle:
+                          'Browse every active game mode and challenge from one place.',
                       icon: Icons.dashboard_customize_rounded,
                       accent: const Color(0xFFA78BFA),
                       onTap: () => Navigator.push(
@@ -161,12 +159,15 @@ class TownSquareScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     _TownDestinationCard(
                       title: 'Leaderboard Tower',
-                      subtitle: 'See where your account ranks among the top finance wizards.',
+                      subtitle:
+                          'See where your account ranks among the top finance wizards.',
                       icon: Icons.leaderboard_rounded,
                       accent: const Color(0xFFF9D66B),
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const LeaderboardScreen(),
+                        ),
                       ),
                     ),
                   ],
@@ -253,9 +254,9 @@ class _BackdropGlow extends StatelessWidget {
 }
 
 class _TownHeader extends StatelessWidget {
-  const _TownHeader({required this.user});
+  const _TownHeader({required this.stats});
 
-  final UserProgressState user;
+  final UserStats stats;
 
   @override
   Widget build(BuildContext context) {
@@ -291,7 +292,7 @@ class _TownHeader extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Level ${user.level} | ${user.literacyPoints} literacy | \$${user.gold}',
+                'Level ${stats.level} | ${stats.literacyPoints} literacy | \$${stats.gold}',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.68),
                   fontSize: 12,
