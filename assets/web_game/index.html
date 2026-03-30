@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
+    <title>Budget Buddy Battle</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0d2d23;
+        --panel: rgba(20, 58, 45, 0.92);
+        --panel-border: rgba(133, 239, 172, 0.22);
+        --accent: #85efac;
+        --accent-strong: #60d889;
+        --text: #f4fffa;
+        --muted: rgba(244, 255, 250, 0.72);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(133, 239, 172, 0.2), transparent 30%),
+          linear-gradient(180deg, #14392e 0%, #0d2d23 100%);
+        color: var(--text);
+      }
+
+      .shell {
+        min-height: 100vh;
+        padding: 28px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .card {
+        width: min(560px, 100%);
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 28px;
+        padding: 24px;
+        box-shadow: 0 22px 40px rgba(0, 0, 0, 0.28);
+        backdrop-filter: blur(18px);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(133, 239, 172, 0.12);
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      h1 {
+        margin: 18px 0 8px;
+        font-size: clamp(28px, 4vw, 38px);
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .stats {
+        margin-top: 20px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+
+      .stat {
+        padding: 14px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .stat span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .stat strong {
+        display: block;
+        margin-top: 6px;
+        font-size: 18px;
+      }
+
+      .question {
+        margin-top: 24px;
+        padding: 18px;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .choices {
+        margin-top: 18px;
+        display: grid;
+        gap: 12px;
+      }
+
+      button {
+        width: 100%;
+        border: none;
+        border-radius: 16px;
+        padding: 14px 16px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 120ms ease, box-shadow 120ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      .primary {
+        background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+        color: #14392e;
+        box-shadow: 0 10px 22px rgba(96, 216, 137, 0.28);
+      }
+
+      .secondary {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      @media (max-width: 520px) {
+        .stats {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card">
+        <div class="eyebrow">⚔️ Local Budget Battle</div>
+        <h1>THE BUDGET BATTLE</h1>
+        <p>
+          Review a $50 grocery receipt and choose the smartest savings move.
+          This bundle is served from localhost so modern WebViews can load every
+          script and module safely offline.
+        </p>
+
+        <div class="stats">
+          <div class="stat">
+            <span>Session</span>
+            <strong id="game-id">daily_budget_battle</strong>
+          </div>
+          <div class="stat">
+            <span>Difficulty</span>
+            <strong id="difficulty">normal</strong>
+          </div>
+          <div class="stat">
+            <span>Player Level</span>
+            <strong id="player-level">7</strong>
+          </div>
+        </div>
+
+        <div class="question">
+          <h2>Which action saves the most money right now?</h2>
+          <p>
+            The receipt includes name-brand cereal, bottled water, and a snack
+            bundle. Pick the strongest move for an instant win.
+          </p>
+
+          <div class="choices">
+            <button class="primary" onclick="finishGame({ gold: 120, xp: 90, literacy_points: 30, status: 'victory' })">
+              Replace bottled water with a reusable bottle plan
+            </button>
+            <button class="secondary" onclick="finishGame({ gold: 30, xp: 25, literacy_points: 10, status: 'defeat' })">
+              Keep everything and hope next week is cheaper
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      function readQueryValue(key, fallback) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(key) || fallback;
+      }
+
+      document.getElementById("game-id").textContent = readQueryValue("gameId", "daily_budget_battle");
+      document.getElementById("difficulty").textContent = readQueryValue("difficulty", "normal");
+      document.getElementById("player-level").textContent = readQueryValue("playerLevel", "7");
+
+      function postToFlutter(payload) {
+        const message = JSON.stringify(payload);
+
+        if (window.GameBridge && window.GameBridge.postMessage) {
+          window.GameBridge.postMessage(message);
+          return;
+        }
+
+        if (window.BudgetBuddyBridge && window.BudgetBuddyBridge.postMessage) {
+          window.BudgetBuddyBridge.postMessage(message);
+        }
+      }
+
+      function finishGame(payload) {
+        postToFlutter({
+          ...payload,
+          title: "Budget Battle Results",
+          description:
+            payload.status === "victory"
+              ? "Great job spotting the strongest savings decision."
+              : "You finished the round and still earned a few practice rewards."
+        });
+      }
+    </script>
+  </body>
+</html>
