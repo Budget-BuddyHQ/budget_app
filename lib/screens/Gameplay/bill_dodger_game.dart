@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../models/user_progress_state.dart';
-import '../../services/base44_config.dart';
-import '../../services/progression_service.dart';
+import '../../controllers/user_stats_controller.dart';
+import '../../services/supabase_service.dart';
 
 class BillDodgerCloseResult {
   const BillDodgerCloseResult({
@@ -14,7 +14,7 @@ class BillDodgerCloseResult {
     required this.literacyPointsEarned,
     required this.finalMoney,
     required this.finalScore,
-    required this.syncResult,
+    required this.syncState,
   });
 
   final int goldEarned;
@@ -22,7 +22,7 @@ class BillDodgerCloseResult {
   final int literacyPointsEarned;
   final int finalMoney;
   final int finalScore;
-  final ProgressionSyncResult syncResult;
+  final SyncState syncState;
 }
 
 class BillDodgerGameScreen extends StatefulWidget {
@@ -48,8 +48,6 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
   final List<_FallingItem> _items = <_FallingItem>[];
 
   late final AnimationController _controller;
-  late final ProgressionService _progressionService;
-
   Timer? _spawnTimer;
   Timer? _clockTimer;
 
@@ -65,11 +63,6 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
   @override
   void initState() {
     super.initState();
-    _progressionService = ProgressionService(
-      baseUrl: Base44Config.baseUrl,
-      userId: UserProgressState.instance.userId,
-      apiKey: Base44Config.apiKey,
-    );
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 16),
@@ -80,7 +73,6 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
   void dispose() {
     _spawnTimer?.cancel();
     _clockTimer?.cancel();
-    _progressionService.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -224,7 +216,7 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
     });
   }
 
-  BillDodgerCloseResult _projectedResult(ProgressionSyncResult syncResult) {
+  BillDodgerCloseResult _projectedResult(SyncState syncState) {
     final finalMoney = money.clamp(0, 999999);
     final goldEarned = max(24, finalMoney ~/ 42 + score ~/ 4);
     final xpEarned = max(40, 30 + score ~/ 2);
@@ -236,7 +228,7 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
       literacyPointsEarned: literacyEarned,
       finalMoney: finalMoney,
       finalScore: score,
-      syncResult: syncResult,
+      syncState: syncState,
     );
   }
 
@@ -250,19 +242,23 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
     });
 
     final projected = _projectedResult(
-      const ProgressionSyncResult(synced: false, queued: false),
+      const SyncState(
+        synced: false,
+        usedCache: true,
+        message: 'Saving locally...',
+      ),
     );
-    final progress = UserProgressState.instance;
-    progress.applyGameRewards(
-      goldEarned: projected.goldEarned,
-      xpEarned: projected.xpEarned,
-      literacyPointsEarned: projected.literacyPointsEarned,
-    );
-
-    final syncResult = await _progressionService.syncProgression(
-      progress.gold,
-      progress.xp,
-      progress.literacyPoints,
+    final controller = context.read<UserStatsController>();
+    final actionResult = await controller.applyChallengePayload(
+      <String, dynamic>{
+        'status': 'completed',
+        'gold_earned': projected.goldEarned,
+        'xp_earned': projected.xpEarned,
+        'literacy_points_earned': projected.literacyPointsEarned,
+        'title': 'Bill Dodger Rewards',
+        'description':
+            'Collected essentials, dodged wasteful spending, and banked the rewards.',
+      },
     );
 
     if (!mounted) {
@@ -277,7 +273,7 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
         literacyPointsEarned: projected.literacyPointsEarned,
         finalMoney: projected.finalMoney,
         finalScore: projected.finalScore,
-        syncResult: syncResult,
+        syncState: actionResult.syncState,
       ),
     );
   }
@@ -292,7 +288,11 @@ class _BillDodgerGameScreenState extends State<BillDodgerGameScreen>
   @override
   Widget build(BuildContext context) {
     final projected = _projectedResult(
-      const ProgressionSyncResult(synced: false, queued: false),
+      const SyncState(
+        synced: false,
+        usedCache: true,
+        message: 'Projected rewards',
+      ),
     );
 
     return Scaffold(
