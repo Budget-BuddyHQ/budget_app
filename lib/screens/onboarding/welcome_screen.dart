@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../navigation/fade_page_route.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -126,9 +128,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         _WelcomeActionButton(
                           label: 'Join the Squad',
                           onPressed: () {
+                            HapticFeedback.lightImpact();
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
+                              FadePageRoute(
                                 builder: (context) => const SignUpPage(),
                               ),
                             );
@@ -139,9 +142,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         _WelcomeActionButton(
                           label: 'Welcome Back',
                           onPressed: () {
+                            HapticFeedback.lightImpact();
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
+                              FadePageRoute(
                                 builder: (context) => const LoginPage(),
                               ),
                             );

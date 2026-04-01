@@ -1,6 +1,8 @@
 // lib/screens/goals_setup_page.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
+
+import '../../widgets/game_toast.dart';
 import 'get_started_confidence_page.dart';
 
 class GetStartedNotificationsPage extends StatefulWidget {
@@ -98,10 +100,12 @@ class _GetStartedNotificationsPageState
 
   Future<void> _handleContinue() async {
     if (_selectedGoalIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select at least one goal.'),
-        ),
+      GameToast.show(
+        context,
+        title: 'Choose a goal',
+        message: 'Please select at least one goal.',
+        icon: Icons.flag_outlined,
+        accent: const Color(0xFFFFC36B),
       );
       return;
     }

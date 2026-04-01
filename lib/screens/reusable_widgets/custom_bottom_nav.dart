@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 
     this.onSelected,
   final int activeIndex;
@@ -71,7 +72,12 @@ class _NavItem extends StatelessWidget {
         return Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: onTap,
+            onTap: onTap == null
+                ? null
+                : () {
+                    HapticFeedback.lightImpact();
+                    onTap!();
+                  },
             borderRadius: BorderRadius.circular(20),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),

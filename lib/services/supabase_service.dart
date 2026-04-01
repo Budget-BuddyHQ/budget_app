@@ -270,6 +270,9 @@ class SupabaseService {
   static final SupabaseService instance = SupabaseService._();
 
   static const String userStatsTable = 'user_stats';
+  static const String _sessionUserIdKey = 'budget_buddy_session_user_id';
+  static const String _sessionEmailKey = 'budget_buddy_session_email';
+  static const String _sessionUsernameKey = 'budget_buddy_session_username';
   static const String schemaSql = '''
 create table if not exists public.user_stats (
   id text primary key,
@@ -295,6 +298,7 @@ create table if not exists public.user_stats (
   bool _isSupabaseConnected = false;
 
   bool get isSupabaseConnected => _isSupabaseConnected;
+  bool get hasCachedPreferences => _preferences != null;
 
   Future<void> initialize({
     required String supabaseUrl,
@@ -333,6 +337,7 @@ create table if not exists public.user_stats (
   }
 
   Future<UserStats> loadUserStats(String userId) async {
+    await _ensurePreferences();
     final cached = await _readCachedUserStats(userId);
     final fallback = cached ?? UserStats.defaults(userId);
     _memoryCache[userId] = fallback;
@@ -392,6 +397,7 @@ create table if not exists public.user_stats (
   }
 
   Future<SyncState> saveUserStats(UserStats stats) async {
+    await _ensurePreferences();
     _memoryCache[stats.id] = stats;
     await _cacheUserStats(stats);
     _localController.add(stats);
@@ -424,14 +430,16 @@ create table if not exists public.user_stats (
   }
 
   Future<void> _cacheUserStats(UserStats stats) async {
-    await _preferences?.setString(
+    final preferences = await _ensurePreferences();
+    await preferences.setString(
       _cacheKey(stats.id),
       jsonEncode(stats.toStorageMap()),
     );
   }
 
   Future<UserStats?> _readCachedUserStats(String userId) async {
-    final rawJson = _preferences?.getString(_cacheKey(userId));
+    final preferences = await _ensurePreferences();
+    final rawJson = preferences.getString(_cacheKey(userId));
     if (rawJson == null || rawJson.isEmpty) {
       return null;
     }
@@ -454,6 +462,77 @@ create table if not exists public.user_stats (
   }
 
   String _cacheKey(String userId) => 'budget_buddy_user_stats_$userId';
+
+  Future<String?> getActiveSessionUserId() async {
+    final preferences = await _ensurePreferences();
+    final savedId = preferences.getString(_sessionUserIdKey);
+    if (savedId == null || savedId.trim().isEmpty) {
+      return null;
+    }
+    return savedId;
+  }
+
+  Future<String> restoreSessionUserId({
+    String fallback = 'user_123',
+  }) async {
+    return await getActiveSessionUserId() ?? fallback;
+  }
+
+  Future<String?> getActiveSessionUsername() async {
+    final preferences = await _ensurePreferences();
+    final username = preferences.getString(_sessionUsernameKey);
+    if (username == null || username.trim().isEmpty) {
+      return null;
+    }
+    return username;
+  }
+
+  Future<void> persistSession({
+    required String userId,
+    required String username,
+    String? email,
+  }) async {
+    final preferences = await _ensurePreferences();
+    await preferences.setString(_sessionUserIdKey, userId);
+    await preferences.setString(_sessionUsernameKey, username);
+    if (email != null && email.trim().isNotEmpty) {
+      await preferences.setString(_sessionEmailKey, email.trim().toLowerCase());
+    }
+  }
+
+  Future<void> clearSessionAndCache({String? userId}) async {
+    final preferences = await _ensurePreferences();
+    await preferences.remove(_sessionUserIdKey);
+    await preferences.remove(_sessionEmailKey);
+    await preferences.remove(_sessionUsernameKey);
+
+    final keysToRemove = preferences
+        .getKeys()
+        .where((key) => key.startsWith('budget_buddy_user_stats_'))
+        .toList(growable: false);
+    for (final key in keysToRemove) {
+      await preferences.remove(key);
+    }
+
+    _memoryCache.clear();
+
+    if (_isSupabaseConnected) {
+      try {
+        await Supabase.instance.client.auth.signOut();
+      } catch (error) {
+        debugPrint('Supabase sign out skipped: $error');
+      }
+    }
+
+    if (userId != null) {
+      _localController.add(UserStats.defaults(userId));
+    }
+  }
+
+  Future<SharedPreferences> _ensurePreferences() async {
+    _preferences ??= await SharedPreferences.getInstance();
+    return _preferences!;
+  }
 
   SupabaseClient? get _existingClient {
     try {

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-import '../profile/user_profile_screen.dart';
-import 'budget_screen.dart';
+import '../profile/profile_screen.dart';
+import 'budget_ledger.dart';
 import 'challenges_screen.dart';
-import 'dashboard_screen.dart';
-import 'invest_screen.dart';
+import 'invest_tab.dart';
+import 'main_game_page.dart';
 
 class DashboardShell extends StatefulWidget {
   const DashboardShell({
@@ -31,7 +32,7 @@ class _DashboardShellState extends State<DashboardShell> {
     if (_currentIndex == index) {
       return;
     }
-
+    HapticFeedback.lightImpact();
     setState(() {
       _currentIndex = index;
     });
@@ -42,15 +43,15 @@ class _DashboardShellState extends State<DashboardShell> {
     return IndexedStack(
       index: _currentIndex,
       children: [
-        DashboardScreen(
+        MainGamePage(
           activeTabIndex: 0,
           onNavSelected: _selectTab,
         ),
-        BudgetScreen(
+        BudgetLedger(
           activeTabIndex: 1,
           onNavSelected: _selectTab,
         ),
-        InvestScreen(
+        InvestTab(
           activeTabIndex: 2,
           onNavSelected: _selectTab,
         ),
@@ -58,7 +59,7 @@ class _DashboardShellState extends State<DashboardShell> {
           activeTabIndex: 3,
           onNavSelected: _selectTab,
         ),
-        UserProfileScreen(
+        ProfileScreen(
           activeTabIndex: 4,
           onNavSelected: _selectTab,
         ),

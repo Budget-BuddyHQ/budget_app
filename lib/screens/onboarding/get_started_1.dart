@@ -1,6 +1,8 @@
 // lib/screens/get_started_page.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
+
+import '../../widgets/game_toast.dart';
 import 'get_started_notifications_page.dart';
 
 class GetStartedPage extends StatefulWidget {
@@ -127,42 +129,58 @@ class _GetStartedPageState extends State<GetStartedPage>
     final parentEmail = _parentEmailController.text.trim();
 
     if (nickname.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter what we should call you.')),
+      GameToast.show(
+        context,
+        title: 'Nickname needed',
+        message: 'Please enter what we should call you.',
+        icon: Icons.badge_outlined,
+        accent: const Color(0xFFFFC36B),
       );
       return;
     }
 
     if (_selectedBirthday == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your birthday.')),
+      GameToast.show(
+        context,
+        title: 'Birthday needed',
+        message: 'Please enter your birthday.',
+        icon: Icons.cake_outlined,
+        accent: const Color(0xFFFFC36B),
       );
       return;
     }
 
     final age = _calculateAge(_selectedBirthday);
     if (age == null || age < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid birthday.')),
+      GameToast.show(
+        context,
+        title: 'Invalid birthday',
+        message: 'Please enter a valid birthday.',
+        icon: Icons.event_busy_outlined,
+        accent: const Color(0xFFFFC36B),
       );
       return;
     }
 
     if (_showParentEmail) {
       if (parentEmail.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please enter a parent/guardian email.'),
-          ),
+        GameToast.show(
+          context,
+          title: 'Parent email needed',
+          message: 'Please enter a parent or guardian email.',
+          icon: Icons.family_restroom_outlined,
+          accent: const Color(0xFFFFC36B),
         );
         return;
       }
 
       if (!_isValidEmail(parentEmail)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please enter a valid parent/guardian email.'),
-          ),
+        GameToast.show(
+          context,
+          title: 'Email looks off',
+          message: 'Please enter a valid parent or guardian email.',
+          icon: Icons.mark_email_read_outlined,
+          accent: const Color(0xFFFFC36B),
         );
         return;
       }
