@@ -78,11 +78,11 @@ class ProfileScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(28),
                           gradient: LinearGradient(
                             colors: [
-                              const Color(0xFF173C2F).withOpacity(0.96),
-                              const Color(0xFF214D3E).withOpacity(0.92),
+                              const Color(0xFF173C2F).withValues(alpha: 0.96),
+                              const Color(0xFF214D3E).withValues(alpha: 0.92),
                             ],
                           ),
-                          border: Border.all(color: Colors.white.withOpacity(0.10)),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
                         ),
                         child: Column(
                           children: [
@@ -96,7 +96,7 @@ class ProfileScreen extends StatelessWidget {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF85EFAC).withOpacity(0.26),
+                                    color: const Color(0xFF85EFAC).withValues(alpha: 0.26),
                                     blurRadius: 22,
                                     spreadRadius: 2,
                                   ),
@@ -129,7 +129,7 @@ class ProfileScreen extends StatelessWidget {
                             Text(
                               'Balance: \$${stats.gold} • XP: ${stats.xp}',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.72),
+                                color: Colors.white.withValues(alpha: 0.72),
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -139,7 +139,7 @@ class ProfileScreen extends StatelessWidget {
                                 vertical: 10,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.06),
+                                color: Colors.white.withValues(alpha: 0.06),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Text(
@@ -157,9 +157,9 @@ class ProfileScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.06),
+                          color: Colors.white.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.white.withOpacity(0.08)),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,7 +254,7 @@ class ProfileScreen extends StatelessWidget {
                   Positioned.fill(
                     child: IgnorePointer(
                       child: Container(
-                        color: Colors.black.withOpacity(0.06),
+                        color: Colors.black.withValues(alpha: 0.06),
                         padding: const EdgeInsets.fromLTRB(16, 18, 16, 120),
                         child: Column(
                           children: const [
@@ -295,7 +295,7 @@ class _ActionRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -304,7 +304,7 @@ class _ActionRow extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: const Color(0xFF85EFAC).withOpacity(0.14),
+              color: const Color(0xFF85EFAC).withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(icon, color: const Color(0xFF85EFAC)),
@@ -325,7 +325,7 @@ class _ActionRow extends StatelessWidget {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.68),
+                    color: Colors.white.withValues(alpha: 0.68),
                     height: 1.35,
                     fontSize: 12,
                   ),
