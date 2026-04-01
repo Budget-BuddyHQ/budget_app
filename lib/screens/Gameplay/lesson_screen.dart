@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import '../../widgets/game_toast.dart';
 
 /// Screen for displaying and completing a lesson with detailed content
 class LessonScreen extends StatefulWidget {
@@ -90,18 +91,12 @@ class _LessonScreenState extends State<LessonScreen>
         _isCompleted = true;
       });
 
-      // Show confirmation on the current screen
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${widget.lesson.title} completed! 🎉'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: const Color(0xFF2E4A3D),
-          duration: const Duration(seconds: 2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
+      GameToast.show(
+        context,
+        title: 'Lesson complete',
+        message: '${widget.lesson.title} completed! 🎉',
+        icon: Icons.school_rounded,
+        accent: const Color(0xFF85EFAC),
       );
     }
   }

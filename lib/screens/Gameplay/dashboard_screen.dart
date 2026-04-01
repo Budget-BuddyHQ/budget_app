@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../controllers/user_stats_controller.dart';
 import '../../services/ui_asset_catalog.dart';
+import '../../widgets/custom_button.dart';
 import '../reusable_widgets/custom_bottom_nav.dart';
 import 'main_game_screen.dart';
 
@@ -125,21 +126,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 _DashboardActionTile(
                                   label: 'Budget',
                                   imageAsset: catalog.imageForSlot('budget'),
+                                  compact: MediaQuery.of(context).size.width < 420,
                                   onTap: () => widget.onNavSelected?.call(1),
                                 ),
                                 _DashboardActionTile(
                                   label: 'Invest',
                                   imageAsset: catalog.imageForSlot('invest'),
+                                  compact: MediaQuery.of(context).size.width < 420,
                                   onTap: () => widget.onNavSelected?.call(2),
                                 ),
                                 _DashboardActionTile(
                                   label: 'Challenges',
                                   imageAsset: catalog.imageForSlot('challenge'),
+                                  compact: MediaQuery.of(context).size.width < 420,
                                   onTap: () => widget.onNavSelected?.call(3),
                                 ),
                                 _DashboardActionTile(
                                   label: 'Profile',
                                   imageAsset: catalog.imageForSlot('profile'),
+                                  compact: MediaQuery.of(context).size.width < 420,
                                   onTap: () => widget.onNavSelected?.call(4),
                                 ),
                               ],
@@ -334,25 +339,15 @@ class _GlassHeroCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onTap,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF85EFAC),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Text(
-                  'Open Battle Hub',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFF1A4D3D),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+            CustomButton(
+              label: 'Open Battle Hub',
+              onPressed: onTap,
+              prefixIcon: const Icon(
+                Icons.bolt_rounded,
+                size: 18,
+                color: Color(0xFF1A4D3D),
               ),
+              style: const CustomButtonStyle.primary(),
             ),
           ],
         ),
@@ -365,11 +360,13 @@ class _DashboardActionTile extends StatelessWidget {
   const _DashboardActionTile({
     required this.label,
     required this.imageAsset,
+    required this.compact,
     required this.onTap,
   });
 
   final String label;
   final String imageAsset;
+  final bool compact;
   final VoidCallback? onTap;
 
   @override
@@ -378,12 +375,12 @@ class _DashboardActionTile extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: SizedBox(
-        width: 156,
+        width: compact ? 148 : 156,
         child: _GlassPanel(
           child: Column(
             children: [
               SizedBox(
-                height: 70,
+                height: compact ? 60 : 70,
                 child: Image.asset(
                   imageAsset,
                   fit: BoxFit.contain,

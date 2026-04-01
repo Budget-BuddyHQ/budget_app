@@ -1,13 +1,15 @@
 import 'package:provider/provider.dart';
 
 import '../../controllers/user_stats_controller.dart';
+import '../../navigation/fade_page_route.dart';
+import '../../widgets/game_toast.dart';
 import 'bill_dodger_game.dart';
 import 'learning_path_screen.dart';
 import 'react_game_screen.dart';
 import 'town_square_screen.dart';
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
+      FadePageRoute(
         builder: (_) => DashboardShell(initialIndex: index.clamp(0, 4).toInt()),
       ),
     );
@@ -35,13 +37,12 @@ import 'town_square_screen.dart';
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '$title complete: +${result.goldEarned} gold, '
-          '+${result.xpEarned} XP. ${result.syncState.message}',
-        ),
-      ),
+    GameToast.show(
+      context,
+      title: '$title complete',
+      message:
+          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+      icon: Icons.workspace_premium_rounded,
     );
   }
 
@@ -55,13 +56,13 @@ import 'town_square_screen.dart';
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Bill Dodger: +${result.goldEarned} gold, '
-          '+${result.xpEarned} XP. ${result.syncState.message}',
-        ),
-      ),
+    GameToast.show(
+      context,
+      title: 'Bill Dodger complete',
+      message:
+          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+      icon: Icons.gamepad_rounded,
+      accent: const Color(0xFFFFC36B),
     );
   }
 
