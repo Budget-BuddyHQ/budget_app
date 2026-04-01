@@ -99,7 +99,7 @@ class MainGamePage extends StatelessWidget {
                         levelTitle: stats.levelTitle,
                       ),
                       const SizedBox(height: 18),
-                      _HeroBattleCard(
+                        _HeroBattleCard(
                         onPlayNow: () => _openReactBattle(context),
                         onOpenDashboard: () {
                           Navigator.of(context).push(
