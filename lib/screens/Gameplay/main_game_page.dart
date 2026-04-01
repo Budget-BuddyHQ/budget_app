@@ -172,7 +172,7 @@ class MainGamePage extends StatelessWidget {
                   Positioned.fill(
                     child: IgnorePointer(
                       child: Container(
-                        color: Colors.black.withOpacity(0.08),
+                        color: Colors.black.withValues(alpha: 0.08),
                         child: SingleChildScrollView(
                           padding: const EdgeInsets.fromLTRB(16, 18, 16, 120),
                           child: Column(
@@ -245,10 +245,10 @@ class _MainBackdrop extends StatelessWidget {
             height: 220,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF85EFAC).withOpacity(0.10),
+              color: const Color(0xFF85EFAC).withValues(alpha: 0.10),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF85EFAC).withOpacity(0.14),
+                  color: const Color(0xFF85EFAC).withValues(alpha: 0.14),
                   blurRadius: 40,
                   spreadRadius: 8,
                 ),
@@ -308,7 +308,7 @@ class _MainHeader extends StatelessWidget {
               Text(
                 '$levelTitle • \$${gold.toString()} balance',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.74),
+                  color: Colors.white.withValues(alpha: 0.74),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -339,11 +339,11 @@ class _HeroBattleCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF14372B).withOpacity(0.96),
-            const Color(0xFF1D4738).withOpacity(0.92),
+            const Color(0xFF14372B).withValues(alpha: 0.96),
+            const Color(0xFF1D4738).withValues(alpha: 0.92),
           ],
         ),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x33000000),
@@ -367,7 +367,7 @@ class _HeroBattleCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF85EFAC).withOpacity(0.16),
+                        color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: const Text(
@@ -394,7 +394,7 @@ class _HeroBattleCard extends StatelessWidget {
                     Text(
                       'A cleaner home base, faster rewards, and smooth game launches designed for mobile players.',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.76),
+                        color: Colors.white.withValues(alpha: 0.76),
                         fontSize: 13,
                         height: 1.45,
                       ),
@@ -408,7 +408,7 @@ class _HeroBattleCard extends StatelessWidget {
                 height: 88,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF85EFAC).withOpacity(0.12),
+                  color: const Color(0xFF85EFAC).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Image.asset(
@@ -477,9 +477,9 @@ class _QuickStatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         children: [
@@ -487,7 +487,7 @@ class _QuickStatCard extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.16),
+              color: accent.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(icon, color: accent),
@@ -508,7 +508,7 @@ class _QuickStatCard extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.66),
+                    color: Colors.white.withValues(alpha: 0.66),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -548,9 +548,9 @@ class _MissionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.10)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -560,7 +560,7 @@ class _MissionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: accent.withOpacity(0.14),
+                  color: accent.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -589,7 +589,7 @@ class _MissionCard extends StatelessWidget {
           Text(
             subtitle,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.72),
+              color: Colors.white.withValues(alpha: 0.72),
               height: 1.45,
             ),
           ),
@@ -628,11 +628,11 @@ class _AdviceCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF1E4A3A).withOpacity(0.94),
-            const Color(0xFF14372B).withOpacity(0.88),
+            const Color(0xFF1E4A3A).withValues(alpha: 0.94),
+            const Color(0xFF14372B).withValues(alpha: 0.88),
           ],
         ),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -641,7 +641,7 @@ class _AdviceCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFF85EFAC).withOpacity(0.18),
+              color: const Color(0xFF85EFAC).withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(
@@ -665,7 +665,7 @@ class _AdviceCard extends StatelessWidget {
                 Text(
                   advice,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.72),
+                    color: Colors.white.withValues(alpha: 0.72),
                     height: 1.45,
                   ),
                 ),
