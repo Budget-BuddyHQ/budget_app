@@ -194,43 +194,52 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
   }
 
   Future<void> _handlePayload(Map<String, dynamic> payload) async {
-    if (_didHandleGameOver) {
-      return;
-    }
+  if (_didHandleGameOver) {
+    return;
+  }
 
-    final status = (payload['status'] ?? '').toString().trim().toLowerCase();
-    if (!_isTerminalStatus(status)) {
-      return;
-    }
+  final status = (payload['status'] ?? '').toString().trim().toLowerCase();
+  if (!_isTerminalStatus(status)) {
+    return;
+  }
 
-    _didHandleGameOver = true;
+  _didHandleGameOver = true;
 
-    final userStatsController = context.read<UserStatsController>();
-    final goldEarned = _readInt(payload['gold_earned'] ?? payload['gold']);
-    final xpEarned = _readInt(payload['xp_earned'] ?? payload['xp']);
-    final literacyEarned = _readInt(
-      payload['literacy_points_earned'] ?? payload['literacy_points'],
-    );
+  final userStatsController = context.read<UserStatsController>();
+  final goldEarned = _readInt(payload['gold_earned'] ?? payload['gold']);
+  final xpEarned = _readInt(payload['xp_earned'] ?? payload['xp']);
+  final literacyEarned = _readInt(
+    payload['literacy_points_earned'] ?? payload['literacy_points'],
+  );
 
-    _messageTimer?.cancel();
-    if (mounted) {
-      setState(() {
-        _isSyncing = true;
-        _cloudMessage = 'Saving to Cloud...';
-      });
-    }
+  _messageTimer?.cancel();
 
-    final actionResult = await userStatsController.applyChallengePayload(
-      <String, dynamic>{
-        ...payload,
-        'gold_earned': goldEarned,
-        'xp_earned': xpEarned,
-        'literacy_points_earned': literacyEarned,
-        'title': payload['title'] ?? 'React Challenge Reward',
-        'description': payload['description'] ??
-            'Mini-game rewards synced from the local React challenge.',
-      },
-    );
+  if (mounted) {
+    setState(() {
+      _isSyncing = true;
+      _cloudMessage = 'Saving to Cloud...';
+    });
+  }
+
+  try {
+    print('A: entered _handlePayload');
+    print('B: before applyChallengePayload');
+
+    final actionResult = await userStatsController
+        .applyChallengePayload(
+          <String, dynamic>{
+            ...payload,
+            'gold_earned': goldEarned,
+            'xp_earned': xpEarned,
+            'literacy_points_earned': literacyEarned,
+            'title': payload['title'] ?? 'React Challenge Reward',
+            'description': payload['description'] ??
+                'Mini-game rewards synced from the local React challenge.',
+          },
+        )
+        .timeout(const Duration(seconds: 8));
+
+    print('C: after applyChallengePayload');
 
     if (!mounted) {
       return;
@@ -239,25 +248,6 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
     setState(() {
       _isSyncing = false;
       _cloudMessage = actionResult.message;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          status == 'victory'
-              ? 'Victory! Rewards saved: +$goldEarned gold, +$xpEarned XP.'
-              : 'Battle finished. Rewards saved: +$goldEarned gold, +$xpEarned XP.',
-        ),
-      ),
-    );
-
-    _messageTimer = Timer(const Duration(seconds: 2), () {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _cloudMessage = null;
-      });
     });
 
     Navigator.of(context).pop(
@@ -269,7 +259,26 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
         syncState: actionResult.syncState,
       ),
     );
+  } catch (e, st) {
+    print('ERROR in _handlePayload: $e');
+    print(st);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSyncing = false;
+      _cloudMessage = 'Save failed';
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Challenge save failed: $e'),
+      ),
+    );
   }
+}
 
   bool _isTerminalStatus(String status) {
     const terminalStatuses = <String>{
