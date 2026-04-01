@@ -37,7 +37,7 @@ class AppTheme {
   // Shadows
   static final List<BoxShadow> elevationSmall = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.1),
+      color: Colors.black.withValues(alpha: 0.1),
       blurRadius: 8,
       offset: const Offset(0, 2),
     ),
@@ -45,7 +45,7 @@ class AppTheme {
 
   static final List<BoxShadow> elevationMedium = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.15),
+      color: Colors.black.withValues(alpha: 0.15),
       blurRadius: 12,
       offset: const Offset(0, 4),
     ),
@@ -53,7 +53,7 @@ class AppTheme {
 
   static final List<BoxShadow> elevationLarge = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.2),
+      color: Colors.black.withValues(alpha: 0.2),
       blurRadius: 24,
       offset: const Offset(0, 8),
     ),
@@ -153,7 +153,7 @@ class AppTheme {
             borderRadius: BorderRadius.circular(radiusLarge),
           ),
           elevation: 8,
-          shadowColor: limeAccent.withOpacity(0.5),
+          shadowColor: limeAccent.withValues(alpha: 0.5),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -226,7 +226,7 @@ class AppTheme {
           fontWeight: FontWeight.w600,
         ),
         hintStyle: TextStyle(
-          color: Colors.white.withOpacity(0.5),
+          color: Colors.white.withValues(alpha: 0.5),
           fontSize: fontSizeBase,
         ),
         errorStyle: const TextStyle(
@@ -246,10 +246,10 @@ class AppTheme {
     double borderRadius = radiusLarge,
   }) {
     return BoxDecoration(
-      color: Colors.white.withOpacity(bgOpacity),
+      color: Colors.white.withValues(alpha: bgOpacity),
       borderRadius: BorderRadius.circular(borderRadius),
       border: Border.all(
-        color: borderColor.withOpacity(borderOpacity),
+        color: borderColor.withValues(alpha: borderOpacity),
         width: borderWidth,
       ),
     );

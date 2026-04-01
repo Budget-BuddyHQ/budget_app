@@ -210,7 +210,7 @@ class _AuthScreenState extends State<AuthScreen>
                                 : 'Build your financial hero profile',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.78),
+                              color: Colors.white.withValues(alpha: 0.78),
                               fontSize: 14,
                               height: 1.45,
                             ),
@@ -412,12 +412,12 @@ class _AuthHero extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Colors.white.withOpacity(0.14),
-                Colors.white.withOpacity(0.06),
+                Colors.white.withValues(alpha: 0.14),
+                Colors.white.withValues(alpha: 0.06),
               ],
             ),
             borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: Colors.white.withOpacity(0.18)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x33000000),
@@ -438,13 +438,13 @@ class _AuthHero extends StatelessWidget {
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
                       colors: [
-                        const Color(0xFF85EFAC).withOpacity(0.96),
-                        const Color(0xFF45D388).withOpacity(0.92),
+                        const Color(0xFF85EFAC).withValues(alpha: 0.96),
+                        const Color(0xFF45D388).withValues(alpha: 0.92),
                       ],
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF85EFAC).withOpacity(0.26),
+                        color: const Color(0xFF85EFAC).withValues(alpha: 0.26),
                         blurRadius: 22,
                         spreadRadius: 2,
                       ),
@@ -477,7 +477,7 @@ class _AuthHero extends StatelessWidget {
                 'A polished, game-first finance coach that feels great on mobile.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.74),
+                  color: Colors.white.withValues(alpha: 0.74),
                   fontSize: 13,
                   height: 1.4,
                 ),
@@ -504,9 +504,9 @@ class _ModeSwitch extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
+        color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
       child: Row(
         children: [
@@ -613,9 +613,9 @@ class _AuthField extends StatelessWidget {
         hintText: hintText,
         floatingLabelBehavior: FloatingLabelBehavior.auto,
         filled: true,
-        fillColor: Colors.white.withOpacity(0.08),
+        fillColor: Colors.white.withValues(alpha: 0.08),
         labelStyle: TextStyle(
-          color: Colors.white.withOpacity(0.84),
+          color: Colors.white.withValues(alpha: 0.84),
           fontWeight: FontWeight.w600,
         ),
         floatingLabelStyle: const TextStyle(
@@ -623,18 +623,18 @@ class _AuthField extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
         hintStyle: TextStyle(
-          color: Colors.white.withOpacity(0.42),
+          color: Colors.white.withValues(alpha: 0.42),
         ),
         prefixIcon: Icon(prefixIcon, color: const Color(0xFF85EFAC)),
         suffixIcon: suffix,
         contentPadding: const EdgeInsets.all(20),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.14)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.14)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
@@ -703,9 +703,9 @@ class _TermsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -714,7 +714,7 @@ class _TermsCard extends StatelessWidget {
             value: accepted,
             activeColor: const Color(0xFF85EFAC),
             checkColor: const Color(0xFF103225),
-            side: BorderSide(color: Colors.white.withOpacity(0.28)),
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
             onChanged: (value) => onChanged(value ?? false),
           ),
           Expanded(
@@ -723,7 +723,7 @@ class _TermsCard extends StatelessWidget {
               child: Text(
                 'I agree to Budget Buddy storing my learning progress and cloud syncing my rewards.',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 12,
                   height: 1.45,
                 ),
