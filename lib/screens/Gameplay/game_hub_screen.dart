@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../controllers/user_stats_controller.dart';
+import '../../navigation/fade_page_route.dart';
+import '../../widgets/game_toast.dart';
 import '../reusable_widgets/custom_bottom_nav.dart';
 import 'bill_dodger_game.dart';
 import 'dashboard_shell.dart';
@@ -15,7 +17,7 @@ class GameHubScreen extends StatelessWidget {
   void _onNavSelected(BuildContext context, int index) {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
+      FadePageRoute(
         builder: (_) => DashboardShell(initialIndex: index.clamp(0, 4).toInt()),
       ),
     );
@@ -45,13 +47,12 @@ class GameHubScreen extends StatelessWidget {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '$title complete: +${result.goldEarned} gold, '
-          '+${result.xpEarned} XP. ${result.syncState.message}',
-        ),
-      ),
+    GameToast.show(
+      context,
+      title: '$title complete',
+      message:
+          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+      icon: Icons.workspace_premium_rounded,
     );
   }
 
@@ -65,13 +66,13 @@ class GameHubScreen extends StatelessWidget {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Bill Dodger: +${result.goldEarned} gold, '
-          '+${result.xpEarned} XP. ${result.syncState.message}',
-        ),
-      ),
+    GameToast.show(
+      context,
+      title: 'Bill Dodger complete',
+      message:
+          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+      icon: Icons.gamepad_rounded,
+      accent: const Color(0xFFFFC36B),
     );
   }
 

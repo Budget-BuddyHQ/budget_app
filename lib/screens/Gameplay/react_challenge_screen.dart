@@ -3,12 +3,14 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-import '../../services/local_web_game_server.dart';
 import '../../controllers/user_stats_controller.dart';
+import '../../services/local_web_game_server.dart';
 import '../../services/supabase_service.dart';
+import '../../widgets/game_toast.dart';
 
 class ReactGameCloseResult {
   const ReactGameCloseResult({
@@ -241,14 +243,16 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
       _cloudMessage = actionResult.message;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          status == 'victory'
-              ? 'Victory! Rewards saved: +$goldEarned gold, +$xpEarned XP.'
-              : 'Battle finished. Rewards saved: +$goldEarned gold, +$xpEarned XP.',
-        ),
-      ),
+    HapticFeedback.lightImpact();
+    GameToast.show(
+      context,
+      title: status == 'victory' ? 'Victory!' : 'Battle complete',
+      message:
+          '+$goldEarned gold • +$xpEarned XP • ${actionResult.message}',
+      icon: status == 'victory'
+          ? Icons.workspace_premium_rounded
+          : Icons.flag_rounded,
+      accent: const Color(0xFF85EFAC),
     );
 
     _messageTimer = Timer(const Duration(seconds: 2), () {

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../controllers/user_stats_controller.dart';
+import '../../navigation/fade_page_route.dart';
 import '../../services/supabase_service.dart';
+import '../../widgets/game_toast.dart';
 import 'bill_dodger_game.dart';
 import 'dashboard_shell.dart';
 import 'game_hub_screen.dart';
@@ -36,13 +38,12 @@ class TownSquareScreen extends StatelessWidget {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '$title complete: +${result.goldEarned} gold, '
-          '+${result.xpEarned} XP. ${result.syncState.message}',
-        ),
-      ),
+    GameToast.show(
+      context,
+      title: '$title complete',
+      message:
+          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+      icon: Icons.workspace_premium_rounded,
     );
   }
 
@@ -56,13 +57,13 @@ class TownSquareScreen extends StatelessWidget {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Bill Dodger: +${result.goldEarned} gold, '
-          '+${result.xpEarned} XP. ${result.syncState.message}',
-        ),
-      ),
+    GameToast.show(
+      context,
+      title: 'Bill Dodger complete',
+      message:
+          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+      icon: Icons.gamepad_rounded,
+      accent: const Color(0xFFFFC36B),
     );
   }
 
@@ -86,7 +87,7 @@ class TownSquareScreen extends StatelessWidget {
                     _WorldMapHero(
                       onDashboard: () => Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(
+                        FadePageRoute(
                           builder: (_) => const DashboardShell(initialIndex: 0),
                         ),
                       ),
@@ -116,7 +117,7 @@ class TownSquareScreen extends StatelessWidget {
                       accent: const Color(0xFF7FE7C4),
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(
+                        FadePageRoute(
                           builder: (_) => const LearningPathScreen(),
                         ),
                       ),
@@ -153,7 +154,7 @@ class TownSquareScreen extends StatelessWidget {
                       accent: const Color(0xFFA78BFA),
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const GameHubScreen()),
+                        FadePageRoute(builder: (_) => const GameHubScreen()),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -165,7 +166,7 @@ class TownSquareScreen extends StatelessWidget {
                       accent: const Color(0xFFF9D66B),
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(
+                        FadePageRoute(
                           builder: (_) => const LeaderboardScreen(),
                         ),
                       ),

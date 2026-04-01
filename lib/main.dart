@@ -14,6 +14,7 @@ import 'screens/auth/login_page.dart';
 import 'screens/auth/signup_page.dart';
 import 'screens/onboarding/welcome_screen.dart';
 import 'services/supabase_service.dart';
+import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,14 +85,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Budget Buddy',
-      theme: ThemeData(
-        colorSchemeSeed: Colors.green,
-        useMaterial3: true,
-        fontFamily: 'sans-serif',
-      ),
+      title: 'Budget Buddy - Financial Literacy Gaming',
+      theme: AppTheme.getLightTheme(),
       debugShowCheckedModeBanner: false,
-      initialRoute: '/welcome',
+      home: const _AppBootstrapGate(),
       routes: {
         '/welcome': (context) => const WelcomeScreen(),
         '/signup': (context) => const SignUpPage(),
@@ -103,6 +100,25 @@ class MyApp extends StatelessWidget {
         '/bill-dodger': (context) => const BillDodgerGameScreen(),
         '/bill_dodger': (context) => const BillDodgerGameScreen(),
         '/leaderboard': (context) => const LeaderboardScreen(),
+      },
+    );
+  }
+}
+
+class _AppBootstrapGate extends StatelessWidget {
+  const _AppBootstrapGate();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: SupabaseService.instance.getActiveSessionUserId(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const WelcomeScreen();
+        }
+        return snapshot.data == null
+            ? const WelcomeScreen()
+            : const DashboardShell();
       },
     );
   }

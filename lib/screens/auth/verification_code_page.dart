@@ -2,6 +2,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
+import '../../widgets/game_toast.dart';
+
 class VerificationCodePage extends StatefulWidget {
   const VerificationCodePage({super.key, required this.initialEmail});
 
@@ -34,16 +36,21 @@ class _VerificationCodePageState extends State<VerificationCodePage>
     final code = _codeController.text.trim();
 
     if (email.isEmpty || code.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your email and verification code.'),
-        ),
+      GameToast.show(
+        context,
+        title: 'Missing details',
+        message: 'Please enter your email and verification code.',
+        icon: Icons.error_outline_rounded,
+        accent: const Color(0xFFFFC36B),
       );
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Verify pressed (not implemented yet).')),
+    GameToast.show(
+      context,
+      title: 'Verification',
+      message: 'Verify pressed (not implemented yet).',
+      icon: Icons.verified_user_outlined,
     );
   }
 
@@ -52,10 +59,11 @@ class _VerificationCodePageState extends State<VerificationCodePage>
       _showTipBox = true; // show the tip box only after clicking
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('New code requested (not implemented yet).'),
-      ),
+    GameToast.show(
+      context,
+      title: 'New code requested',
+      message: 'A fresh verification code request was triggered.',
+      icon: Icons.mark_email_unread_outlined,
     );
   }
 
