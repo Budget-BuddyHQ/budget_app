@@ -20,13 +20,14 @@ class StatsActionResult {
 class UserStatsController extends ChangeNotifier {
   UserStatsController({
     required SupabaseService service,
-    this.userId = 'user_123',
+    String initialUserId = 'user_123',
   })  : _service = service,
-        _stats = UserStats.defaults(userId);
+        _userId = initialUserId,
+        _stats = UserStats.defaults(initialUserId);
 
   final SupabaseService _service;
-  final String userId;
 
+  String _userId;
   UserStats _stats;
   bool _isLoading = true;
   bool _isSaving = false;
@@ -35,6 +36,7 @@ class UserStatsController extends ChangeNotifier {
   bool _initialized = false;
 
   UserStats get stats => _stats;
+  String get userId => _userId;
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
   String? get statusMessage => _statusMessage;
@@ -48,21 +50,83 @@ class UserStatsController extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    _stats = await _service.loadUserStats(userId);
+    _userId = await _service.restoreSessionUserId(fallback: _userId);
+    _stats = await _service.loadUserStats(_userId);
     _isLoading = false;
     notifyListeners();
 
-    if (_subscription != null) {
-      await _subscription!.cancel();
-    }
-    _subscription = _service.watchUserStats(userId).listen((freshStats) {
-      _stats = freshStats;
-      notifyListeners();
-    });
+    await _attachRealtimeStream();
   }
 
   Future<void> refresh() async {
-    _stats = await _service.loadUserStats(userId);
+    _isLoading = true;
+    notifyListeners();
+    _stats = await _service.loadUserStats(_userId);
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<StatsActionResult> signIn({
+    required String email,
+    required String password,
+    String? username,
+    bool isNewAccount = false,
+  }) async {
+    final normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail.isEmpty || password.trim().isEmpty) {
+      return const StatsActionResult(
+        success: false,
+        message: 'Enter your email and password first.',
+        syncState: SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'Missing credentials.',
+        ),
+      );
+    }
+
+    _userId = _userIdFromEmail(normalizedEmail);
+    _stats = await _service.loadUserStats(_userId);
+
+    final resolvedUsername =
+        (username?.trim().isNotEmpty ?? false) ? username!.trim() : _displayNameFromEmail(normalizedEmail);
+    final nextStats = _stats.copyWith(
+      username: resolvedUsername,
+      spendingHabits: <String, dynamic>{
+        ..._stats.spendingHabits,
+        'username': resolvedUsername,
+        'email': normalizedEmail,
+      },
+      updatedAt: DateTime.now().toUtc(),
+    );
+
+    await _service.persistSession(
+      userId: _userId,
+      username: resolvedUsername,
+      email: normalizedEmail,
+    );
+
+    final result = await _saveStats(
+      nextStats,
+      savingMessage: isNewAccount
+          ? 'Creating your Budget Buddy profile...'
+          : 'Signing you in...',
+    );
+
+    await _attachRealtimeStream();
+    return result;
+  }
+
+  Future<void> signOut() async {
+    await _subscription?.cancel();
+    _subscription = null;
+    final previousUserId = _userId;
+    await _service.clearSessionAndCache(userId: previousUserId);
+    _userId = 'user_123';
+    _stats = UserStats.defaults(_userId);
+    _isLoading = false;
+    _isSaving = false;
+    _statusMessage = 'Logged out.';
     notifyListeners();
   }
 
@@ -245,15 +309,43 @@ class UserStatsController extends ChangeNotifier {
     );
   }
 
+  Future<void> _attachRealtimeStream() async {
+    await _subscription?.cancel();
+    _subscription = _service.watchUserStats(_userId).listen((freshStats) {
+      _stats = freshStats;
+      notifyListeners();
+    });
+  }
+
   List<double> _nextPortfolioSeries(double delta) {
     final series = List<double>.from(_stats.portfolioHistory);
     final current = series.isEmpty ? 0.42 : series.last;
-    final nextPoint = (current + delta).clamp(0.16, 0.95);
+    final nextPoint = (current + delta).clamp(0.16, 0.95).toDouble();
     if (series.length >= 8) {
       series.removeAt(0);
     }
     series.add(nextPoint.toDouble());
     return series;
+  }
+
+  String _userIdFromEmail(String email) {
+    final safe = email.replaceAll(RegExp(r'[^a-z0-9]'), '_');
+    return 'user_$safe';
+  }
+
+  String _displayNameFromEmail(String email) {
+    final handle = email.split('@').first.trim();
+    if (handle.isEmpty) {
+      return 'Finance Wizard';
+    }
+    final cleaned = handle.replaceAll(RegExp(r'[^a-zA-Z0-9]+'), ' ').trim();
+    return cleaned
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .map(
+          (part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
+        )
+        .join(' ');
   }
 
   @override

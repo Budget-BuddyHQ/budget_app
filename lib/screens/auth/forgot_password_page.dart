@@ -1,5 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+
+import '../../widgets/game_toast.dart';
 import 'verification_code_page.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -32,8 +34,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
 
   void _handleSendCode() {
     if (_emailController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your email address.')),
+      GameToast.show(
+        context,
+        title: 'Enter your email',
+        message: 'Please enter your email address.',
+        icon: Icons.email_outlined,
+        accent: const Color(0xFFFFC36B),
       );
       return;
     }

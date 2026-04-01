@@ -1,6 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
+import '../../widgets/game_toast.dart';
+
 class PrivacyPolicyPage extends StatefulWidget {
   const PrivacyPolicyPage({super.key});
 
@@ -40,18 +42,20 @@ class _PrivacyPolicyPage extends State<PrivacyPolicyPage>
   }
 
   void _handlePrivacyPolicy() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Privacy Policy tapped (not implemented yet).'),
-      ),
+    GameToast.show(
+      context,
+      title: 'Privacy Policy',
+      message: 'Privacy Policy tapped (not implemented yet).',
+      icon: Icons.privacy_tip_outlined,
     );
   }
 
   void _handleTerms() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Terms & Conditions tapped (not implemented yet).'),
-      ),
+    GameToast.show(
+      context,
+      title: 'Terms & Conditions',
+      message: 'Terms & Conditions tapped (not implemented yet).',
+      icon: Icons.gavel_rounded,
     );
   }
 
