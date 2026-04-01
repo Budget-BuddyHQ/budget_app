@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/services.dart';
 
 class UiAssetCatalog {
@@ -10,13 +8,9 @@ class UiAssetCatalog {
   static Future<UiAssetCatalog> load({
     String imageRoot = 'assets/images/',
   }) async {
-    final manifestRaw = await rootBundle.loadString('AssetManifest.json');
-    final manifestJson = jsonDecode(manifestRaw);
-    final manifest = manifestJson is Map<String, dynamic>
-        ? manifestJson
-        : <String, dynamic>{};
+    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
 
-    final imageAssets = manifest.keys
+    final imageAssets = manifest.listAssets()
         .where((path) => path.startsWith(imageRoot))
         .where(
           (path) =>
