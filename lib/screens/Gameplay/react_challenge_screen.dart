@@ -401,7 +401,7 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
             if (_isLoading)
               Positioned.fill(
                 child: ColoredBox(
-                  color: Colors.black.withOpacity(0.38),
+                  color: Colors.black.withValues(alpha: 0.38),
                   child: Center(
                     child: _ChallengeLoadingOverlay(
                       controller: _loadingController,
@@ -527,7 +527,7 @@ class _ChallengeLoadingOverlay extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
-        color: const Color(0xFF103225).withOpacity(0.94),
+        color: const Color(0xFF103225).withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white12),
       ),
@@ -586,7 +586,7 @@ class _CloudSyncBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF103225).withOpacity(0.92),
+        color: const Color(0xFF103225).withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: Colors.white12),
       ),
