@@ -627,7 +627,7 @@ class _AuthField extends StatelessWidget {
         ),
         prefixIcon: Icon(prefixIcon, color: const Color(0xFF85EFAC)),
         suffixIcon: suffix,
-        contentPadding: const EdgeInsets.fromLTRB(18, 24, 18, 20),
+        contentPadding: const EdgeInsets.all(20),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
           borderSide: BorderSide(color: Colors.white.withOpacity(0.14)),

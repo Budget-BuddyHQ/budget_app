@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'budget_ledger.dart';
+import 'budget_page.dart';
 
 class BudgetScreen extends StatelessWidget {
   const BudgetScreen({
@@ -14,7 +14,7 @@ class BudgetScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BudgetLedger(
+    return BudgetPage(
       activeTabIndex: activeTabIndex,
       onNavSelected: onNavSelected,
     );

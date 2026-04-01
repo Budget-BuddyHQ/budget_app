@@ -150,6 +150,10 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
           'GameBridge',
           onMessageReceived: _onBridgeMessage,
         )
+        ..addJavaScriptChannel(
+          'BudgetBuddyBridge',
+          onMessageReceived: _onBridgeMessage,
+        )
         ..loadRequest(launchUri);
 
       if (!mounted) {
@@ -224,9 +228,6 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
   }
 
   try {
-    print('A: entered _handlePayload');
-    print('B: before applyChallengePayload');
-
     final actionResult = await userStatsController
         .applyChallengePayload(
           <String, dynamic>{
@@ -240,8 +241,6 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
           },
         )
         .timeout(const Duration(seconds: 8));
-
-    print('C: after applyChallengePayload');
 
     if (!mounted) {
       return;
@@ -283,8 +282,7 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
       ),
     );
   } catch (e, st) {
-    print('ERROR in _handlePayload: $e');
-    print(st);
+    debugPrint('Challenge reward sync failed: $e\n$st');
 
     if (!mounted) {
       return;
@@ -295,10 +293,12 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
       _cloudMessage = 'Save failed';
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Challenge save failed: $e'),
-      ),
+    GameToast.show(
+      context,
+      title: 'Save failed',
+      message: 'Challenge reward sync hit a problem. Your next sync will retry.',
+      icon: Icons.cloud_off_rounded,
+      accent: const Color(0xFFFF8A80),
     );
   }
 }
