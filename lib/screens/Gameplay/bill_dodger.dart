@@ -39,14 +39,12 @@ class BillDodgerScreen extends StatefulWidget {
 class _BillDodgerScreenState extends State<BillDodgerScreen>
     with TickerProviderStateMixin {
   static const Color _background = Color(0xFF071711);
-  static const Color _panel = Color(0xFF113528);
   static const Color _accent = Color(0xFF85EFAC);
-  static const Color _needColor = Color(0xFF85EFAC);
-  static const Color _wantColor = Color(0xFFFFB084);
   static const int _roundSeconds = 45;
 
   final math.Random _random = math.Random();
   final List<_FallingPickup> _pickups = <_FallingPickup>[];
+  final FocusNode _focusNode = FocusNode();
 
   Ticker? _ticker;
   Timer? _spawnTimer;
@@ -90,6 +88,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _ticker?.dispose();
     _spawnTimer?.cancel();
     _countdownTimer?.cancel();
@@ -106,10 +105,14 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
       _finished = false;
       _claiming = false;
       _didClaim = false;
+      _movingLeft = false;
+      _movingRight = false;
       _pickups.clear();
       _playerX = math.max(0, (_arenaSize.width - _playerWidth) / 2).toDouble();
       _lastFrame = Duration.zero;
     });
+
+    _focusNode.requestFocus();
 
     _spawnTimer?.cancel();
     _countdownTimer?.cancel();
@@ -175,16 +178,16 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
   }
 
   void _updatePlayer(double deltaSeconds) {
-    const speed = 320.0;
+    const keyboardSpeed = 480.0;
     double direction = 0;
-    if (_movingLeft) {
-      direction -= 1;
-    }
-    if (_movingRight) {
-      direction += 1;
+
+    if (_movingLeft && !_movingRight) {
+      direction = -1;
+    } else if (_movingRight && !_movingLeft) {
+      direction = 1;
     }
 
-    _playerX += direction * speed * deltaSeconds;
+    _playerX += direction * keyboardSpeed * deltaSeconds;
     _playerX = _playerX
         .clamp(0, math.max(0, _arenaSize.width - _playerWidth))
         .toDouble();
@@ -195,6 +198,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
 
     for (final pickup in _pickups) {
       pickup.y += pickup.speed * deltaSeconds;
+
       final pickupRect = Rect.fromLTWH(
         pickup.x,
         pickup.y,
@@ -253,12 +257,13 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
       _random.nextInt(isNeed ? _needPool.length : _wantPool.length)
     ];
 
-    final width = math.min(98.0, _arenaSize.width * 0.24).toDouble();
-    final height = width * 0.72;
+    final width = math.min(104.0, _arenaSize.width * 0.25).toDouble();
+    final height = math.max(72.0, width * 0.82).toDouble();
     final maxX = math.max(0, _arenaSize.width - width).toDouble();
     final lanePadding = math.max(6, _arenaSize.width * 0.02).toDouble();
-    final x = lanePadding +
-        (_random.nextDouble() * math.max(0, maxX - lanePadding * 2).toDouble());
+    final usableWidth = math.max(0, maxX - lanePadding * 2).toDouble();
+    final x =
+        lanePadding + (_random.nextDouble() * (usableWidth <= 0 ? 0 : usableWidth));
 
     _pickups.add(
       _FallingPickup(
@@ -270,8 +275,71 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
         width: width,
         height: height,
         speed: 210 + _random.nextDouble() * 90,
+        tilt: (_random.nextDouble() - 0.5) * 0.16,
       ),
     );
+  }
+
+  void _startMoveLeft() {
+    if (!_started || _finished) return;
+    setState(() {
+      _movingLeft = true;
+      _movingRight = false;
+      _playerX = (_playerX - 14)
+          .clamp(0, math.max(0, _arenaSize.width - _playerWidth))
+          .toDouble();
+    });
+  }
+
+  void _startMoveRight() {
+    if (!_started || _finished) return;
+    setState(() {
+      _movingRight = true;
+      _movingLeft = false;
+      _playerX = (_playerX + 14)
+          .clamp(0, math.max(0, _arenaSize.width - _playerWidth))
+          .toDouble();
+    });
+  }
+
+  void _stopMoveLeft() {
+    if (!_movingLeft) return;
+    setState(() {
+      _movingLeft = false;
+    });
+  }
+
+  void _stopMoveRight() {
+    if (!_movingRight) return;
+    setState(() {
+      _movingRight = false;
+    });
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (!_started || _finished) {
+      return KeyEventResult.ignored;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+      if (event is KeyDownEvent) {
+        _startMoveLeft();
+      } else if (event is KeyUpEvent) {
+        _stopMoveLeft();
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+      if (event is KeyDownEvent) {
+        _startMoveRight();
+      } else if (event is KeyUpEvent) {
+        _stopMoveRight();
+      }
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
   }
 
   Future<bool> _confirmExit() async {
@@ -382,9 +450,11 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
     if (!_started || _finished) {
       return;
     }
+
     _playerX = (_playerX + delta)
         .clamp(0, math.max(0, _arenaSize.width - _playerWidth))
         .toDouble();
+
     setState(() {});
   }
 
@@ -465,12 +535,12 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                   ),
                   child: const Text(
-                    'Collect NEEDS, dodge WANTS, and glide smoothly across the arena. Hold the arrows or drag your hero left and right.',
+                    'Collect NEEDS, dodge WANTS, and glide smoothly across the arena. Use keyboard arrows, hold the buttons, or drag your hero left and right.',
                     style: TextStyle(
                       color: Colors.white70,
                       fontSize: 12,
@@ -486,6 +556,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       _arenaSize = constraints.biggest;
+
                       if (!_started && !_finished) {
                         _playerX = math.max(
                           0,
@@ -500,67 +571,80 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
 
                       return ClipRRect(
                         borderRadius: BorderRadius.circular(28),
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onHorizontalDragUpdate: (details) {
-                            _moveByDrag(details.delta.dx);
-                          },
-                          child: Stack(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      const Color(0xFF103225),
-                                      const Color(0xFF173B2D),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              Positioned.fill(
-                                child: CustomPaint(
-                                  painter: _ArenaPainter(),
-                                ),
-                              ),
-                              for (final pickup in _pickups)
-                                Positioned(
-                                  left: pickup.x,
-                                  top: pickup.y,
-                                  child: _PickupCard(pickup: pickup),
-                                ),
-                              AnimatedPositioned(
-                                duration: const Duration(milliseconds: 60),
-                                curve: Curves.linear,
-                                left: _playerX,
-                                top: _playerY,
-                                child: _PlayerAvatar(
-                                  width: _playerWidth,
-                                  height: _playerHeight,
-                                ),
-                              ),
-                              if (!_started && !_finished)
-                                Positioned.fill(
-                                  child: _OverlayCenter(
-                                    child: _IntroCard(onStart: _startGame),
-                                  ),
-                                ),
-                              if (_finished)
-                                Positioned.fill(
-                                  child: _OverlayCenter(
-                                    child: _ResultsCard(
-                                      score: _score,
-                                      money: _money,
-                                      message: _gradeMessage(),
-                                      rewards: projected,
-                                      claiming: _claiming,
-                                      onReplay: _startGame,
-                                      onClaim: _claimRewards,
+                        child: Focus(
+                          focusNode: _focusNode,
+                          autofocus: true,
+                          onKeyEvent: _handleKeyEvent,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => _focusNode.requestFocus(),
+                            onTapDown: (_) => _focusNode.requestFocus(),
+                            onHorizontalDragStart: (_) {
+                              _focusNode.requestFocus();
+                            },
+                            onHorizontalDragUpdate: (details) {
+                              _moveByDrag(details.delta.dx * 1.35);
+                            },
+                            child: Stack(
+                              children: [
+                                Container(
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Color(0xFF103225),
+                                        Color(0xFF173B2D),
+                                      ],
                                     ),
                                   ),
                                 ),
-                            ],
+                                Positioned.fill(
+                                  child: CustomPaint(
+                                    painter: _ArenaPainter(),
+                                  ),
+                                ),
+                                for (final pickup in _pickups)
+                                  Positioned(
+                                    left: pickup.x,
+                                    top: pickup.y,
+                                    child: Transform.rotate(
+                                      angle: pickup.tilt,
+                                      child: _PickupCard(pickup: pickup),
+                                    ),
+                                  ),
+                                AnimatedPositioned(
+                                  duration: const Duration(milliseconds: 60),
+                                  curve: Curves.linear,
+                                  left: _playerX,
+                                  top: _playerY,
+                                  child: _PlayerAvatar(
+                                    width: _playerWidth,
+                                    height: _playerHeight,
+                                  ),
+                                ),
+                                if (!_started && !_finished)
+                                  Positioned.fill(
+                                    child: _OverlayCenter(
+                                      child: _IntroCard(onStart: _startGame),
+                                    ),
+                                  ),
+                                if (_finished)
+                                  Positioned.fill(
+                                    child: _OverlayCenter(
+                                      child: _ResultsCard(
+                                        score: _score,
+                                        money: _money,
+                                        message: _gradeMessage(),
+                                        rewards: projected,
+                                        claiming: _claiming,
+                                        onReplay: _startGame,
+                                        onClaim: _claimRewards,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       );
@@ -578,12 +662,12 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
                         icon: Icons.arrow_left_rounded,
                         label: 'Hold Left',
                         accent: Colors.white,
-                        background: Colors.white.withOpacity(0.06),
+                        background: Colors.white.withValues(alpha: 0.06),
                         onDown: () {
                           HapticFeedback.lightImpact();
-                          _movingLeft = true;
+                          _startMoveLeft();
                         },
-                        onUp: () => _movingLeft = false,
+                        onUp: _stopMoveLeft,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -595,9 +679,9 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
                         background: _accent,
                         onDown: () {
                           HapticFeedback.lightImpact();
-                          _movingRight = true;
+                          _startMoveRight();
                         },
-                        onUp: () => _movingRight = false,
+                        onUp: _stopMoveRight,
                       ),
                     ),
                   ],
@@ -633,6 +717,7 @@ class _FallingPickup {
     required this.width,
     required this.height,
     required this.speed,
+    required this.tilt,
   });
 
   final String label;
@@ -641,6 +726,7 @@ class _FallingPickup {
   final double width;
   final double height;
   final double speed;
+  final double tilt;
   double x;
   double y;
   bool resolved = false;
@@ -709,9 +795,9 @@ class _TopChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -741,58 +827,108 @@ class _PickupCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isNeed = pickup.kind == _PickupKind.need;
-    final accent = isNeed ? const Color(0xFF85EFAC) : const Color(0xFFFFB084);
+
+    final Color accent =
+        isNeed ? const Color(0xFF73E9A6) : const Color(0xFFFFB084);
+    final Color accentDark =
+        isNeed ? const Color(0xFF39C97A) : const Color(0xFFFF8D5C);
+    final IconData icon =
+        isNeed ? Icons.check_circle_rounded : Icons.shopping_bag_rounded;
 
     return Container(
       width: pickup.width,
       height: pickup.height,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FAF3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withOpacity(0.9), width: 1.2),
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isNeed
+              ? const [
+                  Color(0xFFF3FFF7),
+                  Color(0xFFDDF8E8),
+                ]
+              : const [
+                  Color(0xFFFFF5EF),
+                  Color(0xFFFFE4D6),
+                ],
+        ),
+        border: Border.all(
+          color: accent.withValues(alpha: 0.95),
+          width: 1.4,
+        ),
         boxShadow: [
           BoxShadow(
-            color: accent.withOpacity(0.12),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: accent.withValues(alpha: 0.22),
+            blurRadius: 14,
+            spreadRadius: 1,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: accent,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              isNeed ? 'Need' : 'Want',
-              style: const TextStyle(
-                color: Color(0xFF103225),
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
+          Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  isNeed ? 'Need' : 'Want',
+                  style: const TextStyle(
+                    color: Color(0xFF103225),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    height: 1.0,
+                  ),
+                ),
               ),
-            ),
+              const Spacer(),
+              Icon(
+                icon,
+                size: 16,
+                color: accentDark,
+              ),
+            ],
           ),
           const Spacer(),
           Text(
             pickup.label,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Color(0xFF17382D),
-              fontWeight: FontWeight.w800,
-              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              fontSize: 12.5,
+              height: 1.05,
             ),
           ),
-          Text(
-            '\$${pickup.amount}',
-            style: const TextStyle(
-              color: Color(0xFF355E4E),
-              fontSize: 11,
+          const SizedBox(height: 6),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.72),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: accent.withValues(alpha: 0.7),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              '\$${pickup.amount}',
+              style: const TextStyle(
+                color: Color(0xFF355E4E),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                height: 1.0,
+              ),
             ),
           ),
         ],
@@ -820,10 +956,10 @@ class _PlayerAvatar extends StatelessWidget {
         gradient: const LinearGradient(
           colors: [Color(0xFF85EFAC), Color(0xFF4DD78E)],
         ),
-        border: Border.all(color: Colors.white.withOpacity(0.42), width: 2),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.42), width: 2),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF85EFAC).withOpacity(0.22),
+            color: const Color(0xFF85EFAC).withValues(alpha: 0.22),
             blurRadius: 18,
             spreadRadius: 1,
           ),
@@ -850,7 +986,7 @@ class _OverlayCenter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black.withOpacity(0.32),
+      color: Colors.black.withValues(alpha: 0.32),
       alignment: Alignment.center,
       padding: const EdgeInsets.all(20),
       child: child,
@@ -873,7 +1009,7 @@ class _IntroCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF163729),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.10)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -889,10 +1025,10 @@ class _IntroCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Bill Dodger now uses smooth free movement, tighter collisions, and safer bounds for mobile screens.',
+            'Bill Dodger now supports faster controls, keyboard arrows, drag movement, and more engaging falling pickups.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.74),
+              color: Colors.white.withValues(alpha: 0.74),
               height: 1.45,
             ),
           ),
@@ -939,7 +1075,7 @@ class _ResultsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF163729),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.10)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -957,7 +1093,7 @@ class _ResultsCard extends StatelessWidget {
           Text(
             message,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.72),
+              color: Colors.white.withValues(alpha: 0.72),
               height: 1.45,
             ),
           ),
@@ -1013,7 +1149,7 @@ class _ResultChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -1022,7 +1158,7 @@ class _ResultChip extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.62),
+              color: Colors.white.withValues(alpha: 0.62),
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -1069,7 +1205,7 @@ class _ControlButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.10)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1094,10 +1230,11 @@ class _ArenaPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final lanePaint = Paint()
-      ..color = Colors.white.withOpacity(0.05)
+      ..color = Colors.white.withValues(alpha: 0.05)
       ..strokeWidth = 1;
+
     final shimmerPaint = Paint()
-      ..color = Colors.white.withOpacity(0.04)
+      ..color = Colors.white.withValues(alpha: 0.04)
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round;
 

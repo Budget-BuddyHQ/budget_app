@@ -138,12 +138,12 @@ class _GameToastBannerState extends State<_GameToastBanner>
                       ),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: widget.accent.withOpacity(0.42),
+                        color: widget.accent.withValues(alpha: 0.42),
                         width: 1.2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: widget.accent.withOpacity(0.18),
+                          color: widget.accent.withValues(alpha: 0.18),
                           blurRadius: 22,
                           offset: const Offset(0, 10),
                         ),
@@ -160,7 +160,7 @@ class _GameToastBannerState extends State<_GameToastBanner>
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: widget.accent.withOpacity(0.16),
+                            color: widget.accent.withValues(alpha: 0.16),
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Icon(

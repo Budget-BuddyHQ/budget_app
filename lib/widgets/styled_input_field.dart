@@ -101,7 +101,7 @@ class _StyledInputFieldState extends State<StyledInputField> {
             boxShadow: _isFocused
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF76FF03).withOpacity(0.2),
+                      color: const Color(0xFF76FF03).withValues(alpha: 0.2),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
