@@ -127,7 +127,7 @@ class ProfileScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Balance: \$${stats.gold} • XP: ${stats.xp}',
+                              'Balance: \$${stats.gold} | XP: ${stats.xp}',
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.72),
                               ),
