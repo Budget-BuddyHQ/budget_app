@@ -63,7 +63,7 @@ class BudgetLedger extends StatelessWidget {
                     Text(
                       'A clean view of where your gold goes, what comes back, and how steady your habits feel.',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.74),
+                        color: Colors.white.withValues(alpha: 0.74),
                         height: 1.45,
                       ),
                     ),
@@ -108,7 +108,7 @@ class BudgetLedger extends StatelessWidget {
                   Positioned.fill(
                     child: IgnorePointer(
                       child: Container(
-                        color: Colors.black.withOpacity(0.06),
+                        color: Colors.black.withValues(alpha: 0.06),
                         padding: const EdgeInsets.fromLTRB(16, 18, 16, 120),
                         child: Column(
                           children: const [
@@ -152,11 +152,11 @@ class _BudgetHeroCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF173C2F).withOpacity(0.96),
-            const Color(0xFF214D3E).withOpacity(0.92),
+            const Color(0xFF173C2F).withValues(alpha: 0.96),
+            const Color(0xFF214D3E).withValues(alpha: 0.92),
           ],
         ),
-        border: Border.all(color: Colors.white.withOpacity(0.10)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,7 +164,7 @@ class _BudgetHeroCard extends StatelessWidget {
           Text(
             'Available Gold',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.72),
+              color: Colors.white.withValues(alpha: 0.72),
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -223,7 +223,7 @@ class _BudgetMetricChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
@@ -232,7 +232,7 @@ class _BudgetMetricChip extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.16),
+              color: accent.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: accent, size: 20),
@@ -251,7 +251,7 @@ class _BudgetMetricChip extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.64),
+                  color: Colors.white.withValues(alpha: 0.64),
                   fontSize: 12,
                 ),
               ),
@@ -279,9 +279,9 @@ class _SpendingDonutCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,7 +298,7 @@ class _SpendingDonutCard extends StatelessWidget {
           Text(
             'A donut chart keeps this fast and readable for first-time users.',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.66),
+              color: Colors.white.withValues(alpha: 0.66),
               fontSize: 12,
             ),
           ),
@@ -487,12 +487,12 @@ class _WalletTransactionCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.white.withOpacity(0.08),
-            Colors.white.withOpacity(0.04),
+            Colors.white.withValues(alpha: 0.08),
+            Colors.white.withValues(alpha: 0.04),
           ],
         ),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         children: [
@@ -500,7 +500,7 @@ class _WalletTransactionCard extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.12),
+              color: accent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Icon(
@@ -527,7 +527,7 @@ class _WalletTransactionCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.66),
+                    color: Colors.white.withValues(alpha: 0.66),
                     height: 1.35,
                   ),
                 ),
@@ -574,13 +574,13 @@ class _SmallPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: Colors.white.withOpacity(0.74),
+          color: Colors.white.withValues(alpha: 0.74),
           fontSize: 10,
           fontWeight: FontWeight.w700,
         ),

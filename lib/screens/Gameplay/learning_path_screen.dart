@@ -1,423 +1,560 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+
 import '../../models/lesson.dart';
 import '../../models/progression_service.dart';
+import '../../widgets/game_toast.dart';
+import '../reusable_widgets/custom_bottom_nav.dart';
 import 'lesson_screen.dart';
-import '../../components/skill_tree_node.dart';
 
 class LearningPathScreen extends StatefulWidget {
-  const LearningPathScreen({super.key});
+  const LearningPathScreen({
+    super.key,
+    this.activeTabIndex = 3,
+    this.onNavSelected,
+  });
+
+  final int activeTabIndex;
+  final ValueChanged<int>? onNavSelected;
 
   @override
   State<LearningPathScreen> createState() => _LearningPathScreenState();
 }
 
-class _LearningPathScreenState extends State<LearningPathScreen>
-    with SingleTickerProviderStateMixin {
-  late ProgressionService _progressionService;
-  bool _isTopBarVisible = true;
-  bool _isBottomSheetVisible = true;
-  late AnimationController _backgroundController;
-
-  // Controller for the interactive map view
-  final TransformationController _transformationController =
-      TransformationController();
-  final DraggableScrollableController _bottomSheetController =
-      DraggableScrollableController();
+class _LearningPathScreenState extends State<LearningPathScreen> {
+  late final ProgressionService _progressionService;
 
   @override
   void initState() {
     super.initState();
-    _progressionService = ProgressionService();
-    _progressionService.addListener(_onProgressionChanged);
-
-    _backgroundController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 20),
-    )..repeat();
-
-    // Center the view initially (optional, slight delay to ensure build is done)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _transformationController.value = Matrix4.identity()
-        ..translateByDouble(0.0, -100.0, 0.0, 1.0);// Start slightly scrolled down
-    });
+    _progressionService = ProgressionService()..addListener(_refresh);
   }
 
   @override
   void dispose() {
-    _progressionService.removeListener(_onProgressionChanged);
-    _transformationController.dispose();
-    _bottomSheetController.dispose();
-    _backgroundController.dispose();
+    _progressionService.removeListener(_refresh);
     super.dispose();
   }
 
-  void _onProgressionChanged() {
-    setState(() {});
-  }
-
-  void _toggleTopBar() {
-    setState(() {
-      _isTopBarVisible = !_isTopBarVisible;
-    });
-  }
-
-  void _toggleBottomSheet() {
-    setState(() {
-      _isBottomSheetVisible = !_isBottomSheetVisible;
-    });
-  }
-
-  /// Calculate positions based on a fixed width so math doesn't break
-  List<Offset> _calculateNodePositions(int count, double width) {
-    final positions = <Offset>[];
-    final verticalSpacing = 160.0;
-    final topPadding = 100.0;
-
-    // Ensure we have a valid width to work with, even if screen is weird
-    final usableWidth = width > 0 ? width : 400.0;
-    final safeWidth = usableWidth - 80;
-
-    for (int i = 0; i < count; i++) {
-      final y = topPadding + (i * verticalSpacing);
-
-      double horizontalPercent;
-      int patternStep = i % 4;
-
-      if (patternStep == 0) {
-        horizontalPercent = 0.5;
-      } else if (patternStep == 1)
-        {horizontalPercent = 0.75;}
-      else if (patternStep == 2)
-        {horizontalPercent = 0.5;}
-      else
-        {horizontalPercent = 0.25;}
-
-      final x = 40 + (horizontalPercent * safeWidth) - 45; // -45 to center node
-
-      positions.add(Offset(x, y));
+  void _refresh() {
+    if (mounted) {
+      setState(() {});
     }
-    return positions;
   }
 
-  Widget _buildConnectionLine(Offset start, Offset end, bool isCompleted) {
-    final path = Path();
-    final startCenter = Offset(start.dx + 45, start.dy + 45);
-    final endCenter = Offset(end.dx + 45, end.dy + 45);
+  Future<void> _openLesson(Lesson lesson) async {
+    final status = _progressionService.getLessonStatus(lesson.id);
+    if (status == LessonStatus.locked) {
+      GameToast.show(
+        context,
+        title: 'Locked lesson',
+        message: 'Finish the previous lesson to unlock ${lesson.title}.',
+        icon: Icons.lock_outline_rounded,
+        accent: const Color(0xFFFFB084),
+      );
+      return;
+    }
 
-    // Bezier Curve Logic for fluid path
-    path.moveTo(startCenter.dx, startCenter.dy);
-
-    final controlPoint1 = Offset(
-      startCenter.dx,
-      startCenter.dy + (endCenter.dy - startCenter.dy) * 0.5,
-    );
-    final controlPoint2 = Offset(
-      endCenter.dx,
-      endCenter.dy - (endCenter.dy - startCenter.dy) * 0.5,
-    );
-
-    path.cubicTo(
-      controlPoint1.dx,
-      controlPoint1.dy,
-      controlPoint2.dx,
-      controlPoint2.dy,
-      endCenter.dx,
-      endCenter.dy,
-    );
-
-    return CustomPaint(
-      painter: _ConnectionLinePainter(
-        path: path,
-        color: isCompleted
-            ? const Color.fromARGB(255, 96, 170, 36)
-            : Colors.grey.withValues(alpha: 0.5),
-        strokeWidth: isCompleted ? 6.0 : 4.0,
-        isCompleted: isCompleted,
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LessonScreen(
+          lesson: lesson,
+          progressionService: _progressionService,
+        ),
       ),
     );
-  }
 
-  void _handleLessonTap(Lesson lesson) {
-    if (_progressionService.getLessonStatus(lesson.id) ==
-        LessonStatus.available) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => LessonScreen(
-            lesson: lesson,
-            progressionService: _progressionService,
-          ),
-        ),
-      );
+    if (!mounted) {
+      return;
     }
+
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     final lessons = _progressionService.lessons;
+    final nextLesson = lessons.cast<Lesson?>().firstWhere(
+          (lesson) =>
+              lesson != null &&
+              _progressionService.getLessonStatus(lesson.id) == LessonStatus.available,
+          orElse: () => null,
+        );
+    final completed = _progressionService.completedCount;
+    final total = _progressionService.totalCount;
     final progress = _progressionService.getProgress();
-    final screenSize = MediaQuery.of(context).size;
-
-    // Total height of the skill tree canvas
-    final double totalCanvasHeight = (lessons.length * 160.0) + 400.0;
-
-    // Pre-calculate positions using SCREEN width, not LayoutBuilder constraints
-    // This fixes the issue where nodes disappeared because constraints were infinite
-    final nodePositions = _calculateNodePositions(
-      lessons.length,
-      screenSize.width,
-    );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7), // Light grey backing
-      appBar: AppBar(
-        title: const Text('Financial Literacy'),
-        backgroundColor: const Color(0xFF2E4A3D), // Deep Forest Green
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
+      backgroundColor: const Color(0xFF081A14),
+      bottomNavigationBar: widget.onNavSelected == null
+          ? null
+          : CustomBottomNav(
+              activeIndex: widget.activeTabIndex,
+              onSelected: widget.onNavSelected,
+            ),
       body: Stack(
         children: [
-          // 1. Interactive Map View (Pannable/Zoomable)
-          InteractiveViewer(
-            transformationController: _transformationController,
-            boundaryMargin: const EdgeInsets.all(
-              500.0,
-            ), // Allow panning way out
-            minScale: 0.5,
-            maxScale: 2.0,
-            constrained: false, // Allows the child to be bigger than the screen
-            child: SizedBox(
-              width: screenSize.width,
-              height: totalCanvasHeight,
-              child: Stack(
-                children: [
-                  // A. Grid Background (Restored)
-                  Positioned.fill(
-                    child: AnimatedBuilder(
-                      animation: _backgroundController,
-                      builder: (context, child) {
-                        return CustomPaint(
-                          painter: _GridPatternPainter(
-                            progress: _backgroundController.value,
-                          ),
-                        );
-                      },
-                    ),
+          const _LessonsBackdrop(),
+          SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 132),
+              children: [
+                _LessonsHero(
+                  completed: completed,
+                  total: total,
+                  progress: progress,
+                  onTownSquare: () => widget.onNavSelected?.call(2),
+                ),
+                const SizedBox(height: 18),
+                if (nextLesson != null)
+                  _NextLessonCard(
+                    lesson: nextLesson,
+                    onOpen: () => _openLesson(nextLesson),
                   ),
-
-                  // B. Connection Lines (Draw first so they are behind nodes)
-                  ...List.generate(lessons.length - 1, (index) {
-                    final isCompleted =
-                        _progressionService.getLessonStatus(
-                          lessons[index].id,
-                        ) ==
-                        LessonStatus.completed;
-                    return _buildConnectionLine(
-                      nodePositions[index],
-                      nodePositions[index + 1],
-                      isCompleted,
-                    );
-                  }),
-
-                  // C. Nodes
-                  ...lessons.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final lesson = entry.value;
-                    final status = _progressionService.getLessonStatus(
-                      lesson.id,
-                    );
-
-                    return SkillTreeNode(
-                      lesson: lesson,
-                      status: status,
-                      position: nodePositions[index],
-                      onTap: () => _handleLessonTap(lesson),
-                    );
-                  }),
-                ],
-              ),
+                if (nextLesson != null) const SizedBox(height: 18),
+                _LessonsMap(
+                  lessons: lessons,
+                  progressionService: _progressionService,
+                  onLessonTap: _openLesson,
+                ),
+              ],
             ),
           ),
-
-          // 2. UI Overlays
-          if (_isTopBarVisible)
-            Positioned(
-              top: 16.0,
-              left: 16.0,
-              right: 80.0, // Make room for buttons
-              child: IgnorePointer(
-                child: AnimatedSize(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  child: _buildGlassmorphicProgressBar(progress),
-                ),
-              ),
-            ),
-
-          if (_isBottomSheetVisible) _buildResizableLessonSheet(),
-          _buildFloatingControls(),
         ],
       ),
     );
   }
+}
 
-  // --- WIDGET HELPERS ---
+class _LessonsBackdrop extends StatelessWidget {
+  const _LessonsBackdrop();
 
-  Widget _buildResizableLessonSheet() {
-    final lessons = _progressionService.lessons;
-    final bool allLessonsCompleted =
-        _progressionService.completedCount == _progressionService.totalCount;
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF06150F),
+                Color(0xFF0B231A),
+                Color(0xFF103127),
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          top: -80,
+          right: -40,
+          child: _Aura(
+            size: 220,
+            color: const Color(0xFF4ADE80).withValues(alpha: 0.14),
+          ),
+        ),
+        Positioned(
+          top: 220,
+          left: -70,
+          child: _Aura(
+            size: 170,
+            color: const Color(0xFF58C7FF).withValues(alpha: 0.10),
+          ),
+        ),
+      ],
+    );
+  }
+}
 
-    Lesson? availableLesson;
-    if (!allLessonsCompleted) {
-      try {
-        availableLesson = lessons.firstWhere(
-          (l) =>
-              _progressionService.getLessonStatus(l.id) ==
-              LessonStatus.available,
-        );
-      } catch (e) {
-        availableLesson = null;
-      }
-    }
+class _Aura extends StatelessWidget {
+  const _Aura({
+    required this.size,
+    required this.color,
+  });
 
-    return DraggableScrollableSheet(
-      controller: _bottomSheetController,
-      initialChildSize: 0.2,
-      minChildSize: 0.1,
-      maxChildSize: 0.85,
-      snap: true,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 15,
-                spreadRadius: 2,
-                offset: const Offset(0, -2),
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color,
+          boxShadow: [
+            BoxShadow(
+              color: color,
+              blurRadius: size * 0.42,
+              spreadRadius: size * 0.06,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LessonsHero extends StatelessWidget {
+  const _LessonsHero({
+    required this.completed,
+    required this.total,
+    required this.progress,
+    required this.onTownSquare,
+  });
+
+  final int completed;
+  final int total;
+  final double progress;
+  final VoidCallback onTownSquare;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF102C21).withValues(alpha: 0.98),
+            const Color(0xFF174333).withValues(alpha: 0.94),
+            const Color(0xFF1E4F3D).withValues(alpha: 0.90),
+          ],
+        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x44000000),
+            blurRadius: 24,
+            offset: Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Lessons Academy',
+                      style: TextStyle(
+                        color: const Color(0xFFB7F7D0).withValues(alpha: 0.96),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Node-based learning path',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Build real money instincts one lesson at a time, then head back into Town Square stronger.',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.72),
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Container(
+                width: 86,
+                height: 86,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF58C7FF), Color(0xFF85EFAC)],
+                  ),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.55), width: 3),
+                ),
+                child: const Icon(
+                  Icons.school_rounded,
+                  color: Color(0xFF062C21),
+                  size: 42,
+                ),
               ),
             ],
           ),
-          child: Column(
+          const SizedBox(height: 18),
+          Row(
             children: [
-              // Header / Drag Handle Area
-              GestureDetector(
-                onTap: () {
-                  // Optional: tap header to snap up
-                  if (_bottomSheetController.size < 0.25) {
-                    _bottomSheetController.animateTo(
-                      0.35,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOut,
-                    );
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(24),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Your Path',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.grey[800],
-                              ),
-                            ),
-                            Text(
-                              '${_progressionService.completedCount}/${_progressionService.totalCount}',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: const Color.fromARGB(255, 96, 170, 36),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+              Expanded(
+                child: _HeroPill(
+                  label: 'Completed',
+                  value: '$completed/$total',
+                  accent: const Color(0xFF85EFAC),
                 ),
               ),
-              const Divider(height: 1),
-
-              // Scrollable Content
+              const SizedBox(width: 12),
               Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  padding: EdgeInsets.zero,
-                  children: [
-                    if (!allLessonsCompleted && availableLesson != null) ...[
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-                        child: Text(
-                          "NEXT UP",
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[400],
-                            letterSpacing: 1.2,
+                child: _HeroPill(
+                  label: 'Completion',
+                  value: '${(progress * 100).round()}%',
+                  accent: const Color(0xFFFFD45C),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 11,
+              value: progress,
+              backgroundColor: Colors.white.withValues(alpha: 0.10),
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF85EFAC)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              onPressed: onTownSquare,
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFFFD45C),
+                foregroundColor: const Color(0xFF062C21),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+              icon: const Icon(Icons.auto_awesome_rounded),
+              label: const Text(
+                'Return to Town Square',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroPill extends StatelessWidget {
+  const _HeroPill({
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.62),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              color: accent,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NextLessonCard extends StatelessWidget {
+  const _NextLessonCard({
+    required this.lesson,
+    required this.onOpen,
+  });
+
+  final Lesson lesson;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF58C7FF).withValues(alpha: 0.18),
+            Colors.white.withValues(alpha: 0.04),
+          ],
+        ),
+        border: Border.all(color: const Color(0xFF58C7FF).withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: const Color(0xFF58C7FF).withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.menu_book_rounded,
+              color: Color(0xFF58C7FF),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Next Up',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  lesson.title,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.72),
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          FilledButton(
+            onPressed: onOpen,
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF58C7FF),
+              foregroundColor: const Color(0xFF062C21),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: const Text(
+              'Start',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LessonsMap extends StatelessWidget {
+  const _LessonsMap({
+    required this.lessons,
+    required this.progressionService,
+    required this.onLessonTap,
+  });
+
+  final List<Lesson> lessons;
+  final ProgressionService progressionService;
+  final ValueChanged<Lesson> onLessonTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final positions = _buildPositions(width, lessons.length);
+        final canvasHeight = 180 + math.max(0, lessons.length - 1) * 148.0;
+
+        return Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Academy Path',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Tap any available lesson node to open it. Completed nodes stay lit so progress is always visible.',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.68),
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 18),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: math.max(width, 360),
+                  height: canvasHeight,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: _LessonPathPainter(
+                            positions: positions,
+                            statuses: lessons
+                                .map((lesson) => progressionService.getLessonStatus(lesson.id))
+                                .toList(growable: false),
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildLessonListItem(
-                          availableLesson,
-                          LessonStatus.available,
-                          0,
+                      for (var index = 0; index < lessons.length; index++)
+                        Positioned(
+                          left: positions[index].dx - 44,
+                          top: positions[index].dy - 44,
+                          child: _LessonNode(
+                            lesson: lessons[index],
+                            status: progressionService.getLessonStatus(lessons[index].id),
+                            onTap: () => onLessonTap(lessons[index]),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
                     ],
-
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-                      child: Text(
-                        "ALL LESSONS",
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[400],
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ),
-                    ...lessons.asMap().entries.map((e) {
-                      final status = _progressionService.getLessonStatus(
-                        e.value.id,
-                      );
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildLessonListItem(e.value, status, e.key),
-                      );
-                    }),
-                    const SizedBox(height: 40), // Bottom padding
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -427,155 +564,118 @@ class _LearningPathScreenState extends State<LearningPathScreen>
     );
   }
 
-  Widget _buildLessonListItem(Lesson lesson, LessonStatus status, int index) {
-    IconData icon;
-    Color color;
-    Color bgColor;
+  List<Offset> _buildPositions(double width, int count) {
+    final positions = <Offset>[];
+    final safeWidth = math.max(300.0, width - 40);
+    const verticalSpacing = 148.0;
+    const startY = 62.0;
 
-    switch (status) {
-      case LessonStatus.completed:
-        icon = Icons.check_circle;
-        color = const Color.fromARGB(255, 96, 170, 36);
-        bgColor = Colors.white;
-        break;
-      case LessonStatus.available:
-        icon = Icons.play_circle_fill;
-        color = const Color.fromARGB(255, 33, 150, 243);
-        bgColor = Colors.white;
-        break;
-      case LessonStatus.locked:
-        icon = Icons.lock;
-        color = Colors.grey[400]!;
-        bgColor = Colors.white;
-        break;
+    for (var index = 0; index < count; index++) {
+      final pattern = index % 4;
+      final xFactor = switch (pattern) {
+        0 => 0.20,
+        1 => 0.76,
+        2 => 0.32,
+        _ => 0.68,
+      };
+      positions.add(Offset(safeWidth * xFactor + 20, startY + index * verticalSpacing));
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: status == LessonStatus.locked
-                ? Colors.grey[100]
-                : color.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        title: Text(
-          lesson.title,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: status == LessonStatus.locked ? Colors.grey : Colors.black87,
-          ),
-        ),
-        subtitle: Text(
-          status == LessonStatus.locked
-              ? 'Complete previous lesson'
-              : 'Tap to start',
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-        ),
-        onTap: () => _handleLessonTap(lesson),
-      ),
-    );
+    return positions;
   }
+}
 
-  Widget _buildFloatingControls() {
-    return Positioned(
-      top: 16,
-      right: 16,
+class _LessonNode extends StatelessWidget {
+  const _LessonNode({
+    required this.lesson,
+    required this.status,
+    required this.onTap,
+  });
+
+  final Lesson lesson;
+  final LessonStatus status;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLocked = status == LessonStatus.locked;
+    final accent = switch (status) {
+      LessonStatus.completed => const Color(0xFF85EFAC),
+      LessonStatus.available => const Color(0xFFFFD45C),
+      LessonStatus.locked => const Color(0xFF8A9D96),
+    };
+    final icon = switch (status) {
+      LessonStatus.completed => Icons.check_rounded,
+      LessonStatus.available => Icons.play_arrow_rounded,
+      LessonStatus.locked => Icons.lock_rounded,
+    };
+
+    return GestureDetector(
+      onTap: onTap,
       child: Column(
         children: [
-          FloatingActionButton.small(
-            heroTag: "btn1",
-            onPressed: _toggleTopBar,
-            backgroundColor: Colors.white,
-            child: Icon(
-              _isTopBarVisible ? Icons.visibility_off : Icons.visibility,
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 8),
-          FloatingActionButton.small(
-            heroTag: "btn2",
-            onPressed: _toggleBottomSheet,
-            backgroundColor: Colors.white,
-            child: Icon(
-              _isBottomSheetVisible
-                  ? Icons.keyboard_arrow_down
-                  : Icons.keyboard_arrow_up,
-              color: Colors.grey[700],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGlassmorphicProgressBar(double progress) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 96, 170, 36).withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: const Color.fromARGB(255, 96, 170, 36).withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Progress",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 8,
-                    backgroundColor: Colors.black.withValues(alpha: 0.2),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Color(0xFF76FF03),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: isLocked
+                  ? null
+                  : LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        accent.withValues(alpha: 0.98),
+                        accent.withValues(alpha: 0.72),
+                      ],
                     ),
+              color: isLocked ? const Color(0xFF20352C) : null,
+              border: Border.all(
+                color: accent.withValues(alpha: isLocked ? 0.42 : 0.82),
+                width: status == LessonStatus.available ? 4 : 3,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withValues(alpha: isLocked ? 0.10 : 0.26),
+                  blurRadius: 18,
+                  spreadRadius: status == LessonStatus.available ? 2 : 0,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: isLocked ? accent : const Color(0xFF062C21),
+                  size: 30,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  lesson.order.toString(),
+                  style: TextStyle(
+                    color: isLocked ? accent : const Color(0xFF062C21),
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 15),
-          Text(
-            "${(progress * 100).toInt()}%",
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              fontSize: 14,
+          const SizedBox(height: 10),
+          SizedBox(
+            width: 132,
+            child: Text(
+              lesson.title,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: isLocked ? Colors.white54 : Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                height: 1.35,
+              ),
             ),
           ),
         ],
@@ -584,86 +684,62 @@ class _LearningPathScreenState extends State<LearningPathScreen>
   }
 }
 
-// --- PAINTER CLASSES ---
-
-// 1. GRID PAINTER (Restored)
-class _GridPatternPainter extends CustomPainter {
-  final double progress;
-
-  _GridPatternPainter({this.progress = 0.0});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.grey.withValues(alpha: 0.08)
-      ..strokeWidth = 1.0;
-
-    const double spacing = 40.0;
-    final double offset = progress * spacing;
-
-    for (double x = -spacing + offset; x < size.width; x += spacing) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-
-    for (double y = -spacing + offset; y < size.height; y += spacing) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _GridPatternPainter oldDelegate) =>
-      oldDelegate.progress != progress;
-}
-
-// 2. LINE PAINTER
-class _ConnectionLinePainter extends CustomPainter {
-  final Path path;
-  final Color color;
-  final double strokeWidth;
-  final bool isCompleted;
-
-  _ConnectionLinePainter({
-    required this.path,
-    required this.color,
-    required this.strokeWidth,
-    this.isCompleted = false,
+class _LessonPathPainter extends CustomPainter {
+  _LessonPathPainter({
+    required this.positions,
+    required this.statuses,
   });
 
+  final List<Offset> positions;
+  final List<LessonStatus> statuses;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
+    final inactivePaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
+      ..strokeWidth = 4
       ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
+      ..color = Colors.white.withValues(alpha: 0.10);
 
-    if (isCompleted) {
-      canvas.drawPath(path, paint);
-    } else {
-      // Dashed line effect for incomplete paths
-      final dashWidth = 12.0;
-      final dashSpace = 8.0;
-      final pathMetrics = path.computeMetrics();
+    final activePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5
+      ..strokeCap = StrokeCap.round
+      ..color = const Color(0xFF85EFAC).withValues(alpha: 0.82);
 
-      for (final metric in pathMetrics) {
-        double distance = 0;
-        while (distance < metric.length) {
-          canvas.drawPath(
-            metric.extractPath(distance, distance + dashWidth),
-            paint,
-          );
-          distance += dashWidth + dashSpace;
-        }
+    final glowPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 14
+      ..strokeCap = StrokeCap.round
+      ..color = const Color(0x224ADE80)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+
+    for (var index = 0; index < positions.length - 1; index++) {
+      final start = positions[index];
+      final end = positions[index + 1];
+      final path = Path()
+        ..moveTo(start.dx, start.dy)
+        ..cubicTo(
+          start.dx,
+          start.dy + 48,
+          end.dx,
+          end.dy - 48,
+          end.dx,
+          end.dy,
+        );
+
+      canvas.drawPath(path, inactivePaint);
+
+      final isActive = statuses[index] == LessonStatus.completed;
+      if (isActive) {
+        canvas.drawPath(path, glowPaint);
+        canvas.drawPath(path, activePaint);
       }
     }
   }
 
   @override
-  bool shouldRepaint(covariant _ConnectionLinePainter oldDelegate) {
-    return oldDelegate.color != color ||
-        oldDelegate.strokeWidth != strokeWidth ||
-        oldDelegate.path != path ||
-        oldDelegate.isCompleted != isCompleted;
+  bool shouldRepaint(covariant _LessonPathPainter oldDelegate) {
+    return oldDelegate.positions != positions || oldDelegate.statuses != statuses;
   }
 }

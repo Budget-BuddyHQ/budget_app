@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
 import 'package:provider/provider.dart';
 
 import '../../controllers/user_stats_controller.dart';
@@ -22,12 +23,14 @@ class MainGamePage extends StatelessWidget {
   final ValueChanged<int>? onNavSelected;
 
   Future<void> _openReactBattle(BuildContext context) async {
-    final stats = context.read<UserStatsController>().stats;
+    final controller = context.read<UserStatsController>();
+    final stats = controller.stats;
+
     final result = await Navigator.of(context).push<ReactGameCloseResult>(
       FadePageRoute(
         builder: (_) => ReactChallengeScreen(
           gameId: 'daily_budget_battle',
-          difficulty: 'normal',
+          difficulty: 'medium',
           playerLevel: stats.level,
           userId: stats.id,
         ),
@@ -40,11 +43,10 @@ class MainGamePage extends StatelessWidget {
 
     GameToast.show(
       context,
-      title: result.status == 'victory' ? 'Victory' : 'Challenge complete',
+      title: result.status == 'victory' ? 'Daily battle won' : 'Battle complete',
       message:
           '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
       icon: Icons.workspace_premium_rounded,
-      accent: const Color(0xFF85EFAC),
     );
   }
 
@@ -58,15 +60,6 @@ class MainGamePage extends StatelessWidget {
     if (!context.mounted || result == null) {
       return;
     }
-
-    GameToast.show(
-      context,
-      title: 'Bill Dodger reward',
-      message:
-          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
-      icon: Icons.savings_rounded,
-      accent: const Color(0xFF85EFAC),
-    );
   }
 
   @override
@@ -677,4 +670,3 @@ class _AdviceCard extends StatelessWidget {
     );
   }
 }
-

@@ -107,7 +107,7 @@ class _CustomButtonState extends State<CustomButton>
                 onTap: _isDisabled ? null : _handleTap,
                 borderRadius: borderRadius,
                 splashColor: widget.style.splashColor,
-                highlightColor: Colors.white.withOpacity(0.04),
+                highlightColor: Colors.white.withValues(alpha: 0.04),
                 child: Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 18),
