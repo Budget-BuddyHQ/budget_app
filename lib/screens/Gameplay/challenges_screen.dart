@@ -133,11 +133,11 @@ class ChallengesScreen extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      const Color(0xFF173C2F).withOpacity(0.96),
-                      const Color(0xFF214D3E).withOpacity(0.92),
+                      const Color(0xFF173C2F).withValues(alpha: 0.96),
+                      const Color(0xFF214D3E).withValues(alpha: 0.92),
                     ],
                   ),
-                  border: Border.all(color: Colors.white.withOpacity(0.10)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
                 ),
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,9 +168,9 @@ class ChallengesScreen extends StatelessWidget {
             return Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.06),
+                color: Colors.white.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,7 +183,7 @@ class ChallengesScreen extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: accent.withOpacity(0.16),
+                          color: accent.withValues(alpha: 0.16),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
@@ -217,7 +217,7 @@ class ChallengesScreen extends StatelessWidget {
                   Text(
                     card.description,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.72),
+                      color: Colors.white.withValues(alpha: 0.72),
                       height: 1.45,
                     ),
                   ),
@@ -232,7 +232,7 @@ class ChallengesScreen extends StatelessWidget {
                                   ? 'Cloud-synced challenge'
                                   : 'Story mission',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.62),
+                            color: Colors.white.withValues(alpha: 0.62),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
