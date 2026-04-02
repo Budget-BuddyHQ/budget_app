@@ -140,6 +140,10 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
           'GameBridge',
           onMessageReceived: _onBridgeMessage,
         )
+        ..addJavaScriptChannel(
+          'BudgetBuddyBridge',
+          onMessageReceived: _onBridgeMessage,
+        )
         ..loadRequest(launchUri);
 
       if (!mounted) {
@@ -214,9 +218,6 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
   }
 
   try {
-    print('A: entered _handlePayload');
-    print('B: before applyChallengePayload');
-
     final actionResult = await userStatsController
         .applyChallengePayload(
           <String, dynamic>{
@@ -230,8 +231,6 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
           },
         )
         .timeout(const Duration(seconds: 8));
-
-    print('C: after applyChallengePayload');
 
     if (!mounted) {
       return;
@@ -273,8 +272,7 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
       ),
     );
   } catch (e, st) {
-    print('ERROR in _handlePayload: $e');
-    print(st);
+    debugPrint('Challenge reward sync failed: $e\n$st');
 
     if (!mounted) {
       return;
@@ -285,10 +283,12 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
       _cloudMessage = 'Save failed';
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Challenge save failed: $e'),
-      ),
+    GameToast.show(
+      context,
+      title: 'Save failed',
+      message: 'Challenge reward sync hit a problem. Your next sync will retry.',
+      icon: Icons.cloud_off_rounded,
+      accent: const Color(0xFFFF8A80),
     );
   }
 }
@@ -391,7 +391,7 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
             if (_isLoading)
               Positioned.fill(
                 child: ColoredBox(
-                  color: Colors.black.withOpacity(0.38),
+                  color: Colors.black.withValues(alpha: 0.38),
                   child: Center(
                     child: _ChallengeLoadingOverlay(
                       controller: _loadingController,
@@ -517,7 +517,7 @@ class _ChallengeLoadingOverlay extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
-        color: const Color(0xFF103225).withOpacity(0.94),
+        color: const Color(0xFF103225).withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white12),
       ),
@@ -576,7 +576,7 @@ class _CloudSyncBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF103225).withOpacity(0.92),
+        color: const Color(0xFF103225).withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: Colors.white12),
       ),

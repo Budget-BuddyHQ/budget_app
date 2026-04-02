@@ -39,13 +39,13 @@ class BillDodgerScreen extends StatefulWidget {
 class _BillDodgerScreenState extends State<BillDodgerScreen>
     with TickerProviderStateMixin {
   static const Color _background = Color(0xFF071711);
-  static const Color _panel = Color(0xFF113528);
   static const Color _accent = Color(0xFF85EFAC);
   static const Color _needColor = Color(0xFF85EFAC);
   static const Color _wantColor = Color(0xFFFFB084);
   static const int _roundSeconds = 45;
 
   final math.Random _random = math.Random();
+  final FocusNode _focusNode = FocusNode();
   final List<_FallingPickup> _pickups = <_FallingPickup>[];
 
   Ticker? _ticker;
@@ -55,6 +55,8 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
 
   Size _arenaSize = Size.zero;
   double _playerX = 0;
+  double _playerVelocity = 0;
+  double _playerTilt = 0;
   bool _movingLeft = false;
   bool _movingRight = false;
 
@@ -66,11 +68,12 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
   bool _claiming = false;
   bool _didClaim = false;
 
-  double get _playerWidth => _arenaSize.width <= 0
-      ? 86
-      : (_arenaSize.width.clamp(320.0, 800.0) as double) * 0.18;
+  double get _playerWidth {
+    final width = _arenaSize.width <= 0 ? 380.0 : _arenaSize.width;
+    return (width * 0.18).clamp(76.0, 112.0).toDouble();
+  }
 
-  double get _playerHeight => _playerWidth * 0.88;
+  double get _playerHeight => _playerWidth * 0.92;
 
   double get _playerY =>
       math.max(0, _arenaSize.height - _playerHeight - 18).toDouble();
@@ -90,14 +93,50 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _ticker?.dispose();
     _spawnTimer?.cancel();
     _countdownTimer?.cancel();
     super.dispose();
   }
 
+  void _syncArenaSize(Size newSize) {
+    if (_arenaSize == Size.zero) {
+      _arenaSize = newSize;
+      _playerX = math.max(0, (_arenaSize.width - _playerWidth) / 2).toDouble();
+      return;
+    }
+
+    if (_arenaSize == newSize) {
+      return;
+    }
+
+    final previousWidth = _arenaSize.width <= 0 ? newSize.width : _arenaSize.width;
+    final previousHeight =
+        _arenaSize.height <= 0 ? newSize.height : _arenaSize.height;
+    final widthRatio = newSize.width / previousWidth;
+    final heightRatio = newSize.height / previousHeight;
+
+    _arenaSize = newSize;
+    _playerX = (_playerX * widthRatio)
+        .clamp(0, math.max(0, _arenaSize.width - _playerWidth))
+        .toDouble();
+
+    for (final pickup in _pickups) {
+      pickup.width = _pickupWidthForArena();
+      pickup.height = pickup.width * 0.74;
+      pickup.x = (pickup.x * widthRatio)
+          .clamp(0, math.max(0, _arenaSize.width - pickup.width))
+          .toDouble();
+      pickup.y = (pickup.y * heightRatio)
+          .clamp(-pickup.height * 2, _arenaSize.height + pickup.height)
+          .toDouble();
+    }
+  }
+
   void _startGame() {
     HapticFeedback.lightImpact();
+    _focusNode.requestFocus();
     setState(() {
       _money = 1200;
       _score = 0;
@@ -111,10 +150,12 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
       _lastFrame = Duration.zero;
     });
 
+    _focusNode.requestFocus();
+
     _spawnTimer?.cancel();
     _countdownTimer?.cancel();
 
-    _spawnTimer = Timer.periodic(const Duration(milliseconds: 620), (_) {
+    _spawnTimer = Timer.periodic(const Duration(milliseconds: 560), (_) {
       _spawnPickup();
     });
 
@@ -147,6 +188,8 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
       _finished = true;
       _movingLeft = false;
       _movingRight = false;
+      _playerVelocity = 0;
+      _playerTilt = 0;
     });
   }
 
@@ -195,6 +238,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
 
     for (final pickup in _pickups) {
       pickup.y += pickup.speed * deltaSeconds;
+
       final pickupRect = Rect.fromLTWH(
         pickup.x,
         pickup.y,
@@ -229,18 +273,23 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
       _money += 28;
       _score += 16;
     } else {
-      _money -= 34;
+      _money -= 36;
       _score = math.max(0, _score - 12);
     }
   }
 
   void _handleMissedPickup(_FallingPickup pickup) {
     if (pickup.kind == _PickupKind.need) {
-      _money -= 22;
+      _money -= 20;
       _score = math.max(0, _score - 8);
     } else {
       _score += 6;
     }
+  }
+
+  double _pickupWidthForArena() {
+    final width = _arenaSize.width <= 0 ? 380.0 : _arenaSize.width;
+    return (width * 0.23).clamp(82.0, 104.0).toDouble();
   }
 
   void _spawnPickup() {
@@ -266,10 +315,11 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
         amount: data.amount,
         kind: isNeed ? _PickupKind.need : _PickupKind.want,
         x: x,
-        y: -height - 10,
+        y: -height - 12,
         width: width,
         height: height,
         speed: 210 + _random.nextDouble() * 90,
+        tilt: (_random.nextDouble() - 0.5) * 0.2,
       ),
     );
   }
@@ -361,7 +411,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
       context,
       title: 'Rewards banked',
       message:
-          '+${projected.goldEarned} gold • +${projected.xpEarned} XP • ${result.message}',
+          '+${projected.goldEarned} gold - +${projected.xpEarned} XP - ${result.message}',
       icon: Icons.stars_rounded,
       accent: _accent,
     );
@@ -382,6 +432,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
     if (!_started || _finished) {
       return;
     }
+
     _playerX = (_playerX + delta)
         .clamp(0, math.max(0, _arenaSize.width - _playerWidth))
         .toDouble();
@@ -538,6 +589,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
                                 child: _PlayerAvatar(
                                   width: _playerWidth,
                                   height: _playerHeight,
+                                  tilt: _playerTilt,
                                 ),
                               ),
                               if (!_started && !_finished)
@@ -633,14 +685,16 @@ class _FallingPickup {
     required this.width,
     required this.height,
     required this.speed,
+    required this.tilt,
   });
 
   final String label;
   final int amount;
   final _PickupKind kind;
-  final double width;
-  final double height;
+  double width;
+  double height;
   final double speed;
+  final double tilt;
   double x;
   double y;
   bool resolved = false;
@@ -709,9 +763,9 @@ class _TopChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -741,7 +795,13 @@ class _PickupCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isNeed = pickup.kind == _PickupKind.need;
-    final accent = isNeed ? const Color(0xFF85EFAC) : const Color(0xFFFFB084);
+
+    final Color accent =
+        isNeed ? const Color(0xFF73E9A6) : const Color(0xFFFFB084);
+    final Color accentDark =
+        isNeed ? const Color(0xFF39C97A) : const Color(0xFFFF8D5C);
+    final IconData icon =
+        isNeed ? Icons.check_circle_rounded : Icons.shopping_bag_rounded;
 
     return Container(
       width: pickup.width,
@@ -762,37 +822,65 @@ class _PickupCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: accent,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              isNeed ? 'Need' : 'Want',
-              style: const TextStyle(
-                color: Color(0xFF103225),
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
+          Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  isNeed ? 'Need' : 'Want',
+                  style: const TextStyle(
+                    color: Color(0xFF103225),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    height: 1.0,
+                  ),
+                ),
               ),
-            ),
+              const Spacer(),
+              Icon(
+                icon,
+                size: 16,
+                color: accentDark,
+              ),
+            ],
           ),
           const Spacer(),
           Text(
             pickup.label,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Color(0xFF17382D),
-              fontWeight: FontWeight.w800,
-              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              fontSize: 12.5,
+              height: 1.05,
             ),
           ),
-          Text(
-            '\$${pickup.amount}',
-            style: const TextStyle(
-              color: Color(0xFF355E4E),
-              fontSize: 11,
+          const SizedBox(height: 6),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.72),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: accent.withValues(alpha: 0.7),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              '\$${pickup.amount}',
+              style: const TextStyle(
+                color: Color(0xFF355E4E),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                height: 1.0,
+              ),
             ),
           ),
         ],
@@ -805,10 +893,12 @@ class _PlayerAvatar extends StatelessWidget {
   const _PlayerAvatar({
     required this.width,
     required this.height,
+    required this.tilt,
   });
 
   final double width;
   final double height;
+  final double tilt;
 
   @override
   Widget build(BuildContext context) {
@@ -868,12 +958,12 @@ class _IntroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 420,
+      width: 430,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: const Color(0xFF163729),
+        color: const Color(0xFF113528),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.10)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -892,9 +982,27 @@ class _IntroCard extends StatelessWidget {
             'Bill Dodger now uses smooth free movement, tighter collisions, and safer bounds for mobile screens.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.74),
+              color: Colors.white.withValues(alpha: 0.74),
               height: 1.45,
             ),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: const [
+              Expanded(
+                child: _HintBadge(
+                  icon: Icons.keyboard_rounded,
+                  label: 'Arrow keys',
+                ),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: _HintBadge(
+                  icon: Icons.swipe_rounded,
+                  label: 'Drag to steer',
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 18),
           CustomButton(
@@ -905,6 +1013,41 @@ class _IntroCard extends StatelessWidget {
               color: Color(0xFF103225),
             ),
             style: const CustomButtonStyle.primary(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HintBadge extends StatelessWidget {
+  const _HintBadge({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: const Color(0xFFFFD45C), size: 18),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ],
       ),
@@ -937,9 +1080,9 @@ class _ResultsCard extends StatelessWidget {
       width: 440,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: const Color(0xFF163729),
+        color: const Color(0xFF113528),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.10)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -957,7 +1100,7 @@ class _ResultsCard extends StatelessWidget {
           Text(
             message,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.72),
+              color: Colors.white.withValues(alpha: 0.72),
               height: 1.45,
             ),
           ),
@@ -966,10 +1109,18 @@ class _ResultsCard extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: [
-              _ResultChip(label: 'Score', value: '$score'),
-              _ResultChip(label: 'Money', value: '\$$money'),
-              _ResultChip(label: 'Gold', value: '+${rewards.goldEarned}'),
-              _ResultChip(label: 'XP', value: '+${rewards.xpEarned}'),
+              _ResultChip(label: 'Score', value: '$score', accent: const Color(0xFFFFD45C)),
+              _ResultChip(label: 'Money', value: '\$$money', accent: const Color(0xFF85EFAC)),
+              _ResultChip(
+                label: 'Gold',
+                value: '+${rewards.goldEarned}',
+                accent: const Color(0xFFFFD45C),
+              ),
+              _ResultChip(
+                label: 'XP',
+                value: '+${rewards.xpEarned}',
+                accent: const Color(0xFF85EFAC),
+              ),
             ],
           ),
           const SizedBox(height: 18),
@@ -1003,17 +1154,19 @@ class _ResultChip extends StatelessWidget {
   const _ResultChip({
     required this.label,
     required this.value,
+    required this.accent,
   });
 
   final String label;
   final String value;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -1022,7 +1175,7 @@ class _ResultChip extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.62),
+              color: Colors.white.withValues(alpha: 0.62),
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -1030,8 +1183,8 @@ class _ResultChip extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: accent,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -1069,7 +1222,7 @@ class _ControlButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.10)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1096,13 +1249,17 @@ class _ArenaPainter extends CustomPainter {
     final lanePaint = Paint()
       ..color = Colors.white.withOpacity(0.05)
       ..strokeWidth = 1;
+
     final shimmerPaint = Paint()
       ..color = Colors.white.withOpacity(0.04)
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round;
+    final coinPaint = Paint()
+      ..color = const Color(0x22FFD45C)
+      ..style = PaintingStyle.fill;
 
-    for (var i = 1; i <= 3; i++) {
-      final x = size.width * (i / 4);
+    for (var index = 1; index <= 3; index++) {
+      final x = size.width * (index / 4);
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), lanePaint);
     }
 
@@ -1111,9 +1268,14 @@ class _ArenaPainter extends CustomPainter {
       Offset(size.width - 18, size.height - 100),
       shimmerPaint,
     );
+
+    for (var index = 0; index < 14; index++) {
+      final dx = (size.width / 14) * index + 12;
+      final double  dy = 30 + (index.isEven ? 8 : 0);
+      canvas.drawCircle(Offset(dx, dy), 3.5, coinPaint);
+    }
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
