@@ -4,13 +4,13 @@ import 'package:provider/provider.dart';
 import '../../controllers/user_stats_controller.dart';
 import '../../navigation/fade_page_route.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/game_toast.dart';
 import '../../widgets/skeleton_loader.dart';
 import '../Gameplay/learning_path_screen.dart';
-import '../auth/login_page.dart';
+import '../auth/auth_screen.dart';
 import '../legal/privacy_policy_page.dart';
 import '../profile/goals_setup_page.dart';
-import '../reusable_widgets/custom_bottom_nav.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({
@@ -36,7 +36,9 @@ class ProfileScreen extends StatelessWidget {
       accent: const Color(0xFFFFC36B),
     );
     Navigator.of(context).pushAndRemoveUntil(
-      FadePageRoute<void>(builder: (_) => const LoginPage()),
+      FadePageRoute<void>(
+        builder: (_) => const AuthScreen(mode: AuthMode.login),
+      ),
       (route) => false,
     );
   }
@@ -348,3 +350,4 @@ class _ActionRow extends StatelessWidget {
     );
   }
 }
+
