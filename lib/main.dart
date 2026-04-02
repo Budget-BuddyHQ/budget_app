@@ -5,13 +5,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'controllers/user_stats_controller.dart';
-import 'screens/Gameplay/bill_dodger_game.dart';
+import 'screens/Gameplay/bill_dodger.dart';
 import 'screens/Gameplay/dashboard_shell.dart';
-import 'screens/Gameplay/game_hub_screen.dart';
 import 'screens/Gameplay/leaderboard_screen.dart';
-import 'screens/Gameplay/town_square_screen.dart';
-import 'screens/auth/login_page.dart';
-import 'screens/auth/signup_page.dart';
+import 'screens/auth/auth_screen.dart';
 import 'screens/onboarding/welcome_screen.dart';
 import 'services/supabase_service.dart';
 import 'theme/app_theme.dart';
@@ -91,14 +88,12 @@ class MyApp extends StatelessWidget {
       home: const _AppBootstrapGate(),
       routes: {
         '/welcome': (context) => const WelcomeScreen(),
-        '/signup': (context) => const SignUpPage(),
-        '/login': (context) => const LoginPage(),
+        '/signup': (context) => const AuthScreen(mode: AuthMode.signUp),
+        '/login': (context) => const AuthScreen(mode: AuthMode.login),
         '/game': (context) => const DashboardShell(),
         '/dashboard': (context) => const DashboardShell(initialIndex: 0),
-        '/town': (context) => const TownSquareScreen(),
-        '/hub': (context) => const GameHubScreen(),
-        '/bill-dodger': (context) => const BillDodgerGameScreen(),
-        '/bill_dodger': (context) => const BillDodgerGameScreen(),
+        '/bill-dodger': (context) => const BillDodgerScreen(),
+        '/bill_dodger': (context) => const BillDodgerScreen(),
         '/leaderboard': (context) => const LeaderboardScreen(),
       },
     );
@@ -123,3 +118,4 @@ class _AppBootstrapGate extends StatelessWidget {
     );
   }
 }
+

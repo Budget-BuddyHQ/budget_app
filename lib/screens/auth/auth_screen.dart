@@ -735,3 +735,4 @@ class _TermsCard extends StatelessWidget {
     );
   }
 }
+

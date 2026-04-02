@@ -5,7 +5,7 @@ import '../../controllers/user_stats_controller.dart';
 import '../../navigation/fade_page_route.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/game_toast.dart';
-import '../reusable_widgets/custom_bottom_nav.dart';
+import '../../widgets/custom_bottom_nav.dart';
 import 'bill_dodger.dart';
 import 'react_challenge_screen.dart';
 
@@ -287,3 +287,4 @@ class _ChallengeCardData {
   final bool usesReactBridge;
   final bool isBillDodger;
 }
+

@@ -1,16 +1,30 @@
-# budget_app
+# Budget Buddy
 
-A new Flutter project.
+Budget Buddy is a Flutter app for financial-literacy gameplay with:
 
-## Getting Started
+- Flutter UI for onboarding, dashboard, budget, investing, profile, and mini-game launch flows
+- A local WebView bridge for the React challenge
+- Supabase-backed user stats with local cache fallback
+- A simplified gameplay shell built around a persistent bottom navigation bar
 
-This project is a starting point for a Flutter application.
+## Where to start
 
-A few resources to get you started if this is your first Flutter project:
+- App entry: `lib/main.dart`
+- Main tab shell: `lib/screens/Gameplay/dashboard_shell.dart`
+- Main home hub: `lib/screens/Gameplay/main_game_page.dart`
+- Backend/data layer: `lib/services/supabase_service.dart`
+- Shared user state: `lib/controllers/user_stats_controller.dart`
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Team handoff docs
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The detailed project map lives here:
+
+- `docs/PROJECT_STRUCTURE.md`
+
+That document explains:
+
+- which folders are active vs legacy/reference
+- what each active Dart file does
+- what is inside the assets folders
+- which platform folders are standard Flutter boilerplate
+- which files were deleted during cleanup to reduce confusion
