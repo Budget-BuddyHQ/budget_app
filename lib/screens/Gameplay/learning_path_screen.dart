@@ -2,8 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/game_toast.dart';
-import '../reusable_widgets/custom_bottom_nav.dart';
 import 'lesson_screen.dart';
 
 class LearningPathScreen extends StatefulWidget {
