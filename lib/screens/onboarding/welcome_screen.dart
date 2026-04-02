@@ -3,8 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../navigation/fade_page_route.dart';
-import '../auth/login_page.dart';
-import '../auth/signup_page.dart';
+import '../auth/auth_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -128,31 +127,33 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         ),
                         const SizedBox(height: 40),
                         _WelcomeActionButton(
-                          label: 'Join the Squad',
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            Navigator.push(
-                              context,
-                              FadePageRoute(
-                                builder: (context) => const SignUpPage(),
-                              ),
-                            );
-                          },
-                          primary: true,
+                              label: 'Join the Squad',
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                Navigator.push(
+                                  context,
+                                  FadePageRoute(
+                                    builder: (context) =>
+                                        const AuthScreen(mode: AuthMode.signUp),
+                                  ),
+                                );
+                              },
+                              primary: true,
                         ),
                         const SizedBox(height: 16),
                         _WelcomeActionButton(
-                          label: 'Welcome Back',
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            Navigator.push(
-                              context,
-                              FadePageRoute(
-                                builder: (context) => const LoginPage(),
-                              ),
-                            );
-                          },
-                          primary: false,
+                              label: 'Welcome Back',
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                Navigator.push(
+                                  context,
+                                  FadePageRoute(
+                                    builder: (context) =>
+                                        const AuthScreen(mode: AuthMode.login),
+                                  ),
+                                );
+                              },
+                              primary: false,
                         ),
                       ],
                     ),
