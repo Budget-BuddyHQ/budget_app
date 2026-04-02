@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../models/lesson.dart';
 import '../../models/progression_service.dart';
+import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/game_toast.dart';
-import '../reusable_widgets/custom_bottom_nav.dart';
 import 'lesson_screen.dart';
 
 class LearningPathScreen extends StatefulWidget {

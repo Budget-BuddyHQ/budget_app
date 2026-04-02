@@ -3,10 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../../controllers/user_stats_controller.dart';
 import '../../services/supabase_service.dart' show UserStats;
+import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/game_toast.dart';
-import '../reusable_widgets/custom_bottom_nav.dart';
 import 'bill_dodger.dart';
-import 'react_game_screen.dart';
+import 'react_challenge_screen.dart';
 
 class TownSquare extends StatelessWidget {
   const TownSquare({

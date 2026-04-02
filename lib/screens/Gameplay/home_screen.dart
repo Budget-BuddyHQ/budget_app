@@ -5,13 +5,13 @@ import 'package:provider/provider.dart';
 
 import '../../controllers/user_stats_controller.dart';
 import '../../services/supabase_service.dart';
+import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/game_toast.dart';
+import '../../widgets/progress_metrics_widgets.dart';
 import '../../widgets/skeleton_loader.dart';
-import '../reusable_widgets/custom_bottom_nav.dart';
-import '../reusable_widgets/progress_metrics_widgets.dart';
 import 'bill_dodger.dart';
 import 'leaderboard_screen.dart';
-import 'react_game_screen.dart';
+import 'react_challenge_screen.dart';
 import 'town_square.dart';
 
 class HomeScreen extends StatelessWidget {

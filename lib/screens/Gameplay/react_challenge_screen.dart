@@ -46,6 +46,16 @@ class ReactChallengeScreen extends StatefulWidget {
   State<ReactChallengeScreen> createState() => _ReactChallengeScreenState();
 }
 
+class ReactGameScreen extends ReactChallengeScreen {
+  const ReactGameScreen({
+    super.key,
+    required super.gameId,
+    required super.difficulty,
+    required super.playerLevel,
+    required super.userId,
+  });
+}
+
 class _ReactChallengeScreenState extends State<ReactChallengeScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _loadingController;
