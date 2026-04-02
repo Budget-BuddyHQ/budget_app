@@ -6,7 +6,7 @@ import '../../controllers/user_stats_controller.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/game_toast.dart';
 import '../../widgets/skeleton_loader.dart';
-import '../reusable_widgets/custom_bottom_nav.dart';
+import '../../widgets/custom_bottom_nav.dart';
 
 class InvestTab extends StatelessWidget {
   const InvestTab({
@@ -453,3 +453,4 @@ class _HoldingRow extends StatelessWidget {
     );
   }
 }
+

@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import '../../controllers/user_stats_controller.dart';
 import '../../services/supabase_service.dart';
 import '../../widgets/skeleton_loader.dart';
-import '../reusable_widgets/custom_bottom_nav.dart';
+import '../../widgets/custom_bottom_nav.dart';
 
 class BudgetLedger extends StatelessWidget {
   const BudgetLedger({
@@ -588,3 +588,4 @@ class _SmallPill extends StatelessWidget {
     );
   }
 }
+

@@ -427,3 +427,4 @@ class _GoalChip extends StatelessWidget {
     );
   }
 }
+
