@@ -13,11 +13,7 @@ import '../legal/privacy_policy_page.dart';
 import '../profile/goals_setup_page.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({
-    super.key,
-    this.activeTabIndex = 4,
-    this.onNavSelected,
-  });
+  const ProfileScreen({super.key, this.activeTabIndex = 4, this.onNavSelected});
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
@@ -84,7 +80,9 @@ class ProfileScreen extends StatelessWidget {
                               const Color(0xFF214D3E).withValues(alpha: 0.92),
                             ],
                           ),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.10),
+                          ),
                         ),
                         child: Column(
                           children: [
@@ -94,11 +92,16 @@ class ProfileScreen extends StatelessWidget {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFF85EFAC), Color(0xFF48D58A)],
+                                  colors: [
+                                    Color(0xFF85EFAC),
+                                    Color(0xFF48D58A),
+                                  ],
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF85EFAC).withValues(alpha: 0.26),
+                                    color: const Color(
+                                      0xFF85EFAC,
+                                    ).withValues(alpha: 0.26),
                                     blurRadius: 22,
                                     spreadRadius: 2,
                                   ),
@@ -161,7 +164,9 @@ class ProfileScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.08),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,7 +182,8 @@ class ProfileScreen extends StatelessWidget {
                             const SizedBox(height: 14),
                             _ActionRow(
                               title: 'Refresh Cloud Sync',
-                              subtitle: 'Pull the latest wallet and XP progress.',
+                              subtitle:
+                                  'Pull the latest wallet and XP progress.',
                               icon: Icons.sync_rounded,
                               buttonLabel: 'Sync',
                               onPressed: () async {
@@ -188,7 +194,8 @@ class ProfileScreen extends StatelessWidget {
                                 GameToast.show(
                                   context,
                                   title: 'Profile synced',
-                                  message: 'Your latest progress is now loaded.',
+                                  message:
+                                      'Your latest progress is now loaded.',
                                   icon: Icons.cloud_done_rounded,
                                 );
                               },
@@ -196,21 +203,19 @@ class ProfileScreen extends StatelessWidget {
                             const SizedBox(height: 12),
                             _ActionRow(
                               title: 'Learning Path',
-                              subtitle: 'Open your lesson map and continue your journey.',
+                              subtitle:
+                                  'Open your lesson map and continue your journey.',
                               icon: Icons.route_rounded,
                               buttonLabel: 'Open',
                               onPressed: () {
-                                Navigator.of(context).push(
-                                  FadePageRoute(
-                                    builder: (_) => const LearningPathScreen(),
-                                  ),
-                                );
+                                onNavSelected?.call(3);
                               },
                             ),
                             const SizedBox(height: 12),
                             _ActionRow(
                               title: 'Goal Setup',
-                              subtitle: 'Adjust the goals that guide your weekly quests.',
+                              subtitle:
+                                  'Adjust the goals that guide your weekly quests.',
                               icon: Icons.flag_rounded,
                               buttonLabel: 'Edit',
                               onPressed: () {
@@ -224,7 +229,8 @@ class ProfileScreen extends StatelessWidget {
                             const SizedBox(height: 12),
                             _ActionRow(
                               title: 'Privacy Center',
-                              subtitle: 'Review policies and how your data is stored.',
+                              subtitle:
+                                  'Review policies and how your data is stored.',
                               icon: Icons.privacy_tip_rounded,
                               buttonLabel: 'View',
                               onPressed: () {
@@ -350,4 +356,3 @@ class _ActionRow extends StatelessWidget {
     );
   }
 }
-
