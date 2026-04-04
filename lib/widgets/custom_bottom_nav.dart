@@ -207,8 +207,8 @@ class _TownSquareButton extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutBack,
-        width: active ? 88 : 82,
-        height: active ? 88 : 82,
+        width: active ? 80 : 74,
+        height: active ? 80 : 74,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: const LinearGradient(

@@ -15,9 +15,6 @@ class GameToast {
     Duration duration = const Duration(milliseconds: 2100),
   }) {
     final overlay = Overlay.of(context, rootOverlay: true);
-    if (overlay == null) {
-      return;
-    }
 
     HapticFeedback.lightImpact();
     _activeEntry?.remove();

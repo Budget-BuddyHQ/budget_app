@@ -189,7 +189,7 @@ class CustomButtonStyle {
     this.backgroundColor = Colors.transparent,
     this.textColor = const Color(0xFF1A4D3D),
     this.borderRadius = 18,
-    this.border = null,
+    this.border,
     this.boxShadow = const [
       BoxShadow(
         color: Color.fromRGBO(118, 255, 3, 0.24),
@@ -201,7 +201,7 @@ class CustomButtonStyle {
   });
 
   const CustomButtonStyle.secondary({
-    this.gradient = null,
+    this.gradient,
     this.backgroundColor = const Color(0xFF2D5A4A),
     this.textColor = const Color(0xFF76FF03),
     this.borderRadius = 18,
@@ -222,7 +222,7 @@ class CustomButtonStyle {
   });
 
   const CustomButtonStyle.tertiary({
-    this.gradient = null,
+    this.gradient,
     this.backgroundColor = const Color(0xFF1B3329),
     this.textColor = Colors.white,
     this.borderRadius = 18,
@@ -251,7 +251,7 @@ class CustomButtonStyle {
     this.backgroundColor = Colors.transparent,
     this.textColor = Colors.white,
     this.borderRadius = 18,
-    this.border = null,
+    this.border,
     this.boxShadow = const [
       BoxShadow(
         color: Color.fromRGBO(255, 107, 107, 0.24),
