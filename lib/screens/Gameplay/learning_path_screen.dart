@@ -572,7 +572,8 @@ class _LessonsMap extends StatelessWidget {
 
   List<Offset> _buildPositions(double width, int count) {
     final positions = <Offset>[];
-    final safeWidth = math.max(300.0, width - 40);
+    const horizontalPadding = 30.0;
+    final safeWidth = width - (horizontalPadding * 2);
     const verticalSpacing = 148.0;
     const startY = 62.0;
 
@@ -585,7 +586,7 @@ class _LessonsMap extends StatelessWidget {
         _ => 0.68,
       };
       positions.add(
-        Offset(safeWidth * xFactor + 20, startY + index * verticalSpacing),
+        Offset(safeWidth * xFactor, startY + index * verticalSpacing),
       );
     }
 
