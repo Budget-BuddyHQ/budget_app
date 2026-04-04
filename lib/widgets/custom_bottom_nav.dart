@@ -16,7 +16,7 @@ class CustomBottomNav extends StatelessWidget {
     return SafeArea(
       top: false,
       child: SizedBox(
-        height: 102,
+        height: 110,
         child: Stack(
           clipBehavior: Clip.none,
           alignment: Alignment.bottomCenter,
@@ -25,67 +25,69 @@ class CustomBottomNav extends StatelessWidget {
               left: 12,
               right: 12,
               bottom: 12,
-              child: Container(
-                height: 76,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.white.withValues(alpha: 0.10),
-                      const Color(0xFF082117).withValues(alpha: 0.96),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.12),
-                  ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x77000000),
-                      blurRadius: 24,
-                      offset: Offset(0, 16),
+              child: ClipRect(
+                child: Container(
+                  height: 76,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.10),
+                        const Color(0xFF082117).withValues(alpha: 0.96),
+                      ],
                     ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _NavTile(
-                          label: 'Home',
-                          icon: Icons.home_rounded,
-                          active: activeIndex == 0,
-                          onTap: () => _handleTap(0),
-                        ),
-                      ),
-                      Expanded(
-                        child: _NavTile(
-                          label: 'Financials',
-                          icon: Icons.account_balance_wallet_rounded,
-                          active: activeIndex == 1,
-                          onTap: () => _handleTap(1),
-                        ),
-                      ),
-                      const SizedBox(width: 78),
-                      Expanded(
-                        child: _NavTile(
-                          label: 'Lessons',
-                          icon: Icons.school_rounded,
-                          active: activeIndex == 3,
-                          onTap: () => _handleTap(3),
-                        ),
-                      ),
-                      Expanded(
-                        child: _NavTile(
-                          label: 'Profile',
-                          icon: Icons.person_rounded,
-                          active: activeIndex == 4,
-                          onTap: () => _handleTap(4),
-                        ),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.12),
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x77000000),
+                        blurRadius: 24,
+                        offset: Offset(0, 16),
                       ),
                     ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _NavTile(
+                            label: 'Home',
+                            icon: Icons.home_rounded,
+                            active: activeIndex == 0,
+                            onTap: () => _handleTap(0),
+                          ),
+                        ),
+                        Expanded(
+                          child: _NavTile(
+                            label: 'Financials',
+                            icon: Icons.account_balance_wallet_rounded,
+                            active: activeIndex == 1,
+                            onTap: () => _handleTap(1),
+                          ),
+                        ),
+                        const SizedBox(width: 78),
+                        Expanded(
+                          child: _NavTile(
+                            label: 'Lessons',
+                            icon: Icons.school_rounded,
+                            active: activeIndex == 3,
+                            onTap: () => _handleTap(3),
+                          ),
+                        ),
+                        Expanded(
+                          child: _NavTile(
+                            label: 'Profile',
+                            icon: Icons.person_rounded,
+                            active: activeIndex == 4,
+                            onTap: () => _handleTap(4),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
