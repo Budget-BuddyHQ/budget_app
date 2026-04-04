@@ -9,11 +9,7 @@ import 'bill_dodger.dart';
 import 'react_challenge_screen.dart';
 
 class TownSquare extends StatelessWidget {
-  const TownSquare({
-    super.key,
-    this.activeTabIndex = 2,
-    this.onNavSelected,
-  });
+  const TownSquare({super.key, this.activeTabIndex = 2, this.onNavSelected});
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
@@ -37,7 +33,9 @@ class TownSquare extends StatelessWidget {
 
     GameToast.show(
       context,
-      title: result.status == 'victory' ? 'Budget Battle Won' : 'Battle Complete',
+      title: result.status == 'victory'
+          ? 'Budget Battle Won'
+          : 'Battle Complete',
       message:
           '+${result.goldEarned} gold | +${result.xpEarned} XP | ${result.syncState.message}',
       icon: Icons.workspace_premium_rounded,
@@ -178,23 +176,25 @@ class _TownBackdrop extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF07140F),
-                Color(0xFF0B2118),
-                Color(0xFF113227),
-              ],
+              colors: [Color(0xFF07140F), Color(0xFF0B2118), Color(0xFF113227)],
             ),
           ),
         ),
         Positioned(
           top: -110,
           right: -70,
-          child: _Aura(size: 260, color: const Color(0xFF4ADE80).withValues(alpha: 0.18)),
+          child: _Aura(
+            size: 260,
+            color: const Color(0xFF4ADE80).withValues(alpha: 0.18),
+          ),
         ),
         Positioned(
           top: 220,
           left: -80,
-          child: _Aura(size: 220, color: const Color(0xFFFFD45C).withValues(alpha: 0.10)),
+          child: _Aura(
+            size: 220,
+            color: const Color(0xFFFFD45C).withValues(alpha: 0.10),
+          ),
         ),
       ],
     );
@@ -202,10 +202,7 @@ class _TownBackdrop extends StatelessWidget {
 }
 
 class _Aura extends StatelessWidget {
-  const _Aura({
-    required this.size,
-    required this.color,
-  });
+  const _Aura({required this.size, required this.color});
 
   final double size;
   final Color color;
@@ -233,9 +230,7 @@ class _Aura extends StatelessWidget {
 }
 
 class _TownHeader extends StatelessWidget {
-  const _TownHeader({
-    required this.stats,
-  });
+  const _TownHeader({required this.stats});
 
   final UserStats stats;
 
@@ -339,7 +334,8 @@ class _WorldBoard extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Container(
-            height: 280,
+            height: 320,
+            padding: const EdgeInsets.only(top: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
               gradient: const LinearGradient(
@@ -355,7 +351,7 @@ class _WorldBoard extends StatelessWidget {
                   child: CustomPaint(painter: _WorldPathPainter()),
                 ),
                 const Positioned(
-                  top: 18,
+                  top: 0,
                   left: 18,
                   child: _WorldLabel(
                     title: 'Emerald Commons',
@@ -363,7 +359,7 @@ class _WorldBoard extends StatelessWidget {
                   ),
                 ),
                 Positioned(
-                  top: 34,
+                  top: 75,
                   left: 28,
                   child: _NodeButton(
                     label: 'Treasury',
@@ -409,7 +405,9 @@ class _WorldBoard extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white.withValues(alpha: 0.08),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.18),
+                      ),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(18),
@@ -430,10 +428,7 @@ class _WorldBoard extends StatelessWidget {
 }
 
 class _WorldLabel extends StatelessWidget {
-  const _WorldLabel({
-    required this.title,
-    required this.subtitle,
-  });
+  const _WorldLabel({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
@@ -495,7 +490,10 @@ class _NodeButton extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: accent.withValues(alpha: 0.18),
-              border: Border.all(color: accent.withValues(alpha: 0.56), width: 2),
+              border: Border.all(
+                color: accent.withValues(alpha: 0.56),
+                width: 2,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: accent.withValues(alpha: 0.24),
@@ -607,7 +605,7 @@ class _WorldPathPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final path = Path()
-      ..moveTo(size.width * 0.20, size.height * 0.22)
+      ..moveTo(size.width * 0.20, size.height * 0.4)
       ..quadraticBezierTo(
         size.width * 0.40,
         size.height * 0.10,
