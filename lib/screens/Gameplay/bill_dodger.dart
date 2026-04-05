@@ -43,6 +43,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
   static const Color _needColor = Color(0xFF85EFAC);
   static const Color _wantColor = Color(0xFFFFB084);
   static const int _roundSeconds = 45;
+  static const double _pickupHeightFactor = 0.84;
 
   final math.Random _random = math.Random();
   final FocusNode _focusNode = FocusNode();
@@ -124,7 +125,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
 
     for (final pickup in _pickups) {
       pickup.width = _pickupWidthForArena();
-      pickup.height = pickup.width * 0.74;
+      pickup.height = pickup.width * _pickupHeightFactor;
       pickup.x = (pickup.x * widthRatio)
           .clamp(0, math.max(0, _arenaSize.width - pickup.width))
           .toDouble();
@@ -231,6 +232,44 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
     _playerX = _playerX
         .clamp(0, math.max(0, _arenaSize.width - _playerWidth))
         .toDouble();
+
+    final targetTilt = direction * 0.16;
+    final lerpStrength = (deltaSeconds * 14).clamp(0.0, 1.0);
+    _playerTilt += (targetTilt - _playerTilt) * lerpStrength;
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    final key = event.logicalKey;
+    final isLeft =
+        key == LogicalKeyboardKey.arrowLeft || key == LogicalKeyboardKey.keyA;
+    final isRight =
+        key == LogicalKeyboardKey.arrowRight || key == LogicalKeyboardKey.keyD;
+
+    if (!isLeft && !isRight) {
+      return KeyEventResult.ignored;
+    }
+
+    if (event is KeyDownEvent || event is KeyRepeatEvent) {
+      if (isLeft) {
+        _movingLeft = true;
+      }
+      if (isRight) {
+        _movingRight = true;
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (event is KeyUpEvent) {
+      if (isLeft) {
+        _movingLeft = false;
+      }
+      if (isRight) {
+        _movingRight = false;
+      }
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
   }
 
   void _updatePickups(double deltaSeconds) {
@@ -303,7 +342,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
     ];
 
     final width = math.min(98.0, _arenaSize.width * 0.24).toDouble();
-    final height = width * 0.72;
+    final height = width * _pickupHeightFactor;
     final maxX = math.max(0, _arenaSize.width - width).toDouble();
     final lanePadding = math.max(6, _arenaSize.width * 0.02).toDouble();
     final x = lanePadding +
@@ -462,200 +501,216 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
       ),
     );
 
-    return WillPopScope(
-      onWillPop: _confirmExit,
-      child: Scaffold(
-        backgroundColor: _background,
-        body: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () async {
-                        final shouldLeave = await _confirmExit();
-                        if (!mounted || !shouldLeave) {
-                          return;
-                        }
-                        Navigator.of(context).pop();
-                      },
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const Expanded(
-                      child: Text(
-                        'Bill Dodger',
-                        style: TextStyle(
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: true,
+      onKeyEvent: _handleKeyEvent,
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          final shouldLeave = await _confirmExit();
+          if (shouldLeave && mounted) {
+            Navigator.of(context).pop();
+          }
+        },
+        child: Scaffold(
+          backgroundColor: _background,
+          body: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () async {
+                          final shouldLeave = await _confirmExit();
+                          if (!mounted || !shouldLeave) {
+                            return;
+                          }
+                          Navigator.of(context).pop();
+                        },
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
                           color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
                         ),
                       ),
-                    ),
-                    _TopChip(
-                      label: '${_timeLeft}s',
-                      icon: Icons.timer_rounded,
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _TopStatsRow(
-                  money: _money,
-                  score: _score,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
-                  ),
-                  child: const Text(
-                    'Collect NEEDS, dodge WANTS, and glide smoothly across the arena. Hold the arrows or drag your hero left and right.',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                      height: 1.45,
-                    ),
+                      const Expanded(
+                        child: Text(
+                          'Bill Dodger',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      _TopChip(
+                        label: '${_timeLeft}s',
+                        icon: Icons.timer_rounded,
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Padding(
+                Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      _arenaSize = constraints.biggest;
-                      if (!_started && !_finished) {
-                        _playerX = math.max(
-                          0,
-                          (_arenaSize.width - _playerWidth) / 2,
-                        ).toDouble();
-                      } else {
-                        _playerX = _playerX.clamp(
-                          0,
-                          math.max(0, _arenaSize.width - _playerWidth),
-                        ).toDouble();
-                      }
+                  child: _TopStatsRow(
+                    money: _money,
+                    score: _score,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    child: const Text(
+                      'Collect NEEDS, dodge WANTS, and glide smoothly across the arena. Use arrow keys, hold the buttons, or drag your hero left and right.',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        height: 1.45,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        _arenaSize = constraints.biggest;
+                        if (!_started && !_finished) {
+                          _playerX = math.max(
+                            0,
+                            (_arenaSize.width - _playerWidth) / 2,
+                          ).toDouble();
+                        } else {
+                          _playerX = _playerX.clamp(
+                            0,
+                            math.max(0, _arenaSize.width - _playerWidth),
+                          ).toDouble();
+                        }
 
-                      return ClipRRect(
-                        borderRadius: BorderRadius.circular(28),
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onHorizontalDragUpdate: (details) {
-                            _moveByDrag(details.delta.dx);
-                          },
-                          child: Stack(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      const Color(0xFF103225),
-                                      const Color(0xFF173B2D),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              Positioned.fill(
-                                child: CustomPaint(
-                                  painter: _ArenaPainter(),
-                                ),
-                              ),
-                              for (final pickup in _pickups)
-                                Positioned(
-                                  left: pickup.x,
-                                  top: pickup.y,
-                                  child: _PickupCard(pickup: pickup),
-                                ),
-                              AnimatedPositioned(
-                                duration: const Duration(milliseconds: 60),
-                                curve: Curves.linear,
-                                left: _playerX,
-                                top: _playerY,
-                                child: _PlayerAvatar(
-                                  width: _playerWidth,
-                                  height: _playerHeight,
-                                  tilt: _playerTilt,
-                                ),
-                              ),
-                              if (!_started && !_finished)
-                                Positioned.fill(
-                                  child: _OverlayCenter(
-                                    child: _IntroCard(onStart: _startGame),
-                                  ),
-                                ),
-                              if (_finished)
-                                Positioned.fill(
-                                  child: _OverlayCenter(
-                                    child: _ResultsCard(
-                                      score: _score,
-                                      money: _money,
-                                      message: _gradeMessage(),
-                                      rewards: projected,
-                                      claiming: _claiming,
-                                      onReplay: _startGame,
-                                      onClaim: _claimRewards,
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(28),
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: _focusNode.requestFocus,
+                            onHorizontalDragStart: (_) => _focusNode.requestFocus(),
+                            onHorizontalDragUpdate: (details) {
+                              _moveByDrag(details.delta.dx);
+                            },
+                            child: Stack(
+                              children: [
+                                Container(
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Color(0xFF103225),
+                                        Color(0xFF173B2D),
+                                      ],
                                     ),
                                   ),
                                 ),
-                            ],
+                                Positioned.fill(
+                                  child: CustomPaint(
+                                    painter: _ArenaPainter(),
+                                  ),
+                                ),
+                                for (final pickup in _pickups)
+                                  Positioned(
+                                    left: pickup.x,
+                                    top: pickup.y,
+                                    child: _PickupCard(pickup: pickup),
+                                  ),
+                                AnimatedPositioned(
+                                  duration: const Duration(milliseconds: 60),
+                                  curve: Curves.linear,
+                                  left: _playerX,
+                                  top: _playerY,
+                                  child: _PlayerAvatar(
+                                    width: _playerWidth,
+                                    height: _playerHeight,
+                                    tilt: _playerTilt,
+                                  ),
+                                ),
+                                if (!_started && !_finished)
+                                  Positioned.fill(
+                                    child: _OverlayCenter(
+                                      child: _IntroCard(onStart: _startGame),
+                                    ),
+                                  ),
+                                if (_finished)
+                                  Positioned.fill(
+                                    child: _OverlayCenter(
+                                      child: _ResultsCard(
+                                        score: _score,
+                                        money: _money,
+                                        message: _gradeMessage(),
+                                        rewards: projected,
+                                        claiming: _claiming,
+                                        onReplay: _startGame,
+                                        onClaim: _claimRewards,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _ControlButton(
-                        icon: Icons.arrow_left_rounded,
-                        label: 'Hold Left',
-                        accent: Colors.white,
-                        background: Colors.white.withOpacity(0.06),
-                        onDown: () {
-                          HapticFeedback.lightImpact();
-                          _movingLeft = true;
-                        },
-                        onUp: () => _movingLeft = false,
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _ControlButton(
+                          icon: Icons.arrow_left_rounded,
+                          label: 'Hold Left',
+                          accent: Colors.white,
+                          background: Colors.white.withValues(alpha: 0.06),
+                          onDown: () {
+                            _focusNode.requestFocus();
+                            HapticFeedback.lightImpact();
+                            _movingLeft = true;
+                          },
+                          onUp: () => _movingLeft = false,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _ControlButton(
-                        icon: Icons.arrow_right_rounded,
-                        label: 'Hold Right',
-                        accent: const Color(0xFF103225),
-                        background: _accent,
-                        onDown: () {
-                          HapticFeedback.lightImpact();
-                          _movingRight = true;
-                        },
-                        onUp: () => _movingRight = false,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ControlButton(
+                          icon: Icons.arrow_right_rounded,
+                          label: 'Hold Right',
+                          accent: const Color(0xFF103225),
+                          background: _accent,
+                          onDown: () {
+                            _focusNode.requestFocus();
+                            HapticFeedback.lightImpact();
+                            _movingRight = true;
+                          },
+                          onUp: () => _movingRight = false,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -803,87 +858,96 @@ class _PickupCard extends StatelessWidget {
     final IconData icon =
         isNeed ? Icons.check_circle_rounded : Icons.shopping_bag_rounded;
 
-    return Container(
-      width: pickup.width,
-      height: pickup.height,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0FAF3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withOpacity(0.9), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withOpacity(0.12),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: accent,
-                  borderRadius: BorderRadius.circular(999),
+    final wobble = pickup.tilt + math.sin(pickup.y * 0.045) * 0.08;
+
+    return Transform.rotate(
+      angle: wobble,
+      child: Container(
+        width: pickup.width,
+        height: pickup.height,
+        padding: const EdgeInsets.all(7),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FAF3),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: accent.withValues(alpha: 0.9), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: 0.16),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    isNeed ? 'Need' : 'Want',
+                    style: const TextStyle(
+                      color: Color(0xFF103225),
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w900,
+                      height: 1.0,
+                    ),
+                  ),
                 ),
+                const Spacer(),
+                Icon(
+                  icon,
+                  size: 15,
+                  color: accentDark,
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
                 child: Text(
-                  isNeed ? 'Need' : 'Want',
+                  pickup.label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFF103225),
-                    fontSize: 10,
+                    color: Color(0xFF17382D),
                     fontWeight: FontWeight.w900,
-                    height: 1.0,
+                    fontSize: 12,
+                    height: 1.05,
                   ),
                 ),
               ),
-              const Spacer(),
-              Icon(
-                icon,
-                size: 16,
-                color: accentDark,
-              ),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            pickup.label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF17382D),
-              fontWeight: FontWeight.w900,
-              fontSize: 12.5,
-              height: 1.05,
             ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.72),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: accent.withValues(alpha: 0.7),
-                width: 1,
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.76),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: accent.withValues(alpha: 0.7),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                '\$${pickup.amount}',
+                style: const TextStyle(
+                  color: Color(0xFF355E4E),
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  height: 1.0,
+                ),
               ),
             ),
-            child: Text(
-              '\$${pickup.amount}',
-              style: const TextStyle(
-                color: Color(0xFF355E4E),
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                height: 1.0,
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -902,28 +966,31 @@ class _PlayerAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF85EFAC), Color(0xFF4DD78E)],
-        ),
-        border: Border.all(color: Colors.white.withOpacity(0.42), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF85EFAC).withOpacity(0.22),
-            blurRadius: 18,
-            spreadRadius: 1,
+    return Transform.rotate(
+      angle: tilt,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF85EFAC), Color(0xFF4DD78E)],
           ),
-        ],
-      ),
-      child: const Center(
-        child: Icon(
-          Icons.person_rounded,
-          color: Color(0xFF103225),
-          size: 34,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.42), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF85EFAC).withValues(alpha: 0.22),
+              blurRadius: 18,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: const Center(
+          child: Icon(
+            Icons.person_rounded,
+            color: Color(0xFF103225),
+            size: 34,
+          ),
         ),
       ),
     );
@@ -940,7 +1007,7 @@ class _OverlayCenter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black.withOpacity(0.32),
+      color: Colors.black.withValues(alpha: 0.32),
       alignment: Alignment.center,
       padding: const EdgeInsets.all(20),
       child: child,
@@ -1247,11 +1314,11 @@ class _ArenaPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final lanePaint = Paint()
-      ..color = Colors.white.withOpacity(0.05)
+      ..color = Colors.white.withValues(alpha: 0.05)
       ..strokeWidth = 1;
 
     final shimmerPaint = Paint()
-      ..color = Colors.white.withOpacity(0.04)
+      ..color = Colors.white.withValues(alpha: 0.04)
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round;
     final coinPaint = Paint()

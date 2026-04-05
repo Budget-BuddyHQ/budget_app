@@ -670,7 +670,7 @@ class _PortfolioHeroCard extends StatelessWidget {
           color: trendColor,
           dotData: FlDotData(
             show: true,
-            getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+            getDotPainter: (_, _, _, _) => FlDotCirclePainter(
               radius: 4,
               color: trendColor,
               strokeWidth: 2,
