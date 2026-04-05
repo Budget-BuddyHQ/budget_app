@@ -74,11 +74,6 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   Widget build(BuildContext context) {
     final lessons = _progressionService.lessons;
     final nextLesson = lessons.cast<Lesson?>().firstWhere(
-          (lesson) =>
-              lesson != null &&
-              _progressionService.getLessonStatus(lesson.id) == LessonStatus.available,
-          orElse: () => null,
-        );
     final completed = _progressionService.completedCount;
     final total = _progressionService.totalCount;
     final progress = _progressionService.getProgress();
@@ -137,11 +132,6 @@ class _LessonsBackdrop extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF06150F),
-                Color(0xFF0B231A),
-                Color(0xFF103127),
-              ],
             ),
           ),
         ),
@@ -167,10 +157,6 @@ class _LessonsBackdrop extends StatelessWidget {
 }
 
 class _Aura extends StatelessWidget {
-  const _Aura({
-    required this.size,
-    required this.color,
-  });
 
   final double size;
   final Color color;
@@ -281,7 +267,6 @@ class _LessonsHero extends StatelessWidget {
                   gradient: const LinearGradient(
                     colors: [Color(0xFF58C7FF), Color(0xFF85EFAC)],
                   ),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.55), width: 3),
                 ),
                 child: const Icon(
                   Icons.school_rounded,
@@ -318,7 +303,6 @@ class _LessonsHero extends StatelessWidget {
               minHeight: 11,
               value: progress,
               backgroundColor: Colors.white.withValues(alpha: 0.10),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF85EFAC)),
             ),
           ),
           const SizedBox(height: 16),
@@ -329,7 +313,6 @@ class _LessonsHero extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFFFD45C),
                 foregroundColor: const Color(0xFF062C21),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),
@@ -394,10 +377,6 @@ class _HeroPill extends StatelessWidget {
 }
 
 class _NextLessonCard extends StatelessWidget {
-  const _NextLessonCard({
-    required this.lesson,
-    required this.onOpen,
-  });
 
   final Lesson lesson;
   final VoidCallback onOpen;
@@ -416,7 +395,6 @@ class _NextLessonCard extends StatelessWidget {
             Colors.white.withValues(alpha: 0.04),
           ],
         ),
-        border: Border.all(color: const Color(0xFF58C7FF).withValues(alpha: 0.28)),
       ),
       child: Row(
         children: [
@@ -536,7 +514,6 @@ class _LessonsMap extends StatelessWidget {
                           painter: _LessonPathPainter(
                             positions: positions,
                             statuses: lessons
-                                .map((lesson) => progressionService.getLessonStatus(lesson.id))
                                 .toList(growable: false),
                           ),
                         ),
@@ -547,7 +524,6 @@ class _LessonsMap extends StatelessWidget {
                           top: positions[index].dy - 44,
                           child: _LessonNode(
                             lesson: lessons[index],
-                            status: progressionService.getLessonStatus(lessons[index].id),
                             onTap: () => onLessonTap(lessons[index]),
                           ),
                         ),
@@ -564,7 +540,6 @@ class _LessonsMap extends StatelessWidget {
 
   List<Offset> _buildPositions(double width, int count) {
     final positions = <Offset>[];
-    final safeWidth = math.max(300.0, width - 40);
     const verticalSpacing = 148.0;
     const startY = 62.0;
 
@@ -576,7 +551,6 @@ class _LessonsMap extends StatelessWidget {
         2 => 0.32,
         _ => 0.68,
       };
-      positions.add(Offset(safeWidth * xFactor + 20, startY + index * verticalSpacing));
     }
 
     return positions;
@@ -683,10 +657,6 @@ class _LessonNode extends StatelessWidget {
 }
 
 class _LessonPathPainter extends CustomPainter {
-  _LessonPathPainter({
-    required this.positions,
-    required this.statuses,
-  });
 
   final List<Offset> positions;
   final List<LessonStatus> statuses;
@@ -717,14 +687,6 @@ class _LessonPathPainter extends CustomPainter {
       final end = positions[index + 1];
       final path = Path()
         ..moveTo(start.dx, start.dy)
-        ..cubicTo(
-          start.dx,
-          start.dy + 48,
-          end.dx,
-          end.dy - 48,
-          end.dx,
-          end.dy,
-        );
 
       canvas.drawPath(path, inactivePaint);
 
@@ -738,6 +700,5 @@ class _LessonPathPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _LessonPathPainter oldDelegate) {
-    return oldDelegate.positions != positions || oldDelegate.statuses != statuses;
   }
 }

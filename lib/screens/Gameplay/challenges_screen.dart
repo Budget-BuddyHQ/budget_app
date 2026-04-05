@@ -7,6 +7,7 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/game_toast.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import 'bill_dodger.dart';
+import 'budget_challenge.dart';
 import 'react_challenge_screen.dart';
 
 class ChallengesScreen extends StatelessWidget {
@@ -68,6 +69,27 @@ class ChallengesScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _openBudgetChallenge(BuildContext context) async {
+    final result = await Navigator.of(context).push<BudgetChallengeCloseResult>(
+      FadePageRoute(
+        builder: (_) => const BudgetChallengeScreen(),
+      ),
+    );
+
+    if (!context.mounted || result == null) {
+      return;
+    }
+
+    GameToast.show(
+      context,
+      title: 'Budget challenge complete',
+      message:
+          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+      icon: Icons.shopping_cart_rounded,
+      accent: const Color(0xFF85EFAC),
+    );
+  }
+
   void _showComingSoon(BuildContext context, String title) {
     GameToast.show(
       context,
@@ -82,6 +104,12 @@ class ChallengesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     const challengeCards = <_ChallengeCardData>[
         description: 'Smooth arcade movement with faster money decisions.',
+      _ChallengeCardData(
+        title: 'Budget Challenge',
+        description: 'Balance value vs cost in a timed shopping challenge.',
+        reward: 150,
+        isBudgetChallenge: true,
+      ),
       _ChallengeCardData(
         title: 'Daily Budget Battle',
         description: 'A cloud-synced React challenge that rewards clean choices.',
@@ -117,7 +145,7 @@ class ChallengesScreen extends StatelessWidget {
         child: ListView.separated(
           padding: const EdgeInsets.fromLTRB(16, 18, 16, 120),
           itemCount: challengeCards.length + 1,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             if (index == 0) {
               return Container(
@@ -221,7 +249,7 @@ class ChallengesScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          card.isBillDodger
+                          card.isBillDodger || card.isBudgetChallenge
                               ? 'Arcade mode'
                               : card.usesReactBridge
                                   ? 'Cloud-synced challenge'
@@ -235,21 +263,25 @@ class ChallengesScreen extends StatelessWidget {
                       SizedBox(
                         width: 146,
                         child: CustomButton(
-                          label: card.isBillDodger ? 'Play Now' : 'Start',
+                          label: card.isBillDodger || card.isBudgetChallenge ? 'Play Now' : 'Start',
                           onPressed: card.isBillDodger
                               ? () => _openBillDodger(context)
-                              : card.usesReactBridge
-                                  ? () => _openDailyBattle(context)
-                                  : () => _showComingSoon(context, card.title),
-                          style: card.isBillDodger
+                              : card.isBudgetChallenge
+                                  ? () => _openBudgetChallenge(context)
+                                  : card.usesReactBridge
+                                      ? () => _openDailyBattle(context)
+                                      : () => _showComingSoon(context, card.title),
+                          style: card.isBillDodger || card.isBudgetChallenge
                               ? const CustomButtonStyle.secondary()
                               : const CustomButtonStyle.primary(),
                           prefixIcon: Icon(
                             card.isBillDodger
                                 ? Icons.gamepad_rounded
-                                : Icons.bolt_rounded,
+                                : card.isBudgetChallenge
+                                    ? Icons.shopping_cart_rounded
+                                    : Icons.bolt_rounded,
                             size: 18,
-                            color: card.isBillDodger
+                            color: card.isBillDodger || card.isBudgetChallenge
                                 ? const Color(0xFF76FF03)
                                 : const Color(0xFF1A4D3D),
                           ),
@@ -273,11 +305,13 @@ class _ChallengeCardData {
     required this.description,
     required this.reward,
     this.usesReactBridge = false,
+    this.isBudgetChallenge = false,
   });
 
   final String title;
   final String description;
   final int reward;
   final bool usesReactBridge;
+  final bool isBudgetChallenge;
 }
 

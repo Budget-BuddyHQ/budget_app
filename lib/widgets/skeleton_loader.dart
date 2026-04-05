@@ -7,12 +7,10 @@ class SkeletonLoader extends StatefulWidget {
   final EdgeInsets margin;
 
   const SkeletonLoader({
-    Key? key,
     this.width = double.infinity,
     this.height = 100,
     this.borderRadius = 14,
     this.margin = EdgeInsets.zero,
-  }) : super(key: key);
 
   @override
   State<SkeletonLoader> createState() => _SkeletonLoaderState();
@@ -70,11 +68,9 @@ class SkeletonCard extends StatelessWidget {
   final double spacing;
 
   const SkeletonCard({
-    Key? key,
     this.lines = 3,
     this.lineHeight = 12,
     this.spacing = 8,
-  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
