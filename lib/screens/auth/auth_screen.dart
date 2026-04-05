@@ -453,7 +453,7 @@ class _AuthHero extends StatelessWidget {
                   child: Image.asset(
                     'assets/images/logo.png',
                     fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const Icon(
+                    errorBuilder: (_, _, _) => const Icon(
                       Icons.account_balance_wallet_rounded,
                       size: 42,
                       color: Color(0xFF103225),
