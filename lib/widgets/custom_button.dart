@@ -15,7 +15,7 @@ class CustomButton extends StatefulWidget {
   });
 
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool isLoading;
   final double? width;
   final double height;
@@ -32,7 +32,7 @@ class _CustomButtonState extends State<CustomButton>
   late final AnimationController _controller;
   late final Animation<double> _scaleAnimation;
 
-  bool get _isDisabled => widget.isLoading;
+  bool get _isDisabled => widget.isLoading || widget.onPressed == null;
 
   @override
   void initState() {
@@ -43,7 +43,10 @@ class _CustomButtonState extends State<CustomButton>
       lowerBound: 0.0,
       upperBound: 1.0,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.97,
+    ).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
   }
@@ -68,11 +71,11 @@ class _CustomButtonState extends State<CustomButton>
   }
 
   void _handleTap() {
-    if (_isDisabled) {
+    if (_isDisabled || widget.onPressed == null) {
       return;
     }
     HapticFeedback.lightImpact();
-    widget.onPressed();
+    widget.onPressed!();
   }
 
   @override
@@ -189,7 +192,6 @@ class CustomButtonStyle {
     this.backgroundColor = Colors.transparent,
     this.textColor = const Color(0xFF1A4D3D),
     this.borderRadius = 18,
-    this.border = null,
     this.boxShadow = const [
       BoxShadow(
         color: Color.fromRGBO(118, 255, 3, 0.24),
@@ -201,7 +203,6 @@ class CustomButtonStyle {
   });
 
   const CustomButtonStyle.secondary({
-    this.gradient = null,
     this.backgroundColor = const Color(0xFF2D5A4A),
     this.textColor = const Color(0xFF76FF03),
     this.borderRadius = 18,
@@ -222,7 +223,6 @@ class CustomButtonStyle {
   });
 
   const CustomButtonStyle.tertiary({
-    this.gradient = null,
     this.backgroundColor = const Color(0xFF1B3329),
     this.textColor = Colors.white,
     this.borderRadius = 18,
@@ -244,21 +244,20 @@ class CustomButtonStyle {
 
   const CustomButtonStyle.danger({
     this.gradient = const LinearGradient(
-      colors: [Color(0xFFFF6B6B), Color(0xFFEE5A52)],
+      colors: [Color(0xFFFF6B6B), Color(0xFFFF8A65)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     this.backgroundColor = Colors.transparent,
     this.textColor = Colors.white,
     this.borderRadius = 18,
-    this.border = null,
     this.boxShadow = const [
       BoxShadow(
-        color: Color.fromRGBO(255, 107, 107, 0.24),
-        blurRadius: 18,
+        color: Color.fromRGBO(255, 107, 107, 0.22),
+        blurRadius: 16,
         offset: Offset(0, 8),
       ),
     ],
-    this.splashColor = const Color.fromRGBO(255, 255, 255, 0.18),
+    this.splashColor = const Color.fromRGBO(255, 255, 255, 0.16),
   });
 }

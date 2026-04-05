@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'controllers/user_stats_controller.dart';
@@ -29,20 +28,7 @@ Future<void> main() async {
     defaultValue: 'YOUR_SUPABASE_ANON_KEY',
   );
 
-  try {
-    final hasRealSupabaseConfig =
-        !supabaseUrl.contains('YOUR-PROJECT') &&
-        !supabaseAnonKey.contains('YOUR_SUPABASE');
 
-    if (hasRealSupabaseConfig) {
-      await Supabase.initialize(
-        url: supabaseUrl,
-        anonKey: supabaseAnonKey,
-      );
-    }
-  } catch (error) {
-    debugPrint('Supabase bootstrap skipped, using cached local data: $error');
-  }
 
   await SupabaseService.instance.initialize(
     supabaseUrl: supabaseUrl,
