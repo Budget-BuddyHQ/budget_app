@@ -6,6 +6,7 @@ import '../../services/supabase_service.dart' show UserStats;
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/game_toast.dart';
 import 'bill_dodger.dart';
+import 'budget_challenge.dart';
 import 'react_challenge_screen.dart';
 
 class TownSquare extends StatelessWidget {
@@ -58,6 +59,25 @@ class TownSquare extends StatelessWidget {
       message:
           '+${result.goldEarned} gold | +${result.xpEarned} XP | ${result.syncState.message}',
       icon: Icons.savings_rounded,
+    );
+  }
+
+  Future<void> _launchBudgetChallenge(BuildContext context) async {
+    final result = await Navigator.of(context).push<BudgetChallengeCloseResult>(
+      MaterialPageRoute(builder: (_) => const BudgetChallengeScreen()),
+    );
+
+    if (!context.mounted || result == null) {
+      return;
+    }
+
+    GameToast.show(
+      context,
+      title: 'Budget Challenge Complete',
+      message:
+          '+${result.goldEarned} gold | +${result.xpEarned} XP | ${result.syncState.message}',
+      icon: Icons.shopping_cart_rounded,
+      accent: const Color(0xFF85EFAC),
     );
   }
 
@@ -123,6 +143,18 @@ class TownSquare extends StatelessWidget {
                                 icon: Icons.sports_esports_rounded,
                                 buttonLabel: 'Play Arcade',
                                 onPressed: () => _launchBillDodger(context),
+                              ),
+                            ),
+                            SizedBox(
+                              width: tileWidth,
+                              child: _PortalPanel(
+                                title: 'Budget Challenge Plaza',
+                                subtitle:
+                                    'Pick the cheapest essentials within your budget before time runs out.',
+                                accent: const Color(0xFF85EFAC),
+                                icon: Icons.shopping_cart_rounded,
+                                buttonLabel: 'Start Challenge',
+                                onPressed: () => _launchBudgetChallenge(context),
                               ),
                             ),
                             SizedBox(
