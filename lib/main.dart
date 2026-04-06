@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'config/runtime_env.dart';
 import 'controllers/user_stats_controller.dart';
 import 'screens/Gameplay/bill_dodger.dart';
 import 'screens/Gameplay/dashboard_shell.dart';
@@ -36,14 +38,20 @@ Future<void> main() async {
     }
   }
 
-  const supabaseUrl = String.fromEnvironment(
+  const compileTimeSupabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
     defaultValue: 'https://YOUR-PROJECT.supabase.co',
   );
-  const supabaseAnonKey = String.fromEnvironment(
+  const compileTimeSupabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
     defaultValue: 'YOUR_SUPABASE_ANON_KEY',
   );
+  final supabaseUrl = compileTimeSupabaseUrl.contains('YOUR-PROJECT')
+      ? (readRuntimeEnv('SUPABASE_URL') ?? compileTimeSupabaseUrl)
+      : compileTimeSupabaseUrl;
+  final supabaseAnonKey = compileTimeSupabaseAnonKey.contains('YOUR_SUPABASE')
+      ? (readRuntimeEnv('SUPABASE_ANON_KEY') ?? compileTimeSupabaseAnonKey)
+      : compileTimeSupabaseAnonKey;
 
 
 
@@ -91,15 +99,23 @@ class _AppBootstrapGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<String?>(
-      future: SupabaseService.instance.getActiveSessionUserId(),
+    final service = SupabaseService.instance;
+    return StreamBuilder<AuthState>(
+      stream: service.authStateChanges(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const WelcomeScreen();
+        final hasSession =
+            snapshot.data?.session != null || service.currentUser != null;
+        final controller = context.watch<UserStatsController>();
+
+        if (hasSession && controller.isLoading) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
         }
-        return snapshot.data == null
-            ? const WelcomeScreen()
-            : const DashboardShell();
+
+        return hasSession ? const DashboardShell() : const WelcomeScreen();
       },
     );
   }
