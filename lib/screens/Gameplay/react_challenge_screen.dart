@@ -282,8 +282,6 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
       ),
     );
   } catch (e, st) {
-    debugPrint('Challenge reward sync failed: $e\n$st');
-
     if (!mounted) {
       return;
     }
@@ -373,8 +371,16 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
       );
     }
 
-    return WillPopScope(
-      onWillPop: _confirmExit,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        final shouldPop = await _confirmExit();
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).pop(result);
+        }
+      },
       child: Scaffold(
         backgroundColor: const Color(0xFF07150F),
         appBar: AppBar(
@@ -387,6 +393,7 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
           children: [
             if (_webViewController != null && _loadError == null)
               WebViewWidget(controller: _webViewController!),
+
             if (_loadError != null)
               Center(
                 child: Padding(
@@ -398,6 +405,7 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
                   ),
                 ),
               ),
+
             if (_isLoading)
               Positioned.fill(
                 child: ColoredBox(
@@ -409,6 +417,7 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
                   ),
                 ),
               ),
+
             Positioned(
               top: 16,
               right: 16,

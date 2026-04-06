@@ -40,11 +40,10 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
     with TickerProviderStateMixin {
   static const Color _background = Color(0xFF071711);
   static const Color _accent = Color(0xFF85EFAC);
+  static const Color _needColor = Color(0xFF85EFAC);
+  static const Color _wantColor = Color(0xFFFFB084);
   static const int _roundSeconds = 45;
-  static const double _baseMoveSpeed = 440;
-  static const double _baseAcceleration = 2400;
-  static const double _baseFriction = 2100;
-  static const double _maxPlayerTilt = 0.18;
+  static const double _pickupHeightFactor = 0.84;
 
   final math.Random _random = math.Random();
   final FocusNode _focusNode = FocusNode();
@@ -61,18 +60,10 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
   double _playerTilt = 0;
   bool _movingLeft = false;
   bool _movingRight = false;
-  bool _leftKeyHeld = false;
-  bool _rightKeyHeld = false;
 
   int _money = 1200;
   int _score = 0;
   int _timeLeft = _roundSeconds;
-  int _streak = 0;
-  int _bestStreak = 0;
-  int _wave = 1;
-  double _dangerMeter = 0;
-  double _intensity = 1;
-  double _gameTime = 0; // Added for visual effects
   bool _started = false;
   bool _finished = false;
   bool _claiming = false;
@@ -134,7 +125,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
 
     for (final pickup in _pickups) {
       pickup.width = _pickupWidthForArena();
-      pickup.height = pickup.width * 0.74;
+      pickup.height = pickup.width * _pickupHeightFactor;
       pickup.x = (pickup.x * widthRatio)
           .clamp(0, math.max(0, _arenaSize.width - pickup.width))
           .toDouble();
@@ -151,20 +142,12 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
       _money = 1200;
       _score = 0;
       _timeLeft = _roundSeconds;
-      _streak = 0;
-      _bestStreak = 0;
-      _wave = 1;
-      _dangerMeter = 0;
-      _intensity = 1;
-      _gameTime = 0;
       _started = true;
       _finished = false;
       _claiming = false;
       _didClaim = false;
       _pickups.clear();
       _playerX = math.max(0, (_arenaSize.width - _playerWidth) / 2).toDouble();
-      _playerVelocity = 0;
-      _playerTilt = 0;
       _lastFrame = Duration.zero;
     });
 
@@ -173,7 +156,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
     _spawnTimer?.cancel();
     _countdownTimer?.cancel();
 
-    _spawnTimer = Timer.periodic(const Duration(milliseconds: 420), (_) {
+    _spawnTimer = Timer.periodic(const Duration(milliseconds: 560), (_) {
       _spawnPickup();
     });
 
@@ -206,8 +189,6 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
       _finished = true;
       _movingLeft = false;
       _movingRight = false;
-      _leftKeyHeld = false;
-      _rightKeyHeld = false;
       _playerVelocity = 0;
       _playerTilt = 0;
     });
@@ -228,8 +209,6 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
             .clamp(0.0, 0.032)
             .toDouble();
     _lastFrame = elapsed;
-    
-    _gameTime += deltaSeconds; // Track total time for visual effects
 
     _updatePlayer(deltaSeconds);
     _updatePickups(deltaSeconds);
@@ -240,30 +219,57 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
   }
 
   void _updatePlayer(double deltaSeconds) {
-    final targetDirection = (_movingRight ? 1.0 : 0.0) - (_movingLeft ? 1.0 : 0.0);
-    final targetVelocity = targetDirection * (_baseMoveSpeed * _intensity.clamp(1, 1.8));
-    final changeRate = targetDirection == 0 ? _baseFriction : _baseAcceleration;
-
-    if (_playerVelocity < targetVelocity) {
-      _playerVelocity = math.min(
-        targetVelocity,
-        _playerVelocity + changeRate * deltaSeconds,
-      );
-    } else if (_playerVelocity > targetVelocity) {
-      _playerVelocity = math.max(
-        targetVelocity,
-        _playerVelocity - changeRate * deltaSeconds,
-      );
+    const speed = 320.0;
+    double direction = 0;
+    if (_movingLeft) {
+      direction -= 1;
+    }
+    if (_movingRight) {
+      direction += 1;
     }
 
-    _playerX += _playerVelocity * deltaSeconds;
+    _playerX += direction * speed * deltaSeconds;
     _playerX = _playerX
         .clamp(0, math.max(0, _arenaSize.width - _playerWidth))
         .toDouble();
 
-    final tiltTarget = (_playerVelocity / (_baseMoveSpeed * 1.15)).clamp(-1.0, 1.0).toDouble();
-    _playerTilt += (tiltTarget - _playerTilt) * math.min(1, deltaSeconds * 10);
-    _playerTilt = _playerTilt.clamp(-_maxPlayerTilt, _maxPlayerTilt).toDouble();
+    final targetTilt = direction * 0.16;
+    final lerpStrength = (deltaSeconds * 14).clamp(0.0, 1.0);
+    _playerTilt += (targetTilt - _playerTilt) * lerpStrength;
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    final key = event.logicalKey;
+    final isLeft =
+        key == LogicalKeyboardKey.arrowLeft || key == LogicalKeyboardKey.keyA;
+    final isRight =
+        key == LogicalKeyboardKey.arrowRight || key == LogicalKeyboardKey.keyD;
+
+    if (!isLeft && !isRight) {
+      return KeyEventResult.ignored;
+    }
+
+    if (event is KeyDownEvent || event is KeyRepeatEvent) {
+      if (isLeft) {
+        _movingLeft = true;
+      }
+      if (isRight) {
+        _movingRight = true;
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (event is KeyUpEvent) {
+      if (isLeft) {
+        _movingLeft = false;
+      }
+      if (isRight) {
+        _movingRight = false;
+      }
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
   }
 
   void _updatePickups(double deltaSeconds) {
@@ -293,7 +299,6 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
     }
 
     _pickups.removeWhere(toRemove.contains);
-    _updateDifficulty();
 
     if (_money <= 0) {
       _money = 0;
@@ -304,29 +309,20 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
   void _handlePickupCollision(_FallingPickup pickup) {
     HapticFeedback.lightImpact();
     if (pickup.kind == _PickupKind.need) {
-      _streak += 1;
-      _bestStreak = math.max(_bestStreak, _streak);
-      final streakBonus = 1 + ((_streak - 1) ~/ 4);
-      _money += 26 + (pickup.amount ~/ 14) + streakBonus * 4;
-      _score += 14 + streakBonus * 6;
-      _dangerMeter = math.max(0, _dangerMeter - 0.12);
+      _money += 28;
+      _score += 16;
     } else {
-      _streak = 0;
-      _money -= 32 + (pickup.amount ~/ 8);
-      _score = math.max(0, _score - 14);
-      _dangerMeter = (_dangerMeter + 0.18).clamp(0, 1).toDouble();
+      _money -= 36;
+      _score = math.max(0, _score - 12);
     }
   }
 
   void _handleMissedPickup(_FallingPickup pickup) {
     if (pickup.kind == _PickupKind.need) {
-      _streak = 0;
-      _money -= 18 + (pickup.amount ~/ 16);
-      _score = math.max(0, _score - 10);
-      _dangerMeter = (_dangerMeter + 0.10).clamp(0, 1).toDouble();
+      _money -= 20;
+      _score = math.max(0, _score - 8);
     } else {
-      _score += 8;
-      _dangerMeter = math.max(0, _dangerMeter - 0.06);
+      _score += 6;
     }
   }
 
@@ -340,16 +336,13 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
       return;
     }
 
-    final wantBias = (0.38 + (_wave * 0.05) + (_dangerMeter * 0.1))
-        .clamp(0.38, 0.7)
-        .toDouble();
-    final isNeed = _random.nextDouble() > wantBias;
+    final isNeed = _random.nextBool();
     final data = (isNeed ? _needPool : _wantPool)[
       _random.nextInt(isNeed ? _needPool.length : _wantPool.length)
     ];
 
     final width = math.min(98.0, _arenaSize.width * 0.24).toDouble();
-    final height = width * 0.72;
+    final height = width * _pickupHeightFactor;
     final maxX = math.max(0, _arenaSize.width - width).toDouble();
     final lanePadding = math.max(6, _arenaSize.width * 0.02).toDouble();
     final x = lanePadding +
@@ -364,17 +357,10 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
         y: -height - 12,
         width: width,
         height: height,
-        speed: (205 + _random.nextDouble() * 95) * _intensity,
+        speed: 210 + _random.nextDouble() * 90,
         tilt: (_random.nextDouble() - 0.5) * 0.2,
       ),
     );
-  }
-
-  void _updateDifficulty() {
-    final elapsedSeconds = (_roundSeconds - _timeLeft).clamp(0, _roundSeconds);
-    final computedWave = 1 + (elapsedSeconds ~/ 12);
-    _wave = computedWave.clamp(1, 4);
-    _intensity = (1 + elapsedSeconds / 36 + (_dangerMeter * 0.18)).clamp(1.0, 1.7).toDouble();
   }
 
   Future<bool> _confirmExit() async {
@@ -489,51 +475,10 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
     _playerX = (_playerX + delta)
         .clamp(0, math.max(0, _arenaSize.width - _playerWidth))
         .toDouble();
-    _playerVelocity = (delta * 18).clamp(-_baseMoveSpeed, _baseMoveSpeed).toDouble();
     setState(() {});
   }
 
-  void _handleKeyEvent(KeyEvent event) {
-    if (!_started || _finished) {
-      return;
-    }
-
-    final isLeft = event.logicalKey == LogicalKeyboardKey.arrowLeft ||
-        event.logicalKey == LogicalKeyboardKey.keyA;
-    final isRight = event.logicalKey == LogicalKeyboardKey.arrowRight ||
-        event.logicalKey == LogicalKeyboardKey.keyD;
-
-    if (!isLeft && !isRight) {
-      return;
-    }
-
-    if (event is KeyDownEvent) {
-      if (isLeft && !_leftKeyHeld) {
-        _leftKeyHeld = true;
-        _movingLeft = true;
-        HapticFeedback.selectionClick();
-      }
-      if (isRight && !_rightKeyHeld) {
-        _rightKeyHeld = true;
-        _movingRight = true;
-        HapticFeedback.selectionClick();
-      }
-    } else if (event is KeyUpEvent) {
-      if (isLeft) {
-        _leftKeyHeld = false;
-        _movingLeft = false;
-      }
-      if (isRight) {
-        _rightKeyHeld = false;
-        _movingRight = false;
-      }
-    }
-  }
-
   String _gradeMessage() {
-    if (_score >= 240) {
-      return 'Epic minigame energy. You chained essentials and ruled the arena.';
-    }
     if (_score >= 200) {
       return 'Elite budget instincts. You guarded every essential like a pro.';
     }
@@ -556,231 +501,217 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
       ),
     );
 
-    return WillPopScope(
-      onWillPop: _confirmExit,
-      child: KeyboardListener(
-        focusNode: _focusNode,
-        autofocus: true,
-        onKeyEvent: _handleKeyEvent,
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: true,
+      onKeyEvent: _handleKeyEvent,
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          final shouldLeave = await _confirmExit();
+          if (shouldLeave && mounted) {
+            Navigator.of(context).pop();
+          }
+        },
         child: Scaffold(
           backgroundColor: _background,
           body: SafeArea(
             child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () async {
-                        final shouldLeave = await _confirmExit();
-                        if (!mounted || !shouldLeave) {
-                          return;
-                        }
-                        Navigator.of(context).pop();
-                      },
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const Expanded(
-                      child: Text(
-                        'Bill Dodger',
-                        style: TextStyle(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () async {
+                          final shouldLeave = await _confirmExit();
+                          if (!mounted || !shouldLeave) {
+                            return;
+                          }
+                          Navigator.of(context).pop();
+                        },
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
                           color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
                         ),
                       ),
-                    ),
-                    _TopChip(
-                      label: '${_timeLeft}s',
-                      icon: Icons.timer_rounded,
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _TopStatsRow(
-                  money: _money,
-                  score: _score,
-                  streak: _streak,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
-                  ),
-                  child: const Text(
-                    'Collect NEEDS, dodge WANTS, build a streak, and survive each wave. Hold the arrow keys, press A/D, or drag your hero to glide left and right.',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                      height: 1.45,
-                    ),
+                      const Expanded(
+                        child: Text(
+                          'Bill Dodger',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      _TopChip(
+                        label: '${_timeLeft}s',
+                        icon: Icons.timer_rounded,
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _RoundPulseBar(
-                  label: 'Wave $_wave',
-                  value: _dangerMeter,
-                  caption: _dangerMeter > 0.66
-                      ? 'Pressure is rising - shiny wants are flooding in.'
-                      : _dangerMeter > 0.33
-                          ? 'Steady pace - keep the streak alive.'
-                          : 'You are in control - stack clean catches.',
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Padding(
+                Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      _syncArenaSize(constraints.biggest);
-                      if (!_started && !_finished) {
-                        _playerX = math.max(
-                          0,
-                          (_arenaSize.width - _playerWidth) / 2,
-                        ).toDouble();
-                      } else {
-                        _playerX = _playerX.clamp(
-                          0,
-                          math.max(0, _arenaSize.width - _playerWidth),
-                        ).toDouble();
-                      }
+                  child: _TopStatsRow(
+                    money: _money,
+                    score: _score,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    child: const Text(
+                      'Collect NEEDS, dodge WANTS, and glide smoothly across the arena. Use arrow keys, hold the buttons, or drag your hero left and right.',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        height: 1.45,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        _arenaSize = constraints.biggest;
+                        if (!_started && !_finished) {
+                          _playerX = math.max(
+                            0,
+                            (_arenaSize.width - _playerWidth) / 2,
+                          ).toDouble();
+                        } else {
+                          _playerX = _playerX.clamp(
+                            0,
+                            math.max(0, _arenaSize.width - _playerWidth),
+                          ).toDouble();
+                        }
 
-                      return ClipRRect(
-                        borderRadius: BorderRadius.circular(28),
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onHorizontalDragUpdate: (details) {
-                            _moveByDrag(details.delta.dx);
-                          },
-                          child: Stack(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      const Color(0xFF103225),
-                                      const Color(0xFF173B2D),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              Positioned.fill(
-                                child: CustomPaint(
-                                  painter: _ArenaPainter(
-                                    gameTime: _gameTime,
-                                    dangerMeter: _dangerMeter,
-                                  ),
-                                ),
-                              ),
-                              for (final pickup in _pickups)
-                                Positioned(
-                                  left: pickup.x,
-                                  top: pickup.y,
-                                  child: _PickupCard(pickup: pickup),
-                                ),
-                              // REMOVED AnimatedPositioned TO FIX LAG
-                              Positioned(
-                                left: _playerX,
-                                top: _playerY,
-                                child: _PlayerAvatar(
-                                  width: _playerWidth,
-                                  height: _playerHeight,
-                                  tilt: _playerTilt,
-                                ),
-                              ),
-                              if (!_started && !_finished)
-                                Positioned.fill(
-                                  child: _OverlayCenter(
-                                    child: _IntroCard(onStart: _startGame),
-                                  ),
-                                ),
-                              if (_finished)
-                                Positioned.fill(
-                                  child: _OverlayCenter(
-                                    child: _ResultsCard(
-                                      score: _score,
-                                      money: _money,
-                                      bestStreak: _bestStreak,
-                                      message: _gradeMessage(),
-                                      rewards: projected,
-                                      claiming: _claiming,
-                                      onReplay: _startGame,
-                                      onClaim: _claimRewards,
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(28),
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: _focusNode.requestFocus,
+                            onHorizontalDragStart: (_) => _focusNode.requestFocus(),
+                            onHorizontalDragUpdate: (details) {
+                              _moveByDrag(details.delta.dx);
+                            },
+                            child: Stack(
+                              children: [
+                                Container(
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Color(0xFF103225),
+                                        Color(0xFF173B2D),
+                                      ],
                                     ),
                                   ),
                                 ),
-                            ],
+                                Positioned.fill(
+                                  child: CustomPaint(
+                                    painter: _ArenaPainter(),
+                                  ),
+                                ),
+                                for (final pickup in _pickups)
+                                  Positioned(
+                                    left: pickup.x,
+                                    top: pickup.y,
+                                    child: _PickupCard(pickup: pickup),
+                                  ),
+                                AnimatedPositioned(
+                                  duration: const Duration(milliseconds: 60),
+                                  curve: Curves.linear,
+                                  left: _playerX,
+                                  top: _playerY,
+                                  child: _PlayerAvatar(
+                                    width: _playerWidth,
+                                    height: _playerHeight,
+                                    tilt: _playerTilt,
+                                  ),
+                                ),
+                                if (!_started && !_finished)
+                                  Positioned.fill(
+                                    child: _OverlayCenter(
+                                      child: _IntroCard(onStart: _startGame),
+                                    ),
+                                  ),
+                                if (_finished)
+                                  Positioned.fill(
+                                    child: _OverlayCenter(
+                                      child: _ResultsCard(
+                                        score: _score,
+                                        money: _money,
+                                        message: _gradeMessage(),
+                                        rewards: projected,
+                                        claiming: _claiming,
+                                        onReplay: _startGame,
+                                        onClaim: _claimRewards,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _ControlButton(
-                        icon: Icons.arrow_left_rounded,
-                        label: 'Hold Left',
-                        accent: Colors.white,
-                        background: Colors.white.withOpacity(0.06),
-                        onDown: () {
-                          HapticFeedback.lightImpact();
-                          _movingLeft = true;
-                          _leftKeyHeld = true;
-                        },
-                        onUp: () {
-                          _movingLeft = false;
-                          _leftKeyHeld = false;
-                        },
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _ControlButton(
+                          icon: Icons.arrow_left_rounded,
+                          label: 'Hold Left',
+                          accent: Colors.white,
+                          background: Colors.white.withValues(alpha: 0.06),
+                          onDown: () {
+                            _focusNode.requestFocus();
+                            HapticFeedback.lightImpact();
+                            _movingLeft = true;
+                          },
+                          onUp: () => _movingLeft = false,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _ControlButton(
-                        icon: Icons.arrow_right_rounded,
-                        label: 'Hold Right',
-                        accent: const Color(0xFF103225),
-                        background: _accent,
-                        onDown: () {
-                          HapticFeedback.lightImpact();
-                          _movingRight = true;
-                          _rightKeyHeld = true;
-                        },
-                        onUp: () {
-                          _movingRight = false;
-                          _rightKeyHeld = false;
-                        },
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ControlButton(
+                          icon: Icons.arrow_right_rounded,
+                          label: 'Hold Right',
+                          accent: const Color(0xFF103225),
+                          background: _accent,
+                          onDown: () {
+                            _focusNode.requestFocus();
+                            HapticFeedback.lightImpact();
+                            _movingRight = true;
+                          },
+                          onUp: () => _movingRight = false,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );
@@ -846,65 +777,29 @@ class _TopStatsRow extends StatelessWidget {
   const _TopStatsRow({
     required this.money,
     required this.score,
-    required this.streak,
   });
 
   final int money;
   final int score;
-  final int streak;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final narrow = constraints.maxWidth < 360;
-        final chips = [
-          Expanded(
-            child: _TopChip(
-              label: '\$$money',
-              icon: Icons.account_balance_wallet_rounded,
-            ),
+    return Row(
+      children: [
+        Expanded(
+          child: _TopChip(
+            label: '\$$money',
+            icon: Icons.account_balance_wallet_rounded,
           ),
-          Expanded(
-            child: _TopChip(
-              label: '$score pts',
-              icon: Icons.workspace_premium_rounded,
-            ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _TopChip(
+            label: '$score pts',
+            icon: Icons.workspace_premium_rounded,
           ),
-          Expanded(
-            child: _TopChip(
-              label: '${streak}x streak',
-              icon: Icons.local_fire_department_rounded,
-            ),
-          ),
-        ];
-
-        if (narrow) {
-          return Column(
-            children: [
-              Row(
-                children: [
-                  chips[0],
-                  const SizedBox(width: 10),
-                  chips[1],
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(children: [chips[2]]),
-            ],
-          );
-        }
-
-        return Row(
-          children: [
-            chips[0],
-            const SizedBox(width: 10),
-            chips[1],
-            const SizedBox(width: 10),
-            chips[2],
-          ],
-        );
-      },
+        ),
+      ],
     );
   }
 }
@@ -927,23 +822,19 @@ class _TopChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
-      // FITTED BOX ADDED TO PREVENT OVERFLOW
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: const Color(0xFF85EFAC), size: 18),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-              ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: const Color(0xFF85EFAC), size: 18),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -967,87 +858,96 @@ class _PickupCard extends StatelessWidget {
     final IconData icon =
         isNeed ? Icons.check_circle_rounded : Icons.shopping_bag_rounded;
 
-    return Container(
-      width: pickup.width,
-      height: pickup.height,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0FAF3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withOpacity(0.9), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withOpacity(0.12),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: accent,
-                  borderRadius: BorderRadius.circular(999),
+    final wobble = pickup.tilt + math.sin(pickup.y * 0.045) * 0.08;
+
+    return Transform.rotate(
+      angle: wobble,
+      child: Container(
+        width: pickup.width,
+        height: pickup.height,
+        padding: const EdgeInsets.all(7),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FAF3),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: accent.withValues(alpha: 0.9), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: 0.16),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    isNeed ? 'Need' : 'Want',
+                    style: const TextStyle(
+                      color: Color(0xFF103225),
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w900,
+                      height: 1.0,
+                    ),
+                  ),
                 ),
+                const Spacer(),
+                Icon(
+                  icon,
+                  size: 15,
+                  color: accentDark,
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
                 child: Text(
-                  isNeed ? 'Need' : 'Want',
+                  pickup.label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFF103225),
-                    fontSize: 10,
+                    color: Color(0xFF17382D),
                     fontWeight: FontWeight.w900,
-                    height: 1.0,
+                    fontSize: 12,
+                    height: 1.05,
                   ),
                 ),
               ),
-              const Spacer(),
-              Icon(
-                icon,
-                size: 16,
-                color: accentDark,
-              ),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            pickup.label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF17382D),
-              fontWeight: FontWeight.w900,
-              fontSize: 12.5,
-              height: 1.05,
             ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.72),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: accent.withValues(alpha: 0.7),
-                width: 1,
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.76),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: accent.withValues(alpha: 0.7),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                '\$${pickup.amount}',
+                style: const TextStyle(
+                  color: Color(0xFF355E4E),
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  height: 1.0,
+                ),
               ),
             ),
-            child: Text(
-              '\$${pickup.amount}',
-              style: const TextStyle(
-                color: Color(0xFF355E4E),
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                height: 1.0,
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1068,160 +968,31 @@ class _PlayerAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Transform.rotate(
       angle: tilt,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            left: width * 0.14,
-            right: width * 0.14,
-            bottom: -8,
-            child: Container(
-              height: 12,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                color: const Color(0xFF85EFAC).withOpacity(0.25),
-              ),
-            ),
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF85EFAC), Color(0xFF4DD78E)],
           ),
-          Container(
-            width: width,
-            height: height,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF9DFFBF), Color(0xFF4DD78E)],
-              ),
-              border: Border.all(color: Colors.white.withOpacity(0.42), width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF85EFAC).withOpacity(0.22),
-                  blurRadius: 18,
-                  spreadRadius: 1,
-                ),
-              ],
+          border: Border.all(color: Colors.white.withValues(alpha: 0.42), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF85EFAC).withValues(alpha: 0.22),
+              blurRadius: 18,
+              spreadRadius: 1,
             ),
-            child: const Center(
-              child: Icon(
-                Icons.person_rounded,
-                color: Color(0xFF103225),
-                size: 34,
-              ),
-            ),
+          ],
+        ),
+        child: const Center(
+          child: Icon(
+            Icons.person_rounded,
+            color: Color(0xFF103225),
+            size: 34,
           ),
-        ],
+        ),
       ),
-    );
-  }
-}
-
-class _RoundPulseBar extends StatelessWidget {
-  const _RoundPulseBar({
-    required this.label,
-    required this.value,
-    required this.caption,
-  });
-
-  final String label;
-  final double value;
-  final String caption;
-
-  @override
-  Widget build(BuildContext context) {
-    final clamped = value.clamp(0.0, 1.0);
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '${(clamped * 100).round()}%',
-                style: TextStyle(
-                  color: Color.lerp(
-                    const Color(0xFF85EFAC),
-                    const Color(0xFFFFB084),
-                    clamped,
-                  ),
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: clamped,
-              minHeight: 10,
-              backgroundColor: Colors.white.withOpacity(0.08),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Color.lerp(
-                      const Color(0xFF73E9A6),
-                      const Color(0xFFFF8D5C),
-                      clamped,
-                    ) ??
-                    const Color(0xFF73E9A6),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            caption,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.74),
-              fontSize: 12,
-              height: 1.35,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ResponsiveModalWrapper extends StatelessWidget {
-  const _ResponsiveModalWrapper({
-    required this.maxWidth,
-    required this.child,
-  });
-
-  final double maxWidth;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final double width = math.min(maxWidth, constraints.maxWidth);
-
-        return Center( 
-          child: Container(
-            constraints: BoxConstraints(maxWidth: width),
-            child: SingleChildScrollView(
-              child: IntrinsicHeight( 
-                child: child,
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }
@@ -1236,7 +1007,7 @@ class _OverlayCenter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black.withOpacity(0.32),
+      color: Colors.black.withValues(alpha: 0.32),
       alignment: Alignment.center,
       padding: const EdgeInsets.all(20),
       child: child,
@@ -1253,67 +1024,64 @@ class _IntroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _ResponsiveModalWrapper(
-      maxWidth: 430,
-      child: Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: const Color(0xFF113528),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Catch needs. Dodge wants.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-              ),
+    return Container(
+      width: 430,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xFF113528),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Catch needs. Dodge wants.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
             ),
-            const SizedBox(height: 10),
-            Text(
-              'Bill Dodger now feels closer to a fast arcade minigame: smoother motion, wave pressure, and keyboard support for testing.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.74),
-                height: 1.45,
-              ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Bill Dodger now uses smooth free movement, tighter collisions, and safer bounds for mobile screens.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.74),
+              height: 1.45,
             ),
-            const SizedBox(height: 18),
-            const Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _HintBadge(
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: const [
+              Expanded(
+                child: _HintBadge(
                   icon: Icons.keyboard_rounded,
-                  label: 'Arrow keys / A-D',
+                  label: 'Arrow keys',
                 ),
-                _HintBadge(
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: _HintBadge(
                   icon: Icons.swipe_rounded,
                   label: 'Drag to steer',
                 ),
-                _HintBadge(
-                  icon: Icons.bolt_rounded,
-                  label: 'Build streaks',
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            CustomButton(
-              label: 'Start Round',
-              onPressed: onStart,
-              prefixIcon: const Icon(
-                Icons.play_arrow_rounded,
-                color: Color(0xFF103225),
               ),
-              style: const CustomButtonStyle.primary(),
+            ],
+          ),
+          const SizedBox(height: 18),
+          CustomButton(
+            label: 'Start Round',
+            onPressed: onStart,
+            prefixIcon: const Icon(
+              Icons.play_arrow_rounded,
+              color: Color(0xFF103225),
             ),
-          ],
-        ),
+            style: const CustomButtonStyle.primary(),
+          ),
+        ],
       ),
     );
   }
@@ -1358,7 +1126,6 @@ class _ResultsCard extends StatelessWidget {
   const _ResultsCard({
     required this.score,
     required this.money,
-    required this.bestStreak,
     required this.message,
     required this.rewards,
     required this.claiming,
@@ -1368,7 +1135,6 @@ class _ResultsCard extends StatelessWidget {
 
   final int score;
   final int money;
-  final int bestStreak;
   final String message;
   final BillDodgerCloseResult rewards;
   final bool claiming;
@@ -1377,85 +1143,75 @@ class _ResultsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _ResponsiveModalWrapper(
-      maxWidth: 440,
-      child: Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: const Color(0xFF113528),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Round Complete',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
+    return Container(
+      width: 440,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xFF113528),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Round Complete',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.72),
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _ResultChip(label: 'Score', value: '$score', accent: const Color(0xFFFFD45C)),
+              _ResultChip(label: 'Money', value: '\$$money', accent: const Color(0xFF85EFAC)),
+              _ResultChip(
+                label: 'Gold',
+                value: '+${rewards.goldEarned}',
+                accent: const Color(0xFFFFD45C),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.72),
-                height: 1.45,
+              _ResultChip(
+                label: 'XP',
+                value: '+${rewards.xpEarned}',
+                accent: const Color(0xFF85EFAC),
               ),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _ResultChip(label: 'Score', value: '$score', accent: const Color(0xFFFFD45C)),
-                _ResultChip(label: 'Money', value: '\$$money', accent: const Color(0xFF85EFAC)),
-                _ResultChip(
-                  label: 'Gold',
-                  value: '+${rewards.goldEarned}',
-                  accent: const Color(0xFFFFD45C),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: CustomButton(
+                  label: 'Play Again',
+                  onPressed: onReplay,
+                  style: const CustomButtonStyle.secondary(),
                 ),
-                _ResultChip(
-                  label: 'XP',
-                  value: '+${rewards.xpEarned}',
-                  accent: const Color(0xFF85EFAC),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: CustomButton(
+                  label: 'Claim Rewards',
+                  isLoading: claiming,
+                  onPressed: onClaim,
+                  style: const CustomButtonStyle.primary(),
                 ),
-                _ResultChip(
-                  label: 'Best Streak',
-                  value: '${bestStreak}x',
-                  accent: const Color(0xFF85EFAC),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                SizedBox(
-                  width: 170,
-                  child: CustomButton(
-                    label: 'Play Again',
-                    onPressed: onReplay,
-                    style: const CustomButtonStyle.secondary(),
-                  ),
-                ),
-                SizedBox(
-                  width: 170,
-                  child: CustomButton(
-                    label: 'Claim Rewards',
-                    isLoading: claiming,
-                    onPressed: onClaim,
-                    style: const CustomButtonStyle.primary(),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1554,55 +1310,39 @@ class _ControlButton extends StatelessWidget {
   }
 }
 
-// REWRITTEN PAINTER FOR DYNAMIC SCROLLING GRID
 class _ArenaPainter extends CustomPainter {
-  _ArenaPainter({
-    required this.gameTime,
-    required this.dangerMeter,
-  });
-
-  final double gameTime;
-  final double dangerMeter;
-
   @override
   void paint(Canvas canvas, Size size) {
-    final gridPaint = Paint()
-      ..color = Colors.white.withOpacity(0.04)
-      ..strokeWidth = 1.5;
+    final lanePaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.05)
+      ..strokeWidth = 1;
 
     final shimmerPaint = Paint()
-      ..color = Colors.white.withOpacity(0.04)
+      ..color = Colors.white.withValues(alpha: 0.04)
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round;
+    final coinPaint = Paint()
+      ..color = const Color(0x22FFD45C)
+      ..style = PaintingStyle.fill;
 
-    // The floor moves faster as the danger meter rises
-    final speedMultiplier = 150.0 + (dangerMeter * 250.0);
-    final gridSize = 90.0;
-    
-    // Calculate the Y offset to create the illusion of forward movement
-    final yOffset = (gameTime * speedMultiplier) % gridSize;
-
-    // Draw horizontal scrolling lines
-    for (double y = yOffset; y < size.height; y += gridSize) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
-    }
-
-    // Draw vertical perspective lanes
     for (var index = 1; index <= 3; index++) {
       final x = size.width * (index / 4);
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), lanePaint);
     }
 
-    // Static danger-zone warning line at the bottom
     canvas.drawLine(
       Offset(18, size.height - 100),
       Offset(size.width - 18, size.height - 100),
       shimmerPaint,
     );
+
+    for (var index = 0; index < 14; index++) {
+      final dx = (size.width / 14) * index + 12;
+      final double  dy = 30 + (index.isEven ? 8 : 0);
+      canvas.drawCircle(Offset(dx, dy), 3.5, coinPaint);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _ArenaPainter oldDelegate) {
-    return oldDelegate.gameTime != gameTime || oldDelegate.dangerMeter != dangerMeter;
-  }
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
