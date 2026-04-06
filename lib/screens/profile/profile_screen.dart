@@ -27,7 +27,7 @@ class ProfileScreen extends StatelessWidget {
     GameToast.show(
       context,
       title: 'Logged out',
-      message: 'Your session and local cache were cleared safely.',
+      message: 'Your Supabase session has ended on this device.',
       icon: Icons.logout_rounded,
       accent: const Color(0xFFFFC36B),
     );

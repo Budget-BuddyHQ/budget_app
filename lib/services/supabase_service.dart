@@ -224,6 +224,7 @@ class UserStats {
   }
 
   UserStats copyWith({
+    String? id,
     String? username,
     int? gold,
     int? xp,
@@ -236,7 +237,7 @@ class UserStats {
     DateTime? updatedAt,
   }) {
     return UserStats(
-      id: id,
+      id: id ?? this.id,
       username: username ?? this.username,
       gold: gold ?? this.gold,
       xp: xp ?? this.xp,
@@ -264,15 +265,27 @@ class SyncState {
   final String message;
 }
 
+@immutable
+class ProvisionedUserStats {
+  const ProvisionedUserStats({
+    required this.stats,
+    required this.syncState,
+    required this.createdProfile,
+    required this.migratedLegacyProfile,
+  });
+
+  final UserStats stats;
+  final SyncState syncState;
+  final bool createdProfile;
+  final bool migratedLegacyProfile;
+}
+
 class SupabaseService {
   SupabaseService._();
 
   static final SupabaseService instance = SupabaseService._();
 
   static const String userStatsTable = 'user_stats';
-  static const String _sessionUserIdKey = 'budget_buddy_session_user_id';
-  static const String _sessionEmailKey = 'budget_buddy_session_email';
-  static const String _sessionUsernameKey = 'budget_buddy_session_username';
   static const String schemaSql = '''
 create table if not exists public.user_stats (
   id text primary key,
@@ -299,6 +312,17 @@ create table if not exists public.user_stats (
 
   bool get isSupabaseConnected => _isSupabaseConnected;
   bool get hasCachedPreferences => _preferences != null;
+  User? get currentUser => _existingClient?.auth.currentUser;
+  String? get currentUserId => currentUser?.id;
+  Session? get currentSession => _existingClient?.auth.currentSession;
+
+  Stream<AuthState> authStateChanges() async* {
+    final client = _existingClient;
+    if (client == null) {
+      return;
+    }
+    yield* client.auth.onAuthStateChange;
+  }
 
   Future<void> initialize({
     required String supabaseUrl,
@@ -336,6 +360,47 @@ create table if not exists public.user_stats (
     }
   }
 
+  Future<AuthResponse> signUp({
+    required String email,
+    required String password,
+    String? username,
+  }) async {
+    final client = _requireClient();
+    return client.auth.signUp(
+      email: email.trim().toLowerCase(),
+      password: password,
+      data: <String, dynamic>{
+        if (username != null && username.trim().isNotEmpty)
+          'username': username.trim(),
+      },
+    );
+  }
+
+  Future<AuthResponse> signInWithPassword({
+    required String email,
+    required String password,
+  }) async {
+    final client = _requireClient();
+    return client.auth.signInWithPassword(
+      email: email.trim().toLowerCase(),
+      password: password,
+    );
+  }
+
+  Future<void> resetPasswordForEmail(String email) async {
+    final client = _requireClient();
+    await client.auth.resetPasswordForEmail(email.trim().toLowerCase());
+  }
+
+  Future<void> signOut({String? userId}) async {
+    await clearCachedUserStats(userId: userId);
+    final client = _existingClient;
+    if (client == null) {
+      return;
+    }
+    await client.auth.signOut();
+  }
+
   Future<UserStats> loadUserStats(String userId) async {
     await _ensurePreferences();
     final cached = await _readCachedUserStats(userId);
@@ -366,6 +431,89 @@ create table if not exists public.user_stats (
       debugPrint('Supabase fetch failed, using cached data: $error');
       return fallback;
     }
+  }
+
+  Future<ProvisionedUserStats> loadOrCreateUserStatsForUser({
+    required User user,
+    String? preferredUsername,
+  }) async {
+    final userId = user.id;
+    final email = user.email?.trim().toLowerCase();
+    final resolvedUsername = _resolveUsername(user, preferredUsername);
+
+    final existingStats = await _fetchUserStats(userId);
+    if (existingStats != null) {
+      final needsProfileRefresh = existingStats.username != resolvedUsername ||
+          existingStats.spendingHabits['email'] != email;
+      if (!needsProfileRefresh) {
+        return ProvisionedUserStats(
+          stats: existingStats,
+          syncState: const SyncState(
+            synced: true,
+            usedCache: false,
+            message: 'Loaded your profile.',
+          ),
+          createdProfile: false,
+          migratedLegacyProfile: false,
+        );
+      }
+
+      final refreshedStats = existingStats.copyWith(
+        username: resolvedUsername,
+        spendingHabits: <String, dynamic>{
+          ...existingStats.spendingHabits,
+          'username': resolvedUsername,
+          if (email != null) 'email': email,
+        },
+        updatedAt: DateTime.now().toUtc(),
+      );
+      final syncState = await saveUserStats(refreshedStats);
+      return ProvisionedUserStats(
+        stats: refreshedStats,
+        syncState: syncState,
+        createdProfile: false,
+        migratedLegacyProfile: false,
+      );
+    }
+
+    final legacyStats = await _loadLegacyStats(email);
+    if (legacyStats != null) {
+      final migratedStats = legacyStats.copyWith(
+        id: userId,
+        username: resolvedUsername,
+        spendingHabits: <String, dynamic>{
+          ...legacyStats.spendingHabits,
+          'username': resolvedUsername,
+          if (email != null) 'email': email,
+        },
+        updatedAt: DateTime.now().toUtc(),
+      );
+      final syncState = await saveUserStats(migratedStats);
+      return ProvisionedUserStats(
+        stats: migratedStats,
+        syncState: syncState,
+        createdProfile: false,
+        migratedLegacyProfile: true,
+      );
+    }
+
+    final defaultTemplate = UserStats.defaults(userId);
+    final defaultStats = defaultTemplate.copyWith(
+      username: resolvedUsername,
+      spendingHabits: <String, dynamic>{
+        ...defaultTemplate.spendingHabits,
+        'username': resolvedUsername,
+        if (email != null) 'email': email,
+      },
+      updatedAt: DateTime.now().toUtc(),
+    );
+    final syncState = await saveUserStats(defaultStats);
+    return ProvisionedUserStats(
+      stats: defaultStats,
+      syncState: syncState,
+      createdProfile: true,
+      migratedLegacyProfile: false,
+    );
   }
 
   Stream<UserStats> watchUserStats(String userId) async* {
@@ -429,6 +577,25 @@ create table if not exists public.user_stats (
     }
   }
 
+  Future<void> clearCachedUserStats({String? userId}) async {
+    final preferences = await _ensurePreferences();
+    if (userId != null && userId.trim().isNotEmpty) {
+      await preferences.remove(_cacheKey(userId));
+      _memoryCache.remove(userId);
+      _localController.add(UserStats.defaults(userId));
+      return;
+    }
+
+    final keysToRemove = preferences
+        .getKeys()
+        .where((key) => key.startsWith('budget_buddy_user_stats_'))
+        .toList(growable: false);
+    for (final key in keysToRemove) {
+      await preferences.remove(key);
+    }
+    _memoryCache.clear();
+  }
+
   Future<void> _cacheUserStats(UserStats stats) async {
     final preferences = await _ensurePreferences();
     await preferences.setString(
@@ -461,77 +628,98 @@ create table if not exists public.user_stats (
     return null;
   }
 
-  String _cacheKey(String userId) => 'budget_buddy_user_stats_$userId';
-
-  Future<String?> getActiveSessionUserId() async {
-    final preferences = await _ensurePreferences();
-    final savedId = preferences.getString(_sessionUserIdKey);
-    if (savedId == null || savedId.trim().isEmpty) {
-      return null;
-    }
-    return savedId;
-  }
-
-  Future<String> restoreSessionUserId({
-    String fallback = 'user_123',
-  }) async {
-    return await getActiveSessionUserId() ?? fallback;
-  }
-
-  Future<String?> getActiveSessionUsername() async {
-    final preferences = await _ensurePreferences();
-    final username = preferences.getString(_sessionUsernameKey);
-    if (username == null || username.trim().isEmpty) {
-      return null;
-    }
-    return username;
-  }
-
-  Future<void> persistSession({
-    required String userId,
-    required String username,
-    String? email,
-  }) async {
-    final preferences = await _ensurePreferences();
-    await preferences.setString(_sessionUserIdKey, userId);
-    await preferences.setString(_sessionUsernameKey, username);
-    if (email != null && email.trim().isNotEmpty) {
-      await preferences.setString(_sessionEmailKey, email.trim().toLowerCase());
-    }
-  }
-
-  Future<void> clearSessionAndCache({String? userId}) async {
-    final preferences = await _ensurePreferences();
-    await preferences.remove(_sessionUserIdKey);
-    await preferences.remove(_sessionEmailKey);
-    await preferences.remove(_sessionUsernameKey);
-
-    final keysToRemove = preferences
-        .getKeys()
-        .where((key) => key.startsWith('budget_buddy_user_stats_'))
-        .toList(growable: false);
-    for (final key in keysToRemove) {
-      await preferences.remove(key);
+  Future<UserStats?> _fetchUserStats(String userId) async {
+    final cached = _memoryCache[userId] ?? await _readCachedUserStats(userId);
+    if (!_isSupabaseConnected) {
+      return cached;
     }
 
-    _memoryCache.clear();
+    try {
+      final response = await Supabase.instance.client
+          .from(userStatsTable)
+          .select()
+          .eq('id', userId)
+          .maybeSingle();
 
-    if (_isSupabaseConnected) {
-      try {
-        await Supabase.instance.client.auth.signOut();
-      } catch (error) {
-        debugPrint('Supabase sign out skipped: $error');
+      if (response == null) {
+        return cached;
       }
-    }
 
-    if (userId != null) {
-      _localController.add(UserStats.defaults(userId));
+      final stats = UserStats.fromMap(response);
+      _memoryCache[userId] = stats;
+      await _cacheUserStats(stats);
+      return stats;
+    } catch (error) {
+      debugPrint('Supabase profile lookup failed, using cached data: $error');
+      return cached;
     }
   }
+
+  Future<UserStats?> _loadLegacyStats(String? email) async {
+    if (email == null || email.isEmpty) {
+      return null;
+    }
+    final legacyId = legacyUserIdFromEmail(email);
+    return _fetchUserStats(legacyId);
+  }
+
+  String _resolveUsername(User user, String? preferredUsername) {
+    final metadata = user.userMetadata ?? const <String, dynamic>{};
+    final metadataUsername = (metadata['username'] ?? metadata['display_name'])
+        ?.toString()
+        .trim();
+    if (preferredUsername != null && preferredUsername.trim().isNotEmpty) {
+      return preferredUsername.trim();
+    }
+    if (metadataUsername != null && metadataUsername.isNotEmpty) {
+      return metadataUsername;
+    }
+    final email = user.email?.trim().toLowerCase();
+    if (email != null && email.isNotEmpty) {
+      return displayNameFromEmail(email);
+    }
+    return 'Finance Wizard';
+  }
+
+  static String legacyUserIdFromEmail(String email) {
+    final safe = email.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_');
+    return 'user_$safe';
+  }
+
+  static String displayNameFromEmail(String email) {
+    final handle = email.split('@').first.trim();
+    if (handle.isEmpty) {
+      return 'Finance Wizard';
+    }
+    final cleaned = handle.replaceAll(RegExp(r'[^a-zA-Z0-9]+'), ' ').trim();
+    final words = cleaned
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .map(
+          (part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
+        )
+        .toList(growable: false);
+    if (words.isEmpty) {
+      return 'Finance Wizard';
+    }
+    return words.join(' ');
+  }
+
+  String _cacheKey(String userId) => 'budget_buddy_user_stats_$userId';
 
   Future<SharedPreferences> _ensurePreferences() async {
     _preferences ??= await SharedPreferences.getInstance();
     return _preferences!;
+  }
+
+  SupabaseClient _requireClient() {
+    final client = _existingClient;
+    if (client != null) {
+      return client;
+    }
+    throw StateError(
+      'Supabase is not configured. Add SUPABASE_URL and SUPABASE_ANON_KEY before using authentication.',
+    );
   }
 
   SupabaseClient? get _existingClient {
@@ -613,3 +801,5 @@ List<double> _readDoubleList(dynamic value) {
   }
   return const <double>[];
 }
+
+

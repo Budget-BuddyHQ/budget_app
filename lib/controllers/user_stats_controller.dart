@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/supabase_service.dart';
 
@@ -10,11 +11,13 @@ class StatsActionResult {
     required this.success,
     required this.message,
     required this.syncState,
+    this.requiresEmailConfirmation = false,
   });
 
   final bool success;
   final String message;
   final SyncState syncState;
+  final bool requiresEmailConfirmation;
 }
 
 class UserStatsController extends ChangeNotifier {
@@ -33,6 +36,7 @@ class UserStatsController extends ChangeNotifier {
   bool _isSaving = false;
   String? _statusMessage;
   StreamSubscription<UserStats>? _subscription;
+  StreamSubscription<AuthState>? _authSubscription;
   bool _initialized = false;
 
   UserStats get stats => _stats;
@@ -40,6 +44,7 @@ class UserStatsController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
   String? get statusMessage => _statusMessage;
+  bool get isAuthenticated => _service.currentUser != null;
 
   Future<void> initialize() async {
     if (_initialized) {
@@ -50,15 +55,18 @@ class UserStatsController extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    _userId = await _service.restoreSessionUserId(fallback: _userId);
-    _stats = await _service.loadUserStats(_userId);
-    _isLoading = false;
-    notifyListeners();
-
-    await _attachRealtimeStream();
+    await _syncWithCurrentUser();
+    _authSubscription = _service.authStateChanges().listen((_) {
+      unawaited(_syncWithCurrentUser());
+    });
   }
 
   Future<void> refresh() async {
+    if (!isAuthenticated) {
+      await _resetToSignedOutState(notify: true);
+      return;
+    }
+
     _isLoading = true;
     notifyListeners();
     _stats = await _service.loadUserStats(_userId);
@@ -85,49 +93,115 @@ class UserStatsController extends ChangeNotifier {
       );
     }
 
-    _userId = _userIdFromEmail(normalizedEmail);
-    _stats = await _service.loadUserStats(_userId);
+    _isSaving = true;
+    _statusMessage = isNewAccount
+        ? 'Creating your Budget Buddy profile...'
+        : 'Signing you in...';
+    notifyListeners();
 
-    final resolvedUsername =
-        (username?.trim().isNotEmpty ?? false) ? username!.trim() : _displayNameFromEmail(normalizedEmail);
-    final nextStats = _stats.copyWith(
-      username: resolvedUsername,
-      spendingHabits: <String, dynamic>{
-        ..._stats.spendingHabits,
-        'username': resolvedUsername,
-        'email': normalizedEmail,
-      },
-      updatedAt: DateTime.now().toUtc(),
-    );
+    try {
+      if (isNewAccount) {
+        final response = await _service.signUp(
+          email: normalizedEmail,
+          password: password,
+          username: username,
+        );
+        final user = response.user;
+        if (user == null) {
+          return _authFailure('Supabase did not return a user for this sign-up.');
+        }
 
-    await _service.persistSession(
-      userId: _userId,
-      username: resolvedUsername,
-      email: normalizedEmail,
-    );
+        if (response.session == null) {
+          _isSaving = false;
+          _statusMessage = 'Check your email to confirm your account.';
+          notifyListeners();
+          return const StatsActionResult(
+            success: true,
+            message: 'Account created. Check your email to confirm your account before logging in.',
+            syncState: SyncState(
+              synced: true,
+              usedCache: false,
+              message: 'Awaiting email confirmation.',
+            ),
+            requiresEmailConfirmation: true,
+          );
+        }
 
-    final result = await _saveStats(
-      nextStats,
-      savingMessage: isNewAccount
-          ? 'Creating your Budget Buddy profile...'
-          : 'Signing you in...',
-    );
+        return _finishAuthenticatedFlow(
+          user,
+          preferredUsername: username,
+          successMessage: 'Account ready. You are signed in.',
+        );
+      }
 
-    await _attachRealtimeStream();
-    return result;
+      final response = await _service.signInWithPassword(
+        email: normalizedEmail,
+        password: password,
+      );
+      final user = response.user;
+      if (user == null) {
+        return _authFailure('Supabase did not return a user for this sign-in.');
+      }
+
+      return _finishAuthenticatedFlow(
+        user,
+        successMessage: 'Welcome back to Budget Buddy.',
+      );
+    } on AuthException catch (error) {
+      return _authFailure(error.message);
+    } on StateError catch (error) {
+      return _authFailure(error.message);
+    } catch (error) {
+      return _authFailure('Authentication failed: $error');
+    }
+  }
+
+  Future<StatsActionResult> sendPasswordReset({
+    required String email,
+  }) async {
+    final normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail.isEmpty) {
+      return const StatsActionResult(
+        success: false,
+        message: 'Enter your email so we know where to send the reset link.',
+        syncState: SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'Missing email address.',
+        ),
+      );
+    }
+
+    try {
+      await _service.resetPasswordForEmail(normalizedEmail);
+      return const StatsActionResult(
+        success: true,
+        message: 'Password reset email sent. Check your inbox and spam folder.',
+        syncState: SyncState(
+          synced: true,
+          usedCache: false,
+          message: 'Reset email sent.',
+        ),
+      );
+    } on AuthException catch (error) {
+      return _authFailure(error.message);
+    } on StateError catch (error) {
+      return _authFailure(error.message);
+    } catch (error) {
+      return _authFailure('Password reset failed: $error');
+    }
   }
 
   Future<void> signOut() async {
+    final previousUserId = _userId;
     await _subscription?.cancel();
     _subscription = null;
-    final previousUserId = _userId;
-    await _service.clearSessionAndCache(userId: previousUserId);
-    _userId = 'user_123';
-    _stats = UserStats.defaults(_userId);
-    _isLoading = false;
-    _isSaving = false;
-    _statusMessage = 'Logged out.';
-    notifyListeners();
+
+    try {
+      await _service.signOut(userId: previousUserId);
+    } finally {
+      await _resetToSignedOutState(notify: true, statusMessage: 'Logged out.');
+    }
   }
 
   Future<StatsActionResult> updateOnboardingProfile({
@@ -287,6 +361,90 @@ class UserStatsController extends ChangeNotifier {
     );
   }
 
+  Future<StatsActionResult> _finishAuthenticatedFlow(
+    User user, {
+    String? preferredUsername,
+    required String successMessage,
+  }) async {
+    final provisioned = await _service.loadOrCreateUserStatsForUser(
+      user: user,
+      preferredUsername: preferredUsername,
+    );
+
+    _userId = user.id;
+    _stats = provisioned.stats;
+    _isSaving = false;
+    _isLoading = false;
+    _statusMessage = provisioned.syncState.message;
+    notifyListeners();
+
+    await _attachRealtimeStream();
+
+    final message = provisioned.migratedLegacyProfile
+        ? '$successMessage Your existing profile was linked to this account.'
+        : successMessage;
+
+    return StatsActionResult(
+      success: true,
+      message: message,
+      syncState: provisioned.syncState,
+    );
+  }
+
+  StatsActionResult _authFailure(String message) {
+    _isSaving = false;
+    _statusMessage = message;
+    notifyListeners();
+    return StatsActionResult(
+      success: false,
+      message: message,
+      syncState: const SyncState(
+        synced: false,
+        usedCache: true,
+        message: 'Auth request failed.',
+      ),
+    );
+  }
+
+  Future<void> _syncWithCurrentUser() async {
+    final currentUser = _service.currentUser;
+    if (currentUser == null) {
+      await _resetToSignedOutState(notify: true);
+      return;
+    }
+
+    _isLoading = true;
+    notifyListeners();
+
+    final provisioned = await _service.loadOrCreateUserStatsForUser(
+      user: currentUser,
+    );
+    _userId = currentUser.id;
+    _stats = provisioned.stats;
+    _isLoading = false;
+    _isSaving = false;
+    _statusMessage = provisioned.syncState.message;
+    notifyListeners();
+
+    await _attachRealtimeStream();
+  }
+
+  Future<void> _resetToSignedOutState({
+    required bool notify,
+    String? statusMessage,
+  }) async {
+    _userId = 'user_123';
+    _stats = UserStats.defaults(_userId);
+    _isLoading = false;
+    _isSaving = false;
+    _statusMessage = statusMessage;
+    await _subscription?.cancel();
+    _subscription = null;
+    if (notify) {
+      notifyListeners();
+    }
+  }
+
   Future<StatsActionResult> _saveStats(
     UserStats nextStats, {
     required String savingMessage,
@@ -328,29 +486,10 @@ class UserStatsController extends ChangeNotifier {
     return series;
   }
 
-  String _userIdFromEmail(String email) {
-    final safe = email.replaceAll(RegExp(r'[^a-z0-9]'), '_');
-    return 'user_$safe';
-  }
-
-  String _displayNameFromEmail(String email) {
-    final handle = email.split('@').first.trim();
-    if (handle.isEmpty) {
-      return 'Finance Wizard';
-    }
-    final cleaned = handle.replaceAll(RegExp(r'[^a-zA-Z0-9]+'), ' ').trim();
-    return cleaned
-        .split(' ')
-        .where((part) => part.isNotEmpty)
-        .map(
-          (part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
-        )
-        .join(' ');
-  }
-
   @override
   void dispose() {
     _subscription?.cancel();
+    _authSubscription?.cancel();
     super.dispose();
   }
 }
@@ -367,4 +506,3 @@ int _readInt(dynamic value) {
   }
   return 0;
 }
-
