@@ -15,7 +15,7 @@ class CustomButton extends StatefulWidget {
   });
 
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool isLoading;
   final double? width;
   final double height;
@@ -32,7 +32,7 @@ class _CustomButtonState extends State<CustomButton>
   late final AnimationController _controller;
   late final Animation<double> _scaleAnimation;
 
-  bool get _isDisabled => widget.isLoading;
+  bool get _isDisabled => widget.isLoading || widget.onPressed == null;
 
   @override
   void initState() {
@@ -43,7 +43,10 @@ class _CustomButtonState extends State<CustomButton>
       lowerBound: 0.0,
       upperBound: 1.0,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.97,
+    ).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
   }
@@ -68,11 +71,11 @@ class _CustomButtonState extends State<CustomButton>
   }
 
   void _handleTap() {
-    if (_isDisabled) {
+    if (_isDisabled || widget.onPressed == null) {
       return;
     }
     HapticFeedback.lightImpact();
-    widget.onPressed();
+    widget.onPressed!();
   }
 
   @override
@@ -244,7 +247,7 @@ class CustomButtonStyle {
 
   const CustomButtonStyle.danger({
     this.gradient = const LinearGradient(
-      colors: [Color(0xFFFF6B6B), Color(0xFFEE5A52)],
+      colors: [Color(0xFFFF6B6B), Color(0xFFFF8A65)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
@@ -254,11 +257,11 @@ class CustomButtonStyle {
     this.border,
     this.boxShadow = const [
       BoxShadow(
-        color: Color.fromRGBO(255, 107, 107, 0.24),
-        blurRadius: 18,
+        color: Color.fromRGBO(255, 107, 107, 0.22),
+        blurRadius: 16,
         offset: Offset(0, 8),
       ),
     ],
-    this.splashColor = const Color.fromRGBO(255, 255, 255, 0.18),
+    this.splashColor = const Color.fromRGBO(255, 255, 255, 0.16),
   });
 }

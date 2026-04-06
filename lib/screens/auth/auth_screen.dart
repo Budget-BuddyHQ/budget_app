@@ -123,10 +123,46 @@ class _AuthScreenState extends State<AuthScreen>
       return;
     }
 
+    if (result.requiresEmailConfirmation) {
+      return;
+    }
+
     Navigator.of(context).pushReplacement(
       FadePageRoute<void>(
         builder: (_) => const DashboardShell(),
       ),
+    );
+  }
+
+  Future<void> _submitPasswordReset() async {
+    HapticFeedback.lightImpact();
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      GameToast.show(
+        context,
+        title: 'Enter your email',
+        message: 'Add your email address first so we can send a reset link.',
+        icon: Icons.alternate_email_rounded,
+        accent: const Color(0xFFFFC36B),
+      );
+      return;
+    }
+
+    final controller = context.read<UserStatsController>();
+    final result = await controller.sendPasswordReset(email: email);
+
+    if (!mounted) {
+      return;
+    }
+
+    GameToast.show(
+      context,
+      title: result.success ? 'Password Recovery' : 'Reset failed',
+      message: result.message,
+      icon: result.success ? Icons.key_rounded : Icons.warning_amber_rounded,
+      accent: result.success
+          ? const Color(0xFF85EFAC)
+          : const Color(0xFFFF8A80),
     );
   }
 
@@ -359,17 +395,7 @@ class _AuthScreenState extends State<AuthScreen>
                           const SizedBox(height: 12),
                           if (_isLogin)
                             TextButton(
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                GameToast.show(
-                                  context,
-                                  title: 'Password Recovery',
-                                  message:
-                                      'Password reset can be wired next through Supabase Auth.',
-                                  icon: Icons.key_rounded,
-                                  accent: const Color(0xFF85EFAC),
-                                );
-                              },
+                              onPressed: _submitPasswordReset,
                               child: const Text(
                                 'Forgot your password?',
                                 style: TextStyle(
@@ -453,7 +479,7 @@ class _AuthHero extends StatelessWidget {
                   child: Image.asset(
                     'assets/images/logo.png',
                     fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const Icon(
+                    errorBuilder: (_, _, _) => const Icon(
                       Icons.account_balance_wallet_rounded,
                       size: 42,
                       color: Color(0xFF103225),
