@@ -10,6 +10,7 @@ import '../../widgets/game_toast.dart';
 import '../../widgets/progress_metrics_widgets.dart';
 import '../../widgets/skeleton_loader.dart';
 import 'bill_dodger.dart';
+import 'budget_challenge.dart';
 import 'leaderboard_screen.dart';
 import 'react_challenge_screen.dart';
 import 'town_square.dart';
@@ -66,6 +67,25 @@ class HomeScreen extends StatelessWidget {
           '+${result.goldEarned} gold | +${result.xpEarned} XP | ${result.syncState.message}',
       icon: Icons.savings_rounded,
       accent: const Color(0xFFFFD45C),
+    );
+  }
+
+  Future<void> _openBudgetChallenge(BuildContext context) async {
+    final result = await Navigator.of(context).push<BudgetChallengeCloseResult>(
+      MaterialPageRoute(builder: (_) => const BudgetChallengeScreen()),
+    );
+
+    if (!context.mounted || result == null) {
+      return;
+    }
+
+    GameToast.show(
+      context,
+      title: 'Budget Challenge Complete',
+      message:
+          '+${result.goldEarned} gold | +${result.xpEarned} XP | ${result.syncState.message}',
+      icon: Icons.shopping_cart_rounded,
+      accent: const Color(0xFF85EFAC),
     );
   }
 
@@ -165,6 +185,7 @@ class HomeScreen extends StatelessWidget {
                             },
                             onBudgetBattle: () => _openBudgetBattle(context),
                             onBillDodger: () => _openBillDodger(context),
+                            onBudgetChallenge: () => _openBudgetChallenge(context),
                           ),
                           const SizedBox(height: 18),
                           _MentorPanel(
@@ -592,11 +613,13 @@ class _QuickPortalStrip extends StatelessWidget {
     required this.onTownSquare,
     required this.onBudgetBattle,
     required this.onBillDodger,
+    required this.onBudgetChallenge,
   });
 
   final VoidCallback onTownSquare;
   final VoidCallback onBudgetBattle;
   final VoidCallback onBillDodger;
+  final VoidCallback onBudgetChallenge;
 
   @override
   Widget build(BuildContext context) {
@@ -650,6 +673,16 @@ class _QuickPortalStrip extends StatelessWidget {
                     icon: Icons.sports_esports_rounded,
                     accent: const Color(0xFF58C7FF),
                     onTap: onBillDodger,
+                  ),
+                ),
+                SizedBox(
+                  width: tileWidth,
+                  child: _PortalCard(
+                    title: 'Budget Challenge',
+                    subtitle: 'Pick the cheapest essentials within your budget.',
+                    icon: Icons.shopping_cart_rounded,
+                    accent: const Color(0xFF85EFAC),
+                    onTap: onBudgetChallenge,
                   ),
                 ),
               ],
