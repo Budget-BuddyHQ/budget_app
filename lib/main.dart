@@ -40,11 +40,11 @@ Future<void> main() async {
 
   const compileTimeSupabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
-    defaultValue: 'https://YOUR-PROJECT.supabase.co',
+    defaultValue: 'https://cwqjduingvevagrxbwts.supabase.co',
   );
   const compileTimeSupabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
-    defaultValue: 'YOUR_SUPABASE_ANON_KEY',
+    defaultValue: 'sb_publishable_sALqhgaTDGewkqp_XiNo-g_EO6ziR4l',
   );
   final supabaseUrl = compileTimeSupabaseUrl.contains('YOUR-PROJECT')
       ? (readRuntimeEnv('SUPABASE_URL') ?? compileTimeSupabaseUrl)
