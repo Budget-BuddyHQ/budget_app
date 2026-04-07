@@ -7,7 +7,6 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/game_toast.dart';
 import '../../widgets/skeleton_loader.dart';
-import '../Gameplay/learning_path_screen.dart';
 import '../auth/auth_screen.dart';
 import '../legal/privacy_policy_page.dart';
 import '../profile/goals_setup_page.dart';
