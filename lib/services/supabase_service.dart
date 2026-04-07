@@ -360,6 +360,20 @@ create table if not exists public.user_stats (
     }
   }
 
+  Future<String?> getUserRole() async {
+    final user = Supabase.instance.client.auth.currentUser;
+
+    if (user == null) return null;
+
+    final response = await Supabase.instance.client
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+    return response['role'];
+  }
+
   Future<AuthResponse> signUp({
     required String email,
     required String password,

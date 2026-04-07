@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../admin/admin_screen.dart';
 import '../../controllers/user_stats_controller.dart';
 import '../../navigation/fade_page_route.dart';
 import '../../widgets/custom_button.dart';
@@ -43,6 +44,8 @@ class ProfileScreen extends StatelessWidget {
     return Consumer<UserStatsController>(
       builder: (context, controller, _) {
         final stats = controller.stats;
+
+        final user = Supabase.instance.client.auth.currentUser;
 
         return Scaffold(
           backgroundColor: const Color(0xFF0A211A),
@@ -240,6 +243,22 @@ class ProfileScreen extends StatelessWidget {
                                 );
                               },
                             ),
+
+                            const SizedBox(height: 12),
+                            if (user?.email == 'brucksheferaw@gmail.com')
+                              _ActionRow(
+                                title: 'Admin Panel',
+                                subtitle: 'Manage app data and users.',
+                                icon: Icons.admin_panel_settings,
+                                buttonLabel: 'Open',
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => AdminScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
                           ],
                         ),
                       ),
