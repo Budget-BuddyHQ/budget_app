@@ -97,7 +97,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                   completed: completed,
                   total: total,
                   progress: progress,
-                  onTownSquare: () => widget.onNavSelected?.call(2),
+                  onTownSquare: () => widget.onNavSelected?.call(1),
                 ),
                 const SizedBox(height: 18),
                 if (nextLesson != null)
@@ -249,7 +249,7 @@ class _LessonsHero extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Build real money instincts one lesson at a time, then head back into Town Square stronger.',
+                      'Build real money instincts one lesson at a time, then head back into the Game Hub stronger.',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.72),
                         height: 1.45,
@@ -319,7 +319,7 @@ class _LessonsHero extends StatelessWidget {
               ),
               icon: const Icon(Icons.auto_awesome_rounded),
               label: const Text(
-                'Return to Town Square',
+                'Return to Game Hub',
                 style: TextStyle(fontWeight: FontWeight.w900),
               ),
             ),

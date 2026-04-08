@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../profile/profile_screen.dart';
-import 'budget_page.dart';
+import 'customize_screen.dart';
+import 'game_hub_screen.dart';
 import 'home_screen.dart';
 import 'learning_path_screen.dart';
-import 'town_square.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({
@@ -45,11 +45,11 @@ class _MainNavigationState extends State<MainNavigation> {
           activeTabIndex: 0,
           onNavSelected: _selectTab,
         ),
-        BudgetPage(
+        GameHubScreen(
           activeTabIndex: 1,
           onNavSelected: _selectTab,
         ),
-        TownSquare(
+        CustomizeScreen(
           activeTabIndex: 2,
           onNavSelected: _selectTab,
         ),
