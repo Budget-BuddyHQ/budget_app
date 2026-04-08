@@ -38,27 +38,18 @@ Future<void> main() async {
     }
   }
 
-  const compileTimeSupabaseUrl = String.fromEnvironment(
-    'SUPABASE_URL',
-    defaultValue: 'https://cwqjduingvevagrxbwts.supabase.co',
-  );
-  const compileTimeSupabaseAnonKey = String.fromEnvironment(
-    'SUPABASE_ANON_KEY',
-    defaultValue: 'sb_publishable_sALqhgaTDGewkqp_XiNo-g_EO6ziR4l',
-  );
-  final supabaseUrl = compileTimeSupabaseUrl.contains('YOUR-PROJECT')
-      ? (readRuntimeEnv('SUPABASE_URL') ?? compileTimeSupabaseUrl)
-      : compileTimeSupabaseUrl;
-  final supabaseAnonKey = compileTimeSupabaseAnonKey.contains('YOUR_SUPABASE')
-      ? (readRuntimeEnv('SUPABASE_ANON_KEY') ?? compileTimeSupabaseAnonKey)
-      : compileTimeSupabaseAnonKey;
 
+final String supabaseUrl = const String.fromEnvironment('SUPABASE_URL');
+final String supabaseAnonKey = const String.fromEnvironment('SUPABASE_ANON_KEY');
 
+if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
+  debugPrint('❌ ERROR: Supabase credentials not found. Check your .env.json file!');
+}
 
-  await SupabaseService.instance.initialize(
-    supabaseUrl: supabaseUrl,
-    supabaseAnonKey: supabaseAnonKey,
-  );
+await SupabaseService.instance.initialize(
+  supabaseUrl: supabaseUrl,
+  supabaseAnonKey: supabaseAnonKey,
+);
 
   runApp(
     ChangeNotifierProvider<UserStatsController>(
