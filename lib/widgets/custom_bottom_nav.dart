@@ -11,95 +11,51 @@ class CustomBottomNav extends StatelessWidget {
   final int activeIndex;
   final ValueChanged<int>? onSelected;
 
+  static const _items = <_NavItemData>[
+    _NavItemData(label: 'Dashboard', icon: Icons.dashboard_rounded),
+    _NavItemData(label: 'Game Hub', icon: Icons.grid_view_rounded),
+    _NavItemData(label: 'Customize', icon: Icons.auto_awesome_rounded),
+    _NavItemData(label: 'Lessons', icon: Icons.school_rounded),
+    _NavItemData(label: 'Profile', icon: Icons.person_rounded),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      child: SizedBox(
-        height: 110,
-        child: Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.bottomCenter,
-          children: [
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: 12,
-              child: ClipRect(
-                child: Container(
-                  height: 76,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.white.withValues(alpha: 0.10),
-                        const Color(0xFF082117).withValues(alpha: 0.96),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.12),
-                    ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x77000000),
-                        blurRadius: 24,
-                        offset: Offset(0, 16),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _NavTile(
-                            label: 'Home',
-                            icon: Icons.home_rounded,
-                            active: activeIndex == 0,
-                            onTap: () => _handleTap(0),
-                          ),
-                        ),
-                        Expanded(
-                          child: _NavTile(
-                            label: 'Financials',
-                            icon: Icons.account_balance_wallet_rounded,
-                            active: activeIndex == 1,
-                            onTap: () => _handleTap(1),
-                          ),
-                        ),
-                        const SizedBox(width: 78),
-                        Expanded(
-                          child: _NavTile(
-                            label: 'Lessons',
-                            icon: Icons.school_rounded,
-                            active: activeIndex == 3,
-                            onTap: () => _handleTap(3),
-                          ),
-                        ),
-                        Expanded(
-                          child: _NavTile(
-                            label: 'Profile',
-                            icon: Icons.person_rounded,
-                            active: activeIndex == 4,
-                            onTap: () => _handleTap(4),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+        child: Container(
+          height: 88,
+          decoration: BoxDecoration(
+            color: const Color(0xFF071711).withValues(alpha: 0.92),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.28),
+                blurRadius: 30,
+                offset: const Offset(0, 16),
+              ),
+              BoxShadow(
+                color: const Color(0xFF85EFAC).withValues(alpha: 0.08),
+                blurRadius: 18,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: Row(
+            children: List<Widget>.generate(_items.length, (index) {
+              final item = _items[index];
+              return Expanded(
+                child: _NavTile(
+                  data: item,
+                  active: index == activeIndex,
+                  onTap: () => _handleTap(index),
                 ),
-              ),
-            ),
-            Positioned(
-              bottom: 34,
-              child: _TownSquareButton(
-                active: activeIndex == 2,
-                onTap: () => _handleTap(2),
-              ),
-            ),
-          ],
+              );
+            }),
+          ),
         ),
       ),
     );
@@ -116,69 +72,57 @@ class CustomBottomNav extends StatelessWidget {
 
 class _NavTile extends StatelessWidget {
   const _NavTile({
-    required this.label,
-    required this.icon,
+    required this.data,
     required this.active,
     required this.onTap,
   });
 
-  final String label;
-  final IconData icon;
+  final _NavItemData data;
   final bool active;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final foreground = active ? const Color(0xFF062C21) : Colors.white70;
-
+    final accent = active ? const Color(0xFF85EFAC) : Colors.white70;
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(26),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(24),
             gradient: active
-                ? const LinearGradient(
+                ? LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0xFFB7F7D0), Color(0xFF4ADE80)],
+                    colors: [
+                      const Color(0xFF85EFAC).withValues(alpha: 0.32),
+                      const Color(0xFF0D2B20).withValues(alpha: 0.92),
+                    ],
                   )
                 : null,
             border: Border.all(
               color: active
-                  ? Colors.white.withValues(alpha: 0.45)
+                  ? const Color(0xFF85EFAC).withValues(alpha: 0.42)
                   : Colors.transparent,
             ),
-            boxShadow: active
-                ? const [
-                    BoxShadow(
-                      color: Color(0xFF166534),
-                      offset: Offset(0, 4),
-                    ),
-                    BoxShadow(
-                      color: Color(0x3385EFAC),
-                      blurRadius: 14,
-                      offset: Offset(0, 8),
-                    ),
-                  ]
-                : null,
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: foreground, size: active ? 22 : 20),
+              Icon(data.icon, color: accent, size: active ? 24 : 21),
               const SizedBox(height: 4),
               Text(
-                label,
+                data.label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: foreground,
+                  color: accent,
                   fontSize: 10,
                   fontWeight: active ? FontWeight.w800 : FontWeight.w600,
                 ),
@@ -191,67 +135,12 @@ class _NavTile extends StatelessWidget {
   }
 }
 
-class _TownSquareButton extends StatelessWidget {
-  const _TownSquareButton({
-    required this.active,
-    required this.onTap,
+class _NavItemData {
+  const _NavItemData({
+    required this.label,
+    required this.icon,
   });
 
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutBack,
-        width: active ? 80 : 74,
-        height: active ? 80 : 74,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFFFE55C),
-              Color(0xFF4ADE80),
-              Color(0xFF179D5B),
-            ],
-          ),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.62), width: 3),
-          boxShadow: [
-            const BoxShadow(
-              color: Color(0xFF166534),
-              offset: Offset(0, 7),
-            ),
-            BoxShadow(
-              color: const Color(0xFF4ADE80).withValues(alpha: 0.36),
-              blurRadius: active ? 28 : 18,
-              spreadRadius: active ? 4 : 1,
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.auto_awesome_rounded,
-              color: Color(0xFF062C21),
-              size: 28,
-            ),
-            Text(
-              'Town',
-              style: TextStyle(
-                color: const Color(0xFF062C21),
-                fontSize: active ? 11 : 10,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  final String label;
+  final IconData icon;
 }

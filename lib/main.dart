@@ -7,8 +7,11 @@ import 'package:window_manager/window_manager.dart';
 import 'config/runtime_env.dart';
 import 'controllers/user_stats_controller.dart';
 import 'screens/Gameplay/bill_dodger.dart';
+import 'screens/Gameplay/customize_screen.dart';
 import 'screens/Gameplay/dashboard_shell.dart';
+import 'screens/Gameplay/game_hub_screen.dart';
 import 'screens/Gameplay/leaderboard_screen.dart';
+import 'screens/Gameplay/learning_path_screen.dart';
 import 'screens/auth/auth_screen.dart';
 import 'screens/onboarding/welcome_screen.dart';
 import 'services/supabase_service.dart';
@@ -37,19 +40,21 @@ Future<void> main() async {
       debugPrint('Window manager failed: $error');
     }
   }
+  final supabaseUrl = readRuntimeEnv('SUPABASE_URL') ??
+      const String.fromEnvironment('SUPABASE_URL');
+  final supabaseAnonKey = readRuntimeEnv('SUPABASE_ANON_KEY') ??
+      const String.fromEnvironment('SUPABASE_ANON_KEY');
 
+  if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
+    debugPrint(
+      'Supabase credentials were not found in dart-defines or supabase.env.json. The app will fall back to local cached data.',
+    );
+  }
 
-final String supabaseUrl = const String.fromEnvironment('SUPABASE_URL');
-final String supabaseAnonKey = const String.fromEnvironment('SUPABASE_ANON_KEY');
-
-if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
-  debugPrint('❌ ERROR: Supabase credentials not found. Check your .env.json file!');
-}
-
-await SupabaseService.instance.initialize(
-  supabaseUrl: supabaseUrl,
-  supabaseAnonKey: supabaseAnonKey,
-);
+  await SupabaseService.instance.initialize(
+    supabaseUrl: supabaseUrl,
+    supabaseAnonKey: supabaseAnonKey,
+  );
 
   runApp(
     ChangeNotifierProvider<UserStatsController>(
@@ -77,6 +82,9 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const AuthScreen(mode: AuthMode.login),
         '/game': (context) => const DashboardShell(),
         '/dashboard': (context) => const DashboardShell(initialIndex: 0),
+        '/hub': (context) => const GameHubScreen(),
+        '/customize': (context) => const CustomizeScreen(),
+        '/lessons': (context) => const LearningPathScreen(),
         '/bill-dodger': (context) => const BillDodgerScreen(),
         '/bill_dodger': (context) => const BillDodgerScreen(),
         '/leaderboard': (context) => const LeaderboardScreen(),
