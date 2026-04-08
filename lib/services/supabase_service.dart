@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/avatar_skin.dart';
+
 @immutable
 class LedgerTransaction {
   const LedgerTransaction({
@@ -111,6 +113,8 @@ class UserStats {
         'risk_tolerance': 'balanced',
         'confidence_score': 2.0,
         'missed_questions': <String>[],
+        'equipped_skin': 'classic_turtle',
+        'unlocked_skins': <String>['classic_turtle'],
       },
       transactions: <LedgerTransaction>[
         LedgerTransaction(
@@ -202,6 +206,29 @@ class UserStats {
 
   double get levelProgress => (xp % 120) / 120;
 
+  String get equippedSkin {
+    final value = spendingHabits['equipped_skin']?.toString().trim();
+    if (value == null || value.isEmpty) {
+      return budgetBuddySkins.first.id;
+    }
+    return value;
+  }
+
+  List<String> get unlockedSkins {
+    final raw = spendingHabits['unlocked_skins'];
+    if (raw is List) {
+      final normalized = raw
+          .map((entry) => entry.toString())
+          .where((entry) => entry.trim().isNotEmpty)
+          .toSet()
+          .toList(growable: false);
+      if (normalized.isNotEmpty) {
+        return normalized;
+      }
+    }
+    return <String>[budgetBuddySkins.first.id];
+  }
+
   Map<String, dynamic> toStorageMap() {
     return <String, dynamic>{
       'id': id,
@@ -213,6 +240,8 @@ class UserStats {
       'spending_habits': <String, dynamic>{
         ...spendingHabits,
         'username': username,
+        'equipped_skin': equippedSkin,
+        'unlocked_skins': unlockedSkins,
       },
       'transaction_ledger': transactions
           .map((transaction) => transaction.toJson())
