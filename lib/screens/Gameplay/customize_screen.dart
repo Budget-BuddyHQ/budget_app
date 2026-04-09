@@ -13,12 +13,14 @@ import '../../widgets/game_toast.dart';
 class CustomizeScreen extends StatefulWidget {
   const CustomizeScreen({
     super.key,
-    this.activeTabIndex = 2,
+    this.activeTabIndex = 1,
     this.onNavSelected,
+    this.onPortalTap,
   });
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
+  final VoidCallback? onPortalTap;
 
   @override
   State<CustomizeScreen> createState() => _CustomizeScreenState();
@@ -90,59 +92,71 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
               : CustomBottomNav(
                   activeIndex: widget.activeTabIndex,
                   onSelected: widget.onNavSelected,
+                  onPortalTap: widget.onPortalTap,
                 ),
           body: Stack(
             children: [
               const _CustomizeBackdrop(),
               SafeArea(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 126),
-                  children: [
-                    _CharacterPreviewCard(
-                      stats: stats,
-                      equippedSkin: equippedSkin,
-                    ),
-                    const SizedBox(height: 18),
-                    _StorePanel(
-                      gold: stats.gold,
-                      isOpeningCase: _openingCase,
-                      onOpenCase: _openCase,
-                    ),
-                    const SizedBox(height: 18),
-                    const Text(
-                      'Skin Inventory',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: budgetBuddySkins.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.82,
-                      ),
-                      itemBuilder: (context, index) {
-                        final skin = budgetBuddySkins[index];
-                        final unlocked = unlockedSkins.contains(skin.id);
-                        final equipped = stats.equippedSkin == skin.id;
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    final crossAxisCount = width < 340 ? 3 : 4;
+                    final childAspectRatio = width < 340 ? 0.84 : 0.76;
 
-                        return _SkinTile(
-                          skin: skin,
-                          unlocked: unlocked,
-                          equipped: equipped,
-                          onTap: unlocked ? () => _equipSkin(skin) : null,
-                        );
-                      },
-                    ),
-                  ],
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 126),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _CharacterPreviewCard(
+                            stats: stats,
+                            equippedSkin: equippedSkin,
+                          ),
+                          const SizedBox(height: 18),
+                          _StorePanel(
+                            gold: stats.gold,
+                            isOpeningCase: _openingCase,
+                            onOpenCase: _openCase,
+                          ),
+                          const SizedBox(height: 18),
+                          const Text(
+                            'Skin Inventory',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: budgetBuddySkins.length,
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: childAspectRatio,
+                            ),
+                            itemBuilder: (context, index) {
+                              final skin = budgetBuddySkins[index];
+                              final unlocked = unlockedSkins.contains(skin.id);
+                              final equipped = stats.equippedSkin == skin.id;
+
+                              return _SkinTile(
+                                skin: skin,
+                                unlocked: unlocked,
+                                equipped: equipped,
+                                onTap: unlocked ? () => _equipSkin(skin) : null,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -210,11 +224,30 @@ class _CharacterPreviewCard extends StatelessWidget {
             ),
             child: Column(
               children: [
-                SizedBox(
-                  height: 180,
-                  child: Image.asset(
-                    equippedSkin.assetPath,
-                    fit: BoxFit.contain,
+                Container(
+                  width: 220,
+                  height: 220,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        equippedSkin.accent.withValues(alpha: 0.26),
+                        Colors.white.withValues(alpha: 0.04),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: equippedSkin.accent.withValues(alpha: 0.34),
+                      width: 2,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(22),
+                    child: Image.asset(
+                      equippedSkin.assetPath,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -263,49 +296,20 @@ class _StorePanel extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Emerald Case',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Spend 180 gold for a Common, Rare, or Epic turtle skin.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.72),
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Wallet: $gold gold',
-                  style: const TextStyle(
-                    color: Color(0xFFFFD45C),
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 14),
-          GestureDetector(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stacked = constraints.maxWidth < 430;
+          final action = GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: isOpeningCase ? null : () {
-              HapticFeedback.lightImpact();
-              onOpenCase();
-            },
+            onTap: isOpeningCase
+                ? null
+                : () {
+                    HapticFeedback.lightImpact();
+                    onOpenCase();
+                  },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
-              width: 120,
+              width: stacked ? double.infinity : 120,
               height: 58,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
@@ -330,8 +334,57 @@ class _StorePanel extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-        ],
+          );
+
+          final details = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Emerald Case',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Spend 180 gold for a Common, Rare, or Epic turtle skin.',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.72),
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Wallet: $gold gold',
+                style: const TextStyle(
+                  color: Color(0xFFFFD45C),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          );
+
+          if (stacked) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                details,
+                const SizedBox(height: 14),
+                action,
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(child: details),
+              const SizedBox(width: 14),
+              action,
+            ],
+          );
+        },
       ),
     );
   }
@@ -361,7 +414,7 @@ class _SkinTile extends StatelessWidget {
               onTap!();
             },
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(24),
@@ -399,11 +452,14 @@ class _SkinTile extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
             Text(
               skin.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: Colors.white,
+                fontSize: 13,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -416,7 +472,7 @@ class _SkinTile extends StatelessWidget {
                   : '${skin.rarityLabel} • Locked',
               style: TextStyle(
                 color: unlocked ? skin.accent : Colors.white60,
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
             ),

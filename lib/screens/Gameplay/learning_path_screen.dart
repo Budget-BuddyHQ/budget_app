@@ -9,12 +9,14 @@ import 'lesson_screen.dart';
 class LearningPathScreen extends StatefulWidget {
   const LearningPathScreen({
     super.key,
-    this.activeTabIndex = 3,
+    this.activeTabIndex = 2,
     this.onNavSelected,
+    this.onPortalTap,
   });
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
+  final VoidCallback? onPortalTap;
 
   @override
   State<LearningPathScreen> createState() => _LearningPathScreenState();
@@ -85,6 +87,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
           : CustomBottomNav(
               activeIndex: widget.activeTabIndex,
               onSelected: widget.onNavSelected,
+              onPortalTap: widget.onPortalTap,
             ),
       body: Stack(
         children: [
@@ -97,7 +100,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                   completed: completed,
                   total: total,
                   progress: progress,
-                  onTownSquare: () => widget.onNavSelected?.call(1),
+                  onDashboard: () => widget.onNavSelected?.call(0),
                 ),
                 const SizedBox(height: 18),
                 if (nextLesson != null)
@@ -188,13 +191,13 @@ class _LessonsHero extends StatelessWidget {
     required this.completed,
     required this.total,
     required this.progress,
-    required this.onTownSquare,
+    required this.onDashboard,
   });
 
   final int completed;
   final int total;
   final double progress;
-  final VoidCallback onTownSquare;
+  final VoidCallback onDashboard;
 
   @override
   Widget build(BuildContext context) {
@@ -249,7 +252,7 @@ class _LessonsHero extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Build real money instincts one lesson at a time, then head back into the Game Hub stronger.',
+                      'Build real money instincts one lesson at a time, then return to the dashboard stronger.',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.72),
                         height: 1.45,
@@ -309,7 +312,7 @@ class _LessonsHero extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: FilledButton.icon(
-              onPressed: onTownSquare,
+              onPressed: onDashboard,
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFFFD45C),
                 foregroundColor: const Color(0xFF062C21),
@@ -319,7 +322,7 @@ class _LessonsHero extends StatelessWidget {
               ),
               icon: const Icon(Icons.auto_awesome_rounded),
               label: const Text(
-                'Return to Game Hub',
+                'Back to Dashboard',
                 style: TextStyle(fontWeight: FontWeight.w900),
               ),
             ),
