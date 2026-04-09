@@ -15,10 +15,12 @@ class HomeScreen extends StatelessWidget {
     super.key,
     this.activeTabIndex = 0,
     this.onNavSelected,
+    this.onPortalTap,
   });
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
+  final VoidCallback? onPortalTap;
 
   Future<void> _launchDailyChallenge(BuildContext context) async {
     final stats = context.read<UserStatsController>().stats;
@@ -73,6 +75,7 @@ class HomeScreen extends StatelessWidget {
               : CustomBottomNav(
                   activeIndex: activeTabIndex,
                   onSelected: onNavSelected,
+                  onPortalTap: onPortalTap,
                 ),
           body: Stack(
             children: [
@@ -88,15 +91,14 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(height: 18),
                     _DailyChallengeCard(
                       onPlayNow: () => _launchDailyChallenge(context),
-                      onOpenHub: () => onNavSelected?.call(1),
+                      onOpenHub: onPortalTap,
                     ),
                     const SizedBox(height: 18),
                     _LiteracyProgressCard(stats: stats),
                     const SizedBox(height: 18),
                     _QuickAccessRow(
-                      onGameHub: () => onNavSelected?.call(1),
-                      onCustomize: () => onNavSelected?.call(2),
-                      onLessons: () => onNavSelected?.call(3),
+                      onCustomize: () => onNavSelected?.call(1),
+                      onLessons: () => onNavSelected?.call(2),
                     ),
                     const SizedBox(height: 18),
                     _LeaderboardPreview(
@@ -173,25 +175,35 @@ class _DashboardHeader extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 88,
-            height: 88,
+            width: 90,
+            height: 90,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
+              shape: BoxShape.circle,
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  turtleSkin.accent.withValues(alpha: 0.34),
+                  turtleSkin.accent.withValues(alpha: 0.36),
                   const Color(0xFF0D2B20),
                 ],
               ),
               border: Border.all(
-                color: turtleSkin.accent.withValues(alpha: 0.50),
+                color: const Color(0xFF85EFAC).withValues(alpha: 0.85),
+                width: 2.4,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF85EFAC).withValues(alpha: 0.28),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
             child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Image.asset(turtleSkin.assetPath, fit: BoxFit.contain),
+              padding: const EdgeInsets.all(14),
+              child: ClipOval(
+                child: Image.asset(turtleSkin.assetPath, fit: BoxFit.contain),
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -240,7 +252,7 @@ class _DailyChallengeCard extends StatelessWidget {
   });
 
   final VoidCallback onPlayNow;
-  final VoidCallback onOpenHub;
+  final VoidCallback? onOpenHub;
 
   @override
   Widget build(BuildContext context) {
@@ -269,7 +281,7 @@ class _DailyChallengeCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Start with the featured challenge or jump into the full Game Hub to pick your next minigame.',
+            'Start with the featured challenge, then build momentum through lessons and new turtle upgrades.',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.72),
               height: 1.45,
@@ -288,7 +300,7 @@ class _DailyChallengeCard extends StatelessWidget {
               final hubButton = _ActionButton(
                 label: 'Open Game Hub',
                 accent: const Color(0xFFFFD45C),
-                icon: Icons.grid_view_rounded,
+                icon: Icons.explore_rounded,
                 onTap: onOpenHub,
                 filled: false,
               );
@@ -374,24 +386,16 @@ class _LiteracyProgressCard extends StatelessWidget {
 
 class _QuickAccessRow extends StatelessWidget {
   const _QuickAccessRow({
-    required this.onGameHub,
     required this.onCustomize,
     required this.onLessons,
   });
 
-  final VoidCallback onGameHub;
   final VoidCallback onCustomize;
   final VoidCallback onLessons;
 
   @override
   Widget build(BuildContext context) {
     final cards = <Widget>[
-      _QuickAccessCard(
-        label: 'Game Hub',
-        icon: Icons.sports_esports_rounded,
-        accent: const Color(0xFF85EFAC),
-        onTap: onGameHub,
-      ),
       _QuickAccessCard(
         label: 'Customize',
         icon: Icons.auto_awesome_rounded,
@@ -489,16 +493,18 @@ class _QuickAccessCard extends StatelessWidget {
   final String label;
   final IconData icon;
   final Color accent;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
+      onTap: onTap == null
+          ? null
+          : () {
+              HapticFeedback.lightImpact();
+              onTap!();
+            },
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -529,7 +535,9 @@ class _QuickAccessCard extends StatelessWidget {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: Colors.white.withValues(alpha: 0.62),
+              color: onTap == null
+                  ? Colors.white.withValues(alpha: 0.28)
+                  : Colors.white.withValues(alpha: 0.62),
             ),
           ],
         ),
@@ -550,17 +558,19 @@ class _ActionButton extends StatelessWidget {
   final String label;
   final Color accent;
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool filled;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
+      onTap: onTap == null
+          ? null
+          : () {
+              HapticFeedback.lightImpact();
+              onTap!();
+            },
       child: Container(
         height: 56,
         decoration: BoxDecoration(
