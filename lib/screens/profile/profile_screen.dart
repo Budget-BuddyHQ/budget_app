@@ -13,12 +13,14 @@ import '../auth/auth_screen.dart';
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
     super.key,
-    this.activeTabIndex = 4,
+    this.activeTabIndex = 3,
     this.onNavSelected,
+    this.onPortalTap,
   });
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
+  final VoidCallback? onPortalTap;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -65,6 +67,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               : CustomBottomNav(
                   activeIndex: widget.activeTabIndex,
                   onSelected: widget.onNavSelected,
+                  onPortalTap: widget.onPortalTap,
                 ),
           body: Stack(
             children: [
