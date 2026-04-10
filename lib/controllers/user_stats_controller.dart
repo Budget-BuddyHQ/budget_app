@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/avatar_skin.dart';
 import '../services/supabase_service.dart';
 
 @immutable
@@ -20,6 +22,22 @@ class StatsActionResult {
   final bool requiresEmailConfirmation;
 }
 
+@immutable
+class SkinCaseResult extends StatsActionResult {
+  const SkinCaseResult({
+    required super.success,
+    required super.message,
+    required super.syncState,
+    required this.skin,
+    required this.isNewUnlock,
+    required this.goldSpent,
+  });
+
+  final AvatarSkin skin;
+  final bool isNewUnlock;
+  final int goldSpent;
+}
+
 class UserStatsController extends ChangeNotifier {
   UserStatsController({
     required SupabaseService service,
@@ -29,6 +47,7 @@ class UserStatsController extends ChangeNotifier {
         _stats = UserStats.defaults(initialUserId);
 
   final SupabaseService _service;
+  final Random _random = Random();
 
   String _userId;
   UserStats _stats;
@@ -117,7 +136,8 @@ class UserStatsController extends ChangeNotifier {
           notifyListeners();
           return const StatsActionResult(
             success: true,
-            message: 'Account created. Check your email to confirm your account before logging in.',
+            message:
+                'Account created. Check your email to confirm your account before logging in.',
             syncState: SyncState(
               synced: true,
               usedCache: false,
@@ -163,7 +183,8 @@ class UserStatsController extends ChangeNotifier {
     if (normalizedEmail.isEmpty) {
       return const StatsActionResult(
         success: false,
-        message: 'Enter your email so we know where to send the reset link.',
+        message:
+            'Enter your email so we know where to send the reset link.',
         syncState: SyncState(
           synced: false,
           usedCache: true,
@@ -176,7 +197,8 @@ class UserStatsController extends ChangeNotifier {
       await _service.resetPasswordForEmail(normalizedEmail);
       return const StatsActionResult(
         success: true,
-        message: 'Password reset email sent. Check your inbox and spam folder.',
+        message:
+            'Password reset email sent. Check your inbox and spam folder.',
         syncState: SyncState(
           synced: true,
           usedCache: false,
@@ -200,7 +222,10 @@ class UserStatsController extends ChangeNotifier {
     try {
       await _service.signOut(userId: previousUserId);
     } finally {
-      await _resetToSignedOutState(notify: true, statusMessage: 'Logged out.');
+      await _resetToSignedOutState(
+        notify: true,
+        statusMessage: 'Logged out.',
+      );
     }
   }
 
@@ -328,9 +353,10 @@ class UserStatsController extends ChangeNotifier {
       gold: _stats.gold + goldEarned,
       xp: _stats.xp + xpEarned,
       literacyPoints: _stats.literacyPoints + literacyEarned,
-      personalityType: (payload['personality_type'] ?? '').toString().trim().isEmpty
-          ? _stats.personalityType
-          : payload['personality_type'].toString().trim(),
+      personalityType:
+          (payload['personality_type'] ?? '').toString().trim().isEmpty
+              ? _stats.personalityType
+              : payload['personality_type'].toString().trim(),
       spendingHabits: payload['spending_habits'] is Map
           ? <String, dynamic>{
               ..._stats.spendingHabits,
@@ -358,6 +384,119 @@ class UserStatsController extends ChangeNotifier {
     return _saveStats(
       nextStats,
       savingMessage: 'Saving challenge rewards...',
+    );
+  }
+
+  Future<SkinCaseResult> openSkinCase() async {
+    const caseCost = 180;
+    if (_stats.gold < caseCost) {
+      return SkinCaseResult(
+        success: false,
+        message: 'You need 180 gold to open an Emerald Case.',
+        syncState: const SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'No changes saved.',
+        ),
+        skin: skinFromId(_stats.equippedSkin),
+        isNewUnlock: false,
+        goldSpent: 0,
+      );
+    }
+
+    final unlocked = _stats.unlockedSkins.toSet();
+    final availablePool = budgetBuddySkins
+        .where((skin) => !unlocked.contains(skin.id))
+        .toList(growable: false);
+    final pool = availablePool.isEmpty ? budgetBuddySkins : availablePool;
+    final awardedSkin = _pickWeightedSkin(pool);
+    final isNewUnlock = !unlocked.contains(awardedSkin.id);
+    final now = DateTime.now().toUtc();
+    final nextUnlocked = <String>{
+      ...unlocked,
+      if (isNewUnlock) awardedSkin.id,
+    }.toList(growable: false);
+    final rebate = isNewUnlock ? 0 : 40;
+
+    final nextStats = _stats.copyWith(
+      gold: _stats.gold - caseCost + rebate,
+      xp: _stats.xp + (isNewUnlock ? 16 : 8),
+      literacyPoints: _stats.literacyPoints + (isNewUnlock ? 8 : 4),
+      spendingHabits: <String, dynamic>{
+        ..._stats.spendingHabits,
+        'equipped_skin': isNewUnlock ? awardedSkin.id : _stats.equippedSkin,
+        'unlocked_skins': nextUnlocked,
+      },
+      transactions: <LedgerTransaction>[
+        LedgerTransaction(
+          id: 'txn_${now.microsecondsSinceEpoch}',
+          title: isNewUnlock ? 'Opened Emerald Case' : 'Duplicate Skin Rebate',
+          description: isNewUnlock
+              ? 'Unlocked ${awardedSkin.name} from the emerald case.'
+              : 'Pulled ${awardedSkin.name} again and received a 40 gold rebate.',
+          amount: -(caseCost - rebate),
+          createdAt: now,
+          category: 'unlock',
+        ),
+        ..._stats.transactions,
+      ],
+      updatedAt: now,
+    );
+
+    final saveResult = await _saveStats(
+      nextStats,
+      savingMessage: 'Opening an Emerald Case...',
+    );
+
+    return SkinCaseResult(
+      success: saveResult.success,
+      message: isNewUnlock
+          ? 'Unlocked ${awardedSkin.name}!'
+          : 'Duplicate pull: ${awardedSkin.name}. 40 gold returned.',
+      syncState: saveResult.syncState,
+      skin: awardedSkin,
+      isNewUnlock: isNewUnlock,
+      goldSpent: caseCost - rebate,
+    );
+  }
+
+  Future<StatsActionResult> equipSkin(String skinId) async {
+    if (!_stats.unlockedSkins.contains(skinId)) {
+      return const StatsActionResult(
+        success: false,
+        message: 'That skin is still locked.',
+        syncState: SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'No changes saved.',
+        ),
+      );
+    }
+
+    if (_stats.equippedSkin == skinId) {
+      return const StatsActionResult(
+        success: true,
+        message: 'That skin is already equipped.',
+        syncState: SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'Already active.',
+        ),
+      );
+    }
+
+    final nextStats = _stats.copyWith(
+      spendingHabits: <String, dynamic>{
+        ..._stats.spendingHabits,
+        'equipped_skin': skinId,
+        'unlocked_skins': _stats.unlockedSkins,
+      },
+      updatedAt: DateTime.now().toUtc(),
+    );
+
+    return _saveStats(
+      nextStats,
+      savingMessage: 'Equipping your new turtle style...',
     );
   }
 
@@ -398,7 +537,7 @@ class UserStatsController extends ChangeNotifier {
     return StatsActionResult(
       success: false,
       message: message,
-      syncState: const SyncState(
+      syncState: SyncState(
         synced: false,
         usedCache: true,
         message: 'Auth request failed.',
@@ -482,8 +621,20 @@ class UserStatsController extends ChangeNotifier {
     if (series.length >= 8) {
       series.removeAt(0);
     }
-    series.add(nextPoint.toDouble());
+    series.add(nextPoint);
     return series;
+  }
+
+  AvatarSkin _pickWeightedSkin(List<AvatarSkin> skins) {
+    final totalWeight = skins.fold<int>(0, (sum, skin) => sum + skin.weight);
+    var roll = _random.nextInt(totalWeight);
+    for (final skin in skins) {
+      if (roll < skin.weight) {
+        return skin;
+      }
+      roll -= skin.weight;
+    }
+    return skins.first;
   }
 
   @override
