@@ -5,10 +5,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'config/runtime_env.dart';
+import 'controllers/adventure_state_controller.dart';
 import 'controllers/user_stats_controller.dart';
 import 'screens/Gameplay/bill_dodger.dart';
+import 'screens/Gameplay/customize_screen.dart';
 import 'screens/Gameplay/dashboard_shell.dart';
+import 'screens/Gameplay/game_canvas.dart';
+import 'screens/Gameplay/game_hub_page.dart';
 import 'screens/Gameplay/leaderboard_screen.dart';
+import 'screens/Gameplay/learning_path_screen.dart';
 import 'screens/auth/auth_screen.dart';
 import 'screens/onboarding/welcome_screen.dart';
 import 'services/supabase_service.dart';
@@ -18,9 +23,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   if (!kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.windows ||
-          defaultTargetPlatform == TargetPlatform.linux ||
-          defaultTargetPlatform == TargetPlatform.macOS)) {
+      defaultTargetPlatform == TargetPlatform.windows) {
     try {
       await windowManager.ensureInitialized();
       const options = WindowOptions(
@@ -37,23 +40,16 @@ Future<void> main() async {
       debugPrint('Window manager failed: $error');
     }
   }
+  final supabaseUrl = readRuntimeEnv('SUPABASE_URL') ??
+      const String.fromEnvironment('SUPABASE_URL');
+  final supabaseAnonKey = readRuntimeEnv('SUPABASE_ANON_KEY') ??
+      const String.fromEnvironment('SUPABASE_ANON_KEY');
 
-  const compileTimeSupabaseUrl = String.fromEnvironment(
-    'SUPABASE_URL',
-    defaultValue: 'https://cwqjduingvevagrxbwts.supabase.co',
-  );
-  const compileTimeSupabaseAnonKey = String.fromEnvironment(
-    'SUPABASE_ANON_KEY',
-    defaultValue: 'sb_publishable_sALqhgaTDGewkqp_XiNo-g_EO6ziR4l',
-  );
-  final supabaseUrl = compileTimeSupabaseUrl.contains('YOUR-PROJECT')
-      ? (readRuntimeEnv('SUPABASE_URL') ?? compileTimeSupabaseUrl)
-      : compileTimeSupabaseUrl;
-  final supabaseAnonKey = compileTimeSupabaseAnonKey.contains('YOUR_SUPABASE')
-      ? (readRuntimeEnv('SUPABASE_ANON_KEY') ?? compileTimeSupabaseAnonKey)
-      : compileTimeSupabaseAnonKey;
-
-
+  if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
+    debugPrint(
+      'Supabase credentials were not found in dart-defines or supabase.env.json. The app will fall back to local cached data.',
+    );
+  }
 
   await SupabaseService.instance.initialize(
     supabaseUrl: supabaseUrl,
@@ -61,10 +57,20 @@ Future<void> main() async {
   );
 
   runApp(
-    ChangeNotifierProvider<UserStatsController>(
-      create: (_) => UserStatsController(
-        service: SupabaseService.instance,
-      )..initialize(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<UserStatsController>(
+          create: (_) => UserStatsController(
+            service: SupabaseService.instance,
+          )..initialize(),
+        ),
+        ChangeNotifierProxyProvider<UserStatsController, AdventureStateController>(
+          create: (_) => AdventureStateController(),
+          update: (_, userStats, adventure) =>
+              (adventure ?? AdventureStateController())
+                ..attachUserStats(userStats),
+        ),
+      ],
       child: const MyApp(),
     ),
   );
@@ -86,6 +92,10 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const AuthScreen(mode: AuthMode.login),
         '/game': (context) => const DashboardShell(),
         '/dashboard': (context) => const DashboardShell(initialIndex: 0),
+        '/game_hub': (context) => const GameHubPage(),
+        '/customize': (context) => const CustomizeScreen(),
+        '/lessons': (context) => const LearningPathScreen(),
+        '/game-canvas': (context) => const GameCanvas(),
         '/bill-dodger': (context) => const BillDodgerScreen(),
         '/bill_dodger': (context) => const BillDodgerScreen(),
         '/leaderboard': (context) => const LeaderboardScreen(),
