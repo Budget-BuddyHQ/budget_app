@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../profile/profile_screen.dart';
-import 'budget_page.dart';
+import 'customize_screen.dart';
+import 'game_hub_page.dart';
 import 'home_screen.dart';
 import 'learning_path_screen.dart';
-import 'town_square.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({
@@ -24,7 +24,7 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex.clamp(0, 4).toInt();
+    _currentIndex = widget.initialIndex.clamp(0, 3).toInt();
   }
 
   void _selectTab(int index) {
@@ -36,6 +36,27 @@ class _MainNavigationState extends State<MainNavigation> {
     });
   }
 
+  Future<void> _openPortal() async {
+    await Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        pageBuilder: (_, __, ___) => GameHubPage(
+          activeTabIndex: _currentIndex,
+          onNavSelected: (index) {
+            Navigator.of(context).pop();
+            _selectTab(index);
+          },
+          onPortalTap: _openPortal,
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return IndexedStack(
@@ -44,22 +65,22 @@ class _MainNavigationState extends State<MainNavigation> {
         HomeScreen(
           activeTabIndex: 0,
           onNavSelected: _selectTab,
+          onPortalTap: _openPortal,
         ),
-        BudgetPage(
+        CustomizeScreen(
           activeTabIndex: 1,
           onNavSelected: _selectTab,
-        ),
-        TownSquare(
-          activeTabIndex: 2,
-          onNavSelected: _selectTab,
+          onPortalTap: _openPortal,
         ),
         LearningPathScreen(
-          activeTabIndex: 3,
+          activeTabIndex: 2,
           onNavSelected: _selectTab,
+          onPortalTap: _openPortal,
         ),
         ProfileScreen(
-          activeTabIndex: 4,
+          activeTabIndex: 3,
           onNavSelected: _selectTab,
+          onPortalTap: _openPortal,
         ),
       ],
     );

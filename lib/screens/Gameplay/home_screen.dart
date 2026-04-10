@@ -1,31 +1,28 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../controllers/user_stats_controller.dart';
+import '../../models/avatar_skin.dart';
 import '../../services/supabase_service.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/game_toast.dart';
-import '../../widgets/progress_metrics_widgets.dart';
-import '../../widgets/skeleton_loader.dart';
-import 'bill_dodger.dart';
-import 'budget_challenge.dart';
 import 'leaderboard_screen.dart';
 import 'react_challenge_screen.dart';
-import 'town_square.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
     this.activeTabIndex = 0,
     this.onNavSelected,
+    this.onPortalTap,
   });
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
+  final VoidCallback? onPortalTap;
 
-  Future<void> _openBudgetBattle(BuildContext context) async {
+  Future<void> _launchDailyChallenge(BuildContext context) async {
     final stats = context.read<UserStatsController>().stats;
     final result = await Navigator.of(context).push<ReactGameCloseResult>(
       MaterialPageRoute(
@@ -44,48 +41,13 @@ class HomeScreen extends StatelessWidget {
 
     GameToast.show(
       context,
-      title: result.status == 'victory' ? 'Budget Battle Won' : 'Battle Complete',
+      title: result.status == 'victory'
+          ? 'Daily Challenge Cleared'
+          : 'Challenge Complete',
       message:
           '+${result.goldEarned} gold | +${result.xpEarned} XP | ${result.syncState.message}',
       icon: Icons.workspace_premium_rounded,
-    );
-  }
-
-  Future<void> _openBillDodger(BuildContext context) async {
-    final result = await Navigator.of(context).push<BillDodgerCloseResult>(
-      MaterialPageRoute(builder: (_) => const BillDodgerScreen()),
-    );
-
-    if (!context.mounted || result == null) {
-      return;
-    }
-
-    GameToast.show(
-      context,
-      title: 'Arcade Rewards Banked',
-      message:
-          '+${result.goldEarned} gold | +${result.xpEarned} XP | ${result.syncState.message}',
-      icon: Icons.savings_rounded,
       accent: const Color(0xFFFFD45C),
-    );
-  }
-
-  Future<void> _openBudgetChallenge(BuildContext context) async {
-    final result = await Navigator.of(context).push<BudgetChallengeCloseResult>(
-      MaterialPageRoute(builder: (_) => const BudgetChallengeScreen()),
-    );
-
-    if (!context.mounted || result == null) {
-      return;
-    }
-
-    GameToast.show(
-      context,
-      title: 'Budget Challenge Complete',
-      message:
-          '+${result.goldEarned} gold | +${result.xpEarned} XP | ${result.syncState.message}',
-      icon: Icons.shopping_cart_rounded,
-      accent: const Color(0xFF85EFAC),
     );
   }
 
@@ -94,106 +56,64 @@ class HomeScreen extends StatelessWidget {
     return Consumer<UserStatsController>(
       builder: (context, controller, _) {
         final stats = controller.stats;
-        final leaderboard = _buildLeaderboard(stats);
-        final playerEntry = leaderboard.firstWhere(
-          (entry) => entry.isCurrentUser,
-          orElse: () => leaderboard.first,
-        );
-        final savingsRate = ((stats.gold / 5200) * 100).clamp(1, 100).toDouble();
-        final battleScore = _scoreForLeaderboard(stats);
-        final completion = ((stats.literacyPoints + stats.xp) / 2500)
-            .clamp(0.0, 1.0)
-            .toDouble();
+        final turtleSkin = skinFromId(stats.equippedSkin);
+        final leaders = <_LeaderItem>[
+          const _LeaderItem(name: 'MoneyMaster99', points: 2450, rank: 1),
+          const _LeaderItem(name: 'BudgetPro', points: 2280, rank: 2),
+          _LeaderItem(
+            name: stats.username,
+            points: stats.gold,
+            rank: 3,
+            isCurrentUser: true,
+          ),
+        ];
 
         return Scaffold(
-          backgroundColor: const Color(0xFF071812),
+          backgroundColor: const Color(0xFF071711),
           bottomNavigationBar: onNavSelected == null
               ? null
               : CustomBottomNav(
                   activeIndex: activeTabIndex,
                   onSelected: onNavSelected,
+                  onPortalTap: onPortalTap,
                 ),
           body: Stack(
             children: [
-              const _HomeBackdrop(),
+              const _DashboardBackdrop(),
               SafeArea(
-                child: controller.isLoading
-                    ? const _HomeSkeleton()
-                    : ListView(
-                        padding: const EdgeInsets.fromLTRB(18, 18, 18, 132),
-                        children: [
-                          _RankHeroCard(
-                            username: stats.username,
-                            score: battleScore,
-                            rank: playerEntry.rank,
-                            totalPlayers: leaderboard.length + 124,
-                            levelTitle: stats.levelTitle,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 126),
+                  children: [
+                    _DashboardHeader(
+                      stats: stats,
+                      turtleSkin: turtleSkin,
+                    ),
+                    const SizedBox(height: 18),
+                    _DailyChallengeCard(
+                      onPlayNow: () => _launchDailyChallenge(context),
+                      onOpenHub: onPortalTap,
+                    ),
+                    const SizedBox(height: 18),
+                    _LiteracyProgressCard(stats: stats),
+                    const SizedBox(height: 18),
+                    _QuickAccessRow(
+                      onCustomize: () => onNavSelected?.call(1),
+                      onLessons: () => onNavSelected?.call(2),
+                    ),
+                    const SizedBox(height: 18),
+                    _LeaderboardPreview(
+                      leaders: leaders,
+                      onOpenFull: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const LeaderboardScreen(),
                           ),
-                          const SizedBox(height: 18),
-                          _LeaderboardPreviewCard(
-                            entries: leaderboard.take(5).toList(growable: false),
-                            onOpenFullBoard: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const LeaderboardScreen(),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          ResponsiveMetricGrid(
-                            children: [
-                              FinanceMetricCard(
-                                background: Colors.white.withValues(alpha: 0.06),
-                                border: Colors.white.withValues(alpha: 0.08),
-                                title: 'Savings Rate',
-                                value: '${savingsRate.toStringAsFixed(0)}%',
-                                subtitle: 'global discipline meter',
-                                icon: Icons.savings_rounded,
-                                accent: const Color(0xFF85EFAC),
-                                progressValue: savingsRate / 100,
-                              ),
-                              FinanceMetricCard(
-                                background: Colors.white.withValues(alpha: 0.06),
-                                border: Colors.white.withValues(alpha: 0.08),
-                                title: 'Literacy Rank',
-                                value: '#${math.max(1, 210 - stats.level * 8)}',
-                                subtitle: '${stats.literacyPoints} mastery points',
-                                icon: Icons.auto_awesome_rounded,
-                                accent: const Color(0xFFFFD45C),
-                              ),
-                              FinanceMetricCard(
-                                background: Colors.white.withValues(alpha: 0.06),
-                                border: Colors.white.withValues(alpha: 0.08),
-                                title: 'Progression',
-                                value: '${(completion * 100).round()}%',
-                                subtitle: 'campaign completion',
-                                icon: Icons.flag_rounded,
-                                accent: const Color(0xFF58C7FF),
-                                progressValue: completion,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 18),
-                          _QuickPortalStrip(
-                            onTownSquare: () {
-                              if (onNavSelected != null) {
-                                onNavSelected!(2);
-                                return;
-                              }
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const TownSquare()),
-                              );
-                            },
-                            onBudgetBattle: () => _openBudgetBattle(context),
-                            onBillDodger: () => _openBillDodger(context),
-                            onBudgetChallenge: () => _openBudgetChallenge(context),
-                          ),
-                          const SizedBox(height: 18),
-                          _MentorPanel(
-                            title: 'Global Mentor Brief',
-                            message: stats.wizardAdvice,
-                          ),
-                        ],
-                      ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -201,37 +121,10 @@ class HomeScreen extends StatelessWidget {
       },
     );
   }
-
-  List<_RankEntry> _buildLeaderboard(UserStats stats) {
-    final playerScore = _scoreForLeaderboard(stats);
-    final base = <_RankEntry>[
-      const _RankEntry(name: 'Goldwarden Ivy', score: 7350),
-      const _RankEntry(name: 'Ledger Lion', score: 6980),
-      const _RankEntry(name: 'Mint Mage', score: 6725),
-      const _RankEntry(name: 'SaverSage', score: 6550),
-      _RankEntry(name: stats.username, score: playerScore, isCurrentUser: true),
-      const _RankEntry(name: 'Budget Bard', score: 5450),
-      const _RankEntry(name: 'Coin Captain', score: 5180),
-      const _RankEntry(name: 'Wallet Witch', score: 4970),
-    ];
-
-    final ranked = [...base]..sort((a, b) => b.score.compareTo(a.score));
-    return ranked
-        .asMap()
-        .entries
-        .map(
-          (entry) => entry.value.copyWith(rank: entry.key + 1),
-        )
-        .toList(growable: false);
-  }
-
-  int _scoreForLeaderboard(UserStats stats) {
-    return stats.gold + (stats.xp * 2) + (stats.literacyPoints * 2);
-  }
 }
 
-class _HomeBackdrop extends StatelessWidget {
-  const _HomeBackdrop();
+class _DashboardBackdrop extends StatelessWidget {
+  const _DashboardBackdrop();
 
   @override
   Widget build(BuildContext context) {
@@ -242,28 +135,24 @@ class _HomeBackdrop extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF06150F),
-                Color(0xFF0C241B),
-                Color(0xFF113528),
-              ],
+              colors: [Color(0xFF071711), Color(0xFF0C241B), Color(0xFF113127)],
             ),
           ),
         ),
         Positioned(
-          top: -90,
+          top: -60,
           right: -40,
           child: _GlowOrb(
-            size: 220,
-            color: const Color(0xFF4ADE80).withValues(alpha: 0.14),
+            color: const Color(0xFF85EFAC).withValues(alpha: 0.18),
+            size: 190,
           ),
         ),
         Positioned(
-          top: 180,
+          top: 320,
           left: -70,
           child: _GlowOrb(
+            color: const Color(0xFF58C7FF).withValues(alpha: 0.10),
             size: 180,
-            color: const Color(0xFFFFD45C).withValues(alpha: 0.10),
           ),
         ),
       ],
@@ -271,14 +160,504 @@ class _HomeBackdrop extends StatelessWidget {
   }
 }
 
-class _GlowOrb extends StatelessWidget {
-  const _GlowOrb({
-    required this.size,
-    required this.color,
+class _DashboardHeader extends StatelessWidget {
+  const _DashboardHeader({
+    required this.stats,
+    required this.turtleSkin,
   });
 
-  final double size;
+  final UserStats stats;
+  final AvatarSkin turtleSkin;
+
+  @override
+  Widget build(BuildContext context) {
+    return _GlassPanel(
+      child: Row(
+        children: [
+          Container(
+            width: 90,
+            height: 90,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  turtleSkin.accent.withValues(alpha: 0.36),
+                  const Color(0xFF0D2B20),
+                ],
+              ),
+              border: Border.all(
+                color: const Color(0xFF85EFAC).withValues(alpha: 0.85),
+                width: 2.4,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF85EFAC).withValues(alpha: 0.28),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: ClipOval(
+                child: Image.asset(turtleSkin.assetPath, fit: BoxFit.contain),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Welcome back, ${stats.username}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  stats.levelTitle,
+                  style: const TextStyle(
+                    color: Color(0xFF85EFAC),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Gold: ${stats.gold}  •  Literacy: ${stats.literacyPoints}',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.72),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DailyChallengeCard extends StatelessWidget {
+  const _DailyChallengeCard({
+    required this.onPlayNow,
+    required this.onOpenHub,
+  });
+
+  final VoidCallback onPlayNow;
+  final VoidCallback? onOpenHub;
+
+  @override
+  Widget build(BuildContext context) {
+    return _GlassPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Daily Challenge',
+            style: TextStyle(
+              color: const Color(0xFF85EFAC).withValues(alpha: 0.96),
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
+              letterSpacing: 0.4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Budget Battle: defend your coin stash against surprise spending traps.',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              height: 1.25,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Start with the featured challenge, then build momentum through lessons and new turtle upgrades.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.72),
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 18),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stacked = constraints.maxWidth < 360;
+              final playButton = _ActionButton(
+                label: 'Play Daily Challenge',
+                accent: const Color(0xFF85EFAC),
+                icon: Icons.play_arrow_rounded,
+                onTap: onPlayNow,
+              );
+              final hubButton = _ActionButton(
+                label: 'Open Game Hub',
+                accent: const Color(0xFFFFD45C),
+                icon: Icons.explore_rounded,
+                onTap: onOpenHub,
+                filled: false,
+              );
+
+              if (stacked) {
+                return Column(
+                  children: [
+                    playButton,
+                    const SizedBox(height: 10),
+                    hubButton,
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: playButton),
+                  const SizedBox(width: 12),
+                  Expanded(child: hubButton),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LiteracyProgressCard extends StatelessWidget {
+  const _LiteracyProgressCard({required this.stats});
+
+  final UserStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    return _GlassPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Literacy Points',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${stats.literacyPoints} LP',
+            style: const TextStyle(
+              color: Color(0xFFFFD45C),
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'You are ${(stats.levelProgress * 100).round()}% of the way to the next Finance Wizard level.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.70),
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 13,
+              value: stats.levelProgress.clamp(0.08, 1.0),
+              backgroundColor: Colors.white.withValues(alpha: 0.08),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF85EFAC),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickAccessRow extends StatelessWidget {
+  const _QuickAccessRow({
+    required this.onCustomize,
+    required this.onLessons,
+  });
+
+  final VoidCallback onCustomize;
+  final VoidCallback onLessons;
+
+  @override
+  Widget build(BuildContext context) {
+    final cards = <Widget>[
+      _QuickAccessCard(
+        label: 'Customize',
+        icon: Icons.auto_awesome_rounded,
+        accent: const Color(0xFFFFD45C),
+        onTap: onCustomize,
+      ),
+      _QuickAccessCard(
+        label: 'Lessons',
+        icon: Icons.school_rounded,
+        accent: const Color(0xFF58C7FF),
+        onTap: onLessons,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 560) {
+          return Column(
+            children: [
+              for (var i = 0; i < cards.length; i++) ...[
+                cards[i],
+                if (i != cards.length - 1) const SizedBox(height: 12),
+              ],
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            for (var i = 0; i < cards.length; i++) ...[
+              Expanded(child: cards[i]),
+              if (i != cards.length - 1) const SizedBox(width: 12),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _LeaderboardPreview extends StatelessWidget {
+  const _LeaderboardPreview({
+    required this.leaders,
+    required this.onOpenFull,
+  });
+
+  final List<_LeaderItem> leaders;
+  final VoidCallback onOpenFull;
+
+  @override
+  Widget build(BuildContext context) {
+    return _GlassPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Global Leaderboard',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: onOpenFull,
+                child: const Text('View All'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...leaders.map(
+            (leader) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _LeaderboardTile(leader: leader),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickAccessCard extends StatelessWidget {
+  const _QuickAccessCard({
+    required this.label,
+    required this.icon,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color accent;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap == null
+          ? null
+          : () {
+              HapticFeedback.lightImpact();
+              onTap!();
+            },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: accent.withValues(alpha: 0.22)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: accent),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: onTap == null
+                  ? Colors.white.withValues(alpha: 0.28)
+                  : Colors.white.withValues(alpha: 0.62),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.label,
+    required this.accent,
+    required this.icon,
+    required this.onTap,
+    this.filled = true,
+  });
+
+  final String label;
+  final Color accent;
+  final IconData icon;
+  final VoidCallback? onTap;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap == null
+          ? null
+          : () {
+              HapticFeedback.lightImpact();
+              onTap!();
+            },
+      child: Container(
+        height: 56,
+        decoration: BoxDecoration(
+          color: filled ? accent : Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: filled ? Colors.transparent : accent.withValues(alpha: 0.42),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: filled ? const Color(0xFF062C21) : accent),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: TextStyle(
+                color: filled ? const Color(0xFF062C21) : accent,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LeaderboardTile extends StatelessWidget {
+  const _LeaderboardTile({required this.leader});
+
+  final _LeaderItem leader;
+
+  @override
+  Widget build(BuildContext context) {
+    final medal = switch (leader.rank) {
+      1 => const Color(0xFFFFD45C),
+      2 => const Color(0xFFD2DBE2),
+      _ => const Color(0xFFCD7F32),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: leader.isCurrentUser
+            ? const Color(0xFF85EFAC).withValues(alpha: 0.10)
+            : Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: leader.isCurrentUser
+              ? const Color(0xFF85EFAC).withValues(alpha: 0.42)
+              : Colors.white.withValues(alpha: 0.06),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.emoji_events_rounded, color: medal),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              leader.name,
+              style: TextStyle(
+                color: leader.isCurrentUser
+                    ? const Color(0xFF85EFAC)
+                    : Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          Text(
+            '${leader.points}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GlowOrb extends StatelessWidget {
+  const _GlowOrb({required this.color, required this.size});
+
   final Color color;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
@@ -292,7 +671,7 @@ class _GlowOrb extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: color,
-              blurRadius: size * 0.42,
+              blurRadius: size * 0.40,
               spreadRadius: size * 0.06,
             ),
           ],
@@ -302,595 +681,42 @@ class _GlowOrb extends StatelessWidget {
   }
 }
 
-class _RankHeroCard extends StatelessWidget {
-  const _RankHeroCard({
-    required this.username,
-    required this.score,
-    required this.rank,
-    required this.totalPlayers,
-    required this.levelTitle,
-  });
+class _GlassPanel extends StatelessWidget {
+  const _GlassPanel({required this.child});
 
-  final String username;
-  final int score;
-  final int rank;
-  final int totalPlayers;
-  final String levelTitle;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF0D281E).withValues(alpha: 0.98),
-            const Color(0xFF143B2E).withValues(alpha: 0.94),
-            const Color(0xFF1A4938).withValues(alpha: 0.90),
-          ],
-        ),
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x44000000),
-            blurRadius: 24,
-            offset: Offset(0, 16),
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Global Rank & Progression',
-                      style: TextStyle(
-                        color: const Color(0xFFB7F7D0).withValues(alpha: 0.96),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      username,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      levelTitle,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.72),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 92,
-                height: 92,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFFE55C), Color(0xFF59D78D)],
-                  ),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.60), width: 3),
-                ),
-                child: const Icon(
-                  Icons.emoji_events_rounded,
-                  color: Color(0xFF062C21),
-                  size: 42,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: _HeroChip(
-                  label: 'Global rank',
-                  value: '#$rank',
-                  accent: const Color(0xFFFFD45C),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _HeroChip(
-                  label: 'League score',
-                  value: '$score',
-                  accent: const Color(0xFF85EFAC),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _HeroChip(
-                  label: 'Active wizards',
-                  value: '$totalPlayers',
-                  accent: const Color(0xFF58C7FF),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      child: child,
     );
   }
 }
 
-class _HeroChip extends StatelessWidget {
-  const _HeroChip({
-    required this.label,
-    required this.value,
-    required this.accent,
-  });
-
-  final String label;
-  final String value;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.64),
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              color: accent,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LeaderboardPreviewCard extends StatelessWidget {
-  const _LeaderboardPreviewCard({
-    required this.entries,
-    required this.onOpenFullBoard,
-  });
-
-  final List<_RankEntry> entries;
-  final VoidCallback onOpenFullBoard;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Global Leaderboard',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: onOpenFullBoard,
-                child: const Text('View All'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'The front page starts with competition, momentum, and visible rank.',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.66),
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 14),
-          ...entries.map(
-            (entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _LeaderboardRow(entry: entry),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LeaderboardRow extends StatelessWidget {
-  const _LeaderboardRow({
-    required this.entry,
-  });
-
-  final _RankEntry entry;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = entry.isCurrentUser
-        ? const Color(0xFFFFD45C)
-        : const Color(0xFF85EFAC);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: entry.isCurrentUser
-            ? const Color(0x26FFD45C)
-            : Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: entry.isCurrentUser
-              ? const Color(0x66FFD45C)
-              : Colors.white.withValues(alpha: 0.06),
-        ),
-      ),
-      child: Row(
-        children: [
-          Text(
-            '#${entry.rank}',
-            style: TextStyle(
-              color: accent,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(width: 14),
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: accent.withValues(alpha: 0.16),
-            child: Text(
-              entry.name.isEmpty ? '?' : entry.name[0].toUpperCase(),
-              style: TextStyle(
-                color: accent,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              entry.name,
-              style: TextStyle(
-                color: entry.isCurrentUser ? const Color(0xFFFFE9A1) : Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          Text(
-            entry.score.toString(),
-            style: TextStyle(
-              color: accent,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickPortalStrip extends StatelessWidget {
-  const _QuickPortalStrip({
-    required this.onTownSquare,
-    required this.onBudgetBattle,
-    required this.onBillDodger,
-    required this.onBudgetChallenge,
-  });
-
-  final VoidCallback onTownSquare;
-  final VoidCallback onBudgetBattle;
-  final VoidCallback onBillDodger;
-  final VoidCallback onBudgetChallenge;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Fast Travel',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 12),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final tileWidth = constraints.maxWidth < 640
-                ? constraints.maxWidth
-                : (constraints.maxWidth - 12) / 2;
-
-            return Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                SizedBox(
-                  width: tileWidth,
-                  child: _PortalCard(
-                    title: 'Town Square',
-                    subtitle: 'Enter the main world and choose your next portal.',
-                    icon: Icons.auto_awesome_rounded,
-                    accent: const Color(0xFF4ADE80),
-                    onTap: onTownSquare,
-                  ),
-                ),
-                SizedBox(
-                  width: tileWidth,
-                  child: _PortalCard(
-                    title: 'Budget Battle',
-                    subtitle: 'Jump into the featured web challenge for fast rewards.',
-                    icon: Icons.shield_rounded,
-                    accent: const Color(0xFFFFD45C),
-                    onTap: onBudgetBattle,
-                  ),
-                ),
-                SizedBox(
-                  width: tileWidth,
-                  child: _PortalCard(
-                    title: 'Bill Dodger',
-                    subtitle: 'Smooth arcade practice for needs versus wants.',
-                    icon: Icons.sports_esports_rounded,
-                    accent: const Color(0xFF58C7FF),
-                    onTap: onBillDodger,
-                  ),
-                ),
-                SizedBox(
-                  width: tileWidth,
-                  child: _PortalCard(
-                    title: 'Budget Challenge',
-                    subtitle: 'Pick the cheapest essentials within your budget.',
-                    icon: Icons.shopping_cart_rounded,
-                    accent: const Color(0xFF85EFAC),
-                    onTap: onBudgetChallenge,
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _PortalCard extends StatelessWidget {
-  const _PortalCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.accent,
-    required this.onTap,
-  });
-
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color accent;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Ink(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              accent.withValues(alpha: 0.16),
-              Colors.white.withValues(alpha: 0.04),
-            ],
-          ),
-          border: Border.all(color: accent.withValues(alpha: 0.26)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(icon, color: accent),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.70),
-                      fontSize: 12,
-                      height: 1.35,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MentorPanel extends StatelessWidget {
-  const _MentorPanel({
-    required this.title,
-    required this.message,
-  });
-
-  final String title;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF113528).withValues(alpha: 0.96),
-            const Color(0xFF0C271D).withValues(alpha: 0.92),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFD45C).withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.menu_book_rounded,
-              color: Color(0xFFFFD45C),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  message,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.72),
-                    height: 1.45,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HomeSkeleton extends StatelessWidget {
-  const _HomeSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 132),
-      children: const [
-        SkeletonLoader(height: 220, borderRadius: 30),
-        SizedBox(height: 18),
-        SkeletonLoader(height: 260, borderRadius: 26),
-        SizedBox(height: 18),
-        Row(
-          children: [
-            Expanded(child: SkeletonLoader(height: 132, borderRadius: 20)),
-            SizedBox(width: 12),
-            Expanded(child: SkeletonLoader(height: 132, borderRadius: 20)),
-          ],
-        ),
-        SizedBox(height: 12),
-        SkeletonLoader(height: 132, borderRadius: 20),
-        SizedBox(height: 18),
-        SkeletonLoader(height: 230, borderRadius: 24),
-        SizedBox(height: 18),
-        SkeletonLoader(height: 120, borderRadius: 24),
-      ],
-    );
-  }
-}
-
-class _RankEntry {
-  const _RankEntry({
+class _LeaderItem {
+  const _LeaderItem({
     required this.name,
-    required this.score,
-    this.rank = 0,
+    required this.points,
+    required this.rank,
     this.isCurrentUser = false,
   });
 
   final String name;
-  final int score;
+  final int points;
   final int rank;
   final bool isCurrentUser;
-
-  _RankEntry copyWith({
-    String? name,
-    int? score,
-    int? rank,
-    bool? isCurrentUser,
-  }) {
-    return _RankEntry(
-      name: name ?? this.name,
-      score: score ?? this.score,
-      rank: rank ?? this.rank,
-      isCurrentUser: isCurrentUser ?? this.isCurrentUser,
-    );
-  }
 }
