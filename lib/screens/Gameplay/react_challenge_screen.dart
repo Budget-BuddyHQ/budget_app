@@ -281,7 +281,6 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
         syncState: actionResult.syncState,
       ),
     );
-  } catch (e, st) {
     if (!mounted) {
       return;
     }
