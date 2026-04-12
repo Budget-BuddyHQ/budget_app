@@ -11,14 +11,12 @@ import 'game_canvas.dart';
 class GameHubPage extends StatelessWidget {
   const GameHubPage({
     super.key,
-    this.activeTabIndex = 0,
+    this.activeTabIndex = 1,
     this.onNavSelected,
-    this.onPortalTap,
   });
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
-  final VoidCallback? onPortalTap;
 
   Future<void> _startAdventure(BuildContext context) async {
     HapticFeedback.lightImpact();
@@ -36,14 +34,62 @@ class GameHubPage extends StatelessWidget {
         final stats = controller.stats;
         final turtleSkin = skinFromId(stats.equippedSkin);
 
+        final cards = <_HubCardData>[
+          _HubCardData(
+            title: 'Open World',
+            subtitle:
+                'Explore the map, collide with enemies, and trigger finance encounters.',
+            icon: Icons.explore_rounded,
+            accent: const Color(0xFF85EFAC),
+            buttonLabel: 'Start Adventure',
+            onTap: () => _startAdventure(context),
+          ),
+          _HubCardData(
+            title: 'Bill Dodger',
+            subtitle:
+                'Test your reflexes in the arcade and dodge spending traps.',
+            icon: Icons.flash_on_rounded,
+            accent: const Color(0xFFFFD45C),
+            buttonLabel: 'Play',
+            onTap: () => Navigator.of(context).pushNamed('/bill-dodger'),
+          ),
+          _HubCardData(
+            title: 'React Challenge',
+            subtitle:
+                'Jump into the featured browser-powered challenge for bonus rewards.',
+            icon: Icons.web_asset_rounded,
+            accent: const Color(0xFF58C7FF),
+            buttonLabel: 'Launch',
+            onTap: () => Navigator.of(context).pushNamed('/leaderboard'),
+          ),
+          _HubCardData(
+            title: 'More Minigames',
+            subtitle:
+                'New budget trials are coming soon as the MVP grows toward June.',
+            icon: Icons.auto_awesome_rounded,
+            accent: const Color(0xFFFFB084),
+            buttonLabel: 'Coming Soon',
+            onTap: () {
+              HapticFeedback.lightImpact();
+              GameToast.show(
+                context,
+                title: 'Coming soon',
+                message:
+                    'More world activities are being prepared for the next milestone.',
+                icon: Icons.schedule_rounded,
+                accent: const Color(0xFFFFB084),
+              );
+            },
+          ),
+        ];
+
         return Scaffold(
           backgroundColor: const Color(0xFF071711),
           bottomNavigationBar: onNavSelected == null
               ? null
               : CustomBottomNav(
                   activeIndex: activeTabIndex,
-                  onSelected: onNavSelected,
-                  onPortalTap: null,
+                  onSelected: onNavSelected!,
                 ),
           body: Stack(
             children: [
@@ -51,8 +97,19 @@ class GameHubPage extends StatelessWidget {
               SafeArea(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
+                    final horizontalPadding = constraints.maxWidth >= 1400
+                        ? 28.0
+                        : constraints.maxWidth >= 900
+                            ? 20.0
+                            : 14.0;
+
                     return SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 126),
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        18,
+                        horizontalPadding,
+                        126,
+                      ),
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
                           minHeight: constraints.maxHeight - 18,
@@ -67,72 +124,14 @@ class GameHubPage extends StatelessWidget {
                               literacyPoints: stats.literacyPoints,
                               onStartAdventure: () => _startAdventure(context),
                             ),
-                            const SizedBox(height: 18),
-                            _SectionTitle(
+                            const SizedBox(height: 20),
+                            const _SectionTitle(
                               title: 'Portal Activities',
                               subtitle:
                                   'Pick a lane, warm up your finance reflexes, then step into the world map.',
                             ),
-                            const SizedBox(height: 12),
-                            GridView.count(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              crossAxisCount: constraints.maxWidth < 420 ? 1 : 2,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childAspectRatio:
-                                  constraints.maxWidth < 420 ? 2.2 : 1.24,
-                              children: [
-                                _HubCard(
-                                  title: 'Open World',
-                                  subtitle:
-                                      'Explore the map, collide with enemies, and trigger finance encounters.',
-                                  icon: Icons.explore_rounded,
-                                  accent: const Color(0xFF85EFAC),
-                                  buttonLabel: 'Start Adventure',
-                                  onTap: () => _startAdventure(context),
-                                ),
-                                _HubCard(
-                                  title: 'Bill Dodger',
-                                  subtitle:
-                                      'Test your reflexes in the arcade and dodge spending traps.',
-                                  icon: Icons.flash_on_rounded,
-                                  accent: const Color(0xFFFFD45C),
-                                  buttonLabel: 'Play',
-                                  onTap: () => Navigator.of(context)
-                                      .pushNamed('/bill-dodger'),
-                                ),
-                                _HubCard(
-                                  title: 'React Challenge',
-                                  subtitle:
-                                      'Jump into the featured browser-powered challenge for bonus rewards.',
-                                  icon: Icons.web_asset_rounded,
-                                  accent: const Color(0xFF58C7FF),
-                                  buttonLabel: 'Launch',
-                                  onTap: () => Navigator.of(context)
-                                      .pushNamed('/leaderboard'),
-                                ),
-                                _HubCard(
-                                  title: 'More Minigames',
-                                  subtitle:
-                                      'New budget trials are coming soon as the MVP grows toward June.',
-                                  icon: Icons.auto_awesome_rounded,
-                                  accent: const Color(0xFFFFB084),
-                                  buttonLabel: 'Coming Soon',
-                                  onTap: () {
-                                    HapticFeedback.lightImpact();
-                                    GameToast.show(
-                                      context,
-                                      title: 'Coming soon',
-                                      message:
-                                          'More world activities are being prepared for the next milestone.',
-                                      icon: Icons.schedule_rounded,
-                                      accent: const Color(0xFFFFB084),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
+                            const SizedBox(height: 14),
+                            _ResponsiveCardGrid(cards: cards),
                           ],
                         ),
                       ),
@@ -146,6 +145,84 @@ class GameHubPage extends StatelessWidget {
       },
     );
   }
+}
+
+class _ResponsiveCardGrid extends StatelessWidget {
+  const _ResponsiveCardGrid({
+    required this.cards,
+  });
+
+  final List<_HubCardData> cards;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+
+        int crossAxisCount;
+        double childAspectRatio;
+
+        if (width >= 1650) {
+          crossAxisCount = 4;
+          childAspectRatio = 1.55;
+        } else if (width >= 1200) {
+          crossAxisCount = 4;
+          childAspectRatio = 1.28;
+        } else if (width >= 900) {
+          crossAxisCount = 3;
+          childAspectRatio = 1.10;
+        } else if (width >= 620) {
+          crossAxisCount = 2;
+          childAspectRatio = 1.18;
+        } else {
+          crossAxisCount = 1;
+          childAspectRatio = 1.35;
+        }
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: cards.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 14,
+            crossAxisSpacing: 14,
+            childAspectRatio: childAspectRatio,
+          ),
+          itemBuilder: (context, index) {
+            final card = cards[index];
+            return _HubCard(
+              title: card.title,
+              subtitle: card.subtitle,
+              icon: card.icon,
+              accent: card.accent,
+              buttonLabel: card.buttonLabel,
+              onTap: card.onTap,
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _HubCardData {
+  const _HubCardData({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.accent,
+    required this.buttonLabel,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color accent;
+  final String buttonLabel;
+  final VoidCallback onTap;
 }
 
 class _GameHubHero extends StatelessWidget {
@@ -166,6 +243,7 @@ class _GameHubHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.06),
@@ -181,10 +259,12 @@ class _GameHubHero extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final vertical = constraints.maxWidth < 480;
+          final vertical = constraints.maxWidth < 640;
+          final avatarSize = vertical ? 92.0 : 120.0;
+
           final avatar = Container(
-            width: 120,
-            height: 120,
+            width: avatarSize,
+            height: avatarSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
@@ -208,7 +288,7 @@ class _GameHubHero extends StatelessWidget {
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(vertical ? 12 : 16),
               child: ClipOval(
                 child: Image.asset(
                   turtleSkin.assetPath,
@@ -235,9 +315,10 @@ class _GameHubHero extends StatelessWidget {
               Text(
                 'Ready for the next run, $username?',
                 textAlign: vertical ? TextAlign.center : TextAlign.start,
-                style: const TextStyle(
+                softWrap: true,
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 28,
+                  fontSize: vertical ? 22 : 28,
                   fontWeight: FontWeight.w900,
                   height: 1.15,
                 ),
@@ -246,6 +327,7 @@ class _GameHubHero extends StatelessWidget {
               Text(
                 'Use the portal to enter the open world, challenge monsters, and build financial instincts with fast feedback.',
                 textAlign: vertical ? TextAlign.center : TextAlign.start,
+                softWrap: true,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.74),
                   height: 1.45,
@@ -253,6 +335,8 @@ class _GameHubHero extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Wrap(
+                alignment:
+                    vertical ? WrapAlignment.center : WrapAlignment.start,
                 spacing: 10,
                 runSpacing: 10,
                 children: [
@@ -269,37 +353,39 @@ class _GameHubHero extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 18),
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  onStartAdventure();
-                },
-                child: Container(
-                  height: 58,
-                  width: vertical ? double.infinity : 220,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF85EFAC), Color(0xFF52D18A)],
+              SizedBox(
+                width: vertical ? double.infinity : 220,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    onStartAdventure();
+                  },
+                  child: Container(
+                    height: 58,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF85EFAC), Color(0xFF52D18A)],
+                      ),
                     ),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.play_arrow_rounded,
-                        color: Color(0xFF062C21),
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Start Adventure',
-                        style: TextStyle(
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.play_arrow_rounded,
                           color: Color(0xFF062C21),
-                          fontWeight: FontWeight.w900,
                         ),
-                      ),
-                    ],
+                        SizedBox(width: 8),
+                        Text(
+                          'Start Adventure',
+                          style: TextStyle(
+                            color: Color(0xFF062C21),
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -371,6 +457,8 @@ class _HubCard extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -381,6 +469,8 @@ class _HubCard extends StatelessWidget {
           Expanded(
             child: Text(
               subtitle,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.70),
                 height: 1.45,
@@ -388,22 +478,27 @@ class _HubCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: onTap,
-            child: Container(
-              height: 48,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                color: accent.withValues(alpha: 0.16),
-                border: Border.all(color: accent.withValues(alpha: 0.26)),
-              ),
-              child: Center(
-                child: Text(
-                  buttonLabel,
-                  style: TextStyle(
-                    color: accent,
-                    fontWeight: FontWeight.w900,
+          SizedBox(
+            width: double.infinity,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onTap,
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  color: accent.withValues(alpha: 0.16),
+                  border: Border.all(color: accent.withValues(alpha: 0.26)),
+                ),
+                child: Center(
+                  child: Text(
+                    buttonLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: accent,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ),
@@ -429,6 +524,7 @@ class _InfoPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: const BoxConstraints(minWidth: 92),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.06),
@@ -472,26 +568,29 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
           ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          subtitle,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.70),
-            height: 1.45,
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.70),
+              height: 1.45,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

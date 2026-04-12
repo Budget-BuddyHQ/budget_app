@@ -6,15 +6,14 @@ class CustomBottomNav extends StatelessWidget {
     super.key,
     required this.activeIndex,
     this.onSelected,
-    this.onPortalTap,
   });
 
   final int activeIndex;
   final ValueChanged<int>? onSelected;
-  final VoidCallback? onPortalTap;
 
   static const _items = <_NavItemData>[
     _NavItemData(label: 'Dashboard', icon: Icons.dashboard_rounded),
+    _NavItemData(label: 'Game Hub', icon: Icons.explore_rounded),
     _NavItemData(label: 'Customize', icon: Icons.auto_awesome_rounded),
     _NavItemData(label: 'Lessons', icon: Icons.school_rounded),
     _NavItemData(label: 'Profile', icon: Icons.person_rounded),
@@ -22,15 +21,12 @@ class CustomBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final leadingItems = _items.take(2).toList(growable: false);
-    final trailingItems = _items.skip(2).toList(growable: false);
-
     return SafeArea(
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
         child: Container(
-          height: 88,
+          height: 84,
           decoration: BoxDecoration(
             color: const Color(0xFF071711).withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(30),
@@ -50,24 +46,12 @@ class CustomBottomNav extends StatelessWidget {
           ),
           child: Row(
             children: [
-              for (var index = 0; index < leadingItems.length; index++)
+              for (var index = 0; index < _items.length; index++)
                 Expanded(
                   child: _NavTile(
-                    data: leadingItems[index],
+                    data: _items[index],
                     active: index == activeIndex,
                     onTap: () => _handleTap(index),
-                  ),
-                ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: _PortalButton(onTap: _handlePortalTap),
-              ),
-              for (var index = 0; index < trailingItems.length; index++)
-                Expanded(
-                  child: _NavTile(
-                    data: trailingItems[index],
-                    active: index + leadingItems.length == activeIndex,
-                    onTap: () => _handleTap(index + leadingItems.length),
                   ),
                 ),
             ],
@@ -83,14 +67,6 @@ class CustomBottomNav extends StatelessWidget {
     }
     HapticFeedback.lightImpact();
     onSelected!(index);
-  }
-
-  void _handlePortalTap() {
-    if (onPortalTap == null) {
-      return;
-    }
-    HapticFeedback.lightImpact();
-    onPortalTap!();
   }
 }
 
@@ -116,8 +92,8 @@ class _NavTile extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             gradient: active
@@ -147,7 +123,7 @@ class _NavTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: accent,
-                  fontSize: 10,
+                  fontSize: 9.5,
                   fontWeight: active ? FontWeight.w800 : FontWeight.w600,
                 ),
               ),
@@ -167,51 +143,4 @@ class _NavItemData {
 
   final String label;
   final IconData icon;
-}
-
-class _PortalButton extends StatelessWidget {
-  const _PortalButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        width: 72,
-        height: 72,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF85EFAC), Color(0xFF48D58A), Color(0xFF0F4F3B)],
-          ),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.24),
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF85EFAC).withValues(alpha: 0.30),
-              blurRadius: 24,
-              spreadRadius: 2,
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.30),
-              blurRadius: 18,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: const Icon(
-          Icons.explore_rounded,
-          color: Color(0xFF062C21),
-          size: 34,
-        ),
-      ),
-    );
-  }
 }
