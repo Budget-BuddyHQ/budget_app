@@ -9,14 +9,12 @@ import 'lesson_screen.dart';
 class LearningPathScreen extends StatefulWidget {
   const LearningPathScreen({
     super.key,
-    this.activeTabIndex = 2,
+    this.activeTabIndex = 3,
     this.onNavSelected,
-    this.onPortalTap,
   });
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
-  final VoidCallback? onPortalTap;
 
   @override
   State<LearningPathScreen> createState() => _LearningPathScreenState();
@@ -87,7 +85,6 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
           : CustomBottomNav(
               activeIndex: widget.activeTabIndex,
               onSelected: widget.onNavSelected,
-              onPortalTap: widget.onPortalTap,
             ),
       body: Stack(
         children: [
