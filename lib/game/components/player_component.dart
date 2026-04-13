@@ -1,6 +1,5 @@
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
-import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -25,7 +24,7 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
 
   final Set<LogicalKeyboardKey> _keysPressed = <LogicalKeyboardKey>{};
   bool movementEnabled = true;
-  Vector2 _velocity = Vector2.zero();
+  final Vector2 _velocity = Vector2.zero();
   double _animationClock = 0;
   FacingDirection _facing = FacingDirection.down;
   Sprite? _sprite;
