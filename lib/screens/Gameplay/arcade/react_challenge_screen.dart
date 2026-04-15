@@ -7,10 +7,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-import '../../controllers/user_stats_controller.dart';
-import '../../services/local_web_game_server.dart';
-import '../../services/supabase_service.dart';
-import '../../widgets/game_toast.dart';
+import '../../../controllers/user_stats_controller.dart';
+import '../../../services/local_web_game_server.dart';
+import '../../../services/supabase_service.dart';
+import '../../../widgets/game_toast.dart';
 
 class ReactGameCloseResult {
   const ReactGameCloseResult({

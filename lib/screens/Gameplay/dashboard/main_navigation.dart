@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../profile/profile_screen.dart';
-import 'customize_screen.dart';
-import 'game_hub_page.dart';
+import '../../profile/profile_screen.dart';
+import '../academy/learning_path_screen.dart';
+import '../core/game_hub_page.dart';
+import '../customize_screen.dart';
 import 'home_screen.dart';
-import 'learning_path_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({

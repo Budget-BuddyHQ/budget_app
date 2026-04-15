@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../controllers/user_stats_controller.dart';
-import '../../services/supabase_service.dart';
-import '../../widgets/custom_button.dart';
-import '../../widgets/game_toast.dart';
+import '../../../controllers/user_stats_controller.dart';
+import '../../../services/supabase_service.dart';
+import '../../../widgets/custom_button.dart';
+import '../../../widgets/game_toast.dart';
 
 class BudgetChallengeCloseResult {
   const BudgetChallengeCloseResult({
