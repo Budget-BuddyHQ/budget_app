@@ -1,106 +1,42 @@
-import 'lesson.dart';
 import 'package:flutter/foundation.dart';
 
-/// Service to manage user progression through lessons
-/// Tracks which lessons are completed, available, or locked
+import 'lesson.dart';
+import 'lesson_data.dart';
+
 class ProgressionService extends ChangeNotifier {
-  final Set<String> _completedLessons = {};
-  final List<Lesson> _lessons = [];
+  final Set<String> _completedLessons = <String>{};
+  final List<LessonUnit> _units = lessonUnits;
 
-  ProgressionService() {
-    _initializeLessons();
-  }
+  List<LessonUnit> get units => List<LessonUnit>.unmodifiable(_units);
 
-  /// Initialize the default lessons for the learning path
-  void _initializeLessons() {
-    _lessons.addAll([
-      Lesson(
-        id: 'lesson_1',
-        title: 'Introduction to Budgeting',
-        order: 1,
-        status: LessonStatus.available,
-      ),
-      Lesson(
-        id: 'lesson_2',
-        title: 'Understanding Income',
-        order: 2,
-        prerequisites: ['lesson_1'],
-      ),
-      Lesson(
-        id: 'lesson_3',
-        title: 'Expenses and Spending',
-        order: 3,
-        prerequisites: ['lesson_2'],
-      ),
-      Lesson(
-        id: 'lesson_4',
-        title: 'Saving Strategies',
-        order: 4,
-        prerequisites: ['lesson_3'],
-      ),
-      Lesson(
-        id: 'lesson_5',
-        title: 'Building Your Budget',
-        order: 5,
-        prerequisites: ['lesson_4'],
-      ),
-      Lesson(
-        id: 'lesson_6',
-        title: 'Credit and Debt Management',
-        order: 6,
-        prerequisites: ['lesson_5'],
-      ),
-      Lesson(
-        id: 'lesson_7',
-        title: 'Introduction to Investing',
-        order: 7,
-        prerequisites: ['lesson_6'],
-      ),
-      Lesson(
-        id: 'lesson_8',
-        title: 'Banking and Financial Tools',
-        order: 8,
-        prerequisites: ['lesson_7'],
-      ),
-      Lesson(
-        id: 'lesson_9',
-        title: 'Emergency Planning',
-        order: 9,
-        prerequisites: ['lesson_8'],
-      ),
-      Lesson(
-        id: 'lesson_10',
-        title: 'Long-Term Financial Goals',
-        order: 10,
-        prerequisites: ['lesson_9'],
-      ),
-    ]);
-    _updateLessonStatuses();
-  }
+  List<Lesson> get lessons => List<Lesson>.unmodifiable(
+        _units.expand((unit) => unit.lessons),
+      );
 
-  /// Get all lessons
-  List<Lesson> get lessons => List.unmodifiable(_lessons);
-
-  /// Get a specific lesson by ID
   Lesson? getLesson(String id) {
     try {
-      return _lessons.firstWhere((lesson) => lesson.id == id);
+      return lessons.firstWhere((lesson) => lesson.id == id);
     } catch (e) {
       return null;
     }
   }
 
-  /// Check if a lesson is completed
-  bool isCompleted(String lessonId) {
-    return _completedLessons.contains(lessonId);
+  LessonUnit? getUnit(String unitId) {
+    try {
+      return _units.firstWhere((unit) => unit.id == unitId);
+    } catch (e) {
+      return null;
+    }
   }
 
-  /// Check if a lesson is available (unlocked)
+  bool isCompleted(String lessonId) => _completedLessons.contains(lessonId);
+
   bool isAvailable(String lessonId) {
     final lesson = getLesson(lessonId);
-    if (lesson == null) return false;
+    if (lesson == null) {
+      return false;
+    }
 
-    // Check if all prerequisites are completed
     for (final prereqId in lesson.prerequisites) {
       if (!_completedLessons.contains(prereqId)) {
         return false;
@@ -110,42 +46,65 @@ class ProgressionService extends ChangeNotifier {
     return true;
   }
 
-  /// Get the status of a lesson
   LessonStatus getLessonStatus(String lessonId) {
     if (isCompleted(lessonId)) {
       return LessonStatus.completed;
-    } else if (isAvailable(lessonId)) {
-      return LessonStatus.available;
-    } else {
-      return LessonStatus.locked;
     }
+    if (isAvailable(lessonId)) {
+      return LessonStatus.available;
+    }
+    return LessonStatus.locked;
   }
 
-  /// Mark a lesson as completed
   void completeLesson(String lessonId) {
-    if (!_completedLessons.contains(lessonId)) {
-      _completedLessons.add(lessonId);
-      _updateLessonStatuses();
+    if (_completedLessons.add(lessonId)) {
       notifyListeners();
     }
   }
 
-  /// Update all lesson statuses based on completion and prerequisites
-  void _updateLessonStatuses() {
-    for (var lesson in _lessons) {
-      // The status is computed dynamically via getLessonStatus
+  Lesson? get nextLesson {
+    for (final lesson in lessons) {
+      if (getLessonStatus(lesson.id) == LessonStatus.available) {
+        return lesson;
+      }
     }
+    return null;
   }
 
-  /// Get progress percentage (0.0 to 1.0)
   double getProgress() {
-    if (_lessons.isEmpty) return 0.0;
-    return _completedLessons.length / _lessons.length;
+    if (lessons.isEmpty) {
+      return 0.0;
+    }
+    return _completedLessons.length / lessons.length;
   }
 
-  /// Get number of completed lessons
+  double getUnitProgress(String unitId) {
+    final unit = getUnit(unitId);
+    if (unit == null || unit.lessons.isEmpty) {
+      return 0.0;
+    }
+
+    final completed = unit.lessons
+        .where((lesson) => _completedLessons.contains(lesson.id))
+        .length;
+    return completed / unit.lessons.length;
+  }
+
+  MasteryLevel getUnitMastery(String unitId) {
+    final progress = getUnitProgress(unitId);
+    if (progress >= 1.0) {
+      return MasteryLevel.mastered;
+    }
+    if (progress >= 0.65) {
+      return MasteryLevel.proficient;
+    }
+    if (progress > 0.0) {
+      return MasteryLevel.familiar;
+    }
+    return MasteryLevel.novice;
+  }
+
   int get completedCount => _completedLessons.length;
 
-  /// Get total number of lessons
-  int get totalCount => _lessons.length;
+  int get totalCount => lessons.length;
 }
