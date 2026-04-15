@@ -1,22 +1,43 @@
-/// Lesson model representing a single lesson in the learning path
-class Lesson {
-  final String id;
-  final String title;
-  final int order; // Position in the learning path
-  final LessonStatus status;
-  final List<String> prerequisites; // IDs of lessons that must be completed first
+enum LessonStatus { completed, available, locked }
 
-  Lesson({
+enum LessonNodeType { lesson, quiz, unitTest }
+
+enum MasteryLevel { novice, familiar, proficient, mastered }
+
+class Lesson {
+  const Lesson({
     required this.id,
     required this.title,
+    required this.unitId,
     required this.order,
-    this.status = LessonStatus.locked,
-    this.prerequisites = const [],
+    this.type = LessonNodeType.lesson,
+    this.prerequisites = const <String>[],
+    this.estimatedMinutes = 8,
   });
+
+  final String id;
+  final String title;
+  final String unitId;
+  final int order;
+  final LessonNodeType type;
+  final List<String> prerequisites;
+  final int estimatedMinutes;
 }
 
-enum LessonStatus {
-  completed, // Lesson is finished
-  available, // Lesson can be started (unlocked)
-  locked, // Lesson is locked (prerequisites not met)
+class LessonUnit {
+  const LessonUnit({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.description,
+    required this.order,
+    required this.lessons,
+  });
+
+  final String id;
+  final String title;
+  final String subtitle;
+  final String description;
+  final int order;
+  final List<Lesson> lessons;
 }
