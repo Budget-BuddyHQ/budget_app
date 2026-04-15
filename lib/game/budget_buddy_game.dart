@@ -24,7 +24,7 @@ class BudgetBuddyGame extends FlameGame
 
   static final Vector2 mapSize = Vector2(1600, 1600);
 
-  late final PlayerComponent player;
+  PlayerComponent? _player;
   late final CameraLeadTargetComponent _cameraTarget;
   late final JoystickComponent joystick;
   TiledComponent? _worldMap;
@@ -79,17 +79,17 @@ class BudgetBuddyGame extends FlameGame
     );
     add(joystick);
 
-    player = PlayerComponent(
+    _player = PlayerComponent(
       position: spawnPoint,
       joystick: joystick,
       worldBounds: Rect.fromLTWH(0, 0, effectiveMapSize.x, effectiveMapSize.y),
       collisionRects: _collisionRects,
       onEncounter: _beginEncounter,
     );
-    add(player);
+    add(_player!);
 
     _cameraTarget = CameraLeadTargetComponent(
-      player: player,
+      player: _player!,
       mapBounds: Rect.fromLTWH(0, 0, effectiveMapSize.x, effectiveMapSize.y),
     );
     add(_cameraTarget);
@@ -142,7 +142,7 @@ class BudgetBuddyGame extends FlameGame
     KeyEvent event,
     Set<LogicalKeyboardKey> keysPressed,
   ) {
-    player.setKeyboardState(keysPressed);
+    _player?.setKeyboardState(keysPressed);
     return KeyEventResult.handled;
   }
 
@@ -162,7 +162,7 @@ class BudgetBuddyGame extends FlameGame
     }
 
     _activeEncounter = null;
-    player.movementEnabled = true;
+    _player?.movementEnabled = true;
     _adventureState.restoreMovementAfterCombat();
   }
 
@@ -180,7 +180,7 @@ class BudgetBuddyGame extends FlameGame
       return;
     }
     _activeEncounter = enemy;
-    player.movementEnabled = false;
+    _player?.movementEnabled = false;
     _adventureState.beginEncounter(enemy.enemyName);
   }
 

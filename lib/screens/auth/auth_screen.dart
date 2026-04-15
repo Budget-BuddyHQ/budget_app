@@ -8,7 +8,7 @@ import '../../controllers/user_stats_controller.dart';
 import '../../navigation/fade_page_route.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/game_toast.dart';
-import '../Gameplay/dashboard_shell.dart';
+import '../Gameplay/dashboard/dashboard_shell.dart';
 
 enum AuthMode { login, signUp }
 
