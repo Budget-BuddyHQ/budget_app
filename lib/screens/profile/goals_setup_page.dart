@@ -2,7 +2,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../widgets/game_toast.dart';
-import '../Gameplay/dashboard_shell.dart';
+import '../Gameplay/dashboard/dashboard_shell.dart';
 
 class GoalsSetupPage extends StatefulWidget {
   const GoalsSetupPage({
