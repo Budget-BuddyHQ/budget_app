@@ -35,7 +35,7 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
   AvatarSkin(
     id: 'classic_turtle',
     name: 'Classic Turtle',
-    assetPath: 'assets/images/turtles/classic_turtle.png',
+    assetPath: 'assets/images/turtles/Wface_no_bg_l7nvmfum.png',
     rarity: SkinRarity.common,
     accent: Color(0xFF85EFAC),
     weight: 58,
@@ -43,7 +43,7 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
   AvatarSkin(
     id: 'coin_shell',
     name: 'Coin Shell',
-    assetPath: 'assets/images/turtles/coin_shell.png',
+    assetPath: 'assets/images/turtles/cuteBigHead_no_bg_3xfq2ne3.png',
     rarity: SkinRarity.common,
     accent: Color(0xFFFFD45C),
     weight: 30,
@@ -51,7 +51,7 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
   AvatarSkin(
     id: 'emerald_strider',
     name: 'Emerald Strider',
-    assetPath: 'assets/images/turtles/emerald_strider.png',
+    assetPath: 'assets/images/turtles/purplewithChestBack_no_bg_8cqt48zg.png',
     rarity: SkinRarity.rare,
     accent: Color(0xFF7CF3C7),
     weight: 10,

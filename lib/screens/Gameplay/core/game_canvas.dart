@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../controllers/adventure_state_controller.dart';
-import '../../game/budget_buddy_game.dart';
+import '../../../controllers/adventure_state_controller.dart';
+import '../../../game/budget_buddy_game.dart';
 
 class GameCanvas extends StatefulWidget {
   const GameCanvas({super.key});

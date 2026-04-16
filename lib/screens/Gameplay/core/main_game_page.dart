@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../controllers/user_stats_controller.dart';
-import '../../navigation/fade_page_route.dart';
-import '../../widgets/custom_button.dart';
-import '../../widgets/custom_bottom_nav.dart';
-import '../../widgets/game_toast.dart';
-import '../../widgets/skeleton_loader.dart';
-import 'bill_dodger.dart';
-import 'budget_challenge.dart';
-import 'dashboard_shell.dart';
-import 'react_challenge_screen.dart';
+import '../../../controllers/user_stats_controller.dart';
+import '../../../navigation/fade_page_route.dart';
+import '../../../widgets/custom_bottom_nav.dart';
+import '../../../widgets/custom_button.dart';
+import '../../../widgets/game_toast.dart';
+import '../../../widgets/skeleton_loader.dart';
+import '../arcade/bill_dodger.dart';
+import '../arcade/budget_challenge.dart';
+import '../arcade/react_challenge_screen.dart';
+import '../dashboard/dashboard_shell.dart';
 
 class MainGamePage extends StatelessWidget {
   const MainGamePage({
