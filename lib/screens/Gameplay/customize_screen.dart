@@ -13,14 +13,12 @@ import '../../widgets/game_toast.dart';
 class CustomizeScreen extends StatefulWidget {
   const CustomizeScreen({
     super.key,
-    this.activeTabIndex = 1,
+    this.activeTabIndex = 2,
     this.onNavSelected,
-    this.onPortalTap,
   });
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
-  final VoidCallback? onPortalTap;
 
   @override
   State<CustomizeScreen> createState() => _CustomizeScreenState();
@@ -92,7 +90,6 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
               : CustomBottomNav(
                   activeIndex: widget.activeTabIndex,
                   onSelected: widget.onNavSelected,
-                  onPortalTap: widget.onPortalTap,
                 ),
           body: Stack(
             children: [

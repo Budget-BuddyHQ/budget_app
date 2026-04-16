@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../profile/profile_screen.dart';
-import 'customize_screen.dart';
-import 'game_hub_page.dart';
+import '../../profile/profile_screen.dart';
+import '../academy/learning_path_screen.dart';
+import '../core/game_hub_page.dart';
+import '../customize_screen.dart';
 import 'home_screen.dart';
-import 'learning_path_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({
@@ -24,7 +24,7 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex.clamp(0, 3).toInt();
+    _currentIndex = widget.initialIndex.clamp(0, 4).toInt();
   }
 
   void _selectTab(int index) {
@@ -39,7 +39,7 @@ class _MainNavigationState extends State<MainNavigation> {
   Future<void> _openPortal() async {
     await Navigator.of(context).push(
       PageRouteBuilder<void>(
-        pageBuilder: (_, _, _) => GameHubPage(
+        pageBuilder: (_, __, ___) => GameHubPage(
           activeTabIndex: _currentIndex,
           onNavSelected: (index) {
             Navigator.of(context).pop();
@@ -65,22 +65,22 @@ class _MainNavigationState extends State<MainNavigation> {
         HomeScreen(
           activeTabIndex: 0,
           onNavSelected: _selectTab,
-          onPortalTap: _openPortal,
         ),
-        CustomizeScreen(
+        GameHubPage(
           activeTabIndex: 1,
           onNavSelected: _selectTab,
-          onPortalTap: _openPortal,
         ),
-        LearningPathScreen(
+        CustomizeScreen(
           activeTabIndex: 2,
           onNavSelected: _selectTab,
-          onPortalTap: _openPortal,
         ),
-        ProfileScreen(
+        LearningPathScreen(
           activeTabIndex: 3,
           onNavSelected: _selectTab,
-          onPortalTap: _openPortal,
+        ),
+        ProfileScreen(
+          activeTabIndex: 4,
+          onNavSelected: _selectTab,
         ),
       ],
     );
