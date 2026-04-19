@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:budget_app/services/supabase_service.dart' show UserStats;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
