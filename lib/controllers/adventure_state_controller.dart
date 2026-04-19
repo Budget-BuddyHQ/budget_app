@@ -161,6 +161,16 @@ class AdventureStateController extends ChangeNotifier {
         return 'Explorer Turtle';
       case 'starlight_turtle':
         return 'Starlight Turtle';
+      case 'canopy_guardian':
+        return 'Canopy Guardian';
+      case 'shell_sprinter':
+        return 'Shell Sprinter';
+      case 'trailblazer':
+        return 'Trailblazer';
+      case 'ancient_giant':
+        return 'Ancient Giant';
+      case 'field_captain':
+        return 'Field Captain';
       default:
         return 'Emerald Turtle';
     }
