@@ -1,26 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../../controllers/adventure_state_controller.dart';
 import '../../../controllers/user_stats_controller.dart';
 import '../../../navigation/fade_page_route.dart';
 import '../../../widgets/custom_bottom_nav.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/game_toast.dart';
 import '../../../widgets/skeleton_loader.dart';
-import '../arcade/bill_dodger.dart';
-import '../arcade/budget_challenge.dart';
 import '../arcade/react_challenge_screen.dart';
-import '../dashboard/dashboard_shell.dart';
+import 'game_canvas.dart';
 
 class MainGamePage extends StatelessWidget {
   const MainGamePage({
     super.key,
-    this.activeTabIndex = 0,
+    this.activeTabIndex = 1,
     this.onNavSelected,
   });
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
+
+  Future<void> _openAdventure(BuildContext context) async {
+    HapticFeedback.lightImpact();
+    await Navigator.of(context).push(
+      FadePageRoute(
+        builder: (_) => const GameCanvas(),
+      ),
+    );
+  }
 
   Future<void> _openReactBattle(BuildContext context) async {
     final controller = context.read<UserStatsController>();
@@ -50,34 +59,10 @@ class MainGamePage extends StatelessWidget {
     );
   }
 
-  Future<void> _openBillDodger(BuildContext context) async {
-    final result = await Navigator.of(context).push<BillDodgerCloseResult>(
-      FadePageRoute(
-        builder: (_) => const BillDodgerScreen(),
-      ),
-    );
-
-    if (!context.mounted || result == null) {
-      return;
-    }
-  }
-
-  Future<void> _openBudgetChallenge(BuildContext context) async {
-    final result = await Navigator.of(context).push<BudgetChallengeCloseResult>(
-      FadePageRoute(
-        builder: (_) => const BudgetChallengeScreen(),
-      ),
-    );
-
-    if (!context.mounted || result == null) {
-      return;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Consumer<UserStatsController>(
-      builder: (context, controller, _) {
+    return Consumer2<UserStatsController, AdventureStateController>(
+      builder: (context, controller, adventure, _) {
         final stats = controller.stats;
         final isLoading = controller.isLoading;
 
@@ -87,7 +72,7 @@ class MainGamePage extends StatelessWidget {
               ? null
               : CustomBottomNav(
                   activeIndex: activeTabIndex,
-                  onSelected: onNavSelected,
+                  onSelected: onNavSelected!,
                 ),
           body: SafeArea(
             child: Stack(
@@ -98,90 +83,106 @@ class MainGamePage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _MainHeader(
-                        username: stats.username,
-                        gold: stats.gold,
-                        levelTitle: stats.levelTitle,
+                      _PageHeader(
+                        title: 'Main Gameplay',
+                        subtitle:
+                            'Adventure progression and the featured React challenge now live together in one focused home base.',
                       ),
                       const SizedBox(height: 18),
-                        _HeroBattleCard(
-                        onPlayNow: () => _openReactBattle(context),
-                        onOpenDashboard: () {
-                          Navigator.of(context).push(
-                            FadePageRoute(
-                              builder: (_) => const DashboardShell(initialIndex: 0),
+                      _MainHeroCard(
+                        username: stats.username,
+                        levelTitle: stats.levelTitle,
+                        onOpenAdventure: () => _openAdventure(context),
+                        onOpenReactBattle: () => _openReactBattle(context),
+                      ),
+                      const SizedBox(height: 18),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final stacked = constraints.maxWidth < 760;
+                          final cards = [
+                            _QuickStatCard(
+                              label: 'Adventure Level',
+                              value: 'Lv ${adventure.level}',
+                              icon: Icons.map_rounded,
+                              accent: const Color(0xFF85EFAC),
                             ),
+                            _QuickStatCard(
+                              label: 'XP Progress',
+                              value: '${(adventure.xpProgress * 100).round()}%',
+                              icon: Icons.trending_up_rounded,
+                              accent: const Color(0xFF58C7FF),
+                            ),
+                            _QuickStatCard(
+                              label: 'Active Companion',
+                              value: adventure.equippedPet,
+                              icon: Icons.pets_rounded,
+                              accent: const Color(0xFFE3C56D),
+                            ),
+                          ];
+
+                          if (stacked) {
+                            return Column(
+                              children: [
+                                for (var index = 0; index < cards.length; index++) ...[
+                                  cards[index],
+                                  if (index != cards.length - 1)
+                                    const SizedBox(height: 12),
+                                ],
+                              ],
+                            );
+                          }
+
+                          return Row(
+                            children: [
+                              for (var index = 0; index < cards.length; index++) ...[
+                                Expanded(child: cards[index]),
+                                if (index != cards.length - 1)
+                                  const SizedBox(width: 12),
+                              ],
+                            ],
                           );
                         },
                       ),
-                      const SizedBox(height: 18),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _QuickStatCard(
-                              label: 'Literacy Points',
-                              value: '${stats.literacyPoints}',
-                              icon: Icons.psychology_alt_rounded,
-                              accent: const Color(0xFF85EFAC),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _QuickStatCard(
-                              label: 'Weekly Streak',
-                              value: '${(stats.xp / 45).floor().clamp(2, 9)} days',
-                              icon: Icons.local_fire_department_rounded,
-                              accent: const Color(0xFFFFC36B),
-                            ),
-                          ),
-                        ],
-                      ),
                       const SizedBox(height: 20),
-                      const Text(
-                        'Choose your next mission',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
+                      const _SectionTitle(
+                        title: 'Core Activities',
+                        subtitle:
+                            'The main lane now highlights the long-form adventure loop and the featured browser challenge instead of mixing in arcade modes.',
+                      ),
+                      const SizedBox(height: 14),
+                      _ActivityCard(
+                        title: 'Open World Adventure',
+                        subtitle:
+                            'Explore the map, trigger encounters, and answer finance questions inside the main adventure experience.',
+                        badge: 'PRIMARY LOOP',
+                        accent: const Color(0xFF85EFAC),
+                        icon: Icons.explore_rounded,
+                        buttonLabel: 'Start Adventure',
+                        onPressed: () => _openAdventure(context),
+                        style: const CustomButtonStyle.secondary(),
+                        iconColor: const Color(0xFF76FF03),
                       ),
                       const SizedBox(height: 12),
-                      _MissionCard(
-                        title: 'Budget Battle',
+                      _ActivityCard(
+                        title: 'React Challenge',
                         subtitle:
-                            'Play the React mini-game and earn instant gold, XP, and smarter spending instincts.',
-                        badge: 'Primary Quest',
-                        accent: const Color(0xFF85EFAC),
+                            'Launch the featured challenge, collect rewards, and sync your result back into Budget Buddy.',
+                        badge: 'FEATURED CHALLENGE',
+                        accent: const Color(0xFF6CB6DA),
                         icon: Icons.bolt_rounded,
-                        buttonLabel: 'Play Now',
+                        buttonLabel: 'Play React Challenge',
                         onPressed: () => _openReactBattle(context),
-                      ),
-                      const SizedBox(height: 12),
-                      _MissionCard(
-                        title: 'Bill Dodger',
-                        subtitle:
-                            'Glide across the lane, grab needs, dodge wants, and train rapid-fire money choices.',
-                        badge: 'Arcade Mode',
-                        accent: const Color(0xFFFFC36B),
-                        icon: Icons.gamepad_rounded,
-                        buttonLabel: 'Start Arcade',
-                        secondary: true,
-                        onPressed: () => _openBillDodger(context),
-                      ),
-                      const SizedBox(height: 12),
-                      _MissionCard(
-                        title: 'Budget Challenge',
-                        subtitle:
-                            'Pick the cheapest combination of essentials within your budget before time runs out.',
-                        badge: 'Puzzle Mode',
-                        accent: const Color(0xFF85EFAC),
-                        icon: Icons.shopping_cart_rounded,
-                        buttonLabel: 'Start Challenge',
-                        secondary: true,
-                        onPressed: () => _openBudgetChallenge(context),
+                        style: const CustomButtonStyle.tertiary(),
+                        iconColor: Colors.white,
                       ),
                       const SizedBox(height: 20),
-                      _AdviceCard(advice: stats.wizardAdvice),
+                      _AdventureStatusCard(
+                        encounterEnemyName: adventure.encounterEnemyName,
+                        combatVisible: adventure.combatVisible,
+                        health: adventure.health,
+                        maxHealth: adventure.maxHealth,
+                        advice: stats.wizardAdvice,
+                      ),
                     ],
                   ),
                 ),
@@ -194,31 +195,15 @@ class MainGamePage extends StatelessWidget {
                           padding: const EdgeInsets.fromLTRB(16, 18, 16, 120),
                           child: Column(
                             children: const [
-                              SkeletonLoader(height: 80, borderRadius: 24),
+                              SkeletonLoader(height: 90, borderRadius: 24),
                               SizedBox(height: 18),
-                              SkeletonLoader(height: 240, borderRadius: 32),
+                              SkeletonLoader(height: 250, borderRadius: 30),
                               SizedBox(height: 18),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: SkeletonLoader(
-                                      height: 110,
-                                      borderRadius: 20,
-                                    ),
-                                  ),
-                                  SizedBox(width: 12),
-                                  Expanded(
-                                    child: SkeletonLoader(
-                                      height: 110,
-                                      borderRadius: 20,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 20),
-                              SkeletonLoader(height: 160, borderRadius: 20),
+                              SkeletonLoader(height: 102, borderRadius: 22),
                               SizedBox(height: 12),
-                              SkeletonLoader(height: 160, borderRadius: 20),
+                              SkeletonLoader(height: 102, borderRadius: 22),
+                              SizedBox(height: 12),
+                              SkeletonLoader(height: 180, borderRadius: 24),
                             ],
                           ),
                         ),
@@ -230,6 +215,487 @@ class MainGamePage extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _PageHeader extends StatelessWidget {
+  const _PageHeader({
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (Navigator.of(context).canPop()) ...[
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              onPressed: () => Navigator.of(context).maybePop(),
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.74),
+                  height: 1.45,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MainHeroCard extends StatelessWidget {
+  const _MainHeroCard({
+    required this.username,
+    required this.levelTitle,
+    required this.onOpenAdventure,
+    required this.onOpenReactBattle,
+  });
+
+  final String username;
+  final String levelTitle;
+  final VoidCallback onOpenAdventure;
+  final VoidCallback onOpenReactBattle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF14372B).withValues(alpha: 0.96),
+            const Color(0xFF1D4738).withValues(alpha: 0.92),
+          ],
+        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 24,
+            offset: Offset(0, 16),
+          ),
+        ],
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stacked = constraints.maxWidth < 720;
+
+          final buttons = Column(
+            children: [
+              CustomButton(
+                label: 'Start Adventure',
+                onPressed: onOpenAdventure,
+                prefixIcon: const Icon(
+                  Icons.explore_rounded,
+                  size: 18,
+                  color: Color(0xFF76FF03),
+                ),
+                style: const CustomButtonStyle.secondary(),
+              ),
+              const SizedBox(height: 10),
+              CustomButton(
+                label: 'Play React Challenge',
+                onPressed: onOpenReactBattle,
+                prefixIcon: const Icon(
+                  Icons.bolt_rounded,
+                  size: 18,
+                  color: Colors.white,
+                ),
+                style: const CustomButtonStyle.tertiary(),
+              ),
+            ],
+          );
+
+          final copy = Column(
+            crossAxisAlignment:
+                stacked ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Text(
+                  'MAIN GAMEPLAY',
+                  style: TextStyle(
+                    color: Color(0xFF85EFAC),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Adventure first, $username.',
+                textAlign: stacked ? TextAlign.center : TextAlign.start,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 30,
+                  height: 1.08,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'This page is now reserved for the open-world run and the featured React challenge, so the progression loop feels clear and intentional.',
+                textAlign: stacked ? TextAlign.center : TextAlign.start,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.76),
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Wrap(
+                alignment: stacked ? WrapAlignment.center : WrapAlignment.start,
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _InfoChip(
+                    label: 'Rank',
+                    value: levelTitle,
+                    accent: const Color(0xFF85EFAC),
+                  ),
+                  const _InfoChip(
+                    label: 'World Mode',
+                    value: 'Open map',
+                    accent: Color(0xFF58C7FF),
+                  ),
+                  const _InfoChip(
+                    label: 'Featured',
+                    value: 'React battle',
+                    accent: Color(0xFFE3C56D),
+                  ),
+                ],
+              ),
+            ],
+          );
+
+          if (stacked) {
+            return Column(
+              children: [
+                copy,
+                const SizedBox(height: 18),
+                buttons,
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(flex: 3, child: copy),
+              const SizedBox(width: 18),
+              Expanded(flex: 2, child: buttons),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ActivityCard extends StatelessWidget {
+  const _ActivityCard({
+    required this.title,
+    required this.subtitle,
+    required this.badge,
+    required this.accent,
+    required this.icon,
+    required this.buttonLabel,
+    required this.onPressed,
+    required this.style,
+    required this.iconColor,
+  });
+
+  final String title;
+  final String subtitle;
+  final String badge;
+  final Color accent;
+  final IconData icon;
+  final String buttonLabel;
+  final VoidCallback onPressed;
+  final CustomButtonStyle style;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: accent.withValues(alpha: 0.14)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  badge,
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Icon(icon, color: accent),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 21,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.72),
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 16),
+          CustomButton(
+            label: buttonLabel,
+            onPressed: onPressed,
+            style: style,
+            prefixIcon: Icon(icon, size: 18, color: iconColor),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdventureStatusCard extends StatelessWidget {
+  const _AdventureStatusCard({
+    required this.encounterEnemyName,
+    required this.combatVisible,
+    required this.health,
+    required this.maxHealth,
+    required this.advice,
+  });
+
+  final String encounterEnemyName;
+  final bool combatVisible;
+  final int health;
+  final int maxHealth;
+  final String advice;
+
+  @override
+  Widget build(BuildContext context) {
+    final statusText = combatVisible
+        ? 'An encounter with $encounterEnemyName is active right now.'
+        : 'No active encounter. The world map is clear for your next run.';
+    final healthProgress = maxHealth == 0 ? 0.0 : health / maxHealth;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF1E4A3A).withValues(alpha: 0.94),
+            const Color(0xFF14372B).withValues(alpha: 0.88),
+          ],
+        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Adventure Status',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            statusText,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.72),
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              const Icon(
+                Icons.favorite_rounded,
+                color: Color(0xFFFF8A80),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Health $health / $maxHealth',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 12,
+              value: healthProgress.clamp(0.0, 1.0),
+              backgroundColor: Colors.white.withValues(alpha: 0.10),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFFFF8A80),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Wizard Advice',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.84),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            advice,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.70),
+              height: 1.45,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 100),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accent.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.64),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              color: accent,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          subtitle,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.70),
+            height: 1.45,
+          ),
+        ),
+      ],
     );
   }
 }
