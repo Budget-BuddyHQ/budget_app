@@ -25,7 +25,7 @@ class AdventureStateController extends ChangeNotifier {
   int _gold = 0;
   int _literacyPoints = 0;
   int _health = 100;
-  int _maxHealth = 100;
+  final int _maxHealth = 100;
   String _equippedPet = 'Emerald Turtle';
   bool _combatVisible = false;
   bool _answerResolved = false;

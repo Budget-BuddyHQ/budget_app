@@ -39,7 +39,7 @@ class _MainNavigationState extends State<MainNavigation> {
   Future<void> _openPortal() async {
     await Navigator.of(context).push(
       PageRouteBuilder<void>(
-        pageBuilder: (_, __, ___) => GameHubPage(
+        pageBuilder: (_, _, _) => GameHubPage(
           activeTabIndex: _currentIndex,
           onNavSelected: (index) {
             Navigator.of(context).pop();
