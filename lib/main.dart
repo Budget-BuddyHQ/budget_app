@@ -40,10 +40,8 @@ Future<void> main() async {
       debugPrint('Window manager failed: $error');
     }
   }
-  final supabaseUrl = readRuntimeEnv('SUPABASE_URL') ??
-      const String.fromEnvironment('SUPABASE_URL');
-  final supabaseAnonKey = readRuntimeEnv('SUPABASE_ANON_KEY') ??
-      const String.fromEnvironment('SUPABASE_ANON_KEY');
+  final supabaseUrl = 'https://cwqjduingvevagrxbwts.supabase.co';
+  final supabaseAnonKey = 'sb_publishable_sALqhgaTDGewkqp_XiNo-g_EO6ziR4l';
 
   if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
     debugPrint(
