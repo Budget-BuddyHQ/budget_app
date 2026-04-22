@@ -1,12 +1,10 @@
 import 'dart:math' as math;
-import 'package:flame/camera.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flame_tiled/flame_tiled.dart';
-import 'package:tiled/tiled.dart';
 
 import '../controllers/adventure_state_controller.dart';
 import 'components/camera_lead_target_component.dart';
