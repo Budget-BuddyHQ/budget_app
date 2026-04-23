@@ -27,7 +27,6 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
   final Vector2 _velocity = Vector2.zero();
   double _animationClock = 0;
   FacingDirection _facing = FacingDirection.down;
-  Sprite? _sprite;
 
   static const double maxSpeed = 180;
   static const double acceleration = 880;
@@ -37,11 +36,6 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
 
   @override
   Future<void> onLoad() async {
-    try {
-      _sprite = await Sprite.load('images/turtles/player_topview.png');
-    } catch (_) {
-      _sprite = null;
-    }
     add(
       RectangleHitbox.relative(
         Vector2(0.48, 0.48),
@@ -85,15 +79,6 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
 
   @override
   void render(Canvas canvas) {
-    if (_sprite != null) {
-      _sprite!.render(
-        canvas,
-        position: Vector2.zero(),
-        size: size,
-      );
-      return;
-    }
-
     final moving = _velocity.length2 > 20;
     final stepWave = moving ? (_animationClock % 1) : 0;
     final legOffset = moving ? (stepWave < 0.5 ? -2.5 : 2.5) : 0.0;
