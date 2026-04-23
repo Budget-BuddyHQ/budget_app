@@ -8,8 +8,9 @@ import 'config/runtime_env.dart';
 import 'controllers/adventure_state_controller.dart';
 import 'controllers/user_stats_controller.dart';
 import 'screens/Gameplay/arcade/bill_dodger.dart';
-import 'screens/Gameplay/customize_screen.dart';
 import 'screens/Gameplay/core/game_canvas.dart';
+import 'screens/Gameplay/core/main_game_page.dart';
+import 'screens/Gameplay/core/minigames_page.dart';
 import 'screens/Gameplay/dashboard/dashboard_shell.dart';
 import 'screens/Gameplay/dashboard/leaderboard_screen.dart';
 import 'screens/auth/auth_screen.dart';
@@ -94,6 +95,8 @@ class MyApp extends StatelessWidget {
         '/customize': (context) => const DashboardShell(initialIndex: 2),
         '/lessons': (context) => const DashboardShell(initialIndex: 3),
         '/game-canvas': (context) => const GameCanvas(),
+        '/main-gameplay': (context) => const MainGamePage(),
+        '/minigames': (context) => const MinigamesPage(),
         '/bill-dodger': (context) => const BillDodgerScreen(),
         '/bill_dodger': (context) => const BillDodgerScreen(),
         '/leaderboard': (context) => const LeaderboardScreen(),

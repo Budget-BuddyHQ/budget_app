@@ -1,12 +1,12 @@
 import 'dart:async';
 
+import 'package:budget_app/services/supabase_service.dart' show UserStats;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../controllers/user_stats_controller.dart';
 import '../../models/avatar_skin.dart';
-import '../../services/supabase_service.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/game_toast.dart';
 
