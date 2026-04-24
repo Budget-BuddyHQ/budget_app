@@ -158,9 +158,39 @@ class UserStatsController extends ChangeNotifier {
         email: normalizedEmail,
         password: password,
       );
+
       final user = response.user;
+
       if (user == null) {
         return _authFailure('Supabase did not return a user for this sign-in.');
+      }
+
+      final client = Supabase.instance.client;
+
+      final profile = await client
+          .from('profiles')
+          .select('disabled')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      final isDisabled = profile?['disabled'] == true;
+
+      if (isDisabled) {
+        await client.auth.signOut(); 
+
+        _isSaving = false;
+        _statusMessage = 'This account has been disabled.';
+        notifyListeners();
+
+        return const StatsActionResult(
+          success: false,
+          message: 'Your account has been disabled. Contact support.',
+          syncState: SyncState(
+            synced: false,
+            usedCache: true,
+            message: 'User disabled',
+          ),
+        );
       }
 
       return _finishAuthenticatedFlow(
