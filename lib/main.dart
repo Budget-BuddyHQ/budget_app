@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'config/runtime_env.dart';
 import 'controllers/adventure_state_controller.dart';
 import 'controllers/user_stats_controller.dart';
 import 'screens/Gameplay/bill_dodger.dart';
@@ -22,8 +21,7 @@ import 'theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (!kIsWeb &&
-      defaultTargetPlatform == TargetPlatform.windows) {
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
     try {
       await windowManager.ensureInitialized();
       const options = WindowOptions(
@@ -40,14 +38,9 @@ Future<void> main() async {
       debugPrint('Window manager failed: $error');
     }
   }
-  final supabaseUrl = 'https://cwqjduingvevagrxbwts.supabase.co';
-  final supabaseAnonKey = 'sb_publishable_sALqhgaTDGewkqp_XiNo-g_EO6ziR4l';
 
-  if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
-    debugPrint(
-      'Supabase credentials were not found in dart-defines or supabase.env.json. The app will fall back to local cached data.',
-    );
-  }
+  const supabaseUrl = 'https://cwqjduingvevagrxbwts.supabase.co';
+  const supabaseAnonKey = 'sb_publishable_sALqhgaTDGewkqp_XiNo-g_EO6ziR4l';
 
   await SupabaseService.instance.initialize(
     supabaseUrl: supabaseUrl,
@@ -62,7 +55,8 @@ Future<void> main() async {
             service: SupabaseService.instance,
           )..initialize(),
         ),
-        ChangeNotifierProxyProvider<UserStatsController, AdventureStateController>(
+        ChangeNotifierProxyProvider<UserStatsController,
+            AdventureStateController>(
           create: (_) => AdventureStateController(),
           update: (_, userStats, adventure) =>
               (adventure ?? AdventureStateController())
@@ -105,27 +99,90 @@ class MyApp extends StatelessWidget {
 class _AppBootstrapGate extends StatelessWidget {
   const _AppBootstrapGate();
 
+  Future<bool> _isUserDisabled() async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+
+    if (user == null) return false;
+
+    try {
+      final response = await client
+          .from('profiles')
+          .select('disabled')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (response == null) {
+        return false;
+      }
+
+      return response['disabled'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final service = SupabaseService.instance;
     return StreamBuilder<AuthState>(
-      stream: service.authStateChanges(),
+      stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
-        final hasSession =
-            snapshot.data?.session != null || service.currentUser != null;
-        final controller = context.watch<UserStatsController>();
+        final user = Supabase.instance.client.auth.currentUser;
 
-        if (hasSession && controller.isLoading) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
+        if (user == null) {
+          return const WelcomeScreen();
         }
 
-        return hasSession ? const DashboardShell() : const WelcomeScreen();
+        return FutureBuilder<bool>(
+          key: ValueKey(user.id),
+          future: _isUserDisabled(),
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            final isDisabled = snap.data == true;
+
+            if (isDisabled) {
+              return const _DisabledScreen();
+            }
+
+            return const DashboardShell();
+          },
+        );
       },
     );
   }
 }
 
+class _DisabledScreen extends StatelessWidget {
+  const _DisabledScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF071711),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Your account has been disabled.\nContact support.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () async {
+                await Supabase.instance.client.auth.signOut();
+              },
+              child: const Text('Log Out'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
