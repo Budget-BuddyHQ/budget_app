@@ -6,13 +6,12 @@ import 'package:window_manager/window_manager.dart';
 
 import 'controllers/adventure_state_controller.dart';
 import 'controllers/user_stats_controller.dart';
-import 'screens/Gameplay/bill_dodger.dart';
-import 'screens/Gameplay/customize_screen.dart';
-import 'screens/Gameplay/dashboard_shell.dart';
-import 'screens/Gameplay/game_canvas.dart';
-import 'screens/Gameplay/game_hub_page.dart';
-import 'screens/Gameplay/leaderboard_screen.dart';
-import 'screens/Gameplay/learning_path_screen.dart';
+import 'screens/Gameplay/arcade/bill_dodger.dart';
+import 'screens/Gameplay/core/game_canvas.dart';
+import 'screens/Gameplay/core/main_game_page.dart';
+import 'screens/Gameplay/core/minigames_page.dart';
+import 'screens/Gameplay/dashboard/dashboard_shell.dart';
+import 'screens/Gameplay/dashboard/leaderboard_screen.dart';
 import 'screens/auth/auth_screen.dart';
 import 'screens/onboarding/welcome_screen.dart';
 import 'services/supabase_service.dart';
@@ -84,10 +83,12 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const AuthScreen(mode: AuthMode.login),
         '/game': (context) => const DashboardShell(),
         '/dashboard': (context) => const DashboardShell(initialIndex: 0),
-        '/game_hub': (context) => const GameHubPage(),
-        '/customize': (context) => const CustomizeScreen(),
-        '/lessons': (context) => const LearningPathScreen(),
+        '/game_hub': (context) => const DashboardShell(initialIndex: 1),
+        '/customize': (context) => const DashboardShell(initialIndex: 2),
+        '/lessons': (context) => const DashboardShell(initialIndex: 3),
         '/game-canvas': (context) => const GameCanvas(),
+        '/main-gameplay': (context) => const MainGamePage(),
+        '/minigames': (context) => const MinigamesPage(),
         '/bill-dodger': (context) => const BillDodgerScreen(),
         '/bill_dodger': (context) => const BillDodgerScreen(),
         '/leaderboard': (context) => const LeaderboardScreen(),

@@ -1,26 +1,24 @@
 import 'dart:async';
 
+import 'package:budget_app/services/supabase_service.dart' show UserStats;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../controllers/user_stats_controller.dart';
 import '../../models/avatar_skin.dart';
-import '../../services/supabase_service.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/game_toast.dart';
 
 class CustomizeScreen extends StatefulWidget {
   const CustomizeScreen({
     super.key,
-    this.activeTabIndex = 1,
+    this.activeTabIndex = 2,
     this.onNavSelected,
-    this.onPortalTap,
   });
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
-  final VoidCallback? onPortalTap;
 
   @override
   State<CustomizeScreen> createState() => _CustomizeScreenState();
@@ -92,7 +90,6 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
               : CustomBottomNav(
                   activeIndex: widget.activeTabIndex,
                   onSelected: widget.onNavSelected,
-                  onPortalTap: widget.onPortalTap,
                 ),
           body: Stack(
             children: [

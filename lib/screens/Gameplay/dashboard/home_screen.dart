@@ -1,26 +1,24 @@
+import 'package:budget_app/services/supabase_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../controllers/user_stats_controller.dart';
-import '../../models/avatar_skin.dart';
-import '../../services/supabase_service.dart';
-import '../../widgets/custom_bottom_nav.dart';
-import '../../widgets/game_toast.dart';
+import '../../../controllers/user_stats_controller.dart';
+import '../../../models/avatar_skin.dart';
+import '../../../widgets/custom_bottom_nav.dart';
+import '../../../widgets/game_toast.dart';
+import '../arcade/react_challenge_screen.dart';
 import 'leaderboard_screen.dart';
-import 'react_challenge_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
     this.activeTabIndex = 0,
     this.onNavSelected,
-    this.onPortalTap,
   });
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
-  final VoidCallback? onPortalTap;
 
   Future<void> _launchDailyChallenge(BuildContext context) async {
     final stats = context.read<UserStatsController>().stats;
@@ -75,7 +73,6 @@ class HomeScreen extends StatelessWidget {
               : CustomBottomNav(
                   activeIndex: activeTabIndex,
                   onSelected: onNavSelected,
-                  onPortalTap: onPortalTap,
                 ),
           body: Stack(
             children: [
@@ -91,14 +88,14 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(height: 18),
                     _DailyChallengeCard(
                       onPlayNow: () => _launchDailyChallenge(context),
-                      onOpenHub: onPortalTap,
+                      onOpenHub: () => onNavSelected?.call(1),
                     ),
                     const SizedBox(height: 18),
                     _LiteracyProgressCard(stats: stats),
                     const SizedBox(height: 18),
                     _QuickAccessRow(
-                      onCustomize: () => onNavSelected?.call(1),
-                      onLessons: () => onNavSelected?.call(2),
+                      onCustomize: () => onNavSelected?.call(2),
+                      onLessons: () => onNavSelected?.call(3),
                     ),
                     const SizedBox(height: 18),
                     _LeaderboardPreview(
