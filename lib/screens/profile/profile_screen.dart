@@ -185,7 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-class _ProfileHero extends StatelessWidget {
+class _ProfileHero extends void StatelessWidget {
   const _ProfileHero({required this.stats});
 
   final UserStats stats;
@@ -233,7 +233,7 @@ class _ProfileHero extends StatelessWidget {
   }
 }
 
-class _SettingsCard extends StatelessWidget {
+class _SettingsCard extends void StatelessWidget {
   const _SettingsCard({
     required this.title,
     required this.subtitle,
@@ -257,7 +257,7 @@ class _SettingsCard extends StatelessWidget {
   }
 }
 
-class _AdminCard extends StatelessWidget {
+class _AdminCard extends void StatelessWidget {
   const _AdminCard({required this.onTap});
   final VoidCallback onTap;
 
@@ -272,7 +272,7 @@ class _AdminCard extends StatelessWidget {
   }
 }
 
-class _ProfileBackdrop extends StatelessWidget {
+class _ProfileBackdrop extends void StatelessWidget {
   const _ProfileBackdrop();
 
   @override
