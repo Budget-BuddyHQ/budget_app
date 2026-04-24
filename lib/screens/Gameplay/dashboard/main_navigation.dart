@@ -45,7 +45,7 @@ class _MainNavigationState extends State<MainNavigation> {
             Navigator.of(context).pop();
             _selectTab(index);
           },
-          onPortalTap: _openPortal,
+
         ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(

@@ -2,21 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import '../../services/supabase_service.dart';
 import '../../controllers/user_stats_controller.dart';
 import '../../navigation/fade_page_route.dart';
-import '../../services/supabase_service.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/game_toast.dart';
 import '../admin/admin_screen.dart';
 import '../auth/auth_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({
-    super.key,
-    this.activeTabIndex = 4,
-    this.onNavSelected,
-  });
+  const ProfileScreen({super.key, this.activeTabIndex = 4, this.onNavSelected});
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
@@ -70,122 +65,123 @@ class _ProfileScreenState extends State<ProfileScreen> {
               isAdmin = data['role'] == 'admin';
             }
 
-        return Scaffold(
-          backgroundColor: const Color(0xFF071711),
-          bottomNavigationBar: widget.onNavSelected == null
-              ? null
-              : CustomBottomNav(
-                  activeIndex: widget.activeTabIndex,
-                  onSelected: widget.onNavSelected,
-                  onPortalTap: widget.onPortalTap,
-                ),
-          body: Stack(
-            children: [
-              const _ProfileBackdrop(),
-              SafeArea(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 126),
-                  children: [
-                    _ProfileHero(stats: stats),
-                    const SizedBox(height: 18),
-                    _SettingsCard(
-                      title: 'Notifications',
-                      subtitle: 'Quest reminders and reward alerts.',
-                      icon: Icons.notifications_active_rounded,
-                      trailing: Switch.adaptive(
-                        value: _notificationsEnabled,
-                        activeColor: const Color(0xFF85EFAC),
-                        onChanged: (value) {
-                          HapticFeedback.lightImpact();
-                          setState(() => _notificationsEnabled = value);
-                        },
-                      ),
+            return Scaffold(
+              backgroundColor: const Color(0xFF071711),
+              bottomNavigationBar: widget.onNavSelected == null
+                  ? null
+                  : CustomBottomNav(
+                      activeIndex: widget.activeTabIndex,
+                      onSelected: widget.onNavSelected!,
                     ),
-                    const SizedBox(height: 12),
-                    _SettingsCard(
-                      title: 'Sound',
-                      subtitle: 'Keep taps and reward effects enabled.',
-                      icon: Icons.volume_up_rounded,
-                      trailing: Switch.adaptive(
-                        value: _soundEnabled,
-                        activeColor: const Color(0xFF85EFAC),
-                        onChanged: (value) {
-                          HapticFeedback.lightImpact();
-                          setState(() => _soundEnabled = value);
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _SettingsCard(
-                      title: 'Account',
-                      subtitle:
-                          user?.email ?? 'Signed in as ${stats.username}.',
-                      icon: Icons.manage_accounts_rounded,
-                      trailing: Text(
-                        stats.levelTitle,
-                        style: const TextStyle(
-                          color: Color(0xFF85EFAC),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    if (isAdmin) ...[
-                      const SizedBox(height: 12),
-                      _AdminCard(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const AdminScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                    const SizedBox(height: 22),
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        _logout(context);
-                      },
-                      child: Container(
-                        height: 58,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFF8E72), Color(0xFFF55353)],
+              body: Stack(
+                children: [
+                  const _ProfileBackdrop(),
+                  SafeArea(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 126),
+                      children: [
+                        _ProfileHero(stats: stats),
+                        const SizedBox(height: 18),
+                        _SettingsCard(
+                          title: 'Notifications',
+                          subtitle: 'Quest reminders and reward alerts.',
+                          icon: Icons.notifications_active_rounded,
+                          trailing: Switch.adaptive(
+                            value: _notificationsEnabled,
+                            activeColor: const Color(0xFF85EFAC),
+                            onChanged: (value) {
+                              HapticFeedback.lightImpact();
+                              setState(() => _notificationsEnabled = value);
+                            },
                           ),
                         ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.logout_rounded, color: Colors.white),
-                            SizedBox(width: 10),
-                            Text(
-                              'Log Out',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
+                        const SizedBox(height: 12),
+                        _SettingsCard(
+                          title: 'Sound',
+                          subtitle: 'Keep taps and reward effects enabled.',
+                          icon: Icons.volume_up_rounded,
+                          trailing: Switch.adaptive(
+                            value: _soundEnabled,
+                            activeColor: const Color(0xFF85EFAC),
+                            onChanged: (value) {
+                              HapticFeedback.lightImpact();
+                              setState(() => _soundEnabled = value);
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _SettingsCard(
+                          title: 'Account',
+                          subtitle:
+                              user?.email ?? 'Signed in as ${stats.username}.',
+                          icon: Icons.manage_accounts_rounded,
+                          trailing: Text(
+                            stats.levelTitle,
+                            style: const TextStyle(
+                              color: Color(0xFF85EFAC),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        if (isAdmin) ...[
+                          const SizedBox(height: 12),
+                          _AdminCard(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const AdminScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                        const SizedBox(height: 22),
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            _logout(context);
+                          },
+                          child: Container(
+                            height: 58,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFF8E72), Color(0xFFF55353)],
                               ),
                             ),
-                          ],
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.logout_rounded, color: Colors.white),
+                                SizedBox(width: 10),
+                                Text(
+                                  'Log Out',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
   }
 }
 
-class _ProfileHero extends void StatelessWidget {
+class _ProfileHero extends StatelessWidget {
   const _ProfileHero({required this.stats});
 
   final UserStats stats;
@@ -233,7 +229,7 @@ class _ProfileHero extends void StatelessWidget {
   }
 }
 
-class _SettingsCard extends void StatelessWidget {
+class _SettingsCard extends StatelessWidget {
   const _SettingsCard({
     required this.title,
     required this.subtitle,
@@ -257,7 +253,7 @@ class _SettingsCard extends void StatelessWidget {
   }
 }
 
-class _AdminCard extends void StatelessWidget {
+class _AdminCard extends StatelessWidget {
   const _AdminCard({required this.onTap});
   final VoidCallback onTap;
 
@@ -265,14 +261,13 @@ class _AdminCard extends void StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: const Icon(Icons.admin_panel_settings, color: Colors.amber),
-      title: const Text('Admin Panel',
-          style: TextStyle(color: Colors.white)),
+      title: const Text('Admin Panel', style: TextStyle(color: Colors.white)),
       onTap: onTap,
     );
   }
 }
 
-class _ProfileBackdrop extends void StatelessWidget {
+class _ProfileBackdrop extends StatelessWidget {
   const _ProfileBackdrop();
 
   @override
