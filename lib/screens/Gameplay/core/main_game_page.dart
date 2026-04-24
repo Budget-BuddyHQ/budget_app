@@ -1014,6 +1014,7 @@ class _MissionCard extends StatelessWidget {
     required this.icon,
     required this.buttonLabel,
     required this.onPressed,
+    this.secondary = false,
   });
 
   final String title;
