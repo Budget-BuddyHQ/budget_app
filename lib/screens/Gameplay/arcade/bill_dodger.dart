@@ -6,10 +6,10 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../controllers/user_stats_controller.dart';
-import '../../services/supabase_service.dart';
-import '../../widgets/custom_button.dart';
-import '../../widgets/game_toast.dart';
+import '../../../controllers/user_stats_controller.dart';
+import '../../../services/supabase_service.dart';
+import '../../../widgets/custom_button.dart';
+import '../../../widgets/game_toast.dart';
 
 class BillDodgerCloseResult {
   const BillDodgerCloseResult({
@@ -352,6 +352,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
       _FallingPickup(
         label: data.label,
         amount: data.amount,
+        icon: data.icon,
         kind: isNeed ? _PickupKind.need : _PickupKind.want,
         x: x,
         y: -height - 12,
@@ -724,16 +725,19 @@ class _PickupData {
   const _PickupData({
     required this.label,
     required this.amount,
+    required this.icon,
   });
 
   final String label;
   final int amount;
+  final IconData icon;
 }
 
 class _FallingPickup {
   _FallingPickup({
     required this.label,
     required this.amount,
+    required this.icon,
     required this.kind,
     required this.x,
     required this.y,
@@ -745,6 +749,7 @@ class _FallingPickup {
 
   final String label;
   final int amount;
+  final IconData icon;
   final _PickupKind kind;
   double width;
   double height;
@@ -756,21 +761,25 @@ class _FallingPickup {
 }
 
 const List<_PickupData> _needPool = [
-  _PickupData(label: 'Rent', amount: 600),
-  _PickupData(label: 'Groceries', amount: 90),
-  _PickupData(label: 'Utilities', amount: 120),
-  _PickupData(label: 'Medicine', amount: 45),
-  _PickupData(label: 'Gas', amount: 50),
-  _PickupData(label: 'Internet', amount: 70),
+  _PickupData(label: 'Rent', amount: 600, icon: Icons.home_rounded),
+  _PickupData(
+    label: 'Groceries',
+    amount: 90,
+    icon: Icons.local_grocery_store_rounded,
+  ),
+  _PickupData(label: 'Utilities', amount: 120, icon: Icons.bolt_rounded),
+  _PickupData(label: 'Medicine', amount: 45, icon: Icons.medication_rounded),
+  _PickupData(label: 'Gas', amount: 50, icon: Icons.local_gas_station_rounded),
+  _PickupData(label: 'Internet', amount: 70, icon: Icons.wifi_rounded),
 ];
 
 const List<_PickupData> _wantPool = [
-  _PickupData(label: 'Takeout', amount: 25),
-  _PickupData(label: 'Streaming', amount: 18),
-  _PickupData(label: 'Skins', amount: 15),
-  _PickupData(label: 'Fancy Coffee', amount: 9),
-  _PickupData(label: 'Impulse Buy', amount: 35),
-  _PickupData(label: 'New Shoes', amount: 90),
+  _PickupData(label: 'Takeout', amount: 25, icon: Icons.fastfood_rounded),
+  _PickupData(label: 'Streaming', amount: 18, icon: Icons.tv_rounded),
+  _PickupData(label: 'Skins', amount: 15, icon: Icons.palette_rounded),
+  _PickupData(label: 'Fancy Coffee', amount: 9, icon: Icons.coffee_rounded),
+  _PickupData(label: 'Impulse Buy', amount: 35, icon: Icons.campaign_rounded),
+  _PickupData(label: 'New Shoes', amount: 90, icon: Icons.checkroom_rounded),
 ];
 
 class _TopStatsRow extends StatelessWidget {
@@ -855,8 +864,6 @@ class _PickupCard extends StatelessWidget {
         isNeed ? const Color(0xFF73E9A6) : const Color(0xFFFFB084);
     final Color accentDark =
         isNeed ? const Color(0xFF39C97A) : const Color(0xFFFF8D5C);
-    final IconData icon =
-        isNeed ? Icons.check_circle_rounded : Icons.shopping_bag_rounded;
 
     final wobble = pickup.tilt + math.sin(pickup.y * 0.045) * 0.08;
 
@@ -902,7 +909,7 @@ class _PickupCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Icon(
-                  icon,
+                  pickup.icon,
                   size: 15,
                   color: accentDark,
                 ),

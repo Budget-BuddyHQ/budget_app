@@ -32,7 +32,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/logo.png
-    - assets/web/react_challenge/index.html
     - assets/images/
     - assets/images/turtles/
     - assets/web_game/

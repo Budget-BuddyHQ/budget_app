@@ -35,7 +35,7 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
   AvatarSkin(
     id: 'classic_turtle',
     name: 'Classic Turtle',
-    assetPath: 'assets/images/turtles/classic_turtle.png',
+    assetPath: 'assets/images/turtles/Wface_no_bg_l7nvmfum.png',
     rarity: SkinRarity.common,
     accent: Color(0xFF85EFAC),
     weight: 58,
@@ -43,7 +43,7 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
   AvatarSkin(
     id: 'coin_shell',
     name: 'Coin Shell',
-    assetPath: 'assets/images/turtles/coin_shell.png',
+    assetPath: 'assets/images/turtles/cuteBigHead_no_bg_3xfq2ne3.png',
     rarity: SkinRarity.common,
     accent: Color(0xFFFFD45C),
     weight: 30,
@@ -51,7 +51,7 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
   AvatarSkin(
     id: 'emerald_strider',
     name: 'Emerald Strider',
-    assetPath: 'assets/images/turtles/emerald_strider.png',
+    assetPath: 'assets/images/turtles/purplewithChestBack_no_bg_8cqt48zg.png',
     rarity: SkinRarity.rare,
     accent: Color(0xFF7CF3C7),
     weight: 10,
@@ -95,6 +95,46 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     rarity: SkinRarity.epic,
     accent: Color(0xFFB9A5FF),
     weight: 4,
+  ),
+  AvatarSkin(
+    id: 'canopy_guardian',
+    name: 'Canopy Guardian',
+    assetPath: 'assets/images/turtles/plantcover.png',
+    rarity: SkinRarity.rare,
+    accent: Color(0xFF7FD98E),
+    weight: 10,
+  ),
+  AvatarSkin(
+    id: 'shell_sprinter',
+    name: 'Shell Sprinter',
+    assetPath: 'assets/images/turtles/topview.png',
+    rarity: SkinRarity.common,
+    accent: Color(0xFF7CD0FF),
+    weight: 22,
+  ),
+  AvatarSkin(
+    id: 'trailblazer',
+    name: 'Trailblazer',
+    assetPath: 'assets/images/turtles/player_topview.png',
+    rarity: SkinRarity.common,
+    accent: Color(0xFFFFC96B),
+    weight: 20,
+  ),
+  AvatarSkin(
+    id: 'ancient_giant',
+    name: 'Ancient Giant',
+    assetPath: 'assets/images/turtles/big turtle.png',
+    rarity: SkinRarity.rare,
+    accent: Color(0xFF9FE39E),
+    weight: 8,
+  ),
+  AvatarSkin(
+    id: 'field_captain',
+    name: 'Field Captain',
+    assetPath: 'assets/images/turtles/guild_runner.jpg',
+    rarity: SkinRarity.epic,
+    accent: Color(0xFF9AD8FF),
+    weight: 3,
   ),
 ];
 

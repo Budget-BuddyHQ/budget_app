@@ -6,8 +6,10 @@
       "request": "launch",
       "type": "dart",
       "flutterMode": "debug",
+      "deviceId": "chrome",
       "toolArgs": [
-        "--dart-define-from-file=supabase.env.json"
+        "--dart-define-from-file=supabase.env.json",
+        "--web-port=8080"
       ]
     }
   ]
