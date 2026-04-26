@@ -42,9 +42,9 @@ class UserStatsController extends ChangeNotifier {
   UserStatsController({
     required SupabaseService service,
     String initialUserId = 'user_123',
-  })  : _service = service,
-        _userId = initialUserId,
-        _stats = UserStats.defaults(initialUserId);
+  }) : _service = service,
+       _userId = initialUserId,
+       _stats = UserStats.defaults(initialUserId);
 
   final SupabaseService _service;
   final Random _random = Random();
@@ -127,7 +127,9 @@ class UserStatsController extends ChangeNotifier {
         );
         final user = response.user;
         if (user == null) {
-          return _authFailure('Supabase did not return a user for this sign-up.');
+          return _authFailure(
+            'Supabase did not return a user for this sign-up.',
+          );
         }
 
         if (response.session == null) {
@@ -176,7 +178,7 @@ class UserStatsController extends ChangeNotifier {
       final isDisabled = profile?['disabled'] == true;
 
       if (isDisabled) {
-        await client.auth.signOut(); 
+        await client.auth.signOut();
 
         _isSaving = false;
         _statusMessage = 'This account has been disabled.';
@@ -206,15 +208,12 @@ class UserStatsController extends ChangeNotifier {
     }
   }
 
-  Future<StatsActionResult> sendPasswordReset({
-    required String email,
-  }) async {
+  Future<StatsActionResult> sendPasswordReset({required String email}) async {
     final normalizedEmail = email.trim().toLowerCase();
     if (normalizedEmail.isEmpty) {
       return const StatsActionResult(
         success: false,
-        message:
-            'Enter your email so we know where to send the reset link.',
+        message: 'Enter your email so we know where to send the reset link.',
         syncState: SyncState(
           synced: false,
           usedCache: true,
@@ -227,8 +226,7 @@ class UserStatsController extends ChangeNotifier {
       await _service.resetPasswordForEmail(normalizedEmail);
       return const StatsActionResult(
         success: true,
-        message:
-            'Password reset email sent. Check your inbox and spam folder.',
+        message: 'Password reset email sent. Check your inbox and spam folder.',
         syncState: SyncState(
           synced: true,
           usedCache: false,
@@ -252,10 +250,7 @@ class UserStatsController extends ChangeNotifier {
     try {
       await _service.signOut(userId: previousUserId);
     } finally {
-      await _resetToSignedOutState(
-        notify: true,
-        statusMessage: 'Logged out.',
-      );
+      await _resetToSignedOutState(notify: true, statusMessage: 'Logged out.');
     }
   }
 
@@ -363,10 +358,119 @@ class UserStatsController extends ChangeNotifier {
       updatedAt: now,
     );
 
-    return _saveStats(
-      nextStats,
-      savingMessage: 'Executing sell order...',
+    return _saveStats(nextStats, savingMessage: 'Executing sell order...');
+  }
+
+  Future<StatsActionResult> buyStockLot({
+    required String symbol,
+    required int goldCost,
+    String? companyName,
+  }) async {
+    if (_stats.gold < goldCost) {
+      return StatsActionResult(
+        success: false,
+        message: 'You need $goldCost gold before buying $symbol.',
+        syncState: const SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'No changes saved.',
+        ),
+      );
+    }
+
+    final holdingKey = 'stock_$symbol';
+    final holdings = Map<String, int>.from(_stats.holdings)
+      ..update(holdingKey, (value) => value + 1, ifAbsent: () => 1)
+      ..update('stocks', (value) => value + 1, ifAbsent: () => 1);
+    final nextHistory = _nextPortfolioSeries(0.04);
+    final now = DateTime.now().toUtc();
+    final label = companyName?.trim().isNotEmpty == true
+        ? companyName!
+        : symbol;
+
+    final nextStats = _stats.copyWith(
+      gold: _stats.gold - goldCost,
+      xp: _stats.xp + 14,
+      literacyPoints: _stats.literacyPoints + 7,
+      holdings: holdings,
+      portfolioHistory: nextHistory,
+      transactions: <LedgerTransaction>[
+        LedgerTransaction(
+          id: 'txn_${now.microsecondsSinceEpoch}',
+          title: 'Bought $symbol',
+          description: 'Opened one lot of $label for $goldCost gold.',
+          amount: -goldCost,
+          createdAt: now,
+          category: 'invest',
+        ),
+        ..._stats.transactions,
+      ],
+      updatedAt: now,
     );
+
+    return _saveStats(nextStats, savingMessage: 'Buying $symbol...');
+  }
+
+  Future<StatsActionResult> sellStockLot({
+    required String symbol,
+    required int goldReturn,
+    String? companyName,
+  }) async {
+    final holdingKey = 'stock_$symbol';
+    final currentLots = _stats.holdings[holdingKey] ?? 0;
+    if (currentLots <= 0) {
+      return StatsActionResult(
+        success: false,
+        message: 'No $symbol lots are available to sell right now.',
+        syncState: const SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'No changes saved.',
+        ),
+      );
+    }
+
+    final holdings = Map<String, int>.from(_stats.holdings)
+      ..update(holdingKey, (value) => value > 0 ? value - 1 : 0)
+      ..update(
+        'stocks',
+        (value) => value > 0 ? value - 1 : 0,
+        ifAbsent: () => 0,
+      );
+    if ((holdings[holdingKey] ?? 0) <= 0) {
+      holdings.remove(holdingKey);
+    }
+    if ((holdings['stocks'] ?? 0) <= 0) {
+      holdings.remove('stocks');
+    }
+
+    final nextHistory = _nextPortfolioSeries(-0.03);
+    final now = DateTime.now().toUtc();
+    final label = companyName?.trim().isNotEmpty == true
+        ? companyName!
+        : symbol;
+
+    final nextStats = _stats.copyWith(
+      gold: _stats.gold + goldReturn,
+      xp: _stats.xp + 10,
+      literacyPoints: _stats.literacyPoints + 5,
+      holdings: holdings,
+      portfolioHistory: nextHistory,
+      transactions: <LedgerTransaction>[
+        LedgerTransaction(
+          id: 'txn_${now.microsecondsSinceEpoch}',
+          title: 'Sold $symbol',
+          description: 'Closed one lot of $label for $goldReturn gold.',
+          amount: goldReturn,
+          createdAt: now,
+          category: 'invest',
+        ),
+        ..._stats.transactions,
+      ],
+      updatedAt: now,
+    );
+
+    return _saveStats(nextStats, savingMessage: 'Selling $symbol...');
   }
 
   Future<StatsActionResult> applyChallengePayload(
@@ -385,8 +489,8 @@ class UserStatsController extends ChangeNotifier {
       literacyPoints: _stats.literacyPoints + literacyEarned,
       personalityType:
           (payload['personality_type'] ?? '').toString().trim().isEmpty
-              ? _stats.personalityType
-              : payload['personality_type'].toString().trim(),
+          ? _stats.personalityType
+          : payload['personality_type'].toString().trim(),
       spendingHabits: payload['spending_habits'] is Map
           ? <String, dynamic>{
               ..._stats.spendingHabits,
@@ -399,9 +503,10 @@ class UserStatsController extends ChangeNotifier {
         LedgerTransaction(
           id: 'txn_${now.microsecondsSinceEpoch}',
           title: (payload['title'] ?? 'React Challenge Reward').toString(),
-          description: (payload['description'] ??
-                  'Mini-game rewards synced from the local challenge.')
-              .toString(),
+          description:
+              (payload['description'] ??
+                      'Mini-game rewards synced from the local challenge.')
+                  .toString(),
           amount: goldEarned,
           createdAt: now,
           category: 'challenge',
@@ -411,10 +516,7 @@ class UserStatsController extends ChangeNotifier {
       updatedAt: now,
     );
 
-    return _saveStats(
-      nextStats,
-      savingMessage: 'Saving challenge rewards...',
-    );
+    return _saveStats(nextStats, savingMessage: 'Saving challenge rewards...');
   }
 
   Future<SkinCaseResult> openSkinCase() async {
