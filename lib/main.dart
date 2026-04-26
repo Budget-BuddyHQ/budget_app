@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:window_manager/window_manager.dart';
@@ -20,20 +21,25 @@ import 'theme/app_theme.dart';
 Future<void> main() async {
 
   if (!kIsWeb &&
-      defaultTargetPlatform == TargetPlatform.windows) {
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS)) {
+    await SystemChrome.setPreferredOrientations(const [
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
 
     } catch (error) {
       debugPrint('Window manager failed: $error');
-  final supabaseUrl = readRuntimeEnv('SUPABASE_URL') ??
-      const String.fromEnvironment('SUPABASE_URL');
-  final supabaseAnonKey = readRuntimeEnv('SUPABASE_ANON_KEY') ??
-      const String.fromEnvironment('SUPABASE_ANON_KEY');
 
-  if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
-    debugPrint(
-      'Supabase credentials were not found in dart-defines or supabase.env.json. The app will fall back to local cached data.',
-    );
-  }
+  const fallbackSupabaseUrl = 'https://cwqjduingvevagrxbwts.supabase.co';
+  const fallbackSupabaseAnonKey =
+      'sb_publishable_sALqhgaTDGewkqp_XiNo-g_EO6ziR4l';
+  final supabaseUrl = readRuntimeEnv('SUPABASE_URL') ?? fallbackSupabaseUrl;
+  final supabaseAnonKey =
+      readRuntimeEnv('SUPABASE_ANON_KEY') ?? fallbackSupabaseAnonKey;
   await SupabaseService.instance.initialize(
     supabaseUrl: supabaseUrl,
     supabaseAnonKey: supabaseAnonKey,
@@ -43,11 +49,14 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider<UserStatsController>(
-          create: (_) => UserStatsController(
-            service: SupabaseService.instance,
-          )..initialize(),
+          create: (_) =>
+              UserStatsController(service: SupabaseService.instance)
+                ..initialize(),
         ),
-        ChangeNotifierProxyProvider<UserStatsController, AdventureStateController>(
+        ChangeNotifierProxyProvider<
+          UserStatsController,
+          AdventureStateController
+        >(
           create: (_) => AdventureStateController(),
           update: (_, userStats, adventure) =>
               (adventure ?? AdventureStateController())
@@ -93,25 +102,13 @@ class _AppBootstrapGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final service = SupabaseService.instance;
     return StreamBuilder<AuthState>(
-      stream: service.authStateChanges(),
       builder: (context, snapshot) {
-        final hasSession =
-            snapshot.data?.session != null || service.currentUser != null;
-        final controller = context.watch<UserStatsController>();
-
-        if (hasSession && controller.isLoading) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
         }
 
-        return hasSession ? const DashboardShell() : const WelcomeScreen();
       },
     );
   }
 }
 
+}

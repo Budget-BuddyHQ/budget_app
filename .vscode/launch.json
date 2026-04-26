@@ -6,8 +6,8 @@
       "request": "launch",
       "type": "dart",
       "flutterMode": "debug",
+      "deviceId": "windows",
       "toolArgs": [
-        "--dart-define-from-file=supabase.env.json"
       ]
     }
   ]
