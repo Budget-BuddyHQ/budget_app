@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../models/lesson.dart';
 import '../../../models/progression_service.dart';
+import '../../../services/app_sound_service.dart';
 import '../../../widgets/game_toast.dart';
 
 class LessonDetailScreen extends StatefulWidget {
@@ -37,6 +38,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       message: '${widget.lesson.title} marked complete.',
       icon: Icons.school_rounded,
       accent: const Color(0xFF2F9E68),
+      soundEffect: AppSoundEffect.celebration,
     );
   }
 

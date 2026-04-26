@@ -15,6 +15,7 @@ import 'screens/Gameplay/core/minigames_page.dart';
 import 'screens/Gameplay/dashboard/dashboard_shell.dart';
 import 'screens/Gameplay/dashboard/leaderboard_screen.dart';
 import 'screens/auth/auth_screen.dart';
+import 'services/app_sound_service.dart';
 import 'services/supabase_service.dart';
 import 'theme/app_theme.dart';
 
@@ -44,6 +45,7 @@ Future<void> main() async {
     supabaseUrl: supabaseUrl,
     supabaseAnonKey: supabaseAnonKey,
   );
+  await AppSoundService.initialize();
 
   runApp(
     MultiProvider(

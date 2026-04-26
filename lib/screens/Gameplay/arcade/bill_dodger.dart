@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../controllers/user_stats_controller.dart';
+import '../../../services/app_sound_service.dart';
 import '../../../services/supabase_service.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/game_toast.dart';
@@ -137,6 +138,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
 
   void _startGame() {
     HapticFeedback.lightImpact();
+    AppSoundService.play(AppSoundEffect.navigation);
     _focusNode.requestFocus();
     setState(() {
       _money = 1200;
@@ -192,6 +194,14 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
       _playerVelocity = 0;
       _playerTilt = 0;
     });
+
+    if (_score >= 140) {
+      AppSoundService.play(AppSoundEffect.celebration);
+    } else if (_score < 90 || _money <= 0) {
+      AppSoundService.play(AppSoundEffect.shutdown);
+    } else {
+      AppSoundService.play(AppSoundEffect.success);
+    }
   }
 
   void _onTick(Duration elapsed) {
@@ -309,9 +319,11 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
   void _handlePickupCollision(_FallingPickup pickup) {
     HapticFeedback.lightImpact();
     if (pickup.kind == _PickupKind.need) {
+      AppSoundService.play(AppSoundEffect.needPickup);
       _money += 28;
       _score += 16;
     } else {
+      AppSoundService.play(AppSoundEffect.wantHit);
       _money -= 36;
       _score = math.max(0, _score - 12);
     }
@@ -454,6 +466,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
           '+${projected.goldEarned} gold - +${projected.xpEarned} XP - ${result.message}',
       icon: Icons.stars_rounded,
       accent: _accent,
+      soundEffect: AppSoundEffect.celebration,
     );
 
     Navigator.of(context).pop(
