@@ -12,12 +12,20 @@ import 'package:flutter/services.dart';
     _NavItemData(label: 'Profile', icon: Icons.person_rounded),
   ];
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final compact = screenWidth < 380;
+
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+        padding: EdgeInsets.fromLTRB(
+          compact ? 10 : 14,
+          0,
+          compact ? 10 : 14,
+          14,
+        ),
         child: Container(
-          height: 84,
+          height: compact ? 72 : 84,
           decoration: BoxDecoration(
             color: const Color(0xFF071711).withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(30),
@@ -42,6 +50,7 @@ import 'package:flutter/services.dart';
                   child: _NavTile(
                     data: _items[index],
                     active: index == activeIndex,
+                    compact: compact,
                     onTap: () => _handleTap(index),
                   ),
                 ),
@@ -59,9 +68,11 @@ import 'package:flutter/services.dart';
 class _NavTile extends StatelessWidget {
   const _NavTile({
     required this.data,
+    required this.compact,
     required this.onTap,
   final _NavItemData data;
   final bool active;
+  final bool compact;
   final VoidCallback onTap;
 
     final accent = active ? const Color(0xFF85EFAC) : Colors.white70;
@@ -73,8 +84,14 @@ class _NavTile extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+          margin: EdgeInsets.symmetric(
+            horizontal: compact ? 2 : 3,
+            vertical: 8,
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 1 : 2,
+            vertical: compact ? 6 : 8,
+          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             gradient: active
@@ -96,18 +113,24 @@ class _NavTile extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(data.icon, color: accent, size: active ? 24 : 21),
-              const SizedBox(height: 4),
-              Text(
-                data.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: accent,
-                  fontSize: 9.5,
-                  fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-                ),
+              Icon(
+                data.icon,
+                color: accent,
+                size: compact ? (active ? 23 : 21) : (active ? 24 : 21),
               ),
+              if (!compact) ...[
+                const SizedBox(height: 4),
+                Text(
+                  data.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 9.5,
+                    fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -117,10 +140,7 @@ class _NavTile extends StatelessWidget {
 }
 
 class _NavItemData {
-  const _NavItemData({
-    required this.label,
-    required this.icon,
-  });
+  const _NavItemData({required this.label, required this.icon});
 
   final String label;
   final IconData icon;
