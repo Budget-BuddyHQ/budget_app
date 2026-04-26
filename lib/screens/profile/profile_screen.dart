@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../services/supabase_service.dart';
+
 import '../../controllers/user_stats_controller.dart';
 import '../../navigation/fade_page_route.dart';
+import '../../services/app_sound_service.dart';
+import '../../services/supabase_service.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/game_toast.dart';
 import '../admin/admin_screen.dart';
@@ -23,6 +25,23 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _notificationsEnabled = true;
   bool _soundEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _soundEnabled = AppSoundService.enabled;
+    _syncSoundPreference();
+  }
+
+  Future<void> _syncSoundPreference() async {
+    await AppSoundService.initialize();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _soundEnabled = AppSoundService.enabled;
+    });
+  }
 
   Future<void> _logout(BuildContext context) async {
     await context.read<UserStatsController>().signOut();
@@ -103,8 +122,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           trailing: Switch.adaptive(
                             value: _soundEnabled,
                             activeColor: const Color(0xFF85EFAC),
-                            onChanged: (value) {
+                            onChanged: (value) async {
                               HapticFeedback.lightImpact();
+                              await AppSoundService.setEnabled(value);
+                              if (!mounted) {
+                                return;
+                              }
                               setState(() => _soundEnabled = value);
                             },
                           ),

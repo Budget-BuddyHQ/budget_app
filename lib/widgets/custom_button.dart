@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../services/app_sound_service.dart';
+
 class CustomButton extends StatefulWidget {
   const CustomButton({
     super.key,
@@ -75,6 +77,7 @@ class _CustomButtonState extends State<CustomButton>
       return;
     }
     HapticFeedback.lightImpact();
+    AppSoundService.play(AppSoundEffect.tap);
     widget.onPressed!();
   }
 

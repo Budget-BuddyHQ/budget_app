@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../services/app_sound_service.dart';
+
 class CustomBottomNav extends StatelessWidget {
   const CustomBottomNav({
     super.key,
@@ -75,6 +77,7 @@ class CustomBottomNav extends StatelessWidget {
       return;
     }
     HapticFeedback.lightImpact();
+    AppSoundService.play(AppSoundEffect.navigation);
     onSelected!(index);
   }
 }
