@@ -1,10 +1,10 @@
-import 'package:budget_app/services/supabase_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../controllers/user_stats_controller.dart';
 import '../../../models/avatar_skin.dart';
+import '../../../services/supabase_service.dart';
 import '../../../widgets/custom_bottom_nav.dart';
 import '../../../widgets/game_toast.dart';
 import '../arcade/react_challenge_screen.dart';
@@ -55,16 +55,6 @@ class HomeScreen extends StatelessWidget {
       builder: (context, controller, _) {
         final stats = controller.stats;
         final turtleSkin = skinFromId(stats.equippedSkin);
-        final leaders = <_LeaderItem>[
-          const _LeaderItem(name: 'MoneyMaster99', points: 2450, rank: 1),
-          const _LeaderItem(name: 'BudgetPro', points: 2280, rank: 2),
-          _LeaderItem(
-            name: stats.username,
-            points: stats.gold,
-            rank: 3,
-            isCurrentUser: true,
-          ),
-        ];
 
         return Scaffold(
           backgroundColor: const Color(0xFF071711),
@@ -99,7 +89,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 18),
                     _LeaderboardPreview(
-                      leaders: leaders,
+                      currentUserId: stats.id,
                       onOpenFull: () {
                         HapticFeedback.lightImpact();
                         Navigator.of(context).push(
@@ -435,46 +425,74 @@ class _QuickAccessRow extends StatelessWidget {
 
 class _LeaderboardPreview extends StatelessWidget {
   const _LeaderboardPreview({
-    required this.leaders,
+    required this.currentUserId,
     required this.onOpenFull,
   });
 
-  final List<_LeaderItem> leaders;
+  final String currentUserId;
   final VoidCallback onOpenFull;
 
   @override
   Widget build(BuildContext context) {
-    return _GlassPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return FutureBuilder<List<LeaderboardEntry>>(
+      future: SupabaseService.instance.fetchLeaderboard(
+        limit: 3,
+        currentUserId: currentUserId,
+      ),
+      builder: (context, snapshot) {
+        final leaders = snapshot.data ?? const <LeaderboardEntry>[];
+
+        return _GlassPanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Expanded(
-                child: Text(
-                  'Global Leaderboard',
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Global Leaderboard',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: onOpenFull,
+                    child: const Text('View All'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (snapshot.connectionState == ConnectionState.waiting)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 18),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF85EFAC),
+                    ),
+                  ),
+                )
+              else if (leaders.isEmpty)
+                Text(
+                  'Leaderboard data will appear here as soon as saved profiles are available.',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
+                    color: Colors.white.withValues(alpha: 0.72),
+                    height: 1.45,
+                  ),
+                )
+              else
+                ...leaders.map(
+                  (leader) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _LeaderboardTile(leader: leader),
                   ),
                 ),
-              ),
-              TextButton(
-                onPressed: onOpenFull,
-                child: const Text('View All'),
-              ),
             ],
           ),
-          const SizedBox(height: 8),
-          ...leaders.map(
-            (leader) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _LeaderboardTile(leader: leader),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -599,7 +617,7 @@ class _ActionButton extends StatelessWidget {
 class _LeaderboardTile extends StatelessWidget {
   const _LeaderboardTile({required this.leader});
 
-  final _LeaderItem leader;
+  final LeaderboardEntry leader;
 
   @override
   Widget build(BuildContext context) {
@@ -628,7 +646,7 @@ class _LeaderboardTile extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              leader.name,
+              leader.username,
               style: TextStyle(
                 color: leader.isCurrentUser
                     ? const Color(0xFF85EFAC)
@@ -638,7 +656,7 @@ class _LeaderboardTile extends StatelessWidget {
             ),
           ),
           Text(
-            '${leader.points}',
+            leader.scoreLabel,
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w900,
@@ -702,18 +720,4 @@ class _GlassPanel extends StatelessWidget {
       child: child,
     );
   }
-}
-
-class _LeaderItem {
-  const _LeaderItem({
-    required this.name,
-    required this.points,
-    required this.rank,
-    this.isCurrentUser = false,
-  });
-
-  final String name;
-  final int points;
-  final int rank;
-  final bool isCurrentUser;
 }

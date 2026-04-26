@@ -16,29 +16,43 @@ class UnitRowItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 14,
-      runSpacing: 14,
-      children: lessons
-          .map(
-            (lesson) => _UnitLessonIcon(
-              lesson: lesson,
-              status: statusFor(lesson.id),
-              onTap: () => onLessonTap(lesson),
-            ),
-          )
-          .toList(growable: false),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.of(context).size.width;
+        final cardWidth = availableWidth < 360
+            ? ((availableWidth - 14) / 2).clamp(92.0, 132.0)
+            : 112.0;
+
+        return Wrap(
+          spacing: 14,
+          runSpacing: 14,
+          children: lessons
+              .map(
+                (lesson) => _UnitLessonIcon(
+                  width: cardWidth,
+                  lesson: lesson,
+                  status: statusFor(lesson.id),
+                  onTap: () => onLessonTap(lesson),
+                ),
+              )
+              .toList(growable: false),
+        );
+      },
     );
   }
 }
 
 class _UnitLessonIcon extends StatelessWidget {
   const _UnitLessonIcon({
+    required this.width,
     required this.lesson,
     required this.status,
     required this.onTap,
   });
 
+  final double width;
   final Lesson lesson;
   final LessonStatus status;
   final VoidCallback onTap;
@@ -47,20 +61,20 @@ class _UnitLessonIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = switch (status) {
       LessonStatus.completed => const _LessonPalette(
-          fill: Color(0xFF85EFAC),
-          border: Color(0xFF2A7D52),
-          foreground: Color(0xFF0B2D1A),
-        ),
+        fill: Color(0xFF85EFAC),
+        border: Color(0xFF2A7D52),
+        foreground: Color(0xFF0B2D1A),
+      ),
       LessonStatus.available => const _LessonPalette(
-          fill: Color(0xFFFFD45C),
-          border: Color(0xFFB38C10),
-          foreground: Color(0xFF3C2B00),
-        ),
+        fill: Color(0xFFFFD45C),
+        border: Color(0xFFB38C10),
+        foreground: Color(0xFF3C2B00),
+      ),
       LessonStatus.locked => const _LessonPalette(
-          fill: Color(0xFFE7ECF2),
-          border: Color(0xFFB8C1CC),
-          foreground: Color(0xFF6B7280),
-        ),
+        fill: Color(0xFFE7ECF2),
+        border: Color(0xFFB8C1CC),
+        foreground: Color(0xFF6B7280),
+      ),
     };
 
     final icon = switch (lesson.type) {
@@ -73,7 +87,7 @@ class _UnitLessonIcon extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(18),
       child: Container(
-        width: 112,
+        width: width,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,

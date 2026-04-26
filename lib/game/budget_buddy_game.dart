@@ -25,7 +25,6 @@ class BudgetBuddyGame extends FlameGame
   PlayerComponent? _player;
   late final CameraLeadTargetComponent _cameraTarget;
   late final JoystickComponent joystick;
-  TiledComponent? _worldMap;
   Vector2 _mapPixelSize = mapSize.clone();
   final List<EnemyMonsterComponent> _monsters = <EnemyMonsterComponent>[];
   final List<Rect> _collisionRects = <Rect>[];
@@ -51,7 +50,6 @@ class BudgetBuddyGame extends FlameGame
 
     add(GridWorldComponent(mapSize: effectiveMapSize));
     if (loadedMap != null) {
-      _worldMap = loadedMap;
       add(loadedMap);
     }
 
@@ -97,6 +95,14 @@ class BudgetBuddyGame extends FlameGame
       Vector2(enemySpawn.x + 180, enemySpawn.y + 180),
       'Invoice Imp',
     );
+    _spawnEnemy(
+      Vector2(enemySpawn.x - 220, enemySpawn.y + 260),
+      'Impulse Goblin',
+    );
+    _spawnEnemy(
+      Vector2(enemySpawn.x + 260, enemySpawn.y - 180),
+      'Fee Phantom',
+    );
 
     camera.viewfinder.zoom = 1.1;
     camera.viewfinder.anchor = const Anchor(0.46, 0.42);
@@ -141,6 +147,7 @@ class BudgetBuddyGame extends FlameGame
     Set<LogicalKeyboardKey> keysPressed,
   ) {
     _player?.setKeyboardState(keysPressed);
+    super.onKeyEvent(event, keysPressed);
     return KeyEventResult.handled;
   }
 
@@ -154,8 +161,10 @@ class BudgetBuddyGame extends FlameGame
       final defeatedEnemy = _activeEncounter!;
       Future<void>.delayed(const Duration(milliseconds: 220), () {
         final newPosition = _randomRespawnPosition();
-        defeatedEnemy.position.setFrom(newPosition);
-        defeatedEnemy.isDefeated = false;
+        defeatedEnemy.scheduleRespawn(
+          newPosition,
+          delay: const Duration(milliseconds: 1100),
+        );
       });
     }
 
@@ -168,6 +177,7 @@ class BudgetBuddyGame extends FlameGame
     final enemy = EnemyMonsterComponent(
       position: position,
       enemyName: name,
+      movementBounds: Rect.fromLTWH(0, 0, _mapPixelSize.x, _mapPixelSize.y),
     );
     _monsters.add(enemy);
     add(enemy);

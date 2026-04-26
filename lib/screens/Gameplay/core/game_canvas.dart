@@ -137,13 +137,20 @@ class _GameCanvasState extends State<GameCanvas> {
                         Positioned.fill(
                           child: Container(
                             color: Colors.black.withValues(alpha: 0.48),
-                            child: Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 440),
-                                child: _CombatOverlay(
-                                  controller: adventure,
-                                  onAnswer: (index) =>
-                                      _handleAnswer(context, index),
+                            child: SafeArea(
+                              child: SingleChildScrollView(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 92, 16, 24),
+                                child: Center(
+                                  child: ConstrainedBox(
+                                    constraints:
+                                        const BoxConstraints(maxWidth: 440),
+                                    child: _CombatOverlay(
+                                      controller: adventure,
+                                      onAnswer: (index) =>
+                                          _handleAnswer(context, index),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -193,58 +200,91 @@ class _HudBar extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            _GlassIconButton(
-              icon: Icons.arrow_back_rounded,
-              onTap: onBack,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final stacked = constraints.maxWidth < 430;
+
+            final summary = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  alignment:
+                      stacked ? WrapAlignment.start : WrapAlignment.spaceBetween,
+                  spacing: 12,
+                  runSpacing: 6,
+                  children: [
+                    Text(
+                      'Level $level',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      '$gold Gold',
+                      style: const TextStyle(
+                        color: Color(0xFFFFD45C),
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    minHeight: 10,
+                    value: xpProgress.clamp(0.02, 1.0),
+                    backgroundColor: Colors.white.withValues(alpha: 0.10),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Color(0xFF85EFAC),
+                    ),
+                  ),
+                ),
+              ],
+            );
+
+            if (stacked) {
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Text(
-                        'Level $level',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                        ),
+                      _GlassIconButton(
+                        icon: Icons.arrow_back_rounded,
+                        onTap: onBack,
                       ),
                       const Spacer(),
-                      Text(
-                        '$gold Gold',
-                        style: const TextStyle(
-                          color: Color(0xFFFFD45C),
-                          fontWeight: FontWeight.w900,
-                        ),
+                      _GlassIconButton(
+                        icon: Icons.pets_rounded,
+                        onTap: onPetsTap,
+                        label: 'Pets',
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      minHeight: 10,
-                      value: xpProgress.clamp(0.02, 1.0),
-                      backgroundColor: Colors.white.withValues(alpha: 0.10),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFF85EFAC),
-                      ),
-                    ),
-                  ),
+                  const SizedBox(height: 12),
+                  summary,
                 ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            _GlassIconButton(
-              icon: Icons.pets_rounded,
-              onTap: onPetsTap,
-              label: 'Pets',
-            ),
-          ],
+              );
+            }
+
+            return Row(
+              children: [
+                _GlassIconButton(
+                  icon: Icons.arrow_back_rounded,
+                  onTap: onBack,
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: summary),
+                const SizedBox(width: 12),
+                _GlassIconButton(
+                  icon: Icons.pets_rounded,
+                  onTap: onPetsTap,
+                  label: 'Pets',
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

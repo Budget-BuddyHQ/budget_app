@@ -143,10 +143,7 @@ class UserStats {
         ),
       ],
       portfolioHistory: const <double>[0.24, 0.3, 0.36, 0.41, 0.48, 0.55, 0.61],
-      holdings: const <String, int>{
-        'indexFunds': 3,
-        'stocks': 2,
-      },
+      holdings: const <String, int>{'indexFunds': 3, 'stocks': 2},
       updatedAt: now,
     );
   }
@@ -159,21 +156,28 @@ class UserStats {
 
     return UserStats(
       id: (json['id'] ?? '').toString(),
-      username: (json['username'] ?? spendingHabits['username'] ?? 'Username3189')
-          .toString(),
+      username:
+          (json['username'] ?? spendingHabits['username'] ?? 'Username3189')
+              .toString(),
       gold: _readInt(json['gold']),
       xp: _readInt(json['xp']),
-      literacyPoints: _readInt(json['literacy_points'] ?? json['literacy_score']),
+      literacyPoints: _readInt(
+        json['literacy_points'] ?? json['literacy_score'],
+      ),
       personalityType: (json['personality_type'] ?? 'Spender').toString(),
       spendingHabits: <String, dynamic>{
         'username': (json['username'] ?? 'Username3189').toString(),
         ...spendingHabits,
       },
       transactions: transactions.isEmpty
-          ? UserStats.defaults((json['id'] ?? 'user_123').toString()).transactions
+          ? UserStats.defaults(
+              (json['id'] ?? 'user_123').toString(),
+            ).transactions
           : transactions,
       portfolioHistory: portfolioHistory.isEmpty
-          ? UserStats.defaults((json['id'] ?? 'user_123').toString()).portfolioHistory
+          ? UserStats.defaults(
+              (json['id'] ?? 'user_123').toString(),
+            ).portfolioHistory
           : portfolioHistory,
       holdings: holdings.isEmpty
           ? UserStats.defaults((json['id'] ?? 'user_123').toString()).holdings
@@ -309,6 +313,29 @@ class ProvisionedUserStats {
   final bool migratedLegacyProfile;
 }
 
+@immutable
+class LeaderboardEntry {
+  const LeaderboardEntry({
+    required this.id,
+    required this.rank,
+    required this.username,
+    required this.literacyPoints,
+    required this.xp,
+    required this.gold,
+    required this.isCurrentUser,
+  });
+
+  final String id;
+  final int rank;
+  final String username;
+  final int literacyPoints;
+  final int xp;
+  final int gold;
+  final bool isCurrentUser;
+
+  String get scoreLabel => '$literacyPoints LP';
+}
+
 class SupabaseService {
   SupabaseService._();
 
@@ -370,7 +397,8 @@ create table if not exists public.user_stats (
       return;
     }
 
-    final hasKeys = supabaseUrl.trim().isNotEmpty &&
+    final hasKeys =
+        supabaseUrl.trim().isNotEmpty &&
         !supabaseUrl.contains('YOUR-PROJECT') &&
         supabaseAnonKey.trim().isNotEmpty &&
         !supabaseAnonKey.contains('YOUR_SUPABASE');
@@ -486,7 +514,8 @@ create table if not exists public.user_stats (
 
     final existingStats = await _fetchUserStats(userId);
     if (existingStats != null) {
-      final needsProfileRefresh = existingStats.username != resolvedUsername ||
+      final needsProfileRefresh =
+          existingStats.username != resolvedUsername ||
           existingStats.spendingHabits['email'] != email;
       if (!needsProfileRefresh) {
         return ProvisionedUserStats(
@@ -571,16 +600,17 @@ create table if not exists public.user_stats (
           .stream(primaryKey: const ['id'])
           .eq('id', userId)
           .asyncMap((rows) async {
-        if (rows.isEmpty) {
-          final fallback = _memoryCache[userId] ?? UserStats.defaults(userId);
-          return fallback;
-        }
+            if (rows.isEmpty) {
+              final fallback =
+                  _memoryCache[userId] ?? UserStats.defaults(userId);
+              return fallback;
+            }
 
-        final stats = UserStats.fromMap(rows.first);
-        _memoryCache[userId] = stats;
-        await _cacheUserStats(stats);
-        return stats;
-      });
+            final stats = UserStats.fromMap(rows.first);
+            _memoryCache[userId] = stats;
+            await _cacheUserStats(stats);
+            return stats;
+          });
       return;
     }
 
@@ -725,7 +755,10 @@ create table if not exists public.user_stats (
   }
 
   static String legacyUserIdFromEmail(String email) {
-    final safe = email.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_');
+    final safe = email.trim().toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9]'),
+      '_',
+    );
     return 'user_$safe';
   }
 
@@ -739,7 +772,8 @@ create table if not exists public.user_stats (
         .split(' ')
         .where((part) => part.isNotEmpty)
         .map(
-          (part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
+          (part) =>
+              '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
         )
         .toList(growable: false);
     if (words.isEmpty) {
@@ -749,6 +783,68 @@ create table if not exists public.user_stats (
   }
 
   String _cacheKey(String userId) => 'budget_buddy_user_stats_$userId';
+
+  Future<List<LeaderboardEntry>> fetchLeaderboard({
+    int limit = 20,
+    String? currentUserId,
+  }) async {
+    await _ensurePreferences();
+    final normalizedLimit = limit.clamp(1, 50);
+
+    if (!_isSupabaseConnected) {
+      return _buildCachedLeaderboard(
+        limit: normalizedLimit,
+        currentUserId: currentUserId,
+      );
+    }
+
+    try {
+      final response = await Supabase.instance.client
+          .from(userStatsTable)
+          .select('id, username, literacy_points, xp, gold')
+          .order('literacy_points', ascending: false)
+          .order('xp', ascending: false)
+          .order('gold', ascending: false)
+          .limit(normalizedLimit);
+
+      if (response.isEmpty) {
+        return _buildCachedLeaderboard(
+          limit: normalizedLimit,
+          currentUserId: currentUserId,
+        );
+      }
+
+      return response
+          .whereType<Map>()
+          .map(
+            (entry) =>
+                entry.map((key, value) => MapEntry(key.toString(), value)),
+          )
+          .toList(growable: false)
+          .asMap()
+          .entries
+          .map(
+            (entry) => LeaderboardEntry(
+              id: (entry.value['id'] ?? '').toString(),
+              rank: entry.key + 1,
+              username: (entry.value['username'] ?? 'Finance Wizard')
+                  .toString(),
+              literacyPoints: _readInt(entry.value['literacy_points']),
+              xp: _readInt(entry.value['xp']),
+              gold: _readInt(entry.value['gold']),
+              isCurrentUser:
+                  currentUserId != null && currentUserId == entry.value['id'],
+            ),
+          )
+          .toList(growable: false);
+    } catch (error) {
+      debugPrint('Supabase leaderboard failed, using cached data: $error');
+      return _buildCachedLeaderboard(
+        limit: normalizedLimit,
+        currentUserId: currentUserId,
+      );
+    }
+  }
 
   Future<SharedPreferences> _ensurePreferences() async {
     _preferences ??= await SharedPreferences.getInstance();
@@ -771,6 +867,70 @@ create table if not exists public.user_stats (
     } catch (_) {
       return null;
     }
+  }
+
+  List<LeaderboardEntry> _buildCachedLeaderboard({
+    required int limit,
+    String? currentUserId,
+  }) {
+    final entries = _memoryCache.values
+        .map(
+          (stats) => LeaderboardEntry(
+            id: stats.id,
+            rank: 0,
+            username: stats.username,
+            literacyPoints: stats.literacyPoints,
+            xp: stats.xp,
+            gold: stats.gold,
+            isCurrentUser: currentUserId != null && currentUserId == stats.id,
+          ),
+        )
+        .toList(growable: false);
+
+    if (entries.isEmpty && currentUserId != null) {
+      final stats = UserStats.defaults(currentUserId);
+      return <LeaderboardEntry>[
+        LeaderboardEntry(
+          id: stats.id,
+          rank: 1,
+          username: stats.username,
+          literacyPoints: stats.literacyPoints,
+          xp: stats.xp,
+          gold: stats.gold,
+          isCurrentUser: true,
+        ),
+      ];
+    }
+
+    entries.sort((a, b) {
+      final literacyCompare = b.literacyPoints.compareTo(a.literacyPoints);
+      if (literacyCompare != 0) {
+        return literacyCompare;
+      }
+      final xpCompare = b.xp.compareTo(a.xp);
+      if (xpCompare != 0) {
+        return xpCompare;
+      }
+      return b.gold.compareTo(a.gold);
+    });
+
+    return entries
+        .take(limit)
+        .toList(growable: false)
+        .asMap()
+        .entries
+        .map(
+          (entry) => LeaderboardEntry(
+            id: entry.value.id,
+            rank: entry.key + 1,
+            username: entry.value.username,
+            literacyPoints: entry.value.literacyPoints,
+            xp: entry.value.xp,
+            gold: entry.value.gold,
+            isCurrentUser: entry.value.isCurrentUser,
+          ),
+        )
+        .toList(growable: false);
   }
 }
 
@@ -799,9 +959,7 @@ Map<String, dynamic> _readMap(dynamic value) {
     return value;
   }
   if (value is Map) {
-    return value.map(
-      (key, mapValue) => MapEntry(key.toString(), mapValue),
-    );
+    return value.map((key, mapValue) => MapEntry(key.toString(), mapValue));
   }
   return <String, dynamic>{};
 }
@@ -844,5 +1002,3 @@ List<double> _readDoubleList(dynamic value) {
   }
   return const <double>[];
 }
-
-
