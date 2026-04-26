@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../controllers/adventure_state_controller.dart';
 import '../../../game/budget_buddy_game.dart';
+import '../../../services/app_sound_service.dart';
 
 class GameCanvas extends StatefulWidget {
   const GameCanvas({super.key});
@@ -83,8 +84,11 @@ class _GameCanvasState extends State<GameCanvas> {
     }
 
     if (correct) {
+      AppSoundService.play(AppSoundEffect.success);
       await Future<void>.delayed(const Duration(milliseconds: 320));
       _game.resolveCombat(victory: true);
+    } else {
+      AppSoundService.play(AppSoundEffect.error);
     }
   }
 
@@ -308,6 +312,7 @@ class _GlassIconButton extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: () {
         HapticFeedback.lightImpact();
+        AppSoundService.play(AppSoundEffect.navigation);
         onTap();
       },
       child: Container(

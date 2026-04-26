@@ -1,5 +1,7 @@
 import 'package:flutter/services.dart';
 
+import '../services/app_sound_service.dart';
+
     this.onSelected,
   final int activeIndex;
   final ValueChanged<int>? onSelected;
@@ -63,6 +65,7 @@ import 'package:flutter/services.dart';
       return;
     }
     HapticFeedback.lightImpact();
+    AppSoundService.play(AppSoundEffect.navigation);
     onSelected!(index);
   }
 class _NavTile extends StatelessWidget {

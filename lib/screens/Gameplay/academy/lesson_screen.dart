@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../components/unit_row_item.dart';
 import '../../../models/lesson.dart';
 import '../../../models/progression_service.dart';
+import '../../../services/app_sound_service.dart';
 import '../../../widgets/custom_bottom_nav.dart';
 import '../../../widgets/game_toast.dart';
 import 'lesson_detail_screen.dart';
@@ -76,6 +77,7 @@ class _LessonScreenState extends State<LessonScreen> {
         message: 'Finish the earlier content in this unit to unlock ${lesson.title}.',
         icon: Icons.lock_outline_rounded,
         accent: const Color(0xFFFFB084),
+        soundEffect: AppSoundEffect.error,
       );
       return;
     }
