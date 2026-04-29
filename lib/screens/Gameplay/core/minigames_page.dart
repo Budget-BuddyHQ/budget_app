@@ -7,6 +7,7 @@ import '../../../widgets/custom_button.dart';
 import '../../../widgets/game_toast.dart';
 import '../arcade/bill_dodger.dart';
 import '../arcade/budget_challenge.dart';
+import '../arcade/stock_market_page.dart';
 
 class MinigamesPage extends StatelessWidget {
   const MinigamesPage({
@@ -60,6 +61,14 @@ class MinigamesPage extends StatelessWidget {
     );
   }
 
+  Future<void> _openStockMarket(BuildContext context) async {
+    await Navigator.of(context).push(
+      FadePageRoute(
+        builder: (_) => const StockMarketPage(),
+      ),
+    );
+  }
+
   void _showComingSoon(BuildContext context, String title) {
     HapticFeedback.lightImpact();
     GameToast.show(
@@ -77,7 +86,7 @@ class MinigamesPage extends StatelessWidget {
       const _MinigameCardData(
         title: 'Bill Dodger',
         description:
-            'Glide left and right, collect needs, dodge wants, and build quicker spending instincts.',
+            'Collect needs, dodge wants, and sharpen fast spending calls.',
         badge: 'FEATURED ARCADE',
         accent: Color(0xFFE1BB72),
         icon: Icons.sports_esports_rounded,
@@ -86,25 +95,25 @@ class MinigamesPage extends StatelessWidget {
       const _MinigameCardData(
         title: 'Budget Challenge',
         description:
-            'Assemble essential purchases under pressure and train price-to-value decision making.',
+            'Build the best cart under pressure and protect your budget.',
         badge: 'PUZZLE RUN',
         accent: Color(0xFF78C69B),
         icon: Icons.shopping_cart_rounded,
         cta: 'Play Budget Challenge',
       ),
       const _MinigameCardData(
-        title: 'Emergency Fund Sprint',
+        title: 'Market Board',
         description:
-            'Race against surprise expenses and keep your safety net alive through escalating rounds.',
-        badge: 'COMING NEXT',
-        accent: Color(0xFF6CB6DA),
-        icon: Icons.savings_rounded,
-        cta: 'Coming Soon',
+            'Buy stock lots, ride the swings, and cash out for gold.',
+        badge: 'NEW SIDE MODE',
+        accent: Color(0xFF58C7FF),
+        icon: Icons.show_chart_rounded,
+        cta: 'Open Market Board',
       ),
       const _MinigameCardData(
         title: 'Subscription Sweep',
         description:
-            'Spot recurring charges fast, cut the noise, and protect your monthly budget before it drains away.',
+            'Spot recurring charges before they leak your monthly plan.',
         badge: 'IN PROTOTYPE',
         accent: Color(0xFFD49B7E),
         icon: Icons.receipt_long_rounded,
@@ -130,18 +139,19 @@ class MinigamesPage extends StatelessWidget {
                 _PageHeader(
                   title: 'Minigames',
                   subtitle:
-                      'A dedicated arcade lane for quick budget drills, reflex games, and future bite-sized challenges.',
+                      'Quick budget drills and side modes live here.',
                 ),
                 const SizedBox(height: 18),
                 _MinigameHero(
                   onBillDodger: () => _openBillDodger(context),
                   onBudgetChallenge: () => _openBudgetChallenge(context),
+                  onStockMarket: () => _openStockMarket(context),
                 ),
                 const SizedBox(height: 20),
                 const _SectionTitle(
                   title: 'Arcade Lineup',
                   subtitle:
-                      'Fast sessions live here now, with space for more minigames as the gameplay library grows.',
+                      'Pick a mode and jump straight in.',
                 ),
                 const SizedBox(height: 14),
                 LayoutBuilder(
@@ -171,6 +181,7 @@ class MinigamesPage extends StatelessWidget {
                           onPressed: switch (index) {
                             0 => () => _openBillDodger(context),
                             1 => () => _openBudgetChallenge(context),
+                            2 => () => _openStockMarket(context),
                             _ => () => _showComingSoon(context, game.title),
                           },
                         );
@@ -216,45 +227,70 @@ class _PageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (Navigator.of(context).canPop()) ...[
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              onPressed: () => Navigator.of(context).maybePop(),
-              icon: const Icon(
-                Icons.arrow_back_ios_new_rounded,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stacked = constraints.maxWidth < 420;
+
+        final copy = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
                 color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
               ),
             ),
-          ),
-        ],
-        Expanded(
-          child: Column(
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.74),
+                height: 1.45,
+              ),
+            ),
+          ],
+        );
+
+        if (stacked) {
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
+              if (Navigator.of(context).canPop())
+                IconButton(
+                  onPressed: () => Navigator.of(context).maybePop(),
+                  padding: EdgeInsets.zero,
+                  alignment: Alignment.centerLeft,
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.74),
-                  height: 1.45,
+              copy,
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (Navigator.of(context).canPop()) ...[
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: IconButton(
+                  onPressed: () => Navigator.of(context).maybePop(),
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],
-          ),
-        ),
-      ],
+            Expanded(child: copy),
+          ],
+        );
+      },
     );
   }
 }
@@ -263,10 +299,12 @@ class _MinigameHero extends StatelessWidget {
   const _MinigameHero({
     required this.onBillDodger,
     required this.onBudgetChallenge,
+    required this.onStockMarket,
   });
 
   final VoidCallback onBillDodger;
   final VoidCallback onBudgetChallenge;
+  final VoidCallback onStockMarket;
 
   @override
   Widget build(BuildContext context) {
@@ -311,6 +349,17 @@ class _MinigameHero extends StatelessWidget {
                 ),
                 style: const CustomButtonStyle.tertiary(),
               ),
+              const SizedBox(height: 10),
+              CustomButton(
+                label: 'Open Market Board',
+                onPressed: onStockMarket,
+                prefixIcon: const Icon(
+                  Icons.show_chart_rounded,
+                  color: Color(0xFF58C7FF),
+                  size: 18,
+                ),
+                style: const CustomButtonStyle.tertiary(),
+              ),
             ],
           );
 
@@ -329,7 +378,7 @@ class _MinigameHero extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Short runs. Fast feedback. Cleaner minigame flow.',
+                'Short runs. Fast feedback.',
                 textAlign: stacked ? TextAlign.center : TextAlign.start,
                 style: const TextStyle(
                   color: Colors.white,
@@ -340,7 +389,7 @@ class _MinigameHero extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Bill Dodger and the other smaller challenges now live together, so the main adventure page can stay focused on progression.',
+                'Arcade games stay here so the main adventure page can stay focused.',
                 textAlign: stacked ? TextAlign.center : TextAlign.start,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.74),
@@ -362,8 +411,8 @@ class _MinigameHero extends StatelessWidget {
                     accent: Color(0xFF78C69B),
                   ),
                   _HeroBadge(
-                    label: 'More incoming',
-                    accent: Color(0xFF6CB6DA),
+                    label: 'Market Board',
+                    accent: Color(0xFF58C7FF),
                   ),
                 ],
               ),
@@ -481,9 +530,10 @@ class _MinigameCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stacked = constraints.maxWidth < 230;
+              final badge = Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: data.accent.withValues(alpha: 0.14),
@@ -497,10 +547,27 @@ class _MinigameCard extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-              ),
-              const Spacer(),
-              Icon(data.icon, color: data.accent),
-            ],
+              );
+
+              if (stacked) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    badge,
+                    const SizedBox(height: 12),
+                    Icon(data.icon, color: data.accent),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Flexible(child: badge),
+                  const Spacer(),
+                  Icon(data.icon, color: data.accent),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 14),
           Text(
