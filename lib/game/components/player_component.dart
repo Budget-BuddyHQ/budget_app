@@ -82,6 +82,7 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
     final moving = _velocity.length2 > 20;
     final stepWave = moving ? (_animationClock % 1) : 0;
     final legOffset = moving ? (stepWave < 0.5 ? -2.5 : 2.5) : 0.0;
+    final bob = moving ? ((stepWave < 0.5 ? -1.5 : 1.5)) : 0.0;
     final headTilt = switch (_facing) {
       FacingDirection.left => -5.0,
       FacingDirection.right => 5.0,
@@ -89,7 +90,9 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
     };
 
     final shellPaint = Paint()..color = const Color(0xFFF6E37C);
+    final shellDetailPaint = Paint()..color = const Color(0xFFD4B857);
     final bodyPaint = Paint()..color = const Color(0xFF5C815D);
+    final scarfPaint = Paint()..color = const Color(0xFF58C7FF);
     final outlinePaint = Paint()
       ..color = const Color(0xFF1B5E4A)
       ..style = PaintingStyle.stroke
@@ -100,7 +103,12 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
 
     canvas.save();
     canvas.translate(size.x / 2, size.y / 2);
+    canvas.translate(0, bob);
 
+    canvas.drawOval(
+      Rect.fromCenter(center: const Offset(0, 22), width: 36, height: 12),
+      Paint()..color = Colors.black.withValues(alpha: 0.16),
+    );
     canvas.drawOval(
       Rect.fromCenter(center: const Offset(0, 2), width: 44, height: 28),
       glowPaint,
@@ -109,9 +117,31 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
       Rect.fromCenter(center: const Offset(0, 0), width: 40, height: 28),
       shellPaint,
     );
+    canvas.drawPath(
+      Path()
+        ..moveTo(-10, -2)
+        ..quadraticBezierTo(0, -10, 10, -2)
+        ..quadraticBezierTo(0, 6, -10, -2),
+      shellDetailPaint,
+    );
     canvas.drawOval(
       Rect.fromCenter(center: const Offset(0, 2), width: 52, height: 32),
       bodyPaint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: const Offset(0, -6), width: 26, height: 8),
+        const Radius.circular(6),
+      ),
+      scarfPaint,
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(9, -4)
+        ..lineTo(16, 3)
+        ..lineTo(10, 7)
+        ..close(),
+      scarfPaint,
     );
     canvas.drawOval(
       Rect.fromCenter(center: Offset(headTilt, -16), width: 18, height: 16),
@@ -145,7 +175,11 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
     );
 
     final eyeOffsetX = _facing == FacingDirection.left ? -3.5 : 3.5;
-    canvas.drawCircle(Offset(headTilt + eyeOffsetX, -18), 1.8, Paint()..color = Colors.black);
+    canvas.drawCircle(
+      Offset(headTilt + eyeOffsetX, -18),
+      1.8,
+      Paint()..color = Colors.black,
+    );
     canvas.restore();
   }
 
