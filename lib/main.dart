@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'config/runtime_env.dart';
 import 'controllers/adventure_state_controller.dart';
 import 'controllers/user_stats_controller.dart';
 import 'screens/Gameplay/arcade/bill_dodger.dart';
@@ -14,11 +16,22 @@ import 'screens/Gameplay/dashboard/dashboard_shell.dart';
 import 'screens/Gameplay/dashboard/leaderboard_screen.dart';
 import 'screens/auth/auth_screen.dart';
 import 'screens/onboarding/welcome_screen.dart';
+import 'services/app_sound_service.dart';
 import 'services/supabase_service.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (!kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS)) {
+    await SystemChrome.setPreferredOrientations(const [
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
 
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
     try {
@@ -38,24 +51,31 @@ Future<void> main() async {
     }
   }
 
-  const supabaseUrl = 'https://cwqjduingvevagrxbwts.supabase.co';
-  const supabaseAnonKey = 'sb_publishable_sALqhgaTDGewkqp_XiNo-g_EO6ziR4l';
+  const fallbackSupabaseUrl = 'https://cwqjduingvevagrxbwts.supabase.co';
+  const fallbackSupabaseAnonKey =
+      'sb_publishable_sALqhgaTDGewkqp_XiNo-g_EO6ziR4l';
+  final supabaseUrl = readRuntimeEnv('SUPABASE_URL') ?? fallbackSupabaseUrl;
+  final supabaseAnonKey =
+      readRuntimeEnv('SUPABASE_ANON_KEY') ?? fallbackSupabaseAnonKey;
 
   await SupabaseService.instance.initialize(
     supabaseUrl: supabaseUrl,
     supabaseAnonKey: supabaseAnonKey,
   );
+  await AppSoundService.initialize();
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<UserStatsController>(
-          create: (_) => UserStatsController(
-            service: SupabaseService.instance,
-          )..initialize(),
+          create: (_) =>
+              UserStatsController(service: SupabaseService.instance)
+                ..initialize(),
         ),
-        ChangeNotifierProxyProvider<UserStatsController,
-            AdventureStateController>(
+        ChangeNotifierProxyProvider<
+          UserStatsController,
+          AdventureStateController
+        >(
           create: (_) => AdventureStateController(),
           update: (_, userStats, adventure) =>
               (adventure ?? AdventureStateController())

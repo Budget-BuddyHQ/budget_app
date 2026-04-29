@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../components/unit_row_item.dart';
 import '../../../models/lesson.dart';
 import '../../../models/progression_service.dart';
+import '../../../services/app_sound_service.dart';
 import '../../../widgets/custom_bottom_nav.dart';
 import '../../../widgets/game_toast.dart';
 import 'lesson_detail_screen.dart';
@@ -39,6 +40,30 @@ class _LessonScreenState extends State<LessonScreen> {
     }
   }
 
+  Future<void> _showUnitPickerSheet(List<LessonUnit> units) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFFF8FAFC),
+      builder: (context) {
+        return SafeArea(
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.78,
+            child: _UnitPickerSheet(
+              units: units,
+              selectedIndex: _selectedUnitIndex,
+              onSelected: (index) {
+                setState(() => _selectedUnitIndex = index);
+                Navigator.of(context).pop();
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _openLesson(Lesson lesson) async {
     final status = _progressionService.getLessonStatus(lesson.id);
     if (status == LessonStatus.locked) {
@@ -49,6 +74,7 @@ class _LessonScreenState extends State<LessonScreen> {
             'Finish the earlier content in this unit to unlock ${lesson.title}.',
         icon: Icons.lock_outline_rounded,
         accent: const Color(0xFFFFB084),
+        soundEffect: AppSoundEffect.error,
       );
       return;
     }
@@ -74,7 +100,6 @@ class _LessonScreenState extends State<LessonScreen> {
     final selectedUnit = units[_selectedUnitIndex.clamp(0, units.length - 1)];
     final nextLesson = _progressionService.nextLesson;
     final overallProgress = _progressionService.getProgress();
-    final railExtended = MediaQuery.of(context).size.width >= 980;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D2B20),
@@ -92,9 +117,7 @@ class _LessonScreenState extends State<LessonScreen> {
               total: _progressionService.totalCount,
               progress: overallProgress,
               nextLesson: nextLesson,
-              onOpenNext: nextLesson == null
-                  ? null
-                  : () => _openLesson(nextLesson),
+              onOpenNext: nextLesson == null ? null : () => _openLesson(nextLesson),
             ),
             const _MasteryLegend(),
             Expanded(
@@ -104,9 +127,9 @@ class _LessonScreenState extends State<LessonScreen> {
                     width: railExtended ? 220 : 88,
                     margin: const EdgeInsets.fromLTRB(20, 16, 12, 20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A4D3D),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(28),
-                      border: Border.all(color: const Color(0xFF85EFAC)),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
                     ),
                     child: NavigationRail(
                       extended: railExtended,
@@ -162,6 +185,8 @@ class _HubHeader extends StatelessWidget {
     required this.progress,
     required this.nextLesson,
     required this.onOpenNext,
+    this.onBrowseUnits,
+    this.compact = false,
   });
 
   final int completed;
@@ -169,17 +194,24 @@ class _HubHeader extends StatelessWidget {
   final double progress;
   final Lesson? nextLesson;
   final VoidCallback? onOpenNext;
+  final VoidCallback? onBrowseUnits;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-      padding: const EdgeInsets.all(24),
+      margin: EdgeInsets.fromLTRB(
+        compact ? 0 : 20,
+        compact ? 0 : 20,
+        compact ? 0 : 20,
+        compact ? 0 : 12,
+      ),
+      padding: EdgeInsets.all(compact ? 20 : 24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: <Color>[Color(0xFF114B3A), Color(0xFF1D7056)],
         ),
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(compact ? 26 : 30),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,11 +226,11 @@ class _HubHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Units and mastery',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 30,
+              fontSize: compact ? 24 : 30,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -216,13 +248,11 @@ class _HubHeader extends StatelessWidget {
             runSpacing: 12,
             children: [
               _MetricPill(label: 'Completed', value: '$completed/$total'),
-              _MetricPill(
-                label: 'Progress',
-                value: '${(progress * 100).round()}%',
-              ),
+              _MetricPill(label: 'Progress', value: '${(progress * 100).round()}%'),
               _MetricPill(
                 label: 'Next up',
                 value: nextLesson?.title ?? 'All units complete',
+                compact: compact,
               ),
             ],
           ),
@@ -233,9 +263,7 @@ class _HubHeader extends StatelessWidget {
               minHeight: 10,
               value: progress,
               backgroundColor: Colors.white.withValues(alpha: 0.16),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFF85EFAC),
-              ),
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF85EFAC)),
             ),
           ),
           if (onOpenNext != null) ...[
@@ -260,15 +288,20 @@ class _HubHeader extends StatelessWidget {
 }
 
 class _MetricPill extends StatelessWidget {
-  const _MetricPill({required this.label, required this.value});
+  const _MetricPill({
+    required this.label,
+    required this.value,
+    this.compact = false,
+  });
 
   final String label;
   final String value;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minWidth: 150),
+      constraints: BoxConstraints(minWidth: compact ? 132 : 150),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.12),
@@ -288,11 +321,11 @@ class _MetricPill extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             value,
-            maxLines: 2,
+            maxLines: compact ? 3 : 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 16,
+              fontSize: compact ? 15 : 16,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -303,7 +336,9 @@ class _MetricPill extends StatelessWidget {
 }
 
 class _MasteryLegend extends StatelessWidget {
-  const _MasteryLegend();
+  const _MasteryLegend({this.compact = false});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -315,7 +350,7 @@ class _MasteryLegend extends StatelessWidget {
     ];
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
+      margin: EdgeInsets.symmetric(horizontal: compact ? 0 : 20),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
         color: const Color(0xFF1A4D3D),
@@ -356,6 +391,271 @@ class _MasteryLegend extends StatelessWidget {
   }
 }
 
+class _MobileUnitSelector extends StatelessWidget {
+  const _MobileUnitSelector({
+    required this.units,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  final List<LessonUnit> units;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 58,
+      child: Scrollbar(
+        thumbVisibility: true,
+        notificationPredicate: (notification) => notification.depth == 0,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: units.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 10),
+          itemBuilder: (context, index) {
+            final selected = index == selectedIndex;
+            final unit = units[index];
+            return ChoiceChip(
+              selected: selected,
+              label: Text(unit.title),
+              onSelected: (_) => onSelected(index),
+              labelStyle: TextStyle(
+                color: selected
+                    ? const Color(0xFF0F172A)
+                    : const Color(0xFF334155),
+                fontWeight: FontWeight.w800,
+              ),
+              selectedColor: const Color(0xFF85EFAC),
+              backgroundColor: Colors.white,
+              side: BorderSide(
+                color: selected
+                    ? const Color(0xFF2F9E68)
+                    : const Color(0xFFE5E7EB),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _UnitSidebar extends StatelessWidget {
+  const _UnitSidebar({
+    required this.width,
+    required this.extended,
+    required this.units,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  final double width;
+  final bool extended;
+  final List<LessonUnit> units;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      margin: const EdgeInsets.fromLTRB(20, 16, 12, 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Scrollbar(
+        thumbVisibility: true,
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          itemCount: units.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            final unit = units[index];
+            final selected = index == selectedIndex;
+            final accent = selected
+                ? const Color(0xFF2F9E68)
+                : const Color(0xFF94A3B8);
+
+            return InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () => onSelected(index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                padding: EdgeInsets.symmetric(
+                  horizontal: extended ? 14 : 10,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? const Color(0xFFE9F8EF)
+                      : const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: selected
+                        ? const Color(0xFF2F9E68)
+                        : const Color(0xFFE2E8F0),
+                  ),
+                ),
+                child: extended
+                    ? Row(
+                        children: [
+                          Icon(
+                            selected
+                                ? Icons.menu_book_rounded
+                                : Icons.menu_book_outlined,
+                            color: accent,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              unit.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: selected
+                                    ? const Color(0xFF0F172A)
+                                    : const Color(0xFF334155),
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        children: [
+                          Icon(
+                            selected
+                                ? Icons.menu_book_rounded
+                                : Icons.menu_book_outlined,
+                            color: accent,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              color: selected
+                                  ? const Color(0xFF0F172A)
+                                  : const Color(0xFF334155),
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _UnitPickerSheet extends StatelessWidget {
+  const _UnitPickerSheet({
+    required this.units,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  final List<LessonUnit> units;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Browse Units',
+            style: TextStyle(
+              color: Color(0xFF0F172A),
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Open any unit without losing your place on smaller screens.',
+            style: TextStyle(
+              color: Color(0xFF475569),
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Scrollbar(
+              thumbVisibility: true,
+              child: ListView.separated(
+                itemCount: units.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final unit = units[index];
+                  final selected = index == selectedIndex;
+
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 4,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      side: BorderSide(
+                        color: selected
+                            ? const Color(0xFF2F9E68)
+                            : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    tileColor: selected
+                        ? const Color(0xFFE9F8EF)
+                        : Colors.white,
+                    leading: CircleAvatar(
+                      backgroundColor: selected
+                          ? const Color(0xFF2F9E68)
+                          : const Color(0xFFE2E8F0),
+                      foregroundColor: selected
+                          ? Colors.white
+                          : const Color(0xFF334155),
+                      child: Text('${index + 1}'),
+                    ),
+                    title: Text(
+                      unit.title,
+                      style: const TextStyle(
+                        color: Color(0xFF0F172A),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    subtitle: Text(
+                      unit.subtitle,
+                      style: const TextStyle(color: Color(0xFF64748B)),
+                    ),
+                    trailing: selected
+                        ? const Icon(
+                            Icons.check_circle_rounded,
+                            color: Color(0xFF2F9E68),
+                          )
+                        : null,
+                    onTap: () => onSelected(index),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _UnitCard extends StatelessWidget {
   const _UnitCard({
     required this.unit,
@@ -363,6 +663,7 @@ class _UnitCard extends StatelessWidget {
     required this.mastery,
     required this.onLessonTap,
     required this.statusFor,
+    this.compact = false,
   });
 
   final LessonUnit unit;
@@ -370,11 +671,12 @@ class _UnitCard extends StatelessWidget {
   final MasteryLevel mastery;
   final ValueChanged<Lesson> onLessonTap;
   final LessonStatus Function(String lessonId) statusFor;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(compact ? 20 : 24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(32),
@@ -390,35 +692,52 @@ class _UnitCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stacked = compact || constraints.maxWidth < 560;
+              final badge = _MasteryBadge(mastery: mastery);
+              final copy = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    unit.title,
+                    style: TextStyle(
+                      color: const Color(0xFF0F172A),
+                      fontSize: compact ? 24 : 28,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    unit.description,
+                    style: const TextStyle(
+                      color: Color(0xFF475569),
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              );
+
+              if (stacked) {
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      unit.title,
-                      style: const TextStyle(
-                        color: Color(0xFF0F172A),
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      unit.description,
-                      style: const TextStyle(
-                        color: Color(0xFF475569),
-                        height: 1.5,
-                      ),
-                    ),
+                    copy,
+                    const SizedBox(height: 14),
+                    badge,
                   ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              _MasteryBadge(mastery: mastery),
-            ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: copy),
+                  const SizedBox(width: 16),
+                  badge,
+                ],
+              );
+            },
           ),
           const SizedBox(height: 20),
           Text(
