@@ -8,11 +8,7 @@ import '../../../widgets/game_toast.dart';
 import 'lesson_detail_screen.dart';
 
 class LessonScreen extends StatefulWidget {
-  const LessonScreen({
-    super.key,
-    this.activeTabIndex = 3,
-    this.onNavSelected,
-  });
+  const LessonScreen({super.key, this.activeTabIndex = 3, this.onNavSelected});
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
@@ -49,7 +45,8 @@ class _LessonScreenState extends State<LessonScreen> {
       GameToast.show(
         context,
         title: 'Lesson locked',
-        message: 'Finish the earlier content in this unit to unlock ${lesson.title}.',
+        message:
+            'Finish the earlier content in this unit to unlock ${lesson.title}.',
         icon: Icons.lock_outline_rounded,
         accent: const Color(0xFFFFB084),
       );
@@ -80,7 +77,7 @@ class _LessonScreenState extends State<LessonScreen> {
     final railExtended = MediaQuery.of(context).size.width >= 980;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
+      backgroundColor: const Color(0xFF0D2B20),
       bottomNavigationBar: widget.onNavSelected == null
           ? null
           : CustomBottomNav(
@@ -95,7 +92,9 @@ class _LessonScreenState extends State<LessonScreen> {
               total: _progressionService.totalCount,
               progress: overallProgress,
               nextLesson: nextLesson,
-              onOpenNext: nextLesson == null ? null : () => _openLesson(nextLesson),
+              onOpenNext: nextLesson == null
+                  ? null
+                  : () => _openLesson(nextLesson),
             ),
             const _MasteryLegend(),
             Expanded(
@@ -105,9 +104,9 @@ class _LessonScreenState extends State<LessonScreen> {
                     width: railExtended ? 220 : 88,
                     margin: const EdgeInsets.fromLTRB(20, 16, 12, 20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: const Color(0xFF1A4D3D),
                       borderRadius: BorderRadius.circular(28),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      border: Border.all(color: const Color(0xFF85EFAC)),
                     ),
                     child: NavigationRail(
                       extended: railExtended,
@@ -217,7 +216,10 @@ class _HubHeader extends StatelessWidget {
             runSpacing: 12,
             children: [
               _MetricPill(label: 'Completed', value: '$completed/$total'),
-              _MetricPill(label: 'Progress', value: '${(progress * 100).round()}%'),
+              _MetricPill(
+                label: 'Progress',
+                value: '${(progress * 100).round()}%',
+              ),
               _MetricPill(
                 label: 'Next up',
                 value: nextLesson?.title ?? 'All units complete',
@@ -231,7 +233,9 @@ class _HubHeader extends StatelessWidget {
               minHeight: 10,
               value: progress,
               backgroundColor: Colors.white.withValues(alpha: 0.16),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF85EFAC)),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF85EFAC),
+              ),
             ),
           ),
           if (onOpenNext != null) ...[
@@ -314,9 +318,9 @@ class _MasteryLegend extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1A4D3D),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: const Color(0xFF85EFAC)),
       ),
       child: Wrap(
         spacing: 16,
@@ -431,7 +435,9 @@ class _UnitCard extends StatelessWidget {
               minHeight: 9,
               value: progress,
               backgroundColor: const Color(0xFFE5E7EB),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2F9E68)),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF2F9E68),
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -468,10 +474,7 @@ class _MasteryBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w900,
-        ),
+        style: TextStyle(color: color, fontWeight: FontWeight.w900),
       ),
     );
   }
