@@ -22,6 +22,8 @@ class _LessonScreenState extends State<LessonScreen> {
   late final ProgressionService _progressionService;
   int _selectedUnitIndex = 0;
 
+  bool get railExtended => MediaQuery.of(context).size.width >= 600;
+
   @override
   void initState() {
     super.initState();
@@ -378,7 +380,7 @@ class _MasteryLegend extends StatelessWidget {
                   Text(
                     item.$1,
                     style: const TextStyle(
-                      color: Color(0xFF334155),
+                      color: Colors.white,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -412,7 +414,7 @@ class _MobileUnitSelector extends StatelessWidget {
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: units.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 10),
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
           itemBuilder: (context, index) {
             final selected = index == selectedIndex;
             final unit = units[index];
@@ -474,7 +476,7 @@ class _UnitSidebar extends StatelessWidget {
         child: ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
           itemCount: units.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 8),
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final unit = units[index];
             final selected = index == selectedIndex;
@@ -597,7 +599,7 @@ class _UnitPickerSheet extends StatelessWidget {
               thumbVisibility: true,
               child: ListView.separated(
                 itemCount: units.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final unit = units[index];
                   final selected = index == selectedIndex;
