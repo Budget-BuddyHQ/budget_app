@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../controllers/app_settings_controller.dart';
 import '../../services/supabase_service.dart';
 import '../../controllers/user_stats_controller.dart';
+import '../../navigation/app_tab_index.dart';
 import '../../navigation/fade_page_route.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/game_toast.dart';
@@ -11,7 +13,11 @@ import '../admin/admin_screen.dart';
 import '../auth/auth_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key, this.activeTabIndex = 4, this.onNavSelected});
+  const ProfileScreen({
+    super.key,
+    this.activeTabIndex = AppTabIndex.profile,
+    this.onNavSelected,
+  });
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
@@ -22,7 +28,6 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _notificationsEnabled = true;
-  bool _soundEnabled = true;
 
   Future<void> _logout(BuildContext context) async {
     await context.read<UserStatsController>().signOut();
@@ -46,8 +51,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<UserStatsController>(
-      builder: (context, controller, _) {
+    return Consumer2<UserStatsController, AppSettingsController>(
+      builder: (context, controller, settings, _) {
         final stats = controller.stats;
         final user = Supabase.instance.client.auth.currentUser;
 
@@ -88,7 +93,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           icon: Icons.notifications_active_rounded,
                           trailing: Switch.adaptive(
                             value: _notificationsEnabled,
-                            activeColor: const Color(0xFF85EFAC),
+                            activeThumbColor: const Color(0xFF85EFAC),
                             onChanged: (value) {
                               HapticFeedback.lightImpact();
                               setState(() => _notificationsEnabled = value);
@@ -98,14 +103,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 12),
                         _SettingsCard(
                           title: 'Sound',
-                          subtitle: 'Keep taps and reward effects enabled.',
+                          subtitle:
+                              'Live across buttons, nav, and reward effects.',
                           icon: Icons.volume_up_rounded,
                           trailing: Switch.adaptive(
-                            value: _soundEnabled,
-                            activeColor: const Color(0xFF85EFAC),
-                            onChanged: (value) {
+                            value: settings.soundEnabled,
+                            activeThumbColor: const Color(0xFF85EFAC),
+                            onChanged: (value) async {
                               HapticFeedback.lightImpact();
-                              setState(() => _soundEnabled = value);
+                              await settings.setSoundEnabled(value);
                             },
                           ),
                         ),

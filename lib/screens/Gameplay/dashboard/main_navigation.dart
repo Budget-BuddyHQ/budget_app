@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../../../navigation/app_tab_index.dart';
 import '../../profile/profile_screen.dart';
 import '../academy/learning_path_screen.dart';
-import '../core/game_hub_page.dart';
+import '../core/main_game_page.dart';
+import '../core/minigames_page.dart';
 import '../customize_screen.dart';
 import 'home_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({
     super.key,
-    this.initialIndex = 0,
+    this.initialIndex = AppTabIndex.dashboard,
   });
 
   final int initialIndex;
@@ -24,7 +26,7 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex.clamp(0, 4).toInt();
+    _currentIndex = widget.initialIndex.clamp(0, AppTabIndex.count - 1).toInt();
   }
 
   void _selectTab(int index) {
@@ -36,50 +38,33 @@ class _MainNavigationState extends State<MainNavigation> {
     });
   }
 
-  Future<void> _openPortal() async {
-    await Navigator.of(context).push(
-      PageRouteBuilder<void>(
-        pageBuilder: (_, _, _) => GameHubPage(
-          activeTabIndex: _currentIndex,
-          onNavSelected: (index) {
-            Navigator.of(context).pop();
-            _selectTab(index);
-          },
-
-        ),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return IndexedStack(
       index: _currentIndex,
       children: [
         HomeScreen(
-          activeTabIndex: 0,
+          activeTabIndex: AppTabIndex.dashboard,
           onNavSelected: _selectTab,
         ),
-        GameHubPage(
-          activeTabIndex: 1,
+        MainGamePage(
+          activeTabIndex: AppTabIndex.adventure,
+          onNavSelected: _selectTab,
+        ),
+        MinigamesPage(
+          activeTabIndex: AppTabIndex.minigames,
           onNavSelected: _selectTab,
         ),
         CustomizeScreen(
-          activeTabIndex: 2,
+          activeTabIndex: AppTabIndex.customize,
           onNavSelected: _selectTab,
         ),
         LearningPathScreen(
-          activeTabIndex: 3,
+          activeTabIndex: AppTabIndex.academy,
           onNavSelected: _selectTab,
         ),
         ProfileScreen(
-          activeTabIndex: 4,
+          activeTabIndex: AppTabIndex.profile,
           onNavSelected: _selectTab,
         ),
       ],

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+
+import '../controllers/app_settings_controller.dart';
 
 class CustomBottomNav extends StatelessWidget {
   const CustomBottomNav({
@@ -12,17 +15,18 @@ class CustomBottomNav extends StatelessWidget {
   final ValueChanged<int>? onSelected;
 
   static const _items = <_NavItemData>[
-    _NavItemData(label: 'Dashboard', icon: Icons.dashboard_rounded),
-    _NavItemData(label: 'Game Hub', icon: Icons.explore_rounded),
-    _NavItemData(label: 'Customize', icon: Icons.auto_awesome_rounded),
-    _NavItemData(label: 'Lessons', icon: Icons.school_rounded),
+    _NavItemData(label: 'Home', icon: Icons.dashboard_rounded),
+    _NavItemData(label: 'Adventure', icon: Icons.explore_rounded),
+    _NavItemData(label: 'Arcade', icon: Icons.sports_esports_rounded),
+    _NavItemData(label: 'Style', icon: Icons.auto_awesome_rounded),
+    _NavItemData(label: 'Academy', icon: Icons.school_rounded),
     _NavItemData(label: 'Profile', icon: Icons.person_rounded),
   ];
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final compact = screenWidth < 380;
+    final compact = screenWidth < 720;
 
     return SafeArea(
       top: false,
@@ -58,9 +62,10 @@ class CustomBottomNav extends StatelessWidget {
                 Expanded(
                   child: _NavTile(
                     data: _items[index],
+                    index: index,
                     active: index == activeIndex,
                     compact: compact,
-                    onTap: () => _handleTap(index),
+                    onTap: () => _handleTap(context, index),
                   ),
                 ),
             ],
@@ -70,10 +75,11 @@ class CustomBottomNav extends StatelessWidget {
     );
   }
 
-  void _handleTap(int index) {
+  void _handleTap(BuildContext context, int index) {
     if (onSelected == null || index == activeIndex) {
       return;
     }
+    context.read<AppSettingsController>().playTap();
     HapticFeedback.lightImpact();
     onSelected!(index);
   }
@@ -82,12 +88,14 @@ class CustomBottomNav extends StatelessWidget {
 class _NavTile extends StatelessWidget {
   const _NavTile({
     required this.data,
+    required this.index,
     required this.active,
     required this.compact,
     required this.onTap,
   });
 
   final _NavItemData data;
+  final int index;
   final bool active;
   final bool compact;
   final VoidCallback onTap;
@@ -95,62 +103,68 @@ class _NavTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = active ? const Color(0xFF85EFAC) : Colors.white70;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(26),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-          margin: EdgeInsets.symmetric(
-            horizontal: compact ? 2 : 3,
-            vertical: 8,
-          ),
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? 1 : 2,
-            vertical: compact ? 6 : 8,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            gradient: active
-                ? LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      const Color(0xFF85EFAC).withValues(alpha: 0.32),
-                      const Color(0xFF0D2B20).withValues(alpha: 0.92),
-                    ],
-                  )
-                : null,
-            border: Border.all(
-              color: active
-                  ? const Color(0xFF85EFAC).withValues(alpha: 0.42)
-                  : Colors.transparent,
+    return Semantics(
+      button: true,
+      selected: active,
+      label: '${data.label} tab',
+      value: active ? 'Selected' : 'Not selected',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(26),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            margin: EdgeInsets.symmetric(
+              horizontal: compact ? 2 : 3,
+              vertical: 8,
             ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                data.icon,
-                color: accent,
-                size: compact ? (active ? 23 : 21) : (active ? 24 : 21),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 1 : 2,
+              vertical: compact ? 8 : 8,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: active
+                  ? LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        const Color(0xFF85EFAC).withValues(alpha: 0.32),
+                        const Color(0xFF0D2B20).withValues(alpha: 0.92),
+                      ],
+                    )
+                  : null,
+              border: Border.all(
+                color: active
+                    ? const Color(0xFF85EFAC).withValues(alpha: 0.42)
+                    : Colors.transparent,
               ),
-              if (!compact) ...[
-                const SizedBox(height: 4),
-                Text(
-                  data.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: accent,
-                    fontSize: 9.5,
-                    fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-                  ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  data.icon,
+                  color: accent,
+                  size: compact ? (active ? 23 : 21) : (active ? 24 : 21),
                 ),
+                if (!compact) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    data.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: accent,
+                      fontSize: 9.5,
+                      fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

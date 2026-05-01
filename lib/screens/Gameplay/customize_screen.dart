@@ -7,13 +7,14 @@ import 'package:provider/provider.dart';
 
 import '../../controllers/user_stats_controller.dart';
 import '../../models/avatar_skin.dart';
+import '../../navigation/app_tab_index.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/game_toast.dart';
 
 class CustomizeScreen extends StatefulWidget {
   const CustomizeScreen({
     super.key,
-    this.activeTabIndex = 2,
+    this.activeTabIndex = AppTabIndex.customize,
     this.onNavSelected,
   });
 

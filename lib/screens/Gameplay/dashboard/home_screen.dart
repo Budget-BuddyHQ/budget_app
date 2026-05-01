@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../../navigation/app_tab_index.dart';
 import '../../../controllers/user_stats_controller.dart';
 import '../../../models/avatar_skin.dart';
 import '../../../services/supabase_service.dart';
+import '../../../widgets/ambient_lottie_card.dart';
 import '../../../widgets/custom_bottom_nav.dart';
 import '../../../widgets/game_toast.dart';
 import '../arcade/react_challenge_screen.dart';
@@ -13,7 +15,7 @@ import 'leaderboard_screen.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
-    this.activeTabIndex = 0,
+    this.activeTabIndex = AppTabIndex.dashboard,
     this.onNavSelected,
   });
 
@@ -78,14 +80,20 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(height: 18),
                     _DailyChallengeCard(
                       onPlayNow: () => _launchDailyChallenge(context),
-                      onOpenHub: () => onNavSelected?.call(1),
+                      onOpenAdventure: () =>
+                          onNavSelected?.call(AppTabIndex.adventure),
+                      onOpenArcade: () =>
+                          onNavSelected?.call(AppTabIndex.minigames),
                     ),
                     const SizedBox(height: 18),
                     _LiteracyProgressCard(stats: stats),
                     const SizedBox(height: 18),
                     _QuickAccessRow(
-                      onCustomize: () => onNavSelected?.call(2),
-                      onLessons: () => onNavSelected?.call(3),
+                      onArcade: () => onNavSelected?.call(AppTabIndex.minigames),
+                      onCustomize: () =>
+                          onNavSelected?.call(AppTabIndex.customize),
+                      onAcademy: () =>
+                          onNavSelected?.call(AppTabIndex.academy),
                     ),
                     const SizedBox(height: 18),
                     _LeaderboardPreview(
@@ -159,9 +167,10 @@ class _DashboardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _GlassPanel(
-      child: Row(
-        children: [
-          Container(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stacked = constraints.maxWidth < 720;
+          final avatar = Container(
             width: 90,
             height: 90,
             decoration: BoxDecoration(
@@ -192,41 +201,72 @@ class _DashboardHeader extends StatelessWidget {
                 child: Image.asset(turtleSkin.assetPath, fit: BoxFit.contain),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          );
+
+          final copy = Column(
+            crossAxisAlignment:
+                stacked ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Welcome back, ${stats.username}',
+                textAlign: stacked ? TextAlign.center : TextAlign.start,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                stats.levelTitle,
+                style: const TextStyle(
+                  color: Color(0xFF85EFAC),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Gold: ${stats.gold}  •  Literacy: ${stats.literacyPoints}',
+                textAlign: stacked ? TextAlign.center : TextAlign.start,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.72),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          );
+
+          final illustration = const AmbientLottieCard(
+            assetPath: 'assets/animations/academy_loop.json',
+            semanticLabel: 'Animated dashboard learning illustration',
+            height: 150,
+            width: 160,
+            padding: EdgeInsets.all(12),
+          );
+
+          if (stacked) {
+            return Column(
               children: [
-                Text(
-                  'Welcome back, ${stats.username}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  stats.levelTitle,
-                  style: const TextStyle(
-                    color: Color(0xFF85EFAC),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Gold: ${stats.gold}  •  Literacy: ${stats.literacyPoints}',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.72),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                avatar,
+                const SizedBox(height: 16),
+                copy,
+                const SizedBox(height: 16),
+                illustration,
               ],
-            ),
-          ),
-        ],
+            );
+          }
+
+          return Row(
+            children: [
+              avatar,
+              const SizedBox(width: 16),
+              Expanded(child: copy),
+              const SizedBox(width: 16),
+              illustration,
+            ],
+          );
+        },
       ),
     );
   }
@@ -235,11 +275,13 @@ class _DashboardHeader extends StatelessWidget {
 class _DailyChallengeCard extends StatelessWidget {
   const _DailyChallengeCard({
     required this.onPlayNow,
-    required this.onOpenHub,
+    required this.onOpenAdventure,
+    required this.onOpenArcade,
   });
 
   final VoidCallback onPlayNow;
-  final VoidCallback? onOpenHub;
+  final VoidCallback? onOpenAdventure;
+  final VoidCallback? onOpenArcade;
 
   @override
   Widget build(BuildContext context) {
@@ -268,7 +310,7 @@ class _DailyChallengeCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Start with the featured challenge, then build momentum through lessons and new turtle upgrades.',
+            'Start with the featured challenge, then branch into the adventure tab for longer runs or the arcade tab for shorter practice loops.',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.72),
               height: 1.45,
@@ -277,18 +319,25 @@ class _DailyChallengeCard extends StatelessWidget {
           const SizedBox(height: 18),
           LayoutBuilder(
             builder: (context, constraints) {
-              final stacked = constraints.maxWidth < 360;
+              final stacked = constraints.maxWidth < 460;
               final playButton = _ActionButton(
                 label: 'Play Daily Challenge',
                 accent: const Color(0xFF85EFAC),
                 icon: Icons.play_arrow_rounded,
                 onTap: onPlayNow,
               );
-              final hubButton = _ActionButton(
-                label: 'Open Game Hub',
+              final adventureButton = _ActionButton(
+                label: 'Open Adventure',
                 accent: const Color(0xFFFFD45C),
                 icon: Icons.explore_rounded,
-                onTap: onOpenHub,
+                onTap: onOpenAdventure,
+                filled: false,
+              );
+              final arcadeButton = _ActionButton(
+                label: 'Open Arcade',
+                accent: const Color(0xFF58C7FF),
+                icon: Icons.sports_esports_rounded,
+                onTap: onOpenArcade,
                 filled: false,
               );
 
@@ -297,7 +346,9 @@ class _DailyChallengeCard extends StatelessWidget {
                   children: [
                     playButton,
                     const SizedBox(height: 10),
-                    hubButton,
+                    adventureButton,
+                    const SizedBox(height: 10),
+                    arcadeButton,
                   ],
                 );
               }
@@ -306,7 +357,9 @@ class _DailyChallengeCard extends StatelessWidget {
                 children: [
                   Expanded(child: playButton),
                   const SizedBox(width: 12),
-                  Expanded(child: hubButton),
+                  Expanded(child: adventureButton),
+                  const SizedBox(width: 12),
+                  Expanded(child: arcadeButton),
                 ],
               );
             },
@@ -373,16 +426,24 @@ class _LiteracyProgressCard extends StatelessWidget {
 
 class _QuickAccessRow extends StatelessWidget {
   const _QuickAccessRow({
+    required this.onArcade,
     required this.onCustomize,
-    required this.onLessons,
+    required this.onAcademy,
   });
 
+  final VoidCallback onArcade;
   final VoidCallback onCustomize;
-  final VoidCallback onLessons;
+  final VoidCallback onAcademy;
 
   @override
   Widget build(BuildContext context) {
     final cards = <Widget>[
+      _QuickAccessCard(
+        label: 'Arcade',
+        icon: Icons.sports_esports_rounded,
+        accent: const Color(0xFF58C7FF),
+        onTap: onArcade,
+      ),
       _QuickAccessCard(
         label: 'Customize',
         icon: Icons.auto_awesome_rounded,
@@ -390,10 +451,10 @@ class _QuickAccessRow extends StatelessWidget {
         onTap: onCustomize,
       ),
       _QuickAccessCard(
-        label: 'Lessons',
+        label: 'Academy',
         icon: Icons.school_rounded,
-        accent: const Color(0xFF58C7FF),
-        onTap: onLessons,
+        accent: const Color(0xFF85EFAC),
+        onTap: onAcademy,
       ),
     ];
 

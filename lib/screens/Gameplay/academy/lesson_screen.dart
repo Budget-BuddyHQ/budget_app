@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../components/unit_row_item.dart';
 import '../../../models/lesson.dart';
 import '../../../models/progression_service.dart';
+import '../../../navigation/app_tab_index.dart';
+import '../../../widgets/ambient_lottie_card.dart';
 import '../../../widgets/custom_bottom_nav.dart';
 import '../../../widgets/game_toast.dart';
 import 'lesson_detail_screen.dart';
@@ -10,7 +12,7 @@ import 'lesson_detail_screen.dart';
 class LessonScreen extends StatefulWidget {
   const LessonScreen({
     super.key,
-    this.activeTabIndex = 3,
+    this.activeTabIndex = AppTabIndex.academy,
     this.onNavSelected,
   });
 
@@ -100,6 +102,9 @@ class _LessonScreenState extends State<LessonScreen> {
     final units = _progressionService.units;
     final selectedUnit = units[_selectedUnitIndex.clamp(0, units.length - 1)];
     final nextLesson = _progressionService.nextLesson;
+    final nextUnit = nextLesson == null
+        ? null
+        : _progressionService.getUnit(nextLesson.unitId);
     final overallProgress = _progressionService.getProgress();
 
     return Scaffold(
@@ -127,6 +132,14 @@ class _LessonScreenState extends State<LessonScreen> {
                     progress: overallProgress,
                     nextLesson: nextLesson,
                     onBrowseUnits: () => _showUnitPickerSheet(units),
+                    onOpenNext:
+                        nextLesson == null ? null : () => _openLesson(nextLesson),
+                  ),
+                  const SizedBox(height: 12),
+                  _NextLessonFocusCard(
+                    nextLesson: nextLesson,
+                    nextUnit: nextUnit,
+                    progress: overallProgress,
                     onOpenNext:
                         nextLesson == null ? null : () => _openLesson(nextLesson),
                   ),
@@ -168,6 +181,16 @@ class _LessonScreenState extends State<LessonScreen> {
                           : null,
                   onOpenNext:
                       nextLesson == null ? null : () => _openLesson(nextLesson),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                  child: _NextLessonFocusCard(
+                    nextLesson: nextLesson,
+                    nextUnit: nextUnit,
+                    progress: overallProgress,
+                    onOpenNext:
+                        nextLesson == null ? null : () => _openLesson(nextLesson),
+                  ),
                 ),
                 const _MasteryLegend(),
                 Expanded(
@@ -242,7 +265,7 @@ class _HubHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final content = Container(
       margin: EdgeInsets.fromLTRB(
         compact ? 0 : 20,
         compact ? 0 : 20,
@@ -256,138 +279,325 @@ class _HubHeader extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(compact ? 26 : 30),
       ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final showIllustration = !compact && constraints.maxWidth >= 760;
+          final copy = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Academy',
+                style: TextStyle(
+                  color: Color(0xFFB8F5D1),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Units and mastery',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: compact ? 24 : 30,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Move unit by unit, resume faster, and keep the whole learning path readable on every screen.',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.82),
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _MetricPill(
+                    label: 'Completed',
+                    value: '$completed/$total',
+                    compact: compact,
+                  ),
+                  _MetricPill(
+                    label: 'Progress',
+                    value: '${(progress * 100).round()}%',
+                    compact: compact,
+                  ),
+                  _MetricPill(
+                    label: 'Next up',
+                    value: nextLesson?.title ?? 'All units complete',
+                    compact: compact,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final stackedActions = constraints.maxWidth < 520;
+
+                  final progressBar = ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      minHeight: 10,
+                      value: progress,
+                      backgroundColor: Colors.white.withValues(alpha: 0.16),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Color(0xFF85EFAC),
+                      ),
+                    ),
+                  );
+
+                  final buttons = [
+                    if (onBrowseUnits != null)
+                      OutlinedButton.icon(
+                        onPressed: onBrowseUnits,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.22),
+                          ),
+                        ),
+                        icon: const Icon(Icons.menu_open_rounded),
+                        label: const Text(
+                          'Browse Units',
+                          style: TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    if (onOpenNext != null)
+                      FilledButton.icon(
+                        onPressed: onOpenNext,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFD45C),
+                          foregroundColor: const Color(0xFF133626),
+                        ),
+                        icon: const Icon(Icons.play_arrow_rounded),
+                        label: const Text(
+                          'Resume Learning',
+                          style: TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                  ];
+
+                  if (buttons.isEmpty) {
+                    return progressBar;
+                  }
+
+                  if (stackedActions) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        progressBar,
+                        const SizedBox(height: 18),
+                        ...buttons.expand(
+                          (button) => <Widget>[
+                            SizedBox(width: double.infinity, child: button),
+                            const SizedBox(height: 10),
+                          ],
+                        ),
+                      ]..removeLast(),
+                    );
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      progressBar,
+                      const SizedBox(height: 18),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: buttons,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          );
+
+          if (!showIllustration) {
+            return copy;
+          }
+
+          return Row(
+            children: [
+              Expanded(flex: 3, child: copy),
+              const SizedBox(width: 18),
+              const Expanded(
+                flex: 2,
+                child: AmbientLottieCard(
+                  assetPath: 'assets/animations/academy_loop.json',
+                  semanticLabel: 'Animated academy illustration',
+                  height: 220,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    return content;
+  }
+}
+
+class _NextLessonFocusCard extends StatelessWidget {
+  const _NextLessonFocusCard({
+    required this.nextLesson,
+    required this.nextUnit,
+    required this.progress,
+    required this.onOpenNext,
+  });
+
+  final Lesson? nextLesson;
+  final LessonUnit? nextUnit;
+  final double progress;
+  final VoidCallback? onOpenNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final isComplete = nextLesson == null;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x100F172A),
+            blurRadius: 20,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stacked = constraints.maxWidth < 560;
+          final copy = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isComplete ? 'Path complete' : 'Continue where you left off',
+                style: const TextStyle(
+                  color: Color(0xFF0F172A),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isComplete
+                    ? 'You finished the current academy path. Revisit any unit or add the next chapter when you are ready.'
+                    : '${nextLesson!.title} • ${nextUnit?.title ?? 'Academy'} • ${nextLesson!.estimatedMinutes} min',
+                style: const TextStyle(
+                  color: Color(0xFF475569),
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _FocusPill(
+                    label: 'Mastery',
+                    value: '${(progress * 100).round()}%',
+                    accent: const Color(0xFF2F9E68),
+                  ),
+                  _FocusPill(
+                    label: 'Mode',
+                    value: isComplete ? 'Review' : 'Guided lesson',
+                    accent: const Color(0xFF3B82F6),
+                  ),
+                ],
+              ),
+            ],
+          );
+
+          final action = FilledButton.icon(
+            onPressed: onOpenNext,
+            style: FilledButton.styleFrom(
+              backgroundColor: isComplete
+                  ? const Color(0xFFE2E8F0)
+                  : const Color(0xFF2F9E68),
+              foregroundColor: isComplete
+                  ? const Color(0xFF64748B)
+                  : Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            ),
+            icon: Icon(isComplete ? Icons.check_circle_rounded : Icons.play_arrow_rounded),
+            label: Text(
+              isComplete ? 'All caught up' : 'Resume lesson',
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+          );
+
+          if (stacked) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                copy,
+                const SizedBox(height: 16),
+                SizedBox(width: double.infinity, child: action),
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(child: copy),
+              const SizedBox(width: 18),
+              action,
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _FocusPill extends StatelessWidget {
+  const _FocusPill({
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(18),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Academy',
-            style: TextStyle(
-              color: Color(0xFFB8F5D1),
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.2,
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
-            'Units and mastery',
+            value,
             style: TextStyle(
-              color: Colors.white,
-              fontSize: compact ? 24 : 30,
+              color: accent,
               fontWeight: FontWeight.w900,
             ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Move unit by unit, revisit lessons quickly, and keep the full learning journey visible in one place.',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.82),
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _MetricPill(
-                label: 'Completed',
-                value: '$completed/$total',
-                compact: compact,
-              ),
-              _MetricPill(
-                label: 'Progress',
-                value: '${(progress * 100).round()}%',
-                compact: compact,
-              ),
-              _MetricPill(
-                label: 'Next up',
-                value: nextLesson?.title ?? 'All units complete',
-                compact: compact,
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final stackedActions = constraints.maxWidth < 520;
-
-              final progressBar = ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: LinearProgressIndicator(
-                  minHeight: 10,
-                  value: progress,
-                  backgroundColor: Colors.white.withValues(alpha: 0.16),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    Color(0xFF85EFAC),
-                  ),
-                ),
-              );
-
-              final buttons = [
-                if (onBrowseUnits != null)
-                  OutlinedButton.icon(
-                    onPressed: onBrowseUnits,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.22),
-                      ),
-                    ),
-                    icon: const Icon(Icons.menu_open_rounded),
-                    label: const Text(
-                      'Browse Units',
-                      style: TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                  ),
-                if (onOpenNext != null)
-                  FilledButton.icon(
-                    onPressed: onOpenNext,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFD45C),
-                      foregroundColor: const Color(0xFF133626),
-                    ),
-                    icon: const Icon(Icons.play_arrow_rounded),
-                    label: const Text(
-                      'Resume Learning',
-                      style: TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                  ),
-              ];
-
-              if (buttons.isEmpty) {
-                return progressBar;
-              }
-
-              if (stackedActions) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    progressBar,
-                    const SizedBox(height: 18),
-                    ...buttons.expand(
-                      (button) => <Widget>[
-                        SizedBox(width: double.infinity, child: button),
-                        const SizedBox(height: 10),
-                      ],
-                    ),
-                  ]..removeLast(),
-                );
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  progressBar,
-                  const SizedBox(height: 18),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: buttons,
-                  ),
-                ],
-              );
-            },
           ),
         ],
       ),

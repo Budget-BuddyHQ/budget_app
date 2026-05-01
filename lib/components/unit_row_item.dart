@@ -82,60 +82,80 @@ class _UnitLessonIcon extends StatelessWidget {
       LessonNodeType.quiz => Icons.bolt_rounded,
       LessonNodeType.unitTest => Icons.star_rounded,
     };
+    final statusLabel = _statusLabel(status);
+    final lessonTypeLabel = switch (lesson.type) {
+      LessonNodeType.lesson => 'Lesson',
+      LessonNodeType.quiz => 'Quiz',
+      LessonNodeType.unitTest => 'Unit test',
+    };
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        width: width,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x120F172A),
-              blurRadius: 16,
-              offset: Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: palette.fill,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: palette.border, width: 1.5),
+    return Semantics(
+      button: true,
+      label:
+          '$lessonTypeLabel: ${lesson.title}. $statusLabel. ${lesson.estimatedMinutes} minute lesson.',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          width: width,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x120F172A),
+                blurRadius: 16,
+                offset: Offset(0, 10),
               ),
-              child: Icon(icon, color: palette.foreground),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              lesson.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFF111827),
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                height: 1.3,
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: palette.fill,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: palette.border, width: 1.5),
+                ),
+                child: Icon(icon, color: palette.foreground),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _statusLabel(status),
-              style: TextStyle(
-                color: palette.border,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+              const SizedBox(height: 10),
+              Text(
+                lesson.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF111827),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  height: 1.3,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                statusLabel,
+                style: TextStyle(
+                  color: palette.border,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${lesson.estimatedMinutes} min',
+                style: const TextStyle(
+                  color: Color(0xFF64748B),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

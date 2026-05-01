@@ -212,7 +212,7 @@ class UserStats {
 
   String get equippedSkin {
     final value = spendingHabits['equipped_skin']?.toString().trim();
-    if (value == null || value.isEmpty) {
+    if (value == null || value.isEmpty || !isRegisteredSkinId(value)) {
       return budgetBuddySkins.first.id;
     }
     return value;
@@ -223,10 +223,15 @@ class UserStats {
     if (raw is List) {
       final normalized = raw
           .map((entry) => entry.toString())
-          .where((entry) => entry.trim().isNotEmpty)
+          .where(
+            (entry) => entry.trim().isNotEmpty && isRegisteredSkinId(entry),
+          )
           .toSet()
           .toList(growable: false);
       if (normalized.isNotEmpty) {
+        if (!normalized.contains(budgetBuddySkins.first.id)) {
+          return <String>[budgetBuddySkins.first.id, ...normalized];
+        }
         return normalized;
       }
     }
