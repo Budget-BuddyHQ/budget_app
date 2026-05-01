@@ -120,58 +120,73 @@ class _LessonScreenState extends State<LessonScreen> {
               progress: overallProgress,
               nextLesson: nextLesson,
               onOpenNext: nextLesson == null ? null : () => _openLesson(nextLesson),
+              onBrowseUnits: () => _showUnitPickerSheet(units),
+              compact: !railExtended,
             ),
-            const _MasteryLegend(),
+            _MasteryLegend(compact: !railExtended),
             Expanded(
-              child: Row(
-                children: [
-                  Container(
-                    width: railExtended ? 220 : 88,
-                    margin: const EdgeInsets.fromLTRB(20, 16, 12, 20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(28),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
-                    ),
-                    child: NavigationRail(
-                      extended: railExtended,
-                      minExtendedWidth: 220,
-                      backgroundColor: Colors.transparent,
-                      destinations: units
-                          .map(
-                            (unit) => NavigationRailDestination(
-                              icon: const Icon(Icons.menu_book_outlined),
-                              selectedIcon: const Icon(Icons.menu_book_rounded),
-                              label: Text(unit.title),
-                            ),
-                          )
-                          .toList(growable: false),
-                      selectedIndex: _selectedUnitIndex,
-                      onDestinationSelected: (index) {
-                        setState(() => _selectedUnitIndex = index);
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(8, 16, 20, 24),
+              child: railExtended
+                  ? Row(
                       children: [
-                        _UnitCard(
-                          unit: selectedUnit,
-                          progress: _progressionService.getUnitProgress(
-                            selectedUnit.id,
+                        _UnitSidebar(
+                          width: 220,
+                          extended: true,
+                          units: units,
+                          selectedIndex: _selectedUnitIndex,
+                          onSelected: (index) {
+                            setState(() => _selectedUnitIndex = index);
+                          },
+                        ),
+                        Expanded(
+                          child: ListView(
+                            padding: const EdgeInsets.fromLTRB(8, 16, 20, 24),
+                            children: [
+                              _UnitCard(
+                                unit: selectedUnit,
+                                progress: _progressionService.getUnitProgress(
+                                  selectedUnit.id,
+                                ),
+                                mastery: _progressionService.getUnitMastery(
+                                  selectedUnit.id,
+                                ),
+                                onLessonTap: _openLesson,
+                                statusFor: _progressionService.getLessonStatus,
+                              ),
+                            ],
                           ),
-                          mastery: _progressionService.getUnitMastery(
-                            selectedUnit.id,
+                        ),
+                      ],
+                    )
+                  : Column(
+                      children: [
+                        _MobileUnitSelector(
+                          units: units,
+                          selectedIndex: _selectedUnitIndex,
+                          onSelected: (index) {
+                            setState(() => _selectedUnitIndex = index);
+                          },
+                        ),
+                        Expanded(
+                          child: ListView(
+                            padding: const EdgeInsets.fromLTRB(8, 16, 20, 24),
+                            children: [
+                              _UnitCard(
+                                unit: selectedUnit,
+                                progress: _progressionService.getUnitProgress(
+                                  selectedUnit.id,
+                                ),
+                                mastery: _progressionService.getUnitMastery(
+                                  selectedUnit.id,
+                                ),
+                                onLessonTap: _openLesson,
+                                statusFor: _progressionService.getLessonStatus,
+                                compact: true,
+                              ),
+                            ],
                           ),
-                          onLessonTap: _openLesson,
-                          statusFor: _progressionService.getLessonStatus,
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
             ),
           ],
         ),
@@ -268,6 +283,21 @@ class _HubHeader extends StatelessWidget {
               valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF85EFAC)),
             ),
           ),
+          if (onBrowseUnits != null) ...[
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: onBrowseUnits,
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF133626),
+              ),
+              icon: const Icon(Icons.menu_book_rounded),
+              label: const Text(
+                'Browse Units',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+            ),
+          ],
           if (onOpenNext != null) ...[
             const SizedBox(height: 18),
             FilledButton.icon(
@@ -338,7 +368,9 @@ class _MetricPill extends StatelessWidget {
 }
 
 class _MasteryLegend extends StatelessWidget {
-  const _MasteryLegend({this.compact = false});
+  const _MasteryLegend({
+    this.compact = false,
+  });
 
   final bool compact;
 
@@ -414,7 +446,7 @@ class _MobileUnitSelector extends StatelessWidget {
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: units.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          separatorBuilder: (_, _) => const SizedBox(width: 10),
           itemBuilder: (context, index) {
             final selected = index == selectedIndex;
             final unit = units[index];
@@ -476,7 +508,7 @@ class _UnitSidebar extends StatelessWidget {
         child: ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
           itemCount: units.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final unit = units[index];
             final selected = index == selectedIndex;
@@ -599,7 +631,7 @@ class _UnitPickerSheet extends StatelessWidget {
               thumbVisibility: true,
               child: ListView.separated(
                 itemCount: units.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final unit = units[index];
                   final selected = index == selectedIndex;

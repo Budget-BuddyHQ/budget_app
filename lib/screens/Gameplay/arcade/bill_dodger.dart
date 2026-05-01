@@ -41,8 +41,6 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
     with TickerProviderStateMixin {
   static const Color _background = Color(0xFF071711);
   static const Color _accent = Color(0xFF85EFAC);
-  static const Color _needColor = Color(0xFF85EFAC);
-  static const Color _wantColor = Color(0xFFFFB084);
   static const int _roundSeconds = 45;
   static const double _pickupHeightFactor = 0.84;
 
@@ -57,7 +55,6 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
 
   Size _arenaSize = Size.zero;
   double _playerX = 0;
-  double _playerVelocity = 0;
   double _playerTilt = 0;
   bool _movingLeft = false;
   bool _movingRight = false;
@@ -102,39 +99,6 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
     super.dispose();
   }
 
-  void _syncArenaSize(Size newSize) {
-    if (_arenaSize == Size.zero) {
-      _arenaSize = newSize;
-      _playerX = math.max(0, (_arenaSize.width - _playerWidth) / 2).toDouble();
-      return;
-    }
-
-    if (_arenaSize == newSize) {
-      return;
-    }
-
-    final previousWidth = _arenaSize.width <= 0 ? newSize.width : _arenaSize.width;
-    final previousHeight =
-        _arenaSize.height <= 0 ? newSize.height : _arenaSize.height;
-    final widthRatio = newSize.width / previousWidth;
-    final heightRatio = newSize.height / previousHeight;
-
-    _arenaSize = newSize;
-    _playerX = (_playerX * widthRatio)
-        .clamp(0, math.max(0, _arenaSize.width - _playerWidth))
-        .toDouble();
-
-    for (final pickup in _pickups) {
-      pickup.width = _pickupWidthForArena();
-      pickup.height = pickup.width * _pickupHeightFactor;
-      pickup.x = (pickup.x * widthRatio)
-          .clamp(0, math.max(0, _arenaSize.width - pickup.width))
-          .toDouble();
-      pickup.y = (pickup.y * heightRatio)
-          .clamp(-pickup.height * 2, _arenaSize.height + pickup.height)
-          .toDouble();
-    }
-  }
 
   void _startGame() {
     HapticFeedback.lightImpact();
@@ -191,7 +155,6 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
       _finished = true;
       _movingLeft = false;
       _movingRight = false;
-      _playerVelocity = 0;
       _playerTilt = 0;
     });
 
@@ -336,11 +299,6 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
     } else {
       _score += 6;
     }
-  }
-
-  double _pickupWidthForArena() {
-    final width = _arenaSize.width <= 0 ? 380.0 : _arenaSize.width;
-    return (width * 0.23).clamp(82.0, 104.0).toDouble();
   }
 
   void _spawnPickup() {
@@ -523,10 +481,12 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
         canPop: false,
         onPopInvokedWithResult: (didPop, result) async {
           if (didPop) return;
+          final navigator = Navigator.of(context);
           final shouldLeave = await _confirmExit();
-          if (shouldLeave && mounted) {
-            Navigator.of(context).pop();
+          if (!mounted || !shouldLeave) {
+            return;
           }
+          navigator.pop();
         },
         child: Scaffold(
           backgroundColor: _background,
@@ -539,11 +499,12 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
                     children: [
                       IconButton(
                         onPressed: () async {
+                          final navigator = Navigator.of(context);
                           final shouldLeave = await _confirmExit();
                           if (!mounted || !shouldLeave) {
                             return;
                           }
-                          Navigator.of(context).pop();
+                          navigator.pop();
                         },
                         icon: const Icon(
                           Icons.arrow_back_ios_new_rounded,

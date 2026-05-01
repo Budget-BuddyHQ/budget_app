@@ -107,7 +107,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           icon: Icons.notifications_active_rounded,
                           trailing: Switch.adaptive(
                             value: _notificationsEnabled,
-                            activeColor: const Color(0xFF85EFAC),
+                            activeThumbColor: const Color(0xFF85EFAC),
+                            activeTrackColor: const Color(0xFF85EFAC),
                             onChanged: (value) {
                               HapticFeedback.lightImpact();
                               setState(() => _notificationsEnabled = value);
@@ -121,7 +122,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           icon: Icons.volume_up_rounded,
                           trailing: Switch.adaptive(
                             value: _soundEnabled,
-                            activeColor: const Color(0xFF85EFAC),
+                            activeThumbColor: const Color(0xFF85EFAC),
+                            activeTrackColor: const Color(0xFF85EFAC),
                             onChanged: (value) async {
                               HapticFeedback.lightImpact();
                               await AppSoundService.setEnabled(value);

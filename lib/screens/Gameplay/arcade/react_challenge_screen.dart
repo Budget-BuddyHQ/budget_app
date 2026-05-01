@@ -369,8 +369,15 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
   @override
   Widget build(BuildContext context) {
     if (!_supportsEmbeddedWebView) {
-      return WillPopScope(
-        onWillPop: _confirmExit,
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          final shouldPop = await _confirmExit();
+          if (shouldPop && context.mounted) {
+            Navigator.of(context).pop(result);
+          }
+        },
         child: _NativeChallengeFallback(
           onComplete: (payload) => _handlePayload(payload),
         ),

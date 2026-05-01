@@ -36,27 +36,6 @@ class _MainNavigationState extends State<MainNavigation> {
     });
   }
 
-  Future<void> _openPortal() async {
-    await Navigator.of(context).push(
-      PageRouteBuilder<void>(
-        pageBuilder: (_, _, _) => GameHubPage(
-          activeTabIndex: _currentIndex,
-          onNavSelected: (index) {
-            Navigator.of(context).pop();
-            _selectTab(index);
-          },
-
-        ),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return IndexedStack(
