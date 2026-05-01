@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../controllers/app_settings_controller.dart';
 
+import '../services/app_sound_service.dart';
+
     this.onSelected,
   final int activeIndex;
   final ValueChanged<int>? onSelected;
@@ -69,6 +71,7 @@ import '../controllers/app_settings_controller.dart';
     }
     context.read<AppSettingsController>().playTap();
     HapticFeedback.lightImpact();
+    AppSoundService.play(AppSoundEffect.navigation);
     onSelected!(index);
   }
 class _NavTile extends StatelessWidget {
