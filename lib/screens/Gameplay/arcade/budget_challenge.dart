@@ -500,10 +500,12 @@ class _BudgetChallengeScreenState extends State<BudgetChallengeScreen> {
         if (didPop) {
           return;
         }
+        final navigator = Navigator.of(context);
         final shouldLeave = await _confirmExit();
-        if (shouldLeave && mounted) {
-          Navigator.of(context).pop();
+        if (!mounted || !shouldLeave) {
+          return;
         }
+        navigator.pop();
       },
       child: Scaffold(
         backgroundColor: const Color(0xFF071711),
