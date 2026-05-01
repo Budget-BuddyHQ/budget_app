@@ -9,11 +9,6 @@ import '../../../widgets/game_toast.dart';
 import 'lesson_detail_screen.dart';
 
 class LessonScreen extends StatefulWidget {
-  const LessonScreen({
-    super.key,
-    this.activeTabIndex = 3,
-    this.onNavSelected,
-  });
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
@@ -25,6 +20,8 @@ class LessonScreen extends StatefulWidget {
 class _LessonScreenState extends State<LessonScreen> {
   late final ProgressionService _progressionService;
   int _selectedUnitIndex = 0;
+
+  bool get railExtended => MediaQuery.of(context).size.width >= 600;
 
   @override
   void initState() {
@@ -74,7 +71,6 @@ class _LessonScreenState extends State<LessonScreen> {
       GameToast.show(
         context,
         title: 'Lesson locked',
-        message: 'Finish the earlier content in this unit to unlock ${lesson.title}.',
         icon: Icons.lock_outline_rounded,
         accent: const Color(0xFFFFB084),
         soundEffect: AppSoundEffect.error,
@@ -105,7 +101,6 @@ class _LessonScreenState extends State<LessonScreen> {
     final overallProgress = _progressionService.getProgress();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
       bottomNavigationBar: widget.onNavSelected == null
           ? null
           : CustomBottomNav(
@@ -113,110 +108,65 @@ class _LessonScreenState extends State<LessonScreen> {
               onSelected: widget.onNavSelected,
             ),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final compactLayout =
-                constraints.maxWidth < 920 || constraints.maxHeight < 760;
-
-            if (compactLayout) {
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(
+          children: [
+            _HubHeader(
+              completed: _progressionService.completedCount,
+              total: _progressionService.totalCount,
+              progress: overallProgress,
+              nextLesson: nextLesson,
+            ),
+            const _MasteryLegend(),
+            Expanded(
+              child: Row(
                 children: [
-                  _HubHeader(
-                    compact: true,
-                    completed: _progressionService.completedCount,
-                    total: _progressionService.totalCount,
-                    progress: overallProgress,
-                    nextLesson: nextLesson,
-                    onBrowseUnits: () => _showUnitPickerSheet(units),
-                    onOpenNext:
-                        nextLesson == null ? null : () => _openLesson(nextLesson),
+                  Container(
+                    width: railExtended ? 220 : 88,
+                    margin: const EdgeInsets.fromLTRB(20, 16, 12, 20),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    child: NavigationRail(
+                      extended: railExtended,
+                      minExtendedWidth: 220,
+                      backgroundColor: Colors.transparent,
+                      destinations: units
+                          .map(
+                            (unit) => NavigationRailDestination(
+                              icon: const Icon(Icons.menu_book_outlined),
+                              selectedIcon: const Icon(Icons.menu_book_rounded),
+                              label: Text(unit.title),
+                            ),
+                          )
+                          .toList(growable: false),
+                      selectedIndex: _selectedUnitIndex,
+                      onDestinationSelected: (index) {
+                        setState(() => _selectedUnitIndex = index);
+                      },
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  const _MasteryLegend(compact: true),
-                  const SizedBox(height: 16),
-                  _MobileUnitSelector(
-                    units: units,
-                    selectedIndex: _selectedUnitIndex,
-                    onSelected: (index) {
-                      setState(() => _selectedUnitIndex = index);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _UnitCard(
-                    compact: true,
-                    unit: selectedUnit,
-                    progress: _progressionService.getUnitProgress(selectedUnit.id),
-                    mastery: _progressionService.getUnitMastery(selectedUnit.id),
-                    onLessonTap: _openLesson,
-                    statusFor: _progressionService.getLessonStatus,
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(8, 16, 20, 24),
+                      children: [
+                        _UnitCard(
+                          unit: selectedUnit,
+                          progress: _progressionService.getUnitProgress(
+                            selectedUnit.id,
+                          ),
+                          mastery: _progressionService.getUnitMastery(
+                            selectedUnit.id,
+                          ),
+                          onLessonTap: _openLesson,
+                          statusFor: _progressionService.getLessonStatus,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
-              );
-            }
-
-            final railExtended = constraints.maxWidth >= 1120;
-
-            return Column(
-              children: [
-                _HubHeader(
-                  completed: _progressionService.completedCount,
-                  total: _progressionService.totalCount,
-                  progress: overallProgress,
-                  nextLesson: nextLesson,
-                  onBrowseUnits:
-                      constraints.maxWidth < 1040
-                          ? () => _showUnitPickerSheet(units)
-                          : null,
-                  onOpenNext:
-                      nextLesson == null ? null : () => _openLesson(nextLesson),
-                ),
-                const _MasteryLegend(),
-                Expanded(
-                  child: Row(
-                    children: [
-                      if (constraints.maxWidth >= 1040)
-                        _UnitSidebar(
-                          width: railExtended ? 232 : 116,
-                          extended: railExtended,
-                          units: units,
-                          selectedIndex: _selectedUnitIndex,
-                          onSelected: (index) {
-                            setState(() => _selectedUnitIndex = index);
-                          },
-                        ),
-                      Expanded(
-                        child: Scrollbar(
-                          thumbVisibility: true,
-                          child: ListView(
-                            padding: EdgeInsets.fromLTRB(
-                              constraints.maxWidth >= 1040 ? 8 : 20,
-                              16,
-                              20,
-                              24,
-                            ),
-                            children: [
-                              _UnitCard(
-                                unit: selectedUnit,
-                                progress: _progressionService.getUnitProgress(
-                                  selectedUnit.id,
-                                ),
-                                mastery: _progressionService.getUnitMastery(
-                                  selectedUnit.id,
-                                ),
-                                onLessonTap: _openLesson,
-                                statusFor: _progressionService.getLessonStatus,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -292,16 +242,7 @@ class _HubHeader extends StatelessWidget {
             spacing: 12,
             runSpacing: 12,
             children: [
-              _MetricPill(
-                label: 'Completed',
-                value: '$completed/$total',
-                compact: compact,
-              ),
-              _MetricPill(
-                label: 'Progress',
-                value: '${(progress * 100).round()}%',
-                compact: compact,
-              ),
+              _MetricPill(label: 'Completed', value: '$completed/$total'),
               _MetricPill(
                 label: 'Next up',
                 value: nextLesson?.title ?? 'All units complete',
@@ -310,87 +251,29 @@ class _HubHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final stackedActions = constraints.maxWidth < 520;
-
-              final progressBar = ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: LinearProgressIndicator(
-                  minHeight: 10,
-                  value: progress,
-                  backgroundColor: Colors.white.withValues(alpha: 0.16),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    Color(0xFF85EFAC),
-                  ),
-                ),
-              );
-
-              final buttons = [
-                if (onBrowseUnits != null)
-                  OutlinedButton.icon(
-                    onPressed: onBrowseUnits,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.22),
-                      ),
-                    ),
-                    icon: const Icon(Icons.menu_open_rounded),
-                    label: const Text(
-                      'Browse Units',
-                      style: TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                  ),
-                if (onOpenNext != null)
-                  FilledButton.icon(
-                    onPressed: onOpenNext,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFD45C),
-                      foregroundColor: const Color(0xFF133626),
-                    ),
-                    icon: const Icon(Icons.play_arrow_rounded),
-                    label: const Text(
-                      'Resume Learning',
-                      style: TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                  ),
-              ];
-
-              if (buttons.isEmpty) {
-                return progressBar;
-              }
-
-              if (stackedActions) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    progressBar,
-                    const SizedBox(height: 18),
-                    ...buttons.expand(
-                      (button) => <Widget>[
-                        SizedBox(width: double.infinity, child: button),
-                        const SizedBox(height: 10),
-                      ],
-                    ),
-                  ]..removeLast(),
-                );
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  progressBar,
-                  const SizedBox(height: 18),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: buttons,
-                  ),
-                ],
-              );
-            },
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 10,
+              value: progress,
+              backgroundColor: Colors.white.withValues(alpha: 0.16),
+            ),
           ),
+          if (onOpenNext != null) ...[
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: onOpenNext,
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFFFD45C),
+                foregroundColor: const Color(0xFF133626),
+              ),
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: const Text(
+                'Resume Learning',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -463,9 +346,7 @@ class _MasteryLegend extends StatelessWidget {
       margin: EdgeInsets.symmetric(horizontal: compact ? 0 : 20),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Wrap(
         spacing: 16,
@@ -488,7 +369,7 @@ class _MasteryLegend extends StatelessWidget {
                   Text(
                     item.$1,
                     style: const TextStyle(
-                      color: Color(0xFF334155),
+                      color: Colors.white,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -522,7 +403,7 @@ class _MobileUnitSelector extends StatelessWidget {
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: units.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 10),
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
           itemBuilder: (context, index) {
             final selected = index == selectedIndex;
             final unit = units[index];
@@ -584,7 +465,7 @@ class _UnitSidebar extends StatelessWidget {
         child: ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
           itemCount: units.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 8),
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final unit = units[index];
             final selected = index == selectedIndex;
@@ -707,7 +588,7 @@ class _UnitPickerSheet extends StatelessWidget {
               thumbVisibility: true,
               child: ListView.separated(
                 itemCount: units.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final unit = units[index];
                   final selected = index == selectedIndex;
@@ -864,7 +745,6 @@ class _UnitCard extends StatelessWidget {
               minHeight: 9,
               value: progress,
               backgroundColor: const Color(0xFFE5E7EB),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2F9E68)),
             ),
           ),
           const SizedBox(height: 24),
@@ -901,10 +781,6 @@ class _MasteryBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w900,
-        ),
       ),
     );
   }
