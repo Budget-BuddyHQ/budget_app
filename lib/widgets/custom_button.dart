@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+
+import '../controllers/app_settings_controller.dart';
 
 class CustomButton extends StatefulWidget {
   const CustomButton({
@@ -46,9 +49,7 @@ class _CustomButtonState extends State<CustomButton>
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: 0.97,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
   }
 
   @override
@@ -74,6 +75,7 @@ class _CustomButtonState extends State<CustomButton>
     if (_isDisabled || widget.onPressed == null) {
       return;
     }
+    context.read<AppSettingsController>().playTap();
     HapticFeedback.lightImpact();
     widget.onPressed!();
   }
@@ -209,10 +211,7 @@ class CustomButtonStyle {
     this.textColor = const Color(0xFF76FF03),
     this.borderRadius = 18,
     this.border = const Border.fromBorderSide(
-      BorderSide(
-        color: Color(0xFF76FF03),
-        width: 1.5,
-      ),
+      BorderSide(color: Color(0xFF76FF03), width: 1.5),
     ),
     this.boxShadow = const [
       BoxShadow(
@@ -230,10 +229,7 @@ class CustomButtonStyle {
     this.textColor = Colors.white,
     this.borderRadius = 18,
     this.border = const Border.fromBorderSide(
-      BorderSide(
-        color: Color.fromRGBO(255, 255, 255, 0.08),
-        width: 1,
-      ),
+      BorderSide(color: Color.fromRGBO(255, 255, 255, 0.08), width: 1),
     ),
     this.boxShadow = const [
       BoxShadow(
