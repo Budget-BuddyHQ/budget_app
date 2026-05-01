@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../controllers/user_stats_controller.dart';
+import '../../../services/app_sound_service.dart';
 import '../../../services/local_web_game_server.dart';
 import '../../../services/supabase_service.dart';
 import '../../../widgets/game_toast.dart';
@@ -261,6 +262,10 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
           ? Icons.workspace_premium_rounded
           : Icons.flag_rounded,
       accent: const Color(0xFF85EFAC),
+      soundEffect:
+          status == 'victory'
+              ? AppSoundEffect.celebration
+              : AppSoundEffect.shutdown,
     );
 
     _messageTimer = Timer(const Duration(seconds: 2), () {
@@ -297,6 +302,7 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
       message: 'Challenge reward sync hit a problem. Your next sync will retry.',
       icon: Icons.cloud_off_rounded,
       accent: const Color(0xFFFF8A80),
+      soundEffect: AppSoundEffect.shutdown,
     );
   }
 }
@@ -363,8 +369,15 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
   @override
   Widget build(BuildContext context) {
     if (!_supportsEmbeddedWebView) {
-      return WillPopScope(
-        onWillPop: _confirmExit,
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          final shouldPop = await _confirmExit();
+          if (shouldPop && context.mounted) {
+            Navigator.of(context).pop(result);
+          }
+        },
         child: _NativeChallengeFallback(
           onComplete: (payload) => _handlePayload(payload),
         ),
