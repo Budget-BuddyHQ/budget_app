@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../controllers/user_stats_controller.dart';
 import '../../../models/avatar_skin.dart';
+import '../../../navigation/app_tab_index.dart';
 import '../../../navigation/fade_page_route.dart';
 import '../../../widgets/custom_bottom_nav.dart';
 import '../../../widgets/custom_button.dart';
@@ -13,7 +14,7 @@ import 'minigames_page.dart';
 class GameHubPage extends StatelessWidget {
   const GameHubPage({
     super.key,
-    this.activeTabIndex = 1,
+    this.activeTabIndex = AppTabIndex.adventure,
     this.onNavSelected,
   });
 
@@ -108,7 +109,7 @@ class GameHubPage extends StatelessWidget {
                           const _SectionHeading(
                             title: 'Choose Your Lane',
                             subtitle:
-                                'Main Gameplay keeps the adventure and featured challenge together, while Minigames holds quick arcade runs and future side modes.',
+                                'Adventure and arcade are fully split now, so each lane can stay focused without crowding the other.',
                           ),
                           const SizedBox(height: 14),
                           LayoutBuilder(
@@ -118,7 +119,7 @@ class GameHubPage extends StatelessWidget {
                                 _DestinationCard(
                                   title: 'Main Gameplay',
                                   subtitle:
-                                      'Enter the open-world adventure, battle through finance encounters, and launch the React challenge from one focused home base.',
+                                      'Enter the open-world adventure, battle through finance encounters, and keep the main loop centered on progression.',
                                   accent: const Color(0xFF85EFAC),
                                   icon: Icons.explore_rounded,
                                   eyebrow: 'ADVENTURE CORE',
@@ -133,7 +134,7 @@ class GameHubPage extends StatelessWidget {
                                 _DestinationCard(
                                   title: 'Minigames',
                                   subtitle:
-                                      'Jump into Bill Dodger, Budget Challenge, and the rest of the arcade lineup without crowding the adventure flow.',
+                                      'Jump into React Challenge, Bill Dodger, Budget Challenge, and the rest of the arcade lineup without crowding the adventure flow.',
                                   accent: const Color(0xFFE1BB72),
                                   icon: Icons.sports_esports_rounded,
                                   eyebrow: 'ARCADE WING',
@@ -339,7 +340,7 @@ class _HubHero extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Main Gameplay is now focused on the adventure loop and React challenge, while Minigames gets its own dedicated arcade space.',
+                'Adventure now stays locked on world progression, while the arcade tab handles the faster challenge sessions.',
                 textAlign: stacked ? TextAlign.center : TextAlign.start,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.74),
