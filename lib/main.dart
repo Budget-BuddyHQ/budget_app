@@ -7,7 +7,9 @@ import 'package:window_manager/window_manager.dart';
 
 import 'config/runtime_env.dart';
 import 'controllers/adventure_state_controller.dart';
+import 'controllers/app_settings_controller.dart';
 import 'controllers/user_stats_controller.dart';
+import 'navigation/app_tab_index.dart';
 import 'screens/Gameplay/arcade/bill_dodger.dart';
 import 'screens/Gameplay/core/game_canvas.dart';
 import 'screens/Gameplay/core/main_game_page.dart';
@@ -65,6 +67,9 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<AppSettingsController>(
+          create: (_) => AppSettingsController()..initialize(),
+        ),
         ChangeNotifierProvider<UserStatsController>(
           create: (_) =>
               UserStatsController(service: SupabaseService.instance)
@@ -100,10 +105,14 @@ class MyApp extends StatelessWidget {
         '/signup': (context) => const AuthScreen(mode: AuthMode.signUp),
         '/login': (context) => const AuthScreen(mode: AuthMode.login),
         '/game': (context) => const DashboardShell(),
-        '/dashboard': (context) => const DashboardShell(initialIndex: 0),
-        '/game_hub': (context) => const DashboardShell(initialIndex: 1),
-        '/customize': (context) => const DashboardShell(initialIndex: 2),
-        '/lessons': (context) => const DashboardShell(initialIndex: 3),
+        '/dashboard': (context) =>
+            const DashboardShell(initialIndex: AppTabIndex.dashboard),
+        '/game_hub': (context) =>
+            const DashboardShell(initialIndex: AppTabIndex.adventure),
+        '/customize': (context) =>
+            const DashboardShell(initialIndex: AppTabIndex.customize),
+        '/lessons': (context) =>
+            const DashboardShell(initialIndex: AppTabIndex.academy),
         '/game-canvas': (context) => const GameCanvas(),
         '/main-gameplay': (context) => const MainGamePage(),
         '/minigames': (context) => const MinigamesPage(),

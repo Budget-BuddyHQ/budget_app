@@ -4,19 +4,18 @@ import 'package:provider/provider.dart';
 
 import '../../../controllers/adventure_state_controller.dart';
 import '../../../controllers/user_stats_controller.dart';
+import '../../../navigation/app_tab_index.dart';
 import '../../../navigation/fade_page_route.dart';
 import '../../../widgets/custom_bottom_nav.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/game_toast.dart';
 import '../../../widgets/skeleton_loader.dart';
-import '../arcade/react_challenge_screen.dart';
-import '../arcade/stock_market_page.dart';
 import 'game_canvas.dart';
 
 class MainGamePage extends StatelessWidget {
   const MainGamePage({
     super.key,
-    this.activeTabIndex = 1,
+    this.activeTabIndex = AppTabIndex.adventure,
     this.onNavSelected,
   });
 
@@ -32,41 +31,24 @@ class MainGamePage extends StatelessWidget {
     );
   }
 
-  Future<void> _openReactBattle(BuildContext context) async {
-    final controller = context.read<UserStatsController>();
-    final stats = controller.stats;
-
-    final result = await Navigator.of(context).push<ReactGameCloseResult>(
-      FadePageRoute(
-        builder: (_) => ReactChallengeScreen(
-          gameId: 'daily_budget_battle',
-          difficulty: 'medium',
-          playerLevel: stats.level,
-          userId: stats.id,
-        ),
-      ),
-    );
-
-    if (!context.mounted || result == null) {
+  Future<void> _openAcademy(BuildContext context) async {
+    HapticFeedback.lightImpact();
+    final selectTab = onNavSelected;
+    if (selectTab != null) {
+      selectTab(AppTabIndex.academy);
       return;
     }
-
-    GameToast.show(
-      context,
-      title: result.status == 'victory' ? 'Daily battle won' : 'Battle complete',
-      message:
-          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
-      icon: Icons.workspace_premium_rounded,
-    );
+    await Navigator.of(context).pushNamed('/lessons');
   }
 
-  Future<void> _openStockMarket(BuildContext context) async {
+  Future<void> _openMinigames(BuildContext context) async {
     HapticFeedback.lightImpact();
-    await Navigator.of(context).push(
-      FadePageRoute(
-        builder: (_) => const StockMarketPage(),
-      ),
-    );
+    final selectTab = onNavSelected;
+    if (selectTab != null) {
+      selectTab(AppTabIndex.minigames);
+      return;
+    }
+    await Navigator.of(context).pushNamed('/minigames');
   }
 
   void _scoutEncounter(BuildContext context) {
@@ -131,7 +113,7 @@ class MainGamePage extends StatelessWidget {
                       _PageHeader(
                         title: 'Main Gameplay',
                         subtitle:
-                            'This is your adventure loop now: scout encounters, manage readiness, and jump into the world when the session feels right.',
+                            'This tab is now the pure adventure lane: scout encounters, manage readiness, and jump into the world without arcade shortcuts crowding the flow.',
                       ),
                       const SizedBox(height: 18),
                       _MainHeroCard(
@@ -140,7 +122,7 @@ class MainGamePage extends StatelessWidget {
                         district: adventure.currentDistrict,
                         focus: adventure.sessionFocus,
                         onOpenAdventure: () => _openAdventure(context),
-                        onOpenReactBattle: () => _openReactBattle(context),
+                        onOpenAcademy: () => _openAcademy(context),
                       ),
                       const SizedBox(height: 18),
                       LayoutBuilder(
@@ -211,7 +193,7 @@ class MainGamePage extends StatelessWidget {
                       const _SectionTitle(
                         title: 'Session Roadmap',
                         subtitle:
-                            'The main lane now feels more like a real run plan instead of a plain launcher page.',
+                            'Adventure stays focused here, while academy study and arcade runs branch off into their own dedicated tabs.',
                       ),
                       const SizedBox(height: 14),
                       _SessionChecklistCard(
@@ -224,26 +206,26 @@ class MainGamePage extends StatelessWidget {
                           final stacked = constraints.maxWidth < 760;
                           final cards = [
                             _ActivityCard(
-                              title: 'React Challenge',
+                              title: 'Academy Sync',
                               subtitle:
-                                  'Use the featured challenge for a faster reward spike when you want a shorter session.',
-                              badge: 'FEATURED CHALLENGE',
-                              accent: const Color(0xFF6CB6DA),
-                              icon: Icons.bolt_rounded,
-                              buttonLabel: 'Play React Challenge',
-                              onPressed: () => _openReactBattle(context),
+                                  'Review the next lesson before your next run when you want more confidence going into encounters.',
+                              badge: 'LEARNING SUPPORT',
+                              accent: const Color(0xFF58C7FF),
+                              icon: Icons.school_rounded,
+                              buttonLabel: 'Open Academy',
+                              onPressed: () => _openAcademy(context),
                               style: const CustomButtonStyle.tertiary(),
                               iconColor: Colors.white,
                             ),
                             _ActivityCard(
-                              title: 'Market Board',
+                              title: 'Arcade Wing',
                               subtitle:
-                                  'Trade stock lots with gold, hold them through swings, and cash out when you want more spending power.',
-                              badge: 'NEW SIDE MODE',
+                                  'React Challenge, Bill Dodger, Budget Challenge, and Market Board now live in their own separate lane.',
+                              badge: 'SEPARATE TAB',
                               accent: const Color(0xFFE3C56D),
-                              icon: Icons.show_chart_rounded,
-                              buttonLabel: 'Open Market Board',
-                              onPressed: () => _openStockMarket(context),
+                              icon: Icons.sports_esports_rounded,
+                              buttonLabel: 'Open Minigames',
+                              onPressed: () => _openMinigames(context),
                               style: const CustomButtonStyle.secondary(),
                               iconColor: const Color(0xFF1A4D3D),
                             ),
@@ -401,7 +383,7 @@ class _MainHeroCard extends StatelessWidget {
     required this.district,
     required this.focus,
     required this.onOpenAdventure,
-    required this.onOpenReactBattle,
+    required this.onOpenAcademy,
   });
 
   final String username;
@@ -409,7 +391,7 @@ class _MainHeroCard extends StatelessWidget {
   final String district;
   final String focus;
   final VoidCallback onOpenAdventure;
-  final VoidCallback onOpenReactBattle;
+  final VoidCallback onOpenAcademy;
 
   @override
   Widget build(BuildContext context) {
@@ -452,10 +434,10 @@ class _MainHeroCard extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               CustomButton(
-                label: 'Quick Reward Run',
-                onPressed: onOpenReactBattle,
+                label: 'Review Academy',
+                onPressed: onOpenAcademy,
                 prefixIcon: const Icon(
-                  Icons.bolt_rounded,
+                  Icons.school_rounded,
                   size: 18,
                   color: Colors.white,
                 ),

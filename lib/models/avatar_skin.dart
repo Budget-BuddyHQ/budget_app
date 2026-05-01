@@ -97,22 +97,6 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     weight: 4,
   ),
   AvatarSkin(
-    id: 'canopy_guardian',
-    name: 'Canopy Guardian',
-    assetPath: 'assets/images/turtles/plantcover.png',
-    rarity: SkinRarity.rare,
-    accent: Color(0xFF7FD98E),
-    weight: 10,
-  ),
-  AvatarSkin(
-    id: 'shell_sprinter',
-    name: 'Shell Sprinter',
-    assetPath: 'assets/images/turtles/topview.png',
-    rarity: SkinRarity.common,
-    accent: Color(0xFF7CD0FF),
-    weight: 22,
-  ),
-  AvatarSkin(
     id: 'trailblazer',
     name: 'Trailblazer',
     assetPath: 'assets/images/turtles/player_topview.png',
@@ -120,23 +104,13 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     accent: Color(0xFFFFC96B),
     weight: 20,
   ),
-  AvatarSkin(
-    id: 'ancient_giant',
-    name: 'Ancient Giant',
-    assetPath: 'assets/images/turtles/big turtle.png',
-    rarity: SkinRarity.rare,
-    accent: Color(0xFF9FE39E),
-    weight: 8,
-  ),
-  AvatarSkin(
-    id: 'field_captain',
-    name: 'Field Captain',
-    assetPath: 'assets/images/turtles/guild_runner.jpg',
-    rarity: SkinRarity.epic,
-    accent: Color(0xFF9AD8FF),
-    weight: 3,
-  ),
 ];
+
+final Set<String> budgetBuddySkinIds = budgetBuddySkins
+    .map((skin) => skin.id)
+    .toSet();
+
+bool isRegisteredSkinId(String skinId) => budgetBuddySkinIds.contains(skinId);
 
 AvatarSkin skinFromId(String skinId) {
   return budgetBuddySkins.firstWhere(
