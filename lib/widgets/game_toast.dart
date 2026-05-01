@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../controllers/app_settings_controller.dart';
 
+import '../services/app_sound_service.dart';
+
 class GameToast {
   GameToast._();
 
@@ -16,11 +18,13 @@ class GameToast {
     IconData icon = Icons.auto_awesome_rounded,
     Color accent = const Color(0xFF85EFAC),
     Duration duration = const Duration(milliseconds: 2100),
+    AppSoundEffect soundEffect = AppSoundEffect.notification,
   }) {
     final overlay = Overlay.of(context, rootOverlay: true);
 
     context.read<AppSettingsController>().playReward();
     HapticFeedback.lightImpact();
+    AppSoundService.play(soundEffect);
     _activeEntry?.remove();
 
     late OverlayEntry entry;

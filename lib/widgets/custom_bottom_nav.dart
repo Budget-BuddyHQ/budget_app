@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../controllers/app_settings_controller.dart';
 
+import '../services/app_sound_service.dart';
+
 class CustomBottomNav extends StatelessWidget {
   const CustomBottomNav({
     super.key,
@@ -81,6 +83,7 @@ class CustomBottomNav extends StatelessWidget {
     }
     context.read<AppSettingsController>().playTap();
     HapticFeedback.lightImpact();
+    AppSoundService.play(AppSoundEffect.navigation);
     onSelected!(index);
   }
 }

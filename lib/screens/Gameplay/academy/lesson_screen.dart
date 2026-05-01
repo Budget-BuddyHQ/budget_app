@@ -8,6 +8,7 @@ import '../../../widgets/ambient_lottie_card.dart';
 import '../../../widgets/custom_bottom_nav.dart';
 import '../../../widgets/game_toast.dart';
 import 'lesson_detail_screen.dart';
+import '../../../services/app_sound_service.dart';
 
 class LessonScreen extends StatefulWidget {
   const LessonScreen({
@@ -26,6 +27,8 @@ class LessonScreen extends StatefulWidget {
 class _LessonScreenState extends State<LessonScreen> {
   late final ProgressionService _progressionService;
   int _selectedUnitIndex = 0;
+
+  bool get railExtended => MediaQuery.of(context).size.width >= 600;
 
   @override
   void initState() {
@@ -75,9 +78,11 @@ class _LessonScreenState extends State<LessonScreen> {
       GameToast.show(
         context,
         title: 'Lesson locked',
-        message: 'Finish the earlier content in this unit to unlock ${lesson.title}.',
+        message:
+            'Finish the earlier content in this unit to unlock ${lesson.title}.',
         icon: Icons.lock_outline_rounded,
         accent: const Color(0xFFFFB084),
+        soundEffect: AppSoundEffect.error,
       );
       return;
     }
@@ -108,7 +113,7 @@ class _LessonScreenState extends State<LessonScreen> {
     final overallProgress = _progressionService.getProgress();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
+      backgroundColor: const Color(0xFF0D2B20),
       bottomNavigationBar: widget.onNavSelected == null
           ? null
           : CustomBottomNav(
@@ -166,8 +171,6 @@ class _LessonScreenState extends State<LessonScreen> {
               );
             }
 
-            final railExtended = constraints.maxWidth >= 1120;
-
             return Column(
               children: [
                 _HubHeader(
@@ -194,53 +197,75 @@ class _LessonScreenState extends State<LessonScreen> {
                 ),
                 const _MasteryLegend(),
                 Expanded(
-                  child: Row(
-                    children: [
-                      if (constraints.maxWidth >= 1040)
-                        _UnitSidebar(
-                          width: railExtended ? 232 : 116,
-                          extended: railExtended,
-                          units: units,
-                          selectedIndex: _selectedUnitIndex,
-                          onSelected: (index) {
-                            setState(() => _selectedUnitIndex = index);
-                          },
-                        ),
-                      Expanded(
-                        child: Scrollbar(
-                          thumbVisibility: true,
-                          child: ListView(
-                            padding: EdgeInsets.fromLTRB(
-                              constraints.maxWidth >= 1040 ? 8 : 20,
-                              16,
-                              20,
-                              24,
+                  child: constraints.maxWidth >= 1040
+                      ? Row(
+                          children: [
+                            _UnitSidebar(
+                              width: 220,
+                              extended: true,
+                              units: units,
+                              selectedIndex: _selectedUnitIndex,
+                              onSelected: (index) {
+                                setState(() => _selectedUnitIndex = index);
+                              },
                             ),
-                            children: [
-                              _UnitCard(
-                                unit: selectedUnit,
-                                progress: _progressionService.getUnitProgress(
-                                  selectedUnit.id,
-                                ),
-                                mastery: _progressionService.getUnitMastery(
-                                  selectedUnit.id,
-                                ),
-                                onLessonTap: _openLesson,
-                                statusFor: _progressionService.getLessonStatus,
+                            Expanded(
+                              child: ListView(
+                                padding:
+                                    const EdgeInsets.fromLTRB(8, 16, 20, 24),
+                                children: [
+                                  _UnitCard(
+                                    unit: selectedUnit,
+                                    progress: _progressionService
+                                        .getUnitProgress(selectedUnit.id),
+                                    mastery: _progressionService
+                                        .getUnitMastery(selectedUnit.id),
+                                    onLessonTap: _openLesson,
+                                    statusFor:
+                                        _progressionService.getLessonStatus,
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            _MobileUnitSelector(
+                              units: units,
+                              selectedIndex: _selectedUnitIndex,
+                              onSelected: (index) {
+                                setState(() => _selectedUnitIndex = index);
+                              },
+                            ),
+                            Expanded(
+                              child: ListView(
+                                padding:
+                                    const EdgeInsets.fromLTRB(8, 16, 20, 24),
+                                children: [
+                                  _UnitCard(
+                                    unit: selectedUnit,
+                                    progress: _progressionService
+                                        .getUnitProgress(selectedUnit.id),
+                                    mastery: _progressionService
+                                        .getUnitMastery(selectedUnit.id),
+                                    onLessonTap: _openLesson,
+                                    statusFor:
+                                        _progressionService.getLessonStatus,
+                                    compact: true,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
+                  );
+  }),
+            
+          ),
+        );
   }
 }
 
@@ -654,7 +679,9 @@ class _MetricPill extends StatelessWidget {
 }
 
 class _MasteryLegend extends StatelessWidget {
-  const _MasteryLegend({this.compact = false});
+  const _MasteryLegend({
+    this.compact = false,
+  });
 
   final bool compact;
 
@@ -671,9 +698,9 @@ class _MasteryLegend extends StatelessWidget {
       margin: EdgeInsets.symmetric(horizontal: compact ? 0 : 20),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF1A4D3D),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: const Color(0xFF85EFAC)),
       ),
       child: Wrap(
         spacing: 16,
@@ -696,7 +723,7 @@ class _MasteryLegend extends StatelessWidget {
                   Text(
                     item.$1,
                     style: const TextStyle(
-                      color: Color(0xFF334155),
+                      color: Colors.white,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -1072,7 +1099,9 @@ class _UnitCard extends StatelessWidget {
               minHeight: 9,
               value: progress,
               backgroundColor: const Color(0xFFE5E7EB),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2F9E68)),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF2F9E68),
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -1109,10 +1138,7 @@ class _MasteryBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w900,
-        ),
+        style: TextStyle(color: color, fontWeight: FontWeight.w900),
       ),
     );
   }

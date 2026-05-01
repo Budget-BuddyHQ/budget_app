@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../controllers/app_settings_controller.dart';
-import '../../services/supabase_service.dart';
 import '../../controllers/user_stats_controller.dart';
 import '../../navigation/app_tab_index.dart';
 import '../../navigation/fade_page_route.dart';
+import '../../services/supabase_service.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/game_toast.dart';
 import '../admin/admin_screen.dart';
@@ -28,6 +28,12 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _notificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
 
   Future<void> _logout(BuildContext context) async {
     await context.read<UserStatsController>().signOut();
@@ -197,9 +203,9 @@ class _ProfileHero extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: Colors.white.withOpacity(0.06),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        border: Border.all(color: Colors.white.withOpacity(0.10)),
       ),
       child: Row(
         children: [
