@@ -1,23 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
+import '../../../controllers/user_stats_controller.dart';
+import '../../../navigation/app_tab_index.dart';
 import '../../../navigation/fade_page_route.dart';
 import '../../../widgets/custom_bottom_nav.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/game_toast.dart';
 import '../arcade/bill_dodger.dart';
 import '../arcade/budget_challenge.dart';
+import '../arcade/react_challenge_screen.dart';
 import '../arcade/stock_market_page.dart';
 
 class MinigamesPage extends StatelessWidget {
   const MinigamesPage({
     super.key,
-    this.activeTabIndex = 1,
+    this.activeTabIndex = AppTabIndex.minigames,
     this.onNavSelected,
   });
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
+
+  Future<void> _openReactChallenge(BuildContext context) async {
+    final controller = context.read<UserStatsController>();
+    final stats = controller.stats;
+
+    final result = await Navigator.of(context).push<ReactGameCloseResult>(
+      FadePageRoute(
+        builder: (_) => ReactChallengeScreen(
+          gameId: 'daily_budget_battle',
+          difficulty: 'medium',
+          playerLevel: stats.level,
+          userId: stats.id,
+        ),
+      ),
+    );
+
+    if (!context.mounted || result == null) {
+      return;
+    }
+
+    GameToast.show(
+      context,
+      title: result.status == 'victory' ? 'Arcade streak extended' : 'Run saved',
+      message:
+          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+      icon: Icons.bolt_rounded,
+      accent: const Color(0xFF6CB6DA),
+    );
+  }
 
   Future<void> _openBillDodger(BuildContext context) async {
     final result = await Navigator.of(context).push<BillDodgerCloseResult>(
@@ -84,6 +117,15 @@ class MinigamesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final minigames = <_MinigameCardData>[
       const _MinigameCardData(
+        title: 'React Challenge',
+        description:
+            'Battle through fast money questions when you want a short high-reward run.',
+        badge: 'FEATURED DAILY',
+        accent: Color(0xFF6CB6DA),
+        icon: Icons.bolt_rounded,
+        cta: 'Play React Challenge',
+      ),
+      const _MinigameCardData(
         title: 'Bill Dodger',
         description:
             'Collect needs, dodge wants, and sharpen fast spending calls.',
@@ -143,6 +185,7 @@ class MinigamesPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 18),
                 _MinigameHero(
+                  onReactChallenge: () => _openReactChallenge(context),
                   onBillDodger: () => _openBillDodger(context),
                   onBudgetChallenge: () => _openBudgetChallenge(context),
                   onStockMarket: () => _openStockMarket(context),
@@ -179,9 +222,10 @@ class MinigamesPage extends StatelessWidget {
                         return _MinigameCard(
                           data: game,
                           onPressed: switch (index) {
-                            0 => () => _openBillDodger(context),
-                            1 => () => _openBudgetChallenge(context),
-                            2 => () => _openStockMarket(context),
+                            0 => () => _openReactChallenge(context),
+                            1 => () => _openBillDodger(context),
+                            2 => () => _openBudgetChallenge(context),
+                            3 => () => _openStockMarket(context),
                             _ => () => _showComingSoon(context, game.title),
                           },
                         );
@@ -297,11 +341,13 @@ class _PageHeader extends StatelessWidget {
 
 class _MinigameHero extends StatelessWidget {
   const _MinigameHero({
+    required this.onReactChallenge,
     required this.onBillDodger,
     required this.onBudgetChallenge,
     required this.onStockMarket,
   });
 
+  final VoidCallback onReactChallenge;
   final VoidCallback onBillDodger;
   final VoidCallback onBudgetChallenge;
   final VoidCallback onStockMarket;
@@ -328,6 +374,17 @@ class _MinigameHero extends StatelessWidget {
 
           final buttons = Column(
             children: [
+              CustomButton(
+                label: 'Play React Challenge',
+                onPressed: onReactChallenge,
+                prefixIcon: const Icon(
+                  Icons.bolt_rounded,
+                  color: Color(0xFF6CB6DA),
+                  size: 18,
+                ),
+                style: const CustomButtonStyle.tertiary(),
+              ),
+              const SizedBox(height: 10),
               CustomButton(
                 label: 'Play Bill Dodger',
                 onPressed: onBillDodger,
@@ -389,7 +446,7 @@ class _MinigameHero extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Arcade games stay here so the main adventure page can stay focused.',
+                'Arcade games stay here so the adventure tab can stay focused on the field loop.',
                 textAlign: stacked ? TextAlign.center : TextAlign.start,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.74),
@@ -402,6 +459,10 @@ class _MinigameHero extends StatelessWidget {
                 spacing: 10,
                 runSpacing: 10,
                 children: const [
+                  _HeroBadge(
+                    label: 'React Challenge',
+                    accent: Color(0xFF6CB6DA),
+                  ),
                   _HeroBadge(
                     label: 'Bill Dodger',
                     accent: Color(0xFFE1BB72),
