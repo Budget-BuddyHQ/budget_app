@@ -12,6 +12,7 @@ import '../../../services/app_sound_service.dart';
 import '../../../services/local_web_game_server.dart';
 import '../../../services/supabase_service.dart';
 import '../../../widgets/game_toast.dart';
+import '../../../widgets/orientation_scope.dart';
 
 class ReactGameCloseResult {
   const ReactGameCloseResult({
@@ -190,9 +191,7 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
         return decoded;
       }
       if (decoded is Map) {
-        return decoded.map(
-          (key, value) => MapEntry(key.toString(), value),
-        );
+        return decoded.map((key, value) => MapEntry(key.toString(), value));
       }
     } catch (_) {
       return null;
@@ -201,111 +200,109 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
   }
 
   Future<void> _handlePayload(Map<String, dynamic> payload) async {
-  if (_didHandleGameOver) {
-    return;
-  }
+    if (_didHandleGameOver) {
+      return;
+    }
 
-  final status = (payload['status'] ?? '').toString().trim().toLowerCase();
-  if (!_isTerminalStatus(status)) {
-    return;
-  }
+    final status = (payload['status'] ?? '').toString().trim().toLowerCase();
+    if (!_isTerminalStatus(status)) {
+      return;
+    }
 
-  _didHandleGameOver = true;
+    _didHandleGameOver = true;
 
-  final userStatsController = context.read<UserStatsController>();
-  final goldEarned = _readInt(payload['gold_earned'] ?? payload['gold']);
-  final xpEarned = _readInt(payload['xp_earned'] ?? payload['xp']);
-  final literacyEarned = _readInt(
-    payload['literacy_points_earned'] ?? payload['literacy_points'],
-  );
+    final userStatsController = context.read<UserStatsController>();
+    final goldEarned = _readInt(payload['gold_earned'] ?? payload['gold']);
+    final xpEarned = _readInt(payload['xp_earned'] ?? payload['xp']);
+    final literacyEarned = _readInt(
+      payload['literacy_points_earned'] ?? payload['literacy_points'],
+    );
 
-  _messageTimer?.cancel();
+    _messageTimer?.cancel();
 
-  if (mounted) {
-    setState(() {
-      _isSyncing = true;
-      _cloudMessage = 'Saving to Cloud...';
-    });
-  }
+    if (mounted) {
+      setState(() {
+        _isSyncing = true;
+        _cloudMessage = 'Saving to Cloud...';
+      });
+    }
 
-  try {
-    final actionResult = await userStatsController
-        .applyChallengePayload(
-          <String, dynamic>{
+    try {
+      final actionResult = await userStatsController
+          .applyChallengePayload(<String, dynamic>{
             ...payload,
             'gold_earned': goldEarned,
             'xp_earned': xpEarned,
             'literacy_points_earned': literacyEarned,
             'title': payload['title'] ?? 'React Challenge Reward',
-            'description': payload['description'] ??
+            'description':
+                payload['description'] ??
                 'Mini-game rewards synced from the local React challenge.',
-          },
-        )
-        .timeout(const Duration(seconds: 8));
+          })
+          .timeout(const Duration(seconds: 8));
 
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isSyncing = false;
-      _cloudMessage = actionResult.message;
-    });
-
-    HapticFeedback.lightImpact();
-    GameToast.show(
-      context,
-      title: status == 'victory' ? 'Victory!' : 'Battle complete',
-      message:
-          '+$goldEarned gold • +$xpEarned XP • ${actionResult.message}',
-      icon: status == 'victory'
-          ? Icons.workspace_premium_rounded
-          : Icons.flag_rounded,
-      accent: const Color(0xFF85EFAC),
-      soundEffect:
-          status == 'victory'
-              ? AppSoundEffect.celebration
-              : AppSoundEffect.shutdown,
-    );
-
-    _messageTimer = Timer(const Duration(seconds: 2), () {
       if (!mounted) {
         return;
       }
+
       setState(() {
-        _cloudMessage = null;
+        _isSyncing = false;
+        _cloudMessage = actionResult.message;
       });
-    });
 
-    Navigator.of(context).pop(
-      ReactGameCloseResult(
-        status: status,
-        goldEarned: goldEarned,
-        xpEarned: xpEarned,
-        literacyPointsEarned: literacyEarned,
-        syncState: actionResult.syncState,
-      ),
-    );
-  } catch (e) {
-    if (!mounted) {
-      return;
+      HapticFeedback.lightImpact();
+      GameToast.show(
+        context,
+        title: status == 'victory' ? 'Victory!' : 'Battle complete',
+        message: '+$goldEarned gold • +$xpEarned XP • ${actionResult.message}',
+        icon: status == 'victory'
+            ? Icons.workspace_premium_rounded
+            : Icons.flag_rounded,
+        accent: const Color(0xFF85EFAC),
+        soundEffect: status == 'victory'
+            ? AppSoundEffect.celebration
+            : AppSoundEffect.shutdown,
+      );
+
+      _messageTimer = Timer(const Duration(seconds: 2), () {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _cloudMessage = null;
+        });
+      });
+
+      Navigator.of(context).pop(
+        ReactGameCloseResult(
+          status: status,
+          goldEarned: goldEarned,
+          xpEarned: xpEarned,
+          literacyPointsEarned: literacyEarned,
+          syncState: actionResult.syncState,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isSyncing = false;
+        _cloudMessage = 'Save failed';
+      });
+
+      GameToast.show(
+        context,
+        title: 'Save failed',
+        message:
+            'Challenge reward sync hit a problem. Your next sync will retry.',
+        icon: Icons.cloud_off_rounded,
+        accent: const Color(0xFFFF8A80),
+        soundEffect: AppSoundEffect.shutdown,
+      );
     }
-
-    setState(() {
-      _isSyncing = false;
-      _cloudMessage = 'Save failed';
-    });
-
-    GameToast.show(
-      context,
-      title: 'Save failed',
-      message: 'Challenge reward sync hit a problem. Your next sync will retry.',
-      icon: Icons.cloud_off_rounded,
-      accent: const Color(0xFFFF8A80),
-      soundEffect: AppSoundEffect.shutdown,
-    );
   }
-}
 
   bool _isTerminalStatus(String status) {
     const terminalStatuses = <String>{
@@ -368,86 +365,97 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
 
   @override
   Widget build(BuildContext context) {
+    const orientationScope = <DeviceOrientation>[
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ];
+
     if (!_supportsEmbeddedWebView) {
-      return PopScope(
+      return OrientationScope(
+        orientations: orientationScope,
+        child: PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) async {
+            if (didPop) return;
+            final shouldPop = await _confirmExit();
+            if (shouldPop && context.mounted) {
+              Navigator.of(context).pop(result);
+            }
+          },
+          child: _NativeChallengeFallback(
+            onComplete: (payload) => _handlePayload(payload),
+          ),
+        ),
+      );
+    }
+
+    return OrientationScope(
+      orientations: orientationScope,
+      child: PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, result) async {
           if (didPop) return;
+
           final shouldPop = await _confirmExit();
           if (shouldPop && context.mounted) {
             Navigator.of(context).pop(result);
           }
         },
-        child: _NativeChallengeFallback(
-          onComplete: (payload) => _handlePayload(payload),
-        ),
-      );
-    }
+        child: Scaffold(
+          backgroundColor: const Color(0xFF07150F),
+          appBar: AppBar(
+            title: const Text('React Challenge'),
+            backgroundColor: const Color(0xFF1A4D3D),
+            foregroundColor: Colors.white,
+          ),
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (_webViewController != null && _loadError == null)
+                WebViewWidget(controller: _webViewController!),
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-
-        final shouldPop = await _confirmExit();
-        if (shouldPop && context.mounted) {
-          Navigator.of(context).pop(result);
-        }
-      },
-      child: Scaffold(
-        backgroundColor: const Color(0xFF07150F),
-        appBar: AppBar(
-          title: const Text('React Challenge'),
-          backgroundColor: const Color(0xFF1A4D3D),
-          foregroundColor: Colors.white,
-        ),
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (_webViewController != null && _loadError == null)
-              WebViewWidget(controller: _webViewController!),
-
-            if (_loadError != null)
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    _loadError!,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-              ),
-
-            if (_isLoading)
-              Positioned.fill(
-                child: ColoredBox(
-                  color: Colors.black.withValues(alpha: 0.38),
-                  child: Center(
-                    child: _ChallengeLoadingOverlay(
-                      controller: _loadingController,
+              if (_loadError != null)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      _loadError!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
                 ),
-              ),
 
-            Positioned(
-              top: 16,
-              right: 16,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 180),
-                child: (_isSyncing || _cloudMessage != null)
-                    ? _CloudSyncBadge(
-                        key: ValueKey<String>(
-                          '${_isSyncing}_${_cloudMessage ?? ''}',
-                        ),
-                        message: _cloudMessage ?? 'Saving to Cloud...',
-                        isLoading: _isSyncing,
-                      )
-                    : const SizedBox.shrink(),
+              if (_isLoading)
+                Positioned.fill(
+                  child: ColoredBox(
+                    color: Colors.black.withValues(alpha: 0.38),
+                    child: Center(
+                      child: _ChallengeLoadingOverlay(
+                        controller: _loadingController,
+                      ),
+                    ),
+                  ),
+                ),
+
+              Positioned(
+                top: 16,
+                right: 16,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  child: (_isSyncing || _cloudMessage != null)
+                      ? _CloudSyncBadge(
+                          key: ValueKey<String>(
+                            '${_isSyncing}_${_cloudMessage ?? ''}',
+                          ),
+                          message: _cloudMessage ?? 'Saving to Cloud...',
+                          isLoading: _isSyncing,
+                        )
+                      : const SizedBox.shrink(),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -455,9 +463,7 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
 }
 
 class _NativeChallengeFallback extends StatelessWidget {
-  const _NativeChallengeFallback({
-    required this.onComplete,
-  });
+  const _NativeChallengeFallback({required this.onComplete});
 
   final Future<void> Function(Map<String, dynamic>) onComplete;
 
@@ -497,25 +503,21 @@ class _NativeChallengeFallback extends StatelessWidget {
                   const SizedBox(height: 10),
                   const Text(
                     'WebView isn’t available on this platform, so Budget Buddy falls back to a local native challenge panel instead of sending you to a dead external URL.',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      height: 1.4,
-                    ),
+                    style: TextStyle(color: Colors.white70, height: 1.4),
                   ),
                   const SizedBox(height: 18),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () => onComplete(
-                        const <String, dynamic>{
-                          'status': 'victory',
-                          'gold': 120,
-                          'xp': 90,
-                          'literacy_points': 30,
-                          'title': 'Fallback Challenge Reward',
-                          'description': 'Completed the native fallback challenge.',
-                        },
-                      ),
+                      onPressed: () => onComplete(const <String, dynamic>{
+                        'status': 'victory',
+                        'gold': 120,
+                        'xp': 90,
+                        'literacy_points': 30,
+                        'title': 'Fallback Challenge Reward',
+                        'description':
+                            'Completed the native fallback challenge.',
+                      }),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF85EFAC),
                         foregroundColor: const Color(0xFF1A4D3D),
@@ -538,9 +540,7 @@ class _NativeChallengeFallback extends StatelessWidget {
 }
 
 class _ChallengeLoadingOverlay extends StatelessWidget {
-  const _ChallengeLoadingOverlay({
-    required this.controller,
-  });
+  const _ChallengeLoadingOverlay({required this.controller});
 
   final AnimationController controller;
 
@@ -646,4 +646,3 @@ class _CloudSyncBadge extends StatelessWidget {
     );
   }
 }
-

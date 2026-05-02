@@ -30,8 +30,6 @@ Future<void> main() async {
           defaultTargetPlatform == TargetPlatform.iOS)) {
     await SystemChrome.setPreferredOrientations(const [
       DeviceOrientation.portraitUp,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
     ]);
   }
 
