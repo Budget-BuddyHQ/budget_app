@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../../controllers/user_stats_controller.dart';
 import '../../../models/lesson.dart';
 import '../../../models/progression_service.dart';
 import '../../../services/app_sound_service.dart';
@@ -23,19 +25,43 @@ class LessonDetailScreen extends StatefulWidget {
 
 class _LessonDetailScreenState extends State<LessonDetailScreen> {
   bool _isCompleted = false;
+  bool _isSaving = false;
 
-  void _completeLesson() {
+  Future<void> _completeLesson() async {
+    if (_isSaving) {
+      return;
+    }
+
     if (_isCompleted) {
       Navigator.of(context).pop();
       return;
     }
 
+    setState(() => _isSaving = true);
     widget.progressionService.completeLesson(widget.lesson.id);
-    setState(() => _isCompleted = true);
+
+    final result = await context
+        .read<UserStatsController>()
+        .completeLessonProgress(
+          lessonId: widget.lesson.id,
+          lessonTitle: widget.lesson.title,
+          xpEarned: 12,
+          literacyPointsEarned: 20,
+        );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isCompleted = true;
+      _isSaving = false;
+    });
+
     GameToast.show(
       context,
       title: 'Lesson complete',
-      message: '${widget.lesson.title} marked complete.',
+      message: '${widget.lesson.title} saved. ${result.message}',
       icon: Icons.school_rounded,
       accent: const Color(0xFF2F9E68),
       soundEffect: AppSoundEffect.celebration,
@@ -152,12 +178,34 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 18),
                 ),
-                child: Text(
-                  _isCompleted ? 'Return to Units' : 'Complete Lesson',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (_isSaving) ...[
+                      const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+                    Text(
+                      _isCompleted
+                          ? 'Return to Units'
+                          : _isSaving
+                          ? 'Saving Progress...'
+                          : 'Complete Lesson',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -227,11 +275,7 @@ class _LessonOverviewCard extends StatelessWidget {
           if (stacked) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                leading,
-                const SizedBox(height: 16),
-                copy,
-              ],
+              children: [leading, const SizedBox(height: 16), copy],
             );
           }
 
@@ -249,20 +293,14 @@ class _LessonOverviewCard extends StatelessWidget {
 }
 
 class _LessonContent {
-  const _LessonContent({
-    required this.icon,
-    required this.sections,
-  });
+  const _LessonContent({required this.icon, required this.sections});
 
   final IconData icon;
   final List<_LessonSection> sections;
 }
 
 class _LessonSection {
-  const _LessonSection({
-    required this.title,
-    required this.content,
-  });
+  const _LessonSection({required this.title, required this.content});
 
   final String title;
   final String content;
