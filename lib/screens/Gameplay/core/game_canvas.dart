@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../../controllers/adventure_state_controller.dart';
 import '../../../game/budget_buddy_game.dart';
 import '../../../services/app_sound_service.dart';
+import '../../../widgets/orientation_scope.dart';
 
 class GameCanvas extends StatefulWidget {
   const GameCanvas({super.key});
@@ -94,78 +95,89 @@ class _GameCanvasState extends State<GameCanvas> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF071711),
-      body: SafeArea(
-        child: Consumer<AdventureStateController>(
-          builder: (context, adventure, _) {
-            return Column(
-              children: [
-                Expanded(
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(26),
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF071711),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.10),
+    return OrientationScope(
+      orientations: const <DeviceOrientation>[
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ],
+      child: Scaffold(
+        backgroundColor: const Color(0xFF071711),
+        body: SafeArea(
+          child: Consumer<AdventureStateController>(
+            builder: (context, adventure, _) {
+              return Column(
+                children: [
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(26),
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF071711),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.10),
+                                  ),
                                 ),
-                              ),
-                              child: GameWidget<BudgetBuddyGame>(
-                                game: _game,
-                                autofocus: true,
+                                child: GameWidget<BudgetBuddyGame>(
+                                  game: _game,
+                                  autofocus: true,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      Positioned(
-                        top: 18,
-                        left: 18,
-                        right: 18,
-                        child: _HudBar(
-                          level: adventure.level,
-                          xpProgress: adventure.xpProgress,
-                          gold: adventure.gold,
-                          onBack: () => Navigator.of(context).maybePop(),
-                          onPetsTap: () =>
-                              _showPetsModal(context, adventure.equippedPet),
+                        Positioned(
+                          top: 18,
+                          left: 18,
+                          right: 18,
+                          child: _HudBar(
+                            level: adventure.level,
+                            xpProgress: adventure.xpProgress,
+                            gold: adventure.gold,
+                            onBack: () => Navigator.of(context).maybePop(),
+                            onPetsTap: () =>
+                                _showPetsModal(context, adventure.equippedPet),
+                          ),
                         ),
-                      ),
-                      if (adventure.combatVisible)
-                        Positioned.fill(
-                          child: Container(
-                            color: Colors.black.withValues(alpha: 0.48),
-                            child: SafeArea(
-                              child: SingleChildScrollView(
-                                padding:
-                                    const EdgeInsets.fromLTRB(16, 92, 16, 24),
-                                child: Center(
-                                  child: ConstrainedBox(
-                                    constraints:
-                                        const BoxConstraints(maxWidth: 440),
-                                    child: _CombatOverlay(
-                                      controller: adventure,
-                                      onAnswer: (index) =>
-                                          _handleAnswer(context, index),
+                        if (adventure.combatVisible)
+                          Positioned.fill(
+                            child: Container(
+                              color: Colors.black.withValues(alpha: 0.48),
+                              child: SafeArea(
+                                child: SingleChildScrollView(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    92,
+                                    16,
+                                    24,
+                                  ),
+                                  child: Center(
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 440,
+                                      ),
+                                      child: _CombatOverlay(
+                                        controller: adventure,
+                                        onAnswer: (index) =>
+                                            _handleAnswer(context, index),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -212,8 +224,9 @@ class _HudBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Wrap(
-                  alignment:
-                      stacked ? WrapAlignment.start : WrapAlignment.spaceBetween,
+                  alignment: stacked
+                      ? WrapAlignment.start
+                      : WrapAlignment.spaceBetween,
                   spacing: 12,
                   runSpacing: 6,
                   children: [
@@ -274,10 +287,7 @@ class _HudBar extends StatelessWidget {
 
             return Row(
               children: [
-                _GlassIconButton(
-                  icon: Icons.arrow_back_rounded,
-                  onTap: onBack,
-                ),
+                _GlassIconButton(icon: Icons.arrow_back_rounded, onTap: onBack),
                 const SizedBox(width: 12),
                 Expanded(child: summary),
                 const SizedBox(width: 12),
@@ -296,11 +306,7 @@ class _HudBar extends StatelessWidget {
 }
 
 class _GlassIconButton extends StatelessWidget {
-  const _GlassIconButton({
-    required this.icon,
-    required this.onTap,
-    this.label,
-  });
+  const _GlassIconButton({required this.icon, required this.onTap, this.label});
 
   final IconData icon;
   final VoidCallback onTap;
@@ -349,10 +355,7 @@ class _GlassIconButton extends StatelessWidget {
 }
 
 class _CombatOverlay extends StatelessWidget {
-  const _CombatOverlay({
-    required this.controller,
-    required this.onAnswer,
-  });
+  const _CombatOverlay({required this.controller, required this.onAnswer});
 
   final AdventureStateController controller;
   final ValueChanged<int> onAnswer;

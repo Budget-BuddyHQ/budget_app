@@ -22,6 +22,8 @@ dependencies:
   flame: ^1.18.0
   flame_tiled: ^1.20.3
   lottie: ^3.3.0
+  audioplayers: ^6.6.0
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
@@ -35,6 +37,7 @@ flutter:
     - assets/images/
     - assets/images/turtles/
     - assets/animations/
+    - assets/audio/
     - assets/web_game/
     - assets/map/
 

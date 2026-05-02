@@ -4,19 +4,24 @@ import 'lesson.dart';
 import 'lesson_data.dart';
 
 class ProgressionService extends ChangeNotifier {
-  final Set<String> _completedLessons = <String>{};
+  ProgressionService({
+    Iterable<String> initialCompletedLessons = const <String>[],
+  }) : _completedLessons = initialCompletedLessons.toSet();
+
+  final Set<String> _completedLessons;
   final List<LessonUnit> _units = lessonUnits;
 
   List<LessonUnit> get units => List<LessonUnit>.unmodifiable(_units);
 
-  List<Lesson> get lessons => List<Lesson>.unmodifiable(
-        _units.expand((unit) => unit.lessons),
-      );
+  List<Lesson> get lessons =>
+      List<Lesson>.unmodifiable(_units.expand((unit) => unit.lessons));
+
+  Set<String> get completedLessons => Set<String>.unmodifiable(_completedLessons);
 
   Lesson? getLesson(String id) {
     try {
       return lessons.firstWhere((lesson) => lesson.id == id);
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
@@ -24,7 +29,7 @@ class ProgressionService extends ChangeNotifier {
   LessonUnit? getUnit(String unitId) {
     try {
       return _units.firstWhere((unit) => unit.id == unitId);
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
@@ -60,6 +65,18 @@ class ProgressionService extends ChangeNotifier {
     if (_completedLessons.add(lessonId)) {
       notifyListeners();
     }
+  }
+
+  void replaceCompletedLessons(Iterable<String> lessonIds) {
+    final next = lessonIds.toSet();
+    if (setEquals(_completedLessons, next)) {
+      return;
+    }
+
+    _completedLessons
+      ..clear()
+      ..addAll(next);
+    notifyListeners();
   }
 
   Lesson? get nextLesson {

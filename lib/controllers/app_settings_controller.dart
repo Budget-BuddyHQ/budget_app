@@ -1,12 +1,9 @@
-import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:flutter/foundation.dart';
 
-class AppSettingsController extends ChangeNotifier {
-  static const _soundEnabledKey = 'budget_buddy_sound_enabled';
+import '../services/app_sound_service.dart';
 
-  bool _soundEnabled = true;
+class AppSettingsController extends ChangeNotifier {
+  bool _soundEnabled = AppSoundService.enabled;
   bool _initialized = false;
 
   bool get soundEnabled => _soundEnabled;
@@ -17,8 +14,8 @@ class AppSettingsController extends ChangeNotifier {
       return;
     }
 
-    final preferences = await SharedPreferences.getInstance();
-    _soundEnabled = preferences.getBool(_soundEnabledKey) ?? true;
+    await AppSoundService.initialize();
+    _soundEnabled = AppSoundService.enabled;
     _initialized = true;
     notifyListeners();
   }
@@ -30,22 +27,6 @@ class AppSettingsController extends ChangeNotifier {
 
     _soundEnabled = enabled;
     notifyListeners();
-
-    final preferences = await SharedPreferences.getInstance();
-    await preferences.setBool(_soundEnabledKey, enabled);
-  }
-
-  Future<void> playTap() async {
-    if (!_soundEnabled) {
-      return;
-    }
-    await SystemSound.play(SystemSoundType.click);
-  }
-
-  Future<void> playReward() async {
-    if (!_soundEnabled) {
-      return;
-    }
-    await SystemSound.play(SystemSoundType.alert);
+    await AppSoundService.setEnabled(enabled);
   }
 }

@@ -1,7 +1,4 @@
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-
-import '../controllers/app_settings_controller.dart';
 
 import '../services/app_sound_service.dart';
 
@@ -20,31 +17,39 @@ import '../services/app_sound_service.dart';
 
     final screenWidth = MediaQuery.of(context).size.width;
     final compact = screenWidth < 720;
+    final dense = screenWidth < 560;
 
     return SafeArea(
       top: false,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-          compact ? 10 : 14,
+          dense ? 8 : (compact ? 10 : 14),
           0,
-          compact ? 10 : 14,
-          14,
+          dense ? 8 : (compact ? 10 : 14),
+          dense ? 10 : 14,
         ),
         child: Container(
-          height: compact ? 72 : 84,
+          height: dense ? 84 : (compact ? 88 : 92),
           decoration: BoxDecoration(
-            color: const Color(0xFF071711).withValues(alpha: 0.92),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                const Color(0xFF0A1D17).withValues(alpha: 0.98),
+                const Color(0xFF07110D).withValues(alpha: 0.94),
+              ],
+            ),
             borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.28),
-                blurRadius: 30,
+                blurRadius: 32,
                 offset: const Offset(0, 16),
               ),
               BoxShadow(
-                color: const Color(0xFF85EFAC).withValues(alpha: 0.08),
-                blurRadius: 18,
+                color: const Color(0xFF4BD2A3).withValues(alpha: 0.08),
+                blurRadius: 20,
                 spreadRadius: 1,
               ),
             ],
@@ -58,6 +63,7 @@ import '../services/app_sound_service.dart';
                     index: index,
                     active: index == activeIndex,
                     compact: compact,
+                    dense: dense,
                     onTap: () => _handleTap(context, index),
                   ),
                 ),
@@ -69,7 +75,7 @@ import '../services/app_sound_service.dart';
     if (onSelected == null || index == activeIndex) {
       return;
     }
-    context.read<AppSettingsController>().playTap();
+
     HapticFeedback.lightImpact();
     AppSoundService.play(AppSoundEffect.navigation);
     onSelected!(index);
@@ -79,14 +85,16 @@ class _NavTile extends StatelessWidget {
     required this.data,
     required this.index,
     required this.compact,
+    required this.dense,
     required this.onTap,
   final _NavItemData data;
   final int index;
   final bool active;
   final bool compact;
+  final bool dense;
   final VoidCallback onTap;
 
-    final accent = active ? const Color(0xFF85EFAC) : Colors.white70;
+    final accent = active ? const Color(0xFFB7F7D7) : Colors.white70;
     return Semantics(
       button: true,
       selected: active,
@@ -101,12 +109,12 @@ class _NavTile extends StatelessWidget {
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,
             margin: EdgeInsets.symmetric(
-              horizontal: compact ? 2 : 3,
-              vertical: 8,
+              horizontal: dense ? 1 : (compact ? 2 : 3),
+              vertical: dense ? 7 : 8,
             ),
             padding: EdgeInsets.symmetric(
-              horizontal: compact ? 1 : 2,
-              vertical: compact ? 8 : 8,
+              horizontal: dense ? 0 : (compact ? 1 : 2),
+              vertical: dense ? 7 : 8,
             ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
@@ -115,14 +123,14 @@ class _NavTile extends StatelessWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        const Color(0xFF85EFAC).withValues(alpha: 0.32),
-                        const Color(0xFF0D2B20).withValues(alpha: 0.92),
+                        const Color(0xFF4BD2A3).withValues(alpha: 0.34),
+                        const Color(0xFF123124).withValues(alpha: 0.96),
                       ],
                     )
                   : null,
               border: Border.all(
                 color: active
-                    ? const Color(0xFF85EFAC).withValues(alpha: 0.42)
+                    ? const Color(0xFF7BE1BB).withValues(alpha: 0.48)
                     : Colors.transparent,
               ),
             ),
@@ -132,21 +140,33 @@ class _NavTile extends StatelessWidget {
                 Icon(
                   data.icon,
                   color: accent,
-                  size: compact ? (active ? 23 : 21) : (active ? 24 : 21),
+                  size: dense
+                      ? (active ? 21 : 19)
+                      : compact
+                      ? (active ? 23 : 21)
+                      : (active ? 24 : 21),
                 ),
-                if (!compact) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    data.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: accent,
-                      fontSize: 9.5,
-                      fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                SizedBox(height: dense ? 4 : 5),
+                SizedBox(
+                  height: dense ? 14 : 16,
+                  child: Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        data.label,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: accent,
+                          fontSize: dense ? 9.2 : 10.2,
+                          fontWeight: active
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                          letterSpacing: dense ? 0.0 : 0.1,
+                        ),
+                      ),
                     ),
                   ),
-                ],
+                ),
               ],
             ),
           ),
