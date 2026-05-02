@@ -519,6 +519,55 @@ class UserStatsController extends ChangeNotifier {
     return _saveStats(nextStats, savingMessage: 'Saving challenge rewards...');
   }
 
+  Future<StatsActionResult> completeLessonProgress({
+    required String lessonId,
+    required String lessonTitle,
+    int xpEarned = 10,
+    int literacyPointsEarned = 18,
+    int goldEarned = 0,
+  }) async {
+    final completedLessons = _stats.completedLessons.toSet();
+    if (completedLessons.contains(lessonId)) {
+      return const StatsActionResult(
+        success: true,
+        message: 'Lesson already saved.',
+        syncState: SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'Lesson progress was already recorded.',
+        ),
+      );
+    }
+
+    completedLessons.add(lessonId);
+    final now = DateTime.now().toUtc();
+    final nextStats = _stats.copyWith(
+      gold: _stats.gold + goldEarned,
+      xp: _stats.xp + xpEarned,
+      literacyPoints: _stats.literacyPoints + literacyPointsEarned,
+      spendingHabits: <String, dynamic>{
+        ..._stats.spendingHabits,
+        'completed_lessons': completedLessons.toList(growable: false),
+        'last_completed_lesson': lessonId,
+      },
+      transactions: <LedgerTransaction>[
+        LedgerTransaction(
+          id: 'txn_${now.microsecondsSinceEpoch}',
+          title: 'Academy Lesson Complete',
+          description:
+              'Finished $lessonTitle and banked $literacyPointsEarned literacy points.',
+          amount: goldEarned,
+          createdAt: now,
+          category: 'lesson',
+        ),
+        ..._stats.transactions,
+      ],
+      updatedAt: now,
+    );
+
+    return _saveStats(nextStats, savingMessage: 'Saving lesson progress...');
+  }
+
   Future<SkinCaseResult> openSkinCase() async {
     const caseCost = 180;
     if (_stats.gold < caseCost) {
@@ -629,6 +678,34 @@ class UserStatsController extends ChangeNotifier {
     return _saveStats(
       nextStats,
       savingMessage: 'Equipping your new turtle style...',
+    );
+  }
+
+  Future<StatsActionResult> updateProfilePhoto(String imageUrl) async {
+    final normalizedUrl = imageUrl.trim();
+    if (normalizedUrl.isEmpty) {
+      return const StatsActionResult(
+        success: false,
+        message: 'Choose an image before saving a profile photo.',
+        syncState: SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'No photo URL was provided.',
+        ),
+      );
+    }
+
+    final nextStats = _stats.copyWith(
+      spendingHabits: <String, dynamic>{
+        ..._stats.spendingHabits,
+        'profile_image_url': normalizedUrl,
+      },
+      updatedAt: DateTime.now().toUtc(),
+    );
+
+    return _saveStats(
+      nextStats,
+      savingMessage: 'Saving your new profile photo...',
     );
   }
 
