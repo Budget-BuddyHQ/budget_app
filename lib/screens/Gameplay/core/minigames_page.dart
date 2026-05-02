@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../../../controllers/user_stats_controller.dart';
 import '../../../navigation/app_tab_index.dart';
 import '../../../navigation/fade_page_route.dart';
+import '../../../theme/app_theme.dart';
+import '../../../widgets/ambient_lottie_card.dart';
 import '../../../widgets/custom_bottom_nav.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/game_toast.dart';
@@ -44,7 +46,9 @@ class MinigamesPage extends StatelessWidget {
 
     GameToast.show(
       context,
-      title: result.status == 'victory' ? 'Arcade streak extended' : 'Run saved',
+      title: result.status == 'victory'
+          ? 'Arcade streak extended'
+          : 'Run saved',
       message:
           '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
       icon: Icons.bolt_rounded,
@@ -54,9 +58,7 @@ class MinigamesPage extends StatelessWidget {
 
   Future<void> _openBillDodger(BuildContext context) async {
     final result = await Navigator.of(context).push<BillDodgerCloseResult>(
-      FadePageRoute(
-        builder: (_) => const BillDodgerScreen(),
-      ),
+      FadePageRoute(builder: (_) => const BillDodgerScreen()),
     );
 
     if (!context.mounted || result == null) {
@@ -75,9 +77,7 @@ class MinigamesPage extends StatelessWidget {
 
   Future<void> _openBudgetChallenge(BuildContext context) async {
     final result = await Navigator.of(context).push<BudgetChallengeCloseResult>(
-      FadePageRoute(
-        builder: (_) => const BudgetChallengeScreen(),
-      ),
+      FadePageRoute(builder: (_) => const BudgetChallengeScreen()),
     );
 
     if (!context.mounted || result == null) {
@@ -95,11 +95,9 @@ class MinigamesPage extends StatelessWidget {
   }
 
   Future<void> _openStockMarket(BuildContext context) async {
-    await Navigator.of(context).push(
-      FadePageRoute(
-        builder: (_) => const StockMarketPage(),
-      ),
-    );
+    await Navigator.of(
+      context,
+    ).push(FadePageRoute(builder: (_) => const StockMarketPage()));
   }
 
   void _showComingSoon(BuildContext context, String title) {
@@ -119,7 +117,7 @@ class MinigamesPage extends StatelessWidget {
       const _MinigameCardData(
         title: 'React Challenge',
         description:
-            'Battle through fast money questions when you want a short high-reward run.',
+            'Battle through fast money questions when you want a short, high-reward run.',
         badge: 'FEATURED DAILY',
         accent: Color(0xFF6CB6DA),
         icon: Icons.bolt_rounded,
@@ -145,8 +143,7 @@ class MinigamesPage extends StatelessWidget {
       ),
       const _MinigameCardData(
         title: 'Market Board',
-        description:
-            'Buy stock lots, ride the swings, and cash out for gold.',
+        description: 'Buy stock lots, ride the swings, and cash out for gold.',
         badge: 'NEW SIDE MODE',
         accent: Color(0xFF58C7FF),
         icon: Icons.show_chart_rounded,
@@ -180,8 +177,7 @@ class MinigamesPage extends StatelessWidget {
               children: [
                 _PageHeader(
                   title: 'Minigames',
-                  subtitle:
-                      'Quick budget drills and side modes live here.',
+                  subtitle: 'Quick budget drills, side modes, and skill reps.',
                 ),
                 const SizedBox(height: 18),
                 _MinigameHero(
@@ -193,19 +189,40 @@ class MinigamesPage extends StatelessWidget {
                 const SizedBox(height: 20),
                 const _SectionTitle(
                   title: 'Arcade Lineup',
-                  subtitle:
-                      'Pick a mode and jump straight in.',
+                  subtitle: 'Pick a mode and jump straight in.',
                 ),
                 const SizedBox(height: 14),
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final width = constraints.maxWidth;
-                    final crossAxisCount = width >= 680 ? 2 : 1;
-                    final childAspectRatio = width >= 1180
-                        ? 1.55
-                        : width >= 680
-                            ? 1.08
-                            : 1.14;
+
+                    if (width < 720) {
+                      return Column(
+                        children: [
+                          for (var index = 0; index < minigames.length; index++) ...[
+                            _MinigameCard(
+                              data: minigames[index],
+                              fillHeight: false,
+                              onPressed: switch (index) {
+                                0 => () => _openReactChallenge(context),
+                                1 => () => _openBillDodger(context),
+                                2 => () => _openBudgetChallenge(context),
+                                3 => () => _openStockMarket(context),
+                                _ => () => _showComingSoon(
+                                  context,
+                                  minigames[index].title,
+                                ),
+                              },
+                            ),
+                            if (index != minigames.length - 1)
+                              const SizedBox(height: 14),
+                          ],
+                        ],
+                      );
+                    }
+
+                    final crossAxisCount = width >= 1140 ? 3 : 2;
+                    final mainAxisExtent = width >= 1140 ? 244.0 : 252.0;
 
                     return GridView.builder(
                       itemCount: minigames.length,
@@ -215,12 +232,13 @@ class MinigamesPage extends StatelessWidget {
                         crossAxisCount: crossAxisCount,
                         crossAxisSpacing: 14,
                         mainAxisSpacing: 14,
-                        childAspectRatio: childAspectRatio,
+                        mainAxisExtent: mainAxisExtent,
                       ),
                       itemBuilder: (context, index) {
                         final game = minigames[index];
                         return _MinigameCard(
                           data: game,
+                          fillHeight: true,
                           onPressed: switch (index) {
                             0 => () => _openReactChallenge(context),
                             1 => () => _openBillDodger(context),
@@ -261,10 +279,7 @@ class _MinigameCardData {
 }
 
 class _PageHeader extends StatelessWidget {
-  const _PageHeader({
-    required this.title,
-    required this.subtitle,
-  });
+  const _PageHeader({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
@@ -282,7 +297,7 @@ class _PageHeader extends StatelessWidget {
               title,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 28,
+                fontSize: 30,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -362,15 +377,22 @@ class _MinigameHero extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF173C2F).withValues(alpha: 0.96),
-            const Color(0xFF214D3E).withValues(alpha: 0.90),
+            const Color(0xFF112A22).withValues(alpha: 0.98),
+            const Color(0xFF1B4032).withValues(alpha: 0.92),
           ],
         ),
         border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x22000000),
+            blurRadius: 24,
+            offset: Offset(0, 14),
+          ),
+        ],
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final stacked = constraints.maxWidth < 700;
+          final stacked = constraints.maxWidth < 760;
 
           final buttons = Column(
             children: [
@@ -390,10 +412,10 @@ class _MinigameHero extends StatelessWidget {
                 onPressed: onBillDodger,
                 prefixIcon: const Icon(
                   Icons.sports_esports_rounded,
-                  color: Color(0xFF76FF03),
+                  color: Color(0xFF092018),
                   size: 18,
                 ),
-                style: const CustomButtonStyle.secondary(),
+                style: const CustomButtonStyle.primary(),
               ),
               const SizedBox(height: 10),
               CustomButton(
@@ -420,14 +442,23 @@ class _MinigameHero extends StatelessWidget {
             ],
           );
 
+          const art = AmbientLottieCard(
+            assetPath: 'assets/animations/arcade_loop.json',
+            semanticLabel: 'Animated arcade illustration',
+            height: 170,
+            backgroundColor: Color(0x18FFFFFF),
+            borderColor: Color(0x20FFFFFF),
+          );
+
           final copy = Column(
-            crossAxisAlignment:
-                stacked ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+            crossAxisAlignment: stacked
+                ? CrossAxisAlignment.center
+                : CrossAxisAlignment.start,
             children: [
               Text(
                 'ARCADE LANE',
                 style: TextStyle(
-                  color: const Color(0xFFFFD45C).withValues(alpha: 0.96),
+                  color: const Color(0xFFF2C66D).withValues(alpha: 0.96),
                   fontWeight: FontWeight.w900,
                   fontSize: 12,
                   letterSpacing: 0.8,
@@ -446,7 +477,7 @@ class _MinigameHero extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Arcade games stay here so the adventure tab can stay focused on the field loop.',
+                'Arcade games stay here so the adventure tab can stay focused on the longer field loop.',
                 textAlign: stacked ? TextAlign.center : TextAlign.start,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.74),
@@ -463,18 +494,12 @@ class _MinigameHero extends StatelessWidget {
                     label: 'React Challenge',
                     accent: Color(0xFF6CB6DA),
                   ),
-                  _HeroBadge(
-                    label: 'Bill Dodger',
-                    accent: Color(0xFFE1BB72),
-                  ),
+                  _HeroBadge(label: 'Bill Dodger', accent: Color(0xFFE1BB72)),
                   _HeroBadge(
                     label: 'Budget Challenge',
                     accent: Color(0xFF78C69B),
                   ),
-                  _HeroBadge(
-                    label: 'Market Board',
-                    accent: Color(0xFF58C7FF),
-                  ),
+                  _HeroBadge(label: 'Market Board', accent: Color(0xFF58C7FF)),
                 ],
               ),
             ],
@@ -483,6 +508,8 @@ class _MinigameHero extends StatelessWidget {
           if (stacked) {
             return Column(
               children: [
+                art,
+                const SizedBox(height: 18),
                 copy,
                 const SizedBox(height: 18),
                 buttons,
@@ -492,7 +519,13 @@ class _MinigameHero extends StatelessWidget {
 
           return Row(
             children: [
-              Expanded(flex: 3, child: copy),
+              Expanded(
+                flex: 3,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [copy, const SizedBox(height: 18), art],
+                ),
+              ),
               const SizedBox(width: 18),
               Expanded(flex: 2, child: buttons),
             ],
@@ -504,10 +537,7 @@ class _MinigameHero extends StatelessWidget {
 }
 
 class _HeroBadge extends StatelessWidget {
-  const _HeroBadge({
-    required this.label,
-    required this.accent,
-  });
+  const _HeroBadge({required this.label, required this.accent});
 
   final String label;
   final Color accent;
@@ -534,10 +564,7 @@ class _HeroBadge extends StatelessWidget {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.title,
-    required this.subtitle,
-  });
+  const _SectionTitle({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
@@ -572,21 +599,37 @@ class _MinigameCard extends StatelessWidget {
   const _MinigameCard({
     required this.data,
     required this.onPressed,
+    required this.fillHeight,
   });
 
   final _MinigameCardData data;
   final VoidCallback onPressed;
+  final bool fillHeight;
 
   @override
   Widget build(BuildContext context) {
     final usesPrimary = data.title == 'Bill Dodger';
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF153229).withValues(alpha: 0.96),
+            const Color(0xFF1B4033).withValues(alpha: 0.90),
+          ],
+        ),
         borderRadius: BorderRadius.circular(26),
         border: Border.all(color: data.accent.withValues(alpha: 0.20)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.14),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -595,7 +638,10 @@ class _MinigameCard extends StatelessWidget {
             builder: (context, constraints) {
               final stacked = constraints.maxWidth < 230;
               final badge = Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: data.accent.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(999),
@@ -616,7 +662,7 @@ class _MinigameCard extends StatelessWidget {
                   children: [
                     badge,
                     const SizedBox(height: 12),
-                    Icon(data.icon, color: data.accent),
+                    _ArcadeIconBadge(icon: data.icon, accent: data.accent),
                   ],
                 );
               }
@@ -625,7 +671,7 @@ class _MinigameCard extends StatelessWidget {
                 children: [
                   Flexible(child: badge),
                   const Spacer(),
-                  Icon(data.icon, color: data.accent),
+                  _ArcadeIconBadge(icon: data.icon, accent: data.accent),
                 ],
               );
             },
@@ -640,32 +686,65 @@ class _MinigameCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Expanded(
-            child: Text(
+          if (fillHeight)
+            Expanded(
+              child: Text(
+                data.description,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.72),
+                  height: 1.45,
+                ),
+              ),
+            )
+          else
+            Text(
               data.description,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.72),
                 height: 1.45,
               ),
             ),
-          ),
-          const SizedBox(height: 16),
+          SizedBox(height: fillHeight ? 16 : 18),
           CustomButton(
             label: data.cta,
+            height: 50,
             onPressed: onPressed,
             prefixIcon: Icon(
               data.icon,
-              size: 18,
+              size: 20,
               color: usesPrimary
-                  ? const Color(0xFF1A4D3D)
-                  : const Color(0xFF76FF03),
+                  ? const Color(0xFF0B241B)
+                  : const Color(0xFFB7F7D7),
             ),
             style: usesPrimary
-                ? const CustomButtonStyle.secondary()
+                ? const CustomButtonStyle.primary()
                 : const CustomButtonStyle.tertiary(),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ArcadeIconBadge extends StatelessWidget {
+  const _ArcadeIconBadge({required this.icon, required this.accent});
+
+  final IconData icon;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accent.withValues(alpha: 0.18)),
+      ),
+      child: Icon(icon, color: accent, size: 30),
     );
   }
 }
@@ -678,32 +757,22 @@ class _MinigameBackdrop extends StatelessWidget {
     return Stack(
       children: [
         Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF071711),
-                Color(0xFF0D251D),
-                Color(0xFF14362B),
-              ],
-            ),
-          ),
+          decoration: const BoxDecoration(gradient: AppTheme.gradientForest),
         ),
         Positioned(
           top: -60,
           right: -30,
           child: _GlowOrb(
-            color: const Color(0xFFE3C56D).withValues(alpha: 0.08),
-            size: 180,
+            color: const Color(0xFFF2C66D).withValues(alpha: 0.09),
+            size: 190,
           ),
         ),
         Positioned(
           bottom: 180,
           left: -40,
           child: _GlowOrb(
-            color: const Color(0xFF6CB6DA).withValues(alpha: 0.08),
-            size: 150,
+            color: const Color(0xFF69C6FF).withValues(alpha: 0.08),
+            size: 160,
           ),
         ),
       ],
@@ -712,10 +781,7 @@ class _MinigameBackdrop extends StatelessWidget {
 }
 
 class _GlowOrb extends StatelessWidget {
-  const _GlowOrb({
-    required this.color,
-    required this.size,
-  });
+  const _GlowOrb({required this.color, required this.size});
 
   final Color color;
   final double size;
