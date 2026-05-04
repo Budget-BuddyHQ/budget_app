@@ -362,12 +362,37 @@ class LeaderboardEntry {
   String get scoreLabel => '$literacyPoints LP';
 }
 
+@immutable
+class CurrentUserProfile {
+  const CurrentUserProfile({
+    required this.role,
+    required this.avatarUrl,
+  });
+
+  final String role;
+  final String avatarUrl;
+
+  bool get isAdmin => role.trim().toLowerCase() == 'admin';
+}
+
 class SupabaseService {
   SupabaseService._();
 
   static final SupabaseService instance = SupabaseService._();
 
   static const String userStatsTable = 'user_stats';
+  static const Set<String> _ownerAdminEmails = <String>{
+    'brucksheferaw@gmail.com',
+  };
+  static bool isKnownAdminEmail(String? email) {
+    return _ownerAdminEmails.contains(email?.trim().toLowerCase());
+  }
+  static bool hasAdminMetadata(User? user) {
+    final role =
+        _roleFromMetadata(user?.appMetadata) ??
+        _roleFromMetadata(user?.userMetadata);
+    return role?.trim().toLowerCase() == 'admin';
+  }
   static const String schemaSql = '''
 create table if not exists public.user_stats (
   id text primary key,
@@ -443,18 +468,71 @@ create table if not exists public.user_stats (
     }
   }
 
+  Future<CurrentUserProfile?> getCurrentUserProfile() async {
+    final client = _existingClient;
+    final user = client?.auth.currentUser;
+
+    if (client == null || user == null) {
+      return null;
+    }
+
+    final email = user.email?.trim().toLowerCase();
+    var role =
+        _roleFromMetadata(user.appMetadata) ??
+        _roleFromMetadata(user.userMetadata) ??
+        (SupabaseService.isKnownAdminEmail(email) ? 'admin' : '');
+    var avatarUrl =
+        _readString(user.userMetadata?['avatar_url']) ??
+        _readString(user.userMetadata?['profile_image_url']) ??
+        '';
+
+    try {
+      final response = await client
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+      role = _readString(response?['role']) ?? role;
+    } catch (error) {
+      debugPrint('Supabase profile role lookup failed by id: $error');
+    }
+
+    if (role.trim().isEmpty && email != null && email.isNotEmpty) {
+      try {
+        final response = await client
+            .from('profiles')
+            .select('role')
+            .eq('email', email)
+            .maybeSingle();
+        role = _readString(response?['role']) ?? role;
+      } catch (error) {
+        debugPrint('Supabase profile role lookup failed by email: $error');
+      }
+    }
+
+    try {
+      final response = await client
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
+      avatarUrl = _readString(response?['avatar_url']) ?? avatarUrl;
+    } catch (error) {
+      debugPrint('Supabase profile avatar lookup failed: $error');
+    }
+
+    if (role.trim().isEmpty && avatarUrl.trim().isEmpty) {
+      return null;
+    }
+
+    return CurrentUserProfile(
+      role: role,
+      avatarUrl: avatarUrl,
+    );
+  }
+
   Future<String?> getUserRole() async {
-    final user = Supabase.instance.client.auth.currentUser;
-
-    if (user == null) return null;
-
-    final response = await Supabase.instance.client
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-    return response['role'];
+    return (await getCurrentUserProfile())?.role;
   }
 
   Future<AuthResponse> signUp({
@@ -1042,6 +1120,23 @@ Map<String, dynamic> _readMap(dynamic value) {
 Map<String, int> _readIntMap(dynamic value) {
   final map = _readMap(value);
   return map.map((key, mapValue) => MapEntry(key, _readInt(mapValue)));
+}
+
+String? _readString(dynamic value) {
+  final stringValue = value?.toString().trim();
+  if (stringValue == null || stringValue.isEmpty) {
+    return null;
+  }
+  return stringValue;
+}
+
+String? _roleFromMetadata(Map<String, dynamic>? metadata) {
+  if (metadata == null) {
+    return null;
+  }
+  return _readString(metadata['role']) ??
+      _readString(metadata['app_role']) ??
+      _readString(metadata['user_role']);
 }
 
 List<LedgerTransaction> _readTransactions(dynamic value) {
