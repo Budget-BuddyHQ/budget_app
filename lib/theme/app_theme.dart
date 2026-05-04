@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // Colors
-  static const Color deepForest = Color(0xFF1A4D3D);
-  static const Color darkForest = Color(0xFF1B3329);
-  static const Color limeAccent = Color(0xFF76FF03);
-  static const Color greenPrimary = Color(0xFF85EFAC);
-  static const Color lightGreen = Color(0xFFEAF6EE);
-  static const Color teal = Color(0xFF19D29B);
-  static const Color successGreen = Color(0xFF60AA24);
-  static const Color warningOrange = Color(0xFFFFA500);
-  static const Color errorRed = Color(0xFFFF6B6B);
+  static const Color deepForest = Color(0xFF061510);
+  static const Color darkForest = Color(0xFF0E231C);
+  static const Color limeAccent = Color(0xFFB7F7D7);
+  static const Color greenPrimary = Color(0xFF4BD2A3);
+  static const Color lightGreen = Color(0xFFEAFBF4);
+  static const Color teal = Color(0xFF69C6FF);
+  static const Color successGreen = Color(0xFF2C9C73);
+  static const Color warningOrange = Color(0xFFF2C66D);
+  static const Color errorRed = Color(0xFFFF8474);
+  static const Color panel = Color(0xFF143026);
+  static const Color panelStrong = Color(0xFF1A3A2E);
+  static const Color textPrimary = Color(0xFFF7FFFB);
+  static const Color textMuted = Color(0xFFB9D1C6);
 
   // Spacing constants
   static const double spacingXSmall = 4.0;
@@ -63,21 +67,17 @@ class AppTheme {
   static const LinearGradient gradientForest = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
-      deepForest,
-      Color(0xFF2E4A3D),
-      Color(0xFF0F2018),
-    ],
+    colors: [deepForest, Color(0xFF0C211A), Color(0xFF16392D)],
   );
 
   static const LinearGradient gradientGreen = LinearGradient(
-    colors: [limeAccent, greenPrimary],
+    colors: [Color(0xFF7BE1BB), greenPrimary],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient gradientTeal = LinearGradient(
-    colors: [teal, successGreen],
+    colors: [teal, Color(0xFF7BE1BB)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -87,55 +87,57 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: Colors.green,
+        seedColor: greenPrimary,
         brightness: Brightness.dark,
       ),
       scaffoldBackgroundColor: deepForest,
+      cardColor: panel,
+      dividerColor: Colors.white.withValues(alpha: 0.08),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
-          color: Colors.white,
+          color: textPrimary,
           fontSize: fontSizeXLarge,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.5,
         ),
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: textPrimary),
       ),
       textTheme: const TextTheme(
         displayLarge: TextStyle(
-          color: Colors.white,
+          color: textPrimary,
           fontSize: fontSizeXXLarge,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.0,
         ),
         displayMedium: TextStyle(
-          color: Colors.white,
+          color: textPrimary,
           fontSize: fontSizeXLarge,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.5,
         ),
         headlineSmall: TextStyle(
-          color: Colors.white,
+          color: textPrimary,
           fontSize: fontSizeLarge,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.3,
         ),
         bodyLarge: TextStyle(
-          color: Colors.white,
+          color: textPrimary,
           fontSize: fontSizeMedium,
           fontWeight: FontWeight.w500,
           letterSpacing: 0.2,
         ),
         bodyMedium: TextStyle(
-          color: Colors.white70,
+          color: textMuted,
           fontSize: fontSizeBase,
           fontWeight: FontWeight.normal,
           letterSpacing: 0.2,
         ),
         bodySmall: TextStyle(
-          color: Colors.white60,
+          color: textMuted,
           fontSize: fontSizeSmall,
           fontWeight: FontWeight.w400,
           letterSpacing: 0.1,
@@ -143,7 +145,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: limeAccent,
+          backgroundColor: greenPrimary,
           foregroundColor: deepForest,
           padding: const EdgeInsets.symmetric(
             horizontal: spacingXLarge,
@@ -153,13 +155,16 @@ class AppTheme {
             borderRadius: BorderRadius.circular(radiusLarge),
           ),
           elevation: 8,
-          shadowColor: limeAccent.withValues(alpha: 0.5),
+          shadowColor: greenPrimary.withValues(alpha: 0.35),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: limeAccent,
-          side: const BorderSide(color: limeAccent, width: 2),
+          side: BorderSide(
+            color: limeAccent.withValues(alpha: 0.70),
+            width: 1.5,
+          ),
           padding: const EdgeInsets.symmetric(
             horizontal: spacingXLarge,
             vertical: spacingLarge,
@@ -171,68 +176,76 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: limeAccent,
+          foregroundColor: teal,
           padding: const EdgeInsets.symmetric(
             horizontal: spacingLarge,
             vertical: spacingMedium,
           ),
         ),
       ),
+      chipTheme: ChipThemeData(
+        backgroundColor: panelStrong,
+        selectedColor: greenPrimary,
+        secondarySelectedColor: greenPrimary,
+        disabledColor: panel,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        labelStyle: const TextStyle(
+          color: textPrimary,
+          fontSize: fontSizeSmall,
+          fontWeight: FontWeight.w700,
+        ),
+        secondaryLabelStyle: const TextStyle(
+          color: deepForest,
+          fontSize: fontSizeSmall,
+          fontWeight: FontWeight.w800,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusXLarge),
+        ),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF1B3329),
+        fillColor: panelStrong,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
-          borderSide: const BorderSide(
-            color: greenPrimary,
+          borderSide: BorderSide(
+            color: greenPrimary.withValues(alpha: 0.55),
             width: 1.5,
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
-          borderSide: const BorderSide(
-            color: greenPrimary,
+          borderSide: BorderSide(
+            color: greenPrimary.withValues(alpha: 0.55),
             width: 1.5,
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
-          borderSide: const BorderSide(
-            color: limeAccent,
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: teal, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
-          borderSide: const BorderSide(
-            color: errorRed,
-            width: 1.5,
-          ),
+          borderSide: const BorderSide(color: errorRed, width: 1.5),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
-          borderSide: const BorderSide(
-            color: errorRed,
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: errorRed, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: spacingLarge,
           vertical: spacingMedium,
         ),
         labelStyle: const TextStyle(
-          color: Colors.white,
+          color: textPrimary,
           fontSize: fontSizeBase,
           fontWeight: FontWeight.w600,
         ),
         hintStyle: TextStyle(
-          color: Colors.white.withValues(alpha: 0.5),
+          color: textMuted.withValues(alpha: 0.68),
           fontSize: fontSizeBase,
         ),
-        errorStyle: const TextStyle(
-          color: errorRed,
-          fontSize: fontSizeSmall,
-        ),
+        errorStyle: const TextStyle(color: errorRed, fontSize: fontSizeSmall),
       ),
     );
   }
