@@ -153,16 +153,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final stats = controller.stats;
         final user = Supabase.instance.client.auth.currentUser;
 
-        return FutureBuilder<Map<String, dynamic>?>(
-          future: Supabase.instance.client
-              .from('profiles')
-              .select('role, avatar_url')
-              .eq('id', user?.id ?? '')
-              .maybeSingle(),
+        return FutureBuilder<CurrentUserProfile?>(
+          future: SupabaseService.instance.getCurrentUserProfile(),
           builder: (context, snapshot) {
             final profileData = snapshot.data;
-            final isAdmin = profileData?['role'] == 'admin';
-            final remoteAvatarUrl = profileData?['avatar_url']?.toString() ?? '';
+            final isAdmin =
+                (profileData?.isAdmin ?? false) ||
+                SupabaseService.hasAdminMetadata(user) ||
+                SupabaseService.isKnownAdminEmail(user?.email);
+            final remoteAvatarUrl = profileData?.avatarUrl ?? '';
             final avatarUrl = stats.profileImageUrl.isNotEmpty
                 ? stats.profileImageUrl
                 : remoteAvatarUrl;
