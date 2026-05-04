@@ -238,6 +238,27 @@ class UserStats {
     return <String>[budgetBuddySkins.first.id];
   }
 
+  List<String> get completedLessons {
+    final raw = spendingHabits['completed_lessons'];
+    if (raw is! List) {
+      return const <String>[];
+    }
+
+    return raw
+        .map((entry) => entry.toString().trim())
+        .where((entry) => entry.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+  }
+
+  String get profileImageUrl {
+    final value = spendingHabits['profile_image_url']?.toString().trim();
+    if (value == null || value.isEmpty) {
+      return '';
+    }
+    return value;
+  }
+
   Map<String, dynamic> toStorageMap() {
     return <String, dynamic>{
       'id': id,
@@ -475,6 +496,55 @@ create table if not exists public.user_stats (
       return;
     }
     await client.auth.signOut();
+  }
+
+  Future<String?> uploadProfileAvatar({
+    required String userId,
+    required Uint8List bytes,
+    required String fileExtension,
+  }) async {
+    if (!_isSupabaseConnected) {
+      return null;
+    }
+
+    final normalizedExtension = fileExtension
+        .replaceAll('.', '')
+        .trim()
+        .toLowerCase();
+    final safeExtension = normalizedExtension.isEmpty
+        ? 'jpg'
+        : normalizedExtension;
+    final storagePath =
+        'avatars/$userId/avatar_${DateTime.now().millisecondsSinceEpoch}.$safeExtension';
+
+    await Supabase.instance.client.storage
+        .from('profile-images')
+        .uploadBinary(
+          storagePath,
+          bytes,
+          fileOptions: FileOptions(
+            upsert: true,
+            contentType: _contentTypeForExtension(safeExtension),
+          ),
+        );
+
+    return Supabase.instance.client.storage
+        .from('profile-images')
+        .getPublicUrl(storagePath);
+  }
+
+  Future<void> updateProfileAvatarUrl({
+    required String userId,
+    required String avatarUrl,
+  }) async {
+    if (!_isSupabaseConnected) {
+      return;
+    }
+
+    await Supabase.instance.client
+        .from('profiles')
+        .update(<String, dynamic>{'avatar_url': avatarUrl})
+        .eq('id', userId);
   }
 
   Future<UserStats> loadUserStats(String userId) async {
@@ -1006,4 +1076,13 @@ List<double> _readDoubleList(dynamic value) {
         .toList(growable: false);
   }
   return const <double>[];
+}
+
+String _contentTypeForExtension(String extension) {
+  return switch (extension.toLowerCase()) {
+    'png' => 'image/png',
+    'webp' => 'image/webp',
+    'gif' => 'image/gif',
+    _ => 'image/jpeg',
+  };
 }

@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-
-import '../controllers/app_settings_controller.dart';
 
 import '../services/app_sound_service.dart';
 
@@ -77,7 +74,7 @@ class _CustomButtonState extends State<CustomButton>
     if (_isDisabled || widget.onPressed == null) {
       return;
     }
-    context.read<AppSettingsController>().playTap();
+
     HapticFeedback.lightImpact();
     AppSoundService.play(AppSoundEffect.tap);
     widget.onPressed!();
@@ -190,19 +187,19 @@ class CustomButtonStyle {
 
   const CustomButtonStyle.primary({
     this.gradient = const LinearGradient(
-      colors: [Color(0xFF76FF03), Color(0xFFA1EC40)],
+      colors: [Color(0xFF4BD2A3), Color(0xFF9EF0D0)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     this.backgroundColor = Colors.transparent,
-    this.textColor = const Color(0xFF1A4D3D),
+    this.textColor = const Color(0xFF062017),
     this.borderRadius = 18,
     this.border,
     this.boxShadow = const [
       BoxShadow(
-        color: Color.fromRGBO(118, 255, 3, 0.24),
-        blurRadius: 18,
-        offset: Offset(0, 8),
+        color: Color.fromRGBO(75, 210, 163, 0.26),
+        blurRadius: 24,
+        offset: Offset(0, 10),
       ),
     ],
     this.splashColor = const Color.fromRGBO(255, 255, 255, 0.18),
@@ -210,11 +207,11 @@ class CustomButtonStyle {
 
   const CustomButtonStyle.secondary({
     this.gradient,
-    this.backgroundColor = const Color(0xFF2D5A4A),
-    this.textColor = const Color(0xFF76FF03),
+    this.backgroundColor = const Color(0xFF16362B),
+    this.textColor = const Color(0xFFB7F7D7),
     this.borderRadius = 18,
     this.border = const Border.fromBorderSide(
-      BorderSide(color: Color(0xFF76FF03), width: 1.5),
+      BorderSide(color: Color(0xFF4BD2A3), width: 1.5),
     ),
     this.boxShadow = const [
       BoxShadow(
@@ -228,11 +225,11 @@ class CustomButtonStyle {
 
   const CustomButtonStyle.tertiary({
     this.gradient,
-    this.backgroundColor = const Color(0xFF1B3329),
+    this.backgroundColor = const Color(0xFF132A21),
     this.textColor = Colors.white,
     this.borderRadius = 18,
     this.border = const Border.fromBorderSide(
-      BorderSide(color: Color.fromRGBO(255, 255, 255, 0.08), width: 1),
+      BorderSide(color: Color.fromRGBO(255, 255, 255, 0.10), width: 1),
     ),
     this.boxShadow = const [
       BoxShadow(
@@ -246,7 +243,7 @@ class CustomButtonStyle {
 
   const CustomButtonStyle.danger({
     this.gradient = const LinearGradient(
-      colors: [Color(0xFFFF6B6B), Color(0xFFFF8A65)],
+      colors: [Color(0xFFFF8474), Color(0xFFFFA07F)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),

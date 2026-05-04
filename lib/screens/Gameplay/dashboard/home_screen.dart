@@ -76,6 +76,7 @@ class HomeScreen extends StatelessWidget {
                     _DashboardHeader(
                       stats: stats,
                       turtleSkin: turtleSkin,
+                      profileImageUrl: stats.profileImageUrl,
                     ),
                     const SizedBox(height: 18),
                     _DailyChallengeCard(
@@ -159,10 +160,12 @@ class _DashboardHeader extends StatelessWidget {
   const _DashboardHeader({
     required this.stats,
     required this.turtleSkin,
+    required this.profileImageUrl,
   });
 
   final UserStats stats;
   final AvatarSkin turtleSkin;
+  final String profileImageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +201,16 @@ class _DashboardHeader extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: ClipOval(
-                child: Image.asset(turtleSkin.assetPath, fit: BoxFit.contain),
+                child: profileImageUrl.isNotEmpty
+                    ? Image.network(
+                        profileImageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Image.asset(
+                          turtleSkin.assetPath,
+                          fit: BoxFit.contain,
+                        ),
+                      )
+                    : Image.asset(turtleSkin.assetPath, fit: BoxFit.contain),
               ),
             ),
           );
