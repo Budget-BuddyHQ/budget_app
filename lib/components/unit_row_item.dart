@@ -113,13 +113,13 @@ class _UnitLessonIcon extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFFFFFFF), Color(0xFFF7FAFC)],
+              colors: [Color(0xFF1A3A2E), Color(0xFF122B22)],
             ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: Colors.white12),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x120F172A),
+                color: Color(0x26000000),
                 blurRadius: 18,
                 offset: Offset(0, 10),
               ),
@@ -148,7 +148,7 @@ class _UnitLessonIcon extends StatelessWidget {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: Color(0xFF111827),
+                  color: Color(0xFFF7FFFB),
                   fontSize: isCompactCard ? 11.2 : 12,
                   fontWeight: FontWeight.w800,
                   height: 1.3,
@@ -168,7 +168,7 @@ class _UnitLessonIcon extends StatelessWidget {
               Text(
                 '${lesson.estimatedMinutes} min',
                 style: const TextStyle(
-                  color: Color(0xFF64748B),
+                  color: Color(0xFFB9D1C6),
                   fontSize: 10.5,
                   fontWeight: FontWeight.w600,
                 ),
