@@ -149,12 +149,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Consumer2<UserStatsController, AppSettingsController>(
       builder: (context, controller, settings, _) {
         final stats = controller.stats;
-        return FutureBuilder<Map<String, dynamic>?>(
-              .select('role, avatar_url')
-              .maybeSingle(),
             final profileData = snapshot.data;
-            final isAdmin = profileData?['role'] == 'admin';
-            final remoteAvatarUrl = profileData?['avatar_url']?.toString() ?? '';
             final avatarUrl = stats.profileImageUrl.isNotEmpty
                 ? stats.profileImageUrl
                 : remoteAvatarUrl;
