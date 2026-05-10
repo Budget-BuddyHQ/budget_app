@@ -539,6 +539,7 @@ create table if not exists public.user_stats (
     required String email,
     required String password,
     String? username,
+    String? captchaToken,
   }) async {
     final client = _requireClient();
     return client.auth.signUp(
@@ -548,17 +549,20 @@ create table if not exists public.user_stats (
         if (username != null && username.trim().isNotEmpty)
           'username': username.trim(),
       },
+      captchaToken: captchaToken,
     );
   }
 
   Future<AuthResponse> signInWithPassword({
     required String email,
     required String password,
+    String? captchaToken,
   }) async {
     final client = _requireClient();
     return client.auth.signInWithPassword(
       email: email.trim().toLowerCase(),
       password: password,
+      captchaToken: captchaToken,
     );
   }
 
