@@ -68,7 +68,6 @@ class _LessonScreenState extends State<LessonScreen> {
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFFF8FAFC),
       builder: (context) {
         return SafeArea(
           child: SizedBox(
@@ -527,13 +526,10 @@ class _NextLessonFocusCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFFFFFFF), Color(0xFFF8FBFF)],
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x100F172A),
             blurRadius: 20,
             offset: Offset(0, 10),
           ),
@@ -548,7 +544,6 @@ class _NextLessonFocusCard extends StatelessWidget {
               Text(
                 isComplete ? 'Path complete' : 'Continue where you left off',
                 style: const TextStyle(
-                  color: Color(0xFF0F172A),
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
                 ),
@@ -558,7 +553,6 @@ class _NextLessonFocusCard extends StatelessWidget {
                 isComplete
                     ? 'You finished the current academy path. Revisit any unit or add the next chapter when you are ready.'
                     : '${nextLesson!.title} • ${nextUnit?.title ?? 'Academy'} • ${nextLesson!.estimatedMinutes} min',
-                style: const TextStyle(color: Color(0xFF475569), height: 1.45),
               ),
               const SizedBox(height: 14),
               Wrap(
@@ -584,10 +578,8 @@ class _NextLessonFocusCard extends StatelessWidget {
             onPressed: onOpenNext,
             style: FilledButton.styleFrom(
               backgroundColor: isComplete
-                  ? const Color(0xFFE2E8F0)
                   : const Color(0xFF2F9E68),
               foregroundColor: isComplete
-                  ? const Color(0xFF64748B)
                   : Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
             ),
@@ -642,7 +634,6 @@ class _FocusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -651,7 +642,6 @@ class _FocusPill extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              color: Color(0xFF64748B),
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -816,15 +806,12 @@ class _MobileUnitSelector extends StatelessWidget {
                   labelStyle: TextStyle(
                     color: index == selectedIndex
                         ? const Color(0xFF0F172A)
-                        : const Color(0xFF334155),
                     fontWeight: FontWeight.w800,
                   ),
                   selectedColor: const Color(0xFF85EFAC),
-                  backgroundColor: Colors.white,
                   side: BorderSide(
                     color: index == selectedIndex
                         ? const Color(0xFF2F9E68)
-                        : const Color(0xFFE5E7EB),
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(999),
@@ -860,9 +847,7 @@ class _UnitSidebar extends StatelessWidget {
       width: width,
       margin: const EdgeInsets.fromLTRB(20, 16, 12, 20),
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Scrollbar(
         thumbVisibility: true,
@@ -889,13 +874,9 @@ class _UnitSidebar extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: selected
-                      ? const Color(0xFFE9F8EF)
-                      : const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: selected
-                        ? const Color(0xFF2F9E68)
-                        : const Color(0xFFE2E8F0),
                   ),
                 ),
                 child: extended
@@ -915,8 +896,6 @@ class _UnitSidebar extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: selected
-                                    ? const Color(0xFF0F172A)
-                                    : const Color(0xFF334155),
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -936,8 +915,6 @@ class _UnitSidebar extends StatelessWidget {
                             '${index + 1}',
                             style: TextStyle(
                               color: selected
-                                  ? const Color(0xFF0F172A)
-                                  : const Color(0xFF334155),
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -973,7 +950,6 @@ class _UnitPickerSheet extends StatelessWidget {
           const Text(
             'Browse Units',
             style: TextStyle(
-              color: Color(0xFF0F172A),
               fontSize: 22,
               fontWeight: FontWeight.w900,
             ),
@@ -981,7 +957,6 @@ class _UnitPickerSheet extends StatelessWidget {
           const SizedBox(height: 8),
           const Text(
             'Open any unit without losing your place on smaller screens.',
-            style: TextStyle(color: Color(0xFF475569), height: 1.45),
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -1003,32 +978,22 @@ class _UnitPickerSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(18),
                       side: BorderSide(
                         color: selected
-                            ? const Color(0xFF2F9E68)
-                            : const Color(0xFFE2E8F0),
                       ),
                     ),
                     tileColor: selected
-                        ? const Color(0xFFE9F8EF)
-                        : Colors.white,
                     leading: CircleAvatar(
                       backgroundColor: selected
-                          ? const Color(0xFF2F9E68)
-                          : const Color(0xFFE2E8F0),
                       foregroundColor: selected
-                          ? Colors.white
-                          : const Color(0xFF334155),
                       child: Text('${index + 1}'),
                     ),
                     title: Text(
                       unit.title,
                       style: const TextStyle(
-                        color: Color(0xFF0F172A),
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     subtitle: Text(
                       unit.subtitle,
-                      style: const TextStyle(color: Color(0xFF64748B)),
                     ),
                     trailing: selected
                         ? const Icon(
@@ -1073,13 +1038,10 @@ class _UnitCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFFFFFFF), Color(0xFFF6FAFC)],
         ),
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x140F172A),
             blurRadius: 28,
             offset: Offset(0, 16),
           ),
@@ -1098,7 +1060,6 @@ class _UnitCard extends StatelessWidget {
                   Text(
                     unit.title,
                     style: TextStyle(
-                      color: const Color(0xFF0F172A),
                       fontSize: compact ? 24 : 28,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1107,7 +1068,6 @@ class _UnitCard extends StatelessWidget {
                   Text(
                     unit.description,
                     style: const TextStyle(
-                      color: Color(0xFF475569),
                       height: 1.5,
                     ),
                   ),
@@ -1135,7 +1095,6 @@ class _UnitCard extends StatelessWidget {
           Text(
             '${(progress * 100).round()}% complete',
             style: const TextStyle(
-              color: Color(0xFF0F172A),
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -1145,7 +1104,6 @@ class _UnitCard extends StatelessWidget {
             child: LinearProgressIndicator(
               minHeight: 9,
               value: progress,
-              backgroundColor: const Color(0xFFE5E7EB),
             ),
           ),
           const SizedBox(height: 18),
