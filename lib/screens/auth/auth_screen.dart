@@ -1,11 +1,17 @@
+import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
+import '../../config/turnstile_config.dart';
 import '../../controllers/user_stats_controller.dart';
 import '../../navigation/fade_page_route.dart';
+import '../../services/turnstile_challenge_server.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/game_toast.dart';
 import '../Gameplay/dashboard/dashboard_shell.dart';
@@ -31,6 +37,7 @@ class _AuthScreenState extends State<AuthScreen>
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
+  final TurnstileChallengeServer _turnstileServer = TurnstileChallengeServer();
 
   late AuthMode _mode;
   late final AnimationController _heroController;
@@ -39,8 +46,82 @@ class _AuthScreenState extends State<AuthScreen>
   bool _obscureConfirmPassword = true;
   bool _submitting = false;
   bool _acceptedTerms = false;
+  bool _isConfiguringTurnstile = false;
+  String? _captchaToken;
+  String? _captchaLoadError;
+  WebViewController? _turnstileController;
 
   bool get _isLogin => _mode == AuthMode.login;
+  bool get _isTurnstileConfigured => turnstileSiteKey != 'YOUR_SITE_KEY';
+  bool get _supportsEmbeddedWebView {
+    if (kIsWeb) {
+      return false;
+    }
+
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS;
+  }
+
+  bool get _usesExternalSecurityCheck =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
+
+  String get _turnstileHtml => '''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad" async defer></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: transparent;
+      color-scheme: dark;
+      overflow: hidden;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <div id="turnstile-widget"></div>
+
+  <script>
+    let widgetId;
+
+    function onTurnstileLoad() {
+      widgetId = turnstile.render('#turnstile-widget', {
+        sitekey: '$turnstileSiteKey',
+        size: 'invisible',
+        theme: 'dark',
+        callback: onSuccess,
+        'expired-callback': onExpired,
+        'error-callback': onExpired
+      });
+      turnstile.execute(widgetId);
+    }
+
+    function onSuccess(token) {
+      TokenChannel.postMessage(token);
+    }
+
+    function onExpired() {
+      TokenChannel.postMessage('');
+    }
+  </script>
+</body>
+</html>
+''';
+
+  String get _externalTurnstileHtml => _turnstileHtml.replaceFirst(
+    'TokenChannel.postMessage(token);',
+    "fetch('/token', { method: 'POST', body: token }).then(function () { document.body.innerHTML = '<p style=\"color:#0f5132;font:16px system-ui;text-align:center;margin-top:40px;\">Security check complete. You can return to Budget Buddy.</p>'; });",
+  );
 
   @override
   void initState() {
@@ -50,6 +131,9 @@ class _AuthScreenState extends State<AuthScreen>
       vsync: this,
       duration: const Duration(milliseconds: 700),
     )..forward();
+    if (!_usesExternalSecurityCheck) {
+      unawaited(_configureTurnstile());
+    }
   }
 
   @override
@@ -59,6 +143,7 @@ class _AuthScreenState extends State<AuthScreen>
     _passwordController.dispose();
     _confirmController.dispose();
     _usernameController.dispose();
+    unawaited(_turnstileServer.stop());
     super.dispose();
   }
 
@@ -87,16 +172,77 @@ class _AuthScreenState extends State<AuthScreen>
       return;
     }
 
+    if (!_isTurnstileConfigured) {
+      GameToast.show(
+        context,
+        title: 'Security setup needed',
+        message: 'Add your Cloudflare Turnstile site key before continuing.',
+        icon: Icons.key_rounded,
+        accent: const Color(0xFFFFC36B),
+      );
+      return;
+    }
+
+    if (!_supportsEmbeddedWebView && !_usesExternalSecurityCheck) {
+      GameToast.show(
+        context,
+        title: 'Security check unavailable',
+        message: 'This platform cannot run the required security check.',
+        icon: Icons.web_asset_off_rounded,
+        accent: const Color(0xFFFFC36B),
+      );
+      return;
+    }
+
+    if (_captchaToken == null || _captchaToken!.isEmpty) {
+      if (_usesExternalSecurityCheck) {
+        final token = await _requestExternalSecurityToken();
+        if (!mounted) {
+          return;
+        }
+        if (token == null || token.isEmpty) {
+          GameToast.show(
+            context,
+            title: 'Security check incomplete',
+            message: 'Please complete the browser security check and try again.',
+            icon: Icons.hourglass_empty_rounded,
+            accent: const Color(0xFFFFC36B),
+          );
+          return;
+        }
+        setState(() {
+          _captchaToken = token;
+        });
+      } else {
+        debugPrint('Turnstile submit blocked: captcha token is null.');
+        GameToast.show(
+          context,
+          title: 'Still checking',
+          message: 'Please wait a moment and try again.',
+          icon: Icons.hourglass_empty_rounded,
+          accent: const Color(0xFFFFC36B),
+        );
+        return;
+      }
+    }
+
     setState(() {
       _submitting = true;
     });
 
     final controller = context.read<UserStatsController>();
+    debugPrint(
+      'Submitting auth request. isNewAccount=${!_isLogin}, '
+      'captchaTokenPresent=${_captchaToken != null}, '
+      'captchaTokenLength=${_captchaToken?.length ?? 0}',
+    );
+
     final result = await controller.signIn(
       email: _emailController.text.trim(),
       password: _passwordController.text,
       username: _isLogin ? null : _usernameController.text.trim(),
       isNewAccount: !_isLogin,
+      captchaToken: _captchaToken,
     );
 
     if (!mounted) {
@@ -120,6 +266,7 @@ class _AuthScreenState extends State<AuthScreen>
     );
 
     if (!result.success) {
+      _resetTurnstile();
       return;
     }
 
@@ -174,7 +321,143 @@ class _AuthScreenState extends State<AuthScreen>
     setState(() {
       _mode = nextMode;
       _submitting = false;
+      _captchaToken = null;
+      _captchaLoadError = null;
     });
+    if (!_usesExternalSecurityCheck) {
+      unawaited(_configureTurnstile());
+    }
+  }
+
+  Future<void> _configureTurnstile() async {
+    if (_isConfiguringTurnstile || _turnstileController != null) {
+      return;
+    }
+
+    debugPrint(
+      'Configuring Turnstile. configured=$_isTurnstileConfigured, '
+      'supported=$_supportsEmbeddedWebView, platform=$defaultTargetPlatform',
+    );
+
+    if (!_isTurnstileConfigured || !_supportsEmbeddedWebView) {
+      debugPrint('Turnstile setup skipped.');
+      return;
+    }
+
+    _isConfiguringTurnstile = true;
+
+    final controller = WebViewController();
+
+    controller
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.transparent)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (url) {
+            debugPrint('Turnstile page started: $url');
+          },
+          onPageFinished: (url) {
+            debugPrint('Turnstile page finished: $url');
+          },
+          onWebResourceError: (error) {
+            debugPrint('Turnstile WebView error: ${error.description}');
+            if (!mounted) {
+              return;
+            }
+            setState(() {
+              _captchaLoadError = error.description;
+            });
+          },
+        ),
+      )
+      ..addJavaScriptChannel(
+        'TokenChannel',
+        onMessageReceived: (JavaScriptMessage message) {
+          if (!mounted) {
+            return;
+          }
+          final token = message.message.trim();
+          debugPrint(
+            token.isEmpty
+                ? 'Turnstile token cleared or expired.'
+                : 'Turnstile token received. length=${token.length}',
+          );
+          setState(() {
+            _captchaToken = token.isEmpty ? null : token;
+            _captchaLoadError = null;
+          });
+        },
+      );
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _turnstileController = controller;
+      _captchaToken = null;
+      _captchaLoadError = null;
+    });
+
+    try {
+      await _loadTurnstile(controller);
+    } catch (error) {
+      debugPrint('Turnstile load failed: $error');
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _captchaLoadError = error.toString();
+      });
+    } finally {
+      _isConfiguringTurnstile = false;
+    }
+  }
+
+  void _resetTurnstile() {
+    setState(() {
+      _captchaToken = null;
+      _captchaLoadError = null;
+    });
+    final controller = _turnstileController;
+    if (controller != null) {
+      unawaited(_loadTurnstile(controller));
+    }
+  }
+
+  Future<void> _loadTurnstile(WebViewController controller) async {
+    await controller.loadHtmlString(
+      _turnstileHtml,
+      baseUrl: turnstileChallengeHost,
+    );
+  }
+
+  Future<String?> _requestExternalSecurityToken() async {
+    setState(() {
+      _submitting = true;
+    });
+
+    try {
+      final uri = await _turnstileServer.startTokenRequest(
+        html: _externalTurnstileHtml,
+      );
+      debugPrint('Opening Turnstile browser check at $uri');
+
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        return null;
+      }
+
+      return await _turnstileServer.waitForToken();
+    } catch (error) {
+      debugPrint('External Turnstile check failed: $error');
+      return null;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -375,6 +658,11 @@ class _AuthScreenState extends State<AuthScreen>
                                     },
                                   ),
                                 ],
+                                _HiddenTurnstileView(
+                                  controller: _turnstileController,
+                                  isConfigured: _isTurnstileConfigured,
+                                  isSupported: _supportsEmbeddedWebView,
+                                ),
                               ],
                             ),
                           ),
@@ -757,6 +1045,36 @@ class _TermsCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HiddenTurnstileView extends StatelessWidget {
+  const _HiddenTurnstileView({
+    required this.controller,
+    required this.isConfigured,
+    required this.isSupported,
+  });
+
+  final WebViewController? controller;
+  final bool isConfigured;
+  final bool isSupported;
+
+  @override
+  Widget build(BuildContext context) {
+    if (controller == null || !isConfigured || !isSupported) {
+      return const SizedBox.shrink();
+    }
+
+    return IgnorePointer(
+      child: SizedBox(
+        height: 76,
+        width: double.infinity,
+        child: Transform.translate(
+          offset: const Offset(-10000, -10000),
+          child: WebViewWidget(controller: controller!),
+        ),
       ),
     );
   }

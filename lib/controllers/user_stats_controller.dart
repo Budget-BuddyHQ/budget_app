@@ -98,6 +98,7 @@ class UserStatsController extends ChangeNotifier {
     required String password,
     String? username,
     bool isNewAccount = false,
+    String? captchaToken,
   }) async {
     final normalizedEmail = email.trim().toLowerCase();
     if (normalizedEmail.isEmpty || password.trim().isEmpty) {
@@ -124,6 +125,7 @@ class UserStatsController extends ChangeNotifier {
           email: normalizedEmail,
           password: password,
           username: username,
+          captchaToken: captchaToken,
         );
         final user = response.user;
         if (user == null) {
@@ -159,6 +161,7 @@ class UserStatsController extends ChangeNotifier {
       final response = await _service.signInWithPassword(
         email: normalizedEmail,
         password: password,
+        captchaToken: captchaToken,
       );
 
       final user = response.user;
