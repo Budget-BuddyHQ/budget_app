@@ -14,6 +14,7 @@ import '../arcade/bill_dodger.dart';
 import '../arcade/budget_challenge.dart';
 import '../arcade/react_challenge_screen.dart';
 import '../arcade/stock_market_page.dart';
+import '../arcade/subscription_sweep.dart';
 
 class MinigamesPage extends StatelessWidget {
   const MinigamesPage({
@@ -100,6 +101,26 @@ class MinigamesPage extends StatelessWidget {
     ).push(FadePageRoute(builder: (_) => const StockMarketPage()));
   }
 
+  Future<void> _openSubscriptionSweep(BuildContext context) async {
+    final result = await Navigator.of(context)
+        .push<SubscriptionSweepCloseResult>(
+          FadePageRoute(builder: (_) => const SubscriptionSweepScreen()),
+        );
+
+    if (!context.mounted || result == null) {
+      return;
+    }
+
+    GameToast.show(
+      context,
+      title: 'Sweep complete',
+      message:
+          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+      icon: Icons.receipt_long_rounded,
+      accent: const Color(0xFFD49B7E),
+    );
+  }
+
   void _showComingSoon(BuildContext context, String title) {
     HapticFeedback.lightImpact();
     GameToast.show(
@@ -156,7 +177,7 @@ class MinigamesPage extends StatelessWidget {
         badge: 'IN PROTOTYPE',
         accent: Color(0xFFD49B7E),
         icon: Icons.receipt_long_rounded,
-        cta: 'Coming Soon',
+        cta: 'Play Subscription Sweep',
       ),
     ];
 
@@ -199,7 +220,11 @@ class MinigamesPage extends StatelessWidget {
                     if (width < 720) {
                       return Column(
                         children: [
-                          for (var index = 0; index < minigames.length; index++) ...[
+                          for (
+                            var index = 0;
+                            index < minigames.length;
+                            index++
+                          ) ...[
                             _MinigameCard(
                               data: minigames[index],
                               fillHeight: false,
@@ -208,6 +233,7 @@ class MinigamesPage extends StatelessWidget {
                                 1 => () => _openBillDodger(context),
                                 2 => () => _openBudgetChallenge(context),
                                 3 => () => _openStockMarket(context),
+                                4 => () => _openSubscriptionSweep(context),
                                 _ => () => _showComingSoon(
                                   context,
                                   minigames[index].title,
@@ -244,6 +270,7 @@ class MinigamesPage extends StatelessWidget {
                             1 => () => _openBillDodger(context),
                             2 => () => _openBudgetChallenge(context),
                             3 => () => _openStockMarket(context),
+                            4 => () => _openSubscriptionSweep(context),
                             _ => () => _showComingSoon(context, game.title),
                           },
                         );
