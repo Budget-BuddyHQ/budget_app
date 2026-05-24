@@ -44,12 +44,17 @@ class _SubscriptionSweepScreenState extends State<SubscriptionSweepScreen> {
   int _day = 1;
   int _balance = _monthlyIncome;
   int _avoidedCost = 0;
+  int _moneySpent = 0;
+  int _savingDecisions = 0;
+  int _spendingDecisions = 0;
+  int _trashDecisions = 0;
   int _nextOfferIndex = 0;
   int _happiness = 6;
   bool _claiming = false;
   String _statusMessage =
       'Review cost, keep the essentials, and cancel the rest before tomorrow’s charge.';
   bool _ended = false;
+  bool _reviewShown = false;
 
   _SubscriptionOffer? _currentOffer;
 
@@ -67,8 +72,13 @@ class _SubscriptionSweepScreenState extends State<SubscriptionSweepScreen> {
     _day = 1;
     _balance = _monthlyIncome;
     _avoidedCost = 0;
+    _moneySpent = 0;
+    _savingDecisions = 0;
+    _spendingDecisions = 0;
+    _trashDecisions = 0;
     _nextOfferIndex = 0;
     _ended = false;
+    _reviewShown = false;
     _statusMessage =
         'Review cost, keep the essentials, and cancel the rest before tomorrow’s charge.';
     _nextOffer();
@@ -155,6 +165,54 @@ class _SubscriptionSweepScreenState extends State<SubscriptionSweepScreen> {
         happinessImpact: 2,
       ),
       const _SubscriptionOffer(
+        title: 'Meal Planning Pro',
+        description:
+            'Weekly recipes and grocery lists for \$6/month. Useful if it replaces impulse food spending.',
+        monthlyCost: 6,
+        essential: false,
+        happinessImpact: 1,
+      ),
+      const _SubscriptionOffer(
+        title: 'Transit Tracker Plus',
+        description:
+            'Commute alerts and route planning for \$5/month. Practical, but only if you use transit often.',
+        monthlyCost: 5,
+        essential: true,
+        happinessImpact: 0,
+      ),
+      const _SubscriptionOffer(
+        title: 'Language Streak App',
+        description:
+            'Daily language lessons for \$9/month. Great habit, but easy to forget after the first week.',
+        monthlyCost: 9,
+        essential: false,
+        happinessImpact: 2,
+      ),
+      const _SubscriptionOffer(
+        title: 'Photo Filter Studio',
+        description:
+            'Premium filters and editing tools for \$8/month. Fun, but overlaps with tools you may already have.',
+        monthlyCost: 8,
+        essential: false,
+        happinessImpact: 2,
+      ),
+      const _SubscriptionOffer(
+        title: 'Budget Guard Alerts',
+        description:
+            'Low-balance warnings and bill reminders for \$4/month. Small cost, useful if it prevents late fees.',
+        monthlyCost: 4,
+        essential: true,
+        happinessImpact: 0,
+      ),
+      const _SubscriptionOffer(
+        title: 'Creator Template Club',
+        description:
+            'Design templates for \$14/month. Helpful for a project, expensive if it becomes shelfware.',
+        monthlyCost: 14,
+        essential: false,
+        happinessImpact: 3,
+      ),
+      const _SubscriptionOffer(
         title: 'Student Discount',
         description:
             'A surprise discount lowers one current subscription by 20%.',
@@ -218,6 +276,7 @@ class _SubscriptionSweepScreenState extends State<SubscriptionSweepScreen> {
   void _applyDailyCharge() {
     final charge = _dailyCharge;
     _balance -= charge;
+    _moneySpent += charge;
     if (_balance < 0) {
       _balance = 0;
       _statusMessage =
@@ -309,6 +368,7 @@ class _SubscriptionSweepScreenState extends State<SubscriptionSweepScreen> {
 
     if (action == _SubscriptionAction.cancel) {
       _avoidedCost += offerCost;
+      _savingDecisions += 1;
       final moodPenalty = offer.happinessImpact > 0 ? 1 : 0;
       _happiness = math.max(0, _happiness - moodPenalty);
       _statusMessage =
@@ -318,6 +378,7 @@ class _SubscriptionSweepScreenState extends State<SubscriptionSweepScreen> {
 
     if (action == _SubscriptionAction.pause) {
       _avoidedCost += offerCost;
+      _savingDecisions += 1;
       final moodPenalty = offer.happinessImpact > 0 ? 1 : 0;
       _happiness = math.max(0, _happiness - moodPenalty);
       _statusMessage =
@@ -325,6 +386,7 @@ class _SubscriptionSweepScreenState extends State<SubscriptionSweepScreen> {
       return;
     }
 
+    _spendingDecisions += 1;
     final existing = _activeSubscriptions.firstWhere(
       (subscription) => subscription.name == offer.title,
       orElse: () => _Subscription.empty(),
@@ -344,6 +406,7 @@ class _SubscriptionSweepScreenState extends State<SubscriptionSweepScreen> {
         isTrial: offer.trialDays > 0,
         trialDaysRemaining: offer.trialDays,
         hiddenRenewal: offer.hiddenRenewal,
+        canTrash: true,
       ),
     );
 
@@ -361,6 +424,94 @@ class _SubscriptionSweepScreenState extends State<SubscriptionSweepScreen> {
           ? 'You ran out of money before the round ended. Cancel more plans earlier next time.'
           : 'Round over — bank your rewards with Exit or play again to tighten the sweep.';
     });
+    _showReviewDialogOnce();
+  }
+
+  void _trashSubscription(_Subscription subscription) {
+    if (_ended || !subscription.canTrash) {
+      return;
+    }
+
+    final penalty = math.max(1, (subscription.monthlyCost * 0.10).ceil());
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _activeSubscriptions.remove(subscription);
+      _balance = math.max(0, _balance - penalty);
+      _moneySpent += penalty;
+      _avoidedCost += subscription.monthlyCost;
+      _savingDecisions += 1;
+      _trashDecisions += 1;
+      _happiness = math.max(0, _happiness - (subscription.essential ? 1 : 0));
+      _statusMessage =
+          'You trashed ${subscription.name}. The cancellation fee cost \$$penalty, but you avoided \$${subscription.monthlyCost}/month going forward.';
+    });
+
+    if (_balance <= 0) {
+      _finishGame();
+    }
+  }
+
+  void _showReviewDialogOnce() {
+    if (_reviewShown) {
+      return;
+    }
+    _reviewShown = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_ended) {
+        return;
+      }
+      _showReviewDialog();
+    });
+  }
+
+  Future<void> _showReviewDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF163729),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: const Text(
+          'Subscription Review',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ReviewStat(label: 'Money spent', value: '\$$_moneySpent'),
+            _ReviewStat(label: 'Saving decisions', value: '$_savingDecisions'),
+            _ReviewStat(
+              label: 'Spending decisions',
+              value: '$_spendingDecisions',
+            ),
+            _ReviewStat(label: 'Trashed after signup', value: '$_trashDecisions'),
+            const SizedBox(height: 12),
+            Text(
+              _reviewAdvice,
+              style: const TextStyle(color: Colors.white70, height: 1.4),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String get _reviewAdvice {
+    if (_balance < _savingsGoal) {
+      return 'Next time, protect the savings goal first. Trials and cheap plans still add pressure once daily costs start stacking.';
+    }
+    if (_spendingDecisions > _savingDecisions) {
+      return 'You finished above the goal, but you kept more offers than you cut. Try canceling duplicates earlier to make the round less risky.';
+    }
+    if (_trashDecisions > 0) {
+      return 'Good recovery. Trashing a bad signup can save money, but the 10% fee means catching duplicates before accepting them is stronger.';
+    }
+    return 'Strong sweep. You kept recurring costs controlled and left enough room for the savings target.';
   }
 
   SubscriptionSweepCloseResult _projectedResult(SyncState syncState) {
@@ -430,7 +581,7 @@ class _SubscriptionSweepScreenState extends State<SubscriptionSweepScreen> {
   }
 
   int get _savingsProgress => math.max(0, _balance - _savingsGoal);
-  double get _goalPercent => (_balance / _savingsGoal).clamp(0.0, 1.0);
+  double get _goalPercent => (_balance / _monthlyIncome).clamp(0.0, 1.0);
 
   @override
   Widget build(BuildContext context) {
@@ -465,7 +616,12 @@ class _SubscriptionSweepScreenState extends State<SubscriptionSweepScreen> {
               ),
               const SizedBox(height: 12),
               ..._activeSubscriptions.map(
-                (subscription) => _SubscriptionTile(subscription: subscription),
+                (subscription) => _SubscriptionTile(
+                  subscription: subscription,
+                  onTrash: subscription.canTrash
+                      ? () => _trashSubscription(subscription)
+                      : null,
+                ),
               ),
               const SizedBox(height: 16),
               _currentOffer == null
@@ -473,6 +629,15 @@ class _SubscriptionSweepScreenState extends State<SubscriptionSweepScreen> {
                       balance: _balance,
                       avoidedCost: _avoidedCost,
                       savingsGoal: _savingsGoal,
+                      moneySpent: _moneySpent,
+                      savingDecisions: _savingDecisions,
+                      spendingDecisions: _spendingDecisions,
+                    )
+                  : _currentOffer!.isEvent
+                  ? _EventCard(
+                      offer: _currentOffer!,
+                      onContinue: () =>
+                          _takeAction(_SubscriptionAction.keep),
                     )
                   : _OfferCard(
                       offer: _currentOffer!,
@@ -484,7 +649,7 @@ class _SubscriptionSweepScreenState extends State<SubscriptionSweepScreen> {
               Text(
                 _statusMessage,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.76),
+                  color: Colors.white.withValues(alpha: 0.76),
                   height: 1.4,
                 ),
               ),
@@ -509,7 +674,7 @@ class _SubscriptionSweepScreenState extends State<SubscriptionSweepScreen> {
                         onPressed: _claiming ? null : _bankRewards,
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(
-                            color: Colors.white.withOpacity(0.18),
+                            color: Colors.white.withValues(alpha: 0.18),
                           ),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -582,13 +747,13 @@ class _GameSummaryCard extends StatelessWidget {
                     Text(
                       'Savings Goal',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.72),
+                        color: Colors.white.withValues(alpha: 0.72),
                         fontSize: 12,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '$savingsGoal',
+                      '\$$savingsGoal target',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -607,9 +772,11 @@ class _GameSummaryCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '${(goalPercent * 100).round()}% to goal',
+                      savingsProgress > 0
+                          ? '\$$savingsProgress above goal'
+                          : '\$${savingsGoal - balance} short of goal',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.72),
+                        color: Colors.white.withValues(alpha: 0.72),
                         fontSize: 12,
                       ),
                     ),
@@ -623,7 +790,7 @@ class _GameSummaryCard extends StatelessWidget {
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.06),
+                  color: Colors.white.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Column(
@@ -632,7 +799,7 @@ class _GameSummaryCard extends StatelessWidget {
                     Text(
                       'Day',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.70),
+                        color: Colors.white.withValues(alpha: 0.70),
                         fontSize: 12,
                       ),
                     ),
@@ -671,7 +838,7 @@ class _Metric extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.72),
+              color: Colors.white.withValues(alpha: 0.72),
               fontSize: 12,
             ),
           ),
@@ -712,7 +879,10 @@ class _SectionHeader extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           subtitle,
-          style: TextStyle(color: Colors.white.withOpacity(0.72), height: 1.45),
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.72),
+            height: 1.45,
+          ),
         ),
       ],
     );
@@ -720,9 +890,10 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _SubscriptionTile extends StatelessWidget {
-  const _SubscriptionTile({required this.subscription});
+  const _SubscriptionTile({required this.subscription, required this.onTrash});
 
   final _Subscription subscription;
+  final VoidCallback? onTrash;
 
   @override
   Widget build(BuildContext context) {
@@ -741,9 +912,9 @@ class _SubscriptionTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: color.withOpacity(0.16)),
+        border: Border.all(color: color.withValues(alpha: 0.16)),
       ),
       child: Row(
         children: [
@@ -761,19 +932,30 @@ class _SubscriptionTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '${subscription.monthlyCost}/month • ${subscription.category}',
+                  '\$${subscription.monthlyCost}/month - ${subscription.category}',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.68),
+                    color: Colors.white.withValues(alpha: 0.68),
                     fontSize: 12,
                   ),
                 ),
+                if (onTrash != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Trash fee: 10% of monthly cost',
+                    style: TextStyle(
+                      color: Colors.redAccent.withValues(alpha: 0.82),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.16),
+              color: color.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
@@ -783,6 +965,90 @@ class _SubscriptionTile extends StatelessWidget {
                 fontWeight: FontWeight.w900,
                 fontSize: 12,
               ),
+            ),
+          ),
+          if (onTrash != null) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              tooltip: 'Trash subscription',
+              onPressed: onTrash,
+              icon: const Icon(Icons.delete_outline_rounded),
+              color: Colors.redAccent,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _EventCard extends StatelessWidget {
+  const _EventCard({required this.offer, required this.onContinue});
+
+  final _SubscriptionOffer offer;
+  final VoidCallback onContinue;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFD166).withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: const Color(0xFFFFD166).withValues(alpha: 0.28),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.notification_important_outlined,
+                color: Color(0xFFFFD166),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  offer.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            offer.description,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.76),
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'This is an alert, not a subscription offer. Review your active list, then continue to the next day.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.62),
+              fontSize: 12,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: onContinue,
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFFFD166),
+                foregroundColor: const Color(0xFF071711),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: const Text('CONTINUE'),
             ),
           ),
         ],
@@ -809,7 +1075,7 @@ class _OfferCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: Colors.white12),
       ),
@@ -828,7 +1094,7 @@ class _OfferCard extends StatelessWidget {
           Text(
             offer.description,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.76),
+              color: Colors.white.withValues(alpha: 0.76),
               height: 1.45,
             ),
           ),
@@ -837,7 +1103,7 @@ class _OfferCard extends StatelessWidget {
             Text(
               'The free trial will convert automatically if you do not cancel it.',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.60),
+                color: Colors.white.withValues(alpha: 0.60),
                 fontSize: 12,
               ),
             ),
@@ -845,9 +1111,9 @@ class _OfferCard extends StatelessWidget {
           if (offer.monthlyCost > 0) ...[
             const SizedBox(height: 14),
             Text(
-              'Cost: \$$offer.monthlyCost/month',
+              'Cost: \$${offer.monthlyCost}/month',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.82),
+                color: Colors.white.withValues(alpha: 0.82),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -856,7 +1122,7 @@ class _OfferCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               '${offer.trialDays}-day free trial',
-              style: TextStyle(color: Colors.white.withOpacity(0.64)),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.64)),
             ),
           ],
           const SizedBox(height: 20),
@@ -878,7 +1144,9 @@ class _OfferCard extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: onPause,
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.white.withOpacity(0.18)),
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.18),
+                    ),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
@@ -890,7 +1158,7 @@ class _OfferCard extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: onCancel,
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.red.withOpacity(0.26)),
+                    side: BorderSide(color: Colors.red.withValues(alpha: 0.26)),
                     foregroundColor: Colors.redAccent,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
@@ -910,11 +1178,17 @@ class _EndOfRoundSummary extends StatelessWidget {
     required this.balance,
     required this.avoidedCost,
     required this.savingsGoal,
+    required this.moneySpent,
+    required this.savingDecisions,
+    required this.spendingDecisions,
   });
 
   final int balance;
   final int avoidedCost;
   final int savingsGoal;
+  final int moneySpent;
+  final int savingDecisions;
+  final int spendingDecisions;
 
   @override
   Widget build(BuildContext context) {
@@ -922,7 +1196,7 @@ class _EndOfRoundSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: Colors.white12),
       ),
@@ -947,14 +1221,55 @@ class _EndOfRoundSummary extends StatelessWidget {
             'Avoided recurring cost: \$$avoidedCost/month',
             style: const TextStyle(color: Colors.white70),
           ),
+          const SizedBox(height: 6),
+          Text(
+            'Money spent: \$$moneySpent',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Decisions: $savingDecisions saving / $spendingDecisions spending',
+            style: const TextStyle(color: Colors.white70),
+          ),
           const SizedBox(height: 12),
           Text(
             reachedGoal
                 ? 'You reached your savings goal. Nice work keeping extras under control.'
                 : 'You fell short of the goal. Next round, cancel or pause more optional plans early.',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.82),
+              color: Colors.white.withValues(alpha: 0.82),
               height: 1.45,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReviewStat extends StatelessWidget {
+  const _ReviewStat({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.white70),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -997,11 +1312,16 @@ class _Subscription {
     required this.category,
     required this.monthlyCost,
     required this.essential,
-    this.paused = false,
-    this.isTrial = false,
-    this.trialDaysRemaining = 0,
-    this.hiddenRenewal = false,
-  });
+    bool? paused,
+    bool? isTrial,
+    int? trialDaysRemaining,
+    bool? hiddenRenewal,
+    bool? canTrash,
+  }) : paused = paused ?? false,
+       isTrial = isTrial ?? false,
+       trialDaysRemaining = trialDaysRemaining ?? 0,
+       hiddenRenewal = hiddenRenewal ?? false,
+       canTrash = canTrash ?? false;
 
   _Subscription.empty()
     : name = '',
@@ -1011,7 +1331,8 @@ class _Subscription {
       paused = false,
       isTrial = false,
       trialDaysRemaining = 0,
-      hiddenRenewal = false;
+      hiddenRenewal = false,
+      canTrash = false;
 
   final String name;
   final String category;
@@ -1021,6 +1342,7 @@ class _Subscription {
   bool isTrial;
   int trialDaysRemaining;
   final bool hiddenRenewal;
+  final bool canTrash;
 
   bool get isEmpty => name.isEmpty;
 }

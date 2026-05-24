@@ -48,7 +48,6 @@ class _AuthScreenState extends State<AuthScreen>
   bool _acceptedTerms = false;
   bool _isConfiguringTurnstile = false;
   String? _captchaToken;
-  String? _captchaLoadError;
   WebViewController? _turnstileController;
 
   bool get _isLogin => _mode == AuthMode.login;
@@ -322,7 +321,6 @@ class _AuthScreenState extends State<AuthScreen>
       _mode = nextMode;
       _submitting = false;
       _captchaToken = null;
-      _captchaLoadError = null;
     });
     if (!_usesExternalSecurityCheck) {
       unawaited(_configureTurnstile());
@@ -361,12 +359,6 @@ class _AuthScreenState extends State<AuthScreen>
           },
           onWebResourceError: (error) {
             debugPrint('Turnstile WebView error: ${error.description}');
-            if (!mounted) {
-              return;
-            }
-            setState(() {
-              _captchaLoadError = error.description;
-            });
           },
         ),
       )
@@ -384,7 +376,6 @@ class _AuthScreenState extends State<AuthScreen>
           );
           setState(() {
             _captchaToken = token.isEmpty ? null : token;
-            _captchaLoadError = null;
           });
         },
       );
@@ -395,19 +386,12 @@ class _AuthScreenState extends State<AuthScreen>
     setState(() {
       _turnstileController = controller;
       _captchaToken = null;
-      _captchaLoadError = null;
     });
 
     try {
       await _loadTurnstile(controller);
     } catch (error) {
       debugPrint('Turnstile load failed: $error');
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _captchaLoadError = error.toString();
-      });
     } finally {
       _isConfiguringTurnstile = false;
     }
@@ -416,7 +400,6 @@ class _AuthScreenState extends State<AuthScreen>
   void _resetTurnstile() {
     setState(() {
       _captchaToken = null;
-      _captchaLoadError = null;
     });
     final controller = _turnstileController;
     if (controller != null) {
