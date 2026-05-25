@@ -161,10 +161,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onUploadTap: user == null
                               ? null
                               : () => _pickAndUploadPhoto(
-                                    context,
-                                    controller,
-                                    user,
-                                  ),
+                                  context,
+                                  controller,
+                                  user,
+                                ),
                         ),
                         _ProfileInsightCard(stats: stats),
                         const SizedBox(height: 12),
@@ -313,8 +313,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
 
           final copy = Column(
-            crossAxisAlignment:
-                stacked ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+            crossAxisAlignment: stacked
+                ? CrossAxisAlignment.center
+                : CrossAxisAlignment.start,
             children: [
               Text(
                 stats.username,
@@ -346,13 +347,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
 
           if (stacked) {
-            return Column(
-              children: [
-                avatar,
-                const SizedBox(height: 16),
-                copy,
-              ],
-            );
+            return Column(children: [avatar, const SizedBox(height: 16), copy]);
           }
 
           return Row(
@@ -497,7 +492,10 @@ class _InsightMetric extends StatelessWidget {
         ),
         title: Text(
           title,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         subtitle: Text(
           subtitle,
@@ -559,4 +557,3 @@ class _InsightMetric extends StatelessWidget {
       ),
     );
   }
-

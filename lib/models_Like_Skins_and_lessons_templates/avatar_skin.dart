@@ -5,6 +5,7 @@ enum SkinRarity {
   rare,
   epic,
   Legendary,
+  Mythic,
 }
 
 @immutable
@@ -30,6 +31,7 @@ class AvatarSkin {
         SkinRarity.rare => 'Rare',
         SkinRarity.epic => 'Epic',
         SkinRarity.Legendary => 'Legendary',
+        SkinRarity.Mythic => 'Mythic',
         
       };
 }
@@ -107,6 +109,7 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     accent: Color(0xFFFFC96B),
     weight: 20,
   ),
+  
 ];
 
 final Set<String> budgetBuddySkinIds = budgetBuddySkins
