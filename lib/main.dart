@@ -6,21 +6,21 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'config/runtime_env.dart';
-import 'controllers/adventure_state_controller.dart';
-import 'controllers/app_settings_controller.dart';
-import 'controllers/user_stats_controller.dart';
-import 'navigation/app_tab_index.dart';
-import 'screens/Gameplay/arcade/bill_dodger.dart';
-import 'screens/Gameplay/core/game_canvas.dart';
-import 'screens/Gameplay/core/main_game_page.dart';
-import 'screens/Gameplay/core/minigames_page.dart';
-import 'screens/Gameplay/dashboard/dashboard_shell.dart';
-import 'screens/Gameplay/dashboard/leaderboard_screen.dart';
-import 'screens/auth/auth_screen.dart';
-import 'screens/onboarding/welcome_screen.dart';
-import 'services/app_sound_service.dart';
-import 'services/supabase_service.dart';
-import 'theme/app_theme.dart';
+import 'controllers_that_updates_stats/adventure_state_controller.dart';
+import 'controllers_that_updates_stats/app_settings_controller.dart';
+import 'controllers_that_updates_stats/user_stats_controller.dart';
+import 'navigation_tools_and_animation/app_tab_index.dart';
+import 'screens_minigames_admin_etc/Gameplay/arcade/bill_dodger.dart';
+import 'screens_minigames_admin_etc/Gameplay/core/game_canvas.dart';
+import 'screens_minigames_admin_etc/Gameplay/core/main_game_page.dart';
+import 'screens_minigames_admin_etc/Gameplay/core/minigames_page.dart';
+import 'screens_minigames_admin_etc/Gameplay/dashboard/dashboard_shell.dart';
+import 'screens_minigames_admin_etc/Gameplay/dashboard/leaderboard_screen.dart';
+import 'screens_minigames_admin_etc/auth/auth_screen.dart';
+import 'screens_minigames_admin_etc/onboarding/welcome_screen.dart';
+import 'services_backend_and_other_services/app_sound_service.dart';
+import 'services_backend_and_other_services/supabase_service.dart';
+import 'themes_colors/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -214,3 +214,4 @@ class _DisabledScreen extends StatelessWidget {
     );
   }
 }
+
