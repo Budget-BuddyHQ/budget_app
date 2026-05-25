@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../profile/profile_screen.dart';
 import '../academy/learning_path_screen.dart';
-import '../core/main_game_page.dart';
-import '../core/minigames_page.dart';
+import '../core_bottom_pages/main_game_page.dart';
+import '../core_bottom_pages/minigames_page.dart';
 import '../customize_screen.dart';
 import 'home_screen.dart';
 

@@ -10,11 +10,11 @@ import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
-import '../arcade/bill_dodger.dart';
-import '../arcade/budget_challenge.dart';
-import '../arcade/react_challenge_screen.dart';
-import '../arcade/stock_market_page.dart';
-import '../arcade/subscription_sweep.dart';
+import '../minigames_pages/bill_dodger.dart';
+import '../minigames_pages/budget_challenge.dart';
+import '../minigames_pages/react_challenge_screen.dart';
+import '../minigames_pages/stock_market_page.dart';
+import '../minigames_pages/subscription_sweep.dart';
 
 class MinigamesPage extends StatelessWidget {
   const MinigamesPage({
