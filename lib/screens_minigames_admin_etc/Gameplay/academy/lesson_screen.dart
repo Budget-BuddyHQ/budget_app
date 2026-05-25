@@ -134,7 +134,9 @@ class _LessonScreenState extends State<LessonScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final compactLayout = constraints.maxWidth < 980;
+            // Fix: Check both width and height to decide layout.
+            // In landscape mode on mobile, maxHeight is often < 600.
+            final compactLayout = constraints.maxWidth < 980 || constraints.maxHeight < 620;
 
             if (compactLayout) {
               return ListView(
@@ -1144,4 +1146,3 @@ class _MasteryBadge extends StatelessWidget {
     );
   }
 }
-
