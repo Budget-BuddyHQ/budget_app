@@ -5,64 +5,84 @@
 `lib/main.dart`
 Bootstraps Flutter, Supabase, Provider state, routes, and the main app theme.
 
-`lib/screens/`
-Screen-level UI. The most important subfolders are:
+`lib/screens_minigames_admin_etc/`
+Contains the app shell, feature tabs, profile, auth, onboarding, and gameplay screens.
 
-`lib/screens/Gameplay/dashboard/`
-The professional app shell: dashboard, leaderboard, and shared tab navigation.
+`lib/screens_minigames_admin_etc/Gameplay/dashboard/`
+Dashboard tab UI plus the home screen, leaderboard preview, and the main tab shell entrypoint.
 
-`lib/screens/Gameplay/core/`
-The adventure lane and arcade hub entry points.
+`lib/screens_minigames_admin_etc/Gameplay/core_bottom_pages/`
+Adventure and arcade lane pages for the main gameplay shell.
 
-`lib/screens/Gameplay/academy/`
-The learning experience: unit browser, lesson grid, and lesson detail flow.
+`lib/screens_minigames_admin_etc/Gameplay/academy/`
+Learning experience: progression grid, lesson detail flow, and study roadmap.
 
-`lib/screens/profile/`
-Account settings, profile presentation, and profile photo upload entry point.
+`lib/screens_minigames_admin_etc/Gameplay/minigames_pages/`
+Standalone minigames and arcade experiences.
 
-`lib/controllers/`
+`lib/screens_minigames_admin_etc/Gameplay/customize_screen.dart`
+Skin equip/customize screen, case rolling, and reward presentation.
+
+`lib/screens_minigames_admin_etc/profile/`
+Account settings, profile presentation, and profile photo upload.
+
+`lib/controllers_that_updates_stats/`
 Provider-backed state objects.
 `user_stats_controller.dart` is the main player profile and progression controller.
 `adventure_state_controller.dart` owns the active gameplay session state.
+`app_settings_controller.dart` handles sound and app preferences.
 
-`lib/services/`
+`lib/services_backend_and_other_services/`
 I/O and persistence code.
-`supabase_service.dart` handles auth, local caching, leaderboard reads, and profile photo upload/storage work.
+`supabase_service.dart` handles auth, local caching, leaderboard reads, and profile avatar upload/storage work.
+`sservices_backend_and_other_services/app_sound_service.dart` handles audio initialization and effects.
 
-`lib/models/`
-Data definitions such as skins, lessons, and progression rules.
+`lib/models_Like_Skins_and_lessons_templates/`
+Data definitions such as skins, lessons, progression units, and avatar metadata.
 
-`lib/components/` and `lib/widgets/`
-Reusable UI building blocks like the responsive lesson cards, bottom nav, and buttons.
+`lib/custom_made_widgets/`
+Reusable custom widgets such as `UnitRowItem` and other lesson UI components.
 
-`lib/game/`
-The Flame-based adventure code.
+`lib/widgets_custom_lotties/`
+Shared decorative widgets, custom buttons, toast helpers, and navigation bars.
+
+`lib/game_prodigy/`
+Flame-based adventure code and gameplay logic.
+
+`lib/navigation_tools_and_animation/`
+Navigation helpers, page transitions, route utilities, and tab index definitions.
 
 `assets/`
 Images, turtle skins, animations, map files, and audio.
 
 ## Files to learn first
 
-`lib/screens/Gameplay/dashboard/main_navigation.dart`
-The tab shell. If you want to change how the main app switches sections, start here.
+`lib/screens_minigames_admin_etc/Gameplay/dashboard/main_navigation.dart`
+The tab shell and app navigation entrypoint. This is where the main `IndexedStack` lives.
 
-`lib/widgets/custom_bottom_nav.dart`
-The shared professional bottom nav. It now keeps labels visible even on tighter widths.
+`lib/screens_minigames_admin_etc/Gameplay/dashboard/dashboard_shell.dart`
+Wraps `MainNavigation` and provides the top-level shell used by `/dashboard`, `/game_hub`, `/customize`, and `/lessons` routes.
 
-`lib/screens/Gameplay/academy/lesson_screen.dart`
+`lib/widgets_custom_lotties/custom_bottom_nav.dart`
+The shared professional bottom nav used by the app shell.
+
+`lib/screens_minigames_admin_etc/Gameplay/academy/lesson_screen.dart`
 The academy layout controller. It decides whether the page behaves like a mobile list, tablet layout, or desktop sidebar layout.
 
-`lib/components/unit_row_item.dart`
-The responsive lesson grid. This is where the lesson cards switch between 2, 3, and 4 columns.
+`lib/custom_made_widgets/unit_row_item.dart`
+The responsive lesson grid. This is where the lesson cards switch between 2, 3, and 4 columns based on width.
 
-`lib/screens/Gameplay/core/minigames_page.dart`
-The arcade hub. Small screens now use content-sized cards instead of a cramped fixed-height grid.
+`lib/screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.dart`
+The arcade hub and minigame entry flow.
 
-`lib/screens/profile/profile_screen.dart`
-The current profile page, including the upload button for user profile photos.
+`lib/screens_minigames_admin_etc/Gameplay/customize_screen.dart`
+The skin customization tab and case roll UI.
 
-`lib/services/supabase_service.dart`
-The data layer for stats, leaderboard, auth, and profile avatar upload to Supabase Storage.
+`lib/screens_minigames_admin_etc/profile/profile_screen.dart`
+The current profile page and user avatar upload flow.
+
+`lib/services_backend_and_other_services/supabase_service.dart`
+The data layer for stats, leaderboard, auth, profile avatar upload, and Supabase storage interaction.
 
 ## Flutter concepts used in this repo
 
@@ -83,8 +103,8 @@ Examples in this app:
 
 `LayoutBuilder`
 This is the main responsive tool in the app.
-It gives you the current available width so you can decide between stacked mobile UI and wider desktop/tablet UI.
-The academy page and bottom nav both depend on it heavily.
+It gives you the current available width so you can decide between stacked mobile UI and wider tablet/desktop UI.
+The academy page, dashboard, and bottom nav all depend on it heavily.
 
 `FutureBuilder`
 Used when UI depends on async work such as loading profile metadata from Supabase.
@@ -92,12 +112,12 @@ The profile page uses it to check things like admin status and remote avatar dat
 
 `IndexedStack`
 The main tab shell uses `IndexedStack` so each tab stays alive when you switch away from it.
-That is helpful for keeping scroll position and screen state.
+That helps keep scroll and state preserved.
 
 ## How skins work
 
 Source of truth:
-`lib/models/avatar_skin.dart`
+`lib/models_Like_Skins_and_lessons_templates/avatar_skin.dart`
 
 Save path:
 `Customize screen -> UserStatsController -> SupabaseService -> user_stats table`
@@ -108,7 +128,7 @@ Stored fields:
 
 To add a new skin:
 1. Put the image in `assets/images/turtles/`.
-2. Add a new `AvatarSkin(...)` entry in `lib/models/avatar_skin.dart`.
+2. Add a new `AvatarSkin(...)` entry in `lib/models_Like_Skins_and_lessons_templates/avatar_skin.dart`.
 3. Re-run `flutter pub get` only if you added a new asset folder, not just a new file in the existing folder.
 4. Open Customize and verify the card appears and can be equipped.
 
