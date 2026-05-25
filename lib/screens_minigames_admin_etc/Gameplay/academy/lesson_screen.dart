@@ -138,9 +138,11 @@ class _LessonScreenState extends State<LessonScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // Fix: Check both width and height to decide layout.
-            // In landscape mode on mobile, maxHeight is often < 600.
-            final compactLayout = constraints.maxWidth < 980 || constraints.maxHeight < 620;
+            // Treat landscape or short heights as compact to avoid vertical overflow.
+            final orientation = MediaQuery.of(context).orientation;
+            final compactLayout = constraints.maxWidth < 980 ||
+              constraints.maxHeight < 720 ||
+              (orientation == Orientation.landscape && constraints.maxHeight < 720);
 
             if (compactLayout) {
               return ListView(
