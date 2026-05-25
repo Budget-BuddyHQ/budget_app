@@ -9,7 +9,7 @@ import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
-import '../arcade/react_challenge_screen.dart';
+import '../minigames_pages/react_challenge_screen.dart';
 import 'leaderboard_screen.dart';
 
 class HomeScreen extends StatelessWidget {
