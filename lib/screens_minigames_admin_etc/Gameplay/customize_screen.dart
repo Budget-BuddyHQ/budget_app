@@ -28,7 +28,8 @@ class CustomizeScreen extends StatefulWidget {
 
 class _CustomizeScreenState extends State<CustomizeScreen> {
   bool _openingCase = false;
-
+  late AvatarSkin skin;
+  bool _initalized = false;
   Future<void> _openCase() async {
     if (_openingCase) {
       return;
@@ -62,6 +63,8 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
 
   Future<void> _equipSkin(AvatarSkin skin) async {
     final result = await context.read<UserStatsController>().equipSkin(skin.id);
+
+    this.skin = skin;
     if (!mounted) {
       return;
     }
@@ -79,11 +82,18 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // The a moving arua animation for each skin
     return Consumer<UserStatsController>(
       builder: (context, controller, _) {
         final stats = controller.stats;
         final equippedSkin = skinFromId(stats.equippedSkin);
         final unlockedSkins = stats.unlockedSkins.toSet();
+
+        // Initialize skin if not already set
+        if (!_initalized) {
+          skin = equippedSkin;
+          _initalized = true;
+        }
 
         return Scaffold(
           backgroundColor: const Color(0xFF071711),
@@ -95,7 +105,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
                 ),
           body: Stack(
             children: [
-              const _CustomizeBackdrop(),
+              _CustomizeBackdrop(skin: skin),
               SafeArea(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -348,7 +358,7 @@ class _StorePanel extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Spend 180 gold for a Common, Rare, or Epic turtle skin.',
+                'Spend 180 gold for a Common, Rare, Epic, Legendary or Mythic turtle skin.',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.72),
                   height: 1.4,
@@ -493,6 +503,7 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
   late final Animation<double> _scrollAnimation;
   late final List<AvatarSkin> _rollSkins;
   bool _revealed = false;
+  bool _skipped = false;
   AvatarSkin? _currentSkin;
 
   static const double _itemWidth = 92;
@@ -500,6 +511,14 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
   static const int _minCycles = 4;
 
   double get _itemExtent => _itemWidth + _itemSpacing;
+
+  void _skipRoll() {
+    if (!_revealed && !_skipped) {
+      setState(() => _skipped = true);
+      _scrollController.stop();
+      _onReveal();
+    }
+  }
 
   @override
   void initState() {
@@ -569,6 +588,16 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
     );
   }
 
+  int _getRefundAmount(SkinRarity rarity) {
+    return switch (rarity) {
+      SkinRarity.common => 40,
+      SkinRarity.rare => 60,
+      SkinRarity.epic => 90,
+      SkinRarity.Legendary => 140,
+      SkinRarity.Mythic => 200,
+    };
+  }
+
   @override
   void dispose() {
     _scrollController.removeListener(_onScrollChanged);
@@ -631,33 +660,43 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
 
                         return Stack(
                           children: [
-                            Transform.translate(
-                              offset: Offset(-offset, 0),
-                              child: Row(
-                                children: _rollSkins.map((skin) {
-                                  return Container(
-                                    width: _itemWidth,
-                                    margin: const EdgeInsets.only(
-                                      right: _itemSpacing,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.05,
-                                      ),
-                                      borderRadius: BorderRadius.circular(18),
-                                      border: Border.all(
-                                        color: skin.accent.withValues(
-                                          alpha: 0.2,
+                            SizedBox(
+                              width: trackWidth,
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                physics: const NeverScrollableScrollPhysics(),
+                                child: Transform.translate(
+                                  offset: Offset(-offset, 0),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: _rollSkins.map((skin) {
+                                      return Container(
+                                        width: _itemWidth,
+                                        margin: const EdgeInsets.only(
+                                          right: _itemSpacing,
                                         ),
-                                      ),
-                                    ),
-                                    padding: const EdgeInsets.all(10),
-                                    child: Image.asset(
-                                      skin.assetPath,
-                                      fit: BoxFit.contain,
-                                    ),
-                                  );
-                                }).toList(),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.05,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
+                                          border: Border.all(
+                                            color: skin.accent.withValues(
+                                              alpha: 0.2,
+                                            ),
+                                          ),
+                                        ),
+                                        padding: const EdgeInsets.all(10),
+                                        child: Image.asset(
+                                          skin.assetPath,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
                               ),
                             ),
                             Positioned.fill(
@@ -697,6 +736,11 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
               ),
             ),
             const SizedBox(height: 12),
+            if (_revealed)
+              _RarityAura(skin: preview)
+            else
+              const SizedBox.shrink(),
+            const SizedBox(height: 12),
             Text(
               preview.name,
               style: TextStyle(
@@ -707,11 +751,20 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
             ),
             const SizedBox(height: 6),
             Text(
+              preview.rarityLabel,
+              style: TextStyle(
+                color: preview.accent,
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
               _revealed
                   ? widget.result.isNewUnlock
                         ? 'Unlocked and equipped automatically.'
-                        : 'Duplicate pull — 40 gold refunded.'
-                  : 'Rolling... stop to reveal your reward.',
+                        : 'Duplicate pull — ${_getRefundAmount(preview.rarity)} gold refunded.'
+                  : 'Rolling... tap Skip or wait to reveal.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.72),
@@ -719,29 +772,62 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
               ),
             ),
             const SizedBox(height: 18),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: _revealed ? () => Navigator.of(context).pop() : null,
-              child: Container(
-                height: 52,
-                decoration: BoxDecoration(
-                  color: _revealed
-                      ? const Color(0xFF85EFAC)
-                      : Colors.white.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Center(
-                  child: Text(
-                    _revealed ? 'Awesome' : 'Rolling...',
-                    style: TextStyle(
-                      color: _revealed
-                          ? const Color(0xFF062C21)
-                          : Colors.white60,
-                      fontWeight: FontWeight.w900,
+            Row(
+              children: [
+                if (!_revealed)
+                  Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _skipRoll,
+                      child: Container(
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'Skip',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (!_revealed) const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _revealed ? () => Navigator.of(context).pop() : null,
+                    child: Container(
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: _revealed
+                            ? const Color(0xFF85EFAC)
+                            : Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Center(
+                        child: Text(
+                          _revealed ? 'Awesome' : 'Rolling...',
+                          style: TextStyle(
+                            color: _revealed
+                                ? const Color(0xFF062C21)
+                                : Colors.white60,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
@@ -751,7 +837,9 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
 }
 
 class _CustomizeBackdrop extends StatelessWidget {
-  const _CustomizeBackdrop();
+  const _CustomizeBackdrop({required this.skin});
+
+  final AvatarSkin skin;
 
   @override
   Widget build(BuildContext context) {
@@ -766,32 +854,96 @@ class _CustomizeBackdrop extends StatelessWidget {
             ),
           ),
         ),
-        Positioned(
-          top: -80,
-          left: -40,
-          child: _Aura(color: const Color(0xFFFFD45C).withValues(alpha: 0.14)),
-        ),
+        Positioned(top: -80, left: -40, child: _Aura(skin: skin)),
       ],
     );
   }
 }
 
 class _Aura extends StatelessWidget {
-  const _Aura({required this.color});
+  const _Aura({required this.skin});
 
-  final Color color;
+  final AvatarSkin skin;
 
   @override
   Widget build(BuildContext context) {
+    final auraColor = switch (skin.rarity) {
+      SkinRarity.common => const Color(0xFF85EFAC),
+      SkinRarity.rare => const Color(0xFF58C7FF),
+      SkinRarity.epic => const Color(0xFFB9A5FF),
+      SkinRarity.Legendary => const Color(0xFFFFD45C),
+      SkinRarity.Mythic => const Color(0xFFFF6B9D),
+    };
+
+    final glowIntensity = switch (skin.rarity) {
+      SkinRarity.common => 0.12,
+      SkinRarity.rare => 0.18,
+      SkinRarity.epic => 0.22,
+      SkinRarity.Legendary => 0.28,
+      SkinRarity.Mythic => 0.32,
+    };
+
     return IgnorePointer(
       child: Container(
         width: 180,
         height: 180,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: color,
+          color: auraColor.withValues(alpha: glowIntensity),
           boxShadow: [
-            BoxShadow(color: color, blurRadius: 80, spreadRadius: 14),
+            BoxShadow(
+              color: auraColor.withValues(alpha: glowIntensity),
+              blurRadius: 80,
+              spreadRadius: 14,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RarityAura extends StatelessWidget {
+  const _RarityAura({required this.skin});
+
+  final AvatarSkin skin;
+
+  @override
+  Widget build(BuildContext context) {
+    final auraColor = switch (skin.rarity) {
+      SkinRarity.common => const Color(0xFF85EFAC),
+      SkinRarity.rare => const Color(0xFF58C7FF),
+      SkinRarity.epic => const Color(0xFFB9A5FF),
+      SkinRarity.Legendary => const Color(0xFFFFD45C),
+      SkinRarity.Mythic => const Color(0xFFFF6B9D),
+    };
+
+    final glowIntensity = switch (skin.rarity) {
+      SkinRarity.common => 0.12,
+      SkinRarity.rare => 0.18,
+      SkinRarity.epic => 0.22,
+      SkinRarity.Legendary => 0.28,
+      SkinRarity.Mythic => 0.32,
+    };
+
+    return IgnorePointer(
+      child: Container(
+        width: 120,
+        height: 120,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: auraColor.withValues(alpha: glowIntensity),
+          boxShadow: [
+            BoxShadow(
+              color: auraColor.withValues(alpha: glowIntensity * 1.5),
+              blurRadius: 40,
+              spreadRadius: 8,
+            ),
+            BoxShadow(
+              color: auraColor.withValues(alpha: glowIntensity * 0.7),
+              blurRadius: 60,
+              spreadRadius: 14,
+            ),
           ],
         ),
       ),
