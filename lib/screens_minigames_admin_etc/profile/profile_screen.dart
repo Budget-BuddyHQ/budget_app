@@ -188,10 +188,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onUploadTap: user == null
                               ? null
                               : () => _pickAndUploadPhoto(
-                                    context,
-                                    controller,
-                                    user,
-                                  ),
+                                  context,
+                                  controller,
+                                  user,
+                                ),
                         ),
                         const SizedBox(height: 18),
                         _ProfileInsightCard(stats: stats),
@@ -421,8 +421,9 @@ class _ProfileHero extends StatelessWidget {
           );
 
           final copy = Column(
-            crossAxisAlignment:
-                stacked ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+            crossAxisAlignment: stacked
+                ? CrossAxisAlignment.center
+                : CrossAxisAlignment.start,
             children: [
               Text(
                 stats.username,
@@ -454,13 +455,7 @@ class _ProfileHero extends StatelessWidget {
           );
 
           if (stacked) {
-            return Column(
-              children: [
-                avatar,
-                const SizedBox(height: 16),
-                copy,
-              ],
-            );
+            return Column(children: [avatar, const SizedBox(height: 16), copy]);
           }
 
           return Row(
@@ -606,7 +601,10 @@ class _SettingsCard extends StatelessWidget {
         ),
         title: Text(
           title,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         subtitle: Text(
           subtitle,
@@ -671,4 +669,3 @@ class _ProfileBackdrop extends StatelessWidget {
     );
   }
 }
-
