@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:budget_app/services_backend_and_other_services/supabase_service.dart' show UserStats;
+import 'package:budget_app/services_backend_and_other_services/supabase_service.dart'
+    show UserStats;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -133,11 +134,11 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
                             itemCount: budgetBuddySkins.length,
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: childAspectRatio,
-                            ),
+                                  crossAxisCount: crossAxisCount,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                  childAspectRatio: childAspectRatio,
+                                ),
                             itemBuilder: (context, index) {
                               final skin = budgetBuddySkins[index];
                               final unlocked = unlockedSkins.contains(skin.id);
@@ -367,11 +368,7 @@ class _StorePanel extends StatelessWidget {
           if (stacked) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                details,
-                const SizedBox(height: 14),
-                action,
-              ],
+              children: [details, const SizedBox(height: 14), action],
             );
           }
 
@@ -465,8 +462,8 @@ class _SkinTile extends StatelessWidget {
             Text(
               unlocked
                   ? equipped
-                      ? 'Equipped'
-                      : 'Tap to equip'
+                        ? 'Equipped'
+                        : 'Tap to equip'
                   : '${skin.rarityLabel} • Locked',
               style: TextStyle(
                 color: unlocked ? skin.accent : Colors.white60,
@@ -490,57 +487,98 @@ class _CaseRollDialog extends StatefulWidget {
   State<_CaseRollDialog> createState() => _CaseRollDialogState();
 }
 
-class _CaseRollDialogState extends State<_CaseRollDialog> {
-  Timer? _timer;
-  AvatarSkin? _rollingSkin;
+class _CaseRollDialogState extends State<_CaseRollDialog>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _scrollController;
+  late final Animation<double> _scrollAnimation;
+  late final List<AvatarSkin> _rollSkins;
   bool _revealed = false;
-  int _index = 0;
+  AvatarSkin? _currentSkin;
+
+  static const double _itemWidth = 92;
+  static const double _itemSpacing = 14;
+  static const int _minCycles = 4;
+
+  double get _itemExtent => _itemWidth + _itemSpacing;
 
   @override
   void initState() {
     super.initState();
-    _rollingSkin = budgetBuddySkins.first;
-    _timer = Timer.periodic(const Duration(milliseconds: 120), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
+    _rollSkins = List<AvatarSkin>.generate(
+      budgetBuddySkins.length * 8,
+      (index) => budgetBuddySkins[index % budgetBuddySkins.length],
+    );
 
-      setState(() {
-        _rollingSkin = budgetBuddySkins[_index % budgetBuddySkins.length];
-        _index += 1;
-      });
+    final targetIndex = budgetBuddySkins.indexWhere(
+      (skin) => skin.id == widget.result.skin.id,
+    );
+    final safeTargetIndex = targetIndex < 0 ? 0 : targetIndex;
+    final finalIndex = (_minCycles * budgetBuddySkins.length) + safeTargetIndex;
+    final totalScroll = finalIndex * _itemExtent;
+
+    _currentSkin = _rollSkins.first;
+    _scrollController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 4200),
+    );
+    _scrollAnimation =
+        Tween<double>(begin: 0, end: totalScroll).animate(
+            CurvedAnimation(
+              parent: _scrollController,
+              curve: const Cubic(0.16, 0.86, 0.41, 1.0),
+            ),
+          )
+          ..addListener(_onScrollChanged)
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed) {
+              _onReveal();
+            }
+          });
+
+    _scrollController.forward();
+  }
+
+  void _onScrollChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    final currentIndex = (_scrollAnimation.value / _itemExtent).round();
+    final index = currentIndex.clamp(0, _rollSkins.length - 1);
+    setState(() {
+      _currentSkin = _rollSkins[index];
+    });
+  }
+
+  Future<void> _onReveal() async {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _revealed = true;
+      _currentSkin = widget.result.skin;
     });
 
-    Future<void>.delayed(const Duration(seconds: 2), () {
-      _timer?.cancel();
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _rollingSkin = widget.result.skin;
-        _revealed = true;
-      });
-      GameToast.show(
-        context,
-        title: widget.result.isNewUnlock ? 'New skin unlocked' : 'Duplicate pull',
-        message:
-            '${widget.result.skin.name} • ${widget.result.syncState.message}',
-        icon: Icons.auto_awesome_rounded,
-        accent: widget.result.skin.accent,
-      );
-    });
+    GameToast.show(
+      context,
+      title: widget.result.isNewUnlock ? 'New skin unlocked' : 'Duplicate pull',
+      message:
+          '${widget.result.skin.name} • ${widget.result.syncState.message}',
+      icon: Icons.auto_awesome_rounded,
+      accent: widget.result.skin.accent,
+    );
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _scrollController.removeListener(_onScrollChanged);
+    _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final preview = _rollingSkin ?? widget.result.skin;
+    final preview = _currentSkin ?? widget.result.skin;
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
@@ -563,14 +601,99 @@ class _CaseRollDialogState extends State<_CaseRollDialog> {
             ),
             const SizedBox(height: 18),
             SizedBox(
-              height: 180,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 180),
-                child: Image.asset(
-                  preview.assetPath,
-                  key: ValueKey<String>(preview.id),
-                  fit: BoxFit.contain,
-                ),
+              height: 188,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            preview.accent.withValues(alpha: 0.08),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final trackWidth = constraints.maxWidth;
+                        final offset =
+                            (_scrollAnimation.value -
+                                    (trackWidth / 2 - _itemWidth / 2))
+                                .clamp(0.0, _rollSkins.length * _itemExtent);
+
+                        return Stack(
+                          children: [
+                            Transform.translate(
+                              offset: Offset(-offset, 0),
+                              child: Row(
+                                children: _rollSkins.map((skin) {
+                                  return Container(
+                                    width: _itemWidth,
+                                    margin: const EdgeInsets.only(
+                                      right: _itemSpacing,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.05,
+                                      ),
+                                      borderRadius: BorderRadius.circular(18),
+                                      border: Border.all(
+                                        color: skin.accent.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.all(10),
+                                    child: Image.asset(
+                                      skin.assetPath,
+                                      fit: BoxFit.contain,
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: Center(
+                                  child: Container(
+                                    width: _itemWidth + 8,
+                                    height: 172,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(22),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.88,
+                                        ),
+                                        width: 3,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.45,
+                                          ),
+                                          blurRadius: 20,
+                                          spreadRadius: 2,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -586,9 +709,9 @@ class _CaseRollDialogState extends State<_CaseRollDialog> {
             Text(
               _revealed
                   ? widget.result.isNewUnlock
-                      ? 'Unlocked and equipped automatically.'
-                      : 'Duplicate pull — 40 gold refunded.'
-                  : 'Stopping on a ${preview.rarityLabel.toLowerCase()} reward...',
+                        ? 'Unlocked and equipped automatically.'
+                        : 'Duplicate pull — 40 gold refunded.'
+                  : 'Rolling... stop to reveal your reward.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.72),
@@ -646,9 +769,7 @@ class _CustomizeBackdrop extends StatelessWidget {
         Positioned(
           top: -80,
           left: -40,
-          child: _Aura(
-            color: const Color(0xFFFFD45C).withValues(alpha: 0.14),
-          ),
+          child: _Aura(color: const Color(0xFFFFD45C).withValues(alpha: 0.14)),
         ),
       ],
     );
@@ -670,16 +791,10 @@ class _Aura extends StatelessWidget {
           shape: BoxShape.circle,
           color: color,
           boxShadow: [
-            BoxShadow(
-              color: color,
-              blurRadius: 80,
-              spreadRadius: 14,
-            ),
+            BoxShadow(color: color, blurRadius: 80, spreadRadius: 14),
           ],
         ),
       ),
     );
   }
 }
-
-
