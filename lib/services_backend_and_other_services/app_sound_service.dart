@@ -37,10 +37,7 @@ class AppSoundService {
         AppSoundEffect.shutdown: 'audio/shutdown.wav',
       };
   static final Map<AppSoundEffect, AudioPlayer> _players =
-      <AppSoundEffect, AudioPlayer>{
-        for (final effect in AppSoundEffect.values)
-          effect: AudioPlayer(playerId: 'budget_buddy_${effect.name}'),
-      };
+      <AppSoundEffect, AudioPlayer>{};
 
   static DateTime? _lastPlayedAt;
   static AppSoundEffect? _lastEffect;
@@ -48,15 +45,33 @@ class AppSoundService {
   static bool _playersReady = false;
   static bool enabled = true;
 
+  static bool get _canUseAssetPlayers {
+    if (kIsWeb) {
+      return true;
+    }
+
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+  }
+
   static Future<void> initialize() async {
     _preferences ??= await SharedPreferences.getInstance();
     enabled = _preferences?.getBool(_soundEnabledKey) ?? true;
+
+    if (!_canUseAssetPlayers) {
+      _playersReady = true;
+      return;
+    }
 
     if (_playersReady) {
       return;
     }
 
     _playersReady = true;
+    for (final effect in AppSoundEffect.values) {
+      _players[effect] = AudioPlayer(playerId: 'budget_buddy_${effect.name}');
+    }
+
     for (final player in _players.values) {
       try {
         await player.setReleaseMode(ReleaseMode.stop);

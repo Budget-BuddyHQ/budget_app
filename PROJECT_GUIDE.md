@@ -135,11 +135,11 @@ To add a new skin:
 ## How profile photos work
 
 Current flow:
-`ProfileScreen -> ImagePicker -> SupabaseService.uploadProfileAvatar(...) -> Supabase Storage bucket -> profiles.avatar_url + spending_habits.profile_image_url`
+`ProfileScreen -> ImagePicker -> SupabaseService.uploadProfileAvatar(...) -> Supabase Storage bucket -> user_stats.spending_habits.profile_image_url`
 
-Why both places exist:
-- `profiles.avatar_url` is the clean account-level location for cross-screen profile metadata
+Why this location exists:
 - `spending_habits.profile_image_url` keeps the active avatar available inside the already-loaded `UserStats` model, so UI can update immediately
+- The `profiles` table is still used for account metadata such as `role` and `disabled`, but it does not need an `avatar_url` column
 
 If you expand this later:
 1. Add image cropping before upload.
