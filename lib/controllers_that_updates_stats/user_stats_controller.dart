@@ -57,6 +57,7 @@ class UserStatsController extends ChangeNotifier {
   StreamSubscription<UserStats>? _subscription;
   StreamSubscription<AuthState>? _authSubscription;
   bool _initialized = false;
+  static const Duration _remoteSyncTimeout = Duration(seconds: 8);
 
   UserStats get stats => _stats;
   String get userId => _userId;
@@ -762,20 +763,59 @@ class UserStatsController extends ChangeNotifier {
       return;
     }
 
-    _isLoading = true;
-    notifyListeners();
+    final syncUserId = currentUser.id;
+    if (_userId != syncUserId) {
+      _isLoading = true;
+      notifyListeners();
+    }
 
-    final provisioned = await _service.loadOrCreateUserStatsForUser(
+    final cachedStats = await _service.loadCachedUserStatsForUser(
       user: currentUser,
     );
-    _userId = currentUser.id;
-    _stats = provisioned.stats;
+    if (_service.currentUser?.id != syncUserId) {
+      return;
+    }
+
+    _userId = syncUserId;
+    _stats = cachedStats;
     _isLoading = false;
     _isSaving = false;
-    _statusMessage = provisioned.syncState.message;
+    _statusMessage = _service.isSupabaseConnected
+        ? 'Showing saved progress. Syncing cloud data...'
+        : 'Showing saved progress on this device.';
     notifyListeners();
 
     await _attachRealtimeStream();
+    unawaited(_refreshRemoteUserStats(currentUser));
+  }
+
+  Future<void> _refreshRemoteUserStats(User user) async {
+    try {
+      final provisioned = await _service
+          .loadOrCreateUserStatsForUser(user: user)
+          .timeout(_remoteSyncTimeout);
+      if (_service.currentUser?.id != user.id) {
+        return;
+      }
+
+      _userId = user.id;
+      _stats = provisioned.stats;
+      _isLoading = false;
+      _isSaving = false;
+      _statusMessage = provisioned.syncState.message;
+      notifyListeners();
+
+      await _attachRealtimeStream();
+    } catch (error) {
+      debugPrint('Supabase profile sync timed out, using cached data: $error');
+      if (_service.currentUser?.id != user.id) {
+        return;
+      }
+      _isLoading = false;
+      _isSaving = false;
+      _statusMessage = 'Showing saved progress. Cloud sync will retry later.';
+      notifyListeners();
+    }
   }
 
   Future<void> _resetToSignedOutState({
@@ -818,10 +858,17 @@ class UserStatsController extends ChangeNotifier {
 
   Future<void> _attachRealtimeStream() async {
     await _subscription?.cancel();
-    _subscription = _service.watchUserStats(_userId).listen((freshStats) {
-      _stats = freshStats;
-      notifyListeners();
-    });
+    _subscription = _service
+        .watchUserStats(_userId)
+        .listen(
+          (freshStats) {
+            _stats = freshStats;
+            notifyListeners();
+          },
+          onError: (Object error) {
+            debugPrint('User stats realtime stream failed: $error');
+          },
+        );
   }
 
   List<double> _nextPortfolioSeries(double delta) {

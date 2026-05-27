@@ -479,38 +479,121 @@ class _ProfileInsightCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _InsightMetric(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stacked = constraints.maxWidth < 620;
+          final metrics = [
+            _InsightMetric(
               label: 'Gold',
               value: '${stats.gold}',
               icon: Icons.account_balance_wallet_rounded,
               accent: const Color(0xFFF2C66D),
             ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _InsightMetric(
+            _InsightMetric(
               label: 'Literacy',
               value: '${stats.literacyPoints}',
               icon: Icons.school_rounded,
               accent: const Color(0xFF69C6FF),
             ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _InsightMetric(
+            _InsightMetric(
               label: 'Level',
               value: '${stats.level}',
               icon: Icons.workspace_premium_rounded,
               accent: const Color(0xFF4BD2A3),
+            ),
+          ];
+
+          final metricRow = stacked
+              ? Column(
+                  children: [
+                    for (var index = 0; index < metrics.length; index++) ...[
+                      metrics[index],
+                      if (index != metrics.length - 1)
+                        const SizedBox(height: 10),
+                    ],
+                  ],
+                )
+              : Row(
+                  children: [
+                    for (var index = 0; index < metrics.length; index++) ...[
+                      Expanded(child: metrics[index]),
+                      if (index != metrics.length - 1)
+                        const SizedBox(width: 12),
+                    ],
+                  ],
+                );
+
+          return Column(
+            children: [
+              metricRow,
+              const SizedBox(height: 14),
+              const _BadgePreview(),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _BadgePreview extends StatelessWidget {
+  const _BadgePreview();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF4BD2A3).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF4BD2A3).withValues(alpha: 0.14),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF2C66D).withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.military_tech_rounded,
+              color: Color(0xFFF2C66D),
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Badge Showcase',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Reserved for earned finance badges.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.64),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -535,31 +618,45 @@ class _InsightMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: accent.withValues(alpha: 0.18)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Icon(icon, color: accent, size: 20),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(16),
             ),
+            child: Icon(icon, color: accent, size: 28),
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.70),
-              fontWeight: FontWeight.w700,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.70),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

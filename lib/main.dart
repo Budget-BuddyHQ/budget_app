@@ -21,6 +21,7 @@ import 'screens_minigames_admin_etc/onboarding/welcome_screen.dart';
 import 'services_backend_and_other_services/app_sound_service.dart';
 import 'services_backend_and_other_services/supabase_service.dart';
 import 'themes_colors/app_theme.dart';
+import 'widgets_custom_lotties/branded_loading.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -127,47 +128,29 @@ class MyApp extends StatelessWidget {
 class _AppBootstrapGate extends StatelessWidget {
   const _AppBootstrapGate();
 
-  Future<bool> _isUserDisabled() async {
-    final client = Supabase.instance.client;
-    final user = client.auth.currentUser;
-
-    if (user == null) return false;
-
-    try {
-      final response = await client
-          .from('profiles')
-          .select('disabled')
-          .eq('id', user.id)
-          .maybeSingle();
-
-      if (response == null) {
-        return false;
-      }
-
-      return response['disabled'] == true;
-    } catch (_) {
-      return false;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final service = SupabaseService.instance;
     return StreamBuilder<AuthState>(
-      stream: Supabase.instance.client.auth.onAuthStateChange,
+      stream: service.authStateChanges(),
       builder: (context, snapshot) {
-        final user = Supabase.instance.client.auth.currentUser;
+        final user = service.currentUser;
 
         if (user == null) {
+          if (!service.isSupabaseConnected) {
+            return const DashboardShell();
+          }
           return const WelcomeScreen();
         }
 
         return FutureBuilder<bool>(
           key: ValueKey(user.id),
-          future: _isUserDisabled(),
+          future: service.isCurrentUserDisabled(),
           builder: (context, snap) {
             if (snap.connectionState == ConnectionState.waiting) {
               return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
+                backgroundColor: Color(0xFF071711),
+                body: BrandedLoading(message: 'Checking account...'),
               );
             }
 
@@ -204,7 +187,7 @@ class _DisabledScreen extends StatelessWidget {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
-                await Supabase.instance.client.auth.signOut();
+                await SupabaseService.instance.signOut();
               },
               child: const Text('Log Out'),
             ),
@@ -214,4 +197,3 @@ class _DisabledScreen extends StatelessWidget {
     );
   }
 }
-

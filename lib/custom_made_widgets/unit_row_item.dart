@@ -27,10 +27,10 @@ class UnitRowItem extends StatelessWidget {
             ? 3
             : 2;
         final mainAxisExtent = availableWidth >= 900
-            ? 172.0
+            ? 184.0
             : availableWidth >= 420
-            ? 164.0
-            : 154.0;
+            ? 174.0
+            : 164.0;
 
         return GridView.builder(
           itemCount: lessons.length,
@@ -108,7 +108,7 @@ class _UnitLessonIcon extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: EdgeInsets.all(isCompactCard ? 10 : 12),
+          padding: EdgeInsets.all(isCompactCard ? 12 : 14),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
@@ -129,8 +129,8 @@ class _UnitLessonIcon extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: isCompactCard ? 34 : 38,
-                height: isCompactCard ? 34 : 38,
+                width: isCompactCard ? 44 : 52,
+                height: isCompactCard ? 44 : 52,
                 decoration: BoxDecoration(
                   color: palette.fill,
                   borderRadius: BorderRadius.circular(12),
@@ -139,17 +139,17 @@ class _UnitLessonIcon extends StatelessWidget {
                 child: Icon(
                   icon,
                   color: palette.foreground,
-                  size: isCompactCard ? 20 : 22,
+                  size: isCompactCard ? 25 : 30,
                 ),
               ),
-              SizedBox(height: isCompactCard ? 8 : 10),
+              SizedBox(height: isCompactCard ? 10 : 12),
               Text(
                 lesson.title,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: Color(0xFFF7FFFB),
-                  fontSize: isCompactCard ? 11.2 : 12,
+                  fontSize: isCompactCard ? 11.8 : 12.8,
                   fontWeight: FontWeight.w800,
                   height: 1.3,
                 ),
