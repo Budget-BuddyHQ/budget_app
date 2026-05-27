@@ -250,8 +250,8 @@ class _DashboardHeader extends StatelessWidget {
           );
 
           final illustration = const AmbientLottieCard(
-            assetPath: 'assets/animations/academy_loop.json',
-            semanticLabel: 'Animated dashboard learning illustration',
+            assetPath: 'assets/animations/turtlemoving.json',
+            semanticLabel: 'Animated Budget Buddy turtle illustration',
             height: 150,
             width: 160,
             padding: EdgeInsets.all(12),
