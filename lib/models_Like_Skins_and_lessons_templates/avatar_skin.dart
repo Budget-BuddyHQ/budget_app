@@ -1,12 +1,41 @@
 import 'package:flutter/material.dart';
 
-enum SkinRarity {
-  common,
-  rare,
-  epic,
-  Legendary,
-  Mythic,
+enum SkinRarity { common, rare, epic, legendary, mythic }
+
+@immutable
+class SkinRarityOdds {
+  const SkinRarityOdds({
+    required this.rarity,
+    required this.weight,
+    required this.refundGold,
+  });
+
+  final SkinRarity rarity;
+  final int weight;
+  final int refundGold;
+
+  double get percent => weight / skinCaseTotalWeight * 100;
+
+  String get oddsLabel {
+    if (rarity == SkinRarity.legendary) {
+      return '1 in 1,000';
+    }
+    if (rarity == SkinRarity.mythic) {
+      return '1 in 10,000';
+    }
+    return '${percent.toStringAsFixed(percent >= 1 ? 1 : 2)}%';
+  }
 }
+
+const int skinCaseTotalWeight = 10000;
+
+const List<SkinRarityOdds> skinCaseRarityOdds = <SkinRarityOdds>[
+  SkinRarityOdds(rarity: SkinRarity.common, weight: 6699, refundGold: 40),
+  SkinRarityOdds(rarity: SkinRarity.rare, weight: 2500, refundGold: 70),
+  SkinRarityOdds(rarity: SkinRarity.epic, weight: 790, refundGold: 110),
+  SkinRarityOdds(rarity: SkinRarity.legendary, weight: 10, refundGold: 180),
+  SkinRarityOdds(rarity: SkinRarity.mythic, weight: 1, refundGold: 300),
+];
 
 @immutable
 class AvatarSkin {
@@ -16,7 +45,6 @@ class AvatarSkin {
     required this.assetPath,
     required this.rarity,
     required this.accent,
-    required this.weight,
   });
 
   final String id;
@@ -24,16 +52,18 @@ class AvatarSkin {
   final String assetPath;
   final SkinRarity rarity;
   final Color accent;
-  final int weight;
 
   String get rarityLabel => switch (rarity) {
-        SkinRarity.common => 'Common',
-        SkinRarity.rare => 'Rare',
-        SkinRarity.epic => 'Epic',
-        SkinRarity.Legendary => 'Legendary',
-        SkinRarity.Mythic => 'Mythic',
-        
-      };
+    SkinRarity.common => 'Common',
+    SkinRarity.rare => 'Rare',
+    SkinRarity.epic => 'Epic',
+    SkinRarity.legendary => 'Legendary',
+    SkinRarity.mythic => 'Mythic',
+  };
+}
+
+SkinRarityOdds oddsForRarity(SkinRarity rarity) {
+  return skinCaseRarityOdds.firstWhere((odds) => odds.rarity == rarity);
 }
 
 const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
@@ -43,7 +73,6 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     assetPath: 'assets/images/turtles/Wface_no_bg_l7nvmfum.png',
     rarity: SkinRarity.common,
     accent: Color(0xFF85EFAC),
-    weight: 58,
   ),
   AvatarSkin(
     id: 'coin_shell',
@@ -51,7 +80,6 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     assetPath: 'assets/images/turtles/cuteBigHead_no_bg_3xfq2ne3.png',
     rarity: SkinRarity.common,
     accent: Color(0xFFFFD45C),
-    weight: 30,
   ),
   AvatarSkin(
     id: 'emerald_strider',
@@ -59,23 +87,20 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     assetPath: 'assets/images/turtles/purplewithChestBack_no_bg_8cqt48zg.png',
     rarity: SkinRarity.rare,
     accent: Color(0xFF7CF3C7),
-    weight: 10,
   ),
   AvatarSkin(
     id: 'guild_runner',
     name: 'Guild Runner',
     assetPath: 'assets/images/turtles/walkingredshell_no_bg_63pfbf03.png',
-    rarity: SkinRarity.epic,
-    accent: Color(0xFF58C7FF),
-    weight: 2,
+    rarity: SkinRarity.legendary,
+    accent: Color(0xFFFFD45C),
   ),
   AvatarSkin(
     id: 'cyber_turtle',
     name: 'Cyber Turtle',
     assetPath: 'assets/images/turtles/BlueDiamond_no_bg_3napzapt.png',
-    rarity: SkinRarity.rare,
-    accent: Color(0xFF58C7FF),
-    weight: 9,
+    rarity: SkinRarity.epic,
+    accent: Color(0xFFB9A5FF),
   ),
   AvatarSkin(
     id: 'piggy_bank_turtle',
@@ -83,7 +108,6 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     assetPath: 'assets/images/turtles/sodapopVibe_no_bg_w331x5ng.png',
     rarity: SkinRarity.common,
     accent: Color(0xFFFFD45C),
-    weight: 20,
   ),
   AvatarSkin(
     id: 'explorer_turtle',
@@ -91,15 +115,14 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     assetPath: 'assets/images/turtles/cuteTropicalhandDrawn_no_bg_i3ipxxln.png',
     rarity: SkinRarity.rare,
     accent: Color(0xFF85EFAC),
-    weight: 12,
   ),
   AvatarSkin(
     id: 'starlight_turtle',
     name: 'Starlight',
-    assetPath: 'assets/images/turtles/catearsBlueWithDiamond_no_bg_vyk193le.png',
-    rarity: SkinRarity.epic,
-    accent: Color(0xFFB9A5FF),
-    weight: 4,
+    assetPath:
+        'assets/images/turtles/catearsBlueWithDiamond_no_bg_vyk193le.png',
+    rarity: SkinRarity.mythic,
+    accent: Color(0xFFFF6B9D),
   ),
   AvatarSkin(
     id: 'trailblazer',
@@ -107,9 +130,7 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     assetPath: 'assets/images/turtles/player_topview.png',
     rarity: SkinRarity.common,
     accent: Color(0xFFFFC96B),
-    weight: 20,
   ),
-  
 ];
 
 final Set<String> budgetBuddySkinIds = budgetBuddySkins

@@ -28,6 +28,7 @@ class CustomizeScreen extends StatefulWidget {
 
 class _CustomizeScreenState extends State<CustomizeScreen> {
   bool _openingCase = false;
+  bool _showCaseOdds = false;
   late AvatarSkin skin;
   bool _initalized = false;
   Future<void> _openCase() async {
@@ -126,7 +127,11 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
                           _StorePanel(
                             gold: stats.gold,
                             isOpeningCase: _openingCase,
+                            showOdds: _showCaseOdds,
                             onOpenCase: _openCase,
+                            onToggleOdds: () {
+                              setState(() => _showCaseOdds = !_showCaseOdds);
+                            },
                           ),
                           const SizedBox(height: 18),
                           const Text(
@@ -233,31 +238,16 @@ class _CharacterPreviewCard extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Container(
-                  width: 220,
-                  height: 220,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        equippedSkin.accent.withValues(alpha: 0.26),
-                        Colors.white.withValues(alpha: 0.04),
-                      ],
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    _RarityAura(
+                      skin: equippedSkin,
+                      size: 230,
+                      imageSize: 160,
+                      showImage: true,
                     ),
-                    border: Border.all(
-                      color: equippedSkin.accent.withValues(alpha: 0.34),
-                      width: 2,
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(22),
-                    child: Image.asset(
-                      equippedSkin.assetPath,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -289,12 +279,16 @@ class _StorePanel extends StatelessWidget {
   const _StorePanel({
     required this.gold,
     required this.isOpeningCase,
+    required this.showOdds,
     required this.onOpenCase,
+    required this.onToggleOdds,
   });
 
   final int gold;
   final bool isOpeningCase;
+  final bool showOdds;
   final VoidCallback onOpenCase;
+  final VoidCallback onToggleOdds;
 
   @override
   Widget build(BuildContext context) {
@@ -308,7 +302,7 @@ class _StorePanel extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final stacked = constraints.maxWidth < 430;
-          final action = GestureDetector(
+          final openAction = GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: isOpeningCase
                 ? null
@@ -338,6 +332,34 @@ class _StorePanel extends StatelessWidget {
                   isOpeningCase ? 'Rolling...' : 'Open Case',
                   style: const TextStyle(
                     color: Color(0xFF062C21),
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          final oddsAction = GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onToggleOdds();
+            },
+            child: Container(
+              width: stacked ? double.infinity : 120,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: showOdds ? 0.16 : 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: showOdds ? 0.30 : 0.14),
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  showOdds ? 'Hide Odds' : 'View Odds',
+                  style: const TextStyle(
+                    color: Colors.white,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -375,21 +397,120 @@ class _StorePanel extends StatelessWidget {
             ],
           );
 
-          if (stacked) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [details, const SizedBox(height: 14), action],
-            );
-          }
+          final actions = Column(
+            children: [openAction, const SizedBox(height: 10), oddsAction],
+          );
 
-          return Row(
+          final header = stacked
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [details, const SizedBox(height: 14), actions],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: details),
+                    const SizedBox(width: 14),
+                    actions,
+                  ],
+                );
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: details),
-              const SizedBox(width: 14),
-              action,
+              header,
+              AnimatedCrossFade(
+                firstChild: const SizedBox(width: double.infinity),
+                secondChild: const Padding(
+                  padding: EdgeInsets.only(top: 16),
+                  child: _CaseOddsPanel(),
+                ),
+                crossFadeState: showOdds
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                duration: const Duration(milliseconds: 220),
+              ),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _CaseOddsPanel extends StatelessWidget {
+  const _CaseOddsPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF061D16).withValues(alpha: 0.86),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Case odds',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...skinCaseRarityOdds.map((odds) {
+            final label = _rarityLabel(odds.rarity);
+            final color = _rarityAuraColor(odds.rarity);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.45),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    odds.oddsLabel,
+                    style: TextStyle(color: color, fontWeight: FontWeight.w900),
+                  ),
+                ],
+              ),
+            );
+          }),
+          Text(
+            'Duplicate pulls refund gold based on rarity.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.60),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -589,13 +710,7 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
   }
 
   int _getRefundAmount(SkinRarity rarity) {
-    return switch (rarity) {
-      SkinRarity.common => 40,
-      SkinRarity.rare => 60,
-      SkinRarity.epic => 90,
-      SkinRarity.Legendary => 140,
-      SkinRarity.Mythic => 200,
-    };
+    return oddsForRarity(rarity).refundGold;
   }
 
   @override
@@ -737,7 +852,12 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
             ),
             const SizedBox(height: 12),
             if (_revealed)
-              _RarityAura(skin: preview)
+              _RarityAura(
+                skin: preview,
+                size: 132,
+                imageSize: 96,
+                showImage: true,
+              )
             else
               const SizedBox.shrink(),
             const SizedBox(height: 12),
@@ -867,21 +987,8 @@ class _Aura extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auraColor = switch (skin.rarity) {
-      SkinRarity.common => const Color(0xFF85EFAC),
-      SkinRarity.rare => const Color(0xFF58C7FF),
-      SkinRarity.epic => const Color(0xFFB9A5FF),
-      SkinRarity.Legendary => const Color(0xFFFFD45C),
-      SkinRarity.Mythic => const Color(0xFFFF6B9D),
-    };
-
-    final glowIntensity = switch (skin.rarity) {
-      SkinRarity.common => 0.12,
-      SkinRarity.rare => 0.18,
-      SkinRarity.epic => 0.22,
-      SkinRarity.Legendary => 0.28,
-      SkinRarity.Mythic => 0.32,
-    };
+    final auraColor = _rarityAuraColor(skin.rarity);
+    final glowIntensity = _rarityGlowIntensity(skin.rarity);
 
     return IgnorePointer(
       child: Container(
@@ -904,49 +1011,116 @@ class _Aura extends StatelessWidget {
 }
 
 class _RarityAura extends StatelessWidget {
-  const _RarityAura({required this.skin});
+  const _RarityAura({
+    required this.skin,
+    this.size = 120,
+    this.imageSize = 86,
+    this.showImage = false,
+  });
 
   final AvatarSkin skin;
+  final double size;
+  final double imageSize;
+  final bool showImage;
 
   @override
   Widget build(BuildContext context) {
-    final auraColor = switch (skin.rarity) {
-      SkinRarity.common => const Color(0xFF85EFAC),
-      SkinRarity.rare => const Color(0xFF58C7FF),
-      SkinRarity.epic => const Color(0xFFB9A5FF),
-      SkinRarity.Legendary => const Color(0xFFFFD45C),
-      SkinRarity.Mythic => const Color(0xFFFF6B9D),
-    };
-
-    final glowIntensity = switch (skin.rarity) {
-      SkinRarity.common => 0.12,
-      SkinRarity.rare => 0.18,
-      SkinRarity.epic => 0.22,
-      SkinRarity.Legendary => 0.28,
-      SkinRarity.Mythic => 0.32,
-    };
+    final auraColor = _rarityAuraColor(skin.rarity);
+    final glowIntensity = _rarityGlowIntensity(skin.rarity);
 
     return IgnorePointer(
-      child: Container(
-        width: 120,
-        height: 120,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: auraColor.withValues(alpha: glowIntensity),
-          boxShadow: [
-            BoxShadow(
-              color: auraColor.withValues(alpha: glowIntensity * 1.5),
-              blurRadius: 40,
-              spreadRadius: 8,
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    auraColor.withValues(alpha: glowIntensity * 1.3),
+                    auraColor.withValues(alpha: glowIntensity * 0.52),
+                    Colors.white.withValues(alpha: 0.04),
+                  ],
+                ),
+                border: Border.all(
+                  color: auraColor.withValues(alpha: 0.42),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: auraColor.withValues(alpha: glowIntensity * 1.5),
+                    blurRadius: size * 0.34,
+                    spreadRadius: size * 0.06,
+                  ),
+                  BoxShadow(
+                    color: auraColor.withValues(alpha: glowIntensity * 0.7),
+                    blurRadius: size * 0.50,
+                    spreadRadius: size * 0.12,
+                  ),
+                ],
+              ),
             ),
-            BoxShadow(
-              color: auraColor.withValues(alpha: glowIntensity * 0.7),
-              blurRadius: 60,
-              spreadRadius: 14,
+            if (showImage)
+              SizedBox(
+                width: imageSize,
+                height: imageSize,
+                child: Image.asset(skin.assetPath, fit: BoxFit.contain),
+              ),
+            Positioned(
+              bottom: size * 0.12,
+              child: Container(
+                width: size * 0.42,
+                height: size * 0.06,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.24),
+                      blurRadius: size * 0.08,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
   }
+}
+
+Color _rarityAuraColor(SkinRarity rarity) {
+  return switch (rarity) {
+    SkinRarity.common => const Color(0xFF85EFAC),
+    SkinRarity.rare => const Color(0xFF58C7FF),
+    SkinRarity.epic => const Color(0xFFB9A5FF),
+    SkinRarity.legendary => const Color(0xFFFFD45C),
+    SkinRarity.mythic => const Color(0xFFFF6B9D),
+  };
+}
+
+double _rarityGlowIntensity(SkinRarity rarity) {
+  return switch (rarity) {
+    SkinRarity.common => 0.12,
+    SkinRarity.rare => 0.18,
+    SkinRarity.epic => 0.22,
+    SkinRarity.legendary => 0.30,
+    SkinRarity.mythic => 0.36,
+  };
+}
+
+String _rarityLabel(SkinRarity rarity) {
+  return switch (rarity) {
+    SkinRarity.common => 'Common',
+    SkinRarity.rare => 'Rare',
+    SkinRarity.epic => 'Epic',
+    SkinRarity.legendary => 'Legendary',
+    SkinRarity.mythic => 'Mythic',
+  };
 }
