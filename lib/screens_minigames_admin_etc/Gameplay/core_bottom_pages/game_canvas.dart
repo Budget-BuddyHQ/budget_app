@@ -1,4 +1,5 @@
 import 'package:flame/game.dart';
+import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +18,12 @@ class GameCanvas extends StatefulWidget {
 
 class _GameCanvasState extends State<GameCanvas> {
   late final BudgetBuddyGame _game;
+  int? _movementPointer;
+  Offset? _movementStart;
+  Offset? _lastMovementPosition;
+  bool _isDraggingMovement = false;
+
+  static const double _dragDeadZone = 12;
 
   @override
   void initState() {
@@ -93,6 +100,66 @@ class _GameCanvasState extends State<GameCanvas> {
     }
   }
 
+  bool _isInJoystickZone(Offset position, Size size) {
+    const joystickTouchSize = 156.0;
+    return position.dx <= joystickTouchSize &&
+        position.dy >= size.height - joystickTouchSize;
+  }
+
+  void _beginPointerMovement(PointerDownEvent event, Size size) {
+    if (_movementPointer != null ||
+        _isInJoystickZone(event.localPosition, size)) {
+      return;
+    }
+
+    _movementPointer = event.pointer;
+    _movementStart = event.localPosition;
+    _lastMovementPosition = event.localPosition;
+    _isDraggingMovement = false;
+  }
+
+  void _updatePointerMovement(PointerMoveEvent event) {
+    if (_movementPointer != event.pointer) {
+      return;
+    }
+
+    _lastMovementPosition = event.localPosition;
+    final start = _movementStart;
+    if (start == null) {
+      return;
+    }
+
+    final dragOffset = event.localPosition - start;
+    if (!_isDraggingMovement && dragOffset.distance < _dragDeadZone) {
+      return;
+    }
+
+    _isDraggingMovement = true;
+    _game.steerPlayerWithCanvasDirection(
+      Vector2(dragOffset.dx, dragOffset.dy),
+    );
+  }
+
+  void _endPointerMovement(PointerEvent event) {
+    if (_movementPointer != event.pointer) {
+      return;
+    }
+
+    if (!_isDraggingMovement) {
+      final destination = _lastMovementPosition ?? event.localPosition;
+      _game.movePlayerTowardCanvasPosition(
+        Vector2(destination.dx, destination.dy),
+      );
+    } else {
+      _game.clearPointerMovement();
+    }
+
+    _movementPointer = null;
+    _movementStart = null;
+    _lastMovementPosition = null;
+    _isDraggingMovement = false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return OrientationScope(
@@ -122,9 +189,29 @@ class _GameCanvasState extends State<GameCanvas> {
                                     color: Colors.white.withValues(alpha: 0.10),
                                   ),
                                 ),
-                                child: GameWidget<BudgetBuddyGame>(
-                                  game: _game,
-                                  autofocus: true,
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final gameSize = Size(
+                                      constraints.maxWidth,
+                                      constraints.maxHeight,
+                                    );
+
+                                    return Listener(
+                                      behavior: HitTestBehavior.translucent,
+                                      onPointerDown: (event) =>
+                                          _beginPointerMovement(
+                                            event,
+                                            gameSize,
+                                          ),
+                                      onPointerMove: _updatePointerMovement,
+                                      onPointerUp: _endPointerMovement,
+                                      onPointerCancel: _endPointerMovement,
+                                      child: GameWidget<BudgetBuddyGame>(
+                                        game: _game,
+                                        autofocus: true,
+                                      ),
+                                    );
+                                  },
                                 ),
                               ),
                             ),
@@ -460,4 +547,3 @@ class _CombatOverlay extends StatelessWidget {
     );
   }
 }
-

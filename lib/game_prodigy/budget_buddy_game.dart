@@ -14,9 +14,8 @@ import 'components/player_component.dart';
 
 class BudgetBuddyGame extends FlameGame
     with HasCollisionDetection, HasKeyboardHandlerComponents, KeyboardEvents {
-  BudgetBuddyGame({
-    required AdventureStateController adventureState,
-  }) : _adventureState = adventureState;
+  BudgetBuddyGame({required AdventureStateController adventureState})
+    : _adventureState = adventureState;
 
   final AdventureStateController _adventureState;
 
@@ -29,6 +28,7 @@ class BudgetBuddyGame extends FlameGame
   final List<EnemyMonsterComponent> _monsters = <EnemyMonsterComponent>[];
   final List<Rect> _collisionRects = <Rect>[];
   EnemyMonsterComponent? _activeEncounter;
+  static final Vector2 _cameraAnchorRatio = Vector2(0.46, 0.42);
 
   @override
   Color backgroundColor() => const Color(0xFF071711);
@@ -56,9 +56,11 @@ class BudgetBuddyGame extends FlameGame
     _collisionRects
       ..clear()
       ..addAll(_readCollisionRects(loadedMap?.tileMap));
-    final spawnPoint = _readSpawnPoint(loadedMap?.tileMap, 'player_spawn') ??
+    final spawnPoint =
+        _readSpawnPoint(loadedMap?.tileMap, 'player_spawn') ??
         Vector2(effectiveMapSize.x * 0.4, effectiveMapSize.y * 0.5);
-    final enemySpawn = _readSpawnPoint(loadedMap?.tileMap, 'enemy_spawn') ??
+    final enemySpawn =
+        _readSpawnPoint(loadedMap?.tileMap, 'enemy_spawn') ??
         Vector2(effectiveMapSize.x * 0.62, effectiveMapSize.y * 0.52);
 
     joystick = JoystickComponent(
@@ -91,21 +93,18 @@ class BudgetBuddyGame extends FlameGame
     add(_cameraTarget);
 
     _spawnEnemy(enemySpawn, 'Ledger Slime');
-    _spawnEnemy(
-      Vector2(enemySpawn.x + 180, enemySpawn.y + 180),
-      'Invoice Imp',
-    );
+    _spawnEnemy(Vector2(enemySpawn.x + 180, enemySpawn.y + 180), 'Invoice Imp');
     _spawnEnemy(
       Vector2(enemySpawn.x - 220, enemySpawn.y + 260),
       'Impulse Goblin',
     );
-    _spawnEnemy(
-      Vector2(enemySpawn.x + 260, enemySpawn.y - 180),
-      'Fee Phantom',
-    );
+    _spawnEnemy(Vector2(enemySpawn.x + 260, enemySpawn.y - 180), 'Fee Phantom');
 
     camera.viewfinder.zoom = 1.1;
-    camera.viewfinder.anchor = const Anchor(0.46, 0.42);
+    camera.viewfinder.anchor = Anchor(
+      _cameraAnchorRatio.x,
+      _cameraAnchorRatio.y,
+    );
     camera.follow(_cameraTarget);
   }
 
@@ -149,6 +148,43 @@ class BudgetBuddyGame extends FlameGame
     _player?.setKeyboardState(keysPressed);
     super.onKeyEvent(event, keysPressed);
     return KeyEventResult.handled;
+  }
+
+  void movePlayerTowardCanvasPosition(Vector2 canvasPosition) {
+    if (_activeEncounter != null || _adventureState.combatVisible) {
+      clearPointerMovement();
+      return;
+    }
+
+    _player?.setPointerTarget(_canvasToWorldPosition(canvasPosition));
+  }
+
+  void steerPlayerWithCanvasDirection(Vector2 canvasDirection) {
+    if (_activeEncounter != null || _adventureState.combatVisible) {
+      clearPointerMovement();
+      return;
+    }
+
+    _player?.setPointerDirection(canvasDirection);
+  }
+
+  void clearPointerMovement() {
+    _player?.clearPointerTarget();
+    _player?.clearPointerDirection();
+  }
+
+  Vector2 _canvasToWorldPosition(Vector2 canvasPosition) {
+    final anchorPoint = Vector2(
+      size.x * _cameraAnchorRatio.x,
+      size.y * _cameraAnchorRatio.y,
+    );
+    final worldPosition =
+        camera.viewfinder.position +
+        ((canvasPosition - anchorPoint) / camera.viewfinder.zoom);
+
+    worldPosition.x = worldPosition.x.clamp(0, _mapPixelSize.x).toDouble();
+    worldPosition.y = worldPosition.y.clamp(0, _mapPixelSize.y).toDouble();
+    return worldPosition;
   }
 
   void resolveCombat({required bool victory}) {
@@ -220,12 +256,8 @@ class BudgetBuddyGame extends FlameGame
     }
     return collisionLayer.objects
         .map(
-          (object) => Rect.fromLTWH(
-            object.x,
-            object.y,
-            object.width,
-            object.height,
-          ),
+          (object) =>
+              Rect.fromLTWH(object.x, object.y, object.width, object.height),
         )
         .toList(growable: false);
   }
@@ -240,7 +272,10 @@ class BudgetBuddyGame extends FlameGame
     }
     for (final object in spawnLayer.objects) {
       if (object.name == objectName) {
-        return Vector2(object.x + (object.width / 2), object.y + (object.height / 2));
+        return Vector2(
+          object.x + (object.width / 2),
+          object.y + (object.height / 2),
+        );
       }
     }
     return null;

@@ -368,6 +368,7 @@ class SupabaseService {
   static final SupabaseService instance = SupabaseService._();
 
   static const String userStatsTable = 'user_stats';
+  static const String leaderboardView = 'leaderboard';
   static const String schemaSql = '''
 create table if not exists public.user_stats (
   id text primary key,
@@ -382,6 +383,69 @@ create table if not exists public.user_stats (
   holdings jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default timezone('utc', now())
 );
+
+grant select, insert, update on table public.user_stats to authenticated;
+
+alter table public.user_stats enable row level security;
+
+create or replace view public.leaderboard as
+select
+  id,
+  username,
+  literacy_points,
+  xp,
+  gold,
+  updated_at
+from public.user_stats;
+
+grant select on table public.leaderboard to authenticated;
+
+do \$\$
+begin
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'user_stats'
+      and policyname = 'Users can read their own stats'
+  ) then
+    create policy "Users can read their own stats"
+      on public.user_stats
+      for select
+      to authenticated
+      using (id::text = (select auth.uid())::text);
+  end if;
+
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'user_stats'
+      and policyname = 'Users can create their own stats'
+  ) then
+    create policy "Users can create their own stats"
+      on public.user_stats
+      for insert
+      to authenticated
+      with check (id::text = (select auth.uid())::text);
+  end if;
+
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'user_stats'
+      and policyname = 'Users can update their own stats'
+  ) then
+    create policy "Users can update their own stats"
+      on public.user_stats
+      for update
+      to authenticated
+      using (id::text = (select auth.uid())::text)
+      with check (id::text = (select auth.uid())::text);
+  end if;
+end
+\$\$;
 ''';
 
   final StreamController<UserStats> _localController =
@@ -865,7 +929,7 @@ create table if not exists public.user_stats (
 
     try {
       final response = await Supabase.instance.client
-          .from(userStatsTable)
+          .from(leaderboardView)
           .select('id, username, literacy_points, xp, gold')
           .order('literacy_points', ascending: false)
           .order('xp', ascending: false)
