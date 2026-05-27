@@ -576,13 +576,14 @@ end
 
     try {
       final response = await client
-          .from('profiles')
-          .select('avatar_url')
+          .from(userStatsTable)
+          .select('spending_habits')
           .eq('id', user.id)
           .maybeSingle();
-      avatarUrl = _readString(response?['avatar_url']) ?? avatarUrl;
+      final habits = _readMap(response?['spending_habits']);
+      avatarUrl = _readString(habits['profile_image_url']) ?? avatarUrl;
     } catch (error) {
-      debugPrint('Supabase profile avatar lookup failed: $error');
+      debugPrint('Supabase user stats avatar lookup failed: $error');
     }
 
     if (role.trim().isEmpty && avatarUrl.trim().isEmpty) {
@@ -687,10 +688,26 @@ end
       return;
     }
 
-    await Supabase.instance.client
-        .from('profiles')
-        .update(<String, dynamic>{'avatar_url': avatarUrl})
-        .eq('id', userId);
+    try {
+      final response = await Supabase.instance.client
+          .from(userStatsTable)
+          .select('spending_habits')
+          .eq('id', userId)
+          .maybeSingle();
+      final currentHabits = _readMap(response?['spending_habits']);
+      await Supabase.instance.client
+          .from(userStatsTable)
+          .update(<String, dynamic>{
+            'spending_habits': <String, dynamic>{
+              ...currentHabits,
+              'profile_image_url': avatarUrl,
+            },
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', userId);
+    } catch (error) {
+      debugPrint('Supabase profile image URL update failed: $error');
+    }
   }
 
   Future<UserStats> loadUserStats(String userId) async {

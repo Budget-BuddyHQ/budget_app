@@ -589,18 +589,16 @@ class UserStatsController extends ChangeNotifier {
     }
 
     final unlocked = _stats.unlockedSkins.toSet();
-    final availablePool = budgetBuddySkins
-        .where((skin) => !unlocked.contains(skin.id))
-        .toList(growable: false);
-    final pool = availablePool.isEmpty ? budgetBuddySkins : availablePool;
-    final awardedSkin = _pickWeightedSkin(pool);
+    final awardedSkin = _pickWeightedSkin(budgetBuddySkins);
     final isNewUnlock = !unlocked.contains(awardedSkin.id);
     final now = DateTime.now().toUtc();
     final nextUnlocked = <String>{
       ...unlocked,
       if (isNewUnlock) awardedSkin.id,
     }.toList(growable: false);
-    final rebate = isNewUnlock ? 0 : 40;
+    final rebate = isNewUnlock
+        ? 0
+        : oddsForRarity(awardedSkin.rarity).refundGold;
 
     final nextStats = _stats.copyWith(
       gold: _stats.gold - caseCost + rebate,
@@ -617,7 +615,7 @@ class UserStatsController extends ChangeNotifier {
           title: isNewUnlock ? 'Opened Emerald Case' : 'Duplicate Skin Rebate',
           description: isNewUnlock
               ? 'Unlocked ${awardedSkin.name} from the emerald case.'
-              : 'Pulled ${awardedSkin.name} again and received a 40 gold rebate.',
+              : 'Pulled ${awardedSkin.name} again and received a $rebate gold rebate.',
           amount: -(caseCost - rebate),
           createdAt: now,
           category: 'unlock',
@@ -636,7 +634,7 @@ class UserStatsController extends ChangeNotifier {
       success: saveResult.success,
       message: isNewUnlock
           ? 'Unlocked ${awardedSkin.name}!'
-          : 'Duplicate pull: ${awardedSkin.name}. 40 gold returned.',
+          : 'Duplicate pull: ${awardedSkin.name}. $rebate gold returned.',
       syncState: saveResult.syncState,
       skin: awardedSkin,
       isNewUnlock: isNewUnlock,
@@ -838,14 +836,24 @@ class UserStatsController extends ChangeNotifier {
   }
 
   AvatarSkin _pickWeightedSkin(List<AvatarSkin> skins) {
-    final totalWeight = skins.fold<int>(0, (sum, skin) => sum + skin.weight);
-    var roll = _random.nextInt(totalWeight);
-    for (final skin in skins) {
-      if (roll < skin.weight) {
-        return skin;
+    var rarityRoll = _random.nextInt(skinCaseTotalWeight);
+    var selectedRarity = skinCaseRarityOdds.last.rarity;
+    for (final odds in skinCaseRarityOdds) {
+      if (rarityRoll < odds.weight) {
+        selectedRarity = odds.rarity;
+        break;
       }
-      roll -= skin.weight;
+      rarityRoll -= odds.weight;
     }
+
+    final rarityPool = skins
+        .where((skin) => skin.rarity == selectedRarity)
+        .toList(growable: false);
+
+    if (rarityPool.isNotEmpty) {
+      return rarityPool[_random.nextInt(rarityPool.length)];
+    }
+
     return skins.first;
   }
 
@@ -869,4 +877,3 @@ int _readInt(dynamic value) {
   }
   return 0;
 }
-
