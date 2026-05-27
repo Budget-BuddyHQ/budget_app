@@ -12,10 +12,7 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
     required this.worldBounds,
     required this.collisionRects,
     required this.onEncounter,
-  }) : super(
-          size: Vector2(56, 56),
-          anchor: Anchor.center,
-        );
+  }) : super(size: Vector2(56, 56), anchor: Anchor.center);
 
   final JoystickComponent joystick;
   final Rect worldBounds;
@@ -25,12 +22,15 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
   final Set<LogicalKeyboardKey> _keysPressed = <LogicalKeyboardKey>{};
   bool movementEnabled = true;
   final Vector2 _velocity = Vector2.zero();
+  Vector2? _pointerTarget;
+  Vector2? _pointerDirection;
   double _animationClock = 0;
   FacingDirection _facing = FacingDirection.down;
 
   static const double maxSpeed = 180;
   static const double acceleration = 880;
   static const double friction = 920;
+  static const double pointerStopRadius = 18;
 
   Vector2 get motion => _velocity.clone();
 
@@ -51,20 +51,52 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
       ..addAll(keysPressed);
   }
 
+  void setPointerTarget(Vector2 worldPosition) {
+    _pointerTarget = worldPosition.clone();
+  }
+
+  void clearPointerTarget() {
+    _pointerTarget = null;
+  }
+
+  void setPointerDirection(Vector2 direction) {
+    if (direction.length2 == 0) {
+      _pointerDirection = null;
+      return;
+    }
+
+    _pointerTarget = null;
+    _pointerDirection = direction.normalized();
+  }
+
+  void clearPointerDirection() {
+    _pointerDirection = null;
+  }
+
   @override
   void update(double dt) {
     super.update(dt);
 
     if (!movementEnabled) {
       _velocity.setZero();
+      _pointerTarget = null;
+      _pointerDirection = null;
       return;
     }
 
     final input = _readInputVector();
     if (input.length2 > 0) {
       input.normalize();
-      _velocity.x = _approach(_velocity.x, input.x * maxSpeed, acceleration * dt);
-      _velocity.y = _approach(_velocity.y, input.y * maxSpeed, acceleration * dt);
+      _velocity.x = _approach(
+        _velocity.x,
+        input.x * maxSpeed,
+        acceleration * dt,
+      );
+      _velocity.y = _approach(
+        _velocity.y,
+        input.y * maxSpeed,
+        acceleration * dt,
+      );
       _animationClock += dt * 8;
       _updateFacing(input);
     } else {
@@ -149,7 +181,11 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
     );
 
     canvas.drawOval(
-      Rect.fromCenter(center: Offset(-15, 16 + legOffset), width: 10, height: 8),
+      Rect.fromCenter(
+        center: Offset(-15, 16 + legOffset),
+        width: 10,
+        height: 8,
+      ),
       bodyPaint,
     );
     canvas.drawOval(
@@ -184,9 +220,14 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
   }
 
   @override
-  void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
+  void onCollisionStart(
+    Set<Vector2> intersectionPoints,
+    PositionComponent other,
+  ) {
     super.onCollisionStart(intersectionPoints, other);
-    if (other is EnemyMonsterComponent && !other.isDefeated && movementEnabled) {
+    if (other is EnemyMonsterComponent &&
+        !other.isDefeated &&
+        movementEnabled) {
       onEncounter(other);
     }
   }
@@ -211,11 +252,27 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
     }
 
     final stick = joystick.relativeDelta.clone();
-    final combined = keyboard + stick;
+    final pointer = _pointerDirection?.clone() ?? _readPointerVector();
+    final combined = keyboard + stick + pointer;
     if (combined.length2 > 1) {
       combined.normalize();
     }
     return combined;
+  }
+
+  Vector2 _readPointerVector() {
+    final target = _pointerTarget;
+    if (target == null) {
+      return Vector2.zero();
+    }
+
+    final delta = target - position;
+    if (delta.length2 <= pointerStopRadius * pointerStopRadius) {
+      _pointerTarget = null;
+      return Vector2.zero();
+    }
+
+    return delta..normalize();
   }
 
   void _updateFacing(Vector2 input) {
@@ -240,18 +297,22 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
 
     if (horizontal) {
       position.x += amount;
-      position.x = (position.x.clamp(
-        worldBounds.left + size.x / 2,
-        worldBounds.right - size.x / 2,
-      ) as num)
-          .toDouble();
+      position.x =
+          (position.x.clamp(
+                    worldBounds.left + size.x / 2,
+                    worldBounds.right - size.x / 2,
+                  )
+                  as num)
+              .toDouble();
     } else {
       position.y += amount;
-      position.y = (position.y.clamp(
-        worldBounds.top + size.y / 2,
-        worldBounds.bottom - size.y / 2,
-      ) as num)
-          .toDouble();
+      position.y =
+          (position.y.clamp(
+                    worldBounds.top + size.y / 2,
+                    worldBounds.bottom - size.y / 2,
+                  )
+                  as num)
+              .toDouble();
     }
 
     final bounds = Rect.fromCenter(
@@ -283,9 +344,4 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
   }
 }
 
-enum FacingDirection {
-  up,
-  down,
-  left,
-  right,
-}
+enum FacingDirection { up, down, left, right }
