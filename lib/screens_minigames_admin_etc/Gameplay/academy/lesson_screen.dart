@@ -8,6 +8,7 @@ import '../../../models_Like_Skins_and_lessons_templates/progression_service.dar
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
+import '../../../widgets_custom_lotties/branded_loading.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import 'lesson_detail_screen.dart';
@@ -136,170 +137,180 @@ class _LessonScreenState extends State<LessonScreen> {
               onSelected: widget.onNavSelected,
             ),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // Treat landscape or short heights as compact to avoid vertical overflow.
-            final orientation = MediaQuery.of(context).orientation;
-            final compactLayout = constraints.maxWidth < 980 ||
-              constraints.maxHeight < 720 ||
-              (orientation == Orientation.landscape && constraints.maxHeight < 720);
+        child: Stack(
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // Treat landscape or short heights as compact to avoid vertical overflow.
+                final orientation = MediaQuery.of(context).orientation;
+                final compactLayout =
+                    constraints.maxWidth < 980 ||
+                    constraints.maxHeight < 720 ||
+                    (orientation == Orientation.landscape &&
+                        constraints.maxHeight < 720);
 
-            if (compactLayout) {
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                children: [
-                  _HubHeader(
-                    compact: true,
-                    completed: _progressionService.completedCount,
-                    total: _progressionService.totalCount,
-                    progress: overallProgress,
-                    nextLesson: nextLesson,
-                    onBrowseUnits: () => _showUnitPickerSheet(units),
-                    onOpenNext: nextLesson == null
-                        ? null
-                        : () => _openLesson(nextLesson),
-                  ),
-                  const SizedBox(height: 12),
-                  _NextLessonFocusCard(
-                    nextLesson: nextLesson,
-                    nextUnit: nextUnit,
-                    progress: overallProgress,
-                    onOpenNext: nextLesson == null
-                        ? null
-                        : () => _openLesson(nextLesson),
-                  ),
-                  const SizedBox(height: 12),
-                  const _MasteryLegend(compact: true),
-                  const SizedBox(height: 16),
-                  _MobileUnitSelector(
-                    controller: _unitScrollController,
-                    units: units,
-                    selectedIndex: _selectedUnitIndex,
-                    onSelected: (index) {
-                      setState(() => _selectedUnitIndex = index);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _UnitCard(
-                    compact: true,
-                    unit: selectedUnit,
-                    progress: _progressionService.getUnitProgress(
-                      selectedUnit.id,
-                    ),
-                    mastery: _progressionService.getUnitMastery(
-                      selectedUnit.id,
-                    ),
-                    onLessonTap: _openLesson,
-                    statusFor: _progressionService.getLessonStatus,
-                  ),
-                ],
-              );
-            }
-
-            return Column(
-              children: [
-                _HubHeader(
-                  completed: _progressionService.completedCount,
-                  total: _progressionService.totalCount,
-                  progress: overallProgress,
-                  nextLesson: nextLesson,
-                  onBrowseUnits: constraints.maxWidth < 1040
-                      ? () => _showUnitPickerSheet(units)
-                      : null,
-                  onOpenNext: nextLesson == null
-                      ? null
-                      : () => _openLesson(nextLesson),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                  child: _NextLessonFocusCard(
-                    nextLesson: nextLesson,
-                    nextUnit: nextUnit,
-                    progress: overallProgress,
-                    onOpenNext: nextLesson == null
-                        ? null
-                        : () => _openLesson(nextLesson),
-                  ),
-                ),
-                const _MasteryLegend(),
-                Expanded(
-                  child: constraints.maxWidth >= 1040
-                      ? Row(
-                          children: [
-                            _UnitSidebar(
-                              width: 220,
-                              extended: true,
-                              units: units,
-                              selectedIndex: _selectedUnitIndex,
-                              onSelected: (index) {
-                                setState(() => _selectedUnitIndex = index);
-                              },
-                            ),
-                            Expanded(
-                              child: ListView(
-                                padding: const EdgeInsets.fromLTRB(
-                                  8,
-                                  16,
-                                  20,
-                                  24,
-                                ),
-                                children: [
-                                  _UnitCard(
-                                    unit: selectedUnit,
-                                    progress: _progressionService
-                                        .getUnitProgress(selectedUnit.id),
-                                    mastery: _progressionService.getUnitMastery(
-                                      selectedUnit.id,
-                                    ),
-                                    onLessonTap: _openLesson,
-                                    statusFor:
-                                        _progressionService.getLessonStatus,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          children: [
-                            _MobileUnitSelector(
-                              controller: _unitScrollController,
-                              units: units,
-                              selectedIndex: _selectedUnitIndex,
-                              onSelected: (index) {
-                                setState(() => _selectedUnitIndex = index);
-                              },
-                            ),
-                            Expanded(
-                              child: ListView(
-                                padding: const EdgeInsets.fromLTRB(
-                                  8,
-                                  16,
-                                  20,
-                                  24,
-                                ),
-                                children: [
-                                  _UnitCard(
-                                    unit: selectedUnit,
-                                    progress: _progressionService
-                                        .getUnitProgress(selectedUnit.id),
-                                    mastery: _progressionService.getUnitMastery(
-                                      selectedUnit.id,
-                                    ),
-                                    onLessonTap: _openLesson,
-                                    statusFor:
-                                        _progressionService.getLessonStatus,
-                                    compact: true,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                if (compactLayout) {
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    children: [
+                      _HubHeader(
+                        compact: true,
+                        completed: _progressionService.completedCount,
+                        total: _progressionService.totalCount,
+                        progress: overallProgress,
+                        nextLesson: nextLesson,
+                        onBrowseUnits: () => _showUnitPickerSheet(units),
+                        onOpenNext: nextLesson == null
+                            ? null
+                            : () => _openLesson(nextLesson),
+                      ),
+                      const SizedBox(height: 12),
+                      _NextLessonFocusCard(
+                        nextLesson: nextLesson,
+                        nextUnit: nextUnit,
+                        progress: overallProgress,
+                        onOpenNext: nextLesson == null
+                            ? null
+                            : () => _openLesson(nextLesson),
+                      ),
+                      const SizedBox(height: 12),
+                      const _MasteryLegend(compact: true),
+                      const SizedBox(height: 16),
+                      _MobileUnitSelector(
+                        controller: _unitScrollController,
+                        units: units,
+                        selectedIndex: _selectedUnitIndex,
+                        onSelected: (index) {
+                          setState(() => _selectedUnitIndex = index);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _UnitCard(
+                        compact: true,
+                        unit: selectedUnit,
+                        progress: _progressionService.getUnitProgress(
+                          selectedUnit.id,
                         ),
-                ),
-              ],
-            );
-          },
+                        mastery: _progressionService.getUnitMastery(
+                          selectedUnit.id,
+                        ),
+                        onLessonTap: _openLesson,
+                        statusFor: _progressionService.getLessonStatus,
+                      ),
+                    ],
+                  );
+                }
+
+                return Column(
+                  children: [
+                    _HubHeader(
+                      completed: _progressionService.completedCount,
+                      total: _progressionService.totalCount,
+                      progress: overallProgress,
+                      nextLesson: nextLesson,
+                      onBrowseUnits: constraints.maxWidth < 1040
+                          ? () => _showUnitPickerSheet(units)
+                          : null,
+                      onOpenNext: nextLesson == null
+                          ? null
+                          : () => _openLesson(nextLesson),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      child: _NextLessonFocusCard(
+                        nextLesson: nextLesson,
+                        nextUnit: nextUnit,
+                        progress: overallProgress,
+                        onOpenNext: nextLesson == null
+                            ? null
+                            : () => _openLesson(nextLesson),
+                      ),
+                    ),
+                    const _MasteryLegend(),
+                    Expanded(
+                      child: constraints.maxWidth >= 1040
+                          ? Row(
+                              children: [
+                                _UnitSidebar(
+                                  width: 220,
+                                  extended: true,
+                                  units: units,
+                                  selectedIndex: _selectedUnitIndex,
+                                  onSelected: (index) {
+                                    setState(() => _selectedUnitIndex = index);
+                                  },
+                                ),
+                                Expanded(
+                                  child: ListView(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      8,
+                                      16,
+                                      20,
+                                      24,
+                                    ),
+                                    children: [
+                                      _UnitCard(
+                                        unit: selectedUnit,
+                                        progress: _progressionService
+                                            .getUnitProgress(selectedUnit.id),
+                                        mastery: _progressionService
+                                            .getUnitMastery(selectedUnit.id),
+                                        onLessonTap: _openLesson,
+                                        statusFor:
+                                            _progressionService.getLessonStatus,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              children: [
+                                _MobileUnitSelector(
+                                  controller: _unitScrollController,
+                                  units: units,
+                                  selectedIndex: _selectedUnitIndex,
+                                  onSelected: (index) {
+                                    setState(() => _selectedUnitIndex = index);
+                                  },
+                                ),
+                                Expanded(
+                                  child: ListView(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      8,
+                                      16,
+                                      20,
+                                      24,
+                                    ),
+                                    children: [
+                                      _UnitCard(
+                                        unit: selectedUnit,
+                                        progress: _progressionService
+                                            .getUnitProgress(selectedUnit.id),
+                                        mastery: _progressionService
+                                            .getUnitMastery(selectedUnit.id),
+                                        onLessonTap: _openLesson,
+                                        statusFor:
+                                            _progressionService.getLessonStatus,
+                                        compact: true,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ],
+                );
+              },
+            ),
+            if (_statsController.isLoading)
+              const Positioned(
+                top: 10,
+                right: 10,
+                child: BrandedLoading(message: 'Syncing', compact: true),
+              ),
+          ],
         ),
       ),
     );
@@ -377,7 +388,7 @@ class _HubHeader extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Move unit by unit, resume faster, and keep the whole learning path readable on every screen.',
+                'Pick up the next lesson, clear quizzes, and keep mastery moving.',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.82),
                   height: 1.45,

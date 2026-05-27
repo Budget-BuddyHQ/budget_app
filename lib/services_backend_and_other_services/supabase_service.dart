@@ -364,10 +364,7 @@ class LeaderboardEntry {
 
 @immutable
 class CurrentUserProfile {
-  const CurrentUserProfile({
-    required this.role,
-    required this.avatarUrl,
-  });
+  const CurrentUserProfile({required this.role, required this.avatarUrl});
 
   final String role;
   final String avatarUrl;
@@ -382,18 +379,21 @@ class SupabaseService {
 
   static const String userStatsTable = 'user_stats';
   static const String leaderboardView = 'leaderboard';
+  static const Duration _supabaseReadTimeout = Duration(seconds: 6);
   static const Set<String> _ownerAdminEmails = <String>{
     'brucksheferaw@gmail.com',
   };
   static bool isKnownAdminEmail(String? email) {
     return _ownerAdminEmails.contains(email?.trim().toLowerCase());
   }
+
   static bool hasAdminMetadata(User? user) {
     final role =
         _roleFromMetadata(user?.appMetadata) ??
         _roleFromMetadata(user?.userMetadata);
     return role?.trim().toLowerCase() == 'admin';
   }
+
   static const String schemaSql = '''
 create table if not exists public.user_stats (
   id text primary key,
@@ -495,6 +495,31 @@ end
     yield* client.auth.onAuthStateChange;
   }
 
+  Future<bool> isCurrentUserDisabled() async {
+    final client = _existingClient;
+    final user = client?.auth.currentUser;
+
+    if (client == null || user == null) {
+      return false;
+    }
+
+    try {
+      final response = await client
+          .from('profiles')
+          .select('disabled')
+          .eq('id', user.id)
+          .maybeSingle()
+          .timeout(_supabaseReadTimeout);
+
+      return response?['disabled'] == true;
+    } catch (error) {
+      debugPrint(
+        'Supabase disabled lookup failed, allowing cached app: $error',
+      );
+      return false;
+    }
+  }
+
   Future<void> initialize({
     required String supabaseUrl,
     required String supabaseAnonKey,
@@ -555,7 +580,8 @@ end
           .from('profiles')
           .select('role')
           .eq('id', user.id)
-          .maybeSingle();
+          .maybeSingle()
+          .timeout(_supabaseReadTimeout);
       role = _readString(response?['role']) ?? role;
     } catch (error) {
       debugPrint('Supabase profile role lookup failed by id: $error');
@@ -567,7 +593,8 @@ end
             .from('profiles')
             .select('role')
             .eq('email', email)
-            .maybeSingle();
+            .maybeSingle()
+            .timeout(_supabaseReadTimeout);
         role = _readString(response?['role']) ?? role;
       } catch (error) {
         debugPrint('Supabase profile role lookup failed by email: $error');
@@ -579,7 +606,8 @@ end
           .from(userStatsTable)
           .select('spending_habits')
           .eq('id', user.id)
-          .maybeSingle();
+          .maybeSingle()
+          .timeout(_supabaseReadTimeout);
       final habits = _readMap(response?['spending_habits']);
       avatarUrl = _readString(habits['profile_image_url']) ?? avatarUrl;
     } catch (error) {
@@ -590,10 +618,7 @@ end
       return null;
     }
 
-    return CurrentUserProfile(
-      role: role,
-      avatarUrl: avatarUrl,
-    );
+    return CurrentUserProfile(role: role, avatarUrl: avatarUrl);
   }
 
   Future<String?> getUserRole() async {
@@ -693,7 +718,8 @@ end
           .from(userStatsTable)
           .select('spending_habits')
           .eq('id', userId)
-          .maybeSingle();
+          .maybeSingle()
+          .timeout(_supabaseReadTimeout);
       final currentHabits = _readMap(response?['spending_habits']);
       await Supabase.instance.client
           .from(userStatsTable)
@@ -725,7 +751,8 @@ end
           .from(userStatsTable)
           .select()
           .eq('id', userId)
-          .maybeSingle();
+          .maybeSingle()
+          .timeout(_supabaseReadTimeout);
 
       if (response == null) {
         await saveUserStats(fallback);
@@ -740,6 +767,34 @@ end
       debugPrint('Supabase fetch failed, using cached data: $error');
       return fallback;
     }
+  }
+
+  Future<UserStats> loadCachedUserStatsForUser({
+    required User user,
+    String? preferredUsername,
+  }) async {
+    await _ensurePreferences();
+    final userId = user.id;
+    final cached = _memoryCache[userId] ?? await _readCachedUserStats(userId);
+    if (cached != null) {
+      _memoryCache[userId] = cached;
+      return cached;
+    }
+
+    final email = user.email?.trim().toLowerCase();
+    final defaultTemplate = UserStats.defaults(userId);
+    final defaultStats = defaultTemplate.copyWith(
+      username: _resolveUsername(user, preferredUsername),
+      spendingHabits: <String, dynamic>{
+        ...defaultTemplate.spendingHabits,
+        'username': _resolveUsername(user, preferredUsername),
+        if (email != null) 'email': email,
+      },
+      updatedAt: DateTime.now().toUtc(),
+    );
+    _memoryCache[userId] = defaultStats;
+    await _cacheUserStats(defaultStats);
+    return defaultStats;
   }
 
   Future<ProvisionedUserStats> loadOrCreateUserStatsForUser({
@@ -950,7 +1005,8 @@ end
           .from(userStatsTable)
           .select()
           .eq('id', userId)
-          .maybeSingle();
+          .maybeSingle()
+          .timeout(_supabaseReadTimeout);
 
       if (response == null) {
         return cached;
@@ -1043,7 +1099,8 @@ end
           .order('literacy_points', ascending: false)
           .order('xp', ascending: false)
           .order('gold', ascending: false)
-          .limit(normalizedLimit);
+          .limit(normalizedLimit)
+          .timeout(_supabaseReadTimeout);
 
       if (response.isEmpty) {
         return _buildCachedLeaderboard(
