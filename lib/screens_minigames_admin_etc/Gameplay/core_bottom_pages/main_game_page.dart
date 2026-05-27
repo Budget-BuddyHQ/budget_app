@@ -9,7 +9,7 @@ import '../../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
-import '../../../widgets_custom_lotties/skeleton_loader.dart';
+import '../../../widgets_custom_lotties/branded_loading.dart';
 import 'game_canvas.dart';
 
 class MainGamePage extends StatelessWidget {
@@ -24,11 +24,9 @@ class MainGamePage extends StatelessWidget {
 
   Future<void> _openAdventure(BuildContext context) async {
     HapticFeedback.lightImpact();
-    await Navigator.of(context).push(
-      FadePageRoute(
-        builder: (_) => const GameCanvas(),
-      ),
-    );
+    await Navigator.of(
+      context,
+    ).push(FadePageRoute(builder: (_) => const GameCanvas()));
   }
 
   Future<void> _openAcademy(BuildContext context) async {
@@ -113,7 +111,7 @@ class MainGamePage extends StatelessWidget {
                       _PageHeader(
                         title: 'Main Gameplay',
                         subtitle:
-                            'This tab is now the pure adventure lane: scout encounters, manage readiness, and jump into the world without arcade shortcuts crowding the flow.',
+                            'Scout encounters, manage readiness, and jump back into the field.',
                       ),
                       const SizedBox(height: 18),
                       _MainHeroCard(
@@ -152,7 +150,11 @@ class MainGamePage extends StatelessWidget {
                           if (stacked) {
                             return Column(
                               children: [
-                                for (var index = 0; index < cards.length; index++) ...[
+                                for (
+                                  var index = 0;
+                                  index < cards.length;
+                                  index++
+                                ) ...[
                                   cards[index],
                                   if (index != cards.length - 1)
                                     const SizedBox(height: 12),
@@ -163,7 +165,11 @@ class MainGamePage extends StatelessWidget {
 
                           return Row(
                             children: [
-                              for (var index = 0; index < cards.length; index++) ...[
+                              for (
+                                var index = 0;
+                                index < cards.length;
+                                index++
+                              ) ...[
                                 Expanded(child: cards[index]),
                                 if (index != cards.length - 1)
                                   const SizedBox(width: 12),
@@ -208,7 +214,7 @@ class MainGamePage extends StatelessWidget {
                             _ActivityCard(
                               title: 'Academy Sync',
                               subtitle:
-                                  'Review the next lesson before your next run when you want more confidence going into encounters.',
+                                  'Review the next lesson before your next run.',
                               badge: 'LEARNING SUPPORT',
                               accent: const Color(0xFF58C7FF),
                               icon: Icons.school_rounded,
@@ -220,7 +226,7 @@ class MainGamePage extends StatelessWidget {
                             _ActivityCard(
                               title: 'Arcade Wing',
                               subtitle:
-                                  'React Challenge, Bill Dodger, Budget Challenge, and Market Board now live in their own separate lane.',
+                                  'Short runs and reward drills live in Arcade.',
                               badge: 'SEPARATE TAB',
                               accent: const Color(0xFFE3C56D),
                               icon: Icons.sports_esports_rounded,
@@ -234,7 +240,11 @@ class MainGamePage extends StatelessWidget {
                           if (stacked) {
                             return Column(
                               children: [
-                                for (var index = 0; index < cards.length; index++) ...[
+                                for (
+                                  var index = 0;
+                                  index < cards.length;
+                                  index++
+                                ) ...[
                                   cards[index],
                                   if (index != cards.length - 1)
                                     const SizedBox(height: 12),
@@ -265,27 +275,11 @@ class MainGamePage extends StatelessWidget {
                   ),
                 ),
                 if (isLoading)
-                  Positioned.fill(
+                  const Positioned(
+                    top: 10,
+                    right: 10,
                     child: IgnorePointer(
-                      child: Container(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(16, 18, 16, 120),
-                          child: Column(
-                            children: const [
-                              SkeletonLoader(height: 90, borderRadius: 24),
-                              SizedBox(height: 18),
-                              SkeletonLoader(height: 250, borderRadius: 30),
-                              SizedBox(height: 18),
-                              SkeletonLoader(height: 102, borderRadius: 22),
-                              SizedBox(height: 12),
-                              SkeletonLoader(height: 180, borderRadius: 22),
-                              SizedBox(height: 12),
-                              SkeletonLoader(height: 180, borderRadius: 24),
-                            ],
-                          ),
-                        ),
-                      ),
+                      child: BrandedLoading(message: 'Syncing', compact: true),
                     ),
                   ),
               ],
@@ -298,10 +292,7 @@ class MainGamePage extends StatelessWidget {
 }
 
 class _PageHeader extends StatelessWidget {
-  const _PageHeader({
-    required this.title,
-    required this.subtitle,
-  });
+  const _PageHeader({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
@@ -447,11 +438,15 @@ class _MainHeroCard extends StatelessWidget {
           );
 
           final copy = Column(
-            crossAxisAlignment:
-                stacked ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+            crossAxisAlignment: stacked
+                ? CrossAxisAlignment.center
+                : CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(999),
@@ -468,7 +463,7 @@ class _MainHeroCard extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                'Back to the field, $username.',
+                'Field run ready, $username.',
                 textAlign: stacked ? TextAlign.center : TextAlign.start,
                 style: const TextStyle(
                   color: Colors.white,
@@ -509,6 +504,17 @@ class _MainHeroCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (!stacked) ...[
+                const SizedBox(height: 14),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: BrandedLoading(
+                    assetPath: BrandedLoading.successAsset,
+                    message: 'Ready',
+                    compact: true,
+                  ),
+                ),
+              ],
             ],
           );
 
@@ -516,6 +522,12 @@ class _MainHeroCard extends StatelessWidget {
             return Column(
               children: [
                 copy,
+                const SizedBox(height: 18),
+                const BrandedLoading(
+                  assetPath: BrandedLoading.successAsset,
+                  message: 'Ready',
+                  compact: true,
+                ),
                 const SizedBox(height: 18),
                 buttons,
               ],
@@ -594,7 +606,9 @@ class _CampaignStatusCard extends StatelessWidget {
               minHeight: 10,
               value: chapterProgress,
               backgroundColor: Colors.white.withValues(alpha: 0.10),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF85EFAC)),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF85EFAC),
+              ),
             ),
           ),
         ],
@@ -669,10 +683,7 @@ class _FieldToolsCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     title,
-                    if (badge != null) ...[
-                      const SizedBox(height: 10),
-                      badge,
-                    ],
+                    if (badge != null) ...[const SizedBox(height: 10), badge],
                   ],
                 );
               }
@@ -779,10 +790,7 @@ class _ActionTile extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: TextStyle(
-                  color: accent,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: TextStyle(color: accent, fontWeight: FontWeight.w800),
               ),
             ),
           ],
@@ -901,7 +909,10 @@ class _ActivityCard extends StatelessWidget {
             builder: (context, constraints) {
               final stacked = constraints.maxWidth < 220;
               final badgeWidget = Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(999),
@@ -1023,10 +1034,7 @@ class _AdventureStatusCard extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              const Icon(
-                Icons.favorite_rounded,
-                color: Color(0xFFFF8A80),
-              ),
+              const Icon(Icons.favorite_rounded, color: Color(0xFFFF8A80)),
               const SizedBox(width: 8),
               Text(
                 'Health $health / $maxHealth',
@@ -1106,10 +1114,7 @@ class _InfoChip extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: TextStyle(
-              color: accent,
-              fontWeight: FontWeight.w900,
-            ),
+            style: TextStyle(color: accent, fontWeight: FontWeight.w900),
           ),
         ],
       ),
@@ -1118,10 +1123,7 @@ class _InfoChip extends StatelessWidget {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.title,
-    required this.subtitle,
-  });
+  const _SectionTitle({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
@@ -1164,11 +1166,7 @@ class _MainBackdrop extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF071711),
-                Color(0xFF0C2B21),
-                Color(0xFF11372C),
-              ],
+              colors: [Color(0xFF071711), Color(0xFF0C2B21), Color(0xFF11372C)],
             ),
           ),
         ),

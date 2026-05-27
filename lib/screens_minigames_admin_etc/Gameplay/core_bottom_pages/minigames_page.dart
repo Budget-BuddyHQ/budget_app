@@ -6,7 +6,6 @@ import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../../themes_colors/app_theme.dart';
-import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
@@ -248,7 +247,7 @@ class MinigamesPage extends StatelessWidget {
                     }
 
                     final crossAxisCount = width >= 1140 ? 3 : 2;
-                    final mainAxisExtent = width >= 1140 ? 244.0 : 252.0;
+                    final mainAxisExtent = width >= 1140 ? 224.0 : 232.0;
 
                     return GridView.builder(
                       itemCount: minigames.length,
@@ -469,14 +468,6 @@ class _MinigameHero extends StatelessWidget {
             ],
           );
 
-          const art = AmbientLottieCard(
-            assetPath: 'assets/animations/arcade_loop.json',
-            semanticLabel: 'Animated arcade illustration',
-            height: 170,
-            backgroundColor: Color(0x18FFFFFF),
-            borderColor: Color(0x20FFFFFF),
-          );
-
           final copy = Column(
             crossAxisAlignment: stacked
                 ? CrossAxisAlignment.center
@@ -504,7 +495,7 @@ class _MinigameHero extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Arcade games stay here so the adventure tab can stay focused on the longer field loop.',
+                'Jump into short money drills, collect rewards, and return to the longer adventure loop when ready.',
                 textAlign: stacked ? TextAlign.center : TextAlign.start,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.74),
@@ -534,25 +525,13 @@ class _MinigameHero extends StatelessWidget {
 
           if (stacked) {
             return Column(
-              children: [
-                art,
-                const SizedBox(height: 18),
-                copy,
-                const SizedBox(height: 18),
-                buttons,
-              ],
+              children: [copy, const SizedBox(height: 18), buttons],
             );
           }
 
           return Row(
             children: [
-              Expanded(
-                flex: 3,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [copy, const SizedBox(height: 18), art],
-                ),
-              ),
+              Expanded(flex: 3, child: copy),
               const SizedBox(width: 18),
               Expanded(flex: 2, child: buttons),
             ],
@@ -638,7 +617,7 @@ class _MinigameCard extends StatelessWidget {
     final usesPrimary = data.title == 'Bill Dodger';
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -703,7 +682,7 @@ class _MinigameCard extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           Text(
             data.title,
             style: const TextStyle(
@@ -712,7 +691,7 @@ class _MinigameCard extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           if (fillHeight)
             Expanded(
               child: Text(
@@ -721,7 +700,7 @@ class _MinigameCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.72),
-                  height: 1.45,
+                  height: 1.32,
                 ),
               ),
             )
@@ -730,10 +709,10 @@ class _MinigameCard extends StatelessWidget {
               data.description,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.72),
-                height: 1.45,
+                height: 1.32,
               ),
             ),
-          SizedBox(height: fillHeight ? 16 : 18),
+          SizedBox(height: fillHeight ? 12 : 14),
           CustomButton(
             label: data.cta,
             height: 50,
@@ -764,14 +743,14 @@ class _ArcadeIconBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 56,
-      height: 56,
+      width: 64,
+      height: 64,
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: accent.withValues(alpha: 0.18)),
       ),
-      child: Icon(icon, color: accent, size: 30),
+      child: Icon(icon, color: accent, size: 34),
     );
   }
 }
@@ -834,4 +813,3 @@ class _GlowOrb extends StatelessWidget {
     );
   }
 }
-
