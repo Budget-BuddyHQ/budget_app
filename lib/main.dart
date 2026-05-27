@@ -21,6 +21,7 @@ import 'screens_minigames_admin_etc/onboarding/welcome_screen.dart';
 import 'services_backend_and_other_services/app_sound_service.dart';
 import 'services_backend_and_other_services/supabase_service.dart';
 import 'themes_colors/app_theme.dart';
+import 'widgets_custom_lotties/branded_loading.dart';
 
 Future<void> main() async {
 
@@ -112,14 +113,23 @@ class _AppBootstrapGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final service = SupabaseService.instance;
     return StreamBuilder<AuthState>(
+      stream: service.authStateChanges(),
       builder: (context, snapshot) {
+        final user = service.currentUser;
+          if (!service.isSupabaseConnected) {
+            return const DashboardShell();
+          }
         }
 
+          future: service.isCurrentUserDisabled(),
+                backgroundColor: Color(0xFF071711),
+                body: BrandedLoading(message: 'Checking account...'),
       },
     );
   }
 }
 
+                await SupabaseService.instance.signOut();
 }
-
