@@ -100,7 +100,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   ...leaders.map(
                     (leader) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: _LeaderboardRow(leader: leader),
+                      child: _LeaderboardRow(
+                        leader: leader,
+                        currentUserProfileImageUrl: currentUser.profileImageUrl,
+                      ),
                     ),
                   ),
               ],
@@ -235,9 +238,13 @@ class _EmptyLeaderboardState extends StatelessWidget {
 }
 
 class _LeaderboardRow extends StatelessWidget {
-  const _LeaderboardRow({required this.leader});
+  const _LeaderboardRow({
+    required this.leader,
+    required this.currentUserProfileImageUrl,
+  });
 
   final LeaderboardEntry leader;
+  final String currentUserProfileImageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -272,15 +279,23 @@ class _LeaderboardRow extends StatelessWidget {
           Stack(
             clipBehavior: Clip.none,
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: const Color(0xFF1E4D3D),
-                child: Text(
-                  leader.username.characters.first.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF1E4D3D),
+                ),
+                child: ClipOval(
+                  child: leader.isCurrentUser && currentUserProfileImageUrl.isNotEmpty
+                      ? Image.network(
+                          currentUserProfileImageUrl,
+                          fit: BoxFit.cover,
+                          width: 40,
+                          height: 40,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ),
               if (medalColor != null)

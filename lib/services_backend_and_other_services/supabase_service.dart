@@ -379,6 +379,7 @@ class SupabaseService {
 
   static const String userStatsTable = 'user_stats';
   static const String leaderboardView = 'leaderboard';
+  static const String defaultProfileImageBucket = 'profile_pictures';
   static const Duration _supabaseReadTimeout = Duration(seconds: 6);
   static const Set<String> _ownerAdminEmails = <String>{
     'brucksheferaw@gmail.com',
@@ -520,9 +521,12 @@ end
     }
   }
 
+  late final String _profileImageBucket;
+
   Future<void> initialize({
     required String supabaseUrl,
     required String supabaseAnonKey,
+    String? profileImageBucket,
   }) async {
     if (_isReady) {
       return;
@@ -530,6 +534,9 @@ end
 
     _isReady = true;
     _preferences = await SharedPreferences.getInstance();
+    _profileImageBucket = profileImageBucket?.trim().isNotEmpty == true
+        ? profileImageBucket!.trim()
+        : defaultProfileImageBucket;
 
     final existingClient = _existingClient;
     if (existingClient != null) {
@@ -689,19 +696,25 @@ end
     final storagePath =
         'avatars/$userId/avatar_${DateTime.now().millisecondsSinceEpoch}.$safeExtension';
 
-    await Supabase.instance.client.storage
-        .from('profile-images')
-        .uploadBinary(
-          storagePath,
-          bytes,
-          fileOptions: FileOptions(
-            upsert: true,
-            contentType: _contentTypeForExtension(safeExtension),
-          ),
-        );
+    try {
+      await Supabase.instance.client.storage
+          .from(_profileImageBucket)
+          .uploadBinary(
+            storagePath,
+            bytes,
+            fileOptions: FileOptions(
+              upsert: true,
+              contentType: _contentTypeForExtension(safeExtension),
+            ),
+          );
+    } catch (error) {
+      final message = error.toString();
+      debugPrint('Supabase storage upload failed: $message');
+      rethrow;
+    }
 
     return Supabase.instance.client.storage
-        .from('profile-images')
+        .from(_profileImageBucket)
         .getPublicUrl(storagePath);
   }
 
