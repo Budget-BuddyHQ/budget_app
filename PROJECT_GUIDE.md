@@ -1,5 +1,46 @@
 # Budget Buddy Project Guide
 
+Budget Buddy is a Flutter app for financial-literacy gameplay with:
+
+- Flutter UI for onboarding, dashboard, budget, investing, profile, and mini-game launch flows
+- Supabase-backed user stats, auth, leaderboard, avatar storage, and local cache fallback
+- A gameplay shell built around a persistent bottom navigation bar and `IndexedStack`
+- Responsive layouts using `LayoutBuilder`, adaptive lesson grids, and preserved tab state
+
+## Where to start
+
+- `lib/main.dart`
+  - App entrypoint. Initializes Flutter, Supabase, Provider state, routes, and app theming.
+- `lib/screens_minigames_admin_etc/Gameplay/dashboard/main_navigation.dart`
+  - Main tab shell. Contains the `IndexedStack` and keeps each tab alive when switching.
+- `lib/screens_minigames_admin_etc/Gameplay/dashboard/home_screen.dart`
+  - Dashboard/home hub content, summary cards, and leaderboard preview.
+- `lib/screens_minigames_admin_etc/Gameplay/core_bottom_pages/main_game_page.dart`
+  - Main gameplay hub screen. Handles adventure actions, scouting, recovery, and quick navigation.
+- `lib/screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.dart`
+  - Arcade/minigame launcher and standalone game entrypoint.
+- `lib/screens_minigames_admin_etc/Gameplay/academy/learning_path_screen.dart`
+  - Academy progression controller. Builds the responsive lesson grid and study roadmap.
+- `lib/screens_minigames_admin_etc/Gameplay/customize_screen.dart`
+  - Skin and customization flow. Equips avatar skins, opens reward case logic, and updates cosmetics.
+- `lib/screens_minigames_admin_etc/profile/profile_screen.dart`
+  - Profile page and account settings, including profile photo upload.
+- `lib/services_backend_and_other_services/supabase_service.dart`
+  - Backend/data service. Manages auth, user stats, leaderboard reads, storage uploads, and local cache.
+- `lib/controllers_that_updates_stats/user_stats_controller.dart`
+  - Shared user state. Manages player stats, progression, skin equip, sign-in, and sync logic.
+
+## Quick work zones for new contributors
+
+- UI + screens: `lib/screens_minigames_admin_etc/`
+- App state / controllers: `lib/controllers_that_updates_stats/`
+- Backend + Supabase + storage: `lib/services_backend_and_other_services/`
+- Data models, skins, lessons: `lib/models_Like_Skins_and_lessons_templates/`
+- Shared widgets: `lib/custom_made_widgets/`, `lib/widgets_custom_lotties/`
+- Game logic / Flame: `lib/game_prodigy/`
+- Navigation and routing helpers: `lib/navigation_tools_and_animation/`
+- Assets and media: `assets/`
+
 ## Project shape
 
 `lib/main.dart`
@@ -35,7 +76,7 @@ Provider-backed state objects.
 `lib/services_backend_and_other_services/`
 I/O and persistence code.
 `supabase_service.dart` handles auth, local caching, leaderboard reads, and profile avatar upload/storage work.
-`sservices_backend_and_other_services/app_sound_service.dart` handles audio initialization and effects.
+`app_sound_service.dart` handles audio initialization and effects.
 
 `lib/models_Like_Skins_and_lessons_templates/`
 Data definitions such as skins, lessons, progression units, and avatar metadata.
@@ -63,14 +104,23 @@ The tab shell and app navigation entrypoint. This is where the main `IndexedStac
 `lib/screens_minigames_admin_etc/Gameplay/dashboard/dashboard_shell.dart`
 Wraps `MainNavigation` and provides the top-level shell used by `/dashboard`, `/game_hub`, `/customize`, and `/lessons` routes.
 
+`lib/screens_minigames_admin_etc/Gameplay/dashboard/home_screen.dart`
+Dashboard home and summary panels for the main player hub.
+
 `lib/widgets_custom_lotties/custom_bottom_nav.dart`
 The shared professional bottom nav used by the app shell.
 
+`lib/screens_minigames_admin_etc/Gameplay/academy/learning_path_screen.dart`
+The academy progression controller. Builds the responsive lesson grid and study roadmap.
+
 `lib/screens_minigames_admin_etc/Gameplay/academy/lesson_screen.dart`
-The academy layout controller. It decides whether the page behaves like a mobile list, tablet layout, or desktop sidebar layout.
+The lesson detail layout. Decides whether academy content is shown as mobile cards, tablet split view, or desktop sidebar.
 
 `lib/custom_made_widgets/unit_row_item.dart`
 The responsive lesson grid. This is where the lesson cards switch between 2, 3, and 4 columns based on width.
+
+`lib/screens_minigames_admin_etc/Gameplay/core_bottom_pages/main_game_page.dart`
+Primary gameplay hub screen with actionable adventure controls and quick transitions.
 
 `lib/screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.dart`
 The arcade hub and minigame entry flow.
