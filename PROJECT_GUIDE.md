@@ -153,7 +153,7 @@ There is also a fallback configuration in `lib/main.dart`.
 
 For a real release:
 1. Prefer `--dart-define` or platform secret storage.
-2. Create the `profile-images` storage bucket in Supabase.
+2. Create the `profile_pictures` storage bucket in Supabase, or set `SUPABASE_PROFILE_IMAGE_BUCKET` to a different bucket name.
 3. Add storage policies so authenticated users can upload only their own avatar paths.
 
 ## Recent UI direction
