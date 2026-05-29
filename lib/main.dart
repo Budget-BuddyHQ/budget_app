@@ -58,10 +58,12 @@ Future<void> main() async {
   final supabaseUrl = readRuntimeEnv('SUPABASE_URL') ?? fallbackSupabaseUrl;
   final supabaseAnonKey =
       readRuntimeEnv('SUPABASE_ANON_KEY') ?? fallbackSupabaseAnonKey;
+  final profileImageBucket = readRuntimeEnv('SUPABASE_PROFILE_IMAGE_BUCKET');
 
   await SupabaseService.instance.initialize(
     supabaseUrl: supabaseUrl,
     supabaseAnonKey: supabaseAnonKey,
+    profileImageBucket: profileImageBucket,
   );
   await AppSoundService.initialize();
 
