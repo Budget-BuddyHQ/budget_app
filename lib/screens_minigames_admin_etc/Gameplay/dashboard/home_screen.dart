@@ -99,6 +99,7 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(height: 18),
                     _LeaderboardPreview(
                       currentUserId: stats.id,
+                      currentUserProfileImageUrl: stats.profileImageUrl,
                       onOpenFull: () {
                         HapticFeedback.lightImpact();
                         Navigator.of(context).push(
@@ -499,10 +500,12 @@ class _QuickAccessRow extends StatelessWidget {
 class _LeaderboardPreview extends StatelessWidget {
   const _LeaderboardPreview({
     required this.currentUserId,
+    required this.currentUserProfileImageUrl,
     required this.onOpenFull,
   });
 
   final String currentUserId;
+  final String currentUserProfileImageUrl;
   final VoidCallback onOpenFull;
 
   @override
@@ -559,7 +562,10 @@ class _LeaderboardPreview extends StatelessWidget {
                 ...leaders.map(
                   (leader) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: _LeaderboardTile(leader: leader),
+                    child: _LeaderboardTile(
+                      leader: leader,
+                      currentUserProfileImageUrl: currentUserProfileImageUrl,
+                    ),
                   ),
                 ),
             ],
@@ -688,9 +694,13 @@ class _ActionButton extends StatelessWidget {
 }
 
 class _LeaderboardTile extends StatelessWidget {
-  const _LeaderboardTile({required this.leader});
+  const _LeaderboardTile({
+    required this.leader,
+    required this.currentUserProfileImageUrl,
+  });
 
   final LeaderboardEntry leader;
+  final String currentUserProfileImageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -699,6 +709,29 @@ class _LeaderboardTile extends StatelessWidget {
       2 => const Color(0xFFD2DBE2),
       _ => const Color(0xFFCD7F32),
     };
+
+    final avatar = Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: leader.isCurrentUser && currentUserProfileImageUrl.isNotEmpty
+            ? Colors.transparent
+            : Colors.white.withValues(alpha: 0.05),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.12),
+        ),
+      ),
+      child: leader.isCurrentUser && currentUserProfileImageUrl.isNotEmpty
+          ? ClipOval(
+              child: Image.network(
+                currentUserProfileImageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            )
+          : null,
+    );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -715,6 +748,8 @@ class _LeaderboardTile extends StatelessWidget {
       ),
       child: Row(
         children: [
+          avatar,
+          const SizedBox(width: 10),
           Icon(Icons.emoji_events_rounded, color: medal),
           const SizedBox(width: 10),
           Expanded(
