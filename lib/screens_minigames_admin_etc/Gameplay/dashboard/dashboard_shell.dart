@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import 'main_navigation.dart';
 
 class DashboardShell extends StatelessWidget {
-  const DashboardShell({
-    super.key,
-    this.initialIndex = 0,
-  });
+  const DashboardShell({super.key, this.initialIndex = 0});
 
   final int initialIndex;
 

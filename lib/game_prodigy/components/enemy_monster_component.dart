@@ -2,18 +2,17 @@ import 'dart:math' as math;
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
-class EnemyMonsterComponent extends PositionComponent with CollisionCallbacks {
+class EnemyMonsterComponent extends PositionComponent
+    with CollisionCallbacks, HasGameReference<FlameGame> {
   EnemyMonsterComponent({
     required super.position,
     required this.enemyName,
     required this.movementBounds,
     this.roamRadius = 140,
-  }) : super(
-          size: Vector2.all(58),
-          anchor: Anchor.center,
-        ) {
+  }) : super(size: Vector2(78, 92), anchor: Anchor.center) {
     _spawnOrigin = position.clone();
     _random = math.Random(enemyName.hashCode);
   }
@@ -36,10 +35,7 @@ class EnemyMonsterComponent extends PositionComponent with CollisionCallbacks {
 
   @override
   Future<void> onLoad() async {
-    add(
-      CircleHitbox()
-        ..collisionType = CollisionType.passive,
-    );
+    add(CircleHitbox()..collisionType = CollisionType.passive);
   }
 
   @override
@@ -128,56 +124,185 @@ class EnemyMonsterComponent extends PositionComponent with CollisionCallbacks {
     }
 
     final bob = math.sin(_stepClock) * 2.4;
-    final squash = 1 + (math.sin(_pulse) * 0.03);
+    final pulse = 1 + (math.sin(_pulse) * 0.025);
     final facingRight = _movement.x >= 0;
-    final glowAlpha = 0.16 + (_spawnFlash * 0.18);
-
-    final glowPaint = Paint()
-      ..color = const Color(0xFFFFD45C).withValues(alpha: glowAlpha)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14);
-    final bodyPaint = Paint()..color = const Color(0xFFB24F4F);
-    final shellPaint = Paint()..color = const Color(0xFFFFD45C);
-    final outlinePaint = Paint()
-      ..color = const Color(0xFF572727)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2;
-    final eyePaint = Paint()..color = Colors.black;
+    final glowAlpha = 0.16 + (_spawnFlash * 0.24);
+    final scale = _fieldScale;
+    final cardWidth = 62.0 * scale;
+    final cardHeight = 76.0 * scale;
+    final radius = 18.0 * scale;
+    final cardRect = Rect.fromCenter(
+      center: Offset.zero,
+      width: cardWidth,
+      height: cardHeight,
+    );
+    final cardRRect = RRect.fromRectAndRadius(
+      cardRect,
+      Radius.circular(radius),
+    );
+    final directionNudge = facingRight ? 3.0 * scale : -3.0 * scale;
 
     canvas.save();
     canvas.translate(size.x / 2, size.y / 2);
-    canvas.scale(squash, 1 / squash);
+    canvas.scale(pulse, 1 / pulse);
     canvas.translate(0, bob);
 
-    canvas.drawOval(
-      Rect.fromCenter(center: const Offset(0, 18), width: 40, height: 12),
-      Paint()..color = Colors.black.withValues(alpha: 0.20),
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(0, 27 * scale),
+          width: 56 * scale,
+          height: 12 * scale,
+        ),
+        Radius.circular(12 * scale),
+      ),
+      Paint()..color = Colors.black.withValues(alpha: 0.24),
     );
-    canvas.drawCircle(Offset.zero, 28, glowPaint);
-    canvas.drawOval(
-      Rect.fromCenter(center: const Offset(0, 0), width: 42, height: 34),
-      bodyPaint,
+    canvas.drawRRect(
+      cardRRect.inflate(9 * scale),
+      Paint()
+        ..color = const Color(0xFFFFD45C).withValues(alpha: glowAlpha)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 15 * scale),
     );
-    canvas.drawCircle(const Offset(0, -4), 14, shellPaint);
-    canvas.drawOval(
-      Rect.fromCenter(center: const Offset(0, 0), width: 42, height: 34),
-      outlinePaint,
+    canvas.drawRRect(
+      cardRRect,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF4A2026), Color(0xFF180B12)],
+        ).createShader(cardRect),
     );
-    canvas.drawCircle(const Offset(0, -4), 14, outlinePaint);
-
-    final headOffset = facingRight ? 5.0 : -5.0;
-    canvas.drawCircle(Offset(headOffset, -10), 10, bodyPaint);
-    canvas.drawCircle(Offset(headOffset - 3, -12), 2.2, eyePaint);
-    canvas.drawCircle(Offset(headOffset + 3, -12), 2.2, eyePaint);
-
-    final legWave = math.sin(_stepClock) * 2.4;
-    canvas.drawRect(
-      Rect.fromCenter(center: Offset(-10, 15 + legWave), width: 8, height: 10),
-      bodyPaint,
+    canvas.drawRRect(
+      cardRRect.deflate(2 * scale),
+      Paint()..color = const Color(0xFFFFD45C).withValues(alpha: 0.08),
     );
-    canvas.drawRect(
-      Rect.fromCenter(center: Offset(10, 15 - legWave), width: 8, height: 10),
-      bodyPaint,
+    canvas.drawRRect(
+      cardRRect,
+      Paint()
+        ..color = const Color(0xFFFFD45C).withValues(alpha: 0.62)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2 * scale,
+    );
+    _drawHealthBar(
+      canvas,
+      centerY: -cardHeight * 0.34,
+      width: cardWidth * 0.70,
+      scale: scale,
+      accent: const Color(0xFFFFD45C),
+      value: 1,
+    );
+    _paintIcon(
+      canvas,
+      Icons.crisis_alert_rounded,
+      Offset(directionNudge, -2 * scale),
+      34 * scale,
+      const Color(0xFFFFD45C),
+    );
+    _paintIcon(
+      canvas,
+      Icons.bolt_rounded,
+      Offset(-14 * scale + directionNudge, 14 * scale),
+      18 * scale,
+      const Color(0xFFFF6B6B),
+    );
+    _paintLabel(
+      canvas,
+      'FOE',
+      Offset(0, cardHeight * 0.31),
+      10 * scale,
+      const Color(0xFFFFFFFF),
     );
     canvas.restore();
+  }
+
+  double get _fieldScale {
+    return (game.size.x / 900).clamp(0.78, 1.22).toDouble();
+  }
+
+  void _drawHealthBar(
+    Canvas canvas, {
+    required double centerY,
+    required double width,
+    required double scale,
+    required Color accent,
+    required double value,
+  }) {
+    final background = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: Offset(0, centerY),
+        width: width,
+        height: 5 * scale,
+      ),
+      Radius.circular(8 * scale),
+    );
+    final fill = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        -width / 2,
+        centerY - (2.5 * scale),
+        width * value,
+        5 * scale,
+      ),
+      Radius.circular(8 * scale),
+    );
+
+    canvas.drawRRect(
+      background,
+      Paint()..color = Colors.black.withValues(alpha: 0.34),
+    );
+    canvas.drawRRect(fill, Paint()..color = accent);
+  }
+
+  void _paintIcon(
+    Canvas canvas,
+    IconData icon,
+    Offset center,
+    double size,
+    Color color,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: String.fromCharCode(icon.codePoint),
+        style: TextStyle(
+          color: color,
+          fontSize: size,
+          fontFamily: icon.fontFamily,
+          package: icon.fontPackage,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    painter.paint(
+      canvas,
+      center - Offset(painter.width / 2, painter.height / 2),
+    );
+  }
+
+  void _paintLabel(
+    Canvas canvas,
+    String label,
+    Offset center,
+    double size,
+    Color color,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(
+          color: color,
+          fontSize: size,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0,
+        ),
+      ),
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    painter.paint(
+      canvas,
+      center - Offset(painter.width / 2, painter.height / 2),
+    );
   }
 }
