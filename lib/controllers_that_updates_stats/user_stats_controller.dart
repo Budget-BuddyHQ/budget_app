@@ -65,6 +65,12 @@ class UserStatsController extends ChangeNotifier {
   bool get isSaving => _isSaving;
   String? get statusMessage => _statusMessage;
   bool get isAuthenticated => _service.currentUser != null;
+  List<AvatarSkin> get unlockedAvatarSkins {
+    final unlockedSkinIds = _stats.unlockedSkins.toSet();
+    return budgetBuddySkins
+        .where((skin) => unlockedSkinIds.contains(skin.id))
+        .toList(growable: false);
+  }
 
   Future<void> initialize() async {
     if (_initialized) {

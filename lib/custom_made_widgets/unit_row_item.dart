@@ -16,55 +16,33 @@ class UnitRowItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final availableWidth = constraints.maxWidth.isFinite
-            ? constraints.maxWidth
-            : MediaQuery.of(context).size.width;
-        final crossAxisCount = availableWidth >= 900
-            ? 4
-            : availableWidth >= 300
-            ? 3
-            : 2;
-        final mainAxisExtent = availableWidth >= 900
-            ? 184.0
-            : availableWidth >= 420
-            ? 174.0
-            : 164.0;
-
-        return GridView.builder(
-          itemCount: lessons.length,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            mainAxisExtent: mainAxisExtent,
+    return Column(
+      children: [
+        for (var index = 0; index < lessons.length; index++) ...[
+          _UnitLessonBlock(
+            lesson: lessons[index],
+            status: statusFor(lessons[index].id),
+            index: index,
+            onTap: () => onLessonTap(lessons[index]),
           ),
-          itemBuilder: (context, index) {
-            final lesson = lessons[index];
-            return _UnitLessonIcon(
-              lesson: lesson,
-              status: statusFor(lesson.id),
-              onTap: () => onLessonTap(lesson),
-            );
-          },
-        );
-      },
+          if (index != lessons.length - 1) const SizedBox(height: 10),
+        ],
+      ],
     );
   }
 }
 
-class _UnitLessonIcon extends StatelessWidget {
-  const _UnitLessonIcon({
+class _UnitLessonBlock extends StatelessWidget {
+  const _UnitLessonBlock({
     required this.lesson,
     required this.status,
+    required this.index,
     required this.onTap,
   });
 
   final Lesson lesson;
   final LessonStatus status;
+  final int index;
   final VoidCallback onTap;
 
   @override
@@ -93,84 +71,89 @@ class _UnitLessonIcon extends StatelessWidget {
       LessonNodeType.unitTest => Icons.star_rounded,
     };
     final statusLabel = _statusLabel(status);
-    final lessonTypeLabel = switch (lesson.type) {
-      LessonNodeType.lesson => 'Lesson',
-      LessonNodeType.quiz => 'Quiz',
-      LessonNodeType.unitTest => 'Unit test',
-    };
-    final isCompactCard = MediaQuery.sizeOf(context).width < 430;
+    final compact = MediaQuery.sizeOf(context).width < 430;
 
     return Semantics(
       button: true,
-      label:
-          '$lessonTypeLabel: ${lesson.title}. $statusLabel. ${lesson.estimatedMinutes} minute lesson.',
+      label: 'Lesson ${index + 1}: ${lesson.title}. $statusLabel.',
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         child: Container(
-          padding: EdgeInsets.all(isCompactCard ? 12 : 14),
+          constraints: const BoxConstraints(minHeight: 78),
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 12 : 16,
+            vertical: compact ? 12 : 14,
+          ),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF1A3A2E), Color(0xFF122B22)],
+              colors: [Color(0xFF173B2E), Color(0xFF10291F)],
             ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white12),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: palette.border.withValues(alpha: 0.32)),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x26000000),
-                blurRadius: 18,
-                offset: Offset(0, 10),
+                color: Color(0x22000000),
+                blurRadius: 16,
+                offset: Offset(0, 8),
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
               Container(
-                width: isCompactCard ? 44 : 52,
-                height: isCompactCard ? 44 : 52,
+                width: compact ? 48 : 56,
+                height: compact ? 48 : 56,
                 decoration: BoxDecoration(
                   color: palette.fill,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: palette.border, width: 1.5),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: palette.border, width: 2),
                 ),
                 child: Icon(
                   icon,
                   color: palette.foreground,
-                  size: isCompactCard ? 25 : 30,
+                  size: compact ? 26 : 30,
                 ),
               ),
-              SizedBox(height: isCompactCard ? 10 : 12),
-              Text(
-                lesson.title,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Color(0xFFF7FFFB),
-                  fontSize: isCompactCard ? 11.8 : 12.8,
-                  fontWeight: FontWeight.w800,
-                  height: 1.3,
+              SizedBox(width: compact ? 12 : 14),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      lesson.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: const Color(0xFFF7FFFB),
+                        fontSize: compact ? 15 : 16,
+                        fontWeight: FontWeight.w900,
+                        height: 1.12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const Spacer(),
-              const SizedBox(height: 8),
-              Text(
-                statusLabel,
-                style: TextStyle(
-                  color: palette.border,
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${lesson.estimatedMinutes} min',
-                style: const TextStyle(
-                  color: Color(0xFFB9D1C6),
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w600,
+                decoration: BoxDecoration(
+                  color: palette.border.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: TextStyle(
+                    color: palette.border,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ],

@@ -51,6 +51,13 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _openLeaderboard(BuildContext context) async {
+    HapticFeedback.lightImpact();
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const LeaderboardScreen()));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<UserStatsController>(
@@ -60,6 +67,48 @@ class HomeScreen extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: const Color(0xFF071711),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF071711),
+            elevation: 0,
+            centerTitle: false,
+            titleSpacing: 18,
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Budget Buddy',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(
+                  stats.levelTitle,
+                  style: const TextStyle(
+                    color: Color(0xFF85EFAC),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: IconButton.filledTonal(
+                  tooltip: 'Leaderboard',
+                  style: IconButton.styleFrom(
+                    backgroundColor: const Color(
+                      0xFF85EFAC,
+                    ).withValues(alpha: 0.12),
+                    foregroundColor: const Color(0xFFFFD45C),
+                  ),
+                  onPressed: () => _openLeaderboard(context),
+                  icon: const Icon(Icons.emoji_events_rounded),
+                ),
+              ),
+            ],
+          ),
           bottomNavigationBar: onNavSelected == null
               ? null
               : CustomBottomNav(
@@ -70,46 +119,49 @@ class HomeScreen extends StatelessWidget {
             children: [
               const _DashboardBackdrop(),
               SafeArea(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 126),
-                  children: [
-                    _DashboardHeader(
-                      stats: stats,
-                      turtleSkin: turtleSkin,
-                      profileImageUrl: stats.profileImageUrl,
-                    ),
-                    const SizedBox(height: 18),
-                    _DailyChallengeCard(
-                      onPlayNow: () => _launchDailyChallenge(context),
-                      onOpenAdventure: () =>
-                          onNavSelected?.call(AppTabIndex.adventure),
-                      onOpenArcade: () =>
-                          onNavSelected?.call(AppTabIndex.minigames),
-                    ),
-                    const SizedBox(height: 18),
-                    _LiteracyProgressCard(stats: stats),
-                    const SizedBox(height: 18),
-                    _QuickAccessRow(
-                      onArcade: () => onNavSelected?.call(AppTabIndex.minigames),
-                      onCustomize: () =>
-                          onNavSelected?.call(AppTabIndex.customize),
-                      onAcademy: () =>
-                          onNavSelected?.call(AppTabIndex.academy),
-                    ),
-                    const SizedBox(height: 18),
-                    _LeaderboardPreview(
-                      currentUserId: stats.id,
-                      currentUserProfileImageUrl: stats.profileImageUrl,
-                      onOpenFull: () {
-                        HapticFeedback.lightImpact();
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const LeaderboardScreen(),
+                top: false,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compactHeight = constraints.maxHeight < 650;
+                    final heroHeight =
+                        (constraints.maxHeight * (compactHeight ? 0.36 : 0.40))
+                            .clamp(210.0, 300.0)
+                            .toDouble();
+
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 124),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            height: heroHeight,
+                            child: _AdventureLaunchHero(
+                              stats: stats,
+                              turtleSkin: turtleSkin,
+                              profileImageUrl: stats.profileImageUrl,
+                              compact: compactHeight,
+                              onOpenAdventure: () =>
+                                  onNavSelected?.call(AppTabIndex.adventure),
+                            ),
                           ),
-                        );
-                      },
-                    ),
-                  ],
+                          const SizedBox(height: 10),
+                          _CurrentObjectiveCard(
+                            stats: stats,
+                            compact: compactHeight,
+                            onPlayNow: () => _launchDailyChallenge(context),
+                            onOpenAdventure: () =>
+                                onNavSelected?.call(AppTabIndex.adventure),
+                            onOpenArcade: () =>
+                                onNavSelected?.call(AppTabIndex.minigames),
+                            onOpenAcademy: () =>
+                                onNavSelected?.call(AppTabIndex.academy),
+                            onCustomize: () =>
+                                onNavSelected?.call(AppTabIndex.customize),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -157,126 +209,339 @@ class _DashboardBackdrop extends StatelessWidget {
   }
 }
 
-class _DashboardHeader extends StatelessWidget {
-  const _DashboardHeader({
+class _AdventureLaunchHero extends StatelessWidget {
+  const _AdventureLaunchHero({
     required this.stats,
     required this.turtleSkin,
     required this.profileImageUrl,
+    required this.compact,
+    required this.onOpenAdventure,
   });
 
   final UserStats stats;
   final AvatarSkin turtleSkin;
   final String profileImageUrl;
+  final bool compact;
+  final VoidCallback? onOpenAdventure;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onOpenAdventure == null
+          ? null
+          : () {
+              HapticFeedback.lightImpact();
+              onOpenAdventure!();
+            },
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(compact ? 16 : 20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF15392D), Color(0xFF071711)],
+          ),
+          borderRadius: BorderRadius.circular(34),
+          border: Border.all(
+            color: const Color(0xFF85EFAC).withValues(alpha: 0.24),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
+              blurRadius: 34,
+              spreadRadius: -8,
+              offset: const Offset(0, 18),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.32),
+              blurRadius: 30,
+              offset: const Offset(0, 20),
+            ),
+          ],
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final veryTight = constraints.maxHeight < 240;
+            return Stack(
+              children: [
+                if (!veryTight)
+                  Positioned(
+                    right: constraints.maxWidth < 520 ? 8 : 128,
+                    top: 18,
+                    child: Opacity(
+                      opacity: 0.52,
+                      child: AmbientLottieCard(
+                        assetPath: 'assets/animations/turtlemoving.json',
+                        semanticLabel: 'Moving turtle decoration',
+                        width: constraints.maxWidth < 520 ? 88 : 126,
+                        height: constraints.maxWidth < 520 ? 72 : 96,
+                        padding: const EdgeInsets.all(6),
+                        backgroundColor: Colors.white.withValues(alpha: 0.04),
+                        borderColor: Colors.white.withValues(alpha: 0.08),
+                      ),
+                    ),
+                  ),
+                Align(
+                  alignment: Alignment.topRight,
+                  child: _HeroAvatar(
+                    turtleSkin: turtleSkin,
+                    profileImageUrl: profileImageUrl,
+                    size: veryTight ? 70 : 92,
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.bottomLeft,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: constraints.maxWidth < 520
+                          ? constraints.maxWidth * 0.78
+                          : constraints.maxWidth * 0.58,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFF85EFAC,
+                            ).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: const Color(
+                                0xFF85EFAC,
+                              ).withValues(alpha: 0.20),
+                            ),
+                          ),
+                          child: Text(
+                            'Level ${stats.level}  |  ${stats.gold} Gold',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF85EFAC),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: veryTight ? 8 : 12),
+                        Text(
+                          'Adventure Soon',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: veryTight ? 27 : 34,
+                            fontWeight: FontWeight.w900,
+                            height: 1,
+                          ),
+                        ),
+                        if (!veryTight) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Scout the emerald route and clear your next RPG encounter.',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.76),
+                              height: 1.32,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                        SizedBox(height: veryTight ? 10 : 16),
+                        _ActionButton(
+                          label: 'Enter World',
+                          accent: const Color(0xFF85EFAC),
+                          icon: Icons.explore_rounded,
+                          onTap: onOpenAdventure,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroAvatar extends StatelessWidget {
+  const _HeroAvatar({
+    required this.turtleSkin,
+    required this.profileImageUrl,
+    required this.size,
+  });
+
+  final AvatarSkin turtleSkin;
+  final String profileImageUrl;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      padding: EdgeInsets.all(size * 0.12),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: const Color(0xFF071711).withValues(alpha: 0.74),
+        border: Border.all(color: const Color(0xFF85EFAC), width: 2.4),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF85EFAC).withValues(alpha: 0.28),
+            blurRadius: 26,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: profileImageUrl.isNotEmpty
+            ? Image.network(
+                profileImageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) =>
+                    Image.asset(turtleSkin.assetPath, fit: BoxFit.contain),
+              )
+            : Image.asset(turtleSkin.assetPath, fit: BoxFit.contain),
+      ),
+    );
+  }
+}
+
+class _CurrentObjectiveCard extends StatelessWidget {
+  const _CurrentObjectiveCard({
+    required this.stats,
+    required this.compact,
+    required this.onPlayNow,
+    required this.onOpenAdventure,
+    required this.onOpenArcade,
+    required this.onOpenAcademy,
+    required this.onCustomize,
+  });
+
+  final UserStats stats;
+  final bool compact;
+  final VoidCallback onPlayNow;
+  final VoidCallback? onOpenAdventure;
+  final VoidCallback? onOpenArcade;
+  final VoidCallback? onOpenAcademy;
+  final VoidCallback? onCustomize;
 
   @override
   Widget build(BuildContext context) {
     return _GlassPanel(
+      padding: EdgeInsets.all(compact ? 14 : 18),
+      radius: 26,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final stacked = constraints.maxWidth < 720;
-          final avatar = Container(
-            width: 90,
-            height: 90,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  turtleSkin.accent.withValues(alpha: 0.36),
-                  const Color(0xFF0D2B20),
+          final tight = compact;
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: tight ? 42 : 50,
+                    height: tight ? 42 : 50,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: const Color(0xFF85EFAC).withValues(alpha: 0.26),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.flag_rounded,
+                      color: Color(0xFF85EFAC),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Current Objective',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        Text(
+                          'Daily run | Academy | Arcade tools',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.64),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!tight) ...[
+                    const SizedBox(width: 12),
+                    AmbientLottieCard(
+                      assetPath: 'assets/animations/arcade_loop.json',
+                      semanticLabel: 'Arcade decoration',
+                      width: 92,
+                      height: 70,
+                      padding: const EdgeInsets.all(6),
+                      backgroundColor: Colors.white.withValues(alpha: 0.04),
+                      borderColor: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ],
                 ],
               ),
-              border: Border.all(
-                color: const Color(0xFF85EFAC).withValues(alpha: 0.85),
-                width: 2.4,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF85EFAC).withValues(alpha: 0.28),
-                  blurRadius: 20,
-                  spreadRadius: 2,
+              if (!tight) ...[
+                const SizedBox(height: 14),
+                Text(
+                  'Enter the adventure, then use a quick practice loop if you need more gold or literacy points.',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.74),
+                    height: 1.34,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: ClipOval(
-                child: profileImageUrl.isNotEmpty
-                    ? Image.network(
-                        profileImageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Image.asset(
-                          turtleSkin.assetPath,
-                          fit: BoxFit.contain,
-                        ),
-                      )
-                    : Image.asset(turtleSkin.assetPath, fit: BoxFit.contain),
-              ),
-            ),
-          );
-
-          final copy = Column(
-            crossAxisAlignment:
-                stacked ? CrossAxisAlignment.center : CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Welcome back, ${stats.username}',
-                textAlign: stacked ? TextAlign.center : TextAlign.start,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
+              SizedBox(height: tight ? 12 : 14),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  minHeight: tight ? 9 : 12,
+                  value: stats.levelProgress.clamp(0.08, 1.0),
+                  backgroundColor: Colors.white.withValues(alpha: 0.08),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Color(0xFF85EFAC),
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                stats.levelTitle,
-                style: const TextStyle(
-                  color: Color(0xFF85EFAC),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
+              SizedBox(height: tight ? 12 : 16),
+              _ObjectiveActionBar(
+                compact: tight,
+                onAdventure: onOpenAdventure,
+                onDaily: onPlayNow,
+                onArcade: onOpenArcade,
+                onAcademy: onOpenAcademy,
+                onCustomize: onCustomize,
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Gold: ${stats.gold}  •  Literacy: ${stats.literacyPoints}',
-                textAlign: stacked ? TextAlign.center : TextAlign.start,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.72),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          );
-
-          final illustration = const AmbientLottieCard(
-            assetPath: 'assets/animations/turtlemoving.json',
-            semanticLabel: 'Animated Budget Buddy turtle illustration',
-            height: 150,
-            width: 160,
-            padding: EdgeInsets.all(12),
-          );
-
-          if (stacked) {
-            return Column(
-              children: [
-                avatar,
-                const SizedBox(height: 16),
-                copy,
-                const SizedBox(height: 16),
-                illustration,
-              ],
-            );
-          }
-
-          return Row(
-            children: [
-              avatar,
-              const SizedBox(width: 16),
-              Expanded(child: copy),
-              const SizedBox(width: 16),
-              illustration,
             ],
           );
         },
@@ -285,200 +550,66 @@ class _DashboardHeader extends StatelessWidget {
   }
 }
 
-class _DailyChallengeCard extends StatelessWidget {
-  const _DailyChallengeCard({
-    required this.onPlayNow,
-    required this.onOpenAdventure,
-    required this.onOpenArcade,
-  });
-
-  final VoidCallback onPlayNow;
-  final VoidCallback? onOpenAdventure;
-  final VoidCallback? onOpenArcade;
-
-  @override
-  Widget build(BuildContext context) {
-    return _GlassPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Daily Challenge',
-            style: TextStyle(
-              color: const Color(0xFF85EFAC).withValues(alpha: 0.96),
-              fontWeight: FontWeight.w800,
-              fontSize: 13,
-              letterSpacing: 0.4,
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Budget Battle: defend your coin stash against surprise spending traps.',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              height: 1.25,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Start with the featured challenge, then branch into the adventure tab for longer runs or the arcade tab for shorter practice loops.',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.72),
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: 18),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final stacked = constraints.maxWidth < 460;
-              final playButton = _ActionButton(
-                label: 'Play Daily Challenge',
-                accent: const Color(0xFF85EFAC),
-                icon: Icons.play_arrow_rounded,
-                onTap: onPlayNow,
-              );
-              final adventureButton = _ActionButton(
-                label: 'Open Adventure',
-                accent: const Color(0xFFFFD45C),
-                icon: Icons.explore_rounded,
-                onTap: onOpenAdventure,
-                filled: false,
-              );
-              final arcadeButton = _ActionButton(
-                label: 'Open Arcade',
-                accent: const Color(0xFF58C7FF),
-                icon: Icons.sports_esports_rounded,
-                onTap: onOpenArcade,
-                filled: false,
-              );
-
-              if (stacked) {
-                return Column(
-                  children: [
-                    playButton,
-                    const SizedBox(height: 10),
-                    adventureButton,
-                    const SizedBox(height: 10),
-                    arcadeButton,
-                  ],
-                );
-              }
-
-              return Row(
-                children: [
-                  Expanded(child: playButton),
-                  const SizedBox(width: 12),
-                  Expanded(child: adventureButton),
-                  const SizedBox(width: 12),
-                  Expanded(child: arcadeButton),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LiteracyProgressCard extends StatelessWidget {
-  const _LiteracyProgressCard({required this.stats});
-
-  final UserStats stats;
-
-  @override
-  Widget build(BuildContext context) {
-    return _GlassPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Literacy Points',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${stats.literacyPoints} LP',
-            style: const TextStyle(
-              color: Color(0xFFFFD45C),
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'You are ${(stats.levelProgress * 100).round()}% of the way to the next Finance Wizard level.',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.70),
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              minHeight: 13,
-              value: stats.levelProgress.clamp(0.08, 1.0),
-              backgroundColor: Colors.white.withValues(alpha: 0.08),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFF85EFAC),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickAccessRow extends StatelessWidget {
-  const _QuickAccessRow({
+class _ObjectiveActionBar extends StatelessWidget {
+  const _ObjectiveActionBar({
+    required this.compact,
+    required this.onAdventure,
+    required this.onDaily,
     required this.onArcade,
-    required this.onCustomize,
     required this.onAcademy,
+    required this.onCustomize,
   });
 
-  final VoidCallback onArcade;
-  final VoidCallback onCustomize;
-  final VoidCallback onAcademy;
+  final bool compact;
+  final VoidCallback? onAdventure;
+  final VoidCallback onDaily;
+  final VoidCallback? onArcade;
+  final VoidCallback? onAcademy;
+  final VoidCallback? onCustomize;
 
   @override
   Widget build(BuildContext context) {
-    final cards = <Widget>[
-      _QuickAccessCard(
+    final buttons = <Widget>[
+      _ObjectiveIconButton(
+        label: compact ? 'World' : 'Adventure',
+        icon: Icons.explore_rounded,
+        accent: const Color(0xFF85EFAC),
+        onTap: onAdventure,
+      ),
+      _ObjectiveIconButton(
+        label: 'Daily',
+        icon: Icons.play_arrow_rounded,
+        accent: const Color(0xFFFFD45C),
+        onTap: onDaily,
+      ),
+      _ObjectiveIconButton(
         label: 'Arcade',
         icon: Icons.sports_esports_rounded,
         accent: const Color(0xFF58C7FF),
         onTap: onArcade,
       ),
-      _QuickAccessCard(
-        label: 'Customize',
-        icon: Icons.auto_awesome_rounded,
-        accent: const Color(0xFFFFD45C),
-        onTap: onCustomize,
-      ),
-      _QuickAccessCard(
+      _ObjectiveIconButton(
         label: 'Academy',
         icon: Icons.school_rounded,
         accent: const Color(0xFF85EFAC),
         onTap: onAcademy,
       ),
+      _ObjectiveIconButton(
+        label: 'Style',
+        icon: Icons.auto_awesome_rounded,
+        accent: const Color(0xFFFFD45C),
+        onTap: onCustomize,
+      ),
     ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth < 560) {
-          return Column(
+        if (constraints.maxWidth < 620) {
+          return Row(
             children: [
-              for (var i = 0; i < cards.length; i++) ...[
-                cards[i],
-                if (i != cards.length - 1) const SizedBox(height: 12),
+              for (var index = 0; index < buttons.length; index++) ...[
+                Expanded(child: buttons[index]),
+                if (index != buttons.length - 1) const SizedBox(width: 8),
               ],
             ],
           );
@@ -486,9 +617,9 @@ class _QuickAccessRow extends StatelessWidget {
 
         return Row(
           children: [
-            for (var i = 0; i < cards.length; i++) ...[
-              Expanded(child: cards[i]),
-              if (i != cards.length - 1) const SizedBox(width: 12),
+            for (var index = 0; index < buttons.length; index++) ...[
+              Expanded(child: buttons[index]),
+              if (index != buttons.length - 1) const SizedBox(width: 10),
             ],
           ],
         );
@@ -497,87 +628,8 @@ class _QuickAccessRow extends StatelessWidget {
   }
 }
 
-class _LeaderboardPreview extends StatelessWidget {
-  const _LeaderboardPreview({
-    required this.currentUserId,
-    required this.currentUserProfileImageUrl,
-    required this.onOpenFull,
-  });
-
-  final String currentUserId;
-  final String currentUserProfileImageUrl;
-  final VoidCallback onOpenFull;
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<List<LeaderboardEntry>>(
-      future: SupabaseService.instance.fetchLeaderboard(
-        limit: 3,
-        currentUserId: currentUserId,
-      ),
-      builder: (context, snapshot) {
-        final leaders = snapshot.data ?? const <LeaderboardEntry>[];
-
-        return _GlassPanel(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Global Leaderboard',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: onOpenFull,
-                    child: const Text('View All'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              if (snapshot.connectionState == ConnectionState.waiting)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 18),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF85EFAC),
-                    ),
-                  ),
-                )
-              else if (leaders.isEmpty)
-                Text(
-                  'Leaderboard data will appear here as soon as saved profiles are available.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.72),
-                    height: 1.45,
-                  ),
-                )
-              else
-                ...leaders.map(
-                  (leader) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _LeaderboardTile(
-                      leader: leader,
-                      currentUserProfileImageUrl: currentUserProfileImageUrl,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _QuickAccessCard extends StatelessWidget {
-  const _QuickAccessCard({
+class _ObjectiveIconButton extends StatelessWidget {
+  const _ObjectiveIconButton({
     required this.label,
     required this.icon,
     required this.accent,
@@ -591,49 +643,50 @@ class _QuickAccessCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap == null
-          ? null
-          : () {
-              HapticFeedback.lightImpact();
-              onTap!();
+    return Tooltip(
+      message: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap == null
+            ? null
+            : () {
+                HapticFeedback.lightImpact();
+                onTap!();
+              },
+        child: Container(
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: accent.withValues(alpha: 0.22)),
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final iconOnly = constraints.maxWidth < 70;
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, color: accent, size: 22),
+                  if (!iconOnly) ...[
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              );
             },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: accent.withValues(alpha: 0.22)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(icon, color: accent),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: onTap == null
-                  ? Colors.white.withValues(alpha: 0.28)
-                  : Colors.white.withValues(alpha: 0.62),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -646,14 +699,12 @@ class _ActionButton extends StatelessWidget {
     required this.accent,
     required this.icon,
     required this.onTap,
-    this.filled = true,
   });
 
   final String label;
   final Color accent;
   final IconData icon;
   final VoidCallback? onTap;
-  final bool filled;
 
   @override
   Widget build(BuildContext context) {
@@ -668,109 +719,24 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         height: 56,
         decoration: BoxDecoration(
-          color: filled ? accent : Colors.transparent,
+          color: accent,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: filled ? Colors.transparent : accent.withValues(alpha: 0.42),
-          ),
+          border: Border.all(color: Colors.transparent),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: filled ? const Color(0xFF062C21) : accent),
+            Icon(icon, color: const Color(0xFF062C21)),
             const SizedBox(width: 10),
             Text(
               label,
-              style: TextStyle(
-                color: filled ? const Color(0xFF062C21) : accent,
+              style: const TextStyle(
+                color: Color(0xFF062C21),
                 fontWeight: FontWeight.w900,
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _LeaderboardTile extends StatelessWidget {
-  const _LeaderboardTile({
-    required this.leader,
-    required this.currentUserProfileImageUrl,
-  });
-
-  final LeaderboardEntry leader;
-  final String currentUserProfileImageUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    final medal = switch (leader.rank) {
-      1 => const Color(0xFFFFD45C),
-      2 => const Color(0xFFD2DBE2),
-      _ => const Color(0xFFCD7F32),
-    };
-
-    final avatar = Container(
-      width: 34,
-      height: 34,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: leader.isCurrentUser && currentUserProfileImageUrl.isNotEmpty
-            ? Colors.transparent
-            : Colors.white.withValues(alpha: 0.05),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
-        ),
-      ),
-      child: leader.isCurrentUser && currentUserProfileImageUrl.isNotEmpty
-          ? ClipOval(
-              child: Image.network(
-                currentUserProfileImageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-              ),
-            )
-          : null,
-    );
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: leader.isCurrentUser
-            ? const Color(0xFF85EFAC).withValues(alpha: 0.10)
-            : Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: leader.isCurrentUser
-              ? const Color(0xFF85EFAC).withValues(alpha: 0.42)
-              : Colors.white.withValues(alpha: 0.06),
-        ),
-      ),
-      child: Row(
-        children: [
-          avatar,
-          const SizedBox(width: 10),
-          Icon(Icons.emoji_events_rounded, color: medal),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              leader.username,
-              style: TextStyle(
-                color: leader.isCurrentUser
-                    ? const Color(0xFF85EFAC)
-                    : Colors.white,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          Text(
-            leader.scoreLabel,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -805,23 +771,29 @@ class _GlowOrb extends StatelessWidget {
 }
 
 class _GlassPanel extends StatelessWidget {
-  const _GlassPanel({required this.child});
+  const _GlassPanel({
+    required this.child,
+    this.padding = const EdgeInsets.all(22),
+    this.radius = 28,
+  });
 
   final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double radius;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: padding,
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 18,
-            offset: const Offset(0, 12),
+            color: Colors.black.withValues(alpha: 0.24),
+            blurRadius: 26,
+            offset: const Offset(0, 16),
           ),
         ],
       ),
@@ -829,4 +801,3 @@ class _GlassPanel extends StatelessWidget {
     );
   }
 }
-

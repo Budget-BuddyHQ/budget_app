@@ -1,4 +1,8 @@
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:flame/game.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -83,20 +87,21 @@ class _GameCanvasState extends State<GameCanvas> {
     );
   }
 
-  Future<void> _handleAnswer(BuildContext context, int index) async {
+  Future<bool> _handleAnswer(BuildContext context, int index) async {
     final controller = context.read<AdventureStateController>();
     final correct = await controller.submitAnswer(index);
     if (!mounted) {
-      return;
+      return correct;
     }
 
     if (correct) {
+      HapticFeedback.lightImpact();
       AppSoundService.play(AppSoundEffect.success);
-      await Future<void>.delayed(const Duration(milliseconds: 320));
-      _game.resolveCombat(victory: true);
     } else {
+      HapticFeedback.vibrate();
       AppSoundService.play(AppSoundEffect.error);
     }
+    return correct;
   }
 
   bool _isInJoystickZone(Offset position, Size size) {
@@ -134,9 +139,7 @@ class _GameCanvasState extends State<GameCanvas> {
     }
 
     _isDraggingMovement = true;
-    _game.steerPlayerWithCanvasDirection(
-      Vector2(dragOffset.dx, dragOffset.dy),
-    );
+    _game.steerPlayerWithCanvasDirection(Vector2(dragOffset.dx, dragOffset.dy));
   }
 
   void _endPointerMovement(PointerEvent event) {
@@ -177,43 +180,79 @@ class _GameCanvasState extends State<GameCanvas> {
                     child: Stack(
                       children: [
                         Positioned.fill(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(26),
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF071711),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.10),
+                          child: LayoutBuilder(
+                            builder: (context, outerConstraints) {
+                              final compactFrame =
+                                  outerConstraints.maxHeight < 430 ||
+                                  outerConstraints.maxWidth < 760;
+                              final framePadding = compactFrame ? 8.0 : 14.0;
+
+                              return Padding(
+                                padding: EdgeInsets.all(framePadding),
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(28),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(
+                                          0xFF85EFAC,
+                                        ).withValues(alpha: 0.08),
+                                        blurRadius: 28,
+                                        spreadRadius: -6,
+                                        offset: const Offset(0, 18),
+                                      ),
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.28,
+                                        ),
+                                        blurRadius: 24,
+                                        offset: const Offset(0, 16),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(26),
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF071711),
+                                        border: Border.all(
+                                          color: const Color(
+                                            0xFF85EFAC,
+                                          ).withValues(alpha: 0.12),
+                                        ),
+                                      ),
+                                      child: LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          final gameSize = Size(
+                                            constraints.maxWidth,
+                                            constraints.maxHeight,
+                                          );
+
+                                          return Listener(
+                                            behavior:
+                                                HitTestBehavior.translucent,
+                                            onPointerDown: (event) =>
+                                                _beginPointerMovement(
+                                                  event,
+                                                  gameSize,
+                                                ),
+                                            onPointerMove:
+                                                _updatePointerMovement,
+                                            onPointerUp: _endPointerMovement,
+                                            onPointerCancel:
+                                                _endPointerMovement,
+                                            child: GameWidget<BudgetBuddyGame>(
+                                              game: _game,
+                                              autofocus: true,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
                                   ),
                                 ),
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final gameSize = Size(
-                                      constraints.maxWidth,
-                                      constraints.maxHeight,
-                                    );
-
-                                    return Listener(
-                                      behavior: HitTestBehavior.translucent,
-                                      onPointerDown: (event) =>
-                                          _beginPointerMovement(
-                                            event,
-                                            gameSize,
-                                          ),
-                                      onPointerMove: _updatePointerMovement,
-                                      onPointerUp: _endPointerMovement,
-                                      onPointerCancel: _endPointerMovement,
-                                      child: GameWidget<BudgetBuddyGame>(
-                                        game: _game,
-                                        autofocus: true,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
+                              );
+                            },
                           ),
                         ),
                         Positioned(
@@ -231,30 +270,12 @@ class _GameCanvasState extends State<GameCanvas> {
                         ),
                         if (adventure.combatVisible)
                           Positioned.fill(
-                            child: Container(
-                              color: Colors.black.withValues(alpha: 0.48),
-                              child: SafeArea(
-                                child: SingleChildScrollView(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    16,
-                                    92,
-                                    16,
-                                    24,
-                                  ),
-                                  child: Center(
-                                    child: ConstrainedBox(
-                                      constraints: const BoxConstraints(
-                                        maxWidth: 440,
-                                      ),
-                                      child: _CombatOverlay(
-                                        controller: adventure,
-                                        onAnswer: (index) =>
-                                            _handleAnswer(context, index),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                            child: _CombatOverlay(
+                              controller: adventure,
+                              onAnswer: (index) =>
+                                  _handleAnswer(context, index),
+                              onVictoryComplete: () =>
+                                  _game.resolveCombat(victory: true),
                             ),
                           ),
                       ],
@@ -440,33 +461,434 @@ class _GlassIconButton extends StatelessWidget {
   }
 }
 
-class _CombatOverlay extends StatelessWidget {
-  const _CombatOverlay({required this.controller, required this.onAnswer});
+typedef _CombatAnswerHandler = Future<bool> Function(int index);
+
+class _CombatOverlay extends StatefulWidget {
+  const _CombatOverlay({
+    required this.controller,
+    required this.onAnswer,
+    required this.onVictoryComplete,
+  });
 
   final AdventureStateController controller;
-  final ValueChanged<int> onAnswer;
+  final _CombatAnswerHandler onAnswer;
+  final VoidCallback onVictoryComplete;
+
+  @override
+  State<_CombatOverlay> createState() => _CombatOverlayState();
+}
+
+class _CombatOverlayState extends State<_CombatOverlay> {
+  static const Duration _stagingDuration = Duration(milliseconds: 1500);
+
+  int? _selectedIndex;
+  bool? _lastCorrect;
+  bool _isStaging = false;
+
+  Future<void> _selectAnswer(int index) async {
+    if (_isStaging || widget.controller.answerResolved) {
+      return;
+    }
+
+    setState(() {
+      _selectedIndex = index;
+      _lastCorrect = null;
+      _isStaging = true;
+    });
+
+    final correct = await widget.onAnswer(index);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _lastCorrect = correct;
+    });
+
+    await Future<void>.delayed(_stagingDuration);
+
+    if (!mounted) {
+      return;
+    }
+
+    if (correct) {
+      widget.onVictoryComplete();
+      return;
+    }
+
+    setState(() {
+      _selectedIndex = null;
+      _lastCorrect = null;
+      _isStaging = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
     final question = controller.currentQuestion;
     if (question == null) {
       return const SizedBox.shrink();
     }
 
+    final screenSize = MediaQuery.sizeOf(context);
+    final compact = screenSize.width < 760;
+    final answerLocked = _isStaging || controller.answerResolved;
+    final stageColor = _lastCorrect == null
+        ? const Color(0xFFFFD45C)
+        : _lastCorrect!
+        ? const Color(0xFF85EFAC)
+        : const Color(0xFFFF6B6B);
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.58),
+                gradient: RadialGradient(
+                  center: const Alignment(0.2, -0.28),
+                  radius: 1.2,
+                  colors: [
+                    stageColor.withValues(alpha: 0.18),
+                    const Color(0xFF071711).withValues(alpha: 0.86),
+                    Colors.black.withValues(alpha: 0.76),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              compact ? 12 : 20,
+              86,
+              compact ? 12 : 20,
+              compact ? 12 : 18,
+            ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Stack(
+                    children: [
+                      Align(
+                        alignment: compact
+                            ? Alignment.topCenter
+                            : const Alignment(0.62, -0.94),
+                        child: _BattleCard(
+                          title: controller.encounterEnemyName,
+                          subtitle: 'Enemy',
+                          icon: Icons.bolt_rounded,
+                          accent: const Color(0xFFFFD45C),
+                          healthListenable: controller.enemyHealthNotifier,
+                          maxHealth: controller.maxEnemyHealth,
+                          alignRight: true,
+                          isTakingHit: _isStaging && _lastCorrect == true,
+                        ),
+                      ),
+                      Align(
+                        alignment: compact
+                            ? const Alignment(0, 0.62)
+                            : const Alignment(-0.62, 0.58),
+                        child: _BattleCard(
+                          title: 'Budget Buddy',
+                          subtitle: 'Player',
+                          icon: Icons.shield_rounded,
+                          accent: const Color(0xFF85EFAC),
+                          healthListenable: controller.playerHealthNotifier,
+                          maxHealth: controller.maxHealth,
+                          alignRight: false,
+                          isTakingHit: _isStaging && _lastCorrect == false,
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.center,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 260),
+                          child: Icon(
+                            _lastCorrect == null
+                                ? Icons.sports_martial_arts_rounded
+                                : _lastCorrect!
+                                ? Icons.auto_awesome_rounded
+                                : Icons.warning_rounded,
+                            key: ValueKey<bool?>(_lastCorrect),
+                            color: stageColor,
+                            size: compact ? 38 : 48,
+                            shadows: [
+                              Shadow(
+                                color: stageColor.withValues(alpha: 0.38),
+                                blurRadius: 24,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _CommandMenu(
+                  prompt: question.prompt,
+                  options: question.options,
+                  selectedIndex: _selectedIndex,
+                  answerLocked: answerLocked,
+                  lastCorrect: _lastCorrect,
+                  feedback: controller.combatFeedback,
+                  onSelect: _selectAnswer,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BattleCard extends StatelessWidget {
+  const _BattleCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.accent,
+    required this.healthListenable,
+    required this.maxHealth,
+    required this.alignRight,
+    required this.isTakingHit,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color accent;
+  final ValueListenable<int> healthListenable;
+  final int maxHealth;
+  final bool alignRight;
+  final bool isTakingHit;
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final compact = screenWidth < 760;
+    final cardWidth = (screenWidth * (compact ? 0.78 : 0.34)).clamp(
+      220.0,
+      320.0,
+    );
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(end: isTakingHit ? 1 : 0),
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.elasticOut,
+      builder: (context, impact, child) {
+        final shake = math.sin(impact * math.pi * 8) * 9 * impact;
+        return Transform.translate(
+          offset: Offset(
+            isTakingHit ? shake : 0,
+            isTakingHit ? -impact * 2 : 0,
+          ),
+          child: child,
+        );
+      },
+      child: Container(
+        width: cardWidth,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0B251C).withValues(alpha: 0.88),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: accent.withValues(alpha: 0.34)),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: 0.18),
+              blurRadius: 30,
+              spreadRadius: -8,
+              offset: const Offset(0, 16),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.34),
+              blurRadius: 26,
+              offset: const Offset(0, 18),
+            ),
+          ],
+        ),
+        child: Row(
+          textDirection: alignRight ? TextDirection.rtl : TextDirection.ltr,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    accent.withValues(alpha: 0.96),
+                    accent.withValues(alpha: 0.22),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.28),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Icon(icon, color: const Color(0xFF071711), size: 34),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: alignRight
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    subtitle.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: accent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _AnimatedHealthBar(
+                    healthListenable: healthListenable,
+                    maxHealth: maxHealth,
+                    accent: accent,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimatedHealthBar extends StatelessWidget {
+  const _AnimatedHealthBar({
+    required this.healthListenable,
+    required this.maxHealth,
+    required this.accent,
+  });
+
+  final ValueListenable<int> healthListenable;
+  final int maxHealth;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<int>(
+      valueListenable: healthListenable,
+      builder: (context, health, _) {
+        final target = maxHealth == 0
+            ? 0.0
+            : (health / maxHealth).clamp(0.0, 1.0);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: Container(
+                height: 10,
+                color: Colors.white.withValues(alpha: 0.10),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween<double>(end: target),
+                  duration: const Duration(milliseconds: 520),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, _) {
+                    return FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: value,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              accent,
+                              const Color(0xFFFFFFFF).withValues(alpha: 0.86),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '$health / $maxHealth HP',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.68),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _CommandMenu extends StatelessWidget {
+  const _CommandMenu({
+    required this.prompt,
+    required this.options,
+    required this.selectedIndex,
+    required this.answerLocked,
+    required this.lastCorrect,
+    required this.feedback,
+    required this.onSelect,
+  });
+
+  final String prompt;
+  final List<String> options;
+  final int? selectedIndex;
+  final bool answerLocked;
+  final bool? lastCorrect;
+  final String? feedback;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 760;
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(22),
+      width: double.infinity,
+      padding: EdgeInsets.all(compact ? 14 : 18),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B251C),
-        borderRadius: BorderRadius.circular(28),
+        color: const Color(0xFF071711).withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(30),
         border: Border.all(
-          color: const Color(0xFF85EFAC).withValues(alpha: 0.30),
+          color: const Color(0xFF85EFAC).withValues(alpha: 0.26),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.26),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
+            color: Colors.black.withValues(alpha: 0.38),
+            blurRadius: 34,
+            offset: const Offset(0, -10),
           ),
         ],
       ),
@@ -474,73 +896,229 @@ class _CombatOverlay extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            controller.encounterEnemyName,
-            style: const TextStyle(
-              color: Color(0xFFFFD45C),
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Combat Quiz',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            question.prompt,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.84),
-              height: 1.45,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...List<Widget>.generate(
-            question.options.length,
-            (index) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: controller.answerResolved ? null : () => onAnswer(index),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.10),
-                    ),
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF85EFAC).withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFF85EFAC).withValues(alpha: 0.24),
                   ),
-                  child: Text(
-                    question.options[index],
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
+                ),
+                child: const Icon(
+                  Icons.psychology_alt_rounded,
+                  color: Color(0xFF85EFAC),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  prompt,
+                  maxLines: compact ? 2 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    height: 1.24,
+                    letterSpacing: 0,
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-          if (controller.combatFeedback != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              controller.combatFeedback!,
-              style: TextStyle(
-                color: controller.answerResolved
-                    ? const Color(0xFF85EFAC)
-                    : const Color(0xFFFFB084),
-                fontWeight: FontWeight.w700,
-                height: 1.4,
+          const SizedBox(height: 14),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final useGrid = constraints.maxWidth >= 620;
+              final children = List<Widget>.generate(
+                options.length,
+                (index) => _CommandButton(
+                  label: options[index],
+                  icon: _answerIcon(index),
+                  selected: selectedIndex == index,
+                  locked: answerLocked,
+                  correct: selectedIndex == index ? lastCorrect : null,
+                  onTap: () => onSelect(index),
+                ),
+              );
+
+              if (!useGrid) {
+                return Column(
+                  children: children
+                      .map(
+                        (child) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: child,
+                        ),
+                      )
+                      .toList(growable: false),
+                );
+              }
+
+              return Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: children
+                    .map(
+                      (child) => SizedBox(
+                        width: (constraints.maxWidth - 10) / 2,
+                        child: child,
+                      ),
+                    )
+                    .toList(growable: false),
+              );
+            },
+          ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 260),
+            child: feedback == null
+                ? const SizedBox.shrink()
+                : Padding(
+                    key: ValueKey<String>(feedback!),
+                    padding: const EdgeInsets.only(top: 12),
+                    child: _FeedbackPill(
+                      feedback: feedback!,
+                      success: lastCorrect == true,
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _answerIcon(int index) {
+    return switch (index) {
+      0 => Icons.looks_one_rounded,
+      1 => Icons.looks_two_rounded,
+      2 => Icons.looks_3_rounded,
+      _ => Icons.looks_4_rounded,
+    };
+  }
+}
+
+class _CommandButton extends StatelessWidget {
+  const _CommandButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.locked,
+    required this.correct,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final bool locked;
+  final bool? correct;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = correct == null
+        ? selected
+              ? const Color(0xFFFFD45C)
+              : const Color(0xFF85EFAC)
+        : correct!
+        ? const Color(0xFF85EFAC)
+        : const Color(0xFFFF6B6B);
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: locked ? null : onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        constraints: const BoxConstraints(minHeight: 58),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? accent.withValues(alpha: 0.18)
+              : Colors.white.withValues(alpha: locked ? 0.035 : 0.07),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected
+                ? accent.withValues(alpha: 0.72)
+                : Colors.white.withValues(alpha: 0.10),
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.18),
+                    blurRadius: 18,
+                    offset: const Offset(0, 10),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: accent, size: 24),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withValues(
+                    alpha: locked && !selected ? 0.58 : 0.96,
+                  ),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  height: 1.2,
+                  letterSpacing: 0,
+                ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FeedbackPill extends StatelessWidget {
+  const _FeedbackPill({required this.feedback, required this.success});
+
+  final String feedback;
+  final bool success;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = success ? const Color(0xFF85EFAC) : const Color(0xFFFFB084);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.11),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accent.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            success ? Icons.check_circle_rounded : Icons.heart_broken_rounded,
+            color: accent,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              feedback,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: accent,
+                fontWeight: FontWeight.w800,
+                height: 1.28,
+              ),
+            ),
+          ),
         ],
       ),
     );
