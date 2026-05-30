@@ -88,7 +88,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
       builder: (context, controller, _) {
         final stats = controller.stats;
         final equippedSkin = skinFromId(stats.equippedSkin);
-        final unlockedSkins = stats.unlockedSkins.toSet();
+        final inventorySkins = controller.unlockedAvatarSkins;
 
         // Initialize skin if not already set
         if (!_initalized) {
@@ -146,7 +146,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
                           GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            itemCount: budgetBuddySkins.length,
+                            itemCount: inventorySkins.length,
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: crossAxisCount,
@@ -155,15 +155,14 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
                                   childAspectRatio: childAspectRatio,
                                 ),
                             itemBuilder: (context, index) {
-                              final skin = budgetBuddySkins[index];
-                              final unlocked = unlockedSkins.contains(skin.id);
+                              final skin = inventorySkins[index];
                               final equipped = stats.equippedSkin == skin.id;
 
                               return _SkinTile(
                                 skin: skin,
-                                unlocked: unlocked,
+                                unlocked: true,
                                 equipped: equipped,
-                                onTap: unlocked ? () => _equipSkin(skin) : null,
+                                onTap: () => _equipSkin(skin),
                               );
                             },
                           ),

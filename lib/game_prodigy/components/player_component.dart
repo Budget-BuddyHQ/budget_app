@@ -1,18 +1,20 @@
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'enemy_monster_component.dart';
 
-class PlayerComponent extends PositionComponent with CollisionCallbacks {
+class PlayerComponent extends PositionComponent
+    with CollisionCallbacks, HasGameReference<FlameGame> {
   PlayerComponent({
     required super.position,
     required this.joystick,
     required this.worldBounds,
     required this.collisionRects,
     required this.onEncounter,
-  }) : super(size: Vector2(56, 56), anchor: Anchor.center);
+  }) : super(size: Vector2(78, 92), anchor: Anchor.center);
 
   final JoystickComponent joystick;
   final Rect worldBounds;
@@ -113,110 +115,202 @@ class PlayerComponent extends PositionComponent with CollisionCallbacks {
   void render(Canvas canvas) {
     final moving = _velocity.length2 > 20;
     final stepWave = moving ? (_animationClock % 1) : 0;
-    final legOffset = moving ? (stepWave < 0.5 ? -2.5 : 2.5) : 0.0;
-    final bob = moving ? ((stepWave < 0.5 ? -1.5 : 1.5)) : 0.0;
-    final headTilt = switch (_facing) {
-      FacingDirection.left => -5.0,
-      FacingDirection.right => 5.0,
+    final bob = moving ? (stepWave < 0.5 ? -2.0 : 2.0) : 0.0;
+    final scale = _fieldScale;
+    final cardWidth = 60.0 * scale;
+    final cardHeight = 74.0 * scale;
+    final radius = 18.0 * scale;
+    final cardRect = Rect.fromCenter(
+      center: Offset.zero,
+      width: cardWidth,
+      height: cardHeight,
+    );
+    final cardRRect = RRect.fromRectAndRadius(
+      cardRect,
+      Radius.circular(radius),
+    );
+    final directionNudge = switch (_facing) {
+      FacingDirection.left => -3.0 * scale,
+      FacingDirection.right => 3.0 * scale,
       _ => 0.0,
     };
-
-    final shellPaint = Paint()..color = const Color(0xFFF6E37C);
-    final shellDetailPaint = Paint()..color = const Color(0xFFD4B857);
-    final bodyPaint = Paint()..color = const Color(0xFF5C815D);
-    final scarfPaint = Paint()..color = const Color(0xFF58C7FF);
-    final outlinePaint = Paint()
-      ..color = const Color(0xFF1B5E4A)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-    final glowPaint = Paint()
-      ..color = const Color(0xFF85EFAC).withValues(alpha: 0.12)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
 
     canvas.save();
     canvas.translate(size.x / 2, size.y / 2);
     canvas.translate(0, bob);
 
-    canvas.drawOval(
-      Rect.fromCenter(center: const Offset(0, 22), width: 36, height: 12),
-      Paint()..color = Colors.black.withValues(alpha: 0.16),
-    );
-    canvas.drawOval(
-      Rect.fromCenter(center: const Offset(0, 2), width: 44, height: 28),
-      glowPaint,
-    );
-    canvas.drawOval(
-      Rect.fromCenter(center: const Offset(0, 0), width: 40, height: 28),
-      shellPaint,
-    );
-    canvas.drawPath(
-      Path()
-        ..moveTo(-10, -2)
-        ..quadraticBezierTo(0, -10, 10, -2)
-        ..quadraticBezierTo(0, 6, -10, -2),
-      shellDetailPaint,
-    );
-    canvas.drawOval(
-      Rect.fromCenter(center: const Offset(0, 2), width: 52, height: 32),
-      bodyPaint,
-    );
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromCenter(center: const Offset(0, -6), width: 26, height: 8),
-        const Radius.circular(6),
+        Rect.fromCenter(
+          center: Offset(0, 26 * scale),
+          width: 58 * scale,
+          height: 14 * scale,
+        ),
+        Radius.circular(12 * scale),
       ),
-      scarfPaint,
+      Paint()
+        ..color = Colors.black.withValues(alpha: 0.28)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 6 * scale),
     );
-    canvas.drawPath(
-      Path()
-        ..moveTo(9, -4)
-        ..lineTo(16, 3)
-        ..lineTo(10, 7)
-        ..close(),
-      scarfPaint,
+    canvas.drawRRect(
+      cardRRect.inflate(10 * scale),
+      Paint()
+        ..color = const Color(0xFF85EFAC).withValues(alpha: 0.20)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 18 * scale),
     );
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(headTilt, -16), width: 18, height: 16),
-      bodyPaint,
+    canvas.drawRRect(
+      cardRRect,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF173E31), Color(0xFF071711)],
+        ).createShader(cardRect),
     );
-
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(-15, 16 + legOffset),
-        width: 10,
-        height: 8,
-      ),
-      bodyPaint,
+    canvas.drawRRect(
+      cardRRect.deflate(2 * scale),
+      Paint()..color = Colors.white.withValues(alpha: 0.05),
     );
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(15, 16 - legOffset), width: 10, height: 8),
-      bodyPaint,
+    canvas.drawRRect(
+      cardRRect,
+      Paint()
+        ..color = const Color(0xFF85EFAC).withValues(alpha: 0.58)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2 * scale,
     );
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(-18, 4 - legOffset), width: 10, height: 8),
-      bodyPaint,
-    );
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(18, 4 + legOffset), width: 10, height: 8),
-      bodyPaint,
-    );
-
-    canvas.drawOval(
-      Rect.fromCenter(center: const Offset(0, 2), width: 52, height: 32),
-      outlinePaint,
-    );
-    canvas.drawOval(
-      Rect.fromCenter(center: const Offset(0, 0), width: 40, height: 28),
-      outlinePaint,
-    );
-
-    final eyeOffsetX = _facing == FacingDirection.left ? -3.5 : 3.5;
     canvas.drawCircle(
-      Offset(headTilt + eyeOffsetX, -18),
-      1.8,
-      Paint()..color = Colors.black,
+      Offset(directionNudge, -2 * scale),
+      24 * scale,
+      Paint()
+        ..color = const Color(0xFF85EFAC).withValues(alpha: 0.48)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.6 * scale,
+    );
+    canvas.drawCircle(
+      Offset(directionNudge, -2 * scale),
+      20 * scale,
+      Paint()..color = const Color(0xFF85EFAC).withValues(alpha: 0.10),
+    );
+    _drawHealthBar(
+      canvas,
+      centerY: -cardHeight * 0.34,
+      width: cardWidth * 0.68,
+      scale: scale,
+      accent: const Color(0xFF85EFAC),
+      value: 1,
+    );
+    _paintIcon(
+      canvas,
+      Icons.shield_rounded,
+      Offset(directionNudge, -2 * scale),
+      34 * scale,
+      const Color(0xFF85EFAC),
+    );
+    _paintIcon(
+      canvas,
+      Icons.flash_on_rounded,
+      Offset(14 * scale + directionNudge, 14 * scale),
+      18 * scale,
+      const Color(0xFFFFD45C),
+    );
+    _paintLabel(
+      canvas,
+      'YOU',
+      Offset(0, cardHeight * 0.31),
+      10 * scale,
+      const Color(0xFFFFFFFF),
     );
     canvas.restore();
+  }
+
+  double get _fieldScale {
+    return (game.size.x / 900).clamp(0.78, 1.22).toDouble();
+  }
+
+  void _drawHealthBar(
+    Canvas canvas, {
+    required double centerY,
+    required double width,
+    required double scale,
+    required Color accent,
+    required double value,
+  }) {
+    final background = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: Offset(0, centerY),
+        width: width,
+        height: 5 * scale,
+      ),
+      Radius.circular(8 * scale),
+    );
+    final fill = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        -width / 2,
+        centerY - (2.5 * scale),
+        width * value,
+        5 * scale,
+      ),
+      Radius.circular(8 * scale),
+    );
+
+    canvas.drawRRect(
+      background,
+      Paint()..color = Colors.black.withValues(alpha: 0.34),
+    );
+    canvas.drawRRect(fill, Paint()..color = accent);
+  }
+
+  void _paintIcon(
+    Canvas canvas,
+    IconData icon,
+    Offset center,
+    double size,
+    Color color,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: String.fromCharCode(icon.codePoint),
+        style: TextStyle(
+          color: color,
+          fontSize: size,
+          fontFamily: icon.fontFamily,
+          package: icon.fontPackage,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    painter.paint(
+      canvas,
+      center - Offset(painter.width / 2, painter.height / 2),
+    );
+  }
+
+  void _paintLabel(
+    Canvas canvas,
+    String label,
+    Offset center,
+    double size,
+    Color color,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(
+          color: color,
+          fontSize: size,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0,
+        ),
+      ),
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    painter.paint(
+      canvas,
+      center - Offset(painter.width / 2, painter.height / 2),
+    );
   }
 
   @override
