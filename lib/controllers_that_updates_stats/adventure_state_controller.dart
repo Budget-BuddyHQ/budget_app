@@ -28,6 +28,7 @@ class AdventureStateController extends ChangeNotifier {
   int _gold = 0;
   int _literacyPoints = 0;
   int _health = 100;
+  final int _maxEnemyHealth = 100;
   String _equippedPet = 'Emerald Turtle';
   bool _combatVisible = false;
   bool _answerResolved = false;
@@ -40,12 +41,17 @@ class AdventureStateController extends ChangeNotifier {
   int _encountersWon = 0;
   int _streakDays = 1;
 
+  final ValueNotifier<int> playerHealthNotifier = ValueNotifier<int>(100);
+  final ValueNotifier<int> enemyHealthNotifier = ValueNotifier<int>(100);
+
   int get level => _level;
   int get xp => _xp;
   int get gold => _gold;
   int get literacyPoints => _literacyPoints;
   int get health => _health;
   int get maxHealth => _maxHealth;
+  int get enemyHealth => enemyHealthNotifier.value;
+  int get maxEnemyHealth => _maxEnemyHealth;
   String get equippedPet => _equippedPet;
   bool get combatVisible => _combatVisible;
   bool get answerResolved => _answerResolved;
@@ -134,6 +140,7 @@ class AdventureStateController extends ChangeNotifier {
       return;
     }
     _health = nextHealth;
+    playerHealthNotifier.value = _health;
     _sessionFocus = 'Recovered some health. You are ready for the next run.';
     notifyListeners();
   }
@@ -143,6 +150,8 @@ class AdventureStateController extends ChangeNotifier {
       return;
     }
     _encounterEnemyName = enemyName;
+    enemyHealthNotifier.value = _maxEnemyHealth;
+    playerHealthNotifier.value = _health;
     _currentQuestion =
         _questionBank[enemyName.hashCode.abs() % _questionBank.length];
     _combatVisible = true;
@@ -173,6 +182,7 @@ class AdventureStateController extends ChangeNotifier {
     final correct = optionIndex == question.correctIndex;
     if (correct) {
       _answerResolved = true;
+      enemyHealthNotifier.value = 0;
       _combatFeedback = question.explanation;
       _encountersWon += 1;
       _streakDays = min(30, _streakDays + 1);
@@ -202,6 +212,7 @@ class AdventureStateController extends ChangeNotifier {
     }
 
     _health = max(0, _health - 8);
+    playerHealthNotifier.value = _health;
     _combatFeedback = 'Not quite. ${question.explanation}';
     _sessionFocus = 'Take a breather, then try the encounter again.';
     notifyListeners();
@@ -216,6 +227,13 @@ class AdventureStateController extends ChangeNotifier {
     _encounterEnemyName = '';
     _sessionFocus = 'The path is clear. Explore more of $_currentDistrict.';
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    playerHealthNotifier.dispose();
+    enemyHealthNotifier.dispose();
+    super.dispose();
   }
 
   String _buildSessionFocus(int nextLevel, int literacyPoints) {
