@@ -727,7 +727,7 @@ class _LeaderboardTile extends StatelessWidget {
               child: Image.network(
                 currentUserProfileImageUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
               ),
             )
           : null,
