@@ -1,0 +1,123 @@
+[
+  {
+    "_teamNote": "Add new React Challenge questions by copying this object format. Do not use // comments because this file must stay valid JSON. WILL NEED TO GET QUESTIONS FROM CURRICULUM DEPARTMENT",
+    "prompt": "Your grocery cart is $12 over budget. Which swap helps most?",
+    "choices": [
+      "Trade bottled water for a reusable bottle",
+      "Buy the same snacks in smaller bags",
+      "Remove the store-brand rice"
+    ],
+    "correctIndex": 0,
+    "explanation": "A reusable bottle cuts a repeated cost without removing a need."
+  },
+  {
+    "prompt": "A subscription renews tomorrow, but you have not used it in 3 months.",
+    "choices": [
+      "Cancel before renewal",
+      "Wait until next month",
+      "Upgrade to the annual plan"
+    ],
+    "correctIndex": 0,
+    "explanation": "Canceling unused recurring charges protects future cash flow."
+  },
+  {
+    "prompt": "You get paid Friday and rent is due Monday. What should happen first?",
+    "choices": [
+      "Set aside rent money",
+      "Buy a new game now",
+      "Leave the full check in spending money"
+    ],
+    "correctIndex": 0,
+    "explanation": "Needs with fixed due dates should be protected before wants."
+  },
+  {
+    "prompt": "Two items are on sale. One is a planned need, one is an impulse want.",
+    "choices": [
+      "Buy the planned need",
+      "Buy both because they are discounted",
+      "Buy the want before the sale ends"
+    ],
+    "correctIndex": 0,
+    "explanation": "A sale only saves money when the purchase was already useful."
+  },
+  {
+    "prompt": "You have $25 left for the week. Which choice is strongest?",
+    "choices": [
+      "Plan meals and keep $5 aside",
+      "Spend all $25 today",
+      "Ignore the balance until payday"
+    ],
+    "correctIndex": 0,
+    "explanation": "Planning plus a small cushion makes the money last longer."
+  },
+  {
+    "prompt": "Your phone bill is higher than expected. What is the smartest first move?",
+    "choices": [
+      "Review charges and remove unused add-ons",
+      "Ignore the bill until next month",
+      "Buy a newer phone on credit"
+    ],
+    "correctIndex": 0,
+    "explanation": "Checking the bill can reveal fees or services you can remove immediately."
+  },
+  {
+    "prompt": "You want takeout, but groceries are already at home. Which choice protects your budget?",
+    "choices": [
+      "Cook tonight and save takeout for a planned day",
+      "Order delivery because it feels easier",
+      "Buy extra snacks instead"
+    ],
+    "correctIndex": 0,
+    "explanation": "Using food you already paid for avoids stacking an extra want on top."
+  },
+  {
+    "prompt": "A friend invites you to an expensive event. What response fits a budget plan?",
+    "choices": [
+      "Suggest a cheaper hangout",
+      "Go and skip rent savings",
+      "Put the full cost on a card without checking"
+    ],
+    "correctIndex": 0,
+    "explanation": "Offering a lower-cost alternative keeps the friendship and the budget alive."
+  },
+  {
+    "prompt": "Your emergency fund is empty. Where should extra money go first?",
+    "choices": [
+      "Start a small emergency cushion",
+      "Buy a premium game skin",
+      "Increase impulse spending"
+    ],
+    "correctIndex": 0,
+    "explanation": "Even a small cushion makes surprise costs less damaging."
+  },
+  {
+    "prompt": "You found a coupon for an item you do not need. What is the best call?",
+    "choices": [
+      "Skip it",
+      "Buy it because the coupon expires",
+      "Buy two to maximize the discount"
+    ],
+    "correctIndex": 0,
+    "explanation": "A discount on an unnecessary item is still extra spending."
+  },
+  {
+    "prompt": "Your budget has categories for needs, wants, and savings. Which item belongs in needs?",
+    "choices": [
+      "Electric bill",
+      "Concert merch",
+      "Streaming upgrade"
+    ],
+    "correctIndex": 0,
+    "explanation": "Utilities are essential costs, while merch and upgrades are wants."
+  },
+  {
+    "prompt": "You are comparing two cereal boxes. Which detail helps find the better value?",
+    "choices": [
+      "Price per ounce",
+      "Box color",
+      "Largest front label"
+    ],
+    "correctIndex": 0,
+    "explanation": "Unit price lets you compare value even when package sizes differ."
+  }
+]
