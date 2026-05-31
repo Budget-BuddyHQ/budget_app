@@ -17,8 +17,8 @@ enum AppSoundEffect {
 }
 
 /// Lightweight sound service that persists user preference.
-/// Uses system sounds as a safe fallback and avoids optional native audio
-/// packages to keep compatibility across platforms.
+/// Uses bundled audio assets where available and system sounds as a safe
+/// fallback.
 class AppSoundService {
   AppSoundService._();
 
@@ -45,14 +45,7 @@ class AppSoundService {
   static bool _playersReady = false;
   static bool enabled = true;
 
-  static bool get _canUseAssetPlayers {
-    if (kIsWeb) {
-      return true;
-    }
-
-    return defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS;
-  }
+  static bool get _canUseAssetPlayers => true;
 
   static Future<void> initialize() async {
     _preferences ??= await SharedPreferences.getInstance();
@@ -130,11 +123,11 @@ class AppSoundService {
       case AppSoundEffect.tap:
       case AppSoundEffect.navigation:
       case AppSoundEffect.selection:
+      case AppSoundEffect.success:
+      case AppSoundEffect.needPickup:
         return SystemSound.play(SystemSoundType.click);
       case AppSoundEffect.notification:
-      case AppSoundEffect.success:
       case AppSoundEffect.error:
-      case AppSoundEffect.needPickup:
       case AppSoundEffect.wantHit:
       case AppSoundEffect.celebration:
       case AppSoundEffect.shutdown:
