@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -382,7 +383,7 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
               Navigator.of(context).pop(result);
             }
           },
-          child: _NativeChallengeFallback(
+          child: _NativeBudgetBattleChallenge(
             onComplete: (payload) => _handlePayload(payload),
           ),
         ),
@@ -462,8 +463,583 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
   }
 }
 
-class _NativeChallengeFallback extends StatelessWidget {
-  const _NativeChallengeFallback({required this.onComplete});
+class _NativeBudgetBattleChallenge extends StatefulWidget {
+  const _NativeBudgetBattleChallenge({required this.onComplete});
+
+  final Future<void> Function(Map<String, dynamic>) onComplete;
+
+  @override
+  State<_NativeBudgetBattleChallenge> createState() =>
+      _NativeBudgetBattleChallengeState();
+}
+
+class _NativeBudgetBattleChallengeState
+    extends State<_NativeBudgetBattleChallenge> {
+  static const int _questionsPerRun = 5;
+  static const String _questionBankAsset =
+      'assets/data/react_challenge_questions.json';
+  static const List<_ChallengeQuestion> _fallbackQuestions =
+      <_ChallengeQuestion>[
+    _ChallengeQuestion(
+      prompt: 'Your grocery cart is \$12 over budget. Which swap helps most?',
+      choices: <String>[
+        'Trade bottled water for a reusable bottle',
+        'Buy the same snacks in smaller bags',
+        'Remove the store-brand rice',
+      ],
+      correctIndex: 0,
+      explanation:
+          'A reusable bottle cuts a repeated cost without removing a need.',
+    ),
+    _ChallengeQuestion(
+      prompt:
+          'A subscription renews tomorrow, but you have not used it in 3 months.',
+      choices: <String>[
+        'Cancel before renewal',
+        'Wait until next month',
+        'Upgrade to the annual plan',
+      ],
+      correctIndex: 0,
+      explanation:
+          'Canceling unused recurring charges protects future cash flow.',
+    ),
+    _ChallengeQuestion(
+      prompt:
+          'You get paid Friday and rent is due Monday. What should happen first?',
+      choices: <String>[
+        'Set aside rent money',
+        'Buy a new game now',
+        'Leave the full check in spending money',
+      ],
+      correctIndex: 0,
+      explanation:
+          'Needs with fixed due dates should be protected before wants.',
+    ),
+    _ChallengeQuestion(
+      prompt:
+          'Two items are on sale. One is a planned need, one is an impulse want.',
+      choices: <String>[
+        'Buy the planned need',
+        'Buy both because they are discounted',
+        'Buy the want before the sale ends',
+      ],
+      correctIndex: 0,
+      explanation:
+          'A sale only saves money when the purchase was already useful.',
+    ),
+    _ChallengeQuestion(
+      prompt: 'You have \$25 left for the week. Which choice is strongest?',
+      choices: <String>[
+        'Plan meals and keep \$5 aside',
+        'Spend all \$25 today',
+        'Ignore the balance until payday',
+      ],
+      correctIndex: 0,
+      explanation:
+          'Planning plus a small cushion makes the money last longer.',
+    ),
+  ];
+
+  late List<_ChallengeQuestion> _questions;
+
+  int _questionIndex = 0;
+  int _correctAnswers = 0;
+  int? _selectedIndex;
+  bool _roundComplete = false;
+  bool _isLoadingQuestions = true;
+  bool _isSubmitting = false;
+
+  _ChallengeQuestion get _currentQuestion => _questions[_questionIndex];
+
+  @override
+  void initState() {
+    super.initState();
+    _questions = _dailyQuestionSet(_fallbackQuestions);
+    unawaited(_loadQuestionBank());
+  }
+
+  Future<void> _loadQuestionBank() async {
+    try {
+      final rawQuestions = await rootBundle.loadString(_questionBankAsset);
+      final decoded = jsonDecode(rawQuestions);
+      if (decoded is! List) {
+        throw const FormatException('Question bank must be a JSON list.');
+      }
+
+      final loadedQuestions = decoded
+          .whereType<Map>()
+          .map(
+            (questionJson) => _ChallengeQuestion.fromJson(
+              questionJson.map(
+                (key, value) => MapEntry(key.toString(), value),
+              ),
+            ),
+          )
+          .where((question) => question.isValid)
+          .toList(growable: false);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _questions = _dailyQuestionSet(
+          loadedQuestions.isEmpty ? _fallbackQuestions : loadedQuestions,
+        );
+        _isLoadingQuestions = false;
+      });
+    } catch (error) {
+      debugPrint('React Challenge question bank fallback: $error');
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _questions = _dailyQuestionSet(_fallbackQuestions);
+        _isLoadingQuestions = false;
+      });
+    }
+  }
+
+  List<_ChallengeQuestion> _dailyQuestionSet(
+    List<_ChallengeQuestion> questionBank,
+  ) {
+    final today = DateTime.now();
+    final seed = (today.year * 10000) + (today.month * 100) + today.day;
+    final shuffledQuestions = List<_ChallengeQuestion>.of(questionBank)
+      ..shuffle(math.Random(seed));
+
+    return shuffledQuestions
+        .take(math.min(_questionsPerRun, shuffledQuestions.length))
+        .toList(growable: false);
+  }
+
+  void _chooseAnswer(int index) {
+    if (_selectedIndex != null || _roundComplete) {
+      return;
+    }
+
+    final isCorrect = index == _currentQuestion.correctIndex;
+    HapticFeedback.lightImpact();
+    AppSoundService.play(
+      isCorrect ? AppSoundEffect.success : AppSoundEffect.error,
+    );
+
+    setState(() {
+      _selectedIndex = index;
+      if (isCorrect) {
+        _correctAnswers += 1;
+      }
+    });
+  }
+
+  void _advance() {
+    if (_selectedIndex == null) {
+      return;
+    }
+
+    if (_questionIndex == _questions.length - 1) {
+      setState(() {
+        _roundComplete = true;
+      });
+      return;
+    }
+
+    setState(() {
+      _questionIndex += 1;
+      _selectedIndex = null;
+    });
+  }
+
+  Future<void> _bankRewards() async {
+    if (_isSubmitting) {
+      return;
+    }
+
+    final passed = _correctAnswers >= 3;
+    final gold = 45 + (_correctAnswers * 18);
+    final xp = 35 + (_correctAnswers * 14);
+    final literacyPoints = 12 + (_correctAnswers * 6);
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    await widget.onComplete(<String, dynamic>{
+      'status': passed ? 'victory' : 'defeat',
+      'gold': gold,
+      'xp': xp,
+      'literacy_points': literacyPoints,
+      'title': 'React Challenge Reward',
+      'description':
+          'Answered $_correctAnswers of ${_questions.length} daily Budget Battle prompts correctly.',
+    });
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF103225),
+      appBar: AppBar(
+        title: const Text('React Challenge'),
+        backgroundColor: const Color(0xFF1A4D3D),
+        foregroundColor: Colors.white,
+      ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 620),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                child: _isLoadingQuestions
+                    ? _buildLoadingQuestions()
+                    : _roundComplete
+                    ? _buildResults()
+                    : _buildQuestion(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingQuestions() {
+    return Container(
+      key: const ValueKey<String>('loading_questions'),
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xFF254E3F),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF3B6B59)),
+      ),
+      child: const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircularProgressIndicator(color: Color(0xFF85EFAC)),
+          SizedBox(height: 16),
+          Text(
+            'Loading daily challenge',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuestion() {
+    final question = _currentQuestion;
+    final selectedIndex = _selectedIndex;
+    final progress = (_questionIndex + 1) / _questions.length;
+
+    return Container(
+      key: ValueKey<int>(_questionIndex),
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xFF254E3F),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF3B6B59)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Question ${_questionIndex + 1} of ${_questions.length}',
+                  style: const TextStyle(
+                    color: Color(0xFF85EFAC),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                'Score $_correctAnswers',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 8,
+              value: progress,
+              backgroundColor: Colors.white10,
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF85EFAC),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            question.prompt,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              height: 1.18,
+            ),
+          ),
+          const SizedBox(height: 20),
+          for (var index = 0; index < question.choices.length; index += 1) ...[
+            _ChallengeChoiceButton(
+              label: question.choices[index],
+              isCorrect: index == question.correctIndex,
+              isSelected: selectedIndex == index,
+              hasAnswered: selectedIndex != null,
+              onPressed: () => _chooseAnswer(index),
+            ),
+            if (index != question.choices.length - 1) const SizedBox(height: 10),
+          ],
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: selectedIndex == null
+                ? const SizedBox(height: 18)
+                : Padding(
+                    padding: const EdgeInsets.only(top: 18),
+                    child: Text(
+                      question.explanation,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: selectedIndex == null ? null : _advance,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF85EFAC),
+                foregroundColor: const Color(0xFF103225),
+                disabledBackgroundColor: Colors.white12,
+                disabledForegroundColor: Colors.white38,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Text(
+                _questionIndex == _questions.length - 1
+                    ? 'See Results'
+                    : 'Next Question',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResults() {
+    final passed = _correctAnswers >= 3;
+    final title = passed ? 'Victory!' : 'Run Complete';
+    final message = passed
+        ? 'You made smart spending calls under pressure.'
+        : 'You finished the run and earned practice rewards.';
+
+    return Container(
+      key: const ValueKey<String>('results'),
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xFF254E3F),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF3B6B59)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            passed ? Icons.workspace_premium_rounded : Icons.flag_rounded,
+            color: const Color(0xFF85EFAC),
+            size: 42,
+          ),
+          const SizedBox(height: 14),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$message You answered $_correctAnswers of ${_questions.length} correctly.',
+            style: const TextStyle(color: Colors.white70, height: 1.4),
+          ),
+          const SizedBox(height: 22),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isSubmitting ? null : _bankRewards,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF85EFAC),
+                foregroundColor: const Color(0xFF103225),
+                disabledBackgroundColor: Colors.white12,
+                disabledForegroundColor: Colors.white38,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF85EFAC),
+                      ),
+                    )
+                  : const Text('Bank Rewards'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChallengeChoiceButton extends StatelessWidget {
+  const _ChallengeChoiceButton({
+    required this.label,
+    required this.isCorrect,
+    required this.isSelected,
+    required this.hasAnswered,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool isCorrect;
+  final bool isSelected;
+  final bool hasAnswered;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color backgroundColor;
+    final Color borderColor;
+    final Color foregroundColor;
+    final IconData? icon;
+
+    if (hasAnswered && isCorrect) {
+      backgroundColor = const Color(0xFF85EFAC);
+      borderColor = const Color(0xFF85EFAC);
+      foregroundColor = const Color(0xFF103225);
+      icon = Icons.check_circle_rounded;
+    } else if (hasAnswered && isSelected) {
+      backgroundColor = const Color(0xFFFF8A80);
+      borderColor = const Color(0xFFFF8A80);
+      foregroundColor = const Color(0xFF3B1210);
+      icon = Icons.cancel_rounded;
+    } else {
+      backgroundColor = Colors.white.withValues(alpha: 0.06);
+      borderColor = Colors.white.withValues(alpha: 0.12);
+      foregroundColor = Colors.white;
+      icon = null;
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: hasAnswered ? null : onPressed,
+        style: OutlinedButton.styleFrom(
+          alignment: Alignment.centerLeft,
+          backgroundColor: backgroundColor,
+          foregroundColor: foregroundColor,
+          disabledBackgroundColor: backgroundColor,
+          disabledForegroundColor: foregroundColor,
+          side: BorderSide(color: borderColor),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+            if (icon != null) ...[
+              const SizedBox(width: 12),
+              Icon(icon, size: 20),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChallengeQuestion {
+  const _ChallengeQuestion({
+    required this.prompt,
+    required this.choices,
+    required this.correctIndex,
+    required this.explanation,
+  });
+
+  factory _ChallengeQuestion.fromJson(Map<String, dynamic> json) {
+    final rawChoices = json['choices'];
+    final choices = rawChoices is List
+        ? rawChoices.map((choice) => choice.toString()).toList(growable: false)
+        : const <String>[];
+
+    final rawCorrectIndex = json['correctIndex'] ?? json['correct_index'];
+    final correctIndex = rawCorrectIndex is num
+        ? rawCorrectIndex.toInt()
+        : int.tryParse(rawCorrectIndex?.toString() ?? '') ?? -1;
+
+    return _ChallengeQuestion(
+      prompt: (json['prompt'] ?? '').toString(),
+      choices: choices,
+      correctIndex: correctIndex,
+      explanation: (json['explanation'] ?? '').toString(),
+    );
+  }
+
+  final String prompt;
+  final List<String> choices;
+  final int correctIndex;
+  final String explanation;
+
+  bool get isValid =>
+      prompt.trim().isNotEmpty &&
+      choices.length >= 2 &&
+      correctIndex >= 0 &&
+      correctIndex < choices.length &&
+      explanation.trim().isNotEmpty;
+}
+
+class NativeChallengeFallbackPreview extends StatelessWidget {
+  const NativeChallengeFallbackPreview({super.key, required this.onComplete});
 
   final Future<void> Function(Map<String, dynamic>) onComplete;
 

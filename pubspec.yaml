@@ -40,6 +40,7 @@ flutter:
     - assets/images/turtles/
     - assets/animations/
     - assets/audio/
+    - assets/data/
     - assets/web_game/
     - assets/map/
 
