@@ -128,7 +128,27 @@ class _AppBootstrapGate extends StatelessWidget {
           future: service.isCurrentUserDisabled(),
                 backgroundColor: Color(0xFF071711),
                 body: BrandedLoading(message: 'Checking account...'),
+            return Consumer<UserStatsController>(
+              builder: (context, controller, _) {
+                if (controller.isLoading) {
+                  return const _AdventureSaveLoadingScreen();
+                }
+                return const DashboardShell();
+              },
+            );
       },
+    );
+  }
+}
+
+class _AdventureSaveLoadingScreen extends StatelessWidget {
+  const _AdventureSaveLoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFF071711),
+      body: BrandedLoading(message: 'Loading your adventure save...'),
     );
   }
 }

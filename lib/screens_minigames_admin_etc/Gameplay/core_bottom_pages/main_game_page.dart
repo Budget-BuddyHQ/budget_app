@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
+import '../../../game_prodigy/adventure_world.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
+import 'game_canvas.dart';
 
 class MainGamePage extends StatelessWidget {
   const MainGamePage({
@@ -38,6 +40,23 @@ class MainGamePage extends StatelessWidget {
       return;
     }
     await Navigator.of(context).pushNamed('/minigames');
+  }
+
+  Future<void> _enterWorld(
+    BuildContext context,
+    UserStats stats,
+    AvatarSkin skin,
+  ) async {
+    HapticFeedback.mediumImpact();
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => GameCanvas(
+          mapId: stats.adventureMapId,
+          initialPosition: stats.adventurePosition,
+          skinAssetPath: skin.assetPath,
+        ),
+      ),
+    );
   }
 
   @override
@@ -73,13 +92,16 @@ class MainGamePage extends StatelessWidget {
                       children: [
                         const _PageHeader(
                           title: 'Adventure',
-                          subtitle: 'The overworld is getting rebuilt.',
+                          subtitle:
+                              'Roam the finance world and battle monsters.',
                         ),
                         SizedBox(height: short ? 14 : 20),
-                        _ComingSoonPanel(
+                        _AdventureLaunchPanel(
                           stats: stats,
                           skin: equippedSkin,
                           compact: !wide || short,
+                          onEnterWorld: () =>
+                              _enterWorld(context, stats, equippedSkin),
                           onOpenAcademy: () => _openAcademy(context),
                           onOpenArcade: () => _openArcade(context),
                         ),
@@ -146,11 +168,12 @@ class _PageHeader extends StatelessWidget {
   }
 }
 
-class _ComingSoonPanel extends StatelessWidget {
-  const _ComingSoonPanel({
+class _AdventureLaunchPanel extends StatelessWidget {
+  const _AdventureLaunchPanel({
     required this.stats,
     required this.skin,
     required this.compact,
+    required this.onEnterWorld,
     required this.onOpenAcademy,
     required this.onOpenArcade,
   });
@@ -158,11 +181,17 @@ class _ComingSoonPanel extends StatelessWidget {
   final UserStats stats;
   final AvatarSkin skin;
   final bool compact;
+  final VoidCallback onEnterWorld;
   final VoidCallback onOpenAcademy;
   final VoidCallback onOpenArcade;
 
   @override
   Widget build(BuildContext context) {
+    final world = adventureWorldForId(stats.adventureMapId);
+    final savedPosition = stats.adventurePosition;
+    final positionLabel = savedPosition == null
+        ? 'Starting at ${world.title} spawn'
+        : 'Saved at ${savedPosition.dx.round()}, ${savedPosition.dy.round()}';
     final art = _AdventureArt(skin: skin, compact: compact);
     final copy = Column(
       mainAxisSize: MainAxisSize.min,
@@ -190,7 +219,7 @@ class _ComingSoonPanel extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         Text(
-          'Adventure coming soon',
+          'Enter ${world.title}',
           textAlign: compact ? TextAlign.center : TextAlign.start,
           style: TextStyle(
             color: Colors.white,
@@ -201,7 +230,7 @@ class _ComingSoonPanel extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'A bigger overworld is currently in development. Academy and Arcade are open while the new adventure map is rebuilt.',
+          'Walk your equipped turtle through the overworld, collide with monsters, answer finance questions, and save rewards as you explore.',
           textAlign: compact ? TextAlign.center : TextAlign.start,
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.76),
@@ -209,9 +238,17 @@ class _ComingSoonPanel extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
+        const SizedBox(height: 18),
+        _WorldStatusCard(
+          world: world,
+          skin: skin,
+          positionLabel: positionLabel,
+          compact: compact,
+        ),
         const SizedBox(height: 22),
         _ActionRow(
           compact: compact,
+          onEnterWorld: onEnterWorld,
           onOpenAcademy: onOpenAcademy,
           onOpenArcade: onOpenArcade,
         ),
@@ -220,7 +257,7 @@ class _ComingSoonPanel extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      constraints: BoxConstraints(minHeight: compact ? 520 : 620),
+      constraints: BoxConstraints(minHeight: compact ? 540 : 620),
       padding: EdgeInsets.all(compact ? 20 : 30),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -325,10 +362,10 @@ class _StatusChip extends StatelessWidget {
       child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.construction_rounded, color: Color(0xFFFFD45C), size: 16),
+          Icon(Icons.check_circle_rounded, color: Color(0xFF85EFAC), size: 16),
           SizedBox(width: 6),
           Text(
-            'Building',
+            'Ready',
             style: TextStyle(
               color: Colors.white,
               fontSize: 12,
@@ -341,19 +378,167 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
+class _WorldStatusCard extends StatelessWidget {
+  const _WorldStatusCard({
+    required this.world,
+    required this.skin,
+    required this.positionLabel,
+    required this.compact,
+  });
+
+  final AdventureWorld world;
+  final AvatarSkin skin;
+  final String positionLabel;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <_WorldStatusItem>[
+      _WorldStatusItem(
+        icon: Icons.map_rounded,
+        label: 'Current Map',
+        value: world.title,
+        accent: const Color(0xFF85EFAC),
+      ),
+      _WorldStatusItem(
+        icon: Icons.location_on_rounded,
+        label: 'Save Point',
+        value: positionLabel,
+        accent: const Color(0xFFFFD45C),
+      ),
+      _WorldStatusItem(
+        icon: Icons.pets_rounded,
+        label: 'Equipped Turtle',
+        value: skin.name,
+        accent: skin.accent,
+      ),
+    ];
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFF071711).withValues(alpha: 0.56),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: const Color(0xFF85EFAC).withValues(alpha: 0.18),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: compact
+            ? Column(
+                children: items
+                    .map(
+                      (item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: item,
+                      ),
+                    )
+                    .toList(growable: false),
+              )
+            : Row(
+                children: items
+                    .map(
+                      (item) => Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: item,
+                        ),
+                      ),
+                    )
+                    .toList(growable: false),
+              ),
+      ),
+    );
+  }
+}
+
+class _WorldStatusItem extends StatelessWidget {
+  const _WorldStatusItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.13),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: accent.withValues(alpha: 0.22)),
+          ),
+          child: Icon(icon, color: accent, size: 22),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.60),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ActionRow extends StatelessWidget {
   const _ActionRow({
     required this.compact,
+    required this.onEnterWorld,
     required this.onOpenAcademy,
     required this.onOpenArcade,
   });
 
   final bool compact;
+  final VoidCallback onEnterWorld;
   final VoidCallback onOpenAcademy;
   final VoidCallback onOpenArcade;
 
   @override
   Widget build(BuildContext context) {
+    final enterWorld = CustomButton(
+      label: 'Enter World',
+      onPressed: onEnterWorld,
+      prefixIcon: const Icon(
+        Icons.explore_rounded,
+        color: Color(0xFF062C21),
+        size: 18,
+      ),
+      style: const CustomButtonStyle.primary(),
+    );
     final academy = CustomButton(
       label: 'Open Academy',
       onPressed: onOpenAcademy,
@@ -376,14 +561,28 @@ class _ActionRow extends StatelessWidget {
     );
 
     if (compact) {
-      return Column(children: [academy, const SizedBox(height: 10), arcade]);
+      return Column(
+        children: [
+          enterWorld,
+          const SizedBox(height: 10),
+          academy,
+          const SizedBox(height: 10),
+          arcade,
+        ],
+      );
     }
 
-    return Row(
+    return Column(
       children: [
-        Expanded(child: academy),
-        const SizedBox(width: 12),
-        Expanded(child: arcade),
+        enterWorld,
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: academy),
+            const SizedBox(width: 12),
+            Expanded(child: arcade),
+          ],
+        ),
       ],
     );
   }

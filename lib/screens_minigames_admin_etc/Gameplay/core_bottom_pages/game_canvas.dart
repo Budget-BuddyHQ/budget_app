@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -8,12 +9,23 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/adventure_state_controller.dart';
+import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../game_prodigy/budget_buddy_game.dart';
+import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
 import '../../../widgets_custom_lotties/orientation_scope.dart';
 
 class GameCanvas extends StatefulWidget {
-  const GameCanvas({super.key});
+  const GameCanvas({
+    super.key,
+    this.mapId,
+    this.initialPosition,
+    this.skinAssetPath,
+  });
+
+  final String? mapId;
+  final Offset? initialPosition;
+  final String? skinAssetPath;
 
   @override
   State<GameCanvas> createState() => _GameCanvasState();
@@ -25,15 +37,94 @@ class _GameCanvasState extends State<GameCanvas> {
   Offset? _movementStart;
   Offset? _lastMovementPosition;
   bool _isDraggingMovement = false;
+  DateTime _lastProgressSave = DateTime.fromMillisecondsSinceEpoch(0);
+  String? _lastProgressKey;
+  bool _saveInFlight = false;
+  ({String mapId, Vector2 position})? _pendingSave;
 
   static const double _dragDeadZone = 12;
+  static const Duration _progressSaveInterval = Duration(seconds: 4);
 
   @override
   void initState() {
     super.initState();
+    final userStats = context.read<UserStatsController>().stats;
+    final equippedSkin = skinFromId(userStats.equippedSkin);
+    final initialPosition =
+        widget.initialPosition ?? userStats.adventurePosition;
     _game = BudgetBuddyGame(
       adventureState: context.read<AdventureStateController>(),
+      mapId: widget.mapId ?? userStats.adventureMapId,
+      initialPosition: initialPosition == null
+          ? null
+          : Vector2(initialPosition.dx, initialPosition.dy),
+      skinAssetPath: widget.skinAssetPath ?? equippedSkin.assetPath,
+      onProgressChanged: _queueAdventureProgressSave,
     );
+  }
+
+  void _queueAdventureProgressSave(
+    String mapId,
+    Vector2 position, {
+    bool force = false,
+  }) {
+    final progressKey =
+        '$mapId:${position.x.round() ~/ 8}:${position.y.round() ~/ 8}';
+    final now = DateTime.now();
+    if (!force &&
+        progressKey == _lastProgressKey &&
+        now.difference(_lastProgressSave) < _progressSaveInterval) {
+      return;
+    }
+
+    if (!force && now.difference(_lastProgressSave) < _progressSaveInterval) {
+      _pendingSave = (mapId: mapId, position: position.clone());
+      return;
+    }
+
+    _lastProgressKey = progressKey;
+    _lastProgressSave = now;
+    unawaited(_saveProgress(mapId, position.clone()));
+  }
+
+  Future<void> _saveProgress(String mapId, Vector2 position) async {
+    if (_saveInFlight) {
+      _pendingSave = (mapId: mapId, position: position.clone());
+      return;
+    }
+
+    _saveInFlight = true;
+    try {
+      await context.read<UserStatsController>().saveAdventureProgress(
+        mapId: mapId,
+        x: position.x,
+        y: position.y,
+      );
+    } finally {
+      _saveInFlight = false;
+    }
+
+    final pending = _pendingSave;
+    _pendingSave = null;
+    if (pending != null && mounted) {
+      _queueAdventureProgressSave(pending.mapId, pending.position, force: true);
+    }
+  }
+
+  Future<void> _saveCurrentProgress() async {
+    final position = _game.playerWorldPosition;
+    if (position == null) {
+      return;
+    }
+    await _saveProgress(_game.mapId, position);
+  }
+
+  Future<void> _saveAndPop() async {
+    HapticFeedback.lightImpact();
+    await _saveCurrentProgress();
+    if (mounted) {
+      await Navigator.of(context).maybePop();
+    }
   }
 
   Future<void> _showPetsModal(BuildContext context, String equippedPet) async {
@@ -263,7 +354,7 @@ class _GameCanvasState extends State<GameCanvas> {
                             level: adventure.level,
                             xpProgress: adventure.xpProgress,
                             gold: adventure.gold,
-                            onBack: () => Navigator.of(context).maybePop(),
+                            onBack: _saveAndPop,
                             onPetsTap: () =>
                                 _showPetsModal(context, adventure.equippedPet),
                           ),
@@ -274,8 +365,10 @@ class _GameCanvasState extends State<GameCanvas> {
                               controller: adventure,
                               onAnswer: (index) =>
                                   _handleAnswer(context, index),
-                              onVictoryComplete: () =>
-                                  _game.resolveCombat(victory: true),
+                              onVictoryComplete: () {
+                                _game.resolveCombat(victory: true);
+                                unawaited(_saveCurrentProgress());
+                              },
                             ),
                           ),
                       ],
