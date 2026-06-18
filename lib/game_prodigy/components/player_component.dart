@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
@@ -13,12 +15,14 @@ class PlayerComponent extends PositionComponent
     required this.joystick,
     required this.worldBounds,
     required this.collisionRects,
+    required this.skinAssetPath,
     required this.onEncounter,
   }) : super(size: Vector2(78, 92), anchor: Anchor.center);
 
   final JoystickComponent joystick;
   final Rect worldBounds;
   final List<Rect> collisionRects;
+  final String skinAssetPath;
   final ValueChanged<EnemyMonsterComponent> onEncounter;
 
   final Set<LogicalKeyboardKey> _keysPressed = <LogicalKeyboardKey>{};
@@ -28,6 +32,7 @@ class PlayerComponent extends PositionComponent
   Vector2? _pointerDirection;
   double _animationClock = 0;
   FacingDirection _facing = FacingDirection.down;
+  ui.Image? _skinImage;
 
   static const double maxSpeed = 180;
   static const double acceleration = 880;
@@ -38,6 +43,7 @@ class PlayerComponent extends PositionComponent
 
   @override
   Future<void> onLoad() async {
+    await _loadSkinImage();
     add(
       RectangleHitbox.relative(
         Vector2(0.48, 0.48),
@@ -45,6 +51,17 @@ class PlayerComponent extends PositionComponent
         anchor: Anchor.center,
       )..collisionType = CollisionType.active,
     );
+  }
+
+  Future<void> _loadSkinImage() async {
+    try {
+      final data = await rootBundle.load(skinAssetPath);
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final frame = await codec.getNextFrame();
+      _skinImage = frame.image;
+    } catch (error) {
+      debugPrint('Failed to load player skin $skinAssetPath: $error');
+    }
   }
 
   void setKeyboardState(Set<LogicalKeyboardKey> keysPressed) {
@@ -158,6 +175,53 @@ class PlayerComponent extends PositionComponent
         ..color = const Color(0xFF85EFAC).withValues(alpha: 0.20)
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, 18 * scale),
     );
+
+    final skinImage = _skinImage;
+    if (skinImage != null) {
+      final imageRect = Rect.fromCenter(
+        center: Offset(directionNudge, -2 * scale),
+        width: 78 * scale,
+        height: 78 * scale,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          imageRect.inflate(4 * scale),
+          Radius.circular(22 * scale),
+        ),
+        Paint()
+          ..color = const Color(0xFF071711).withValues(alpha: 0.70)
+          ..style = PaintingStyle.fill,
+      );
+      canvas.drawImageRect(
+        skinImage,
+        Rect.fromLTWH(
+          0,
+          0,
+          skinImage.width.toDouble(),
+          skinImage.height.toDouble(),
+        ),
+        imageRect,
+        Paint()..filterQuality = FilterQuality.high,
+      );
+      _drawHealthBar(
+        canvas,
+        centerY: -cardHeight * 0.50,
+        width: cardWidth * 0.62,
+        scale: scale,
+        accent: const Color(0xFF85EFAC),
+        value: 1,
+      );
+      _paintLabel(
+        canvas,
+        'YOU',
+        Offset(0, cardHeight * 0.43),
+        10 * scale,
+        const Color(0xFFFFFFFF),
+      );
+      canvas.restore();
+      return;
+    }
+
     canvas.drawRRect(
       cardRRect,
       Paint()

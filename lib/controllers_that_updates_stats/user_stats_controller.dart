@@ -689,6 +689,40 @@ class UserStatsController extends ChangeNotifier {
     );
   }
 
+  Future<StatsActionResult> saveAdventureProgress({
+    required String mapId,
+    required double x,
+    required double y,
+  }) async {
+    final normalizedMapId = mapId.trim().isEmpty
+        ? _stats.adventureMapId
+        : mapId.trim();
+    if (!x.isFinite || !y.isFinite) {
+      return const StatsActionResult(
+        success: false,
+        message: 'Invalid adventure position.',
+        syncState: SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'No adventure progress saved.',
+        ),
+      );
+    }
+
+    final now = DateTime.now().toUtc();
+    final nextStats = _stats.copyWith(
+      spendingHabits: <String, dynamic>{
+        ..._stats.spendingHabits,
+        'adventure_map_id': normalizedMapId,
+        'adventure_position_x': x,
+        'adventure_position_y': y,
+      },
+      updatedAt: now,
+    );
+
+    return _saveStats(nextStats, savingMessage: 'Saving adventure progress...');
+  }
+
   Future<StatsActionResult> updateProfilePhoto(String imageUrl) async {
     final normalizedUrl = imageUrl.trim();
     if (normalizedUrl.isEmpty) {
