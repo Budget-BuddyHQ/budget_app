@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../navigation_tools_and_animation/app_tab_index.dart';
+import '../../widgets_custom_lotties/ambient_lottie_card.dart';
 import '../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
 
@@ -851,11 +852,30 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
             ),
             const SizedBox(height: 12),
             if (_revealed)
-              _RarityAura(
-                skin: preview,
-                size: 132,
-                imageSize: 96,
-                showImage: true,
+              Center(
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.96, end: 1.0),
+                  duration: const Duration(milliseconds: 420),
+                  builder: (context, scale, child) {
+                    return Transform.scale(scale: scale, child: child);
+                  },
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      _RarityAura(
+                        skin: preview,
+                        size: 132,
+                        imageSize: 96,
+                        showImage: true,
+                      ),
+                      _RollShineOverlay(
+                        color: preview.accent,
+                        size: 132,
+                        moving: false,
+                      ),
+                    ],
+                  ),
+                ),
               )
             else
               const SizedBox.shrink(),
@@ -973,6 +993,38 @@ class _CustomizeBackdrop extends StatelessWidget {
             ),
           ),
         ),
+        Positioned(
+          top: 18,
+          right: 20,
+          child: Opacity(
+            opacity: 0.20,
+            child: AmbientLottieCard(
+              assetPath: 'assets/animations/arcade_loop.json',
+              semanticLabel: 'Sparkling game ambience',
+              width: 110,
+              height: 110,
+              padding: const EdgeInsets.all(10),
+              backgroundColor: Colors.white.withValues(alpha: 0.05),
+              borderColor: Colors.white.withValues(alpha: 0.08),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 32,
+          right: 14,
+          child: Opacity(
+            opacity: 0.16,
+            child: AmbientLottieCard(
+              assetPath: 'assets/animations/academy_loop.json',
+              semanticLabel: 'Floating animation accent',
+              width: 90,
+              height: 90,
+              padding: const EdgeInsets.all(8),
+              backgroundColor: Colors.white.withValues(alpha: 0.04),
+              borderColor: Colors.white.withValues(alpha: 0.06),
+            ),
+          ),
+        ),
         Positioned(top: -80, left: -40, child: _Aura(skin: skin)),
       ],
     );
@@ -1070,24 +1122,136 @@ class _RarityAura extends StatelessWidget {
                 height: imageSize,
                 child: Image.asset(skin.assetPath, fit: BoxFit.contain),
               ),
-            Positioned(
-              bottom: size * 0.12,
-              child: Container(
-                width: size * 0.42,
-                height: size * 0.06,
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(999),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.24),
-                      blurRadius: size * 0.08,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RollShineOverlay extends StatefulWidget {
+  const _RollShineOverlay({
+    required this.color,
+    this.size = 132,
+    this.moving = false,
+  });
+
+  final Color color;
+  final double size;
+  final bool moving;
+
+  @override
+  State<_RollShineOverlay> createState() => _RollShineOverlayState();
+}
+
+class _RollShineOverlayState extends State<_RollShineOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _shineController;
+
+  @override
+  void initState() {
+    super.initState();
+    _shineController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _shineController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: widget.size * 0.90,
+            height: widget.size * 0.90,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  widget.color.withValues(alpha: 0.28),
+                  widget.color.withValues(alpha: 0.08),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.45, 1.0],
+              ),
+            ),
+          ),
+          if (widget.moving)
+            AnimatedBuilder(
+              animation: _shineController,
+              builder: (context, child) {
+                final progress = _shineController.value;
+                return Transform.rotate(
+                  angle: progress * 2 * 3.141592653589793,
+                  child: child,
+                );
+              },
+              child: Center(
+                child: Container(
+                  width: widget.size * 0.94,
+                  height: widget.size * 0.16,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(widget.size * 0.08),
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.0),
+                        Colors.white.withValues(alpha: 0.32),
+                        Colors.white.withValues(alpha: 0.0),
+                      ],
+                      stops: const [0.0, 0.5, 1.0],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ],
+          Positioned(
+            top: widget.size * 0.08,
+            left: widget.size * 0.24,
+            child: _ShinePoint(size: widget.size * 0.12, color: widget.color),
+          ),
+          Positioned(
+            right: widget.size * 0.16,
+            top: widget.size * 0.18,
+            child: _ShinePoint(size: widget.size * 0.10, color: widget.color),
+          ),
+          Positioned(
+            bottom: widget.size * 0.12,
+            child: _ShinePoint(size: widget.size * 0.08, color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShinePoint extends StatelessWidget {
+  const _ShinePoint({required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color.withValues(alpha: 0.92), color.withValues(alpha: 0.0)],
+          stops: const [0.0, 0.8],
         ),
       ),
     );
