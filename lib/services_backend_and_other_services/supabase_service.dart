@@ -1,12 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:ui' show Offset;
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
+
+const String defaultAdventureMapId = 'starter_village';
+const double defaultAdventurePositionX = 640;
+const double defaultAdventurePositionY = 800;
 
 @immutable
 class LedgerTransaction {
@@ -115,6 +120,9 @@ class UserStats {
         'missed_questions': <String>[],
         'equipped_skin': 'classic_turtle',
         'unlocked_skins': <String>['classic_turtle'],
+        'adventure_map_id': defaultAdventureMapId,
+        'adventure_position_x': defaultAdventurePositionX,
+        'adventure_position_y': defaultAdventurePositionY,
       },
       transactions: <LedgerTransaction>[
         LedgerTransaction(
@@ -259,6 +267,23 @@ class UserStats {
     return value;
   }
 
+  String get adventureMapId {
+    final value = spendingHabits['adventure_map_id']?.toString().trim();
+    if (value == null || value.isEmpty) {
+      return defaultAdventureMapId;
+    }
+    return value;
+  }
+
+  Offset? get adventurePosition {
+    final x = _readDoubleOrNull(spendingHabits['adventure_position_x']);
+    final y = _readDoubleOrNull(spendingHabits['adventure_position_y']);
+    if (x == null || y == null || !x.isFinite || !y.isFinite) {
+      return null;
+    }
+    return Offset(x, y);
+  }
+
   Map<String, dynamic> toStorageMap() {
     return <String, dynamic>{
       'id': id,
@@ -272,6 +297,11 @@ class UserStats {
         'username': username,
         'equipped_skin': equippedSkin,
         'unlocked_skins': unlockedSkins,
+        'adventure_map_id': adventureMapId,
+        if (adventurePosition case final position?) ...<String, dynamic>{
+          'adventure_position_x': position.dx,
+          'adventure_position_y': position.dy,
+        },
       },
       'transaction_ledger': transactions
           .map((transaction) => transaction.toJson())
@@ -1253,6 +1283,19 @@ int _readInt(dynamic value) {
     return int.tryParse(value) ?? 0;
   }
   return 0;
+}
+
+double? _readDoubleOrNull(dynamic value) {
+  if (value is double) {
+    return value;
+  }
+  if (value is num) {
+    return value.toDouble();
+  }
+  if (value is String) {
+    return double.tryParse(value);
+  }
+  return null;
 }
 
 DateTime? _readDate(dynamic value) {

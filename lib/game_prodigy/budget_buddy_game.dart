@@ -11,13 +11,30 @@ import 'components/camera_lead_target_component.dart';
 import 'components/enemy_monster_component.dart';
 import 'components/grid_world_component.dart';
 import 'components/player_component.dart';
+import 'adventure_world.dart';
+
+typedef AdventureProgressChanged =
+    void Function(String mapId, Vector2 position);
 
 class BudgetBuddyGame extends FlameGame
     with HasCollisionDetection, HasKeyboardHandlerComponents, KeyboardEvents {
-  BudgetBuddyGame({required AdventureStateController adventureState})
-    : _adventureState = adventureState;
+  BudgetBuddyGame({
+    required AdventureStateController adventureState,
+    String? mapId,
+    Vector2? initialPosition,
+    required String skinAssetPath,
+    AdventureProgressChanged? onProgressChanged,
+  }) : _adventureState = adventureState,
+       _world = adventureWorldForId(mapId),
+       _initialPosition = initialPosition,
+       _skinAssetPath = skinAssetPath,
+       _onProgressChanged = onProgressChanged;
 
   final AdventureStateController _adventureState;
+  final AdventureWorld _world;
+  final Vector2? _initialPosition;
+  final String _skinAssetPath;
+  final AdventureProgressChanged? _onProgressChanged;
 
   static final Vector2 mapSize = Vector2(1600, 1600);
 
@@ -29,6 +46,12 @@ class BudgetBuddyGame extends FlameGame
   final List<Rect> _collisionRects = <Rect>[];
   EnemyMonsterComponent? _activeEncounter;
   static final Vector2 _cameraAnchorRatio = Vector2(0.46, 0.42);
+  double _progressEmitClock = 0;
+  Vector2? _lastEmittedProgressPosition;
+
+  String get mapId => _world.id;
+
+  Vector2? get playerWorldPosition => _player?.position.clone();
 
   @override
   Color backgroundColor() => const Color(0xFF071711);
@@ -56,9 +79,7 @@ class BudgetBuddyGame extends FlameGame
     _collisionRects
       ..clear()
       ..addAll(_readCollisionRects(loadedMap?.tileMap));
-    final spawnPoint =
-        _readSpawnPoint(loadedMap?.tileMap, 'player_spawn') ??
-        Vector2(effectiveMapSize.x * 0.4, effectiveMapSize.y * 0.5);
+    final spawnPoint = _resolveSpawnPoint(loadedMap?.tileMap, effectiveMapSize);
     final enemySpawn =
         _readSpawnPoint(loadedMap?.tileMap, 'enemy_spawn') ??
         Vector2(effectiveMapSize.x * 0.62, effectiveMapSize.y * 0.52);
@@ -82,6 +103,7 @@ class BudgetBuddyGame extends FlameGame
       joystick: joystick,
       worldBounds: Rect.fromLTWH(0, 0, effectiveMapSize.x, effectiveMapSize.y),
       collisionRects: _collisionRects,
+      skinAssetPath: _skinAssetPath,
       onEncounter: _beginEncounter,
     );
     add(_player!);
@@ -106,23 +128,21 @@ class BudgetBuddyGame extends FlameGame
       _cameraAnchorRatio.y,
     );
     camera.follow(_cameraTarget);
+    _emitProgressIfMoved(force: true);
   }
 
   Future<TiledComponent?> _loadWorldMapSafely() async {
     try {
-      final tiled = await TiledComponent.load(
-        'map/world_map.tmx',
-        Vector2.all(32),
-      );
+      final tiled = await TiledComponent.load(_world.tmxPath, Vector2.all(32));
       if (!_hasRenderableTiles(tiled.tileMap.map)) {
         debugPrint(
-          'world_map.tmx loaded but no visible tiles were found. Falling back to solid viewport.',
+          '${_world.tmxPath} loaded but no visible tiles were found. Falling back to solid viewport.',
         );
         return null;
       }
       return tiled;
     } catch (error, stackTrace) {
-      debugPrint('Failed to load world_map.tmx: $error');
+      debugPrint('Failed to load ${_world.tmxPath}: $error');
       debugPrint('$stackTrace');
       return null;
     }
@@ -138,6 +158,16 @@ class BudgetBuddyGame extends FlameGame
       }
     }
     return false;
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    _progressEmitClock += dt;
+    if (_progressEmitClock >= 1.5) {
+      _progressEmitClock = 0;
+      _emitProgressIfMoved();
+    }
   }
 
   @override
@@ -207,6 +237,7 @@ class BudgetBuddyGame extends FlameGame
     _activeEncounter = null;
     _player?.movementEnabled = true;
     _adventureState.restoreMovementAfterCombat();
+    _emitProgressIfMoved(force: true);
   }
 
   void _spawnEnemy(Vector2 position, String name) {
@@ -244,6 +275,52 @@ class BudgetBuddyGame extends FlameGame
         return Vector2(x, y);
       }
     }
+  }
+
+  Vector2 _resolveSpawnPoint(RenderableTiledMap? tiledMap, Vector2 mapSize) {
+    final savedPosition = _initialPosition;
+    if (savedPosition != null && _isValidSpawn(savedPosition, mapSize)) {
+      return savedPosition.clone();
+    }
+
+    final tiledSpawn = _readSpawnPoint(tiledMap, 'player_spawn');
+    if (tiledSpawn != null && _isValidSpawn(tiledSpawn, mapSize)) {
+      return tiledSpawn;
+    }
+
+    final worldSpawn = _world.fallbackSpawn;
+    if (_isValidSpawn(worldSpawn, mapSize)) {
+      return worldSpawn.clone();
+    }
+
+    return Vector2(mapSize.x * 0.4, mapSize.y * 0.5);
+  }
+
+  bool _isValidSpawn(Vector2 position, Vector2 mapSize) {
+    if (!position.x.isFinite || !position.y.isFinite) {
+      return false;
+    }
+    return position.x >= 0 &&
+        position.y >= 0 &&
+        position.x <= mapSize.x &&
+        position.y <= mapSize.y;
+  }
+
+  void _emitProgressIfMoved({bool force = false}) {
+    final position = _player?.position;
+    if (position == null) {
+      return;
+    }
+
+    final lastPosition = _lastEmittedProgressPosition;
+    if (!force &&
+        lastPosition != null &&
+        (position - lastPosition).length2 < 24 * 24) {
+      return;
+    }
+
+    _lastEmittedProgressPosition = position.clone();
+    _onProgressChanged?.call(_world.id, position.clone());
   }
 
   List<Rect> _readCollisionRects(RenderableTiledMap? tiledMap) {
