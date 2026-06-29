@@ -67,7 +67,7 @@ class GameCanvas extends StatelessWidget {
                       color: const Color(0xFF0F261C),
                       borderRadius: BorderRadius.circular(28),
                       border: Border.all(
-                        color: const Color(0xFF85EFAC).withOpacity(0.18),
+                        color: const Color(0xFF85EFAC).withValues(alpha: 0.18),
                       ),
                     ),
                     child: Padding(
