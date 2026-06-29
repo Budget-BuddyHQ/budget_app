@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
-import '../../../game_prodigy/adventure_world.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
@@ -187,10 +186,9 @@ class _AdventureLaunchPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final world = adventureWorldForId(stats.adventureMapId);
     final savedPosition = stats.adventurePosition;
     final positionLabel = savedPosition == null
-        ? 'Starting at ${world.title} spawn'
+        ? 'No saved position'
         : 'Saved at ${savedPosition.dx.round()}, ${savedPosition.dy.round()}';
     final art = _AdventureArt(skin: skin, compact: compact);
     final copy = Column(
@@ -219,7 +217,7 @@ class _AdventureLaunchPanel extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         Text(
-          'Enter ${world.title}',
+          'Enter Adventure',
           textAlign: compact ? TextAlign.center : TextAlign.start,
           style: TextStyle(
             color: Colors.white,
@@ -230,7 +228,7 @@ class _AdventureLaunchPanel extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'Walk your equipped turtle through the overworld, collide with monsters, answer finance questions, and save rewards as you explore.',
+          'This adventure area has been reset for a new Flame/Bonfire game build. The next version of the game will appear here.',
           textAlign: compact ? TextAlign.center : TextAlign.start,
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.76),
@@ -240,7 +238,7 @@ class _AdventureLaunchPanel extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         _WorldStatusCard(
-          world: world,
+          mapTitle: 'Adventure',
           skin: skin,
           positionLabel: positionLabel,
           compact: compact,
@@ -380,13 +378,13 @@ class _StatusChip extends StatelessWidget {
 
 class _WorldStatusCard extends StatelessWidget {
   const _WorldStatusCard({
-    required this.world,
+    required this.mapTitle,
     required this.skin,
     required this.positionLabel,
     required this.compact,
   });
 
-  final AdventureWorld world;
+  final String mapTitle;
   final AvatarSkin skin;
   final String positionLabel;
   final bool compact;
@@ -397,7 +395,7 @@ class _WorldStatusCard extends StatelessWidget {
       _WorldStatusItem(
         icon: Icons.map_rounded,
         label: 'Current Map',
-        value: world.title,
+        value: mapTitle,
         accent: const Color(0xFF85EFAC),
       ),
       _WorldStatusItem(

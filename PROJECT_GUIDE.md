@@ -17,6 +17,8 @@ Budget Buddy is a Flutter app for financial-literacy gameplay with:
   - Dashboard/home hub content, summary cards, and leaderboard preview.
 - `lib/screens_minigames_admin_etc/Gameplay/core_bottom_pages/main_game_page.dart`
   - Main gameplay hub screen. Handles adventure actions, scouting, recovery, and quick navigation.
+- `lib/screens_minigames_admin_etc/Gameplay/core_bottom_pages/game_canvas.dart`
+  - Current adventure placeholder screen. This is where the future Flame/Bonfire game will launch.
 - `lib/screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.dart`
   - Arcade/minigame launcher and standalone game entrypoint.
 - `lib/screens_minigames_admin_etc/Gameplay/academy/learning_path_screen.dart`
@@ -37,7 +39,7 @@ Budget Buddy is a Flutter app for financial-literacy gameplay with:
 - Backend + Supabase + storage: `lib/services_backend_and_other_services/`
 - Data models, skins, lessons: `lib/models_Like_Skins_and_lessons_templates/`
 - Shared widgets: `lib/custom_made_widgets/`, `lib/widgets_custom_lotties/`
-- Game logic / Flame: `lib/game_prodigy/`
+- Adventure placeholder / future Flame game: `lib/screens_minigames_admin_etc/Gameplay/core_bottom_pages/game_canvas.dart`
 - Navigation and routing helpers: `lib/navigation_tools_and_animation/`
 - Assets and media: `assets/`
 
@@ -87,8 +89,8 @@ Reusable custom widgets such as `UnitRowItem` and other lesson UI components.
 `lib/widgets_custom_lotties/`
 Shared decorative widgets, custom buttons, toast helpers, and navigation bars.
 
-`lib/game_prodigy/`
-Flame-based adventure code and gameplay logic.
+`lib/screens_minigames_admin_etc/Gameplay/core_bottom_pages/game_canvas.dart`
+Current adventure placeholder screen for the future Flame/Bonfire game launch.
 
 `lib/navigation_tools_and_animation/`
 Navigation helpers, page transitions, route utilities, and tab index definitions.
