@@ -1,22 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 
 class BrandedLoading extends StatelessWidget {
   const BrandedLoading({
     super.key,
     this.message,
     this.compact = false,
-    this.assetPath = dotsAsset,
+    this.assetPath,
   });
-
-  static const String dotsAsset =
-      'assets/animations/12c4e8c6-bd8a-426e-aba9-55bd62c7688f.json';
-  static const String successAsset =
-      'assets/animations/62c35559-ef30-401e-a52e-2ba5c16b743c.json';
 
   final String? message;
   final bool compact;
-  final String assetPath;
+  final String? assetPath;
 
   @override
   Widget build(BuildContext context) {
@@ -39,11 +33,11 @@ class BrandedLoading extends StatelessWidget {
           SizedBox(
             width: size,
             height: size,
-            child: Lottie.asset(
-              assetPath,
-              fit: BoxFit.contain,
-              repeat: true,
-              frameRate: FrameRate.composition,
+            child: CircularProgressIndicator(
+              strokeWidth: compact ? 2.5 : 3.0,
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF85EFAC),
+              ),
             ),
           ),
           if (label != null && label.trim().isNotEmpty) ...[
