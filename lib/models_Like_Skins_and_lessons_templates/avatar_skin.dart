@@ -82,31 +82,10 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     accent: Color(0xFFFFD45C),
   ),
   AvatarSkin(
-    id: 'emerald_strider',
-    name: 'Emerald Strider',
-    assetPath: 'assets/images/turtles/purplewithChestBack_no_bg_8cqt48zg.png',
-    rarity: SkinRarity.rare,
-    accent: Color(0xFF7CF3C7),
-  ),
-  AvatarSkin(
     id: 'guild_runner',
     name: 'Guild Runner',
     assetPath: 'assets/images/turtles/walkingredshell_no_bg_63pfbf03.png',
     rarity: SkinRarity.legendary,
-    accent: Color(0xFFFFD45C),
-  ),
-  AvatarSkin(
-    id: 'cyber_turtle',
-    name: 'Cyber Turtle',
-    assetPath: 'assets/images/turtles/BlueDiamond_no_bg_3napzapt.png',
-    rarity: SkinRarity.epic,
-    accent: Color(0xFFB9A5FF),
-  ),
-  AvatarSkin(
-    id: 'piggy_bank_turtle',
-    name: 'Piggy Bank',
-    assetPath: 'assets/images/turtles/sodapopVibe_no_bg_w331x5ng.png',
-    rarity: SkinRarity.common,
     accent: Color(0xFFFFD45C),
   ),
   AvatarSkin(
@@ -115,21 +94,6 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     assetPath: 'assets/images/turtles/cuteTropicalhandDrawn_no_bg_i3ipxxln.png',
     rarity: SkinRarity.rare,
     accent: Color(0xFF85EFAC),
-  ),
-  AvatarSkin(
-    id: 'starlight_turtle',
-    name: 'Starlight',
-    assetPath:
-        'assets/images/turtles/catearsBlueWithDiamond_no_bg_vyk193le.png',
-    rarity: SkinRarity.mythic,
-    accent: Color(0xFFFF6B9D),
-  ),
-  AvatarSkin(
-    id: 'trailblazer',
-    name: 'Trailblazer',
-    assetPath: 'assets/images/turtles/player_topview.png',
-    rarity: SkinRarity.common,
-    accent: Color(0xFFFFC96B),
   ),
 ];
 
