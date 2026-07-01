@@ -77,12 +77,8 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
   double get _playerY =>
       math.max(0, _arenaSize.height - _playerHeight - 18).toDouble();
 
-  Rect get _playerRect => Rect.fromLTWH(
-        _playerX,
-        _playerY,
-        _playerWidth,
-        _playerHeight,
-      );
+  Rect get _playerRect =>
+      Rect.fromLTWH(_playerX, _playerY, _playerWidth, _playerHeight);
 
   @override
   void initState() {
@@ -98,7 +94,6 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
     _countdownTimer?.cancel();
     super.dispose();
   }
-
 
   void _startGame() {
     HapticFeedback.lightImpact();
@@ -307,22 +302,24 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
     }
 
     final isNeed = _random.nextBool();
-    final data = (isNeed ? _needPool : _wantPool)[
-      _random.nextInt(isNeed ? _needPool.length : _wantPool.length)
-    ];
+    final data =
+        (isNeed ? _needPool : _wantPool)[_random.nextInt(
+          isNeed ? _needPool.length : _wantPool.length,
+        )];
 
     final width = math.min(98.0, _arenaSize.width * 0.24).toDouble();
     final height = width * _pickupHeightFactor;
     final maxX = math.max(0, _arenaSize.width - width).toDouble();
     final lanePadding = math.max(6, _arenaSize.width * 0.02).toDouble();
-    final x = lanePadding +
+    final x =
+        lanePadding +
         (_random.nextDouble() * math.max(0, maxX - lanePadding * 2).toDouble());
 
     _pickups.add(
       _FallingPickup(
         label: data.label,
         amount: data.amount,
-        icon: data.icon,
+        img: data.img,
         kind: isNeed ? _PickupKind.need : _PickupKind.want,
         x: x,
         y: -height - 12,
@@ -400,17 +397,15 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
     );
 
     final controller = context.read<UserStatsController>();
-    final result = await controller.applyChallengePayload(
-      <String, dynamic>{
-        'status': 'completed',
-        'gold_earned': projected.goldEarned,
-        'xp_earned': projected.xpEarned,
-        'literacy_points_earned': projected.literacyPointsEarned,
-        'title': 'Bill Dodger Rewards',
-        'description':
-            'You collected essentials, dodged wants, and banked your reward.',
-      },
-    );
+    final result = await controller.applyChallengePayload(<String, dynamic>{
+      'status': 'completed',
+      'gold_earned': projected.goldEarned,
+      'xp_earned': projected.xpEarned,
+      'literacy_points_earned': projected.literacyPointsEarned,
+      'title': 'Bill Dodger Rewards',
+      'description':
+          'You collected essentials, dodged wants, and banked your reward.',
+    });
 
     if (!mounted) {
       return;
@@ -472,6 +467,9 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
         message: 'Projected rewards',
       ),
     );
+    final profileImageUrl = context.select<UserStatsController, String>(
+      (controller) => controller.stats.profileImageUrl,
+    );
 
     return Focus(
       focusNode: _focusNode,
@@ -530,10 +528,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _TopStatsRow(
-                    money: _money,
-                    score: _score,
-                  ),
+                  child: _TopStatsRow(money: _money, score: _score),
                 ),
                 const SizedBox(height: 12),
                 Padding(
@@ -543,7 +538,9 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.08),
+                      ),
                     ),
                     child: const Text(
                       'Collect NEEDS, dodge WANTS, and glide smoothly across the arena. Use arrow keys, hold the buttons, or drag your hero left and right.',
@@ -563,15 +560,16 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
                       builder: (context, constraints) {
                         _arenaSize = constraints.biggest;
                         if (!_started && !_finished) {
-                          _playerX = math.max(
-                            0,
-                            (_arenaSize.width - _playerWidth) / 2,
-                          ).toDouble();
+                          _playerX = math
+                              .max(0, (_arenaSize.width - _playerWidth) / 2)
+                              .toDouble();
                         } else {
-                          _playerX = _playerX.clamp(
-                            0,
-                            math.max(0, _arenaSize.width - _playerWidth),
-                          ).toDouble();
+                          _playerX = _playerX
+                              .clamp(
+                                0,
+                                math.max(0, _arenaSize.width - _playerWidth),
+                              )
+                              .toDouble();
                         }
 
                         return ClipRRect(
@@ -579,7 +577,8 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
                           child: GestureDetector(
                             behavior: HitTestBehavior.opaque,
                             onTap: _focusNode.requestFocus,
-                            onHorizontalDragStart: (_) => _focusNode.requestFocus(),
+                            onHorizontalDragStart: (_) =>
+                                _focusNode.requestFocus(),
                             onHorizontalDragUpdate: (details) {
                               _moveByDrag(details.delta.dx);
                             },
@@ -598,9 +597,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
                                   ),
                                 ),
                                 Positioned.fill(
-                                  child: CustomPaint(
-                                    painter: _ArenaPainter(),
-                                  ),
+                                  child: CustomPaint(painter: _ArenaPainter()),
                                 ),
                                 for (final pickup in _pickups)
                                   Positioned(
@@ -617,6 +614,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
                                     width: _playerWidth,
                                     height: _playerHeight,
                                     tilt: _playerTilt,
+                                    profileImageUrl: profileImageUrl,
                                   ),
                                 ),
                                 if (!_started && !_finished)
@@ -699,19 +697,19 @@ class _PickupData {
   const _PickupData({
     required this.label,
     required this.amount,
-    required this.icon,
+    required this.img,
   });
 
   final String label;
   final int amount;
-  final IconData icon;
+  final String img;
 }
 
 class _FallingPickup {
   _FallingPickup({
     required this.label,
     required this.amount,
-    required this.icon,
+    required this.img,
     required this.kind,
     required this.x,
     required this.y,
@@ -723,7 +721,7 @@ class _FallingPickup {
 
   final String label;
   final int amount;
-  final IconData icon;
+  final String img;
   final _PickupKind kind;
   double width;
   double height;
@@ -735,32 +733,65 @@ class _FallingPickup {
 }
 
 const List<_PickupData> _needPool = [
-  _PickupData(label: 'Rent', amount: 600, icon: Icons.home_rounded),
+  _PickupData(
+    label: 'Rent',
+    amount: 600,
+    img: 'assets/icons/icons8-house-48.png',
+  ),
   _PickupData(
     label: 'Groceries',
     amount: 90,
-    icon: Icons.local_grocery_store_rounded,
+    img: 'assets/icons/icons8-money-48.png',
   ),
-  _PickupData(label: 'Utilities', amount: 120, icon: Icons.bolt_rounded),
-  _PickupData(label: 'Medicine', amount: 45, icon: Icons.medication_rounded),
-  _PickupData(label: 'Gas', amount: 50, icon: Icons.local_gas_station_rounded),
-  _PickupData(label: 'Internet', amount: 70, icon: Icons.wifi_rounded),
+  _PickupData(
+    label: 'Utilities',
+    amount: 120,
+    img: 'assets/icons/icons8-water-48.png',
+  ),
+  _PickupData(
+    label: 'Medicine',
+    amount: 45,
+    img: 'assets/icons/icons8-medicine-48.png',
+  ),
+  _PickupData(
+    label: 'Gas',
+    amount: 50,
+    img: 'assets/icons/icons8-gas-station-48.png',
+  ),
+  _PickupData(
+    label: 'Internet',
+    amount: 70,
+    img: 'assets/icons/icons8-internet-48.png',
+  ),
 ];
 
 const List<_PickupData> _wantPool = [
-  _PickupData(label: 'Takeout', amount: 25, icon: Icons.fastfood_rounded),
-  _PickupData(label: 'Streaming', amount: 18, icon: Icons.tv_rounded),
-  _PickupData(label: 'Skins', amount: 15, icon: Icons.palette_rounded),
-  _PickupData(label: 'Fancy Coffee', amount: 9, icon: Icons.coffee_rounded),
-  _PickupData(label: 'Impulse Buy', amount: 35, icon: Icons.campaign_rounded),
-  _PickupData(label: 'New Shoes', amount: 90, icon: Icons.checkroom_rounded),
+  _PickupData(
+    label: 'Takeout',
+    amount: 25,
+    img: 'assets/icons/icons8-pancake-stack-48.png',
+  ),
+  _PickupData(
+    label: 'Streaming',
+    amount: 18,
+    img: 'assets/icons/icons8-streaming-service-48.png',
+  ),
+  _PickupData(label: 'Box', amount: 15, img: 'assets/icons/box.png'),
+  _PickupData(
+    label: 'Crunchyroll',
+    amount: 9,
+    img: 'assets/icons/icons8-crunchyroll-48.png',
+  ),
+  _PickupData(label: 'Market', amount: 35, img: 'assets/icons/market.png'),
+  _PickupData(
+    label: 'Money',
+    amount: 90,
+    img: 'assets/icons/icons8-money-48.png',
+  ),
 ];
 
 class _TopStatsRow extends StatelessWidget {
-  const _TopStatsRow({
-    required this.money,
-    required this.score,
-  });
+  const _TopStatsRow({required this.money, required this.score});
 
   final int money;
   final int score;
@@ -788,10 +819,7 @@ class _TopStatsRow extends StatelessWidget {
 }
 
 class _TopChip extends StatelessWidget {
-  const _TopChip({
-    required this.label,
-    required this.icon,
-  });
+  const _TopChip({required this.label, required this.icon});
 
   final String label;
   final IconData icon;
@@ -808,7 +836,7 @@ class _TopChip extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: const Color(0xFF85EFAC), size: 18),
+          Icon(icon, color: Colors.white.withValues(alpha: 0.92), size: 18),
           const SizedBox(width: 8),
           Text(
             label,
@@ -824,9 +852,7 @@ class _TopChip extends StatelessWidget {
 }
 
 class _PickupCard extends StatelessWidget {
-  const _PickupCard({
-    required this.pickup,
-  });
+  const _PickupCard({required this.pickup});
 
   final _FallingPickup pickup;
 
@@ -834,10 +860,12 @@ class _PickupCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isNeed = pickup.kind == _PickupKind.need;
 
-    final Color accent =
-        isNeed ? const Color(0xFF73E9A6) : const Color(0xFFFFB084);
-    final Color accentDark =
-        isNeed ? const Color(0xFF39C97A) : const Color(0xFFFF8D5C);
+    final Color accent = isNeed
+        ? const Color(0xFF73E9A6)
+        : const Color(0xFFFFB084);
+    final Color accentDark = isNeed
+        ? const Color(0xFF39C97A)
+        : const Color(0xFFFF8D5C);
 
     final wobble = pickup.tilt + math.sin(pickup.y * 0.045) * 0.08;
 
@@ -846,84 +874,96 @@ class _PickupCard extends StatelessWidget {
       child: Container(
         width: pickup.width,
         height: pickup.height,
-        padding: const EdgeInsets.all(7),
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: const Color(0xFFF0FAF3),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: accent.withValues(alpha: 0.9), width: 1.2),
+          color: const Color(0xFFF8FCF8),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: accent.withValues(alpha: 0.95), width: 1.4),
           boxShadow: [
             BoxShadow(
-              color: accent.withValues(alpha: 0.16),
-              blurRadius: 12,
-              offset: const Offset(0, 5),
+              color: accent.withValues(alpha: 0.22),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Row(
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: accent,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    isNeed ? 'Need' : 'Want',
-                    style: const TextStyle(
-                      color: Color(0xFF103225),
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w900,
-                      height: 1.0,
-                    ),
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      accent.withValues(alpha: 0.18),
+                      accentDark.withValues(alpha: 0.08),
+                    ],
                   ),
                 ),
-                const Spacer(),
-                Icon(
-                  pickup.icon,
-                  size: 15,
-                  color: accentDark,
-                ),
-              ],
+              ),
             ),
-            const SizedBox(height: 6),
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerLeft,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Image.asset(
+                pickup.img,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
+                errorBuilder: (context, error, stackTrace) => Center(
+                  child: Icon(
+                    Icons.image_outlined,
+                    color: accentDark,
+                    size: 30,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 6,
+              left: 6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
                 child: Text(
-                  pickup.label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  isNeed ? 'Need' : 'Want',
                   style: const TextStyle(
-                    color: Color(0xFF17382D),
+                    color: Color(0xFF103225),
+                    fontSize: 9.5,
                     fontWeight: FontWeight.w900,
-                    fontSize: 12,
-                    height: 1.05,
+                    height: 1.0,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.76),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: accent.withValues(alpha: 0.7),
-                  width: 1,
+            Positioned(
+              bottom: 6,
+              left: 6,
+              right: 6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.82),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: accent.withValues(alpha: 0.7),
+                    width: 1,
+                  ),
                 ),
-              ),
-              child: Text(
-                '\$${pickup.amount}',
-                style: const TextStyle(
-                  color: Color(0xFF355E4E),
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w800,
-                  height: 1.0,
+                child: Text(
+                  '\$${pickup.amount}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFF355E4E),
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    height: 1.0,
+                  ),
                 ),
               ),
             ),
@@ -939,11 +979,13 @@ class _PlayerAvatar extends StatelessWidget {
     required this.width,
     required this.height,
     required this.tilt,
+    required this.profileImageUrl,
   });
 
   final double width;
   final double height;
   final double tilt;
+  final String profileImageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -957,7 +999,10 @@ class _PlayerAvatar extends StatelessWidget {
           gradient: const LinearGradient(
             colors: [Color(0xFF85EFAC), Color(0xFF4DD78E)],
           ),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.42), width: 2),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.42),
+            width: 2,
+          ),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF85EFAC).withValues(alpha: 0.22),
@@ -966,12 +1011,27 @@ class _PlayerAvatar extends StatelessWidget {
             ),
           ],
         ),
-        child: const Center(
-          child: Icon(
-            Icons.person_rounded,
-            color: Color(0xFF103225),
-            size: 34,
-          ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: profileImageUrl.isNotEmpty
+              ? Image.network(
+                  profileImageUrl,
+                  fit: BoxFit.cover,
+                  width: width,
+                  height: height,
+                  errorBuilder: (context, error, stackTrace) => Image.asset(
+                    'assets/images/cool_turtle.png',
+                    fit: BoxFit.cover,
+                    width: width,
+                    height: height,
+                  ),
+                )
+              : Image.asset(
+                  'assets/images/cool_turtle.png',
+                  fit: BoxFit.cover,
+                  width: width,
+                  height: height,
+                ),
         ),
       ),
     );
@@ -979,9 +1039,7 @@ class _PlayerAvatar extends StatelessWidget {
 }
 
 class _OverlayCenter extends StatelessWidget {
-  const _OverlayCenter({
-    required this.child,
-  });
+  const _OverlayCenter({required this.child});
 
   final Widget child;
 
@@ -997,9 +1055,7 @@ class _OverlayCenter extends StatelessWidget {
 }
 
 class _IntroCard extends StatelessWidget {
-  const _IntroCard({
-    required this.onStart,
-  });
+  const _IntroCard({required this.onStart});
 
   final VoidCallback onStart;
 
@@ -1069,10 +1125,7 @@ class _IntroCard extends StatelessWidget {
 }
 
 class _HintBadge extends StatelessWidget {
-  const _HintBadge({
-    required this.icon,
-    required this.label,
-  });
+  const _HintBadge({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -1157,8 +1210,16 @@ class _ResultsCard extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: [
-              _ResultChip(label: 'Score', value: '$score', accent: const Color(0xFFFFD45C)),
-              _ResultChip(label: 'Money', value: '\$$money', accent: const Color(0xFF85EFAC)),
+              _ResultChip(
+                label: 'Score',
+                value: '$score',
+                accent: const Color(0xFFFFD45C),
+              ),
+              _ResultChip(
+                label: 'Money',
+                value: '\$$money',
+                accent: const Color(0xFF85EFAC),
+              ),
               _ResultChip(
                 label: 'Gold',
                 value: '+${rewards.goldEarned}',
@@ -1231,10 +1292,7 @@ class _ResultChip extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: TextStyle(
-              color: accent,
-              fontWeight: FontWeight.w900,
-            ),
+            style: TextStyle(color: accent, fontWeight: FontWeight.w900),
           ),
         ],
       ),
@@ -1279,10 +1337,7 @@ class _ControlButton extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               label,
-              style: TextStyle(
-                color: accent,
-                fontWeight: FontWeight.w800,
-              ),
+              style: TextStyle(color: accent, fontWeight: FontWeight.w800),
             ),
           ],
         ),
@@ -1319,7 +1374,7 @@ class _ArenaPainter extends CustomPainter {
 
     for (var index = 0; index < 14; index++) {
       final dx = (size.width / 14) * index + 12;
-      final double  dy = 30 + (index.isEven ? 8 : 0);
+      final double dy = 30 + (index.isEven ? 8 : 0);
       canvas.drawCircle(Offset(dx, dy), 3.5, coinPaint);
     }
   }
@@ -1327,4 +1382,3 @@ class _ArenaPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
