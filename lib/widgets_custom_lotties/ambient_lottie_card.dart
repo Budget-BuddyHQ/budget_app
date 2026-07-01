@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 
 class AmbientLottieCard extends StatelessWidget {
   const AmbientLottieCard({
@@ -35,11 +34,12 @@ class AmbientLottieCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(28),
           border: Border.all(color: borderColor),
         ),
-        child: Lottie.asset(
-          assetPath,
-          fit: BoxFit.contain,
-          repeat: true,
-          frameRate: FrameRate.composition,
+        child: Center(
+          child: Icon(
+            Icons.auto_awesome_rounded,
+            color: Colors.white.withValues(alpha: 0.8),
+            size: 36,
+          ),
         ),
       ),
     );

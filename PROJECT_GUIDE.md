@@ -208,6 +208,18 @@ For a real release:
 2. Create the `profile_pictures` storage bucket in Supabase, or set `SUPABASE_PROFILE_IMAGE_BUCKET` to a different bucket name.
 3. Add storage policies so authenticated users can upload only their own avatar paths.
 
+## Imported assets and minigame art
+
+The project has several imported asset families that should be treated as first-class content:
+- `assets/icons/` is the preferred source for minigame pickup icons and small UI symbols. Use the downloaded PNG assets there directly instead of relying on generic `IconData` fallbacks when a matching PNG exists.
+- `assets/map_assets_coins/` contains sprite sheets, animation frame sets, and map-related artwork that can be reused for richer background scenes, NPCs, and environmental details.
+- `assets/imported/` contains additional map and sprite sheet resources. Keep those assets intact unless a file is confirmed broken, and prefer mapping gameplay visuals to the correct imported PNG or atlas file rather than deleting content.
+
+For new minigame visuals:
+1. Pick the closest asset from `assets/icons/` or `assets/map_assets_coins/`.
+2. Update the screen data to point at the correct asset path.
+3. Keep the visual treatment consistent with the emerald/aqua/gold UI palette.
+
 ## Recent UI direction
 
 The app is moving from a prototype feel to a more polished financial literacy product.

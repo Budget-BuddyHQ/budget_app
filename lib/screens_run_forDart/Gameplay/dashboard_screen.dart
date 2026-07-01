@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../Gameplay/game_hub_screen.dart';
+import 'game_hub_screen.dart';
 import '../leaderboard_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
