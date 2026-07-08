@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
 import '../../../services_backend_and_other_services/local_web_game_server.dart';
@@ -468,10 +469,9 @@ class _NativeBudgetBattleChallenge extends StatefulWidget {
 class _NativeBudgetBattleChallengeState
     extends State<_NativeBudgetBattleChallenge> {
   static const int _questionsPerRun = 5;
-  static const String _questionBankAsset =
-      'assets/data/react_challenge_questions.json';
-  static const List<_ChallengeQuestion> _fallbackQuestions =
-      <_ChallengeQuestion>[
+  static const String _questionBankAsset = AppAssets.reactChallengeQuestions;
+  static const List<_ChallengeQuestion>
+  _fallbackQuestions = <_ChallengeQuestion>[
     _ChallengeQuestion(
       prompt: 'Your grocery cart is \$12 over budget. Which swap helps most?',
       choices: <String>[
@@ -527,8 +527,7 @@ class _NativeBudgetBattleChallengeState
         'Ignore the balance until payday',
       ],
       correctIndex: 0,
-      explanation:
-          'Planning plus a small cushion makes the money last longer.',
+      explanation: 'Planning plus a small cushion makes the money last longer.',
     ),
   ];
 
@@ -562,9 +561,7 @@ class _NativeBudgetBattleChallengeState
           .whereType<Map>()
           .map(
             (questionJson) => _ChallengeQuestion.fromJson(
-              questionJson.map(
-                (key, value) => MapEntry(key.toString(), value),
-              ),
+              questionJson.map((key, value) => MapEntry(key.toString(), value)),
             ),
           )
           .where((question) => question.isValid)
@@ -801,7 +798,8 @@ class _NativeBudgetBattleChallengeState
               hasAnswered: selectedIndex != null,
               onPressed: () => _chooseAnswer(index),
             ),
-            if (index != question.choices.length - 1) const SizedBox(height: 10),
+            if (index != question.choices.length - 1)
+              const SizedBox(height: 10),
           ],
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
@@ -1214,4 +1212,3 @@ class _CloudSyncBadge extends StatelessWidget {
     );
   }
 }
-

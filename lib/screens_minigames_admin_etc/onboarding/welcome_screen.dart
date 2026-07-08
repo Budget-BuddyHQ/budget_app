@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../constants/app_assets.dart';
 import '../../navigation_tools_and_animation/fade_page_route.dart';
 import '../auth/auth_screen.dart';
 
@@ -47,8 +48,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final maxWidth = math.min(constraints.maxWidth * 0.9, 520.0);
-                final titleSize =
-                    math.min(constraints.maxWidth * 0.12, 40.0);
+                final titleSize = math.min(constraints.maxWidth * 0.12, 40.0);
 
                 return Center(
                   child: ConstrainedBox(
@@ -61,7 +61,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           builder: (context, child) {
                             final offset =
                                 math.sin(_floatController.value * math.pi * 2) *
-                                    8;
+                                8;
                             return Transform.translate(
                               offset: Offset(0, offset),
                               child: child,
@@ -79,7 +79,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                     borderRadius: BorderRadius.circular(28),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.25),
+                                        color: Colors.black.withValues(
+                                          alpha: 0.25,
+                                        ),
                                         blurRadius: 24,
                                         offset: const Offset(0, 14),
                                       ),
@@ -88,18 +90,18 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(22),
                                     child: Image.asset(
-                                      'assets/images/logo.png',
+                                      AppAssets.logo,
                                       fit: BoxFit.contain,
                                       errorBuilder:
                                           (context, error, stackTrace) {
-                                        return const Center(
-                                          child: Icon(
-                                            Icons.account_balance_wallet,
-                                            size: 60,
-                                            color: Color(0xFF1B3B2A),
-                                          ),
-                                        );
-                                      },
+                                            return const Center(
+                                              child: Icon(
+                                                Icons.account_balance_wallet,
+                                                size: 60,
+                                                color: Color(0xFF1B3B2A),
+                                              ),
+                                            );
+                                          },
                                     ),
                                   ),
                                 ),
@@ -115,7 +117,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                   color: Colors.white,
                                   shadows: [
                                     Shadow(
-                                      color: Colors.black.withValues(alpha: 0.5),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.5,
+                                      ),
                                       blurRadius: 6,
                                       offset: const Offset(0, 2),
                                     ),
@@ -127,33 +131,33 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         ),
                         const SizedBox(height: 40),
                         _WelcomeActionButton(
-                              label: 'Join the Squad',
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                Navigator.push(
-                                  context,
-                                  FadePageRoute(
-                                    builder: (context) =>
-                                        const AuthScreen(mode: AuthMode.signUp),
-                                  ),
-                                );
-                              },
-                              primary: true,
+                          label: 'Join the Squad',
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.push(
+                              context,
+                              FadePageRoute(
+                                builder: (context) =>
+                                    const AuthScreen(mode: AuthMode.signUp),
+                              ),
+                            );
+                          },
+                          primary: true,
                         ),
                         const SizedBox(height: 16),
                         _WelcomeActionButton(
-                              label: 'Welcome Back',
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                Navigator.push(
-                                  context,
-                                  FadePageRoute(
-                                    builder: (context) =>
-                                        const AuthScreen(mode: AuthMode.login),
-                                  ),
-                                );
-                              },
-                              primary: false,
+                          label: 'Welcome Back',
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.push(
+                              context,
+                              FadePageRoute(
+                                builder: (context) =>
+                                    const AuthScreen(mode: AuthMode.login),
+                              ),
+                            );
+                          },
+                          primary: false,
                         ),
                       ],
                     ),
@@ -182,11 +186,7 @@ class _WelcomeBackground extends StatelessWidget {
         Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                Color(0xFF0C2418),
-                Color(0xFF154D36),
-                Color(0xFF0F2E1E),
-              ],
+              colors: [Color(0xFF0C2418), Color(0xFF154D36), Color(0xFF0F2E1E)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -240,9 +240,7 @@ class _GlowOrb extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [color, Colors.transparent],
-        ),
+        gradient: RadialGradient(colors: [color, Colors.transparent]),
       ),
     );
   }
