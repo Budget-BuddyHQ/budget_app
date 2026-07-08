@@ -24,9 +24,11 @@ dependencies:
   flame: ^1.18.0
   flame_tiled: ^1.20.3
   lottie: ^3.3.0
+  flutter_svg: ^2.2.0
   audioplayers: ^6.6.0
   image_picker: ^1.1.2
   cloudflare_turnstile: ^1.0.0
+  flutter_3d_controller: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -35,6 +37,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: NormalFont
+      fonts:
+        - asset: assets/fonts/NormalFont.ttf
   assets:
     - assets/images/logo.png
     - assets/images/
@@ -44,4 +50,8 @@ flutter:
     - assets/data/
     - assets/map/
     - assets/icons/
+    - assets/fonts/
+    - assets/imported/pond_loading_animation_source/pond.glb
+    - assets/imported/
+    - assets/self_made_backgrounds/
 

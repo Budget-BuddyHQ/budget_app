@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../constants/app_assets.dart';
 import '../../../custom_made_widgets/unit_row_item.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson.dart';
@@ -8,8 +9,8 @@ import '../../../models_Like_Skins_and_lessons_templates/progression_service.dar
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
-import '../../../widgets_custom_lotties/branded_loading.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
+import '../../loading/temporary_loading_screen.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import 'lesson_detail_screen.dart';
 
@@ -258,7 +259,10 @@ class _LessonScreenState extends State<LessonScreen> {
               const Positioned(
                 top: 10,
                 right: 10,
-                child: BrandedLoading(message: 'Syncing', compact: true),
+                child: TemporaryLoadingScreen(
+                  message: 'Syncing',
+                  compact: true,
+                ),
               ),
           ],
         ),
@@ -598,7 +602,7 @@ class _HubHeader extends StatelessWidget {
               const Expanded(
                 flex: 2,
                 child: AmbientLottieCard(
-                  assetPath: 'assets/animations/academy_loop.json',
+                  assetPath: AppAssets.academyLoopAnimation,
                   semanticLabel: 'Animated academy illustration',
                   height: 220,
                 ),

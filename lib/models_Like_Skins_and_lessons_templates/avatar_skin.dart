@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../constants/app_assets.dart';
+
 enum SkinRarity { common, rare, epic, legendary, mythic }
 
 @immutable
@@ -70,28 +72,28 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
   AvatarSkin(
     id: 'classic_turtle',
     name: 'Classic Turtle',
-    assetPath: 'assets/images/turtles/Wface_no_bg_l7nvmfum.png',
+    assetPath: AppAssets.turtleClassic,
     rarity: SkinRarity.common,
     accent: Color(0xFF85EFAC),
   ),
   AvatarSkin(
     id: 'coin_shell',
     name: 'Coin Shell',
-    assetPath: 'assets/images/turtles/cuteBigHead_no_bg_3xfq2ne3.png',
+    assetPath: AppAssets.turtleCoinShell,
     rarity: SkinRarity.common,
     accent: Color(0xFFFFD45C),
   ),
   AvatarSkin(
     id: 'guild_runner',
     name: 'Guild Runner',
-    assetPath: 'assets/images/turtles/walkingredshell_no_bg_63pfbf03.png',
+    assetPath: AppAssets.turtleGuildRunner,
     rarity: SkinRarity.legendary,
     accent: Color(0xFFFFD45C),
   ),
   AvatarSkin(
     id: 'explorer_turtle',
     name: 'Explorer',
-    assetPath: 'assets/images/turtles/cuteTropicalhandDrawn_no_bg_i3ipxxln.png',
+    assetPath: AppAssets.turtleExplorer,
     rarity: SkinRarity.rare,
     accent: Color(0xFF85EFAC),
   ),
