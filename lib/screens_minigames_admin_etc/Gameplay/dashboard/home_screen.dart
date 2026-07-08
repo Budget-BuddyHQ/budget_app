@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
+import '../../../constants/app_assets.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
@@ -273,7 +274,7 @@ class _AdventureLaunchHero extends StatelessWidget {
                     child: Opacity(
                       opacity: 0.52,
                       child: AmbientLottieCard(
-                        assetPath: 'assets/animations/turtlemoving.json',
+                        assetPath: AppAssets.turtleMovingAnimation,
                         semanticLabel: 'Moving turtle decoration',
                         width: constraints.maxWidth < 520 ? 88 : 126,
                         height: constraints.maxWidth < 520 ? 72 : 96,
@@ -497,7 +498,7 @@ class _CurrentObjectiveCard extends StatelessWidget {
                   if (!tight) ...[
                     const SizedBox(width: 12),
                     AmbientLottieCard(
-                      assetPath: 'assets/animations/arcade_loop.json',
+                      assetPath: AppAssets.arcadeLoopAnimation,
                       semanticLabel: 'Arcade decoration',
                       width: 92,
                       height: 70,

@@ -4,6 +4,8 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
+import '../constants/app_assets.dart';
+
 class LocalWebGameServer {
   HttpServer? _server;
   Uri? _entryUri;
@@ -12,7 +14,7 @@ class LocalWebGameServer {
   Uri? get entryUri => _entryUri;
 
   Future<Uri> start({
-    String assetRoot = 'assets/web_game/',
+    String assetRoot = AppAssets.webGameRoot,
     Map<String, String> queryParameters = const <String, String>{},
   }) async {
     if (_server != null && _entryUri != null) {
@@ -22,9 +24,7 @@ class LocalWebGameServer {
     await _loadAssetManifest(assetRoot);
 
     _server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    unawaited(
-      _server!.forEach(_handleRequest),
-    );
+    unawaited(_server!.forEach(_handleRequest));
 
     _entryUri = Uri(
       scheme: 'http',
@@ -69,7 +69,9 @@ class LocalWebGameServer {
   }
 
   Future<void> _handleRequest(HttpRequest request) async {
-    final normalizedPath = request.uri.path == '/' ? '/index.html' : request.uri.path;
+    final normalizedPath = request.uri.path == '/'
+        ? '/index.html'
+        : request.uri.path;
     final assetPath = _assetLookup[normalizedPath];
 
     if (assetPath == null) {

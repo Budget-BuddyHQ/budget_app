@@ -20,6 +20,7 @@ class CustomBottomNav extends StatelessWidget {
     _NavItemData(label: 'Style', icon: Icons.auto_awesome_rounded),
     _NavItemData(label: 'Academy', icon: Icons.school_rounded),
     _NavItemData(label: 'Profile', icon: Icons.person_rounded),
+    _NavItemData(label: 'Loading', icon: Icons.hourglass_top_rounded),
   ];
 
   @override
@@ -201,4 +202,3 @@ class _NavItemData {
   final String label;
   final IconData icon;
 }
-
