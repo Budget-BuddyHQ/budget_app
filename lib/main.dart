@@ -17,11 +17,11 @@ import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.da
 import 'screens_minigames_admin_etc/Gameplay/dashboard/dashboard_shell.dart';
 import 'screens_minigames_admin_etc/Gameplay/dashboard/leaderboard_screen.dart';
 import 'screens_minigames_admin_etc/auth/auth_screen.dart';
+import 'screens_minigames_admin_etc/loading/temporary_loading_screen.dart';
 import 'screens_minigames_admin_etc/onboarding/welcome_screen.dart';
 import 'services_backend_and_other_services/app_sound_service.dart';
 import 'services_backend_and_other_services/supabase_service.dart';
 import 'themes_colors/app_theme.dart';
-import 'widgets_custom_lotties/branded_loading.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -150,9 +150,8 @@ class _AppBootstrapGate extends StatelessWidget {
           future: service.isCurrentUserDisabled(),
           builder: (context, snap) {
             if (snap.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                backgroundColor: Color(0xFF071711),
-                body: BrandedLoading(message: 'Checking account...'),
+              return const TemporaryLoadingScreen(
+                message: 'Checking account...',
               );
             }
 
@@ -182,9 +181,8 @@ class _AdventureSaveLoadingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFF071711),
-      body: BrandedLoading(message: 'Loading your adventure save...'),
+    return const TemporaryLoadingScreen(
+      message: 'Loading your adventure save...',
     );
   }
 }

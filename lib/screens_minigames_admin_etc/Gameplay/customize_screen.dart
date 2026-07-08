@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
+import '../../constants/app_assets.dart';
 import '../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../widgets_custom_lotties/ambient_lottie_card.dart';
@@ -999,7 +1000,7 @@ class _CustomizeBackdrop extends StatelessWidget {
           child: Opacity(
             opacity: 0.20,
             child: AmbientLottieCard(
-              assetPath: 'assets/animations/arcade_loop.json',
+              assetPath: AppAssets.arcadeLoopAnimation,
               semanticLabel: 'Sparkling game ambience',
               width: 110,
               height: 110,
@@ -1015,7 +1016,7 @@ class _CustomizeBackdrop extends StatelessWidget {
           child: Opacity(
             opacity: 0.16,
             child: AmbientLottieCard(
-              assetPath: 'assets/animations/academy_loop.json',
+              assetPath: AppAssets.academyLoopAnimation,
               semanticLabel: 'Floating animation accent',
               width: 90,
               height: 90,

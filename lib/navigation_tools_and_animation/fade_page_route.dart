@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../widgets_custom_lotties/branded_loading.dart';
-// I need to work on this loading animation
 class FadePageRoute<T> extends PageRouteBuilder<T> {
   FadePageRoute({
     required WidgetBuilder builder,
@@ -35,21 +33,7 @@ class FadePageRoute<T> extends PageRouteBuilder<T> {
              return transitioned;
            }
 
-           return Stack(
-             children: [
-               transitioned,
-               Positioned(
-                 right: 18,
-                 bottom: 18,
-                 child: FadeTransition(
-                   opacity: ReverseAnimation(curved),
-                   child: const IgnorePointer(
-                     child: BrandedLoading(message: 'Loading', compact: true),
-                   ),
-                 ),
-               ),
-             ],
-           );
+           return transitioned;
          },
        );
 }

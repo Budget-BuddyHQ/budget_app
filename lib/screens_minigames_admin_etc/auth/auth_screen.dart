@@ -11,6 +11,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../../config/turnstile_config.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../navigation_tools_and_animation/fade_page_route.dart';
+import '../../constants/app_assets.dart';
 import '../../services_backend_and_other_services/turnstile_challenge_server.dart';
 import '../../widgets_custom_lotties/custom_button.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
@@ -19,10 +20,7 @@ import '../Gameplay/dashboard/dashboard_shell.dart';
 enum AuthMode { login, signUp }
 
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({
-    super.key,
-    required this.mode,
-  });
+  const AuthScreen({super.key, required this.mode});
 
   final AuthMode mode;
 
@@ -30,8 +28,7 @@ class AuthScreen extends StatefulWidget {
   State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen>
-    with TickerProviderStateMixin {
+class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -65,7 +62,8 @@ class _AuthScreenState extends State<AuthScreen>
   bool get _usesExternalSecurityCheck =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
 
-  String get _turnstileHtml => '''
+  String get _turnstileHtml =>
+      '''
 <!DOCTYPE html>
 <html>
 <head>
@@ -203,7 +201,8 @@ class _AuthScreenState extends State<AuthScreen>
           GameToast.show(
             context,
             title: 'Security check incomplete',
-            message: 'Please complete the browser security check and try again.',
+            message:
+                'Please complete the browser security check and try again.',
             icon: Icons.hourglass_empty_rounded,
             accent: const Color(0xFFFFC36B),
           );
@@ -258,7 +257,9 @@ class _AuthScreenState extends State<AuthScreen>
           ? (_isLogin ? 'Welcome back' : 'Account ready')
           : 'Could not continue',
       message: result.message,
-      icon: result.success ? Icons.verified_rounded : Icons.warning_amber_rounded,
+      icon: result.success
+          ? Icons.verified_rounded
+          : Icons.warning_amber_rounded,
       accent: result.success
           ? const Color(0xFF85EFAC)
           : const Color(0xFFFF8A80),
@@ -274,9 +275,7 @@ class _AuthScreenState extends State<AuthScreen>
     }
 
     Navigator.of(context).pushReplacement(
-      FadePageRoute<void>(
-        builder: (_) => const DashboardShell(),
-      ),
+      FadePageRoute<void>(builder: (_) => const DashboardShell()),
     );
   }
 
@@ -425,7 +424,10 @@ class _AuthScreenState extends State<AuthScreen>
       );
       debugPrint('Opening Turnstile browser check at $uri');
 
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched) {
         return null;
       }
@@ -488,23 +490,21 @@ class _AuthScreenState extends State<AuthScreen>
                               curve: Curves.easeOut,
                             ),
                             child: SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(0, 0.08),
-                                end: Offset.zero,
-                              ).animate(
-                                CurvedAnimation(
-                                  parent: _heroController,
-                                  curve: Curves.easeOutCubic,
-                                ),
-                              ),
+                              position:
+                                  Tween<Offset>(
+                                    begin: const Offset(0, 0.08),
+                                    end: Offset.zero,
+                                  ).animate(
+                                    CurvedAnimation(
+                                      parent: _heroController,
+                                      curve: Curves.easeOutCubic,
+                                    ),
+                                  ),
                               child: _AuthHero(isCompact: isCompact),
                             ),
                           ),
                           const SizedBox(height: 24),
-                          _ModeSwitch(
-                            mode: _mode,
-                            onChanged: _toggleMode,
-                          ),
+                          _ModeSwitch(mode: _mode, onChanged: _toggleMode),
                           const SizedBox(height: 22),
                           Text(
                             _isLogin
@@ -530,7 +530,8 @@ class _AuthScreenState extends State<AuthScreen>
                                   _AuthField(
                                     controller: _usernameController,
                                     label: 'Wizard Name',
-                                    hintText: 'How should Budget Buddy greet you?',
+                                    hintText:
+                                        'How should Budget Buddy greet you?',
                                     keyboardType: TextInputType.name,
                                     prefixIcon: Icons.person_rounded,
                                     validator: (value) {
@@ -651,7 +652,9 @@ class _AuthScreenState extends State<AuthScreen>
                           ),
                           const SizedBox(height: 18),
                           CustomButton(
-                            label: _isLogin ? 'Enter Budget Buddy' : 'Create Account',
+                            label: _isLogin
+                                ? 'Enter Budget Buddy'
+                                : 'Create Account',
                             isLoading: _submitting,
                             onPressed: _submit,
                             prefixIcon: Icon(
@@ -690,9 +693,7 @@ class _AuthScreenState extends State<AuthScreen>
 }
 
 class _AuthHero extends StatelessWidget {
-  const _AuthHero({
-    required this.isCompact,
-  });
+  const _AuthHero({required this.isCompact});
 
   final bool isCompact;
 
@@ -748,7 +749,7 @@ class _AuthHero extends StatelessWidget {
                     ],
                   ),
                   child: Image.asset(
-                    'assets/images/logo.png',
+                    AppAssets.logo,
                     fit: BoxFit.contain,
                     errorBuilder: (_, _, _) => const Icon(
                       Icons.account_balance_wallet_rounded,
@@ -788,10 +789,7 @@ class _AuthHero extends StatelessWidget {
 }
 
 class _ModeSwitch extends StatelessWidget {
-  const _ModeSwitch({
-    required this.mode,
-    required this.onChanged,
-  });
+  const _ModeSwitch({required this.mode, required this.onChanged});
 
   final AuthMode mode;
   final ValueChanged<AuthMode> onChanged;
@@ -919,9 +917,7 @@ class _AuthField extends StatelessWidget {
           color: Color(0xFF85EFAC),
           fontWeight: FontWeight.w700,
         ),
-        hintStyle: TextStyle(
-          color: Colors.white.withValues(alpha: 0.42),
-        ),
+        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.42)),
         prefixIcon: Icon(prefixIcon, color: const Color(0xFF85EFAC)),
         suffixIcon: suffix,
         contentPadding: const EdgeInsets.all(20),
@@ -987,10 +983,7 @@ class _PasswordToggleButton extends StatelessWidget {
 }
 
 class _TermsCard extends StatelessWidget {
-  const _TermsCard({
-    required this.accepted,
-    required this.onChanged,
-  });
+  const _TermsCard({required this.accepted, required this.onChanged});
 
   final bool accepted;
   final ValueChanged<bool> onChanged;
@@ -1062,5 +1055,3 @@ class _HiddenTurnstileView extends StatelessWidget {
     );
   }
 }
-
-

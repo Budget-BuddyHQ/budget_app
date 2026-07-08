@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
+import '../../../constants/app_assets.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
@@ -733,61 +734,21 @@ class _FallingPickup {
 }
 
 const List<_PickupData> _needPool = [
-  _PickupData(
-    label: 'Rent',
-    amount: 600,
-    img: 'assets/icons/icons8-house-48.png',
-  ),
-  _PickupData(
-    label: 'Groceries',
-    amount: 90,
-    img: 'assets/icons/icons8-money-48.png',
-  ),
-  _PickupData(
-    label: 'Utilities',
-    amount: 120,
-    img: 'assets/icons/icons8-water-48.png',
-  ),
-  _PickupData(
-    label: 'Medicine',
-    amount: 45,
-    img: 'assets/icons/icons8-medicine-48.png',
-  ),
-  _PickupData(
-    label: 'Gas',
-    amount: 50,
-    img: 'assets/icons/icons8-gas-station-48.png',
-  ),
-  _PickupData(
-    label: 'Internet',
-    amount: 70,
-    img: 'assets/icons/icons8-internet-48.png',
-  ),
+  _PickupData(label: 'Rent', amount: 600, img: AppAssets.iconHouse),
+  _PickupData(label: 'Groceries', amount: 90, img: AppAssets.iconMoney),
+  _PickupData(label: 'Utilities', amount: 120, img: AppAssets.iconWater),
+  _PickupData(label: 'Medicine', amount: 45, img: AppAssets.iconMedicine),
+  _PickupData(label: 'Gas', amount: 50, img: AppAssets.iconGas),
+  _PickupData(label: 'Internet', amount: 70, img: AppAssets.iconInternet),
 ];
 
 const List<_PickupData> _wantPool = [
-  _PickupData(
-    label: 'Takeout',
-    amount: 25,
-    img: 'assets/icons/icons8-pancake-stack-48.png',
-  ),
-  _PickupData(
-    label: 'Streaming',
-    amount: 18,
-    img: 'assets/icons/icons8-streaming-service-48.png',
-  ),
-  _PickupData(label: 'Box', amount: 15, img: 'assets/icons/box.png'),
-  _PickupData(
-    label: 'Crunchyroll',
-    amount: 9,
-    img: 'assets/icons/icons8-crunchyroll-48.png',
-  ),
-  _PickupData(label: 'Market', amount: 35, img: 'assets/icons/market.png'),
-  _PickupData(
-    label: 'Money',
-    amount: 90,
-    img: 'assets/icons/icons8-money-48.png',
-  ),
+  _PickupData(label: 'Takeout', amount: 25, img: AppAssets.iconPancake),
+  _PickupData(label: 'Streaming', amount: 18, img: AppAssets.iconStreaming),
+  _PickupData(label: 'Box', amount: 15, img: AppAssets.iconBox),
+  _PickupData(label: 'Crunchyroll', amount: 9, img: AppAssets.iconCrunchyroll),
+  _PickupData(label: 'Market', amount: 35, img: AppAssets.iconMarket),
+  _PickupData(label: 'Money', amount: 90, img: AppAssets.iconMoney),
 ];
 
 class _TopStatsRow extends StatelessWidget {
@@ -1020,14 +981,14 @@ class _PlayerAvatar extends StatelessWidget {
                   width: width,
                   height: height,
                   errorBuilder: (context, error, stackTrace) => Image.asset(
-                    'assets/images/cool_turtle.png',
+                    AppAssets.coolTurtle,
                     fit: BoxFit.cover,
                     width: width,
                     height: height,
                   ),
                 )
               : Image.asset(
-                  'assets/images/cool_turtle.png',
+                  AppAssets.coolTurtle,
                   fit: BoxFit.cover,
                   width: width,
                   height: height,
