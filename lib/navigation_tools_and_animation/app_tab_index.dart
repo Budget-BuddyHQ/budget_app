@@ -5,7 +5,6 @@ abstract final class AppTabIndex {
   static const int customize = 3;
   static const int academy = 4;
   static const int profile = 5;
-  static const int loading = 6;
 
-  static const int count = 7;
+  static const int count = 6;
 }

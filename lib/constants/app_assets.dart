@@ -20,6 +20,13 @@ class AppAssets {
 
   static const String webGameRoot = 'assets/web_game/';
 
+  static const String villageMapBackground =
+      'assets/self_made_backgrounds/map.png';
+  static const String tileGrass =
+      'assets/map_assets_coins/PNG_more_map_tiles/rpgTile000.png';
+  static const String tileShore =
+      'assets/map_assets_coins/PNG_more_map_tiles/rpgTile010.png';
+
   static const String turtleClassic =
       'assets/images/turtles/Wface_no_bg_l7nvmfum.png';
   static const String turtleCoinShell =

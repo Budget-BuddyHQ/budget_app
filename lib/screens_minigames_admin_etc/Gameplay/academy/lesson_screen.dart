@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../constants/app_assets.dart';
+import '../../../constants/app_assets.dart';
 import '../../../custom_made_widgets/unit_row_item.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson.dart';
@@ -159,6 +159,18 @@ class _LessonScreenState extends State<LessonScreen> {
       body: SafeArea(
         child: Stack(
           children: [
+            Positioned.fill(
+              child: Image.asset(
+                AppAssets.villageMapBackground,
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.none,
+              ),
+            ),
+            Positioned.fill(
+              child: Container(
+                color: const Color(0xFF0D2B20).withValues(alpha: 0.86),
+              ),
+            ),
             LayoutBuilder(
               builder: (context, constraints) {
                 // Treat landscape or short heights as compact to avoid vertical overflow.
@@ -932,13 +944,26 @@ class _UnitCard extends StatelessWidget {
               final copy = Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    unit.title,
-                    style: TextStyle(
-                      color: const Color(0xFFF7FFFB),
-                      fontSize: compact ? 24 : 28,
-                      fontWeight: FontWeight.w900,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.cottage_rounded,
+                        color: const Color(0xFFB8F5D1),
+                        size: compact ? 22 : 26,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          unit.title,
+                          style: TextStyle(
+                            color: const Color(0xFFF7FFFB),
+                            fontSize: compact ? 24 : 28,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               );

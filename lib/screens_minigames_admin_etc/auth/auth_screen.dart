@@ -451,242 +451,258 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     const emerald = Color(0xFF173C2F);
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [deepForest, emerald, Color(0xFF0A1C16)],
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            AppAssets.villageMapBackground,
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.none,
           ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isCompact = constraints.maxHeight < 760;
-              return Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 520),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: IconButton(
-                              onPressed: () => Navigator.of(context).maybePop(),
-                              icon: const Icon(
-                                Icons.arrow_back_ios_new_rounded,
-                                color: Colors.white,
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  deepForest.withValues(alpha: 0.86),
+                  emerald.withValues(alpha: 0.80),
+                  const Color(0xFF0A1C16).withValues(alpha: 0.90),
+                ],
+              ),
+            ),
+          ),
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isCompact = constraints.maxHeight < 760;
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: IconButton(
+                                onPressed: () =>
+                                    Navigator.of(context).maybePop(),
+                                icon: const Icon(
+                                  Icons.arrow_back_ios_new_rounded,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          FadeTransition(
-                            opacity: CurvedAnimation(
-                              parent: _heroController,
-                              curve: Curves.easeOut,
-                            ),
-                            child: SlideTransition(
-                              position:
-                                  Tween<Offset>(
-                                    begin: const Offset(0, 0.08),
-                                    end: Offset.zero,
-                                  ).animate(
-                                    CurvedAnimation(
-                                      parent: _heroController,
-                                      curve: Curves.easeOutCubic,
+                            const SizedBox(height: 8),
+                            FadeTransition(
+                              opacity: CurvedAnimation(
+                                parent: _heroController,
+                                curve: Curves.easeOut,
+                              ),
+                              child: SlideTransition(
+                                position:
+                                    Tween<Offset>(
+                                      begin: const Offset(0, 0.08),
+                                      end: Offset.zero,
+                                    ).animate(
+                                      CurvedAnimation(
+                                        parent: _heroController,
+                                        curve: Curves.easeOutCubic,
+                                      ),
                                     ),
-                                  ),
-                              child: _AuthHero(isCompact: isCompact),
+                                child: _AuthHero(isCompact: isCompact),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 24),
-                          _ModeSwitch(mode: _mode, onChanged: _toggleMode),
-                          const SizedBox(height: 22),
-                          Text(
-                            _isLogin
-                                ? 'Log back into your kingdom'
-                                : 'Build your financial hero profile',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.78),
-                              fontSize: 14,
-                              height: 1.45,
+                            const SizedBox(height: 24),
+                            _ModeSwitch(mode: _mode, onChanged: _toggleMode),
+                            const SizedBox(height: 22),
+                            Text(
+                              _isLogin
+                                  ? 'Log back into your kingdom'
+                                  : 'Build your financial hero profile',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.78),
+                                fontSize: 14,
+                                height: 1.45,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 24),
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 250),
-                            switchInCurve: Curves.easeOutCubic,
-                            switchOutCurve: Curves.easeInCubic,
-                            child: Column(
-                              key: ValueKey<AuthMode>(_mode),
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                if (!_isLogin) ...[
-                                  _AuthField(
-                                    controller: _usernameController,
-                                    label: 'Wizard Name',
-                                    hintText:
-                                        'How should Budget Buddy greet you?',
-                                    keyboardType: TextInputType.name,
-                                    prefixIcon: Icons.person_rounded,
-                                    validator: (value) {
-                                      if (_isLogin) {
+                            const SizedBox(height: 24),
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 250),
+                              switchInCurve: Curves.easeOutCubic,
+                              switchOutCurve: Curves.easeInCubic,
+                              child: Column(
+                                key: ValueKey<AuthMode>(_mode),
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  if (!_isLogin) ...[
+                                    _AuthField(
+                                      controller: _usernameController,
+                                      label: 'Wizard Name',
+                                      hintText:
+                                          'How should Budget Buddy greet you?',
+                                      keyboardType: TextInputType.name,
+                                      prefixIcon: Icons.person_rounded,
+                                      validator: (value) {
+                                        if (_isLogin) {
+                                          return null;
+                                        }
+                                        final trimmed = value?.trim() ?? '';
+                                        if (trimmed.isEmpty) {
+                                          return 'Please choose a display name.';
+                                        }
+                                        if (trimmed.length < 3) {
+                                          return 'Use at least 3 characters.';
+                                        }
                                         return null;
+                                      },
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                  _AuthField(
+                                    controller: _emailController,
+                                    label: 'Email Address',
+                                    hintText: 'wizard@budgetbuddy.app',
+                                    keyboardType: TextInputType.emailAddress,
+                                    prefixIcon: Icons.alternate_email_rounded,
+                                    validator: (value) {
+                                      final email = value?.trim() ?? '';
+                                      if (email.isEmpty) {
+                                        return 'Enter your email.';
                                       }
-                                      final trimmed = value?.trim() ?? '';
-                                      if (trimmed.isEmpty) {
-                                        return 'Please choose a display name.';
-                                      }
-                                      if (trimmed.length < 3) {
-                                        return 'Use at least 3 characters.';
+                                      if (!RegExp(
+                                        r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                                      ).hasMatch(email)) {
+                                        return 'Use a valid email address.';
                                       }
                                       return null;
                                     },
                                   ),
                                   const SizedBox(height: 16),
-                                ],
-                                _AuthField(
-                                  controller: _emailController,
-                                  label: 'Email Address',
-                                  hintText: 'wizard@budgetbuddy.app',
-                                  keyboardType: TextInputType.emailAddress,
-                                  prefixIcon: Icons.alternate_email_rounded,
-                                  validator: (value) {
-                                    final email = value?.trim() ?? '';
-                                    if (email.isEmpty) {
-                                      return 'Enter your email.';
-                                    }
-                                    if (!RegExp(
-                                      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                                    ).hasMatch(email)) {
-                                      return 'Use a valid email address.';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                _AuthField(
-                                  controller: _passwordController,
-                                  label: 'Password',
-                                  hintText: _isLogin
-                                      ? 'Enter your password'
-                                      : 'Create a strong password',
-                                  keyboardType: TextInputType.visiblePassword,
-                                  prefixIcon: Icons.lock_rounded,
-                                  obscureText: _obscurePassword,
-                                  suffix: _PasswordToggleButton(
-                                    isObscured: _obscurePassword,
-                                    onPressed: () {
-                                      HapticFeedback.lightImpact();
-                                      setState(() {
-                                        _obscurePassword = !_obscurePassword;
-                                      });
-                                    },
-                                  ),
-                                  validator: (value) {
-                                    final password = value ?? '';
-                                    if (password.isEmpty) {
-                                      return 'Enter your password.';
-                                    }
-                                    if (!_isLogin && password.length < 8) {
-                                      return 'Use at least 8 characters.';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                if (!_isLogin) ...[
-                                  const SizedBox(height: 16),
                                   _AuthField(
-                                    controller: _confirmController,
-                                    label: 'Confirm Password',
-                                    hintText: 'Repeat your password',
+                                    controller: _passwordController,
+                                    label: 'Password',
+                                    hintText: _isLogin
+                                        ? 'Enter your password'
+                                        : 'Create a strong password',
                                     keyboardType: TextInputType.visiblePassword,
-                                    prefixIcon: Icons.verified_user_rounded,
-                                    obscureText: _obscureConfirmPassword,
+                                    prefixIcon: Icons.lock_rounded,
+                                    obscureText: _obscurePassword,
                                     suffix: _PasswordToggleButton(
-                                      isObscured: _obscureConfirmPassword,
+                                      isObscured: _obscurePassword,
                                       onPressed: () {
                                         HapticFeedback.lightImpact();
                                         setState(() {
-                                          _obscureConfirmPassword =
-                                              !_obscureConfirmPassword;
+                                          _obscurePassword = !_obscurePassword;
                                         });
                                       },
                                     ),
                                     validator: (value) {
-                                      if (_isLogin) {
-                                        return null;
+                                      final password = value ?? '';
+                                      if (password.isEmpty) {
+                                        return 'Enter your password.';
                                       }
-                                      if ((value ?? '').isEmpty) {
-                                        return 'Confirm your password.';
-                                      }
-                                      if (value != _passwordController.text) {
-                                        return 'Passwords do not match.';
+                                      if (!_isLogin && password.length < 8) {
+                                        return 'Use at least 8 characters.';
                                       }
                                       return null;
                                     },
                                   ),
-                                  const SizedBox(height: 16),
-                                  _TermsCard(
-                                    accepted: _acceptedTerms,
-                                    onChanged: (value) {
-                                      HapticFeedback.lightImpact();
-                                      setState(() {
-                                        _acceptedTerms = value;
-                                      });
-                                    },
+                                  if (!_isLogin) ...[
+                                    const SizedBox(height: 16),
+                                    _AuthField(
+                                      controller: _confirmController,
+                                      label: 'Confirm Password',
+                                      hintText: 'Repeat your password',
+                                      keyboardType:
+                                          TextInputType.visiblePassword,
+                                      prefixIcon: Icons.verified_user_rounded,
+                                      obscureText: _obscureConfirmPassword,
+                                      suffix: _PasswordToggleButton(
+                                        isObscured: _obscureConfirmPassword,
+                                        onPressed: () {
+                                          HapticFeedback.lightImpact();
+                                          setState(() {
+                                            _obscureConfirmPassword =
+                                                !_obscureConfirmPassword;
+                                          });
+                                        },
+                                      ),
+                                      validator: (value) {
+                                        if (_isLogin) {
+                                          return null;
+                                        }
+                                        if ((value ?? '').isEmpty) {
+                                          return 'Confirm your password.';
+                                        }
+                                        if (value != _passwordController.text) {
+                                          return 'Passwords do not match.';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _TermsCard(
+                                      accepted: _acceptedTerms,
+                                      onChanged: (value) {
+                                        HapticFeedback.lightImpact();
+                                        setState(() {
+                                          _acceptedTerms = value;
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                  _HiddenTurnstileView(
+                                    controller: _turnstileController,
+                                    isConfigured: _isTurnstileConfigured,
+                                    isSupported: _supportsEmbeddedWebView,
                                   ),
                                 ],
-                                _HiddenTurnstileView(
-                                  controller: _turnstileController,
-                                  isConfigured: _isTurnstileConfigured,
-                                  isSupported: _supportsEmbeddedWebView,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          CustomButton(
-                            label: _isLogin
-                                ? 'Enter Budget Buddy'
-                                : 'Create Account',
-                            isLoading: _submitting,
-                            onPressed: _submit,
-                            prefixIcon: Icon(
-                              _isLogin
-                                  ? Icons.login_rounded
-                                  : Icons.auto_awesome_rounded,
-                              color: const Color(0xFF1A4D3D),
-                              size: 18,
-                            ),
-                            style: const CustomButtonStyle.primary(),
-                          ),
-                          const SizedBox(height: 12),
-                          if (_isLogin)
-                            TextButton(
-                              onPressed: _submitPasswordReset,
-                              child: const Text(
-                                'Forgot your password?',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontWeight: FontWeight.w600,
-                                ),
                               ),
                             ),
-                        ],
+                            const SizedBox(height: 18),
+                            CustomButton(
+                              label: _isLogin
+                                  ? 'Enter Budget Buddy'
+                                  : 'Create Account',
+                              isLoading: _submitting,
+                              onPressed: _submit,
+                              prefixIcon: Icon(
+                                _isLogin
+                                    ? Icons.login_rounded
+                                    : Icons.auto_awesome_rounded,
+                                color: const Color(0xFF1A4D3D),
+                                size: 18,
+                              ),
+                              style: const CustomButtonStyle.primary(),
+                            ),
+                            const SizedBox(height: 12),
+                            if (_isLogin)
+                              TextButton(
+                                onPressed: _submitPasswordReset,
+                                child: const Text(
+                                  'Forgot your password?',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

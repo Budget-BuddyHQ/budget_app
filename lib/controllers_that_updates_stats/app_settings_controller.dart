@@ -30,4 +30,3 @@ class AppSettingsController extends ChangeNotifier {
     await AppSoundService.setEnabled(enabled);
   }
 }
-

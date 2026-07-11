@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'config/dev_preview_flags.dart';
 import 'config/runtime_env.dart';
 import 'controllers_that_updates_stats/adventure_state_controller.dart';
 import 'controllers_that_updates_stats/app_settings_controller.dart';
@@ -17,6 +18,7 @@ import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.da
 import 'screens_minigames_admin_etc/Gameplay/dashboard/dashboard_shell.dart';
 import 'screens_minigames_admin_etc/Gameplay/dashboard/leaderboard_screen.dart';
 import 'screens_minigames_admin_etc/auth/auth_screen.dart';
+import 'screens_minigames_admin_etc/dev/turtle_sprite_gallery_screen.dart';
 import 'screens_minigames_admin_etc/loading/temporary_loading_screen.dart';
 import 'screens_minigames_admin_etc/onboarding/welcome_screen.dart';
 import 'services_backend_and_other_services/app_sound_service.dart';
@@ -53,8 +55,12 @@ Future<void> main() async {
   }
 
   const fallbackSupabaseUrl = 'https://cwqjduingvevagrxbwts.supabase.co';
+  // This must be the anon-role key (matches supabase.env.json's
+  // SUPABASE_ANON_KEY) — the "sb_publishable_..." format previously here
+  // was a different, non-working key, which is why login only succeeded
+  // for people with their own local supabase.env.json overriding it.
   const fallbackSupabaseAnonKey =
-      'sb_publishable_sALqhgaTDGewkqp_XiNo-g_EO6ziR4l';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN3cWpkdWluZ3ZldmFncnhid3RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MTQ4OTEsImV4cCI6MjA5MTA5MDg5MX0.XIHeR4oRiwJHCjRj9XDr-2by_6YY67YolSxeggdgDdc';
   final supabaseUrl = readRuntimeEnv('SUPABASE_URL') ?? fallbackSupabaseUrl;
   final supabaseAnonKey =
       readRuntimeEnv('SUPABASE_ANON_KEY') ?? fallbackSupabaseAnonKey;
@@ -122,6 +128,8 @@ class MyApp extends StatelessWidget {
         '/bill-dodger': (context) => const BillDodgerScreen(),
         '/bill_dodger': (context) => const BillDodgerScreen(),
         '/leaderboard': (context) => const LeaderboardScreen(),
+        '/turtle-sprite-gallery': (context) =>
+            const TurtleSpriteGalleryScreen(),
       },
     );
   }
@@ -132,6 +140,10 @@ class _AppBootstrapGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (kDevSkipAuthGate) {
+      return const DashboardShell();
+    }
+
     final service = SupabaseService.instance;
     return StreamBuilder<AuthState>(
       stream: service.authStateChanges(),

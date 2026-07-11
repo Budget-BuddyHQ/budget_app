@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
-import '../../loading/temporary_loading_screen.dart';
 import '../../profile/profile_screen.dart';
 import '../academy/learning_path_screen.dart';
 import '../core_bottom_pages/main_game_page.dart';
@@ -63,10 +62,6 @@ class _MainNavigationState extends State<MainNavigation> {
         ),
         ProfileScreen(
           activeTabIndex: AppTabIndex.profile,
-          onNavSelected: _selectTab,
-        ),
-        TemporaryLoadingScreen(
-          activeTabIndex: AppTabIndex.loading,
           onNavSelected: _selectTab,
         ),
       ],

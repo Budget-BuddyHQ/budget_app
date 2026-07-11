@@ -624,9 +624,9 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
   late final AnimationController _scrollController;
   late final Animation<double> _scrollAnimation;
   late final List<AvatarSkin> _rollSkins;
+  late final Widget _rollTrack;
   bool _revealed = false;
   bool _skipped = false;
-  AvatarSkin? _currentSkin;
 
   static const double _itemWidth = 92;
   static const double _itemSpacing = 14;
@@ -649,6 +649,11 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
       budgetBuddySkins.length * 8,
       (index) => budgetBuddySkins[index % budgetBuddySkins.length],
     );
+    _rollTrack = _RollTrack(
+      rollSkins: _rollSkins,
+      itemWidth: _itemWidth,
+      itemSpacing: _itemSpacing,
+    );
 
     final targetIndex = budgetBuddySkins.indexWhere(
       (skin) => skin.id == widget.result.skin.id,
@@ -657,38 +662,28 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
     final finalIndex = (_minCycles * budgetBuddySkins.length) + safeTargetIndex;
     final totalScroll = finalIndex * _itemExtent;
 
-    _currentSkin = _rollSkins.first;
     _scrollController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 4200),
     );
     _scrollAnimation =
         Tween<double>(begin: 0, end: totalScroll).animate(
-            CurvedAnimation(
-              parent: _scrollController,
-              curve: const Cubic(0.16, 0.86, 0.41, 1.0),
-            ),
-          )
-          ..addListener(_onScrollChanged)
-          ..addStatusListener((status) {
-            if (status == AnimationStatus.completed) {
-              _onReveal();
-            }
-          });
+          CurvedAnimation(
+            parent: _scrollController,
+            curve: const Cubic(0.16, 0.86, 0.41, 1.0),
+          ),
+        )..addStatusListener((status) {
+          if (status == AnimationStatus.completed) {
+            _onReveal();
+          }
+        });
 
     _scrollController.forward();
   }
 
-  void _onScrollChanged() {
-    if (!mounted) {
-      return;
-    }
-
-    final currentIndex = (_scrollAnimation.value / _itemExtent).round();
-    final index = currentIndex.clamp(0, _rollSkins.length - 1);
-    setState(() {
-      _currentSkin = _rollSkins[index];
-    });
+  AvatarSkin _skinAtScroll(double value) {
+    final index = (value / _itemExtent).round().clamp(0, _rollSkins.length - 1);
+    return _rollSkins[index];
   }
 
   Future<void> _onReveal() async {
@@ -697,7 +692,6 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
     }
     setState(() {
       _revealed = true;
-      _currentSkin = widget.result.skin;
     });
 
     GameToast.show(
@@ -716,262 +710,375 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScrollChanged);
     _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final preview = _currentSkin ?? widget.result.skin;
     return Dialog(
       backgroundColor: Colors.transparent,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: const Color(0xFF071711).withValues(alpha: 0.96),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: preview.accent.withValues(alpha: 0.34)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _revealed ? 'Case Opened!' : 'Rolling Emerald Case...',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
-              height: 188,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            preview.accent.withValues(alpha: 0.08),
-                            Colors.transparent,
-                          ],
-                        ),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: AnimatedBuilder(
+        animation: _scrollAnimation,
+        child: _rollTrack,
+        builder: (context, rollTrack) {
+          final preview = _revealed
+              ? widget.result.skin
+              : _skinAtScroll(_scrollAnimation.value);
+          return LayoutBuilder(
+            builder: (context, dialogConstraints) {
+              // Landscape phones / short viewports don't have room for the
+              // full fixed layout — shrink the reel and drop the reveal
+              // aura rather than overflow.
+              final compact = dialogConstraints.maxHeight < 560;
+              final reelHeight = compact ? 120.0 : 188.0;
+
+              return ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 440,
+                  maxHeight: dialogConstraints.maxHeight,
+                ),
+                child: SingleChildScrollView(
+                  child: Container(
+                    padding: EdgeInsets.all(compact ? 16 : 20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF071711).withValues(alpha: 0.96),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: preview.accent.withValues(alpha: 0.34),
                       ),
                     ),
-                  ),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final trackWidth = constraints.maxWidth;
-                        final offset =
-                            (_scrollAnimation.value -
-                                    (trackWidth / 2 - _itemWidth / 2))
-                                .clamp(0.0, _rollSkins.length * _itemExtent);
-
-                        return Stack(
-                          children: [
-                            SizedBox(
-                              width: trackWidth,
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                physics: const NeverScrollableScrollPhysics(),
-                                child: Transform.translate(
-                                  offset: Offset(-offset, 0),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: _rollSkins.map((skin) {
-                                      return Container(
-                                        width: _itemWidth,
-                                        margin: const EdgeInsets.only(
-                                          right: _itemSpacing,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.05,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            18,
-                                          ),
-                                          border: Border.all(
-                                            color: skin.accent.withValues(
-                                              alpha: 0.2,
-                                            ),
-                                          ),
-                                        ),
-                                        padding: const EdgeInsets.all(10),
-                                        child: Image.asset(
-                                          skin.assetPath,
-                                          fit: BoxFit.contain,
-                                        ),
-                                      );
-                                    }).toList(),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _revealed
+                              ? 'Case Opened!'
+                              : 'Rolling Emerald Case...',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: compact ? 18 : 22,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(height: compact ? 12 : 18),
+                        SizedBox(
+                          height: reelHeight,
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(24),
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        preview.accent.withValues(alpha: 0.08),
+                                        Colors.transparent,
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            Positioned.fill(
-                              child: IgnorePointer(
-                                child: Center(
-                                  child: Container(
-                                    width: _itemWidth + 8,
-                                    height: 172,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(22),
-                                      border: Border.all(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.88,
-                                        ),
-                                        width: 3,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.45,
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(24),
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final trackWidth = constraints.maxWidth;
+                                    final offset =
+                                        (_scrollAnimation.value -
+                                                (trackWidth / 2 -
+                                                    _itemWidth / 2))
+                                            .clamp(
+                                              0.0,
+                                              _rollSkins.length * _itemExtent,
+                                            );
+
+                                    return Stack(
+                                      children: [
+                                        ShaderMask(
+                                          shaderCallback: (rect) =>
+                                              const LinearGradient(
+                                                begin: Alignment.centerLeft,
+                                                end: Alignment.centerRight,
+                                                colors: [
+                                                  Colors.transparent,
+                                                  Colors.black,
+                                                  Colors.black,
+                                                  Colors.transparent,
+                                                ],
+                                                stops: [0.0, 0.10, 0.90, 1.0],
+                                              ).createShader(rect),
+                                          blendMode: BlendMode.dstIn,
+                                          child: SizedBox(
+                                            width: trackWidth,
+                                            child: ClipRect(
+                                              child: Transform.translate(
+                                                offset: Offset(-offset, 0),
+                                                child: rollTrack,
+                                              ),
+                                            ),
                                           ),
-                                          blurRadius: 20,
-                                          spreadRadius: 2,
+                                        ),
+                                        Positioned.fill(
+                                          child: IgnorePointer(
+                                            child: Center(
+                                              child: _PulsingHighlightBorder(
+                                                width: _itemWidth + 8,
+                                                height: 172,
+                                                accent:
+                                                    widget.result.skin.accent,
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       ],
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: compact ? 8 : 12),
+                        if (_revealed)
+                          Center(
+                            child: TweenAnimationBuilder<double>(
+                              tween: Tween(begin: 0.96, end: 1.0),
+                              duration: const Duration(milliseconds: 420),
+                              builder: (context, scale, child) {
+                                return Transform.scale(
+                                  scale: scale,
+                                  child: child,
+                                );
+                              },
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  _RarityAura(
+                                    skin: preview,
+                                    size: compact ? 92 : 132,
+                                    imageSize: compact ? 66 : 96,
+                                    showImage: true,
+                                  ),
+                                  _RollShineOverlay(
+                                    color: preview.accent,
+                                    size: compact ? 92 : 132,
+                                    moving: false,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          const SizedBox.shrink(),
+                        SizedBox(height: compact ? 8 : 12),
+                        Text(
+                          preview.name,
+                          style: TextStyle(
+                            color: preview.accent,
+                            fontSize: compact ? 17 : 20,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          preview.rarityLabel,
+                          style: TextStyle(
+                            color: preview.accent,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        SizedBox(height: compact ? 4 : 6),
+                        Text(
+                          _revealed
+                              ? widget.result.isNewUnlock
+                                    ? 'Unlocked and equipped automatically.'
+                                    : 'Duplicate pull — ${_getRefundAmount(preview.rarity)} gold refunded.'
+                              : 'Rolling... tap Skip or wait to reveal.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.72),
+                            height: 1.4,
+                          ),
+                        ),
+                        SizedBox(height: compact ? 12 : 18),
+                        Row(
+                          children: [
+                            if (!_revealed)
+                              Expanded(
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: _skipRoll,
+                                  child: Container(
+                                    height: compact ? 44 : 52,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.10,
+                                      ),
+                                      borderRadius: BorderRadius.circular(18),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                      ),
+                                    ),
+                                    child: const Center(
+                                      child: Text(
+                                        'Skip',
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            if (!_revealed) const SizedBox(width: 12),
+                            Expanded(
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: _revealed
+                                    ? () => Navigator.of(context).pop()
+                                    : null,
+                                child: Container(
+                                  height: compact ? 44 : 52,
+                                  decoration: BoxDecoration(
+                                    color: _revealed
+                                        ? const Color(0xFF85EFAC)
+                                        : Colors.white.withValues(alpha: 0.06),
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      _revealed ? 'Awesome' : 'Rolling...',
+                                      style: TextStyle(
+                                        color: _revealed
+                                            ? const Color(0xFF062C21)
+                                            : Colors.white60,
+                                        fontWeight: FontWeight.w900,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
                           ],
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (_revealed)
-              Center(
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.96, end: 1.0),
-                  duration: const Duration(milliseconds: 420),
-                  builder: (context, scale, child) {
-                    return Transform.scale(scale: scale, child: child);
-                  },
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      _RarityAura(
-                        skin: preview,
-                        size: 132,
-                        imageSize: 96,
-                        showImage: true,
-                      ),
-                      _RollShineOverlay(
-                        color: preview.accent,
-                        size: 132,
-                        moving: false,
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              const SizedBox.shrink(),
-            const SizedBox(height: 12),
-            Text(
-              preview.name,
-              style: TextStyle(
-                color: preview.accent,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              preview.rarityLabel,
-              style: TextStyle(
-                color: preview.accent,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _revealed
-                  ? widget.result.isNewUnlock
-                        ? 'Unlocked and equipped automatically.'
-                        : 'Duplicate pull — ${_getRefundAmount(preview.rarity)} gold refunded.'
-                  : 'Rolling... tap Skip or wait to reveal.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.72),
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                if (!_revealed)
-                  Expanded(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: _skipRoll,
-                      child: Container(
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
-                          ),
                         ),
-                        child: const Center(
-                          child: Text(
-                            'Skip',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                if (!_revealed) const SizedBox(width: 12),
-                Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: _revealed ? () => Navigator.of(context).pop() : null,
-                    child: Container(
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: _revealed
-                            ? const Color(0xFF85EFAC)
-                            : Colors.white.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Center(
-                        child: Text(
-                          _revealed ? 'Awesome' : 'Rolling...',
-                          style: TextStyle(
-                            color: _revealed
-                                ? const Color(0xFF062C21)
-                                : Colors.white60,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
+              );
+            },
+          );
+        },
       ),
+    );
+  }
+}
+
+class _RollTrack extends StatelessWidget {
+  const _RollTrack({
+    required this.rollSkins,
+    required this.itemWidth,
+    required this.itemSpacing,
+  });
+
+  final List<AvatarSkin> rollSkins;
+  final double itemWidth;
+  final double itemSpacing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: rollSkins.map((skin) {
+        return Container(
+          width: itemWidth,
+          margin: EdgeInsets.only(right: itemSpacing),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: skin.accent.withValues(alpha: 0.2)),
+          ),
+          padding: const EdgeInsets.all(10),
+          child: Image.asset(skin.assetPath, fit: BoxFit.contain),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _PulsingHighlightBorder extends StatefulWidget {
+  const _PulsingHighlightBorder({
+    required this.width,
+    required this.height,
+    required this.accent,
+  });
+
+  final double width;
+  final double height;
+  final Color accent;
+
+  @override
+  State<_PulsingHighlightBorder> createState() =>
+      _PulsingHighlightBorderState();
+}
+
+class _PulsingHighlightBorderState extends State<_PulsingHighlightBorder>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, _) {
+        final glow = 0.55 + _pulseController.value * 0.45;
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.88),
+              width: 3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.accent.withValues(alpha: glow * 0.55),
+                blurRadius: 22,
+                spreadRadius: 3,
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.45),
+                blurRadius: 20,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
