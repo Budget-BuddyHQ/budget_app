@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services_backend_and_other_services/app_sound_service.dart';
 
@@ -205,12 +206,12 @@ class _PopNavTileState extends State<_PopNavTile>
                       fit: BoxFit.scaleDown,
                       child: Text(
                         widget.item.label,
-                        style: TextStyle(
+                        style: GoogleFonts.pixelifySans(
                           color: widget.active ? _deepCharcoal : Colors.white70,
-                          fontSize: widget.dense ? 8.6 : 9.6,
+                          fontSize: widget.dense ? 9.2 : 10.2,
                           fontWeight: widget.active
-                              ? FontWeight.w800
-                              : FontWeight.w600,
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                         ),
                       ),
                     ),

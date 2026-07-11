@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -525,7 +526,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                                   ? 'Log back into your kingdom'
                                   : 'Build your financial hero profile',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: GoogleFonts.quicksand(
                                 color: Colors.white.withValues(alpha: 0.78),
                                 fontSize: 14,
                                 height: 1.45,
@@ -776,10 +777,10 @@ class _AuthHero extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              const Text(
+              Text(
                 'BUDGET BUDDY',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: GoogleFonts.baloo2(
                   color: Colors.white,
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
@@ -790,7 +791,7 @@ class _AuthHero extends StatelessWidget {
               Text(
                 'A polished, game-first finance coach that feels great on mobile.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   color: Colors.white.withValues(alpha: 0.74),
                   fontSize: 13,
                   height: 1.4,
@@ -875,7 +876,7 @@ class _ModeSwitchChip extends StatelessWidget {
           child: Text(
             label,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               color: active ? const Color(0xFF103225) : Colors.white70,
               fontWeight: FontWeight.w800,
             ),
@@ -913,7 +914,7 @@ class _AuthField extends StatelessWidget {
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
-      style: const TextStyle(
+      style: GoogleFonts.quicksand(
         color: Colors.white,
         fontSize: 15,
         fontWeight: FontWeight.w600,
@@ -925,15 +926,17 @@ class _AuthField extends StatelessWidget {
         floatingLabelBehavior: FloatingLabelBehavior.auto,
         filled: true,
         fillColor: Colors.white.withValues(alpha: 0.08),
-        labelStyle: TextStyle(
+        labelStyle: GoogleFonts.quicksand(
           color: Colors.white.withValues(alpha: 0.84),
           fontWeight: FontWeight.w600,
         ),
-        floatingLabelStyle: const TextStyle(
-          color: Color(0xFF85EFAC),
+        floatingLabelStyle: GoogleFonts.quicksand(
+          color: const Color(0xFF85EFAC),
           fontWeight: FontWeight.w700,
         ),
-        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.42)),
+        hintStyle: GoogleFonts.quicksand(
+          color: Colors.white.withValues(alpha: 0.42),
+        ),
         prefixIcon: Icon(prefixIcon, color: const Color(0xFF85EFAC)),
         suffixIcon: suffix,
         contentPadding: const EdgeInsets.all(20),
@@ -957,8 +960,8 @@ class _AuthField extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           borderSide: const BorderSide(color: Color(0xFFFF8A80), width: 1.8),
         ),
-        errorStyle: const TextStyle(
-          color: Color(0xFFFFB2AB),
+        errorStyle: GoogleFonts.quicksand(
+          color: const Color(0xFFFFB2AB),
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -1028,7 +1031,7 @@ class _TermsCard extends StatelessWidget {
               padding: const EdgeInsets.only(top: 8),
               child: Text(
                 'I agree to Budget Buddy storing my learning progress and cloud syncing my rewards.',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 12,
                   height: 1.45,

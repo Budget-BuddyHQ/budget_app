@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../constants/app_assets.dart';
@@ -140,7 +141,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         elevation: 0,
         title: Text(
           widget.lesson.title,
-          style: const TextStyle(fontWeight: FontWeight.w800),
+          style: GoogleFonts.baloo2(fontWeight: FontWeight.w700),
         ),
       ),
       body: Stack(
@@ -154,7 +155,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           ),
           Positioned.fill(
             child: Container(
-              color: const Color(0xFF0D2B20).withValues(alpha: 0.86),
+              color: const Color(0xFF0D2B20).withValues(alpha: 0.62),
             ),
           ),
           SafeArea(
@@ -195,18 +196,19 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                               children: [
                                 Text(
                                   section.title,
-                                  style: const TextStyle(
-                                    color: Color(0xFFF7FFFB),
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w900,
+                                  style: GoogleFonts.baloo2(
+                                    color: const Color(0xFFF7FFFB),
+                                    fontSize: 23,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
                                   section.content,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.82),
+                                  style: GoogleFonts.quicksand(
+                                    color: Colors.white.withValues(alpha: 0.86),
                                     fontSize: 16,
+                                    fontWeight: FontWeight.w500,
                                     height: 1.7,
                                   ),
                                 ),
@@ -364,10 +366,10 @@ class _LessonOverviewCard extends StatelessWidget {
             children: [
               Text(
                 lessonTitle,
-                style: const TextStyle(
-                  color: Color(0xFFF7FFFB),
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
+                style: GoogleFonts.baloo2(
+                  color: const Color(0xFFF7FFFB),
+                  fontSize: 27,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 6),
@@ -452,10 +454,10 @@ class _QuizQuestionCard extends StatelessWidget {
         const SizedBox(height: 20),
         Text(
           question.question,
-          style: const TextStyle(
-            color: Color(0xFFF7FFFB),
-            fontSize: 21,
-            fontWeight: FontWeight.w900,
+          style: GoogleFonts.baloo2(
+            color: const Color(0xFFF7FFFB),
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
             height: 1.3,
           ),
         ),
@@ -576,9 +578,9 @@ class _OptionCard extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(
+              style: GoogleFonts.quicksand(
                 color: text,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 fontSize: 15,
               ),
             ),
@@ -631,10 +633,10 @@ class _QuizResultsCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             '$correct / $total correct',
-            style: const TextStyle(
-              color: Color(0xFFF7FFFB),
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
+            style: GoogleFonts.baloo2(
+              color: const Color(0xFFF7FFFB),
+              fontSize: 25,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 8),
@@ -643,7 +645,10 @@ class _QuizResultsCard extends StatelessWidget {
                 ? 'Nice work — those ideas are sticking.'
                 : 'Worth a re-read before the next unit.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.72)),
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.78),
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
