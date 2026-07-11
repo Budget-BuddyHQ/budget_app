@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_3d_controller/flutter_3d_controller.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 
 class TemporaryLoadingScreen extends StatefulWidget {
@@ -72,7 +73,9 @@ class _TemporaryLoadingScreenState extends State<TemporaryLoadingScreen> {
 
           // High-contrast tint overlay
           Positioned.fill(
-            child: Container(color: const Color(0xFF0D1F1A).withOpacity(0.80)),
+            child: Container(
+              color: const Color(0xFF0D1F1A).withValues(alpha: 0.80),
+            ),
           ),
 
           // =========================================================
@@ -161,13 +164,13 @@ class _TemporaryLoadingScreenState extends State<TemporaryLoadingScreen> {
     return Text(
       widget.message.toUpperCase(),
       textAlign: TextAlign.center,
-      style: const TextStyle(
-        fontFamily: 'PressStart2P',
-        color: Color(0xFF00E676),
+      style: GoogleFonts.getFont(
+        'Press Start 2P',
+        color: const Color(0xFF00E676),
         fontSize: 13,
         height: 1.6,
         letterSpacing: 1.2,
-        shadows: [
+        shadows: const [
           Shadow(color: Colors.black, offset: Offset(2, 2)),
           Shadow(color: Colors.black54, offset: Offset(4, 4)),
         ],

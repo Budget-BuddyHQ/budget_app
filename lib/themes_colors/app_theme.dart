@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Colors
@@ -93,56 +94,59 @@ class AppTheme {
       scaffoldBackgroundColor: deepForest,
       cardColor: panel,
       dividerColor: Colors.white.withValues(alpha: 0.08),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: TextStyle(
+        titleTextStyle: GoogleFonts.baloo2(
           color: textPrimary,
           fontSize: fontSizeXLarge,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.5,
         ),
-        iconTheme: IconThemeData(color: textPrimary),
+        iconTheme: const IconThemeData(color: textPrimary),
       ),
-      textTheme: const TextTheme(
-        displayLarge: TextStyle(
-          color: textPrimary,
-          fontSize: fontSizeXXLarge,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.0,
-        ),
-        displayMedium: TextStyle(
-          color: textPrimary,
-          fontSize: fontSizeXLarge,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
-        ),
-        headlineSmall: TextStyle(
-          color: textPrimary,
-          fontSize: fontSizeLarge,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
-        ),
-        bodyLarge: TextStyle(
-          color: textPrimary,
-          fontSize: fontSizeMedium,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0.2,
-        ),
-        bodyMedium: TextStyle(
-          color: textMuted,
-          fontSize: fontSizeBase,
-          fontWeight: FontWeight.normal,
-          letterSpacing: 0.2,
-        ),
-        bodySmall: TextStyle(
-          color: textMuted,
-          fontSize: fontSizeSmall,
-          fontWeight: FontWeight.w400,
-          letterSpacing: 0.1,
-        ),
-      ),
+      textTheme:
+          GoogleFonts.baloo2TextTheme(
+            ThemeData(brightness: Brightness.dark).textTheme,
+          ).copyWith(
+            displayLarge: GoogleFonts.baloo2(
+              color: textPrimary,
+              fontSize: fontSizeXXLarge,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.0,
+            ),
+            displayMedium: GoogleFonts.baloo2(
+              color: textPrimary,
+              fontSize: fontSizeXLarge,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+            headlineSmall: GoogleFonts.baloo2(
+              color: textPrimary,
+              fontSize: fontSizeLarge,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
+            ),
+            bodyLarge: GoogleFonts.quicksand(
+              color: textPrimary,
+              fontSize: fontSizeMedium,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.2,
+            ),
+            bodyMedium: GoogleFonts.quicksand(
+              color: textMuted,
+              fontSize: fontSizeBase,
+              fontWeight: FontWeight.normal,
+              letterSpacing: 0.2,
+            ),
+            bodySmall: GoogleFonts.quicksand(
+              color: textMuted,
+              fontSize: fontSizeSmall,
+              fontWeight: FontWeight.w400,
+              letterSpacing: 0.1,
+            ),
+          ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: greenPrimary,

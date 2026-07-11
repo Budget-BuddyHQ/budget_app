@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../navigation_tools_and_animation/fade_page_route.dart';
-import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../minigames_pages/bill_dodger.dart';
@@ -663,8 +663,16 @@ class _MinigameBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(gradient: AppTheme.gradientForest),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          AppAssets.arcadeTileBackground,
+          repeat: ImageRepeat.repeat,
+          filterQuality: FilterQuality.none,
+        ),
+        Container(color: const Color(0xFF071711).withValues(alpha: 0.50)),
+      ],
     );
   }
 }

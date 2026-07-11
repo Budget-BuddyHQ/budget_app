@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../constants/app_assets.dart';
 import '../../navigation_tools_and_animation/fade_page_route.dart';
 import '../auth/auth_screen.dart';
@@ -110,7 +111,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               Text(
                                 'BUDGET BUDDY',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: GoogleFonts.baloo2(
                                   fontSize: titleSize,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 1.4,
@@ -283,9 +284,9 @@ class _WelcomeActionButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: const TextStyle(
+          style: GoogleFonts.quicksand(
             fontSize: 18,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
             letterSpacing: 0.8,
           ),
         ),
