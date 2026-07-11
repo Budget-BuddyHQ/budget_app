@@ -1,12 +1,12 @@
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/academy/learning_path_screen.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/core_bottom_pages/main_game_page.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/customize_screen.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/home_screen.dart';
+import 'package:budget_app/screens_minigames_admin_etc/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
-import '../../profile/profile_screen.dart';
-import '../academy/learning_path_screen.dart';
-import '../core_bottom_pages/main_game_page.dart';
-import '../core_bottom_pages/minigames_page.dart';
-import '../customize_screen.dart';
-import 'home_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key, this.initialIndex = AppTabIndex.dashboard});
