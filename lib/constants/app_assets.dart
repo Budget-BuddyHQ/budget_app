@@ -22,6 +22,12 @@ class AppAssets {
 
   static const String villageMapBackground =
       'assets/self_made_backgrounds/map.png';
+  static const String homeTileBackground =
+      'assets/self_made_backgrounds/home_tile_bg.png';
+  static const String profileTileBackground =
+      'assets/self_made_backgrounds/profile_tile_bg.png';
+  static const String arcadeTileBackground =
+      'assets/self_made_backgrounds/arcade_tile_bg.png';
   static const String tileGrass =
       'assets/map_assets_coins/PNG_more_map_tiles/rpgTile000.png';
   static const String tileShore =

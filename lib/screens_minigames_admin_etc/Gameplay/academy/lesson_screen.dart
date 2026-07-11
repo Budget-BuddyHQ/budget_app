@@ -168,7 +168,7 @@ class _LessonScreenState extends State<LessonScreen> {
             ),
             Positioned.fill(
               child: Container(
-                color: const Color(0xFF0D2B20).withValues(alpha: 0.86),
+                color: const Color(0xFF0D2B20).withValues(alpha: 0.58),
               ),
             ),
             LayoutBuilder(
