@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 import 'package:lottie/lottie.dart';
-import '../../navigation_tools_and_animation/app_tab_index.dart';
 
 class TemporaryLoadingScreen extends StatefulWidget {
   const TemporaryLoadingScreen({
     super.key,
     this.message = 'LOADING ADVENTURE...',
-    this.activeTabIndex = AppTabIndex.loading,
+    this.activeTabIndex = -1,
     this.onNavSelected,
     this.compact = false,
     this.animationAssetPath = 'assets/animations/02_Manny_Run_Fill.json',
-    this.animationSize = 140, 
+    this.animationSize = 140,
     this.showProgressIndicator = true,
   });
 
@@ -86,11 +85,11 @@ class _TemporaryLoadingScreenState extends State<TemporaryLoadingScreen> {
                   // 1. Fixed Header Text at the very top
                   const SizedBox(height: 28),
                   _buildLoadingText(),
-                  
+
                   // 2. Flexible Middle Space (Swaps dynamically)
                   Expanded(
-                    child: isLandscape 
-                        ? _buildLandscapeLayout(screenSize) 
+                    child: isLandscape
+                        ? _buildLandscapeLayout(screenSize)
                         : _buildPortraitLayout(screenSize),
                   ),
 

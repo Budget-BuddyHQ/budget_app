@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../constants/app_assets.dart';
 import '../models_Like_Skins_and_lessons_templates/lesson.dart';
 
 class UnitRowItem extends StatelessWidget {
@@ -106,15 +107,47 @@ class _UnitLessonBlock extends StatelessWidget {
               Container(
                 width: compact ? 48 : 56,
                 height: compact ? 48 : 56,
+                clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
-                  color: palette.fill,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: palette.border, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: palette.border.withValues(alpha: 0.35),
+                      blurRadius: 8,
+                    ),
+                  ],
                 ),
-                child: Icon(
-                  icon,
-                  color: palette.foreground,
-                  size: compact ? 26 : 30,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ColorFiltered(
+                      colorFilter: status == LessonStatus.locked
+                          ? const ColorFilter.matrix(_grayscaleTileMatrix)
+                          : const ColorFilter.mode(
+                              Colors.transparent,
+                              BlendMode.multiply,
+                            ),
+                      child: Image.asset(
+                        status == LessonStatus.available
+                            ? AppAssets.tileShore
+                            : AppAssets.tileGrass,
+                        fit: BoxFit.cover,
+                        filterQuality: FilterQuality.none,
+                      ),
+                    ),
+                    Container(color: palette.fill.withValues(alpha: 0.30)),
+                    Center(
+                      child: Icon(
+                        icon,
+                        color: palette.foreground,
+                        size: compact ? 24 : 28,
+                        shadows: const [
+                          Shadow(color: Colors.black38, blurRadius: 3),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               SizedBox(width: compact ? 12 : 14),
@@ -171,6 +204,30 @@ class _UnitLessonBlock extends StatelessWidget {
     };
   }
 }
+
+// Desaturates the locked-tile ground art so unexplored stops read as dimmed.
+const List<double> _grayscaleTileMatrix = <double>[
+  0.2126,
+  0.7152,
+  0.0722,
+  0,
+  0,
+  0.2126,
+  0.7152,
+  0.0722,
+  0,
+  0,
+  0.2126,
+  0.7152,
+  0.0722,
+  0,
+  0,
+  0,
+  0,
+  0,
+  1,
+  0,
+];
 
 class _LessonPalette {
   const _LessonPalette({
