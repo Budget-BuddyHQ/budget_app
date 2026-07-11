@@ -18,7 +18,6 @@ import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.da
 import 'screens_minigames_admin_etc/Gameplay/dashboard/dashboard_shell.dart';
 import 'screens_minigames_admin_etc/Gameplay/dashboard/leaderboard_screen.dart';
 import 'screens_minigames_admin_etc/auth/auth_screen.dart';
-import 'screens_minigames_admin_etc/dev/turtle_sprite_gallery_screen.dart';
 import 'screens_minigames_admin_etc/loading/temporary_loading_screen.dart';
 import 'screens_minigames_admin_etc/onboarding/welcome_screen.dart';
 import 'services_backend_and_other_services/app_sound_service.dart';
@@ -128,8 +127,7 @@ class MyApp extends StatelessWidget {
         '/bill-dodger': (context) => const BillDodgerScreen(),
         '/bill_dodger': (context) => const BillDodgerScreen(),
         '/leaderboard': (context) => const LeaderboardScreen(),
-        '/turtle-sprite-gallery': (context) =>
-            const TurtleSpriteGalleryScreen(),
+        
       },
     );
   }
