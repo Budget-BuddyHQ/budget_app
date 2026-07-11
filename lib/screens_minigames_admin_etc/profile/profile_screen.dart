@@ -13,7 +13,7 @@ import '../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
 import '../admin/admin_screen.dart';
 import '../auth/auth_screen.dart';
-import '../dev/turtle_sprite_gallery_screen.dart';
+
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
@@ -180,20 +180,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               color: Color(0xFFB7F7D7),
                             ),
                         ),
-                        if (kShowDevTools) ...[
-                          const SizedBox(height: 12),
-                          _DevToolsCard(
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const TurtleSpriteGalleryScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
+                      
                               ),
                               boxShadow: const [
                                 BoxShadow(

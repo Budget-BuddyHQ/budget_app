@@ -1,6 +1,6 @@
+import 'package:budget_app/navigation_tools_and_animation/main_navigation.dart';
 import 'package:flutter/material.dart';
 
-import 'main_navigation.dart';
 
 class DashboardShell extends StatelessWidget {
   const DashboardShell({super.key, this.initialIndex = 0});
