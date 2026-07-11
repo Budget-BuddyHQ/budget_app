@@ -45,6 +45,21 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
   static const int _roundSeconds = 45;
   static const double _pickupHeightFactor = 0.84;
 
+  // Difficulty ramps in three stages across the round: spawns come faster
+  // and pickups fall quicker as the timer counts down.
+  static const List<Duration> _spawnIntervalByStage = [
+    Duration(milliseconds: 620),
+    Duration(milliseconds: 480),
+    Duration(milliseconds: 360),
+  ];
+  static const List<double> _minSpeedByStage = [190, 230, 280];
+  static const List<double> _maxSpeedByStage = [260, 320, 380];
+  static const List<Color> _stageAccent = [
+    Color(0xFF85EFAC),
+    Color(0xFFFFD45C),
+    Color(0xFFFF8A5B),
+  ];
+
   final math.Random _random = math.Random();
   final FocusNode _focusNode = FocusNode();
   final List<_FallingPickup> _pickups = <_FallingPickup>[];
@@ -80,6 +95,22 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
 
   Rect get _playerRect =>
       Rect.fromLTWH(_playerX, _playerY, _playerWidth, _playerHeight);
+
+  int get _difficultyStage {
+    final elapsed = _roundSeconds - _timeLeft;
+    if (elapsed < 15) return 0;
+    if (elapsed < 30) return 1;
+    return 2;
+  }
+
+  Duration get _currentSpawnInterval => _spawnIntervalByStage[_difficultyStage];
+
+  double _rollSpeed() {
+    final stage = _difficultyStage;
+    final min = _minSpeedByStage[stage];
+    final max = _maxSpeedByStage[stage];
+    return min + _random.nextDouble() * (max - min);
+  }
 
   @override
   void initState() {
@@ -118,9 +149,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
     _spawnTimer?.cancel();
     _countdownTimer?.cancel();
 
-    _spawnTimer = Timer.periodic(const Duration(milliseconds: 560), (_) {
-      _spawnPickup();
-    });
+    _scheduleNextSpawn();
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!_started || _finished) {
@@ -297,6 +326,17 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
     }
   }
 
+  void _scheduleNextSpawn() {
+    _spawnTimer?.cancel();
+    if (!_started || _finished) {
+      return;
+    }
+    _spawnTimer = Timer(_currentSpawnInterval, () {
+      _spawnPickup();
+      _scheduleNextSpawn();
+    });
+  }
+
   void _spawnPickup() {
     if (!_started || _finished || _arenaSize == Size.zero) {
       return;
@@ -326,7 +366,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
         y: -height - 12,
         width: width,
         height: height,
-        speed: 210 + _random.nextDouble() * 90,
+        speed: _rollSpeed(),
         tilt: (_random.nextDouble() - 0.5) * 0.2,
       ),
     );
@@ -523,6 +563,7 @@ class _BillDodgerScreenState extends State<BillDodgerScreen>
                       _TopChip(
                         label: '${_timeLeft}s',
                         icon: Icons.timer_rounded,
+                        accent: _stageAccent[_difficultyStage],
                       ),
                     ],
                   ),
@@ -740,6 +781,9 @@ const List<_PickupData> _needPool = [
   _PickupData(label: 'Medicine', amount: 45, img: AppAssets.iconMedicine),
   _PickupData(label: 'Gas', amount: 50, img: AppAssets.iconGas),
   _PickupData(label: 'Internet', amount: 70, img: AppAssets.iconInternet),
+  _PickupData(label: 'Phone Bill', amount: 65, img: AppAssets.iconInternet),
+  _PickupData(label: 'Car Payment', amount: 220, img: AppAssets.iconGas),
+  _PickupData(label: 'Insurance', amount: 95, img: AppAssets.iconMedicine),
 ];
 
 const List<_PickupData> _wantPool = [
@@ -749,6 +793,9 @@ const List<_PickupData> _wantPool = [
   _PickupData(label: 'Crunchyroll', amount: 9, img: AppAssets.iconCrunchyroll),
   _PickupData(label: 'Market', amount: 35, img: AppAssets.iconMarket),
   _PickupData(label: 'Money', amount: 90, img: AppAssets.iconMoney),
+  _PickupData(label: 'Video Game', amount: 40, img: AppAssets.iconBox),
+  _PickupData(label: 'Concert Ticket', amount: 60, img: AppAssets.iconMarket),
+  _PickupData(label: 'New Sneakers', amount: 55, img: AppAssets.iconStreaming),
 ];
 
 class _TopStatsRow extends StatelessWidget {
@@ -780,31 +827,30 @@ class _TopStatsRow extends StatelessWidget {
 }
 
 class _TopChip extends StatelessWidget {
-  const _TopChip({required this.label, required this.icon});
+  const _TopChip({required this.label, required this.icon, this.accent});
 
   final String label;
   final IconData icon;
+  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
+    final color = accent ?? Colors.white;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: Colors.white.withValues(alpha: 0.92), size: 18),
+          Icon(icon, color: color.withValues(alpha: 0.92), size: 18),
           const SizedBox(width: 8),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-            ),
+            style: TextStyle(color: color, fontWeight: FontWeight.w800),
           ),
         ],
       ),

@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../config/dev_preview_flags.dart';
 import '../../controllers_that_updates_stats/app_settings_controller.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../navigation_tools_and_animation/app_tab_index.dart';
@@ -13,6 +14,7 @@ import '../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
 import '../admin/admin_screen.dart';
 import '../auth/auth_screen.dart';
+import '../dev/turtle_sprite_gallery_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
@@ -246,6 +248,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (_) => const AdminScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                        if (kShowDevTools) ...[
+                          const SizedBox(height: 12),
+                          _DevToolsCard(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const TurtleSpriteGalleryScreen(),
                                 ),
                               );
                             },
@@ -749,6 +765,8 @@ class _AdminCard extends StatelessWidget {
     );
   }
 }
+
+
 
 class _ProfileBackdrop extends StatelessWidget {
   const _ProfileBackdrop();

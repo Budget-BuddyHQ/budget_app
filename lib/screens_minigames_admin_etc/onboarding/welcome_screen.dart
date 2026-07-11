@@ -183,12 +183,15 @@ class _WelcomeBackground extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF0C2418), Color(0xFF154D36), Color(0xFF0F2E1E)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        Image.asset(
+          AppAssets.villageMapBackground,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.none,
+        ),
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: const Color(0xFF0C2418).withValues(alpha: 0.55),
             ),
           ),
         ),
