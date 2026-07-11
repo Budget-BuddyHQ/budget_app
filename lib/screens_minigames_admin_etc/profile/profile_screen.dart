@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../config/dev_preview_flags.dart';
+import '../../constants/app_assets.dart';
 import '../../controllers_that_updates_stats/app_settings_controller.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../navigation_tools_and_animation/app_tab_index.dart';
@@ -14,7 +15,6 @@ import '../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
 import '../admin/admin_screen.dart';
 import '../auth/auth_screen.dart';
-
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
@@ -253,7 +253,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             },
                           ),
                         ],
-                      
+
                         const SizedBox(height: 22),
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
@@ -276,14 +276,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               ],
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.logout_rounded, color: Colors.white),
-                                SizedBox(width: 10),
+                                const Icon(
+                                  Icons.logout_rounded,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 10),
                                 Text(
                                   'Log Out',
-                                  style: TextStyle(
+                                  style: GoogleFonts.baloo2(
                                     color: Colors.white,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w900,
@@ -431,7 +434,7 @@ class _ProfileHero extends StatelessWidget {
               Text(
                 stats.username,
                 textAlign: stacked ? TextAlign.center : TextAlign.start,
-                style: const TextStyle(
+                style: GoogleFonts.baloo2(
                   color: Colors.white,
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
@@ -440,8 +443,8 @@ class _ProfileHero extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 stats.levelTitle,
-                style: const TextStyle(
-                  color: Color(0xFFB7F7D7),
+                style: GoogleFonts.quicksand(
+                  color: const Color(0xFFB7F7D7),
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -449,7 +452,7 @@ class _ProfileHero extends StatelessWidget {
               Text(
                 'Upload a profile photo to make the app feel more like your personal finance hub.',
                 textAlign: stacked ? TextAlign.center : TextAlign.start,
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   color: Colors.white.withValues(alpha: 0.74),
                   height: 1.45,
                 ),
@@ -753,21 +756,21 @@ class _AdminCard extends StatelessWidget {
   }
 }
 
-
-
 class _ProfileBackdrop extends StatelessWidget {
   const _ProfileBackdrop();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF071711), Color(0xFF0B2019), Color(0xFF113128)],
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          AppAssets.profileTileBackground,
+          repeat: ImageRepeat.repeat,
+          filterQuality: FilterQuality.none,
         ),
-      ),
+        Container(color: const Color(0xFF071711).withValues(alpha: 0.50)),
+      ],
     );
   }
 }

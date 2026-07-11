@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
@@ -76,11 +77,11 @@ class HomeScreen extends StatelessWidget {
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Budget Buddy',
-                  style: TextStyle(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 Text(
@@ -180,13 +181,16 @@ class _DashboardBackdrop extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF071711), Color(0xFF0C241B), Color(0xFF113127)],
-            ),
+        Positioned.fill(
+          child: Image.asset(
+            AppAssets.homeTileBackground,
+            repeat: ImageRepeat.repeat,
+            filterQuality: FilterQuality.none,
+          ),
+        ),
+        Positioned.fill(
+          child: Container(
+            color: const Color(0xFF071711).withValues(alpha: 0.48),
           ),
         ),
         Positioned(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../services_backend_and_other_services/supabase_service.dart';
@@ -58,27 +59,22 @@ class _AdminScreenState extends State<AdminScreen> {
     }
 
     return users
-        .map(
-          (user) {
-            final userId = user['id']?.toString();
-            final email = user['email']?.toString().trim().toLowerCase();
-            Map<String, dynamic>? stats;
+        .map((user) {
+          final userId = user['id']?.toString();
+          final email = user['email']?.toString().trim().toLowerCase();
+          Map<String, dynamic>? stats;
 
-            if (userId != null && userId.isNotEmpty) {
-              stats = statsByUserId[userId];
-            }
+          if (userId != null && userId.isNotEmpty) {
+            stats = statsByUserId[userId];
+          }
 
-            if (stats == null && email != null && email.isNotEmpty) {
-              final legacyId = SupabaseService.legacyUserIdFromEmail(email);
-              stats = statsByLegacyId[legacyId] ?? statsByEmail[email];
-            }
+          if (stats == null && email != null && email.isNotEmpty) {
+            final legacyId = SupabaseService.legacyUserIdFromEmail(email);
+            stats = statsByLegacyId[legacyId] ?? statsByEmail[email];
+          }
 
-            return <String, dynamic>{
-              ...user,
-              'user_stats': stats,
-            };
-          },
-        )
+          return <String, dynamic>{...user, 'user_stats': stats};
+        })
         .toList(growable: false);
   }
 
@@ -101,19 +97,13 @@ class _AdminScreenState extends State<AdminScreen> {
         ? 'user'
         : 'admin';
 
-    await supabase
-        .from('profiles')
-        .update({'role': newRole})
-        .eq('id', userId);
+    await supabase.from('profiles').update({'role': newRole}).eq('id', userId);
 
     _refresh();
   }
 
   Future<void> _deleteUser(String userId) async {
-    await supabase
-        .from('profiles')
-        .update({'disabled': true})
-        .eq('id', userId);
+    await supabase.from('profiles').update({'disabled': true}).eq('id', userId);
 
     _refresh();
   }
@@ -176,12 +166,12 @@ class _AdminScreenState extends State<AdminScreen> {
         }
 
         if (accessSnapshot.data != true) {
-          return const Scaffold(
-            backgroundColor: Color(0xFF0A211A),
+          return Scaffold(
+            backgroundColor: const Color(0xFF0A211A),
             body: Center(
               child: Text(
                 'Access denied',
-                style: TextStyle(color: Colors.white),
+                style: GoogleFonts.quicksand(color: Colors.white),
               ),
             ),
           );
@@ -205,10 +195,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   });
                 },
               ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: _refresh,
-              ),
+              IconButton(icon: const Icon(Icons.refresh), onPressed: _refresh),
             ],
           ),
           body: FutureBuilder<List<Map<String, dynamic>>>(
@@ -228,10 +215,10 @@ class _AdminScreenState extends State<AdminScreen> {
               final users = snapshot.data!;
 
               if (users.isEmpty) {
-                return const Center(
+                return Center(
                   child: Text(
                     'No users found',
-                    style: TextStyle(color: Colors.white),
+                    style: GoogleFonts.quicksand(color: Colors.white),
                   ),
                 );
               }
@@ -317,10 +304,7 @@ class _AdminScreenState extends State<AdminScreen> {
 }
 
 class _AdminErrorState extends StatelessWidget {
-  const _AdminErrorState({
-    required this.message,
-    required this.onRetry,
-  });
+  const _AdminErrorState({required this.message, required this.onRetry});
 
   final String message;
   final Future<void> Function() onRetry;
@@ -358,4 +342,3 @@ class _AdminErrorState extends StatelessWidget {
     );
   }
 }
-
