@@ -218,7 +218,10 @@ class UserStatsController extends ChangeNotifier {
     }
   }
 
-  Future<StatsActionResult> sendPasswordReset({required String email}) async {
+  Future<StatsActionResult> sendPasswordReset({
+    required String email,
+    String? captchaToken,
+  }) async {
     final normalizedEmail = email.trim().toLowerCase();
     if (normalizedEmail.isEmpty) {
       return const StatsActionResult(
@@ -233,7 +236,10 @@ class UserStatsController extends ChangeNotifier {
     }
 
     try {
-      await _service.resetPasswordForEmail(normalizedEmail);
+      await _service.resetPasswordForEmail(
+        normalizedEmail,
+        captchaToken: captchaToken,
+      );
       return const StatsActionResult(
         success: true,
         message: 'Password reset email sent. Check your inbox and spam folder.',
