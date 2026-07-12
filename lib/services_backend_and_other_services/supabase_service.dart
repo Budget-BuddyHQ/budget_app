@@ -693,9 +693,17 @@ end
     );
   }
 
-  Future<void> resetPasswordForEmail(String email) async {
+  Future<void> resetPasswordForEmail(
+    String email, {
+    String? captchaToken,
+  }) async {
     final client = _requireClient();
-    await client.auth.resetPasswordForEmail(email.trim().toLowerCase());
+    // Supabase has captcha protection enabled project-wide, so the reset
+    // request is rejected with captcha_failed unless a token is included.
+    await client.auth.resetPasswordForEmail(
+      email.trim().toLowerCase(),
+      captchaToken: captchaToken,
+    );
   }
 
   Future<void> signOut({String? userId}) async {
