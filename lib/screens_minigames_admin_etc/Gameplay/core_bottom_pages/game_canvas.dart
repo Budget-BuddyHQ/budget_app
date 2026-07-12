@@ -1,3 +1,4 @@
+import 'package:bonfire/bonfire.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +7,9 @@ import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../../widgets_custom_lotties/orientation_scope.dart';
 
+/// The adventure world, running on Bonfire: a tile map generated from the
+/// village terrain matrix below, a joystick, and the player's equipped
+/// turtle skin walking around it.
 class GameCanvas extends StatelessWidget {
   const GameCanvas({
     super.key,
@@ -18,14 +22,43 @@ class GameCanvas extends StatelessWidget {
   final Offset? initialPosition;
   final String? skinAssetPath;
 
+  static const double _tileSize = 48;
+
+  // 0 = grass, 1 = water (blocked), 2 = dirt path.
+  static const List<List<double>> _terrain = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+    [0, 2, 2, 0, 2, 2, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 2, 0, 0, 0, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+    [0, 2, 0, 0, 0, 0, 0, 2, 2, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+    [0, 2, 2, 0, 0, 0, 0, 0, 2, 2, 2, 0, 1, 0, 0, 0, 0, 0],
+    [0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 0, 0],
+    [0, 0, 0, 2, 2, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0],
+    [0, 0, 0, 0, 2, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0],
+    [0, 0, 0, 0, 2, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0],
+    [0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final userStats = context.watch<UserStatsController>().stats;
+    final userStats = context.read<UserStatsController>().stats;
     final equippedSkin = skinFromId(userStats.equippedSkin);
-    final savedPosition = userStats.adventurePosition;
-    final positionLabel = savedPosition == null
-        ? 'No saved position yet'
-        : 'Saved at ${savedPosition.dx.round()}, ${savedPosition.dy.round()}';
+    final skinPath = (skinAssetPath ?? equippedSkin.assetPath).replaceFirst(
+      'assets/images/',
+      '',
+    );
+
+    // Saved adventure positions from the old placeholder are in pixels;
+    // convert anything outside the tile grid, then clamp inside the walls.
+    var start = initialPosition ?? const Offset(4, 5);
+    if (start.dx > 17 || start.dy > 11) {
+      start = Offset(start.dx / _tileSize, start.dy / _tileSize);
+    }
+    start = Offset(
+      start.dx.clamp(1.0, 16.0).toDouble(),
+      start.dy.clamp(1.0, 10.0).toDouble(),
+    );
 
     return OrientationScope(
       orientations: const <DeviceOrientation>[
@@ -34,145 +67,86 @@ class GameCanvas extends StatelessWidget {
       ],
       child: Scaffold(
         backgroundColor: const Color(0xFF071711),
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white),
-                      splashRadius: 26,
-                    ),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        'Adventure Preview',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Expanded(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0F261C),
-                      borderRadius: BorderRadius.circular(28),
-                      border: Border.all(
-                        color: const Color(0xFF85EFAC).withValues(alpha: 0.18),
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.videogame_asset_rounded,
-                              color: equippedSkin.accent,
-                              size: 86,
-                            ),
-                            const SizedBox(height: 24),
-                            const Text(
-                              'Adventure content has been cleared.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'The old game engine is removed. A Flame/Bonfire version can now be built here.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _BadgeLabel(
-                                  label: 'Map',
-                                  value: mapId ?? 'unset',
-                                ),
-                                const SizedBox(width: 12),
-                                _BadgeLabel(
-                                  label: 'Saved',
-                                  value: positionLabel,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
+        body: Stack(
+          children: [
+            BonfireWidget(
+              backgroundColor: const Color(0xFF0A1D17),
+              playerControllers: [Joystick(directional: JoystickDirectional())],
+              map: MatrixMapGenerator.generate(
+                layers: [MatrixLayer(matrix: _terrain, axisInverted: true)],
+                builder: _buildTile,
+              ),
+              player: _TurtlePlayer(
+                position: Vector2(start.dx * _tileSize, start.dy * _tileSize),
+                spritePath: skinPath,
+              ),
+              cameraConfig: CameraConfig(zoom: 1.4, moveOnlyMapArea: true),
+            ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF071711).withValues(alpha: 0.72),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: IconButton(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BadgeLabel extends StatelessWidget {
-  const _BadgeLabel({
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF0B1E16),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white24),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white54,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  static Tile _buildTile(ItemMatrixProperties properties) {
+    final String path;
+    final bool blocked;
+    switch (properties.value.toInt()) {
+      case 1:
+        path = 'tiles/tile_water.png';
+        blocked = true;
+      case 2:
+        path = 'tiles/tile_dirt.png';
+        blocked = false;
+      default:
+        path = 'tiles/tile_grass.png';
+        blocked = false;
+    }
+
+    return Tile(
+      x: properties.position.x,
+      y: properties.position.y,
+      width: _tileSize,
+      height: _tileSize,
+      sprite: TileSprite(path: path),
+      collisions: blocked
+          ? [RectangleHitbox(size: Vector2.all(_tileSize))]
+          : null,
+    );
+  }
+}
+
+class _TurtlePlayer extends SimplePlayer {
+  _TurtlePlayer({required super.position, required String spritePath})
+    : super(
+        size: Vector2.all(GameCanvas._tileSize * 0.9),
+        speed: 130,
+        animation: SimpleDirectionAnimation(
+          idleRight: _frame(spritePath),
+          runRight: _frame(spritePath),
+        ),
+      );
+
+  static Future<SpriteAnimation> _frame(String path) async {
+    final sprite = await Sprite.load(path);
+    return SpriteAnimation.spriteList([sprite], stepTime: 0.4);
   }
 }
