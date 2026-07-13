@@ -9,7 +9,6 @@ import '../../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../minigames_pages/bill_dodger.dart';
-import '../minigames_pages/budget_challenge.dart';
 import '../minigames_pages/react_challenge_screen.dart';
 import '../minigames_pages/stock_market_page.dart';
 import '../minigames_pages/subscription_sweep.dart';
@@ -74,25 +73,6 @@ class MinigamesPage extends StatelessWidget {
     );
   }
 
-  Future<void> _openBudgetChallenge(BuildContext context) async {
-    final result = await Navigator.of(context).push<BudgetChallengeCloseResult>(
-      FadePageRoute(builder: (_) => const BudgetChallengeScreen()),
-    );
-
-    if (!context.mounted || result == null) {
-      return;
-    }
-
-    GameToast.show(
-      context,
-      title: 'Budget challenge complete',
-      message:
-          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
-      icon: Icons.shopping_cart_rounded,
-      accent: const Color(0xFF78C69B),
-    );
-  }
-
   Future<void> _openStockMarket(BuildContext context) async {
     await Navigator.of(
       context,
@@ -133,12 +113,6 @@ class MinigamesPage extends StatelessWidget {
         accent: const Color(0xFFE1BB72),
         icon: Icons.sports_esports_rounded,
         onPressed: () => _openBillDodger(context),
-      ),
-      _MinigamePosterData(
-        title: 'Budget Challenge',
-        accent: const Color(0xFF78C69B),
-        icon: Icons.shopping_cart_rounded,
-        onPressed: () => _openBudgetChallenge(context),
       ),
       _MinigamePosterData(
         title: 'Market Board',

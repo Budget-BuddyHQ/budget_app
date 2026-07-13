@@ -48,6 +48,14 @@ class _StockMarketPageState extends State<StockMarketPage> {
           if (_rand.nextDouble() < 0.06) {
             pct += (_rand.nextDouble() * 2 - 1) * 0.05;
           }
+          // Very rare "news event": can move up to ~±75%, but cubing the
+          // roll makes huge swings far less likely than moderate ones —
+          // like real stocks, a 75% day is possible but almost never.
+          if (_rand.nextDouble() < 0.008) {
+            final magnitude = _rand.nextDouble();
+            final sign = _rand.nextBool() ? 1 : -1;
+            pct += sign * magnitude * magnitude * magnitude * 0.75;
+          }
           final next = (current * (1 + pct)).clamp(
             seed.basePrice * 0.3,
             seed.basePrice * 4.0,
