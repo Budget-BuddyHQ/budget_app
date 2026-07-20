@@ -12,6 +12,7 @@ import '../minigames_pages/bill_dodger.dart';
 import '../minigames_pages/react_challenge_screen.dart';
 import '../minigames_pages/stock_market_page.dart';
 import '../minigames_pages/subscription_sweep.dart';
+import '../minigames_pages/finance_brawl_game.dart';
 
 class MinigamesPage extends StatelessWidget {
   const MinigamesPage({
@@ -99,6 +100,25 @@ class MinigamesPage extends StatelessWidget {
     );
   }
 
+  Future<void> _openFinanceBrawl(BuildContext context) async {
+  final result = await Navigator.of(context).push<FinanceBrawlCloseResult>(
+    FadePageRoute(builder: (_) => const FinanceBrawlScreen()),
+  );
+
+  if (!context.mounted || result == null) {
+    return;
+  }
+
+  GameToast.show(
+    context,
+    title: 'Horde cleared',
+    message:
+        '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+    icon: Icons.gavel_rounded,
+    accent: const Color(0xFFE1BB72),
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     final minigames = <_MinigamePosterData>[
@@ -125,6 +145,12 @@ class MinigamesPage extends StatelessWidget {
         accent: const Color(0xFFD49B7E),
         icon: Icons.receipt_long_rounded,
         onPressed: () => _openSubscriptionSweep(context),
+      ),
+      _MinigamePosterData(
+      title: 'Finance Brawl',
+      accent: const Color(0xFF85EFAC),
+      icon: Icons.gavel_rounded,
+      onPressed: () => _openFinanceBrawl(context),
       ),
     ];
 
