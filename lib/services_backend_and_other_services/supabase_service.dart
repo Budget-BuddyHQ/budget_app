@@ -379,6 +379,7 @@ class LeaderboardEntry {
     required this.xp,
     required this.gold,
     required this.isCurrentUser,
+    this.profileImageUrl = '',
   });
 
   final String id;
@@ -388,6 +389,7 @@ class LeaderboardEntry {
   final int xp;
   final int gold;
   final bool isCurrentUser;
+  final String profileImageUrl;
 
   String get scoreLabel => '$literacyPoints LP';
 }
@@ -451,6 +453,7 @@ select
   literacy_points,
   xp,
   gold,
+  spending_habits->>'profile_image_url' as profile_image_url,
   updated_at
 from public.user_stats;
 
@@ -693,9 +696,17 @@ end
     );
   }
 
-  Future<void> resetPasswordForEmail(String email) async {
+  Future<void> resetPasswordForEmail(
+    String email, {
+    String? captchaToken,
+  }) async {
     final client = _requireClient();
-    await client.auth.resetPasswordForEmail(email.trim().toLowerCase());
+    // Supabase has captcha protection enabled project-wide, so the reset
+    // request is rejected with captcha_failed unless a token is included.
+    await client.auth.resetPasswordForEmail(
+      email.trim().toLowerCase(),
+      captchaToken: captchaToken,
+    );
   }
 
   Future<void> signOut({String? userId}) async {
@@ -1138,7 +1149,7 @@ end
     try {
       final response = await Supabase.instance.client
           .from(leaderboardView)
-          .select('id, username, literacy_points, xp, gold')
+          .select('*')
           .order('literacy_points', ascending: false)
           .order('xp', ascending: false)
           .order('gold', ascending: false)
@@ -1172,6 +1183,10 @@ end
               gold: _readInt(entry.value['gold']),
               isCurrentUser:
                   currentUserId != null && currentUserId == entry.value['id'],
+              // Present once the leaderboard view exposes it (see the SQL
+              // in this file's schema comment); empty string until then.
+              profileImageUrl: (entry.value['profile_image_url'] ?? '')
+                  .toString(),
             ),
           )
           .toList(growable: false);

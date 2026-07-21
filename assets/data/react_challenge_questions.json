@@ -119,5 +119,145 @@
     ],
     "correctIndex": 0,
     "explanation": "Unit price lets you compare value even when package sizes differ."
+  },
+  {
+    "prompt": "How many months of expenses do experts usually suggest for an emergency fund?",
+    "choices": [
+      "1 week",
+      "3 to 6 months",
+      "5 years"
+    ],
+    "correctIndex": 1,
+    "explanation": "Three to six months of essential expenses is the common target for a full emergency fund."
+  },
+  {
+    "prompt": "Your credit card bill arrives. What protects your credit score most?",
+    "choices": [
+      "Paying only when convenient",
+      "Skipping one month",
+      "Paying at least the minimum on time"
+    ],
+    "correctIndex": 2,
+    "explanation": "Payment history is the biggest factor in a credit score, so on-time payments matter most."
+  },
+  {
+    "prompt": "A friend offers a 'guaranteed double your money in a week' deal. What is the smartest move?",
+    "choices": [
+      "Invest half to be safe",
+      "Walk away, because guaranteed high returns are a scam signal",
+      "Borrow money to invest more"
+    ],
+    "correctIndex": 1,
+    "explanation": "No legitimate investment guarantees fast, high returns. That promise is a classic scam pattern."
+  },
+  {
+    "prompt": "You get your first paycheck and it is smaller than expected. Why?",
+    "choices": [
+      "Taxes and deductions were withheld",
+      "The bank charged a deposit fee",
+      "Paychecks are always rounded down"
+    ],
+    "correctIndex": 0,
+    "explanation": "Gross pay shrinks to net pay after taxes and deductions are withheld."
+  },
+  {
+    "prompt": "Which choice spreads out investment risk the most?",
+    "choices": [
+      "All savings in one exciting stock",
+      "A diversified fund holding many companies",
+      "Keeping everything in cash forever"
+    ],
+    "correctIndex": 1,
+    "explanation": "Diversification lowers the damage any single company can do to your money."
+  },
+  {
+    "prompt": "Holiday gifts cost you about $120 every December. What is the smoothest plan?",
+    "choices": [
+      "Put it all on credit in December",
+      "Save $10 a month in a sinking fund",
+      "Skip gifts if money is tight"
+    ],
+    "correctIndex": 1,
+    "explanation": "A sinking fund turns a known yearly cost into a small, painless monthly habit."
+  },
+  {
+    "prompt": "Two loans are identical except one has a higher APR. What does the higher APR mean?",
+    "choices": [
+      "It costs more to borrow",
+      "It pays you more interest",
+      "It has a longer grace period"
+    ],
+    "correctIndex": 0,
+    "explanation": "APR is the yearly cost of borrowing, so higher APR means a more expensive loan."
+  },
+  {
+    "prompt": "Choosing the concert ticket means skipping the new game. That tradeoff is called:",
+    "choices": [
+      "Inflation",
+      "Opportunity cost",
+      "Compound interest"
+    ],
+    "correctIndex": 1,
+    "explanation": "Opportunity cost is the value of the next-best option you give up when you choose."
+  },
+  {
+    "prompt": "Why does starting to save at 15 beat starting at 25, even with smaller amounts?",
+    "choices": [
+      "Banks reward younger customers",
+      "Compound growth has more years to work",
+      "Prices were lower in the past"
+    ],
+    "correctIndex": 1,
+    "explanation": "Compounding builds on itself, so extra years matter more than extra dollars."
+  },
+  {
+    "prompt": "A text says your bank account is locked and asks you to click a link fast. You should:",
+    "choices": [
+      "Click quickly before it locks",
+      "Reply with your account number",
+      "Ignore the link and check the official app directly"
+    ],
+    "correctIndex": 2,
+    "explanation": "Urgency plus a link is a phishing pattern. Always go to the official app or site yourself."
+  },
+  {
+    "prompt": "Your debit card is different from a credit card because a debit card:",
+    "choices": [
+      "Spends money you already have",
+      "Builds credit history faster",
+      "Lets you borrow from the bank"
+    ],
+    "correctIndex": 0,
+    "explanation": "Debit pulls directly from your checking account, while credit borrows money you repay later."
+  },
+  {
+    "prompt": "Rent, insurance, and a phone plan are examples of:",
+    "choices": [
+      "Variable expenses",
+      "Fixed expenses",
+      "Impulse purchases"
+    ],
+    "correctIndex": 1,
+    "explanation": "Fixed expenses stay about the same every month, which makes them easy to plan around."
+  },
+  {
+    "prompt": "You want a $60 game in 3 months. Which plan actually gets you there?",
+    "choices": [
+      "Save $20 a month starting now",
+      "Hope for gift money",
+      "Buy now and owe a friend"
+    ],
+    "correctIndex": 0,
+    "explanation": "Breaking a goal into a monthly amount turns wishing into a plan."
+  },
+  {
+    "prompt": "An item is 'Buy one get one 50% off.' What should you check before grabbing it?",
+    "choices": [
+      "Whether you needed two in the first place",
+      "How big the sale sign is",
+      "Whether the store is busy"
+    ],
+    "correctIndex": 0,
+    "explanation": "Deals only save money when they cover something you already planned to buy."
   }
 ]

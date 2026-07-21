@@ -9,10 +9,10 @@ import '../../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../minigames_pages/bill_dodger.dart';
-import '../minigames_pages/budget_challenge.dart';
 import '../minigames_pages/react_challenge_screen.dart';
 import '../minigames_pages/stock_market_page.dart';
 import '../minigames_pages/subscription_sweep.dart';
+import '../minigames_pages/finance_brawl_game.dart';
 
 class MinigamesPage extends StatelessWidget {
   const MinigamesPage({
@@ -74,25 +74,6 @@ class MinigamesPage extends StatelessWidget {
     );
   }
 
-  Future<void> _openBudgetChallenge(BuildContext context) async {
-    final result = await Navigator.of(context).push<BudgetChallengeCloseResult>(
-      FadePageRoute(builder: (_) => const BudgetChallengeScreen()),
-    );
-
-    if (!context.mounted || result == null) {
-      return;
-    }
-
-    GameToast.show(
-      context,
-      title: 'Budget challenge complete',
-      message:
-          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
-      icon: Icons.shopping_cart_rounded,
-      accent: const Color(0xFF78C69B),
-    );
-  }
-
   Future<void> _openStockMarket(BuildContext context) async {
     await Navigator.of(
       context,
@@ -119,6 +100,25 @@ class MinigamesPage extends StatelessWidget {
     );
   }
 
+  Future<void> _openFinanceBrawl(BuildContext context) async {
+  final result = await Navigator.of(context).push<FinanceBrawlCloseResult>(
+    FadePageRoute(builder: (_) => const FinanceBrawlScreen()),
+  );
+
+  if (!context.mounted || result == null) {
+    return;
+  }
+
+  GameToast.show(
+    context,
+    title: 'Horde cleared',
+    message:
+        '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+    icon: Icons.gavel_rounded,
+    accent: const Color(0xFFE1BB72),
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     final minigames = <_MinigamePosterData>[
@@ -135,12 +135,6 @@ class MinigamesPage extends StatelessWidget {
         onPressed: () => _openBillDodger(context),
       ),
       _MinigamePosterData(
-        title: 'Budget Challenge',
-        accent: const Color(0xFF78C69B),
-        icon: Icons.shopping_cart_rounded,
-        onPressed: () => _openBudgetChallenge(context),
-      ),
-      _MinigamePosterData(
         title: 'Market Board',
         accent: const Color(0xFF58C7FF),
         icon: Icons.show_chart_rounded,
@@ -151,6 +145,12 @@ class MinigamesPage extends StatelessWidget {
         accent: const Color(0xFFD49B7E),
         icon: Icons.receipt_long_rounded,
         onPressed: () => _openSubscriptionSweep(context),
+      ),
+      _MinigamePosterData(
+      title: 'Finance Brawl',
+      accent: const Color(0xFF85EFAC),
+      icon: Icons.gavel_rounded,
+      onPressed: () => _openFinanceBrawl(context),
       ),
     ];
 
