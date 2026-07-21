@@ -73,37 +73,33 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               Hero(
                                 tag: 'budget-buddy-logo',
                                 child: Container(
-                                  width: 110,
-                                  height: 110,
+                                  padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFEAF6EE),
-                                    borderRadius: BorderRadius.circular(28),
+                                    shape: BoxShape.circle,
+                                    color: const Color(
+                                      0xFF0C2418,
+                                    ).withValues(alpha: 0.42),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.25,
-                                        ),
-                                        blurRadius: 24,
-                                        offset: const Offset(0, 14),
+                                        color: const Color(
+                                          0xFF3CCB74,
+                                        ).withValues(alpha: 0.35),
+                                        blurRadius: 34,
+                                        spreadRadius: 4,
                                       ),
                                     ],
                                   ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(22),
-                                    child: Image.asset(
-                                      AppAssets.logo,
-                                      fit: BoxFit.contain,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                            return const Center(
-                                              child: Icon(
-                                                Icons.account_balance_wallet,
-                                                size: 60,
-                                                color: Color(0xFF1B3B2A),
-                                              ),
-                                            );
-                                          },
-                                    ),
+                                  child: Image.asset(
+                                    AppAssets.coolTurtle,
+                                    width: 120,
+                                    height: 120,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (context, error, stack) =>
+                                        const Icon(
+                                          Icons.account_balance_wallet,
+                                          size: 60,
+                                          color: Color(0xFFB8F5D1),
+                                        ),
                                   ),
                                 ),
                               ),
