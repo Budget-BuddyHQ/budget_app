@@ -5,8 +5,8 @@ import 'package:provider/provider.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
+import '../../../constants/app_assets.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
-import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
 import 'game_canvas.dart';
@@ -591,8 +591,16 @@ class _AdventureBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(gradient: AppTheme.gradientForest),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          AppAssets.adventureMapBackground,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.none,
+        ),
+        Container(color: const Color(0xFF071711).withValues(alpha: 0.52)),
+      ],
     );
   }
 }

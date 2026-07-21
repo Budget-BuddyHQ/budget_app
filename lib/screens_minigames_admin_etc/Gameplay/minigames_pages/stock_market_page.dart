@@ -16,40 +16,91 @@ class StockMarketPage extends StatefulWidget {
 }
 
 class _StockMarketPageState extends State<StockMarketPage> {
-  Timer? _minuteTimer;
+  static const int _maxPoints = 90;
+
+  final Map<String, List<double>> _series = <String, List<double>>{};
+  final math.Random _rand = math.Random();
+  Timer? _tickTimer;
 
   @override
   void initState() {
     super.initState();
-    _scheduleMinuteRefresh();
-  }
+    final now = DateTime.now().toUtc();
+    for (final seed in _marketSeeds) {
+      final history = _buildPriceHistory(seed, now, 240);
+      final sampled = <double>[];
+      for (var i = 0; i < _maxPoints; i++) {
+        sampled.add(history[(i * (history.length - 1)) ~/ (_maxPoints - 1)]);
+      }
+      _series[seed.symbol] = sampled;
+    }
 
-  void _scheduleMinuteRefresh() {
-    _minuteTimer?.cancel();
-    final now = DateTime.now();
-    final nextMinute = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      now.hour,
-      now.minute,
-    ).add(const Duration(minutes: 1));
-    final initialDelay = nextMinute.difference(now);
-
-    _minuteTimer = Timer(initialDelay, () {
+    _tickTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
       if (!mounted) return;
-      setState(() {});
-      _minuteTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-        if (!mounted) return;
-        setState(() {});
+      setState(() {
+        for (final seed in _marketSeeds) {
+          final points = _series[seed.symbol]!;
+          final current = points.last;
+          // Live random walk: small drift each tick, with an occasional
+          // bigger jump so the board feels alive without being pure chaos.
+          var pct =
+              (_rand.nextDouble() * 2 - 1) * 0.012 * (1 + seed.volatility * 4);
+          if (_rand.nextDouble() < 0.06) {
+            pct += (_rand.nextDouble() * 2 - 1) * 0.05;
+          }
+          // Very rare "news event": can move up to ~±75%, but cubing the
+          // roll makes huge swings far less likely than moderate ones —
+          // like real stocks, a 75% day is possible but almost never.
+          if (_rand.nextDouble() < 0.008) {
+            final magnitude = _rand.nextDouble();
+            final sign = _rand.nextBool() ? 1 : -1;
+            pct += sign * magnitude * magnitude * magnitude * 0.75;
+          }
+          final next = (current * (1 + pct)).clamp(
+            seed.basePrice * 0.3,
+            seed.basePrice * 4.0,
+          );
+          points.add(next);
+          if (points.length > _maxPoints) {
+            points.removeAt(0);
+          }
+        }
       });
     });
   }
 
   @override
   void dispose() {
-    _minuteTimer?.cancel();
+    _tickTimer?.cancel();
     super.dispose();
+  }
+
+  _MarketQuote _quoteFor(_MarketSeed seed) {
+    final points = _series[seed.symbol]!;
+    final current = points.last;
+    final previous = points.length > 1 ? points[points.length - 2] : current;
+    final opening = points.first;
+    final price = current.round();
+    return _MarketQuote(
+      symbol: seed.symbol,
+      company: seed.company,
+      sector: seed.sector,
+      currentPrice: price,
+      previousPrice: previous.round(),
+      openingPrice: opening.round(),
+      recentChangePercent: previous > 0
+          ? (current - previous) / previous * 100
+          : 0,
+      openingChangePercent: opening > 0
+          ? (current - opening) / opening * 100
+          : 0,
+      buyCost: price,
+      sellValue: price,
+      history: points.map((p) => p.round()).toList(growable: false),
+      thesis: seed.thesis,
+      icon: seed.icon,
+      accent: seed.accent,
+    );
   }
 
   Future<void> _buyLot(BuildContext context, _MarketQuote quote) async {
@@ -106,17 +157,7 @@ class _StockMarketPageState extends State<StockMarketPage> {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now().toUtc();
-    final minuteNow = DateTime.utc(
-      now.year,
-      now.month,
-      now.day,
-      now.hour,
-      now.minute,
-    );
-    final quotes = _marketSeeds
-        .map((seed) => _quoteFromSeed(seed, minuteNow))
-        .toList(growable: false);
+    final quotes = _marketSeeds.map(_quoteFor).toList(growable: false);
 
     return Consumer<UserStatsController>(
       builder: (context, controller, _) {
@@ -183,38 +224,6 @@ class _StockMarketPageState extends State<StockMarketPage> {
               children: [
                 _TickerTape(quotes: quotes),
                 const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.03),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.06),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Welcome to the Budget Buddy Stock Exchange',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      SizedBox(height: 6),
-                      Text(
-                        'Buy and sell lots, watch the board move, and practice portfolio management.',
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
                 _MarketHero(
                   gold: stats.gold,
                   totalLots: totalLots,
@@ -232,8 +241,7 @@ class _StockMarketPageState extends State<StockMarketPage> {
                 const SizedBox(height: 18),
                 const _SectionTitle(
                   title: 'Trade Board',
-                  subtitle:
-                      'Buy lots with gold, hold them through swings, and sell back into your wallet when the board looks good.',
+                  subtitle: 'Buy low, hold through swings, sell high.',
                 ),
                 const SizedBox(height: 14),
                 for (final quote in quotes) ...[
@@ -245,12 +253,6 @@ class _StockMarketPageState extends State<StockMarketPage> {
                   ),
                   const SizedBox(height: 14),
                 ],
-                const SizedBox(height: 4),
-                const _SectionTitle(
-                  title: 'Live Feed Note',
-                  subtitle:
-                      'This board uses a local market simulation right now. The screen is ready to swap to a real stock API once we choose a provider and key flow.',
-                ),
               ],
             ),
           ),
@@ -428,18 +430,32 @@ class _MarketHero extends StatelessWidget {
                 ? CrossAxisAlignment.center
                 : CrossAxisAlignment.start,
             children: [
-              Text(
-                'STOCKS SIDE MODE',
-                style: TextStyle(
-                  color: const Color(0xFFFFD45C).withValues(alpha: 0.96),
-                  fontWeight: FontWeight.w900,
-                  fontSize: 12,
-                  letterSpacing: 0.8,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF3FCB74),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'LIVE',
+                    style: TextStyle(
+                      color: const Color(0xFF3FCB74).withValues(alpha: 0.96),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Text(
-                'Practice market timing without leaving the game loop.',
+                'The board is moving.',
                 textAlign: stacked ? TextAlign.center : TextAlign.start,
                 style: const TextStyle(
                   color: Colors.white,
@@ -448,16 +464,7 @@ class _MarketHero extends StatelessWidget {
                   height: 1.1,
                 ),
               ),
-              const SizedBox(height: 10),
-              Text(
-                'Each lot costs gold, moves with the board, and can be sold back into your run economy when you want liquidity.',
-                textAlign: stacked ? TextAlign.center : TextAlign.start,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.74),
-                  height: 1.45,
-                ),
-              ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
               chips,
             ],
           );
@@ -751,14 +758,7 @@ class _StockCard extends StatelessWidget {
             },
           ),
           const SizedBox(height: 14),
-          Text(
-            quote.thesis,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.72),
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
           _StockSparkline(history: quote.history, accent: quote.accent),
           const SizedBox(height: 16),
           LayoutBuilder(
@@ -950,95 +950,6 @@ class _MarketQuote {
   final Color accent;
 }
 
-_MarketQuote _quoteFromSeed(
-  _MarketSeed seed,
-  DateTime now, [
-  int displayPoints = 360,
-]) {
-  // build a full 24-hour minute base history (long-term GBM)
-  const minutes24h = 24 * 60;
-  final baseHistory = _buildPriceHistory(seed, now, minutes24h); // List<double>
-
-  // overlay short-term intraday noise only on the most recent window so "since open" stays calmer
-  final augmented = List<double>.from(baseHistory);
-  final applyWindow = math.min(
-    baseHistory.length,
-    240,
-  ); // minutes to apply short noise
-  final startIndex = baseHistory.length - applyWindow;
-  var shortNoise = 0.0;
-  const shortPhi = 0.88;
-  final shortSigma = math.max(0.006, seed.volatility * 0.06);
-  for (var i = startIndex; i < baseHistory.length; i += 1) {
-    final minuteTime = now.subtract(
-      Duration(minutes: baseHistory.length - 1 - i),
-    );
-    final tick = minuteTime.millisecondsSinceEpoch;
-    final zShort = _gaussianNoise(seed, tick + 1234567);
-    shortNoise = shortPhi * shortNoise + shortSigma * zShort;
-    augmented[i] = baseHistory[i] * math.exp(shortNoise);
-  }
-
-  final currentDouble = augmented.last;
-  final previousDouble = augmented.length > 1
-      ? augmented[augmented.length - 2]
-      : currentDouble;
-  final recentChangePercent = previousDouble > 0
-      ? ((currentDouble - previousDouble) / previousDouble) * 100
-      : 0.0;
-
-  // opening price = price at start of day (UTC) derived from baseHistory (no short noise)
-  final openingMinute = DateTime.utc(now.year, now.month, now.day);
-  final minutesSinceOpen = now.difference(openingMinute).inMinutes;
-  double openingDouble;
-  if (minutesSinceOpen >= 0 && minutesSinceOpen < baseHistory.length) {
-    final openingIndex = baseHistory.length - 1 - minutesSinceOpen;
-    openingDouble = baseHistory[openingIndex.clamp(0, baseHistory.length - 1)];
-  } else {
-    openingDouble = baseHistory.first;
-  }
-  final openingChangePercent = openingDouble > 0
-      ? ((currentDouble - openingDouble) / openingDouble) * 100
-      : 0.0;
-
-  // produce integer chart history by sampling the augmented (short-noise applied) history
-  final chartHistory = <int>[];
-  if (augmented.length <= displayPoints) {
-    chartHistory.addAll(augmented.map((d) => d.round()));
-  } else {
-    for (var index = 0; index < displayPoints; index += 1) {
-      final sampleIndex =
-          ((index * (augmented.length - 1)) / (displayPoints - 1)).round();
-      chartHistory.add(augmented[sampleIndex].round());
-    }
-    final currentPriceRounded = currentDouble.round();
-    if (chartHistory.last != currentPriceRounded) {
-      chartHistory[chartHistory.length - 1] = currentPriceRounded;
-    }
-  }
-
-  final currentPrice = currentDouble.round();
-  final previousPrice = previousDouble.round();
-  final openingPrice = openingDouble.round();
-
-  return _MarketQuote(
-    symbol: seed.symbol,
-    company: seed.company,
-    sector: seed.sector,
-    currentPrice: currentPrice,
-    previousPrice: previousPrice,
-    openingPrice: openingPrice,
-    recentChangePercent: recentChangePercent,
-    openingChangePercent: openingChangePercent,
-    buyCost: currentPrice,
-    sellValue: currentPrice,
-    history: chartHistory,
-    thesis: seed.thesis,
-    icon: seed.icon,
-    accent: seed.accent,
-  );
-}
-
 List<double> _buildPriceHistory(_MarketSeed seed, DateTime now, int points) {
   final base = seed.basePrice.toDouble();
   final symbolBias = _seedFromDescription(
@@ -1151,7 +1062,7 @@ class _StockSparkline extends StatelessWidget {
             ),
           ],
         ),
-        duration: Duration.zero,
+        duration: const Duration(milliseconds: 400),
       ),
     );
   }

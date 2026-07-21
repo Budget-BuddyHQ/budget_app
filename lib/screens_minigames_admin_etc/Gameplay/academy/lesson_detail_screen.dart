@@ -155,7 +155,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           ),
           Positioned.fill(
             child: Container(
-              color: const Color(0xFF0D2B20).withValues(alpha: 0.62),
+              color: const Color(0xFF0D2B20).withValues(alpha: 0.74),
             ),
           ),
           SafeArea(
@@ -180,6 +180,10 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                         estimatedMinutes: widget.lesson.estimatedMinutes,
                       ),
                       const SizedBox(height: 24),
+                      if (quiz.isEmpty && content.objectives.isNotEmpty) ...[
+                        _ObjectivesCard(objectives: content.objectives),
+                        const SizedBox(height: 8),
+                      ],
                       if (quiz.isEmpty)
                         ...content.sections.map(
                           (section) => Container(
@@ -206,9 +210,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                                 Text(
                                   section.content,
                                   style: GoogleFonts.quicksand(
-                                    color: Colors.white.withValues(alpha: 0.86),
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
+                                    color: const Color(0xFFF7FFFB),
+                                    fontSize: 16.5,
+                                    fontWeight: FontWeight.w600,
                                     height: 1.7,
                                   ),
                                 ),
@@ -230,6 +234,14 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                           onSelect: (optionIndex) =>
                               _selectOption(quiz[_questionIndex], optionIndex),
                         ),
+                      if (quiz.isEmpty && content.keyTerms.isNotEmpty) ...[
+                        const SizedBox(height: 20),
+                        _KeyTermsCard(terms: content.keyTerms),
+                      ],
+                      if (quiz.isEmpty && content.takeaway != null) ...[
+                        const SizedBox(height: 14),
+                        _TakeawayCard(text: content.takeaway!),
+                      ],
                     ],
                   ),
                 ),
@@ -398,6 +410,156 @@ class _LessonOverviewCard extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _ObjectivesCard extends StatelessWidget {
+  const _ObjectivesCard({required this.objectives});
+
+  final List<String> objectives;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF85EFAC).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF85EFAC).withValues(alpha: 0.24),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'WHAT YOU\'LL LEARN',
+            style: GoogleFonts.baloo2(
+              color: const Color(0xFFB8F5D1),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final objective in objectives) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.check_circle_outline_rounded,
+                  color: Color(0xFF85EFAC),
+                  size: 17,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    objective,
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white.withValues(alpha: 0.88),
+                      fontWeight: FontWeight.w600,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _KeyTermsCard extends StatelessWidget {
+  const _KeyTermsCard({required this.terms});
+
+  final Map<String, String> terms;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'KEY TERMS',
+            style: GoogleFonts.baloo2(
+              color: const Color(0xFFFFD45C),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final entry in terms.entries) ...[
+            RichText(
+              text: TextSpan(
+                style: GoogleFonts.quicksand(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  height: 1.45,
+                ),
+                children: [
+                  TextSpan(
+                    text: '${entry.key}: ',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFF7FFFB),
+                    ),
+                  ),
+                  TextSpan(text: entry.value),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TakeawayCard extends StatelessWidget {
+  const _TakeawayCard({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFD45C).withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFFFFD45C).withValues(alpha: 0.30),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.star_rounded, color: Color(0xFFFFD45C), size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.quicksand(
+                color: Colors.white.withValues(alpha: 0.9),
+                fontWeight: FontWeight.w600,
+                height: 1.45,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -761,11 +923,23 @@ class _LessonContent {
     required this.icon,
     this.sections = const [],
     this.quiz = const [],
+    this.objectives = const [],
+    this.keyTerms = const {},
+    this.takeaway,
   });
 
   final IconData icon;
   final List<_LessonSection> sections;
   final List<QuizQuestion> quiz;
+
+  /// "What you'll learn" bullets shown before the content.
+  final List<String> objectives;
+
+  /// Vocabulary the lesson introduces, term -> definition.
+  final Map<String, String> keyTerms;
+
+  /// One-sentence summary shown at the end of the lesson.
+  final String? takeaway;
 }
 
 class _LessonSection {
@@ -778,6 +952,18 @@ class _LessonSection {
 const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   'lesson_1': _LessonContent(
     icon: Icons.account_balance_wallet_rounded,
+    objectives: [
+      'Define what a budget is and what it is for',
+      'Explain why planning beats reacting with money',
+      'Apply the 50/30/20 rule to a simple income',
+    ],
+    keyTerms: {
+      'Budget': 'a plan for how your money will be used before you spend it',
+      '50/30/20 rule':
+          'a starting framework: 50% needs, 30% wants, 20% savings or debt payoff',
+    },
+    takeaway:
+        'A budget is not a punishment — it is a plan that puts you in charge of every dollar before it leaves.',
     sections: [
       _LessonSection(
         title: 'What is budgeting?',
@@ -798,6 +984,17 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_2': _LessonContent(
     icon: Icons.payments_rounded,
+    objectives: [
+      'Distinguish fixed income from variable income',
+      'Explain the difference between gross and net pay',
+      'Choose the right income number to build a budget on',
+    ],
+    keyTerms: {
+      'Gross income': 'total pay before taxes and deductions come out',
+      'Net income': 'the take-home amount that actually reaches your account',
+    },
+    takeaway:
+        'Always plan with net income — budgets built on gross pay promise money you never actually receive.',
     sections: [
       _LessonSection(
         title: 'Income comes first',
@@ -838,6 +1035,16 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_3': _LessonContent(
     icon: Icons.shopping_bag_rounded,
+    objectives: [
+      'Track spending to reveal real habits and leaks',
+      'Sort expenses into needs and wants confidently',
+    ],
+    keyTerms: {
+      'Need': 'an essential cost that keeps life running, like rent or food',
+      'Want': 'a nice-to-have that should fit after essentials are covered',
+    },
+    takeaway:
+        'Your bank statement tells the truth about your habits — read it before you plan.',
     sections: [
       _LessonSection(
         title: 'Track spending patterns',
@@ -853,6 +1060,16 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_4': _LessonContent(
     icon: Icons.savings_rounded,
+    objectives: [
+      'Treat saving as a required bill, not a leftover',
+      'Explain why consistency beats occasional big efforts',
+    ],
+    keyTerms: {
+      'Pay yourself first':
+          'moving money to savings before any other spending happens',
+    },
+    takeaway:
+        'Small automatic saving repeated weekly beats big saving done occasionally.',
     sections: [
       _LessonSection(
         title: 'Pay yourself first',
@@ -868,6 +1085,18 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_5': _LessonContent(
     icon: Icons.pie_chart_rounded,
+    objectives: [
+      'Assemble a complete budget from income, costs, and goals',
+      'Compare the plan against take-home pay and adjust',
+      'Build a habit of reviewing the budget regularly',
+    ],
+    keyTerms: {
+      'Fixed cost': 'an expense that stays the same each month, like rent',
+      'Flexible spending':
+          'costs you can adjust month to month, like eating out',
+    },
+    takeaway:
+        'A budget is a living tool — build it once, then review and adjust it as life changes.',
     sections: [
       _LessonSection(
         title: 'Build the plan',

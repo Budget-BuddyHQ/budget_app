@@ -294,12 +294,41 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       return;
     }
 
+    // Supabase enforces captcha on the recover endpoint too, so a reset
+    // request without a Turnstile token is rejected with captcha_failed.
+    var token = _captchaToken;
+    if (token == null || token.isEmpty) {
+      if (_usesExternalSecurityCheck) {
+        token = await _requestExternalSecurityToken();
+      }
+      if (!mounted) {
+        return;
+      }
+      if (token == null || token.isEmpty) {
+        GameToast.show(
+          context,
+          title: 'Still checking',
+          message:
+              'Complete the security check, then tap the reset link again.',
+          icon: Icons.hourglass_empty_rounded,
+          accent: const Color(0xFFFFC36B),
+        );
+        return;
+      }
+    }
+
     final controller = context.read<UserStatsController>();
-    final result = await controller.sendPasswordReset(email: email);
+    final result = await controller.sendPasswordReset(
+      email: email,
+      captchaToken: token,
+    );
 
     if (!mounted) {
       return;
     }
+
+    // Turnstile tokens are single-use; get a fresh one for the next action.
+    _resetTurnstile();
 
     GameToast.show(
       context,
