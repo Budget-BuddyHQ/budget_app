@@ -763,83 +763,93 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
                           ),
                         ),
                         SizedBox(height: compact ? 12 : 18),
-                        SizedBox(
-                          height: reelHeight,
-                          child: Stack(
-                            children: [
-                              Positioned.fill(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(24),
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        preview.accent.withValues(alpha: 0.08),
-                                        Colors.transparent,
-                                      ],
+                        // Fade the reel in so the first layout frame (before
+                        // sprites/offsets settle) never flashes on screen.
+                        TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0.0, end: 1.0),
+                          duration: const Duration(milliseconds: 240),
+                          builder: (context, opacity, child) =>
+                              Opacity(opacity: opacity, child: child),
+                          child: SizedBox(
+                            height: reelHeight,
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(24),
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          preview.accent.withValues(
+                                            alpha: 0.08,
+                                          ),
+                                          Colors.transparent,
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(24),
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final trackWidth = constraints.maxWidth;
-                                    final offset =
-                                        (_scrollAnimation.value -
-                                                (trackWidth / 2 -
-                                                    _itemWidth / 2))
-                                            .clamp(
-                                              0.0,
-                                              _rollSkins.length * _itemExtent,
-                                            );
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(24),
+                                  child: LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      final trackWidth = constraints.maxWidth;
+                                      final offset =
+                                          (_scrollAnimation.value -
+                                                  (trackWidth / 2 -
+                                                      _itemWidth / 2))
+                                              .clamp(
+                                                0.0,
+                                                _rollSkins.length * _itemExtent,
+                                              );
 
-                                    return Stack(
-                                      children: [
-                                        ShaderMask(
-                                          shaderCallback: (rect) =>
-                                              const LinearGradient(
-                                                begin: Alignment.centerLeft,
-                                                end: Alignment.centerRight,
-                                                colors: [
-                                                  Colors.transparent,
-                                                  Colors.black,
-                                                  Colors.black,
-                                                  Colors.transparent,
-                                                ],
-                                                stops: [0.0, 0.10, 0.90, 1.0],
-                                              ).createShader(rect),
-                                          blendMode: BlendMode.dstIn,
-                                          child: SizedBox(
-                                            width: trackWidth,
-                                            child: ClipRect(
-                                              child: Transform.translate(
-                                                offset: Offset(-offset, 0),
-                                                child: rollTrack,
+                                      return Stack(
+                                        children: [
+                                          ShaderMask(
+                                            shaderCallback: (rect) =>
+                                                const LinearGradient(
+                                                  begin: Alignment.centerLeft,
+                                                  end: Alignment.centerRight,
+                                                  colors: [
+                                                    Colors.transparent,
+                                                    Colors.black,
+                                                    Colors.black,
+                                                    Colors.transparent,
+                                                  ],
+                                                  stops: [0.0, 0.10, 0.90, 1.0],
+                                                ).createShader(rect),
+                                            blendMode: BlendMode.dstIn,
+                                            child: SizedBox(
+                                              width: trackWidth,
+                                              child: ClipRect(
+                                                child: Transform.translate(
+                                                  offset: Offset(-offset, 0),
+                                                  child: rollTrack,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                        Positioned.fill(
-                                          child: IgnorePointer(
-                                            child: Center(
-                                              child: _PulsingHighlightBorder(
-                                                width: _itemWidth + 8,
-                                                height: 172,
-                                                accent:
-                                                    widget.result.skin.accent,
+                                          Positioned.fill(
+                                            child: IgnorePointer(
+                                              child: Center(
+                                                child: _PulsingHighlightBorder(
+                                                  width: _itemWidth + 8,
+                                                  height: 172,
+                                                  accent:
+                                                      widget.result.skin.accent,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    );
-                                  },
+                                        ],
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                         SizedBox(height: compact ? 8 : 12),
@@ -1092,13 +1102,16 @@ class _CustomizeBackdrop extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF071711), Color(0xFF0B231B), Color(0xFF113127)],
-            ),
+        Positioned.fill(
+          child: Image.asset(
+            'assets/self_made_backgrounds/meadow_tile_bg.png',
+            repeat: ImageRepeat.repeat,
+            filterQuality: FilterQuality.none,
+          ),
+        ),
+        Positioned.fill(
+          child: Container(
+            color: const Color(0xFF071711).withValues(alpha: 0.55),
           ),
         ),
         Positioned(

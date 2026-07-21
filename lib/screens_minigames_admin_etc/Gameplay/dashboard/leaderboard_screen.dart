@@ -246,6 +246,22 @@ class _LeaderboardRow extends StatelessWidget {
   final LeaderboardEntry leader;
   final String currentUserProfileImageUrl;
 
+  Widget _initialAvatar() {
+    final initial = leader.username.isNotEmpty
+        ? leader.username[0].toUpperCase()
+        : '?';
+    return Center(
+      child: Text(
+        initial,
+        style: const TextStyle(
+          color: Color(0xFF85EFAC),
+          fontWeight: FontWeight.w900,
+          fontSize: 16,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final medalColor = _medalColor(leader.rank);
@@ -287,15 +303,28 @@ class _LeaderboardRow extends StatelessWidget {
                   color: const Color(0xFF1E4D3D),
                 ),
                 child: ClipOval(
-                  child: leader.isCurrentUser && currentUserProfileImageUrl.isNotEmpty
-                      ? Image.network(
-                          currentUserProfileImageUrl,
+                  child: Builder(
+                    builder: (context) {
+                      // Every row shows its own avatar from the leaderboard
+                      // view; the signed-in user falls back to their local
+                      // profile image, everyone else to an initial.
+                      final url = leader.profileImageUrl.isNotEmpty
+                          ? leader.profileImageUrl
+                          : (leader.isCurrentUser
+                                ? currentUserProfileImageUrl
+                                : '');
+                      if (url.isNotEmpty) {
+                        return Image.network(
+                          url,
                           fit: BoxFit.cover,
                           width: 40,
                           height: 40,
-                          errorBuilder: (_, _,_) => const SizedBox.shrink(),
-                        )
-                      : const SizedBox.shrink(),
+                          errorBuilder: (_, _, _) => _initialAvatar(),
+                        );
+                      }
+                      return _initialAvatar();
+                    },
+                  ),
                 ),
               ),
               if (medalColor != null)
