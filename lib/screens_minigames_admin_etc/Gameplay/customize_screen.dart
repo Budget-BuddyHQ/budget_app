@@ -824,9 +824,19 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
                                             child: SizedBox(
                                               width: trackWidth,
                                               child: ClipRect(
-                                                child: Transform.translate(
-                                                  offset: Offset(-offset, 0),
-                                                  child: rollTrack,
+                                                // OverflowBox lets the long
+                                                // reel Row lay out at its
+                                                // natural width instead of
+                                                // tripping the debug
+                                                // overflow stripes.
+                                                child: OverflowBox(
+                                                  alignment:
+                                                      Alignment.centerLeft,
+                                                  maxWidth: double.infinity,
+                                                  child: Transform.translate(
+                                                    offset: Offset(-offset, 0),
+                                                    child: rollTrack,
+                                                  ),
                                                 ),
                                               ),
                                             ),
