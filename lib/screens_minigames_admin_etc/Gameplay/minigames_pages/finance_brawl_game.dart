@@ -100,9 +100,9 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
   bool _isSavingAndExiting = false;
   bool _bossActive = false;
   
-  double _attackSpeedMultiplier = 1.0;
+  final double _attackSpeedMultiplier = 1.0;
   double _coinDamage = 35.0;
-  double _coinSpeed = 380.0;
+  final double _coinSpeed = 380.0;
   int _coinStreamCount = 1;
   double _playerSpeed = 220.0;
 
@@ -1809,7 +1809,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0A1814).withOpacity(0.92),
+                          color: const Color(0xFF0A1814).withValues(alpha: 0.92),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: const Color(0xFF1F4D3E)),
                         ),
@@ -1834,7 +1834,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0A1814).withOpacity(0.92),
+                          color: const Color(0xFF0A1814).withValues(alpha: 0.92),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: const Color(0xFF85EFAC)),
                         ),
@@ -1859,7 +1859,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF0A1814).withOpacity(0.9),
+                              color: const Color(0xFF0A1814).withValues(alpha: 0.9),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(color: const Color(0xFF1F4D3E)),
                             ),
@@ -1877,7 +1877,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
                           const SizedBox(width: 10),
                           IconButton(
                             style: IconButton.styleFrom(
-                              backgroundColor: const Color(0xFFE25C5C).withOpacity(0.95),
+                              backgroundColor: const Color(0xFFE25C5C).withValues(alpha: 0.95),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.all(12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -1984,7 +1984,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
                   }),
                   if (_isAnswerSubmitted) ...[
                     const SizedBox(height: 10),
-                    Text(q.explanation, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13, fontStyle: FontStyle.italic)),
+                    Text(q.explanation, style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, fontStyle: FontStyle.italic)),
                     const SizedBox(height: 16),
                   ],
                   ElevatedButton(
@@ -2004,7 +2004,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
   Widget _buildUpgradeOverlay() {
     final upgrades = _getUpgradeOptions().take(3).toList();
     return Container(
-      color: Colors.black.withOpacity(0.85),
+      color: Colors.black.withValues(alpha: 0.85),
       padding: const EdgeInsets.all(24),
       child: Center(
         child: Column(
@@ -2049,7 +2049,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
 
   Widget _buildGameOverOverlay() {
     return Container(
-      color: Colors.black.withOpacity(0.9),
+      color: Colors.black.withValues(alpha: 0.9),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -2226,7 +2226,7 @@ class _BrawlPainter extends CustomPainter {
 
     // Particles
     for (final part in particles) {
-      canvas.drawCircle(part.pos, 2.5, Paint()..color = part.color.withOpacity((part.life / 0.22).clamp(0.0, 1.0)));
+      canvas.drawCircle(part.pos, 2.5, Paint()..color = part.color.withValues(alpha: (part.life / 0.22).clamp(0.0, 1.0)));
     }
 
     // Render Market Windfall Chests
