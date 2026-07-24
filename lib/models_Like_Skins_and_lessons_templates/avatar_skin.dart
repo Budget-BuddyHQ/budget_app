@@ -97,6 +97,13 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     rarity: SkinRarity.rare,
     accent: Color(0xFF85EFAC),
   ),
+  AvatarSkin(
+    id: 'mushroom_goomba',
+    name: 'Mushroom Goomba',
+    assetPath: AppAssets.goombaWalk,
+    rarity: SkinRarity.epic,
+    accent: Color(0xFF34D399),
+  ),
 ];
 
 final Set<String> budgetBuddySkinIds = budgetBuddySkins

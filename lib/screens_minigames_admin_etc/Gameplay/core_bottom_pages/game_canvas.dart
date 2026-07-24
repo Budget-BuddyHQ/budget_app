@@ -246,11 +246,53 @@ class _TurtlePlayer extends SimplePlayer {
     : super(
         size: Vector2.all(GameCanvas.tileSize * 0.9),
         speed: 130,
-        animation: SimpleDirectionAnimation(
-          idleRight: _frame(spritePath),
-          runRight: _frame(spritePath),
-        ),
+        animation: _animationFor(spritePath),
       );
+
+  /// Skins that ship as a multi-frame walk cycle animate directionally; every
+  /// other skin is a single static sprite reused for idle and run.
+  static SimpleDirectionAnimation _animationFor(String path) {
+    if (path.contains('goomba/')) {
+      const south = <String>[
+        'goomba/south1.png',
+        'goomba/south2.png',
+        'goomba/south3.png',
+        'goomba/south4.png',
+      ];
+      const north = <String>[
+        'goomba/north1.png',
+        'goomba/north2.png',
+        'goomba/north3.png',
+        'goomba/north4.png',
+      ];
+      // Left/right reuse the front (south) frames; SimpleDirectionAnimation
+      // flips horizontally on its own, so the goomba always faces the camera
+      // sideways and turns away only when walking up.
+      return SimpleDirectionAnimation(
+        idleRight: _walk(<String>[south.first]),
+        runRight: _walk(south),
+        idleDown: _walk(<String>[south.first]),
+        runDown: _walk(south),
+        idleUp: _walk(<String>[north.first]),
+        runUp: _walk(north),
+      );
+    }
+    return SimpleDirectionAnimation(
+      idleRight: _frame(path),
+      runRight: _frame(path),
+    );
+  }
+
+  static Future<SpriteAnimation> _walk(List<String> paths) async {
+    final sprites = <Sprite>[];
+    for (final path in paths) {
+      sprites.add(await Sprite.load(path));
+    }
+    return SpriteAnimation.spriteList(
+      sprites,
+      stepTime: sprites.length > 1 ? 0.16 : 0.4,
+    );
+  }
 
   static Future<SpriteAnimation> _frame(String path) async {
     final sprite = await Sprite.load(path);
