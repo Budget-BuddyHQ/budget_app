@@ -46,6 +46,7 @@ flutter:
     - assets/images/logo.png
     - assets/images/
     - assets/images/turtles/
+    - assets/images/goomba/
     - assets/images/tiles/
     - assets/animations/
     - assets/audio/
