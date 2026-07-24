@@ -77,7 +77,6 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
   Offset _playerPos = const Offset(800, 800); 
   final double _playerRadius = 24.0;
   
-  // Finance Overhaul: Balance instead of health
   int _bankBalance = 10000;
   final int _maxBankBalance = 10000;
   
@@ -113,6 +112,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
 
   double _lastSpawnTime = 0.0;
   double _lastAttackTime = 0.0;
+  double _lastBossAttackTime = 0.0; // Boss shooting cooldown tracking
   double _totalElapsedTime = 0.0;
   
   final List<_FinancialLiability> _liabilities = [];
@@ -1298,14 +1298,13 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
         if (!_isCollidingWithObstacles(targetY, _playerRadius)) _playerPos = targetY;
       }
 
-      // 1b. Handle Treasure Chest (Market Windfall) Collection
+      // 1b. Handle Treasure Chest Collection
       for (int i = _chests.length - 1; i >= 0; i--) {
         final chest = _chests[i];
         double dist = (_playerPos - chest.pos).distance;
         if (dist < (_playerRadius + _chestRadius)) {
           _chests.removeAt(i);
           
-          // 50% current health / balance boost
           int balanceBonus = (_bankBalance / 2).floor();
           if (balanceBonus < 250) balanceBonus = 250;
           
@@ -1350,12 +1349,42 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
         if (_shieldDamageCooldown >= 0.15) _shieldDamageCooldown = 0.0;
       }
 
-      // 3. Automatic Coin Firing
+      // 3a. Automatic Player Coin Firing
       _lastAttackTime += dt;
       double currentAttackCooldown = 0.55 / _attackSpeedMultiplier;
       if (_lastAttackTime >= currentAttackCooldown && _liabilities.isNotEmpty) {
         _lastAttackTime = 0;
         _fireCoins();
+      }
+
+      // 3b. Automatic Boss Projectile Firing
+      if (_bossActive) {
+        _lastBossAttackTime += dt;
+        double bossAttackCooldown = max(0.8, 1.8 - ((_wave ~/ 5) * 0.15));
+
+        if (_lastBossAttackTime >= bossAttackCooldown) {
+          _lastBossAttackTime = 0.0;
+          
+          final boss = _liabilities.firstWhere((mob) => mob.isBoss, orElse: () => _liabilities.first);
+          if (boss.isBoss) {
+            Offset direction = _playerPos - boss.pos;
+            double dist = direction.distance;
+
+            if (dist > 0) {
+              double projectileSpeed = 260.0 + ((_wave ~/ 5) * 20.0);
+              Offset normalizedVelocity = (direction / dist) * projectileSpeed;
+              double bossDamage = 400.0 + (_wave * 120.0);
+
+              _coins.add(_CoinProjectile(
+                pos: boss.pos,
+                velocity: normalizedVelocity,
+                damage: bossDamage,
+                isEnemyProjectile: true,
+                radius: 18.0,
+              ));
+            }
+          }
+        }
       }
 
       // 4. Spawning Debts / Boss Market Crises
@@ -1372,12 +1401,12 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
         }
       }
 
-      // 5. Coin Projectiles Vector Updates
+      // 5. Projectiles Movement
       for (int i = _coins.length - 1; i >= 0; i--) {
         final coin = _coins[i];
         coin.pos += coin.velocity * dt;
         
-        if (_isCollidingWithObstacles(coin.pos, 4.0)) {
+        if (_isCollidingWithObstacles(coin.pos, coin.radius)) {
           _coins.removeAt(i);
           continue;
         }
@@ -1417,7 +1446,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
           }
         }
 
-        // Drains Bank Balance when touching player
+        // Drains Bank Balance when touching player directly
         if (dist < (_playerRadius + mob.radius)) {
           int drain = (mob.drainRate * dt).ceil();
           _bankBalance -= drain;
@@ -1428,26 +1457,43 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
         }
       }
 
-      // 7. Coin Collisions on Liabilities
+      // 7. Projectile Collisions
       for (int cIdx = _coins.length - 1; cIdx >= 0; cIdx--) {
         final coin = _coins[cIdx];
         bool coinDestroyed = false;
 
-        for (int mIdx = _liabilities.length - 1; mIdx >= 0; mIdx--) {
-          final mob = _liabilities[mIdx];
-          double dist = (coin.pos - mob.pos).distance;
-
-          if (dist < (mob.radius + 6.0)) {
-            mob.principalRemaining -= coin.damage;
+        if (coin.isEnemyProjectile) {
+          // Boss Projectile hits Player
+          double distToPlayer = (coin.pos - _playerPos).distance;
+          if (distToPlayer < (_playerRadius + coin.radius)) {
             coinDestroyed = true;
-            _spawnExplosion(mob.pos, mob.color);
+            _bankBalance -= coin.damage.toInt();
+            _spawnExplosion(_playerPos, const Color(0xFFFF2F55));
 
-            if (mob.principalRemaining <= 0) {
-              _onLiabilityCleared(mIdx, mob);
+            if (_bankBalance <= 0) {
+              _bankBalance = 0;
+              _endGame();
             }
-            break;
+          }
+        } else {
+          // Player Coin hits Liabilities
+          for (int mIdx = _liabilities.length - 1; mIdx >= 0; mIdx--) {
+            final mob = _liabilities[mIdx];
+            double dist = (coin.pos - mob.pos).distance;
+
+            if (dist < (mob.radius + coin.radius)) {
+              mob.principalRemaining -= coin.damage;
+              coinDestroyed = true;
+              _spawnExplosion(mob.pos, mob.color);
+
+              if (mob.principalRemaining <= 0) {
+                _onLiabilityCleared(mIdx, mob);
+              }
+              break;
+            }
           }
         }
+
         if (coinDestroyed) {
           _coins.removeAt(cIdx);
         }
@@ -1488,7 +1534,6 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
     double x = (_playerPos.dx + cos(angle) * spawnDist).clamp(20.0, _mapWidth - 20.0);
     double y = (_playerPos.dy + sin(angle) * spawnDist).clamp(20.0, _mapHeight - 20.0);
 
-    // Incremental Health and Damage scaling per wave
     double scaleFactor = pow(1.12, _wave - 1).toDouble(); 
     
     List<String> debtNames = ["Credit Card Debt", "Payday Loan", "Medical Bill", "Auto Loan"];
@@ -1516,7 +1561,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
       speed: speed,
       radius: radius,
       color: color,
-      drainRate: (450.0 + (_wave * 50.0)) * scaleFactor,
+      drainRate: (150.0 + (_wave * 40.0)) * scaleFactor,
       rewardGold: gold,
     ));
   }
@@ -1530,7 +1575,6 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
     List<String> bossTitles = ["MARKET CRASH", "HYPERINFLATION", "LIQUIDITY CRISIS", "RECESSION SPIRAL"];
     String title = bossTitles[(_wave ~/ 5 - 1) % bossTitles.length];
 
-    // Major exponential scaling for bosses every 5 levels
     double bossMultiplier = pow(1.45, (_wave ~/ 5) - 1).toDouble();
     double hp = (500.0 + (_wave * 120.0)) * bossMultiplier;
 
@@ -1539,8 +1583,8 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
       pos: Offset(x, y),
       principalRemaining: hp,
       maxPrincipal: hp,
-      speed: 95.0,
-      radius: 40.0,
+      speed: 120.0 + ((_wave ~/ 5) * 20.0),
+      radius: 60.0,
       color: const Color(0xFFFF2F55),
       drainRate: (750.0 + (_wave * 80.0)) * bossMultiplier,
       rewardGold: 150,
@@ -1572,6 +1616,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
         pos: _playerPos,
         velocity: normalizedVelocity,
         damage: _coinDamage,
+        radius: 7.0,
       ));
     }
   }
@@ -1798,7 +1843,6 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
                   ),
                 ),
 
-                // Top Dashboard HUD
                 Positioned(
                   top: MediaQuery.of(context).padding.top + 12,
                   left: 16,
@@ -1830,7 +1874,6 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen> with TickerProv
                         ),
                       ),
 
-                      // Bank Balance HUD
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         decoration: BoxDecoration(
@@ -2100,10 +2143,19 @@ class _FinancialLiability {
 }
 
 class _CoinProjectile {
-  _CoinProjectile({required this.pos, required this.velocity, required this.damage});
+  _CoinProjectile({
+    required this.pos,
+    required this.velocity,
+    required this.damage,
+    this.isEnemyProjectile = false,
+    this.radius = 7.0,
+  });
+
   Offset pos;
   Offset velocity;
   double damage;
+  final bool isEnemyProjectile;
+  final double radius;
 }
 
 class _Particle {
@@ -2168,7 +2220,6 @@ class _BrawlPainter extends CustomPainter {
     canvas.save();
     canvas.translate(camOffset.dx, camOffset.dy);
 
-    // Map background
     canvas.drawRect(Rect.fromLTWH(0, 0, mapWidth, mapHeight), Paint()..color = const Color(0xFF1E3A2B));
     final grassPaint = Paint()..color = const Color(0xFF244433);
     for (double x = 0; x < mapWidth; x += 160) {
@@ -2178,10 +2229,8 @@ class _BrawlPainter extends CustomPainter {
       }
     }
 
-    // Border
     canvas.drawRect(Rect.fromLTWH(0, 0, mapWidth, mapHeight), Paint()..color = const Color(0xFF9E4242)..strokeWidth = 10..style = PaintingStyle.stroke);
 
-    // Obstacles
     final rockPaint = Paint()..color = const Color(0xFF5A635E);
     for (final rock in rockPositions) {
       canvas.drawCircle(rock, rockRadius, rockPaint);
@@ -2194,11 +2243,18 @@ class _BrawlPainter extends CustomPainter {
       canvas.drawCircle(tree - const Offset(0, 14), treeRadius, treeLeavesPaint);
     }
 
-    // Render Liabilities (Debts / Market Crises)
-    for (final mob in liabilities) {
+    // Track occupied bounding boxes to prevent overlapping label text
+    final List<Rect> drawnLabelBounds = [];
+
+    // Sort so boss labels are evaluated first and given render priority
+    final sortedLiabilities = List<_FinancialLiability>.from(liabilities)
+      ..sort((a, b) => (b.isBoss ? 1 : 0).compareTo(a.isBoss ? 1 : 0));
+
+    for (final mob in sortedLiabilities) {
+      // 1. Draw enemy circle
       canvas.drawCircle(mob.pos, mob.radius, Paint()..color = mob.color);
 
-      // Remaining Principal Bar
+      // 2. Draw health bar
       double hpPercent = (mob.principalRemaining / mob.maxPrincipal).clamp(0.0, 1.0);
       final barW = mob.radius * 2.2;
       final barH = mob.isBoss ? 7.0 : 4.0;
@@ -2208,28 +2264,59 @@ class _BrawlPainter extends CustomPainter {
       canvas.drawRect(Rect.fromLTWH(barLeft, barTop, barW, barH), Paint()..color = Colors.black45);
       canvas.drawRect(Rect.fromLTWH(barLeft, barTop, barW * hpPercent, barH), Paint()..color = mob.isBoss ? const Color(0xFFFF2F55) : const Color(0xFFE25C5C));
 
-      // Label debt name
+      // 3. Layout text and check for label overlap
       final textPainter = TextPainter(
-        text: TextSpan(text: mob.name, style: TextStyle(color: Colors.white70, fontSize: mob.isBoss ? 12 : 9, fontWeight: FontWeight.bold)),
+        text: TextSpan(
+          text: mob.name, 
+          style: TextStyle(
+            color: Colors.white70, 
+            fontSize: mob.isBoss ? 12 : 9, 
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         textDirection: TextDirection.ltr,
       )..layout();
-      textPainter.paint(canvas, mob.pos - Offset(textPainter.width / 2, mob.radius + (mob.isBoss ? 32 : 22)));
+
+      final Offset labelPos = mob.pos - Offset(textPainter.width / 2, mob.radius + (mob.isBoss ? 32 : 22));
+      
+      // Expand bounding box slightly for padding around text
+      final Rect currentLabelRect = Rect.fromLTWH(
+        labelPos.dx - 2, 
+        labelPos.dy - 2, 
+        textPainter.width + 4, 
+        textPainter.height + 4,
+      );
+
+      // Check if this label collides with any already drawn label
+      bool overlaps = drawnLabelBounds.any((rect) => rect.overlaps(currentLabelRect));
+
+      if (!overlaps) {
+        textPainter.paint(canvas, labelPos);
+        drawnLabelBounds.add(currentLabelRect);
+      }
     }
 
-    // Render Flying Gold Coins
-    final coinPaint = Paint()..color = const Color(0xFFFFD700);
-    final coinBorderPaint = Paint()..color = const Color(0xFFB8860B)..style = PaintingStyle.stroke..strokeWidth = 1.5;
+    // Render Projectiles (Player Coins vs Boss Threat Spheres)
+    final playerCoinPaint = Paint()..color = const Color(0xFFFFD700);
+    final playerCoinBorder = Paint()..color = const Color(0xFFB8860B)..style = PaintingStyle.stroke..strokeWidth = 1.5;
+
+    final bossCoinPaint = Paint()..color = const Color(0xFFFF2F55);
+    final bossCoinBorder = Paint()..color = const Color(0xFF8B0000)..style = PaintingStyle.stroke..strokeWidth = 2.5;
+
     for (final coin in coins) {
-      canvas.drawCircle(coin.pos, 7.0, coinPaint);
-      canvas.drawCircle(coin.pos, 7.0, coinBorderPaint);
+      if (coin.isEnemyProjectile) {
+        canvas.drawCircle(coin.pos, coin.radius, bossCoinPaint);
+        canvas.drawCircle(coin.pos, coin.radius, bossCoinBorder);
+      } else {
+        canvas.drawCircle(coin.pos, coin.radius, playerCoinPaint);
+        canvas.drawCircle(coin.pos, coin.radius, playerCoinBorder);
+      }
     }
 
-    // Particles
     for (final part in particles) {
       canvas.drawCircle(part.pos, 2.5, Paint()..color = part.color.withValues(alpha: (part.life / 0.22).clamp(0.0, 1.0)));
     }
 
-    // Render Market Windfall Chests
     final chestPaint = Paint()..color = const Color(0xFFE1BB72);
     final chestTrimPaint = Paint()..color = const Color(0xFF8C6621);
     for (final chest in chests) {
@@ -2246,7 +2333,6 @@ class _BrawlPainter extends CustomPainter {
       );
     }
 
-    // Render Emergency Fund Spinning Cash Shields
     if (emergencyFundLevel > 0) {
       double shieldRadius = 55.0 + (emergencyFundLevel * 10.0);
       int shieldCount = min(4, 1 + emergencyFundLevel);
@@ -2271,7 +2357,6 @@ class _BrawlPainter extends CustomPainter {
     )..layout();
     textPainter.paint(canvas, playerPos - Offset(textPainter.width / 2, textPainter.height / 2));
 
-    // Player Balance HUD Bar
     double playerBalancePercent = (bankBalance / maxBankBalance).clamp(0.0, 1.0);
     final pBarW = 72.0;
     final pBarH = 6.0;
@@ -2284,3 +2369,7 @@ class _BrawlPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _BrawlPainter oldDelegate) => true;
 }
+
+
+
+
