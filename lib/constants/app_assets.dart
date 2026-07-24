@@ -44,6 +44,22 @@ class AppAssets {
   static const String turtleExplorer =
       'assets/images/turtles/cuteTropicalhandDrawn_no_bg_i3ipxxln.png';
 
+  // Mushroom Goomba — 4-frame directional walk cycle (south = toward camera,
+  // north = away). The first south frame doubles as the skin preview image.
+  static const String goombaWalk = 'assets/images/goomba/south1.png';
+  static const List<String> goombaWalkSouth = <String>[
+    'assets/images/goomba/south1.png',
+    'assets/images/goomba/south2.png',
+    'assets/images/goomba/south3.png',
+    'assets/images/goomba/south4.png',
+  ];
+  static const List<String> goombaWalkNorth = <String>[
+    'assets/images/goomba/north1.png',
+    'assets/images/goomba/north2.png',
+    'assets/images/goomba/north3.png',
+    'assets/images/goomba/north4.png',
+  ];
+
   static const String iconHouse = 'assets/icons/icons8-house-48.png';
   static const String iconMoney = 'assets/icons/icons8-money-48.png';
   static const String iconWater = 'assets/icons/icons8-water-48.png';
