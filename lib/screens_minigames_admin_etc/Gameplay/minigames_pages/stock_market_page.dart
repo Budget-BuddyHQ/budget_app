@@ -41,16 +41,11 @@ class _StockMarketPageState extends State<StockMarketPage> {
         for (final seed in _marketSeeds) {
           final points = _series[seed.symbol]!;
           final current = points.last;
-          // Live random walk: small drift each tick, with an occasional
-          // bigger jump so the board feels alive without being pure chaos.
-          var pct =
-              (_rand.nextDouble() * 2 - 1) * 0.012 * (1 + seed.volatility * 4);
+          
+          var pct = (_rand.nextDouble() * 2 - 1) * 0.012 * (1 + seed.volatility * 4);
           if (_rand.nextDouble() < 0.06) {
             pct += (_rand.nextDouble() * 2 - 1) * 0.05;
           }
-          // Very rare "news event": can move up to ~±75%, but cubing the
-          // roll makes huge swings far less likely than moderate ones —
-          // like real stocks, a 75% day is possible but almost never.
           if (_rand.nextDouble() < 0.008) {
             final magnitude = _rand.nextDouble();
             final sign = _rand.nextBool() ? 1 : -1;
@@ -103,56 +98,176 @@ class _StockMarketPageState extends State<StockMarketPage> {
     );
   }
 
-  Future<void> _buyLot(BuildContext context, _MarketQuote quote) async {
-    final result = await context.read<UserStatsController>().buyStockLot(
-      symbol: quote.symbol,
-      goldCost: quote.buyCost,
-      companyName: quote.company,
-    );
+  Future<void> _showTradeDialog({
+    required BuildContext context,
+    required _MarketQuote quote,
+    required bool isBuying,
+    required int availableGold,
+    required int ownedLots,
+  }) async {
+    final maxShares = isBuying
+        ? (availableGold ~/ quote.currentPrice)
+        : ownedLots;
 
-    if (!context.mounted) {
+    if (maxShares <= 0) {
+      GameToast.show(
+        context,
+        title: isBuying ? 'Insufficient Gold' : 'No Shares Owned',
+        message: isBuying
+            ? 'You need at least ${quote.currentPrice} gold to buy 1 share of ${quote.symbol}.'
+            : 'You do not own any shares of ${quote.symbol} to sell.',
+        icon: Icons.info_outline_rounded,
+        accent: const Color(0xFFFFB084),
+      );
       return;
     }
 
-    GameToast.show(
-      context,
-      title: result.success ? 'Buy order filled' : 'Trade blocked',
-      message: result.success
-          ? '${quote.symbol} added to your holdings for ${quote.buyCost} gold.'
-          : result.message,
-      icon: result.success
-          ? Icons.trending_up_rounded
-          : Icons.info_outline_rounded,
-      accent: result.success
-          ? const Color(0xFF85EFAC)
-          : const Color(0xFFFFB084),
-    );
-  }
+    int selectedQuantity = 1;
 
-  Future<void> _sellLot(BuildContext context, _MarketQuote quote) async {
-    final result = await context.read<UserStatsController>().sellStockLot(
-      symbol: quote.symbol,
-      goldReturn: quote.sellValue,
-      companyName: quote.company,
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final totalAmount = selectedQuantity * quote.currentPrice;
+
+            return AlertDialog(
+              backgroundColor: const Color(0xFF10281F),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(color: quote.accent.withValues(alpha: 0.4)),
+              ),
+              title: Text(
+                '${isBuying ? 'Buy' : 'Sell'} ${quote.symbol}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Market Price: ${quote.currentPrice}g per share',
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Quantity:',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '$selectedQuantity / $maxShares',
+                        style: TextStyle(
+                          color: quote.accent,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (maxShares > 1)
+                    Slider(
+                      value: selectedQuantity.toDouble(),
+                      min: 1,
+                      max: maxShares.toDouble(),
+                      divisions: maxShares - 1,
+                      activeColor: quote.accent,
+                      inactiveColor: Colors.white12,
+                      onChanged: (val) {
+                        setDialogState(() {
+                          selectedQuantity = val.round();
+                        });
+                      },
+                    ),
+                  const Divider(color: Colors.white24, height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isBuying ? 'Total Gold Cost:' : 'Total Gold Return:',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        '${totalAmount}g',
+                        style: const TextStyle(
+                          color: Color(0xFFE1BB72),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: const Text('CANCEL', style: TextStyle(color: Colors.white54)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isBuying ? const Color(0xFF85EFAC) : const Color(0xFFFF8A80),
+                    foregroundColor: const Color(0xFF103224),
+                  ),
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: Text(
+                    isBuying ? 'CONFIRM BUY' : 'CONFIRM SELL',
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
 
-    if (!context.mounted) {
-      return;
+    if (confirmed == true && context.mounted) {
+      final totalValue = selectedQuantity * quote.currentPrice;
+      
+      final result = isBuying
+          ? await context.read<UserStatsController>().buyStockLot(
+                symbol: quote.symbol,
+                goldCost: totalValue,
+                companyName: quote.company,
+                quantity: selectedQuantity,
+              )
+          : await context.read<UserStatsController>().sellStockLot(
+                symbol: quote.symbol,
+                goldReturn: totalValue,
+                companyName: quote.company,
+                quantity: selectedQuantity,
+              );
+
+      if (!context.mounted) return;
+
+      GameToast.show(
+        context,
+        title: result.success
+            ? (isBuying ? 'Buy order filled' : 'Sell order filled')
+            : 'Trade blocked',
+        message: result.success
+            ? '${isBuying ? 'Bought' : 'Sold'} $selectedQuantity share${selectedQuantity > 1 ? 's' : ''} of ${quote.symbol} for ${totalValue}g.'
+            : result.message,
+        icon: result.success
+            ? (isBuying ? Icons.trending_up_rounded : Icons.attach_money_rounded)
+            : Icons.info_outline_rounded,
+        accent: result.success
+            ? (isBuying ? const Color(0xFF85EFAC) : const Color(0xFFE1BB72))
+            : const Color(0xFFFFB084),
+      );
     }
-
-    GameToast.show(
-      context,
-      title: result.success ? 'Sell order filled' : 'Trade blocked',
-      message: result.success
-          ? '${quote.symbol} sold for ${quote.sellValue} gold.'
-          : result.message,
-      icon: result.success
-          ? Icons.attach_money_rounded
-          : Icons.info_outline_rounded,
-      accent: result.success
-          ? const Color(0xFFE1BB72)
-          : const Color(0xFFFFB084),
-    );
   }
 
   @override
@@ -162,6 +277,7 @@ class _StockMarketPageState extends State<StockMarketPage> {
     return Consumer<UserStatsController>(
       builder: (context, controller, _) {
         final stats = controller.stats;
+        
         final totalMarketValue = quotes.fold<int>(
           0,
           (sum, quote) =>
@@ -248,8 +364,21 @@ class _StockMarketPageState extends State<StockMarketPage> {
                   _StockCard(
                     quote: quote,
                     ownedLots: stats.holdings['stock_${quote.symbol}'] ?? 0,
-                    onBuy: () => _buyLot(context, quote),
-                    onSell: () => _sellLot(context, quote),
+                    costBasis: stats.costBasis['stock_${quote.symbol}'] ?? 0,
+                    onBuy: () => _showTradeDialog(
+                      context: context,
+                      quote: quote,
+                      isBuying: true,
+                      availableGold: stats.gold,
+                      ownedLots: stats.holdings['stock_${quote.symbol}'] ?? 0,
+                    ),
+                    onSell: () => _showTradeDialog(
+                      context: context,
+                      quote: quote,
+                      isBuying: false,
+                      availableGold: stats.gold,
+                      ownedLots: stats.holdings['stock_${quote.symbol}'] ?? 0,
+                    ),
                   ),
                   const SizedBox(height: 14),
                 ],
@@ -262,8 +391,6 @@ class _StockMarketPageState extends State<StockMarketPage> {
   }
 }
 
-/// Continuously auto-scrolling strip of symbol/price/delta, giving the
-/// board an at-a-glance "trading floor" feel.
 class _TickerTape extends StatefulWidget {
   const _TickerTape({required this.quotes});
 
@@ -413,7 +540,7 @@ class _MarketHero extends StatelessWidget {
                 accent: const Color(0xFFE1BB72),
               ),
               _MarketMetric(
-                label: 'Owned Lots',
+                label: 'Owned Shares',
                 value: '$totalLots',
                 accent: const Color(0xFF85EFAC),
               ),
@@ -425,7 +552,7 @@ class _MarketHero extends StatelessWidget {
             ],
           );
 
-          final copy = Column(
+          return Column(
             crossAxisAlignment: stacked
                 ? CrossAxisAlignment.center
                 : CrossAxisAlignment.start,
@@ -468,8 +595,6 @@ class _MarketHero extends StatelessWidget {
               chips,
             ],
           );
-
-          return copy;
         },
       ),
     );
@@ -520,9 +645,9 @@ class _PortfolioSummary extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Portfolio Summary',
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.w900,
@@ -637,12 +762,14 @@ class _StockCard extends StatelessWidget {
   const _StockCard({
     required this.quote,
     required this.ownedLots,
+    required this.costBasis,
     required this.onBuy,
     required this.onSell,
   });
 
   final _MarketQuote quote;
   final int ownedLots;
+  final int costBasis;
   final VoidCallback onBuy;
   final VoidCallback onSell;
 
@@ -656,6 +783,18 @@ class _StockCard extends StatelessWidget {
     final openColor = openPositive
         ? const Color(0xFF58C7FF)
         : const Color(0xFFFF8A80);
+
+    // Calculate Average Cost Basis & Position Return Metrics
+    final double averageCost = ownedLots > 0 ? (costBasis / ownedLots) : 0.0;
+    final double currentValue = (ownedLots * quote.currentPrice).toDouble();
+    final double totalProfitLoss = ownedLots > 0 ? (currentValue - costBasis) : 0.0;
+    final double profitLossPercent = averageCost > 0
+        ? ((quote.currentPrice - averageCost) / averageCost) * 100
+        : 0.0;
+
+    final bool isProfitable = totalProfitLoss >= 0;
+    final Color plColor = isProfitable ? const Color(0xFF85EFAC) : const Color(0xFFFF8A80);
+    final String plSign = isProfitable ? '+' : '';
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -757,8 +896,68 @@ class _StockCard extends StatelessWidget {
               );
             },
           ),
+          
+          if (ownedLots > 0) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: plColor.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: plColor.withValues(alpha: 0.25)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'AVG COST BASIS',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${averageCost.toStringAsFixed(1)}g / share',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text(
+                        'POSITION RETURN',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$plSign${totalProfitLoss.round()}g ($plSign${profitLossPercent.toStringAsFixed(1)}%)',
+                        style: TextStyle(
+                          color: plColor,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           const SizedBox(height: 14),
-          const SizedBox(height: 4),
           _StockSparkline(history: quote.history, accent: quote.accent),
           const SizedBox(height: 16),
           LayoutBuilder(
@@ -774,9 +973,9 @@ class _StockCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   icon: const Icon(Icons.arrow_upward_rounded),
-                  label: Text(
-                    'Buy ${quote.buyCost}g',
-                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  label: const Text(
+                    'Buy Shares',
+                    style: TextStyle(fontWeight: FontWeight.w900),
                   ),
                 ),
               );
@@ -791,9 +990,9 @@ class _StockCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   icon: const Icon(Icons.arrow_downward_rounded),
-                  label: Text(
-                    'Sell ${quote.sellValue}g',
-                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  label: const Text(
+                    'Sell Shares',
+                    style: TextStyle(fontWeight: FontWeight.w900),
                   ),
                 ),
               );
@@ -944,7 +1143,7 @@ class _MarketQuote {
   final double openingChangePercent;
   final int buyCost;
   final int sellValue;
-  final List<int> history; // downsampled history used for chart
+  final List<int> history;
   final String thesis;
   final IconData icon;
   final Color accent;
@@ -959,7 +1158,6 @@ List<double> _buildPriceHistory(_MarketSeed seed, DateTime now, int points) {
   const minutesPerTradingDay = 390;
   final dt = 1 / (252 * minutesPerTradingDay);
 
-  // Long-term GBM parameters (reduced to keep day-to-day moves calmer)
   final longScale = 3.0;
   final sigmaLongAnnual = math.max(0.04, seed.volatility * longScale);
   final sigmaLong = sigmaLongAnnual * math.sqrt(dt);
@@ -968,8 +1166,7 @@ List<double> _buildPriceHistory(_MarketSeed seed, DateTime now, int points) {
   final values = <double>[];
   var price = base;
 
-  // occasional deterministic 'news' events on the base series (rare)
-  const eventProbBase = 0.002; // per-minute chance
+  const eventProbBase = 0.002;
   const eventSigmaBase = 0.06;
 
   for (var index = 0; index < points; index += 1) {
@@ -982,7 +1179,6 @@ List<double> _buildPriceHistory(_MarketSeed seed, DateTime now, int points) {
     final longTerm = sigmaLong * zLong;
     price *= math.exp(driftLong + longTerm);
 
-    // deterministic occasional jump/spike based on stable uniform (affects base/day)
     final u = _stableUniform(seed, tick + 7919);
     if (u < eventProbBase) {
       final jumpZ = _gaussianNoise(seed, tick + 46021);
@@ -993,7 +1189,6 @@ List<double> _buildPriceHistory(_MarketSeed seed, DateTime now, int points) {
     if (!price.isFinite || price.isNaN) {
       price = base;
     }
-    // clamp to reasonable band to avoid extreme explosions
     price = price.clamp(24.0, base * 24.0);
     values.add(price);
   }
