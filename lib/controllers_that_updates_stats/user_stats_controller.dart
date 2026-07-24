@@ -381,6 +381,7 @@ class UserStatsController extends ChangeNotifier {
     required String symbol,
     required int goldCost,
     String? companyName,
+    int quantity = 1,
   }) async {
     if (_stats.gold < goldCost) {
       return StatsActionResult(
@@ -396,8 +397,14 @@ class UserStatsController extends ChangeNotifier {
 
     final holdingKey = 'stock_$symbol';
     final holdings = Map<String, int>.from(_stats.holdings)
-      ..update(holdingKey, (value) => value + 1, ifAbsent: () => 1)
-      ..update('stocks', (value) => value + 1, ifAbsent: () => 1);
+      ..update(holdingKey, (value) => value + quantity, ifAbsent: () => quantity)
+      ..update('stocks', (value) => value + quantity, ifAbsent: () => quantity);
+
+    final existingCostBasis = Map<String, int>.from(
+      (_stats.spendingHabits['cost_basis'] as Map?)?.cast<String, int>() ?? {},
+    );
+    existingCostBasis[holdingKey] = (existingCostBasis[holdingKey] ?? 0) + goldCost;
+
     final nextHistory = _nextPortfolioSeries(0.04);
     final now = DateTime.now().toUtc();
     final label = companyName?.trim().isNotEmpty == true
@@ -406,15 +413,19 @@ class UserStatsController extends ChangeNotifier {
 
     final nextStats = _stats.copyWith(
       gold: _stats.gold - goldCost,
-      xp: _stats.xp + 14,
-      literacyPoints: _stats.literacyPoints + 7,
+      xp: _stats.xp + (14 * quantity),
+      literacyPoints: _stats.literacyPoints + (7 * quantity),
       holdings: holdings,
       portfolioHistory: nextHistory,
+      spendingHabits: <String, dynamic>{
+        ..._stats.spendingHabits,
+        'cost_basis': existingCostBasis,
+      },
       transactions: <LedgerTransaction>[
         LedgerTransaction(
           id: 'txn_${now.microsecondsSinceEpoch}',
           title: 'Bought $symbol',
-          description: 'Opened one lot of $label for $goldCost gold.',
+          description: 'Opened $quantity lot(s) of $label for $goldCost gold.',
           amount: -goldCost,
           createdAt: now,
           category: 'invest',
@@ -431,10 +442,11 @@ class UserStatsController extends ChangeNotifier {
     required String symbol,
     required int goldReturn,
     String? companyName,
+    int quantity = 1,
   }) async {
     final holdingKey = 'stock_$symbol';
     final currentLots = _stats.holdings[holdingKey] ?? 0;
-    if (currentLots <= 0) {
+    if (currentLots < quantity) {
       return StatsActionResult(
         success: false,
         message: 'No $symbol lots are available to sell right now.',
@@ -447,10 +459,10 @@ class UserStatsController extends ChangeNotifier {
     }
 
     final holdings = Map<String, int>.from(_stats.holdings)
-      ..update(holdingKey, (value) => value > 0 ? value - 1 : 0)
+      ..update(holdingKey, (value) => value > quantity ? value - quantity : 0)
       ..update(
         'stocks',
-        (value) => value > 0 ? value - 1 : 0,
+        (value) => value > quantity ? value - quantity : 0,
         ifAbsent: () => 0,
       );
     if ((holdings[holdingKey] ?? 0) <= 0) {
@@ -458,6 +470,19 @@ class UserStatsController extends ChangeNotifier {
     }
     if ((holdings['stocks'] ?? 0) <= 0) {
       holdings.remove('stocks');
+    }
+
+    final existingCostBasis = Map<String, int>.from(
+      (_stats.spendingHabits['cost_basis'] as Map?)?.cast<String, int>() ?? {},
+    );
+    final currentCost = existingCostBasis[holdingKey] ?? 0;
+    if (currentLots > 0 && currentCost > 0) {
+      final costPerShare = currentCost / currentLots;
+      final reducedCost = (costPerShare * quantity).round();
+      existingCostBasis[holdingKey] = max(0, currentCost - reducedCost);
+    }
+    if ((holdings[holdingKey] ?? 0) <= 0) {
+      existingCostBasis.remove(holdingKey);
     }
 
     final nextHistory = _nextPortfolioSeries(-0.03);
@@ -468,15 +493,19 @@ class UserStatsController extends ChangeNotifier {
 
     final nextStats = _stats.copyWith(
       gold: _stats.gold + goldReturn,
-      xp: _stats.xp + 10,
-      literacyPoints: _stats.literacyPoints + 5,
+      xp: _stats.xp + (10 * quantity),
+      literacyPoints: _stats.literacyPoints + (5 * quantity),
       holdings: holdings,
       portfolioHistory: nextHistory,
+      spendingHabits: <String, dynamic>{
+        ..._stats.spendingHabits,
+        'cost_basis': existingCostBasis,
+      },
       transactions: <LedgerTransaction>[
         LedgerTransaction(
           id: 'txn_${now.microsecondsSinceEpoch}',
           title: 'Sold $symbol',
-          description: 'Closed one lot of $label for $goldReturn gold.',
+          description: 'Closed $quantity lot(s) of $label for $goldReturn gold.',
           amount: goldReturn,
           createdAt: now,
           category: 'invest',
@@ -969,4 +998,14 @@ int _readInt(dynamic value) {
     return int.tryParse(value) ?? 0;
   }
   return 0;
+}
+
+extension UserStatsCostBasisExtension on UserStats {
+  Map<String, int> get costBasis {
+    final raw = spendingHabits['cost_basis'];
+    if (raw is Map) {
+      return raw.map((k, v) => MapEntry(k.toString(), _readInt(v)));
+    }
+    return const {};
+  }
 }
