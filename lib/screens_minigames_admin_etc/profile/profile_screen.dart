@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../constants/app_assets.dart';
 import '../../controllers_that_updates_stats/app_settings_controller.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
+import '../../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import '../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../services_backend_and_other_services/supabase_service.dart';
@@ -14,6 +15,7 @@ import '../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
 import '../admin/admin_screen.dart';
 import '../auth/auth_screen.dart';
+import 'personal_details_sheet.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
@@ -30,7 +32,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool _notificationsEnabled = true;
   bool _isUploadingPhoto = false;
   final ImagePicker _imagePicker = ImagePicker();
 
@@ -146,6 +147,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return 'jpg';
   }
 
+  String _personalDetailsSummary(UserStats stats) {
+    if (!stats.hasCompletedPersonalDetails) {
+      return 'Add your age and how you describe yourself.';
+    }
+    final parts = <String>[
+      if (stats.ageBand != AgeBand.undisclosed) stats.ageBand.label,
+      if (stats.gender != GenderIdentity.undisclosed) stats.gender.label,
+    ];
+    return parts.isEmpty ? 'Not shared' : parts.join(' • ');
+  }
+
+  Future<void> _editPersonalDetails(
+    BuildContext context,
+    UserStats stats,
+  ) async {
+    HapticFeedback.lightImpact();
+    await PersonalDetailsSheet.show(
+      context,
+      ageBand: stats.ageBand,
+      gender: stats.gender,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer2<UserStatsController, AppSettingsController>(
@@ -170,13 +194,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         _ProfileInsightCard(stats: stats),
                         const SizedBox(height: 12),
+                            value: settings.notificationsEnabled,
                             activeThumbColor: const Color(0xFF4BD2A3),
+                            onChanged: (value) async {
+                              await settings.setNotificationsEnabled(value);
                           subtitle:
                               'Live across buttons, nav, and reward effects.',
                             value: settings.soundEnabled,
                             activeThumbColor: const Color(0xFF4BD2A3),
                             onChanged: (value) async {
                               await settings.setSoundEnabled(value);
+                        _SettingsCard(
+                          title: 'About You',
+                          subtitle: _personalDetailsSummary(stats),
+                          icon: Icons.badge_rounded,
+                          onTap: () => _editPersonalDetails(context, stats),
+                          trailing: const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Color(0xFFB7F7D7),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                               color: Color(0xFFB7F7D7),
                             ),
                         ),
@@ -572,12 +610,14 @@ class _InsightMetric extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     required this.trailing,
+    this.onTap,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
   final Widget trailing;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -588,6 +628,8 @@ class _InsightMetric extends StatelessWidget {
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: ListTile(
+        onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
         leading: Container(
           width: 44,
           height: 44,

@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -7,9 +5,12 @@ import 'package:provider/provider.dart';
 import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson.dart';
+import '../../../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import '../../../models_Like_Skins_and_lessons_templates/progression_service.dart';
+import '../../../models_Like_Skins_and_lessons_templates/quiz_bank.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
+import 'quiz_widgets.dart';
 
 class LessonDetailScreen extends StatefulWidget {
   const LessonDetailScreen({
@@ -35,6 +36,13 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   int? _selectedOption;
   int _correctCount = 0;
 
+  /// Questions answered wrong this run, kept so the results screen can show
+  /// exactly what to revisit instead of only a score.
+  final List<QuizQuestion> _missed = <QuizQuestion>[];
+
+  /// Assessment questions for this node, empty for reading lessons.
+  late final List<QuizQuestion> _quiz = quizFor(widget.lesson.id);
+
   Future<void> _completeLesson({List<QuizQuestion> quiz = const []}) async {
     if (_isSaving) {
       return;
@@ -58,6 +66,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           lessonTitle: widget.lesson.title,
           xpEarned: 12 + bonusXp,
           literacyPointsEarned: 20,
+          quizCorrect: hasQuiz ? _correctCount : null,
+          quizTotal: hasQuiz ? quiz.length : null,
+          missedSkills: _missed.map((question) => question.skillId),
         );
 
     if (!mounted) {
@@ -90,6 +101,8 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       _selectedOption = optionIndex;
       if (isCorrect) {
         _correctCount++;
+      } else {
+        _missed.add(question);
       }
     });
     AppSoundService.play(
@@ -130,7 +143,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final content = _getLessonContent();
-    final quiz = content.quiz;
+    final quiz = _quiz;
     final inQuizResults = quiz.isNotEmpty && _questionIndex >= quiz.length;
 
     return Scaffold(
@@ -221,12 +234,13 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                           ),
                         )
                       else if (inQuizResults)
-                        _QuizResultsCard(
+                        QuizResultsCard(
                           correct: _correctCount,
                           total: quiz.length,
+                          missed: _missed,
                         )
                       else
-                        _QuizQuestionCard(
+                        QuizQuestionCard(
                           questionNumber: _questionIndex + 1,
                           totalQuestions: quiz.length,
                           question: quiz[_questionIndex],
@@ -234,6 +248,15 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                           onSelect: (optionIndex) =>
                               _selectOption(quiz[_questionIndex], optionIndex),
                         ),
+                      if (quiz.isEmpty && content.workedExample != null) ...[
+                        const SizedBox(height: 20),
+                        _WorkedExampleCard(
+                          example: content.workedExample!,
+                          stage: context.select<UserStatsController, LifeStage>(
+                            (controller) => controller.stats.lifeStage,
+                          ),
+                        ),
+                      ],
                       if (quiz.isEmpty && content.keyTerms.isNotEmpty) ...[
                         const SizedBox(height: 20),
                         _KeyTermsCard(terms: content.keyTerms),
@@ -474,6 +497,67 @@ class _ObjectivesCard extends StatelessWidget {
   }
 }
 
+class _WorkedExampleCard extends StatelessWidget {
+  const _WorkedExampleCard({required this.example, required this.stage});
+
+  final WorkedExample example;
+  final LifeStage stage;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF69C6FF).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF69C6FF).withValues(alpha: 0.24),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'WORKED EXAMPLE',
+                style: GoogleFonts.baloo2(
+                  color: const Color(0xFF9BD9FF),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                switch (stage) {
+                  LifeStage.allowance => 'allowance scale',
+                  LifeStage.firstJob => 'part-time scale',
+                  LifeStage.independent => 'living-alone scale',
+                },
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            example.render(stage),
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.88),
+              fontWeight: FontWeight.w600,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _KeyTermsCard extends StatelessWidget {
   const _KeyTermsCard({required this.terms});
 
@@ -566,371 +650,21 @@ class _TakeawayCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------
-// Quiz UI
-// ---------------------------------------------------------------------
-
-class _QuizQuestionCard extends StatelessWidget {
-  const _QuizQuestionCard({
-    required this.questionNumber,
-    required this.totalQuestions,
-    required this.question,
-    required this.selectedOption,
-    required this.onSelect,
-  });
-
-  final int questionNumber;
-  final int totalQuestions;
-  final QuizQuestion question;
-  final int? selectedOption;
-  final ValueChanged<int> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    final answered = selectedOption != null;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Question $questionNumber of $totalQuestions',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.62),
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: LinearProgressIndicator(
-            minHeight: 6,
-            value: (questionNumber - 1) / totalQuestions,
-            backgroundColor: Colors.white.withValues(alpha: 0.12),
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF85EFAC)),
-          ),
-        ),
-        const SizedBox(height: 20),
-        Text(
-          question.question,
-          style: GoogleFonts.baloo2(
-            color: const Color(0xFFF7FFFB),
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            height: 1.3,
-          ),
-        ),
-        const SizedBox(height: 18),
-        for (var i = 0; i < question.options.length; i++) ...[
-          _OptionCard(
-            label: question.options[i],
-            state: _resolveState(i),
-            onTap: answered ? null : () => onSelect(i),
-          ),
-          if (i != question.options.length - 1) const SizedBox(height: 10),
-        ],
-        if (answered && question.explanation != null) ...[
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.lightbulb_outline_rounded,
-                  color: Color(0xFFFFD45C),
-                  size: 18,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    question.explanation!,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.78),
-                      height: 1.45,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  _OptionCardState _resolveState(int index) {
-    if (selectedOption == null) {
-      return _OptionCardState.neutral;
-    }
-    if (index == question.correctIndex) {
-      return _OptionCardState.correct;
-    }
-    if (index == selectedOption) {
-      return _OptionCardState.incorrect;
-    }
-    return _OptionCardState.disabled;
-  }
-}
-
-enum _OptionCardState { neutral, correct, incorrect, disabled }
-
-class _OptionCard extends StatelessWidget {
-  const _OptionCard({
-    required this.label,
-    required this.state,
-    required this.onTap,
-  });
-
-  final String label;
-  final _OptionCardState state;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color fill;
-    final Color border;
-    final Color text;
-    final Widget? trailing;
-
-    switch (state) {
-      case _OptionCardState.neutral:
-        fill = Colors.white.withValues(alpha: 0.06);
-        border = Colors.white.withValues(alpha: 0.16);
-        text = Colors.white;
-        trailing = null;
-      case _OptionCardState.correct:
-        fill = const Color(0xFF2F9E68).withValues(alpha: 0.24);
-        border = const Color(0xFF85EFAC);
-        text = const Color(0xFFF7FFFB);
-        trailing = const Icon(
-          Icons.check_circle_rounded,
-          color: Color(0xFF85EFAC),
-        );
-      case _OptionCardState.incorrect:
-        fill = const Color(0xFFE24B4A).withValues(alpha: 0.22);
-        border = const Color(0xFFFF8474);
-        text = const Color(0xFFF7FFFB);
-        trailing = const Icon(Icons.cancel_rounded, color: Color(0xFFFF8474));
-      case _OptionCardState.disabled:
-        fill = Colors.white.withValues(alpha: 0.03);
-        border = Colors.transparent;
-        text = Colors.white.withValues(alpha: 0.38);
-        trailing = null;
-    }
-
-    final card = AnimatedContainer(
-      duration: const Duration(milliseconds: 160),
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: fill,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: border, width: 2),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: GoogleFonts.quicksand(
-                color: text,
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
-              ),
-            ),
-          ),
-          if (trailing != null) ...[const SizedBox(width: 10), trailing],
-        ],
-      ),
-    );
-
-    final wrapped = state == _OptionCardState.incorrect
-        ? _ShakeX(child: card)
-        : state == _OptionCardState.correct
-        ? _PulseScale(child: card)
-        : card;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: wrapped,
-      ),
-    );
-  }
-}
-
-class _QuizResultsCard extends StatelessWidget {
-  const _QuizResultsCard({required this.correct, required this.total});
-
-  final int correct;
-  final int total;
-
-  @override
-  Widget build(BuildContext context) {
-    final passed = total == 0 || correct / total >= 0.7;
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            passed ? Icons.emoji_events_rounded : Icons.refresh_rounded,
-            color: const Color(0xFFFFD45C),
-            size: 48,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '$correct / $total correct',
-            style: GoogleFonts.baloo2(
-              color: const Color(0xFFF7FFFB),
-              fontSize: 25,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            passed
-                ? 'Nice work — those ideas are sticking.'
-                : 'Worth a re-read before the next unit.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.quicksand(
-              color: Colors.white.withValues(alpha: 0.78),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ShakeX extends StatefulWidget {
-  const _ShakeX({required this.child});
-
-  final Widget child;
-
-  @override
-  State<_ShakeX> createState() => _ShakeXState();
-}
-
-class _ShakeXState extends State<_ShakeX> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 420),
-    )..forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final t = _controller.value;
-        final decay = 1 - t;
-        final dx = math.sin(t * math.pi * 6) * 8 * decay;
-        return Transform.translate(offset: Offset(dx, 0), child: child);
-      },
-      child: widget.child,
-    );
-  }
-}
-
-class _PulseScale extends StatefulWidget {
-  const _PulseScale({required this.child});
-
-  final Widget child;
-
-  @override
-  State<_PulseScale> createState() => _PulseScaleState();
-}
-
-class _PulseScaleState extends State<_PulseScale>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 360),
-    );
-    _scale = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.05), weight: 45),
-      TweenSequenceItem(tween: Tween(begin: 1.05, end: 1.0), weight: 55),
-    ]).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ScaleTransition(scale: _scale, child: widget.child);
-  }
-}
-
-// ---------------------------------------------------------------------
 // Content model + library
 // ---------------------------------------------------------------------
-
-class QuizQuestion {
-  const QuizQuestion({
-    required this.question,
-    required this.options,
-    required this.correctIndex,
-    this.explanation,
-  });
-
-  final String question;
-  final List<String> options;
-  final int correctIndex;
-  final String? explanation;
-}
 
 class _LessonContent {
   const _LessonContent({
     required this.icon,
     this.sections = const [],
-    this.quiz = const [],
     this.objectives = const [],
     this.keyTerms = const {},
     this.takeaway,
+    this.workedExample,
   });
 
   final IconData icon;
   final List<_LessonSection> sections;
-  final List<QuizQuestion> quiz;
 
   /// "What you'll learn" bullets shown before the content.
   final List<String> objectives;
@@ -940,6 +674,74 @@ class _LessonContent {
 
   /// One-sentence summary shown at the end of the lesson.
   final String? takeaway;
+
+  /// Builds a worked example using amounts scaled to the reader's life stage,
+  /// so a 13-year-old sees allowance-sized numbers and an adult sees rent-sized
+  /// ones. Null for lessons where no money amount is involved.
+  final WorkedExample? workedExample;
+}
+
+/// A money example whose figures are scaled to the reader's [LifeStage].
+@immutable
+class WorkedExample {
+  const WorkedExample(this.build);
+
+  /// Receives a baseline (first-job) monthly income already scaled for the
+  /// reader, plus the stage itself for wording.
+  final String Function(int monthlyIncome, LifeStage stage) build;
+
+  /// Baseline first-job monthly take-home the examples are written against.
+  static const int baselineIncome = 400;
+
+  static int incomeFor(LifeStage stage) =>
+      (baselineIncome * stage.exampleScale).round();
+
+  String render(LifeStage stage) => build(incomeFor(stage), stage);
+}
+
+// Worked examples. Each receives a monthly income already scaled to the
+// reader's life stage, so the same lesson quotes allowance-sized numbers to a
+// 13-year-old and rent-sized ones to an adult.
+
+String _fiftyThirtyTwentyExample(int income, LifeStage stage) {
+  final needs = (income * 0.5).round();
+  final wants = (income * 0.3).round();
+  final saving = (income * 0.2).round();
+  return 'Say $income dollars reaches you this month. The 50/30/20 split puts '
+      '$needs on needs, $wants on wants, and $saving into savings or debt '
+      'payoff — decided before any of it moves.';
+}
+
+String _payYourselfFirstExample(int income, LifeStage stage) {
+  final saved = (income * 0.15).round();
+  final rest = income - saved;
+  return 'On a $income dollar ${stage.incomeNoun}, moving 15 percent out first '
+      'means $saved goes straight to savings and you budget the remaining '
+      '$rest. Over a year that is ${saved * 12} dollars you never had to '
+      'find at the end of a month.';
+}
+
+String _sinkingFundExample(int income, LifeStage stage) {
+  // Roughly a month and a half of income, spread over six months.
+  final target = (income * 1.5).round();
+  final monthly = (target / 6).round();
+  return 'A $target dollar cost you know is six months away becomes $monthly a '
+      'month starting now. The bill still costs the same — it just stops '
+      'landing on one month all at once.';
+}
+
+String _compoundingExample(int income, LifeStage stage) {
+  final monthly = (income * 0.1).round();
+  final yearOne = monthly * 12;
+  // 7% annual growth, contributions monthly, compounded over 10 years.
+  var balance = 0.0;
+  for (var year = 0; year < 10; year++) {
+    balance = (balance + (monthly * 12)) * 1.07;
+  }
+  return 'Investing $monthly a month adds up to $yearOne in year one. Left to '
+      'grow at about 7 percent a year, ten years of those contributions is '
+      'roughly ${balance.round()} dollars — and only ${monthly * 120} of that '
+      'came out of your pocket.';
 }
 
 class _LessonSection {
@@ -952,6 +754,7 @@ class _LessonSection {
 const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   'lesson_1': _LessonContent(
     icon: Icons.account_balance_wallet_rounded,
+    workedExample: WorkedExample(_fiftyThirtyTwentyExample),
     objectives: [
       'Define what a budget is and what it is for',
       'Explain why planning beats reacting with money',
@@ -1008,31 +811,6 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       ),
     ],
   ),
-  'quiz_1': _LessonContent(
-    icon: Icons.bolt_rounded,
-    quiz: [
-      QuizQuestion(
-        question: 'In the 50/30/20 rule, what is the 20% for?',
-        options: ['Wants', 'Savings or debt payoff', 'Rent', 'Taxes'],
-        correctIndex: 1,
-        explanation:
-            '50% needs, 30% wants, 20% savings or debt payoff — the 20% is your future-focused slice.',
-      ),
-      QuizQuestion(
-        question:
-            'When building a budget, which number should you plan around?',
-        options: [
-          'Gross income',
-          'Net (take-home) income',
-          'Last year’s income',
-          'Expected bonus income',
-        ],
-        correctIndex: 1,
-        explanation:
-            'Net income is what actually reaches your account, so it is the honest number to plan against.',
-      ),
-    ],
-  ),
   'lesson_3': _LessonContent(
     icon: Icons.shopping_bag_rounded,
     objectives: [
@@ -1060,6 +838,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_4': _LessonContent(
     icon: Icons.savings_rounded,
+    workedExample: WorkedExample(_payYourselfFirstExample),
     objectives: [
       'Treat saving as a required bill, not a leftover',
       'Explain why consistency beats occasional big efforts',
@@ -1110,59 +889,25 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       ),
     ],
   ),
-  'test_1': _LessonContent(
-    icon: Icons.star_rounded,
-    quiz: [
-      QuizQuestion(
-        question: 'What is the best description of budgeting?',
-        options: [
-          'Spending whatever is left at the end of the month',
-          'A plan for how money will be used before you spend it',
-          'A way to avoid ever checking your account',
-          'A once-a-year financial review',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'In the 50/30/20 rule, what does the 50% cover?',
-        options: ['Wants', 'Needs', 'Savings', 'Entertainment'],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'Which income figure should you budget against?',
-        options: [
-          'Gross income',
-          'Net income',
-          'Projected raise',
-          'Side income only',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: '“Pay yourself first” means treating savings like:',
-        options: [
-          'An optional leftover',
-          'A required bill',
-          'A once-a-year bonus',
-          'Something to skip when busy',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question:
-            'A complete budget plan should list all of the following EXCEPT:',
-        options: [
-          'Income and fixed costs',
-          'Savings goals and debt payments',
-          'Flexible spending',
-          'Your friends’ spending habits',
-        ],
-        correctIndex: 3,
-      ),
-    ],
-  ),
   'lesson_6': _LessonContent(
     icon: Icons.credit_card_rounded,
+    objectives: [
+      'Explain what credit actually costs when a balance is carried',
+      'Identify the habits that build a strong payment history',
+      'Recognise why a credit limit is not a spending target',
+    ],
+    keyTerms: {
+      'Credit':
+          'borrowed money you use now and repay later, usually with interest',
+      'APR':
+          'the yearly cost of borrowing, so a higher APR means a carried balance grows faster',
+      'Minimum payment':
+          'the least you can pay to stay current — a floor, not a plan for clearing the balance',
+      'Credit utilisation':
+          'how much of your available limit you are using; lower generally looks better',
+    },
+    takeaway:
+        'Credit is a tool for timing, not for extra money — anything you buy with it, you still pay for, plus interest if you carry it.',
     sections: [
       _LessonSection(
         title: 'Credit is borrowed trust',
@@ -1178,6 +923,22 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_7': _LessonContent(
     icon: Icons.show_chart_rounded,
+    objectives: [
+      'Describe why investing suits long horizons and saving suits short ones',
+      'Explain the link between expected return and risk',
+      'Say what diversification does and does not protect you from',
+    ],
+    keyTerms: {
+      'Return':
+          'the gain or loss an investment produces, usually shown as a percentage',
+      'Risk':
+          'the uncertainty around that return, including the chance of loss',
+      'Diversification':
+          'spreading money across many investments so one bad outcome is not decisive',
+      'Time horizon': 'how long until you need the money back',
+    },
+    takeaway:
+        'Return and risk are two sides of the same coin — the honest question is not "how do I avoid risk?" but "how much can I carry, for how long?".',
     sections: [
       _LessonSection(
         title: 'Investing is long-term',
@@ -1191,33 +952,24 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       ),
     ],
   ),
-  'quiz_2': _LessonContent(
-    icon: Icons.bolt_rounded,
-    quiz: [
-      QuizQuestion(
-        question: 'Which is a healthy credit habit?',
-        options: [
-          'Maxing out your limit every month',
-          'Paying on time and keeping balances low',
-          'Only checking your balance once a year',
-          'Treating your credit limit as spending money',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'Investing tends to work best over:',
-        options: [
-          'A single weekend',
-          'Long time horizons',
-          'One paycheck cycle',
-          'The next 24 hours',
-        ],
-        correctIndex: 1,
-      ),
-    ],
-  ),
   'lesson_8': _LessonContent(
     icon: Icons.account_balance_rounded,
+    objectives: [
+      'Tell the difference between a checking and a savings account',
+      'Compare accounts on fees, access and tooling instead of branding',
+      'Set up the alerts that prevent overdraft charges',
+    ],
+    keyTerms: {
+      'Checking account': 'the account you spend from day to day',
+      'Savings account':
+          'a separate account for money you are deliberately not spending',
+      'Overdraft fee':
+          'a charge for spending past your balance — one of the most avoidable costs there is',
+      'Direct deposit':
+          'pay sent straight into your account, which is what makes payday automation possible',
+    },
+    takeaway:
+        'The right account setup is the one that makes good habits automatic and bad surprises loud.',
     sections: [
       _LessonSection(
         title: 'Choose the right tools',
@@ -1233,6 +985,21 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_9': _LessonContent(
     icon: Icons.warning_amber_rounded,
+    objectives: [
+      'Explain what an emergency fund is for and what it is not for',
+      'Choose a starting target you can actually reach',
+      'Decide where emergency money should live',
+    ],
+    keyTerms: {
+      'Emergency fund':
+          'money set aside so an unexpected cost does not become new debt',
+      'Liquidity':
+          'how quickly money can be turned into spendable cash without a penalty',
+      'Starter fund':
+          r'a first milestone — often $500 or one month of essentials — before building further',
+    },
+    takeaway:
+        'An emergency fund is insurance for your budget, so reachability matters far more than the interest rate it earns.',
     sections: [
       _LessonSection(
         title: 'Emergencies will happen',
@@ -1248,6 +1015,19 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_10': _LessonContent(
     icon: Icons.flag_rounded,
+    objectives: [
+      'Turn a vague intention into a goal you can check progress against',
+      'Break a large target into a monthly amount',
+      'Use milestones to keep long goals from feeling invisible',
+    ],
+    keyTerms: {
+      'SMART goal':
+          'specific, measurable, achievable, relevant and time-bound — the test a goal has to pass',
+      'Milestone': 'a checkpoint along the way that proves the plan is working',
+      'Target date': 'the deadline that turns a wish into a monthly number',
+    },
+    takeaway:
+        r'"Save more" cannot be checked; "$600 by December, $50 a month" tells you every single month whether you are on track.',
     sections: [
       _LessonSection(
         title: 'Give money a destination',
@@ -1261,63 +1041,23 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       ),
     ],
   ),
-  'test_2': _LessonContent(
-    icon: Icons.star_rounded,
-    quiz: [
-      QuizQuestion(
-        question: 'Credit is best described as:',
-        options: [
-          'Free money',
-          'Borrowed money you use now and repay later',
-          'A savings bonus',
-          'Something that never affects your budget',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'Higher potential investment return usually comes with:',
-        options: [
-          'Guaranteed profit',
-          'More uncertainty',
-          'Zero risk',
-          'A fixed schedule',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'When choosing a bank account, you should compare:',
-        options: [
-          'Only the branch location',
-          'Fees, digital tools, transfer speed, and support',
-          'Just the color of the card',
-          'Whichever account a friend has',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'The main purpose of an emergency fund is to:',
-        options: [
-          'Fund vacations',
-          'Protect your budget from turning into new debt',
-          'Replace your regular savings',
-          'Earn the highest possible interest rate',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'Good long-term financial goals should be:',
-        options: [
-          'Vague and flexible',
-          'Specific, measurable, and tied to a timeline',
-          'Kept secret from yourself',
-          'Set once and never reviewed',
-        ],
-        correctIndex: 1,
-      ),
-    ],
-  ),
   'lesson_11': _LessonContent(
     icon: Icons.workspace_premium_rounded,
+    objectives: [
+      'Explain why saving from leftovers rarely works',
+      'Set a savings percentage and schedule it on payday',
+      'Budget from what remains after saving, not before',
+    ],
+    keyTerms: {
+      'Pay yourself first':
+          'moving money to savings before any other spending happens',
+      'Savings rate':
+          'the share of take-home pay you save, expressed as a percentage',
+      'Leftover saving':
+          'the habit of saving whatever survives the month — unreliable because everything else competes with it first',
+    },
+    takeaway:
+        'Saving survives a busy month only when it happens before the month starts spending.',
     sections: [
       _LessonSection(
         title: 'Save before spending',
@@ -1333,6 +1073,20 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_12': _LessonContent(
     icon: Icons.inventory_2_rounded,
+    workedExample: WorkedExample(_sinkingFundExample),
+    objectives: [
+      'Tell a sinking fund apart from an emergency fund',
+      'Convert a known future cost into a monthly contribution',
+      'Spot the recurring costs that keep ambushing your budget',
+    ],
+    keyTerms: {
+      'Sinking fund': 'money saved gradually for a known, dated future cost',
+      'Irregular expense':
+          'a real cost that does not arrive monthly, like insurance or gifts',
+      'Smoothing': 'spreading a lumpy cost across the months leading up to it',
+    },
+    takeaway:
+        'A bill you knew about is not an emergency — sinking funds are what keep predictable costs out of your emergency fund.',
     sections: [
       _LessonSection(
         title: 'What is a sinking fund?',
@@ -1346,33 +1100,23 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       ),
     ],
   ),
-  'quiz_3': _LessonContent(
-    icon: Icons.bolt_rounded,
-    quiz: [
-      QuizQuestion(
-        question: '“Pay yourself first” means:',
-        options: [
-          'Spend first, save whatever is left',
-          'Move money to savings before other spending',
-          'Only save on holidays',
-          'Save only after a raise',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'A sinking fund is money set aside for:',
-        options: [
-          'Impulse purchases',
-          'A known future cost, saved gradually',
-          'Emergencies only',
-          'Paying off credit cards',
-        ],
-        correctIndex: 1,
-      ),
-    ],
-  ),
   'lesson_13': _LessonContent(
     icon: Icons.account_balance_wallet_outlined,
+    objectives: [
+      'Match an account type to how soon you need the money',
+      'Read past a headline interest rate to the conditions attached',
+      'Explain why access beats yield for short-horizon money',
+    ],
+    keyTerms: {
+      'Interest rate': 'what the bank pays you for keeping money there',
+      'APY':
+          'the yearly rate including compounding, which makes two accounts genuinely comparable',
+      'Minimum balance':
+          'the amount you must keep in the account to avoid fees or keep the advertised rate',
+      'Withdrawal penalty': 'the cost of taking money out earlier than agreed',
+    },
+    takeaway:
+        'A great rate you cannot reach when you need it is worth nothing — pick the account by the job the money is doing.',
     sections: [
       _LessonSection(
         title: 'Savings accounts are tools',
@@ -1388,6 +1132,19 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_14': _LessonContent(
     icon: Icons.sync_alt_rounded,
+    objectives: [
+      'Identify which money decisions are worth automating',
+      'Explain why automation beats willpower for recurring habits',
+      'Schedule a review so automation does not drift out of date',
+    ],
+    keyTerms: {
+      'Automatic transfer': 'a recurring move of money you set up once',
+      'Autopay': 'scheduled bill payment, which protects your payment history',
+      'Subscription creep':
+          'recurring charges that outlive their usefulness because nobody is watching',
+    },
+    takeaway:
+        'Automation removes friction in both directions — it protects good habits and hides dead subscriptions, so a periodic review is part of the system.',
     sections: [
       _LessonSection(
         title: 'Automation removes friction',
@@ -1403,6 +1160,19 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_15': _LessonContent(
     icon: Icons.calendar_month_rounded,
+    objectives: [
+      'List the irregular costs that a monthly budget usually misses',
+      'Divide an annual total into a monthly line item',
+      'Keep predictable costs from draining the emergency fund',
+    ],
+    keyTerms: {
+      'Annualising':
+          'adding up a cost across a year so you can divide it by twelve',
+      'Buffer category':
+          'a budget line for costs you know are coming but cannot date precisely',
+    },
+    takeaway:
+        r'Costs like gifts, servicing and renewals are predictable in total even when they are unpredictable in timing — $720 a year is just $60 a month.',
     sections: [
       _LessonSection(
         title: 'Irregular costs are still real',
@@ -1416,63 +1186,23 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       ),
     ],
   ),
-  'test_3': _LessonContent(
-    icon: Icons.star_rounded,
-    quiz: [
-      QuizQuestion(
-        question: 'Automatic transfers on payday help mainly because:',
-        options: [
-          'They earn extra interest',
-          'The saving decision is already made for you',
-          'They are required by banks',
-          'They remove the need for a budget',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'When choosing a savings account, you should compare:',
-        options: [
-          'Only the app icon',
-          'Interest rate, fees, minimum balance, and transfer speed',
-          'Whichever bank is newest',
-          'Nothing — all accounts are the same',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'Irregular costs like annual subscriptions should be:',
-        options: [
-          'Ignored until they happen',
-          'Divided across months and saved for gradually',
-          'Paid only with credit',
-          'Someone else’s problem',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'A sinking fund helps you avoid being surprised by:',
-        options: [
-          'Daily coffee costs',
-          'Known future expenses',
-          'Interest rates',
-          'Tax season',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'Automation still works best when paired with:',
-        options: [
-          'Never checking your accounts',
-          'Regular review to match your goals',
-          'Turning off all alerts',
-          'Ignoring irregular costs',
-        ],
-        correctIndex: 1,
-      ),
-    ],
-  ),
   'lesson_16': _LessonContent(
     icon: Icons.trending_up_rounded,
+    objectives: [
+      'Explain how inflation erodes money that is not growing',
+      'Say when investing is appropriate and when saving is',
+      'Describe what you are being paid to accept when you invest',
+    ],
+    keyTerms: {
+      'Inflation':
+          'the general rise in prices, which shrinks what a fixed amount buys',
+      'Purchasing power':
+          'what your money can actually buy, rather than its face value',
+      'Real return':
+          'return after inflation — the only one that changes your life',
+    },
+    takeaway:
+        'A balance that never falls still loses ground if prices rise faster than it grows, which is why long-horizon money is invested rather than parked.',
     sections: [
       _LessonSection(
         title: 'Investing grows future options',
@@ -1488,6 +1218,20 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_17': _LessonContent(
     icon: Icons.scatter_plot_rounded,
+    objectives: [
+      'Explain what diversification protects against and what it does not',
+      'Recognise concentrated risk in a portfolio',
+      'Match the amount of risk you take to your time horizon',
+    ],
+    keyTerms: {
+      'Concentration risk':
+          'having so much in one place that a single outcome decides everything',
+      'Volatility': 'how sharply a value swings up and down along the way',
+      'Asset allocation':
+          'how money is split between different kinds of investment',
+    },
+    takeaway:
+        'Diversification does not stop you losing money — it stops any one failure being the whole story.',
     sections: [
       _LessonSection(
         title: 'Risk is normal',
@@ -1501,33 +1245,23 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       ),
     ],
   ),
-  'quiz_4': _LessonContent(
-    icon: Icons.bolt_rounded,
-    quiz: [
-      QuizQuestion(
-        question: 'People invest mainly because:',
-        options: [
-          'Cash savings alone often can’t outpace long-term goals or inflation',
-          'It guarantees a profit',
-          'It is required by law',
-          'It removes all financial risk',
-        ],
-        correctIndex: 0,
-      ),
-      QuizQuestion(
-        question: 'Diversification helps because it:',
-        options: [
-          'Guarantees higher returns',
-          'Spreads exposure so one bad performer does less damage',
-          'Eliminates all risk',
-          'Only applies to bonds',
-        ],
-        correctIndex: 1,
-      ),
-    ],
-  ),
   'lesson_18': _LessonContent(
     icon: Icons.stacked_line_chart_rounded,
+    objectives: [
+      'Tell the difference between owning and lending',
+      'Describe what a fund holds and why beginners often start there',
+      'Explain why low fees matter over long horizons',
+    ],
+    keyTerms: {
+      'Stock': 'part-ownership of a company, with no guaranteed payment',
+      'Bond': 'a loan to a company or government, repaid with interest',
+      'Index fund':
+          'a fund that buys a wide slice of the market at low cost rather than picking winners',
+      'Expense ratio':
+          'the yearly fee a fund charges, quietly subtracted from your return',
+    },
+    takeaway:
+        'Stocks own, bonds lend, funds bundle — and the fee you pay for the bundle compounds against you just as surely as returns compound for you.',
     sections: [
       _LessonSection(
         title: 'Know the categories',
@@ -1543,6 +1277,21 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_19': _LessonContent(
     icon: Icons.auto_graph_rounded,
+    workedExample: WorkedExample(_compoundingExample),
+    objectives: [
+      'Explain how compounding differs from simple growth',
+      'Show why starting earlier beats contributing more later',
+      'Estimate growth over several years without a calculator',
+    ],
+    keyTerms: {
+      'Compound growth':
+          'growth that earns returns on previous returns, not just the original amount',
+      'Principal': 'the original amount you put in',
+      'Rule of 72':
+          'divide 72 by the yearly return to estimate the years it takes money to double',
+    },
+    takeaway:
+        'Compounding is unremarkable in year two and overwhelming in year thirty — which is why the most valuable thing a young investor has is time, not money.',
     sections: [
       _LessonSection(
         title: 'Growth can build on growth',
@@ -1558,6 +1307,23 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_20': _LessonContent(
     icon: Icons.psychology_alt_rounded,
+    objectives: [
+      'Explain why selling during a downturn usually locks in the loss',
+      'Recognise hype, FOMO and tips as signals to slow down',
+      'Write a plan you can follow when the market is falling',
+    ],
+    keyTerms: {
+      'Market downturn':
+          'a period when prices broadly fall — a normal feature, not a malfunction',
+      'Paper loss':
+          'a drop in value you have not realised because you have not sold',
+      'FOMO':
+          'fear of missing out, which reliably pushes people to buy high and sell low',
+      'Dollar-cost averaging':
+          'investing a fixed amount on a schedule, so you buy more units when prices are low',
+    },
+    takeaway:
+        'The downturn is not the risk — reacting to it is. Deciding your response in advance is what turns volatility into something you can sit through.',
     sections: [
       _LessonSection(
         title: 'Stay focused on the plan',
@@ -1571,64 +1337,23 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       ),
     ],
   ),
-  'test_4': _LessonContent(
-    icon: Icons.star_rounded,
-    quiz: [
-      QuizQuestion(
-        question: 'A stock represents:',
-        options: [
-          'A loan to a company',
-          'Ownership in a company',
-          'A savings account',
-          'A tax form',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'A bond is best described as:',
-        options: [
-          'Ownership in a company',
-          'A loan that earns interest',
-          'A basket of assets',
-          'A type of bank fee',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'Compound growth happens when:',
-        options: [
-          'Returns start earning returns too',
-          'You withdraw money early',
-          'Prices never change',
-          'You only invest once',
-        ],
-        correctIndex: 0,
-      ),
-      QuizQuestion(
-        question:
-            'For long-term growth, what usually matters more than picking the perfect investment?',
-        options: [
-          'Starting earlier',
-          'Checking prices daily',
-          'Avoiding all risk',
-          'Following trends',
-        ],
-        correctIndex: 0,
-      ),
-      QuizQuestion(
-        question: 'A long-term investor mindset means:',
-        options: [
-          'Reacting to every price swing',
-          'Staying focused on strategy instead of short-term noise',
-          'Selling as soon as prices dip',
-          'Avoiding diversification',
-        ],
-        correctIndex: 1,
-      ),
-    ],
-  ),
   'lesson_21': _LessonContent(
     icon: Icons.receipt_long_rounded,
+    objectives: [
+      'Find gross pay, deductions and net pay on a real stub',
+      'Explain what each common deduction is for',
+      'Use year-to-date figures to check your pay is correct',
+    ],
+    keyTerms: {
+      'Gross pay': 'total earnings before anything is taken out',
+      'Net pay': 'take-home pay, the amount that actually reaches your account',
+      'Deduction':
+          'anything subtracted from gross pay, such as tax or retirement contributions',
+      'Year to date (YTD)':
+          'the running total since January across all pay periods',
+    },
+    takeaway:
+        'Your pay stub is a receipt for your own labour — reading it is how you catch errors that would otherwise go unnoticed for months.',
     sections: [
       _LessonSection(
         title: 'A pay stub tells the real story',
@@ -1644,6 +1369,20 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_22': _LessonContent(
     icon: Icons.work_outline_rounded,
+    objectives: [
+      'Convert benefits into an hourly value you can compare',
+      'Account for commute time and cost in the real wage',
+      'Compare two offers on total value rather than headline rate',
+    ],
+    keyTerms: {
+      'Total compensation':
+          'pay plus the cash value of every benefit attached to it',
+      'Benefits': 'non-cash pay such as health cover, transport or paid leave',
+      'Effective hourly rate':
+          'what you really earn per hour once benefits, commute time and costs are counted',
+    },
+    takeaway:
+        r'The advertised rate is the least interesting number on an offer — $17 with cover and a transport pass can comfortably beat $19 without.',
     sections: [
       _LessonSection(
         title: 'Salary is only one part',
@@ -1657,33 +1396,25 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       ),
     ],
   ),
-  'quiz_5': _LessonContent(
-    icon: Icons.bolt_rounded,
-    quiz: [
-      QuizQuestion(
-        question: 'Your budget should be based on:',
-        options: [
-          'Gross salary',
-          'Take-home (net) pay',
-          'Expected bonuses',
-          'Last year’s income',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'When comparing job offers, you should also weigh:',
-        options: [
-          'Only the salary number',
-          'Benefits, commute, flexibility, and growth opportunities',
-          'The company logo',
-          'Nothing besides salary',
-        ],
-        correctIndex: 1,
-      ),
-    ],
-  ),
   'lesson_23': _LessonContent(
     icon: Icons.home_work_rounded,
+    objectives: [
+      'List the costs that advertised rent leaves out',
+      'Apply a housing guideline to your own take-home pay',
+      'Budget for the up-front cost of moving in',
+    ],
+    keyTerms: {
+      'Utilities':
+          'electricity, water, heating and internet — usually billed separately from rent',
+      'Security deposit':
+          'money held up front and returned if the place is left in good order',
+      '30% guideline':
+          'a common rule of thumb capping housing at about 30% of take-home pay',
+      'Cost of living':
+          'the total of everything it takes to run your life in a given place',
+    },
+    takeaway:
+        'Rent is the headline, not the total — utilities, deposit and getting to work are what decide whether a place is actually affordable.',
     sections: [
       _LessonSection(
         title: 'Housing has layers',
@@ -1699,6 +1430,23 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_24': _LessonContent(
     icon: Icons.request_quote_rounded,
+    objectives: [
+      'Explain what withholding is and why it happens during the year',
+      'Describe what a refund or a bill at filing time actually means',
+      'Know which documents you need before filing',
+    ],
+    keyTerms: {
+      'Withholding':
+          'tax your employer sends to the government on your behalf as you earn',
+      'Tax refund':
+          'money returned because you overpaid during the year — your own money coming back',
+      'Filing':
+          'the yearly reconciliation between what you paid and what you owed',
+      'W-4 / tax code':
+          'the form or setting that tells your employer how much to withhold',
+    },
+    takeaway:
+        'A big refund is not a prize — it means the government held your money interest-free all year, and your withholding may be set too high.',
     sections: [
       _LessonSection(
         title: 'Taxes reduce take-home pay',
@@ -1714,6 +1462,21 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   ),
   'lesson_25': _LessonContent(
     icon: Icons.route_rounded,
+    objectives: [
+      'Assemble budgeting, saving, credit and investing into one order of operations',
+      'Decide what to do with a monthly surplus',
+      'Recognise lifestyle creep before it absorbs a raise',
+    ],
+    keyTerms: {
+      'Order of operations':
+          'the usual sequence: cover essentials, build a starter emergency fund, clear high-interest debt, then invest',
+      'Surplus': 'money left after everything planned has been funded',
+      'Lifestyle creep':
+          'spending quietly rising to match income, so a raise leaves you no better off',
+      'Net worth': 'what you own minus what you owe — the long-run scoreboard',
+    },
+    takeaway:
+        'Every unit so far is one step in a single sequence — the plan is knowing which step you are on, and what earns your next spare dollar.',
     sections: [
       _LessonSection(
         title: 'Bring the pieces together',
@@ -1724,61 +1487,6 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         title: 'Keep refining it',
         content:
             'Your plan should change when your life changes. Review it regularly so it stays realistic and useful.',
-      ),
-    ],
-  ),
-  'test_5': _LessonContent(
-    icon: Icons.star_rounded,
-    quiz: [
-      QuizQuestion(
-        question: 'A pay stub shows all of the following EXCEPT:',
-        options: [
-          'Gross pay and deductions',
-          'Taxes and benefits',
-          'Net take-home pay',
-          'Your neighbor’s salary',
-        ],
-        correctIndex: 3,
-      ),
-      QuizQuestion(
-        question: 'Beyond rent, monthly housing costs can include:',
-        options: [
-          'Nothing else',
-          'Utilities, internet, parking, and commuting',
-          'Only groceries',
-          'Only entertainment',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'Withholding is:',
-        options: [
-          'A bonus added to your paycheck',
-          'Money set aside from each paycheck for taxes',
-          'An optional savings account',
-          'A type of investment',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'Too little tax withholding during the year can lead to:',
-        options: [
-          'A larger refund automatically',
-          'A tax bill later',
-          'Lower rent',
-          'No effect at all',
-        ],
-        correctIndex: 1,
-      ),
-      QuizQuestion(
-        question: 'A personal money plan connects:',
-        options: [
-          'Only your savings account',
-          'Income, bills, savings, debt strategy, and goals',
-          'Just your credit score',
-          'Only your job title',
-        ],
-        correctIndex: 1,
       ),
     ],
   ),

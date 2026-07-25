@@ -22,15 +22,14 @@ import 'screens_minigames_admin_etc/onboarding/welcome_screen.dart';
 import 'services_backend_and_other_services/app_sound_service.dart';
 import 'services_backend_and_other_services/supabase_service.dart';
 import 'themes_colors/app_theme.dart';
+import 'widgets_custom_lotties/orientation_scope.dart';
 
 Future<void> main() async {
 
   if (!kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS)) {
-    await SystemChrome.setPreferredOrientations(const [
-      DeviceOrientation.portraitUp,
-    ]);
+    await SystemChrome.setPreferredOrientations(kAppOrientations);
   }
 
 
@@ -107,7 +106,6 @@ class MyApp extends StatelessWidget {
         '/main-gameplay': (context) => const MainGamePage(),
         '/minigames': (context) => const MinigamesPage(),
         '/leaderboard': (context) => const LeaderboardScreen(),
-        
       },
     );
   }

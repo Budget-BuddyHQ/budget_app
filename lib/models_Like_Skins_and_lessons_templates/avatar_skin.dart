@@ -4,6 +4,17 @@ import '../constants/app_assets.dart';
 
 enum SkinRarity { common, rare, epic, legendary, mythic }
 
+/// Broad look of an avatar, used to group the customise grid.
+enum SkinFamily {
+  turtle('Turtles'),
+  villager('Villagers'),
+  critter('Critters');
+
+  const SkinFamily(this.label);
+
+  final String label;
+}
+
 @immutable
 class SkinRarityOdds {
   const SkinRarityOdds({
@@ -47,13 +58,60 @@ class AvatarSkin {
     required this.assetPath,
     required this.rarity,
     required this.accent,
+    this.family = SkinFamily.turtle,
+    this.humanVariantId,
+    this.isHuman = false,
+    this.blurb,
   });
+
+  /// A villager skin built from one of the recoloured human sprite folders.
+  /// [variantId] of null means the original blue villager.
+  const AvatarSkin.villager({
+    required this.id,
+    required this.name,
+    required String? variantId,
+    required this.rarity,
+    required this.accent,
+    this.blurb,
+  }) : humanVariantId = variantId,
+       isHuman = true,
+       family = SkinFamily.villager,
+       assetPath = '';
 
   final String id;
   final String name;
-  final String assetPath;
   final SkinRarity rarity;
   final Color accent;
+  final SkinFamily family;
+
+  /// Populated for non-human skins. Villagers derive their art from
+  /// [humanVariantId] instead so every walk frame resolves from one prefix.
+  final String assetPath;
+
+  final String? humanVariantId;
+  final bool isHuman;
+
+  /// One-line flavour text shown in the customise grid.
+  final String? blurb;
+
+  /// Still image used for previews, grid tiles and the case-roll reel.
+  String get previewAsset =>
+      isHuman ? AppAssets.humanPreview(humanVariantId) : assetPath;
+
+  /// Walk-cycle frames for [direction] (`south`, `north`, `west`).
+  /// Empty for skins that have no directional animation.
+  List<String> walkFrames(String direction) {
+    if (isHuman) {
+      return AppAssets.humanWalk(humanVariantId, direction);
+    }
+    if (id == 'mushroom_goomba') {
+      return switch (direction) {
+        'north' => AppAssets.goombaWalkNorth,
+        _ => AppAssets.goombaWalkSouth,
+      };
+    }
+    return const <String>[];
+  }
 
   String get rarityLabel => switch (rarity) {
     SkinRarity.common => 'Common',
@@ -69,12 +127,14 @@ SkinRarityOdds oddsForRarity(SkinRarity rarity) {
 }
 
 const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
+  // --- Turtles -----------------------------------------------------------
   AvatarSkin(
     id: 'classic_turtle',
     name: 'Classic Turtle',
     assetPath: AppAssets.turtleClassic,
     rarity: SkinRarity.common,
     accent: Color(0xFF85EFAC),
+    blurb: 'Where every Budget Buddy starts.',
   ),
   AvatarSkin(
     id: 'coin_shell',
@@ -82,13 +142,7 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     assetPath: AppAssets.turtleCoinShell,
     rarity: SkinRarity.common,
     accent: Color(0xFFFFD45C),
-  ),
-  AvatarSkin(
-    id: 'guild_runner',
-    name: 'Guild Runner',
-    assetPath: AppAssets.turtleGuildRunner,
-    rarity: SkinRarity.legendary,
-    accent: Color(0xFFFFD45C),
+    blurb: 'Carries its savings on its back.',
   ),
   AvatarSkin(
     id: 'explorer_turtle',
@@ -96,13 +150,116 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     assetPath: AppAssets.turtleExplorer,
     rarity: SkinRarity.rare,
     accent: Color(0xFF85EFAC),
+    blurb: 'Packed and ready for the meadow.',
   ),
+  AvatarSkin(
+    id: 'guild_runner',
+    name: 'Guild Runner',
+    assetPath: AppAssets.turtleGuildRunner,
+    rarity: SkinRarity.legendary,
+    accent: Color(0xFFFFD45C),
+    blurb: 'Fastest shell in the village.',
+  ),
+
+  // --- Critters ----------------------------------------------------------
   AvatarSkin(
     id: 'mushroom_goomba',
     name: 'Mushroom Goomba',
     assetPath: AppAssets.goombaWalk,
     rarity: SkinRarity.epic,
     accent: Color(0xFF34D399),
+    family: SkinFamily.critter,
+    blurb: 'Wandered in from the forest path.',
+  ),
+
+  // --- Villagers ---------------------------------------------------------
+  AvatarSkin.villager(
+    id: 'villager_classic',
+    name: 'Villager',
+    variantId: null,
+    rarity: SkinRarity.common,
+    accent: Color(0xFF4A7FBF),
+    blurb: 'A familiar face around the square.',
+  ),
+  AvatarSkin.villager(
+    id: 'villager_emerald_scout',
+    name: 'Emerald Scout',
+    variantId: 'emerald_scout',
+    rarity: SkinRarity.rare,
+    accent: Color(0xFF2FA36B),
+    blurb: 'Maps the meadow, budgets the trip.',
+  ),
+  AvatarSkin.villager(
+    id: 'villager_teal_analyst',
+    name: 'Teal Analyst',
+    variantId: 'teal_analyst',
+    rarity: SkinRarity.rare,
+    accent: Color(0xFF2FA3A3),
+    blurb: 'Reads the charts before the hype.',
+  ),
+  AvatarSkin.villager(
+    id: 'villager_slate_investor',
+    name: 'Slate Investor',
+    variantId: 'slate_investor',
+    rarity: SkinRarity.rare,
+    accent: Color(0xFF5C6B7A),
+    blurb: 'Long horizons, steady hands.',
+  ),
+  AvatarSkin.villager(
+    id: 'villager_gold_banker',
+    name: 'Gold Banker',
+    variantId: 'gold_banker',
+    rarity: SkinRarity.epic,
+    accent: Color(0xFFE0A93B),
+    blurb: 'Keeps the village vault balanced.',
+  ),
+  AvatarSkin.villager(
+    id: 'villager_violet_scholar',
+    name: 'Violet Scholar',
+    variantId: 'violet_scholar',
+    rarity: SkinRarity.epic,
+    accent: Color(0xFF8B5CC7),
+    blurb: 'Top of the Academy leaderboard.',
+  ),
+  AvatarSkin.villager(
+    id: 'villager_rose_planner',
+    name: 'Rose Planner',
+    variantId: 'rose_planner',
+    rarity: SkinRarity.epic,
+    accent: Color(0xFFD9668C),
+    blurb: 'Every goal has a date on it.',
+  ),
+  AvatarSkin.villager(
+    id: 'villager_sand_saver',
+    name: 'Sand Saver',
+    variantId: 'sand_saver',
+    rarity: SkinRarity.legendary,
+    accent: Color(0xFFD9B98C),
+    blurb: 'Turned a sinking fund into a fortune.',
+  ),
+  AvatarSkin.villager(
+    id: 'villager_crimson_trader',
+    name: 'Crimson Trader',
+    variantId: 'crimson_trader',
+    rarity: SkinRarity.legendary,
+    accent: Color(0xFFC4483F),
+    blurb: 'Rings the bell on the market board.',
+  ),
+  AvatarSkin.villager(
+    id: 'villager_midnight_ledger',
+    name: 'Midnight Ledger',
+    variantId: 'midnight_ledger',
+    rarity: SkinRarity.legendary,
+    accent: Color(0xFF2E3F6B),
+    blurb: 'Balances the books after dark.',
+  ),
+  AvatarSkin.villager(
+    id: 'villager_aurora_prime',
+    name: 'Aurora Prime',
+    variantId: 'aurora_prime',
+    rarity: SkinRarity.mythic,
+    accent: Color(0xFFFFD45C),
+    blurb: 'One in ten thousand. Genuinely.',
   ),
 ];
 
@@ -118,3 +275,13 @@ AvatarSkin skinFromId(String skinId) {
     orElse: () => budgetBuddySkins.first,
   );
 }
+
+/// Every rarity the case can roll must have at least one skin behind it,
+/// otherwise a lucky roll silently degrades to the fallback skin.
+bool get skinCatalogCoversAllRarities => skinCaseRarityOdds.every(
+  (odds) => budgetBuddySkins.any((skin) => skin.rarity == odds.rarity),
+);
+
+List<AvatarSkin> skinsInFamily(SkinFamily family) => budgetBuddySkins
+    .where((skin) => skin.family == family)
+    .toList(growable: false);

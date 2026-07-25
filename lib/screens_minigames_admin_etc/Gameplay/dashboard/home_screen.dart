@@ -278,7 +278,7 @@ class _AdventureLaunchHero extends StatelessWidget {
                     child: Opacity(
                       opacity: 0.52,
                       child: AmbientLottieCard(
-                        assetPath: AppAssets.turtleMovingAnimation,
+                        motif: AmbientMotif.turtle,
                         semanticLabel: 'Moving turtle decoration',
                         width: constraints.maxWidth < 520 ? 88 : 126,
                         height: constraints.maxWidth < 520 ? 72 : 96,
@@ -415,9 +415,9 @@ class _HeroAvatar extends StatelessWidget {
                 profileImageUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (_, _, _) =>
-                    Image.asset(turtleSkin.assetPath, fit: BoxFit.contain),
+                    Image.asset(turtleSkin.previewAsset, fit: BoxFit.contain),
               )
-            : Image.asset(turtleSkin.assetPath, fit: BoxFit.contain),
+            : Image.asset(turtleSkin.previewAsset, fit: BoxFit.contain),
       ),
     );
   }
@@ -502,7 +502,7 @@ class _CurrentObjectiveCard extends StatelessWidget {
                   if (!tight) ...[
                     const SizedBox(width: 12),
                     AmbientLottieCard(
-                      assetPath: AppAssets.arcadeLoopAnimation,
+                      motif: AmbientMotif.arcade,
                       semanticLabel: 'Arcade decoration',
                       width: 92,
                       height: 70,
@@ -728,16 +728,26 @@ class _ActionButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: Colors.transparent),
         ),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        // These buttons sit in a Row of equal-width slots, so on a narrow
+        // phone the label has to be allowed to shrink rather than push the
+        // icon off the edge.
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: const Color(0xFF062C21)),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFF062C21),
-                fontWeight: FontWeight.w900,
+            Icon(icon, color: const Color(0xFF062C21), size: 20),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: const TextStyle(
+                  color: Color(0xFF062C21),
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ],

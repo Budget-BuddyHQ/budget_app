@@ -6,9 +6,16 @@ import 'lesson_data.dart';
 class ProgressionService extends ChangeNotifier {
   ProgressionService({
     Iterable<String> initialCompletedLessons = const <String>[],
-  }) : _completedLessons = initialCompletedLessons.toSet();
+    Map<String, double> initialAccuracy = const <String, double>{},
+  }) : _completedLessons = initialCompletedLessons.toSet(),
+       _accuracy = Map<String, double>.from(initialAccuracy);
 
   final Set<String> _completedLessons;
+
+  /// Best accuracy (0..1) per assessment node id. Mastery uses this so that
+  /// clicking through a quiz is not the same as understanding it.
+  final Map<String, double> _accuracy;
+
   final List<LessonUnit> _units = lessonUnits;
 
   List<LessonUnit> get units => List<LessonUnit>.unmodifiable(_units);
@@ -16,7 +23,8 @@ class ProgressionService extends ChangeNotifier {
   List<Lesson> get lessons =>
       List<Lesson>.unmodifiable(_units.expand((unit) => unit.lessons));
 
-  Set<String> get completedLessons => Set<String>.unmodifiable(_completedLessons);
+  Set<String> get completedLessons =>
+      Set<String>.unmodifiable(_completedLessons);
 
   Lesson? getLesson(String id) {
     try {
@@ -107,18 +115,68 @@ class ProgressionService extends ChangeNotifier {
     return completed / unit.lessons.length;
   }
 
+  void replaceAccuracy(Map<String, double> accuracy) {
+    if (mapEquals(_accuracy, accuracy)) {
+      return;
+    }
+    _accuracy
+      ..clear()
+      ..addAll(accuracy);
+    notifyListeners();
+  }
+
+  /// Best recorded accuracy for an assessment node, or null if never taken.
+  double? accuracyFor(String nodeId) => _accuracy[nodeId];
+
+  /// Mean accuracy across the unit's quizzes and tests that have been taken.
+  /// Null when none have been attempted yet.
+  double? getUnitAccuracy(String unitId) {
+    final unit = getUnit(unitId);
+    if (unit == null) {
+      return null;
+    }
+
+    final scores = unit.lessons
+        .where((lesson) => lesson.type != LessonNodeType.lesson)
+        .map((lesson) => _accuracy[lesson.id])
+        .whereType<double>()
+        .toList(growable: false);
+
+    if (scores.isEmpty) {
+      return null;
+    }
+    return scores.reduce((a, b) => a + b) / scores.length;
+  }
+
+  /// Mastery combines coverage with performance: finishing every node earns
+  /// "mastered" only when the assessments in it were actually answered well.
   MasteryLevel getUnitMastery(String unitId) {
     final progress = getUnitProgress(unitId);
-    if (progress >= 1.0) {
-      return MasteryLevel.mastered;
+    if (progress <= 0.0) {
+      return MasteryLevel.novice;
     }
+
+    final accuracy = getUnitAccuracy(unitId);
+
+    if (progress >= 1.0) {
+      // No assessment attempted yet cannot be full mastery.
+      if (accuracy == null) {
+        return MasteryLevel.proficient;
+      }
+      if (accuracy >= 0.85) {
+        return MasteryLevel.mastered;
+      }
+      return accuracy >= 0.6 ? MasteryLevel.proficient : MasteryLevel.familiar;
+    }
+
     if (progress >= 0.65) {
+      if (accuracy != null && accuracy < 0.5) {
+        return MasteryLevel.familiar;
+      }
       return MasteryLevel.proficient;
     }
-    if (progress > 0.0) {
-      return MasteryLevel.familiar;
-    }
-    return MasteryLevel.novice;
+
+    return MasteryLevel.familiar;
   }
 
   int get completedCount => _completedLessons.length;
