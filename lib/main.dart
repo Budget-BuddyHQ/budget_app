@@ -11,7 +11,6 @@ import 'controllers_that_updates_stats/adventure_state_controller.dart';
 import 'controllers_that_updates_stats/app_settings_controller.dart';
 import 'controllers_that_updates_stats/user_stats_controller.dart';
 import 'navigation_tools_and_animation/app_tab_index.dart';
-import 'screens_minigames_admin_etc/Gameplay/minigames_pages/bill_dodger.dart';
 import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/game_canvas.dart';
 import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/main_game_page.dart';
 import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.dart';
@@ -107,8 +106,6 @@ class MyApp extends StatelessWidget {
         '/game-canvas': (context) => const GameCanvas(),
         '/main-gameplay': (context) => const MainGamePage(),
         '/minigames': (context) => const MinigamesPage(),
-        '/bill-dodger': (context) => const BillDodgerScreen(),
-        '/bill_dodger': (context) => const BillDodgerScreen(),
         '/leaderboard': (context) => const LeaderboardScreen(),
         
       },

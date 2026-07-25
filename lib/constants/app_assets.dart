@@ -46,18 +46,19 @@ class AppAssets {
 
   // Mushroom Goomba — 4-frame directional walk cycle (south = toward camera,
   // north = away). The first south frame doubles as the skin preview image.
-  static const String goombaWalk = 'assets/images/goomba/south1.png';
+  static const String goombaDir = 'assets/own_skins/mushroom_goomba/walking_animation/';
+  static const String goombaWalk = '${goombaDir}walkingframe1.png';
   static const List<String> goombaWalkSouth = <String>[
-    'assets/images/goomba/south1.png',
-    'assets/images/goomba/south2.png',
-    'assets/images/goomba/south3.png',
-    'assets/images/goomba/south4.png',
+    '${goombaDir}walkingframe1.png',
+    '${goombaDir}walking frame2.png',
+    '${goombaDir}walkingframe3.png',
+    '${goombaDir}walkingframe4.png',
   ];
   static const List<String> goombaWalkNorth = <String>[
-    'assets/images/goomba/north1.png',
-    'assets/images/goomba/north2.png',
-    'assets/images/goomba/north3.png',
-    'assets/images/goomba/north4.png',
+    '${goombaDir}northwalking1.png',
+    '${goombaDir}northwalking2.png',
+    '${goombaDir}northwalking3.png',
+    '${goombaDir}northwalking4.png',
   ];
 
   static const String iconHouse = 'assets/icons/icons8-house-48.png';
