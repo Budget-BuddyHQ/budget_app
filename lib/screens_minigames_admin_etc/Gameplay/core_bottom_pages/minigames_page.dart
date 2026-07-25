@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 
 import '../../../constants/app_assets.dart';
-import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
-import '../minigames_pages/bill_dodger.dart';
-import '../minigames_pages/react_challenge_screen.dart';
 import '../minigames_pages/stock_market_page.dart';
-import '../minigames_pages/subscription_sweep.dart';
 import '../minigames_pages/finance_brawl_game.dart';
 
 class MinigamesPage extends StatelessWidget {
@@ -24,80 +19,10 @@ class MinigamesPage extends StatelessWidget {
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
 
-  Future<void> _openReactChallenge(BuildContext context) async {
-    final controller = context.read<UserStatsController>();
-    final stats = controller.stats;
-
-    final result = await Navigator.of(context).push<ReactGameCloseResult>(
-      FadePageRoute(
-        builder: (_) => ReactChallengeScreen(
-          gameId: 'daily_budget_battle',
-          difficulty: 'medium',
-          playerLevel: stats.level,
-          userId: stats.id,
-        ),
-      ),
-    );
-
-    if (!context.mounted || result == null) {
-      return;
-    }
-
-    GameToast.show(
-      context,
-      title: result.status == 'victory'
-          ? 'Arcade streak extended'
-          : 'Run saved',
-      message:
-          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
-      icon: Icons.bolt_rounded,
-      accent: const Color(0xFF6CB6DA),
-    );
-  }
-
-  Future<void> _openBillDodger(BuildContext context) async {
-    final result = await Navigator.of(context).push<BillDodgerCloseResult>(
-      FadePageRoute(builder: (_) => const BillDodgerScreen()),
-    );
-
-    if (!context.mounted || result == null) {
-      return;
-    }
-
-    GameToast.show(
-      context,
-      title: 'Arcade rewards saved',
-      message:
-          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
-      icon: Icons.sports_esports_rounded,
-      accent: const Color(0xFFE1BB72),
-    );
-  }
-
   Future<void> _openStockMarket(BuildContext context) async {
     await Navigator.of(
       context,
     ).push(FadePageRoute(builder: (_) => const StockMarketPage()));
-  }
-
-  Future<void> _openSubscriptionSweep(BuildContext context) async {
-    final result = await Navigator.of(context)
-        .push<SubscriptionSweepCloseResult>(
-          FadePageRoute(builder: (_) => const SubscriptionSweepScreen()),
-        );
-
-    if (!context.mounted || result == null) {
-      return;
-    }
-
-    GameToast.show(
-      context,
-      title: 'Sweep complete',
-      message:
-          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
-      icon: Icons.receipt_long_rounded,
-      accent: const Color(0xFFD49B7E),
-    );
   }
 
   Future<void> _openFinanceBrawl(BuildContext context) async {
@@ -123,34 +48,16 @@ class MinigamesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final minigames = <_MinigamePosterData>[
       _MinigamePosterData(
-        title: 'React Challenge',
-        accent: const Color(0xFF6CB6DA),
-        icon: Icons.bolt_rounded,
-        onPressed: () => _openReactChallenge(context),
-      ),
-      _MinigamePosterData(
-        title: 'Bill Dodger',
-        accent: const Color(0xFFE1BB72),
-        icon: Icons.sports_esports_rounded,
-        onPressed: () => _openBillDodger(context),
-      ),
-      _MinigamePosterData(
         title: 'Market Board',
         accent: const Color(0xFF58C7FF),
         icon: Icons.show_chart_rounded,
         onPressed: () => _openStockMarket(context),
       ),
       _MinigamePosterData(
-        title: 'Subscription Sweep',
-        accent: const Color(0xFFD49B7E),
-        icon: Icons.receipt_long_rounded,
-        onPressed: () => _openSubscriptionSweep(context),
-      ),
-      _MinigamePosterData(
-      title: 'Finance Brawl',
-      accent: const Color(0xFF85EFAC),
-      icon: Icons.gavel_rounded,
-      onPressed: () => _openFinanceBrawl(context),
+        title: 'Finance Brawl',
+        accent: const Color(0xFF85EFAC),
+        icon: Icons.gavel_rounded,
+        onPressed: () => _openFinanceBrawl(context),
       ),
     ];
 
@@ -369,18 +276,10 @@ class _FeaturedArcadeShelf extends StatelessWidget {
     if (wide) {
       return Row(
         children: [
-          Expanded(flex: 3, child: _FeaturePoster(data: games[1])),
-          const SizedBox(width: 14),
-          Expanded(
-            flex: 2,
-            child: Column(
-              children: [
-                _MiniPoster(data: games[0]),
-                const SizedBox(height: 12),
-                _MiniPoster(data: games[3]),
-              ],
-            ),
-          ),
+          for (var index = 0; index < games.length; index++) ...[
+            if (index != 0) const SizedBox(width: 14),
+            Expanded(child: _FeaturePoster(data: games[index])),
+          ],
         ],
       );
     }

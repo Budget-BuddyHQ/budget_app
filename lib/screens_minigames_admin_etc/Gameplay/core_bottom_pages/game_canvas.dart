@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
@@ -249,32 +250,27 @@ class _TurtlePlayer extends SimplePlayer {
         animation: _animationFor(spritePath),
       );
 
+  /// Goomba lives under assets/own_skins/, outside Flame's default
+  /// assets/images/ image root, so its sprites load through this
+  /// zero-prefix cache using full asset paths instead of the shared one.
+  static final Images _fullPathImages = Images(prefix: '');
+
   /// Skins that ship as a multi-frame walk cycle animate directionally; every
   /// other skin is a single static sprite reused for idle and run.
   static SimpleDirectionAnimation _animationFor(String path) {
-    if (path.contains('goomba/')) {
-      const south = <String>[
-        'goomba/south1.png',
-        'goomba/south2.png',
-        'goomba/south3.png',
-        'goomba/south4.png',
-      ];
-      const north = <String>[
-        'goomba/north1.png',
-        'goomba/north2.png',
-        'goomba/north3.png',
-        'goomba/north4.png',
-      ];
+    if (path.contains('mushroom_goomba/')) {
+      const south = AppAssets.goombaWalkSouth;
+      const north = AppAssets.goombaWalkNorth;
       // Left/right reuse the front (south) frames; SimpleDirectionAnimation
       // flips horizontally on its own, so the goomba always faces the camera
       // sideways and turns away only when walking up.
       return SimpleDirectionAnimation(
-        idleRight: _walk(<String>[south.first]),
-        runRight: _walk(south),
-        idleDown: _walk(<String>[south.first]),
-        runDown: _walk(south),
-        idleUp: _walk(<String>[north.first]),
-        runUp: _walk(north),
+        idleRight: _walk(<String>[south.first], images: _fullPathImages),
+        runRight: _walk(south, images: _fullPathImages),
+        idleDown: _walk(<String>[south.first], images: _fullPathImages),
+        runDown: _walk(south, images: _fullPathImages),
+        idleUp: _walk(<String>[north.first], images: _fullPathImages),
+        runUp: _walk(north, images: _fullPathImages),
       );
     }
     return SimpleDirectionAnimation(
@@ -283,10 +279,13 @@ class _TurtlePlayer extends SimplePlayer {
     );
   }
 
-  static Future<SpriteAnimation> _walk(List<String> paths) async {
+  static Future<SpriteAnimation> _walk(
+    List<String> paths, {
+    Images? images,
+  }) async {
     final sprites = <Sprite>[];
     for (final path in paths) {
-      sprites.add(await Sprite.load(path));
+      sprites.add(await Sprite.load(path, images: images));
     }
     return SpriteAnimation.spriteList(
       sprites,
