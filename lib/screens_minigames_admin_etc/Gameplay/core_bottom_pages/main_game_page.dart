@@ -52,7 +52,7 @@ class MainGamePage extends StatelessWidget {
         builder: (_) => GameCanvas(
           mapId: stats.adventureMapId,
           initialPosition: stats.adventurePosition,
-          skinAssetPath: skin.assetPath,
+          skin: skin,
         ),
       ),
     );
@@ -329,7 +329,7 @@ class _AdventureArt extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Image.asset(skin.assetPath, fit: BoxFit.contain),
+              child: Image.asset(skin.previewAsset, fit: BoxFit.contain),
             ),
             Positioned(
               right: size * 0.08,

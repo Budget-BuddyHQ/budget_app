@@ -13,16 +13,13 @@ import '../../../widgets_custom_lotties/orientation_scope.dart';
 /// terrain matrix below, a joystick, collectible coins that pay out real
 /// gold, and the player's equipped turtle skin as the hero.
 class GameCanvas extends StatefulWidget {
-  const GameCanvas({
-    super.key,
-    this.mapId,
-    this.initialPosition,
-    this.skinAssetPath,
-  });
+  const GameCanvas({super.key, this.mapId, this.initialPosition, this.skin});
 
   final String? mapId;
   final Offset? initialPosition;
-  final String? skinAssetPath;
+
+  /// Hero skin. Defaults to whatever the player has equipped.
+  final AvatarSkin? skin;
 
   static const double tileSize = 48;
 
@@ -102,9 +99,7 @@ class _GameCanvasState extends State<GameCanvas> {
   @override
   Widget build(BuildContext context) {
     final userStats = context.read<UserStatsController>().stats;
-    final equippedSkin = skinFromId(userStats.equippedSkin);
-    final skinPath = (widget.skinAssetPath ?? equippedSkin.assetPath)
-        .replaceFirst('assets/images/', '');
+    final skin = widget.skin ?? skinFromId(userStats.equippedSkin);
 
     // Saved adventure positions from the old placeholder are in pixels;
     // convert anything outside the tile grid, then clamp inside the walls.
@@ -151,7 +146,7 @@ class _GameCanvasState extends State<GameCanvas> {
                   start.dx * GameCanvas.tileSize,
                   start.dy * GameCanvas.tileSize,
                 ),
-                spritePath: skinPath,
+                skin: skin,
               ),
               cameraConfig: CameraConfig(zoom: 1.4, moveOnlyMapArea: true),
             ),
@@ -243,11 +238,11 @@ class _GameCanvasState extends State<GameCanvas> {
 }
 
 class _TurtlePlayer extends SimplePlayer {
-  _TurtlePlayer({required super.position, required String spritePath})
+  _TurtlePlayer({required super.position, required AvatarSkin skin})
     : super(
         size: Vector2.all(GameCanvas.tileSize * 0.9),
         speed: 130,
-        animation: _animationFor(spritePath),
+        animation: _animationFor(skin),
       );
 
   /// Goomba lives under assets/own_skins/, outside Flame's default
@@ -257,8 +252,28 @@ class _TurtlePlayer extends SimplePlayer {
 
   /// Skins that ship as a multi-frame walk cycle animate directionally; every
   /// other skin is a single static sprite reused for idle and run.
-  static SimpleDirectionAnimation _animationFor(String path) {
-    if (path.contains('mushroom_goomba/')) {
+  static SimpleDirectionAnimation _animationFor(AvatarSkin skin) {
+    if (skin.isHuman) {
+      // Villagers have real art for all four facings. East is mirrored from
+      // west by the crop tool so it can be handed to SimpleDirectionAnimation
+      // as the right-facing set, which then derives left by flipping back.
+      final south = AppAssets.humanWalkForFlame(skin.humanVariantId, 'south');
+      final north = AppAssets.humanWalkForFlame(skin.humanVariantId, 'north');
+      final east = AppAssets.humanWalkForFlame(skin.humanVariantId, 'east');
+      return SimpleDirectionAnimation(
+        idleRight: _walk(<String>[east.first]),
+        runRight: _walk(east),
+        idleDown: _walk(<String>[south.first]),
+        runDown: _walk(south),
+        idleUp: _walk(<String>[north.first]),
+        runUp: _walk(north),
+      );
+    }
+
+    if (skin.id == 'mushroom_goomba') {
+      // Goomba lives under assets/own_skins/, outside Flame's default
+      // assets/images/ image root, so its sprites load through the
+      // zero-prefix cache using the full, unmodified asset paths.
       const south = AppAssets.goombaWalkSouth;
       const north = AppAssets.goombaWalkNorth;
       // Left/right reuse the front (south) frames; SimpleDirectionAnimation
@@ -273,6 +288,8 @@ class _TurtlePlayer extends SimplePlayer {
         runUp: _walk(north, images: _fullPathImages),
       );
     }
+
+    final path = skin.previewAsset.replaceFirst('assets/images/', '');
     return SimpleDirectionAnimation(
       idleRight: _frame(path),
       runRight: _frame(path),

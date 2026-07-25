@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
+import '../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import '../services_backend_and_other_services/supabase_service.dart';
 
 @immutable
@@ -289,6 +290,26 @@ class UserStatsController extends ChangeNotifier {
     );
   }
 
+  /// Saves the self-described age band and gender from onboarding or the
+  /// profile editor. Passing null for either leaves that value untouched, so
+  /// the profile screen can update one field at a time.
+  Future<StatsActionResult> updatePersonalDetails({
+    AgeBand? ageBand,
+    GenderIdentity? gender,
+  }) async {
+    final nextStats = _stats.copyWith(
+      spendingHabits: <String, dynamic>{
+        ..._stats.spendingHabits,
+        if (ageBand != null) ProfileKeys.ageBand: ageBand.id,
+        if (gender != null) ProfileKeys.gender: gender.id,
+        ProfileKeys.onboardingComplete: true,
+      },
+      updatedAt: DateTime.now().toUtc(),
+    );
+
+    return _saveStats(nextStats, savingMessage: 'Saving your profile...');
+  }
+
   Future<StatsActionResult> buyIndexFund() async {
     const goldCost = 200;
     if (_stats.gold < goldCost) {
@@ -570,9 +591,16 @@ class UserStatsController extends ChangeNotifier {
     int xpEarned = 10,
     int literacyPointsEarned = 18,
     int goldEarned = 0,
+    int? quizCorrect,
+    int? quizTotal,
+    Iterable<String> missedSkills = const <String>[],
   }) async {
     final completedLessons = _stats.completedLessons.toSet();
-    if (completedLessons.contains(lessonId)) {
+    final alreadyComplete = completedLessons.contains(lessonId);
+
+    // A retake still updates the score and skill history — only the rewards
+    // and the completion flag are one-time.
+    if (alreadyComplete && quizTotal == null) {
       return const StatsActionResult(
         success: true,
         message: 'Lesson already saved.',
@@ -586,14 +614,42 @@ class UserStatsController extends ChangeNotifier {
 
     completedLessons.add(lessonId);
     final now = DateTime.now().toUtc();
+
+    final quizScores = Map<String, dynamic>.from(_stats.quizScores);
+    if (quizTotal != null && quizTotal > 0) {
+      final best = _readInt(
+        (quizScores[lessonId] as Map?)?['best_correct'] ?? 0,
+      );
+      quizScores[lessonId] = <String, dynamic>{
+        'correct': quizCorrect ?? 0,
+        'total': quizTotal,
+        // Mastery reads the best attempt so a bad retake cannot erase progress.
+        'best_correct': (quizCorrect ?? 0) > best ? (quizCorrect ?? 0) : best,
+        'attempts':
+            _readInt((quizScores[lessonId] as Map?)?['attempts'] ?? 0) + 1,
+        'updated_at': now.toIso8601String(),
+      };
+    }
+
+    final weakSkills = _stats.weakSkills.toSet();
+    if (quizTotal != null) {
+      // Skills answered correctly this run clear; freshly missed ones stick
+      // until they are answered right somewhere later.
+      final missed = missedSkills.toSet();
+      weakSkills.addAll(missed);
+    }
+
     final nextStats = _stats.copyWith(
-      gold: _stats.gold + goldEarned,
-      xp: _stats.xp + xpEarned,
-      literacyPoints: _stats.literacyPoints + literacyPointsEarned,
+      gold: _stats.gold + (alreadyComplete ? 0 : goldEarned),
+      xp: _stats.xp + (alreadyComplete ? 0 : xpEarned),
+      literacyPoints:
+          _stats.literacyPoints + (alreadyComplete ? 0 : literacyPointsEarned),
       spendingHabits: <String, dynamic>{
         ..._stats.spendingHabits,
         'completed_lessons': completedLessons.toList(growable: false),
         'last_completed_lesson': lessonId,
+        'quiz_scores': quizScores,
+        'weak_skills': weakSkills.toList(growable: false),
       },
       transactions: <LedgerTransaction>[
         LedgerTransaction(
@@ -611,6 +667,108 @@ class UserStatsController extends ChangeNotifier {
     );
 
     return _saveStats(nextStats, savingMessage: 'Saving lesson progress...');
+  }
+
+  /// Records an arcade run so the hub can show a personal best and play count.
+  ///
+  /// Rewards are granted by the games themselves through
+  /// [applyChallengePayload]; this only tracks the scoreboard, so it must not
+  /// touch gold or XP.
+  Future<StatsActionResult> recordArcadeRun({
+    required String gameId,
+    required int score,
+  }) async {
+    final scores = Map<String, dynamic>.from(_stats.arcadeScores);
+    final previous = scores[gameId];
+    final previousBest = previous is Map ? _readInt(previous['best']) : 0;
+    final plays = previous is Map ? _readInt(previous['plays']) : 0;
+
+    scores[gameId] = <String, dynamic>{
+      'best': score > previousBest ? score : previousBest,
+      'plays': plays + 1,
+      'last_score': score,
+      'last_played_at': DateTime.now().toUtc().toIso8601String(),
+    };
+
+    return _saveStats(
+      _stats.copyWith(
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          'arcade_scores': scores,
+        },
+        updatedAt: DateTime.now().toUtc(),
+      ),
+      savingMessage: 'Saving your run...',
+    );
+  }
+
+  /// Records a practice run. Unlike [completeLessonProgress] this never touches
+  /// `completed_lessons` — practice is repeatable and must not inflate the
+  /// "lessons complete" count that drives unit progress.
+  Future<StatsActionResult> recordPracticeSession({
+    required String unitId,
+    required int correct,
+    required int total,
+    Iterable<String> missedSkills = const <String>[],
+  }) async {
+    if (total <= 0) {
+      return const StatsActionResult(
+        success: false,
+        message: 'Nothing to record.',
+        syncState: SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'Empty practice set.',
+        ),
+      );
+    }
+
+    final now = DateTime.now().toUtc();
+    final missed = missedSkills.toSet();
+
+    // Skills answered correctly this run drop off the weak list; ones missed
+    // again stay on it.
+    final weakSkills = _stats.weakSkills.toSet()..addAll(missed);
+
+    final xpEarned = correct * 3;
+    final nextStats = _stats.copyWith(
+      xp: _stats.xp + xpEarned,
+      literacyPoints: _stats.literacyPoints + (correct * 2),
+      spendingHabits: <String, dynamic>{
+        ..._stats.spendingHabits,
+        'weak_skills': weakSkills.toList(growable: false),
+        'last_practice_unit': unitId,
+        'last_practice_at': now.toIso8601String(),
+      },
+      updatedAt: now,
+    );
+
+    return _saveStats(nextStats, savingMessage: 'Saving practice results...');
+  }
+
+  /// Clears a skill from the weak list once it has been answered correctly.
+  Future<void> clearWeakSkills(Iterable<String> skillIds) async {
+    final cleared = skillIds.toSet();
+    if (cleared.isEmpty) {
+      return;
+    }
+    final remaining = _stats.weakSkills
+        .where((skill) => !cleared.contains(skill))
+        .toList(growable: false);
+    if (remaining.length == _stats.weakSkills.length) {
+      return;
+    }
+
+    await _saveStats(
+      _stats.copyWith(
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          'weak_skills': remaining,
+        },
+        updatedAt: DateTime.now().toUtc(),
+      ),
+      savingMessage: 'Updating mastery...',
+    );
   }
 
   Future<SkinCaseResult> openSkinCase() async {

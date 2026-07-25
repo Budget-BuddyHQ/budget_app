@@ -35,6 +35,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  yaml: ^3.1.2
 
 flutter:
   uses-material-design: true
@@ -48,6 +49,19 @@ flutter:
     - assets/images/turtles/
     - assets/images/ui/
     - assets/images/tiles/
+    # Flutter does not recurse into asset subfolders, so every human variant
+    # directory has to be listed on its own.
+    - assets/images/humans/
+    - assets/images/humans/emerald_scout/
+    - assets/images/humans/gold_banker/
+    - assets/images/humans/crimson_trader/
+    - assets/images/humans/violet_scholar/
+    - assets/images/humans/teal_analyst/
+    - assets/images/humans/sand_saver/
+    - assets/images/humans/rose_planner/
+    - assets/images/humans/slate_investor/
+    - assets/images/humans/midnight_ledger/
+    - assets/images/humans/aurora_prime/
     - assets/animations/
     - assets/audio/
     - assets/data/
@@ -55,6 +69,7 @@ flutter:
     - assets/fonts/
     - assets/imported/pond_loading_animation_source/pond.glb
     - assets/imported/
+    - assets/own_skins/
     - assets/self_made_backgrounds/
     - assets/map_assets_coins/PNG_more_map_tiles/
     - assets/own_skins/mushroom_goomba/walking_animation/

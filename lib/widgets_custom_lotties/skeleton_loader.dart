@@ -93,9 +93,7 @@ class SkeletonCard extends StatelessWidget {
             (index) => SkeletonLoader(
               height: lineHeight,
               borderRadius: 6,
-              margin: EdgeInsets.only(
-                bottom: index < lines - 1 ? spacing : 0,
-              ),
+              margin: EdgeInsets.only(bottom: index < lines - 1 ? spacing : 0),
             ),
           ),
         ],
