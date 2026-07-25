@@ -56,9 +56,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFF85EFAC),
-                ),
+                child: CircularProgressIndicator(color: Color(0xFF85EFAC)),
               );
             }
 
@@ -135,7 +133,9 @@ class _CurrentUserSummary extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF163526),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF85EFAC).withValues(alpha: 0.35)),
+        border: Border.all(
+          color: const Color(0xFF85EFAC).withValues(alpha: 0.35),
+        ),
       ),
       child: Wrap(
         spacing: 14,
@@ -173,10 +173,7 @@ class _CurrentUserSummary extends StatelessWidget {
 }
 
 class _StatChip extends StatelessWidget {
-  const _StatChip({
-    required this.label,
-    required this.value,
-  });
+  const _StatChip({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -265,8 +262,9 @@ class _LeaderboardRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final medalColor = _medalColor(leader.rank);
-    final highlightBorder =
-        leader.isCurrentUser ? const Color(0xFFF4D06F) : Colors.transparent;
+    final highlightBorder = leader.isCurrentUser
+        ? const Color(0xFFF4D06F)
+        : Colors.transparent;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -331,11 +329,7 @@ class _LeaderboardRow extends StatelessWidget {
                 Positioned(
                   right: -6,
                   top: -6,
-                  child: Icon(
-                    Icons.emoji_events,
-                    color: medalColor,
-                    size: 20,
-                  ),
+                  child: Icon(Icons.emoji_events, color: medalColor, size: 20),
                 ),
             ],
           ),
@@ -384,4 +378,3 @@ class _LeaderboardRow extends StatelessWidget {
     return null;
   }
 }
-

@@ -603,11 +603,16 @@ class _NativeBudgetBattleChallengeState
   ) {
     final today = DateTime.now();
     final seed = (today.year * 10000) + (today.month * 100) + today.day;
+    final random = math.Random(seed);
     final shuffledQuestions = List<_ChallengeQuestion>.of(questionBank)
-      ..shuffle(math.Random(seed));
+      ..shuffle(random);
 
     return shuffledQuestions
         .take(math.min(_questionsPerRun, shuffledQuestions.length))
+        // Choice order is shuffled too — the bank leans heavily toward the
+        // right answer being listed first, so leaving it as authored would
+        // let a player win by always tapping the top choice.
+        .map((question) => question.withShuffledChoices(random))
         .toList(growable: false);
   }
 
@@ -1034,81 +1039,19 @@ class _ChallengeQuestion {
       correctIndex >= 0 &&
       correctIndex < choices.length &&
       explanation.trim().isNotEmpty;
-}
 
-class NativeChallengeFallbackPreview extends StatelessWidget {
-  const NativeChallengeFallbackPreview({super.key, required this.onComplete});
-
-  final Future<void> Function(Map<String, dynamic>) onComplete;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF1A4D3D),
-      appBar: AppBar(
-        title: const Text('React Challenge'),
-        backgroundColor: const Color(0xFF1A4D3D),
-        foregroundColor: Colors.white,
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 460),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF254E3F),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF3B6B59)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Local Challenge Preview',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'WebView isn’t available on this platform, so Budget Buddy falls back to a local native challenge panel instead of sending you to a dead external URL.',
-                    style: TextStyle(color: Colors.white70, height: 1.4),
-                  ),
-                  const SizedBox(height: 18),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => onComplete(const <String, dynamic>{
-                        'status': 'victory',
-                        'gold': 120,
-                        'xp': 90,
-                        'literacy_points': 30,
-                        'title': 'Fallback Challenge Reward',
-                        'description':
-                            'Completed the native fallback challenge.',
-                      }),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF85EFAC),
-                        foregroundColor: const Color(0xFF1A4D3D),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: const Text('Complete Challenge'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+  /// Same question with choice order shuffled and [correctIndex] updated to
+  /// match. The authored bank (and its fallback) skews toward putting the
+  /// right answer first, so without this a player could score well above
+  /// chance just by always tapping the top choice.
+  _ChallengeQuestion withShuffledChoices(math.Random random) {
+    final correctText = choices[correctIndex];
+    final shuffled = List<String>.of(choices)..shuffle(random);
+    return _ChallengeQuestion(
+      prompt: prompt,
+      choices: shuffled,
+      correctIndex: shuffled.indexOf(correctText),
+      explanation: explanation,
     );
   }
 }

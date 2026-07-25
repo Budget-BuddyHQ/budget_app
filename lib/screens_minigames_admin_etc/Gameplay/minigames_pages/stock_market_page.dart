@@ -37,30 +37,7 @@ class _StockMarketPageState extends State<StockMarketPage> {
 
     _tickTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
       if (!mounted) return;
-      setState(() {
-        for (final seed in _marketSeeds) {
-          final points = _series[seed.symbol]!;
-          final current = points.last;
-          
-          var pct = (_rand.nextDouble() * 2 - 1) * 0.012 * (1 + seed.volatility * 4);
-          if (_rand.nextDouble() < 0.06) {
-            pct += (_rand.nextDouble() * 2 - 1) * 0.05;
-          }
-          if (_rand.nextDouble() < 0.008) {
-            final magnitude = _rand.nextDouble();
-            final sign = _rand.nextBool() ? 1 : -1;
-            pct += sign * magnitude * magnitude * magnitude * 0.75;
-          }
-          final next = (current * (1 + pct)).clamp(
-            seed.basePrice * 0.3,
-            seed.basePrice * 4.0,
-          );
-          points.add(next);
-          if (points.length > _maxPoints) {
-            points.removeAt(0);
-          }
-        }
-      });
+      setState(_advanceAllSeries);
     });
   }
 
@@ -70,12 +47,55 @@ class _StockMarketPageState extends State<StockMarketPage> {
     super.dispose();
   }
 
+  /// One random-walk step for every stock. Shared by the periodic timer and
+  /// the manual refresh button, which used to be a no-op `setState(() {})`
+  /// that changed nothing.
+  void _advanceAllSeries() {
+    for (final seed in _marketSeeds) {
+      final points = _series[seed.symbol]!;
+      final current = points.last;
+      // Live random walk: small drift each tick, with an occasional
+      // bigger jump so the board feels alive without being pure chaos.
+      var pct =
+          (_rand.nextDouble() * 2 - 1) * 0.012 * (1 + seed.volatility * 4);
+      if (_rand.nextDouble() < 0.06) {
+        pct += (_rand.nextDouble() * 2 - 1) * 0.05;
+      }
+      // Very rare "news event": can move up to ~±75%, but cubing the roll
+      // makes huge swings far less likely than moderate ones — like real
+      // stocks, a 75% day is possible but almost never.
+      if (_rand.nextDouble() < 0.008) {
+        final magnitude = _rand.nextDouble();
+        final sign = _rand.nextBool() ? 1 : -1;
+        pct += sign * magnitude * magnitude * magnitude * 0.75;
+      }
+      final next = (current * (1 + pct)).clamp(
+        seed.basePrice * 0.3,
+        seed.basePrice * 4.0,
+      );
+      points.add(next);
+      if (points.length > _maxPoints) {
+        points.removeAt(0);
+      }
+    }
+  }
+
   _MarketQuote _quoteFor(_MarketSeed seed) {
     final points = _series[seed.symbol]!;
     final current = points.last;
     final previous = points.length > 1 ? points[points.length - 2] : current;
     final opening = points.first;
     final price = current.round();
+
+    // Bid-ask spread: what a buyer pays and a seller receives always differ
+    // by a little, and it widens for more volatile stocks — the same reason
+    // a jumpy penny stock is pricier to trade than a stable blue chip in
+    // real markets. Without this, buying and selling the same lot back to
+    // back was a free, infinite source of gold-neutral XP.
+    final spreadFraction = (0.015 + seed.volatility * 0.05).clamp(0.01, 0.08);
+    final buyCost = (price * (1 + spreadFraction / 2)).round();
+    final sellValue = math.max(1, (price * (1 - spreadFraction / 2)).round());
+
     return _MarketQuote(
       symbol: seed.symbol,
       company: seed.company,
@@ -89,8 +109,8 @@ class _StockMarketPageState extends State<StockMarketPage> {
       openingChangePercent: opening > 0
           ? (current - opening) / opening * 100
           : 0,
-      buyCost: price,
-      sellValue: price,
+      buyCost: buyCost,
+      sellValue: sellValue,
       history: points.map((p) => p.round()).toList(growable: false),
       thesis: seed.thesis,
       icon: seed.icon,
@@ -105,16 +125,19 @@ class _StockMarketPageState extends State<StockMarketPage> {
     required int availableGold,
     required int ownedLots,
   }) async {
-    final maxShares = isBuying
-        ? (availableGold ~/ quote.currentPrice)
-        : ownedLots;
+    // Buying and selling settle at different per-share prices (see the
+    // bid-ask spread in _quoteFor) — using the same currentPrice for both
+    // here would let a player buy and immediately sell the same lot for a
+    // free, infinite gold-neutral profit.
+    final perShare = isBuying ? quote.buyCost : quote.sellValue;
+    final maxShares = isBuying ? (availableGold ~/ perShare) : ownedLots;
 
     if (maxShares <= 0) {
       GameToast.show(
         context,
         title: isBuying ? 'Insufficient Gold' : 'No Shares Owned',
         message: isBuying
-            ? 'You need at least ${quote.currentPrice} gold to buy 1 share of ${quote.symbol}.'
+            ? 'You need at least $perShare gold to buy 1 share of ${quote.symbol}.'
             : 'You do not own any shares of ${quote.symbol} to sell.',
         icon: Icons.info_outline_rounded,
         accent: const Color(0xFFFFB084),
@@ -129,7 +152,7 @@ class _StockMarketPageState extends State<StockMarketPage> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            final totalAmount = selectedQuantity * quote.currentPrice;
+            final totalAmount = selectedQuantity * perShare;
 
             return AlertDialog(
               backgroundColor: const Color(0xFF10281F),
@@ -149,8 +172,12 @@ class _StockMarketPageState extends State<StockMarketPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Market Price: ${quote.currentPrice}g per share',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+                    isBuying
+                        ? 'Buy price: ${perShare}g per share'
+                        : 'Sell price: ${perShare}g per share',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -213,11 +240,16 @@ class _StockMarketPageState extends State<StockMarketPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(false),
-                  child: const Text('CANCEL', style: TextStyle(color: Colors.white54)),
+                  child: const Text(
+                    'CANCEL',
+                    style: TextStyle(color: Colors.white54),
+                  ),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isBuying ? const Color(0xFF85EFAC) : const Color(0xFFFF8A80),
+                    backgroundColor: isBuying
+                        ? const Color(0xFF85EFAC)
+                        : const Color(0xFFFF8A80),
                     foregroundColor: const Color(0xFF103224),
                   ),
                   onPressed: () => Navigator.of(ctx).pop(true),
@@ -234,21 +266,22 @@ class _StockMarketPageState extends State<StockMarketPage> {
     );
 
     if (confirmed == true && context.mounted) {
-      final totalValue = selectedQuantity * quote.currentPrice;
-      
+      final totalValue = selectedQuantity * perShare;
+      final controller = context.read<UserStatsController>();
+
       final result = isBuying
-          ? await context.read<UserStatsController>().buyStockLot(
-                symbol: quote.symbol,
-                goldCost: totalValue,
-                companyName: quote.company,
-                quantity: selectedQuantity,
-              )
-          : await context.read<UserStatsController>().sellStockLot(
-                symbol: quote.symbol,
-                goldReturn: totalValue,
-                companyName: quote.company,
-                quantity: selectedQuantity,
-              );
+          ? await controller.buyStockLot(
+              symbol: quote.symbol,
+              goldCost: totalValue,
+              companyName: quote.company,
+              quantity: selectedQuantity,
+            )
+          : await controller.sellStockLot(
+              symbol: quote.symbol,
+              goldReturn: totalValue,
+              companyName: quote.company,
+              quantity: selectedQuantity,
+            );
 
       if (!context.mounted) return;
 
@@ -261,7 +294,9 @@ class _StockMarketPageState extends State<StockMarketPage> {
             ? '${isBuying ? 'Bought' : 'Sold'} $selectedQuantity share${selectedQuantity > 1 ? 's' : ''} of ${quote.symbol} for ${totalValue}g.'
             : result.message,
         icon: result.success
-            ? (isBuying ? Icons.trending_up_rounded : Icons.attach_money_rounded)
+            ? (isBuying
+                  ? Icons.trending_up_rounded
+                  : Icons.attach_money_rounded)
             : Icons.info_outline_rounded,
         accent: result.success
             ? (isBuying ? const Color(0xFF85EFAC) : const Color(0xFFE1BB72))
@@ -277,7 +312,7 @@ class _StockMarketPageState extends State<StockMarketPage> {
     return Consumer<UserStatsController>(
       builder: (context, controller, _) {
         final stats = controller.stats;
-        
+
         final totalMarketValue = quotes.fold<int>(
           0,
           (sum, quote) =>
@@ -328,7 +363,7 @@ class _StockMarketPageState extends State<StockMarketPage> {
             actions: [
               IconButton(
                 tooltip: 'Refresh board',
-                onPressed: () => setState(() {}),
+                onPressed: () => setState(_advanceAllSeries),
                 icon: const Icon(Icons.refresh_rounded),
               ),
             ],
@@ -787,13 +822,17 @@ class _StockCard extends StatelessWidget {
     // Calculate Average Cost Basis & Position Return Metrics
     final double averageCost = ownedLots > 0 ? (costBasis / ownedLots) : 0.0;
     final double currentValue = (ownedLots * quote.currentPrice).toDouble();
-    final double totalProfitLoss = ownedLots > 0 ? (currentValue - costBasis) : 0.0;
+    final double totalProfitLoss = ownedLots > 0
+        ? (currentValue - costBasis)
+        : 0.0;
     final double profitLossPercent = averageCost > 0
         ? ((quote.currentPrice - averageCost) / averageCost) * 100
         : 0.0;
 
     final bool isProfitable = totalProfitLoss >= 0;
-    final Color plColor = isProfitable ? const Color(0xFF85EFAC) : const Color(0xFFFF8A80);
+    final Color plColor = isProfitable
+        ? const Color(0xFF85EFAC)
+        : const Color(0xFFFF8A80);
     final String plSign = isProfitable ? '+' : '';
 
     return Container(
@@ -896,7 +935,7 @@ class _StockCard extends StatelessWidget {
               );
             },
           ),
-          
+
           if (ownedLots > 0) ...[
             const SizedBox(height: 12),
             Container(
@@ -958,6 +997,16 @@ class _StockCard extends StatelessWidget {
           ],
 
           const SizedBox(height: 14),
+          Text(
+            quote.thesis,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.68),
+              fontSize: 12.5,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
           _StockSparkline(history: quote.history, accent: quote.accent),
           const SizedBox(height: 16),
           LayoutBuilder(
@@ -1098,7 +1147,6 @@ class _MarketSeed {
     required this.sector,
     required this.basePrice,
     required this.volatility,
-    required this.phase,
     required this.thesis,
     required this.icon,
     required this.accent,
@@ -1109,7 +1157,6 @@ class _MarketSeed {
   final String sector;
   final int basePrice;
   final double volatility;
-  final double phase;
   final String thesis;
   final IconData icon;
   final Color accent;
@@ -1304,7 +1351,6 @@ const List<_MarketSeed> _marketSeeds = <_MarketSeed>[
     sector: 'Consumer finance',
     basePrice: 138,
     volatility: 0.10,
-    phase: 0.8,
     thesis: 'Stable regional lender with steady savings-product demand.',
     icon: Icons.account_balance_rounded,
     accent: Color(0xFFE1BB72),
@@ -1315,7 +1361,6 @@ const List<_MarketSeed> _marketSeeds = <_MarketSeed>[
     sector: 'Learning tech',
     basePrice: 126,
     volatility: 0.12,
-    phase: 1.9,
     thesis:
         'Fast-growing education platform riding stronger classroom adoption.',
     icon: Icons.school_rounded,
@@ -1327,7 +1372,6 @@ const List<_MarketSeed> _marketSeeds = <_MarketSeed>[
     sector: 'Utilities',
     basePrice: 152,
     volatility: 0.08,
-    phase: 2.7,
     thesis:
         'Lower volatility name with dependable cash flow and modest upside.',
     icon: Icons.eco_rounded,
@@ -1339,7 +1383,6 @@ const List<_MarketSeed> _marketSeeds = <_MarketSeed>[
     sector: 'E-commerce',
     basePrice: 112,
     volatility: 0.15,
-    phase: 3.5,
     thesis:
         'Higher-risk momentum play that can move quickly in both directions.',
     icon: Icons.rocket_launch_rounded,

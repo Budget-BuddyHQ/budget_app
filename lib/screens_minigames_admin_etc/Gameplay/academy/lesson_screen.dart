@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../constants/app_assets.dart';
@@ -6,6 +7,7 @@ import '../../../custom_made_widgets/unit_row_item.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson.dart';
 import '../../../models_Like_Skins_and_lessons_templates/progression_service.dart';
+import '../../../models_Like_Skins_and_lessons_templates/quiz_bank.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
@@ -13,6 +15,7 @@ import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../loading/temporary_loading_screen.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import 'lesson_detail_screen.dart';
+import 'practice_screen.dart';
 
 class LessonScreen extends StatefulWidget {
   const LessonScreen({
@@ -41,6 +44,7 @@ class _LessonScreenState extends State<LessonScreen> {
     _statsController = context.read<UserStatsController>();
     _progressionService = ProgressionService(
       initialCompletedLessons: _statsController.stats.completedLessons,
+      initialAccuracy: _accuracyFromStats(),
     )..addListener(_refresh);
     _statsController.addListener(_syncProgressFromStats);
   }
@@ -59,10 +63,23 @@ class _LessonScreenState extends State<LessonScreen> {
     }
   }
 
+  /// Best accuracy per assessment node, pulled out of the saved quiz scores.
+  Map<String, double> _accuracyFromStats() {
+    final stats = _statsController.stats;
+    final result = <String, double>{};
+    for (final nodeId in stats.quizScores.keys) {
+      final accuracy = stats.accuracyFor(nodeId);
+      if (accuracy != null) {
+        result[nodeId] = accuracy;
+      }
+    }
+    return result;
+  }
+
   void _syncProgressFromStats() {
-    _progressionService.replaceCompletedLessons(
-      _statsController.stats.completedLessons,
-    );
+    _progressionService
+      ..replaceCompletedLessons(_statsController.stats.completedLessons)
+      ..replaceAccuracy(_accuracyFromStats());
   }
 
   void _selectUnit(int index) {
@@ -116,6 +133,15 @@ class _LessonScreenState extends State<LessonScreen> {
     }
   }
 
+  Future<void> _openPractice(LessonUnit unit) async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => PracticeScreen(unit: unit)));
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   List<Widget> _unitCards(List<LessonUnit> units, {required bool compact}) {
     return <Widget>[
       for (var index = 0; index < units.length; index++) ...[
@@ -124,7 +150,9 @@ class _LessonScreenState extends State<LessonScreen> {
           unit: units[index],
           progress: _progressionService.getUnitProgress(units[index].id),
           mastery: _progressionService.getUnitMastery(units[index].id),
+          accuracy: _progressionService.getUnitAccuracy(units[index].id),
           onLessonTap: _openLesson,
+          onPractice: () => _openPractice(units[index]),
           statusFor: _progressionService.getLessonStatus,
         ),
         if (index != units.length - 1) const SizedBox(height: 16),
@@ -221,19 +249,22 @@ class _LessonScreenState extends State<LessonScreen> {
                   );
                 }
 
-                return Column(
+                // Everything scrolls as one list. Pinning the header above an
+                // Expanded list overflowed once the combined fixed height
+                // passed the viewport — which happens on a tablet in
+                // landscape at 1024x768.
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
-                      child: _UnitQuickChangerBar(
-                        controller: _unitQuickScrollController,
-                        units: units,
-                        activeIndex: selectedUnitIndex,
-                        progressFor: _progressionService.getUnitProgress,
-                        masteryFor: _progressionService.getUnitMastery,
-                        onSelected: _selectUnit,
-                      ),
+                    _UnitQuickChangerBar(
+                      controller: _unitQuickScrollController,
+                      units: units,
+                      activeIndex: selectedUnitIndex,
+                      progressFor: _progressionService.getUnitProgress,
+                      masteryFor: _progressionService.getUnitMastery,
+                      onSelected: _selectUnit,
                     ),
+                    const SizedBox(height: 12),
                     _HubHeader(
                       completed: _progressionService.completedCount,
                       total: _progressionService.totalCount,
@@ -243,26 +274,19 @@ class _LessonScreenState extends State<LessonScreen> {
                           ? null
                           : () => _openLesson(nextLesson),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                      child: _NextLessonFocusCard(
-                        nextLesson: nextLesson,
-                        nextUnit: nextUnit,
-                        progress: overallProgress,
-                        onOpenNext: nextLesson == null
-                            ? null
-                            : () => _openLesson(nextLesson),
-                      ),
+                    const SizedBox(height: 12),
+                    _NextLessonFocusCard(
+                      nextLesson: nextLesson,
+                      nextUnit: nextUnit,
+                      progress: overallProgress,
+                      onOpenNext: nextLesson == null
+                          ? null
+                          : () => _openLesson(nextLesson),
                     ),
+                    const SizedBox(height: 12),
                     const _MasteryLegend(),
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                        children: _unitCards([
-                          selectedUnit,
-                        ], compact: compactLayout),
-                      ),
-                    ),
+                    const SizedBox(height: 16),
+                    ..._unitCards([selectedUnit], compact: compactLayout),
                   ],
                 );
               },
@@ -614,7 +638,7 @@ class _HubHeader extends StatelessWidget {
               const Expanded(
                 flex: 2,
                 child: AmbientLottieCard(
-                  assetPath: AppAssets.academyLoopAnimation,
+                  motif: AmbientMotif.academy,
                   semanticLabel: 'Animated academy illustration',
                   height: 220,
                 ),
@@ -902,7 +926,9 @@ class _UnitCard extends StatelessWidget {
     required this.unit,
     required this.progress,
     required this.mastery,
+    required this.accuracy,
     required this.onLessonTap,
+    required this.onPractice,
     required this.statusFor,
     this.compact = false,
   });
@@ -910,7 +936,12 @@ class _UnitCard extends StatelessWidget {
   final LessonUnit unit;
   final double progress;
   final MasteryLevel mastery;
+
+  /// Mean best accuracy across attempted assessments, null if none taken yet.
+  final double? accuracy;
+
   final ValueChanged<Lesson> onLessonTap;
+  final VoidCallback onPractice;
   final LessonStatus Function(String lessonId) statusFor;
   final bool compact;
 
@@ -986,12 +1017,27 @@ class _UnitCard extends StatelessWidget {
             },
           ),
           const SizedBox(height: 20),
-          Text(
-            '${(progress * 100).round()}% complete',
-            style: const TextStyle(
-              color: Color(0xFFF7FFFB),
-              fontWeight: FontWeight.w800,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${(progress * 100).round()}% complete',
+                  style: const TextStyle(
+                    color: Color(0xFFF7FFFB),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              if (accuracy != null)
+                Text(
+                  '${(accuracy! * 100).round()}% accuracy',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.66),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 10),
           ClipRRect(
@@ -1011,6 +1057,27 @@ class _UnitCard extends StatelessWidget {
             statusFor: statusFor,
             onLessonTap: onLessonTap,
           ),
+          if (practiceFor(unit.id).isNotEmpty) ...[
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onPractice,
+                icon: const Icon(Icons.fitness_center_rounded, size: 18),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF69C6FF),
+                  side: BorderSide(
+                    color: const Color(0xFF69C6FF).withValues(alpha: 0.45),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                label: Text(
+                  'Practice this unit',
+                  style: GoogleFonts.baloo2(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
