@@ -3,17 +3,10 @@ class AppAssets {
 
   static const String logo = 'assets/images/logo.png';
   static const String coolTurtle = 'assets/images/cool_turtle.png';
-  static const String tilesetNature =
-      'assets/images/tilesets/TilesetNature.png';
+  static const String pixelMainTurtle = 'assets/own_skins/pixelMainTurtle.png';
 
-  static const String turtleLoadingAnimation =
-      'assets/animations/turtle_loading.svg';
-  static const String academyLoopAnimation =
-      'assets/animations/academy_loop.json';
-  static const String arcadeLoopAnimation =
-      'assets/animations/arcade_loop.json';
-  static const String turtleMovingAnimation =
-      'assets/animations/turtlemoving.json';
+  static const String loadingAnimation =
+      'assets/animations/02_Manny_Run_Fill.json';
 
   static const String reactChallengeQuestions =
       'assets/data/react_challenge_questions.json';
@@ -30,10 +23,13 @@ class AppAssets {
       'assets/self_made_backgrounds/arcade_tile_bg.png';
   static const String adventureMapBackground =
       'assets/self_made_backgrounds/adventure_map.png';
+  static const String meadowTileBackground =
+      'assets/self_made_backgrounds/meadow_tile_bg.png';
   static const String tileGrass =
       'assets/map_assets_coins/PNG_more_map_tiles/rpgTile000.png';
   static const String tileShore =
       'assets/map_assets_coins/PNG_more_map_tiles/rpgTile010.png';
+  static const String tileCoin = 'assets/images/tiles/coin.png';
 
   static const String turtleClassic =
       'assets/images/turtles/Wface_no_bg_l7nvmfum.png';
@@ -43,6 +39,51 @@ class AppAssets {
       'assets/images/turtles/walkingredshell_no_bg_63pfbf03.png';
   static const String turtleExplorer =
       'assets/images/turtles/cuteTropicalhandDrawn_no_bg_i3ipxxln.png';
+
+  // Human villagers. Frames are cropped from the hand-drawn sheets in
+  // assets/own_skins by tool/crop_human_skins.ps1; the colour variants are
+  // generated from those frames by tool/make_human_variants.ps1. Every variant
+  // folder holds the same frame names, so a variant is just a path prefix.
+  static const String humansRoot = 'assets/images/humans';
+
+  static const List<String> humanVariantIds = <String>[
+    'emerald_scout',
+    'gold_banker',
+    'crimson_trader',
+    'violet_scholar',
+    'teal_analyst',
+    'sand_saver',
+    'rose_planner',
+    'slate_investor',
+    'midnight_ledger',
+    'aurora_prime',
+  ];
+
+  /// Preview frame (front-facing, standing) for [variantId]; pass null for the
+  /// original blue villager.
+  static String humanPreview(String? variantId) =>
+      humanFrame(variantId, 'south', 1);
+
+  static String humanFrame(String? variantId, String direction, int frame) {
+    final base = variantId == null ? humansRoot : '$humansRoot/$variantId';
+    return '$base/$direction$frame.png';
+  }
+
+  /// Walk-cycle frames for one direction: `south` (8), `north` (7), `west` (8)
+  /// or `east` (8, mirrored from west by the crop tool).
+  static List<String> humanWalk(String? variantId, String direction) {
+    final count = direction == 'north' ? 7 : 8;
+    return <String>[
+      for (var i = 1; i <= count; i++) humanFrame(variantId, direction, i),
+    ];
+  }
+
+  /// Same as [humanWalk] but relative to `assets/images/`, which is the root
+  /// Flame/Bonfire resolves sprite paths against.
+  static List<String> humanWalkForFlame(String? variantId, String direction) =>
+      humanWalk(variantId, direction)
+          .map((path) => path.replaceFirst('assets/images/', ''))
+          .toList(growable: false);
 
   // Mushroom Goomba — 4-frame directional walk cycle (south = toward camera,
   // north = away). The first south frame doubles as the skin preview image.

@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
+import '../models_Like_Skins_and_lessons_templates/player_profile.dart';
 
 const String defaultAdventureMapId = 'starter_village';
 const double defaultAdventurePositionX = 640;
@@ -259,6 +260,66 @@ class UserStats {
         .toList(growable: false);
   }
 
+  /// Arcade history keyed by game id, holding `best` and `plays`.
+  Map<String, dynamic> get arcadeScores {
+    final raw = spendingHabits['arcade_scores'];
+    if (raw is Map) {
+      return raw.map((key, value) => MapEntry(key.toString(), value));
+    }
+    return const <String, dynamic>{};
+  }
+
+  /// Highest score recorded for [gameId], or null if never played.
+  int? bestArcadeScore(String gameId) {
+    final entry = arcadeScores[gameId];
+    if (entry is! Map) {
+      return null;
+    }
+    final best = _readInt(entry['best']);
+    return best > 0 ? best : null;
+  }
+
+  int arcadePlays(String gameId) {
+    final entry = arcadeScores[gameId];
+    return entry is Map ? _readInt(entry['plays']) : 0;
+  }
+
+  /// Quiz results keyed by lesson-graph node id. Each value holds `correct`,
+  /// `total`, `best_correct` and `attempts`.
+  Map<String, dynamic> get quizScores {
+    final raw = spendingHabits['quiz_scores'];
+    if (raw is Map) {
+      return raw.map((key, value) => MapEntry(key.toString(), value));
+    }
+    return const <String, dynamic>{};
+  }
+
+  /// Best-ever accuracy on an assessment node, or null if never attempted.
+  double? accuracyFor(String nodeId) {
+    final entry = quizScores[nodeId];
+    if (entry is! Map) {
+      return null;
+    }
+    final total = _readInt(entry['total']);
+    if (total <= 0) {
+      return null;
+    }
+    return _readInt(entry['best_correct']) / total;
+  }
+
+  /// Skill ids the player has missed questions on and not yet recovered.
+  List<String> get weakSkills {
+    final raw = spendingHabits['weak_skills'];
+    if (raw is! List) {
+      return const <String>[];
+    }
+    return raw
+        .map((entry) => entry.toString().trim())
+        .where((entry) => entry.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+  }
+
   String get profileImageUrl {
     final value = spendingHabits['profile_image_url']?.toString().trim();
     if (value == null || value.isEmpty) {
@@ -266,6 +327,20 @@ class UserStats {
     }
     return value;
   }
+
+  AgeBand get ageBand => AgeBand.fromId(spendingHabits[ProfileKeys.ageBand]);
+
+  GenderIdentity get gender =>
+      GenderIdentity.fromId(spendingHabits[ProfileKeys.gender]);
+
+  /// Drives which worked examples the Academy shows. See [AgeBand.lifeStage].
+  LifeStage get lifeStage => ageBand.lifeStage;
+
+  /// True once the player has been through the age/gender step, whether or not
+  /// they chose to disclose anything. Without this we cannot tell "skipped" from
+  /// "not asked yet" and would re-prompt forever.
+  bool get hasCompletedPersonalDetails =>
+      spendingHabits[ProfileKeys.onboardingComplete] == true;
 
   String get adventureMapId {
     final value = spendingHabits['adventure_map_id']?.toString().trim();

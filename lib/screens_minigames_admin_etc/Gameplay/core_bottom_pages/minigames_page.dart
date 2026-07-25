@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 import '../../../constants/app_assets.dart';
+import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../navigation_tools_and_animation/fade_page_route.dart';
+import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
-import '../minigames_pages/stock_market_page.dart';
+import '../minigames_pages/bill_dodger.dart';
 import '../minigames_pages/finance_brawl_game.dart';
+import '../minigames_pages/react_challenge_screen.dart';
+import '../minigames_pages/stock_market_page.dart';
+import '../minigames_pages/subscription_sweep.dart';
+import 'arcade_catalog.dart';
 
 class MinigamesPage extends StatelessWidget {
   const MinigamesPage({
@@ -19,118 +27,270 @@ class MinigamesPage extends StatelessWidget {
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
 
+  Future<void> _launch(BuildContext context, ArcadeGame game) async {
+    HapticFeedback.selectionClick();
+    switch (game.id) {
+      case 'react_challenge':
+        await _openReactChallenge(context);
+      case 'bill_dodger':
+        await _openBillDodger(context);
+      case 'market_board':
+        await _openStockMarket(context);
+      case 'subscription_sweep':
+        await _openSubscriptionSweep(context);
+      case 'finance_brawl':
+        await _openFinanceBrawl(context);
+    }
+  }
+
+  Future<void> _openReactChallenge(BuildContext context) async {
+    final controller = context.read<UserStatsController>();
+    final stats = controller.stats;
+
+    final result = await Navigator.of(context).push<ReactGameCloseResult>(
+      FadePageRoute(
+        builder: (_) => ReactChallengeScreen(
+          gameId: 'daily_budget_battle',
+          difficulty: 'medium',
+          playerLevel: stats.level,
+          userId: stats.id,
+        ),
+      ),
+    );
+
+    if (!context.mounted || result == null) {
+      return;
+    }
+
+    await controller.recordArcadeRun(
+      gameId: 'react_challenge',
+      score: result.goldEarned,
+    );
+    if (!context.mounted) {
+      return;
+    }
+
+    GameToast.show(
+      context,
+      title: result.status == 'victory'
+          ? 'Arcade streak extended'
+          : 'Run saved',
+      message:
+          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+      icon: Icons.bolt_rounded,
+      accent: const Color(0xFF6CB6DA),
+    );
+  }
+
+  Future<void> _openBillDodger(BuildContext context) async {
+    final controller = context.read<UserStatsController>();
+    final result = await Navigator.of(context).push<BillDodgerCloseResult>(
+      FadePageRoute(builder: (_) => const BillDodgerScreen()),
+    );
+
+    if (!context.mounted || result == null) {
+      return;
+    }
+
+    await controller.recordArcadeRun(
+      gameId: 'bill_dodger',
+      score: result.finalScore,
+    );
+    if (!context.mounted) {
+      return;
+    }
+
+    GameToast.show(
+      context,
+      title: 'Arcade rewards saved',
+      message:
+          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+      icon: Icons.sports_esports_rounded,
+      accent: const Color(0xFFE1BB72),
+    );
+  }
+
   Future<void> _openStockMarket(BuildContext context) async {
     await Navigator.of(
       context,
     ).push(FadePageRoute(builder: (_) => const StockMarketPage()));
   }
 
-  Future<void> _openFinanceBrawl(BuildContext context) async {
-  final result = await Navigator.of(context).push<FinanceBrawlCloseResult>(
-    FadePageRoute(builder: (_) => const FinanceBrawlScreen()),
-  );
+  Future<void> _openSubscriptionSweep(BuildContext context) async {
+    final controller = context.read<UserStatsController>();
+    final result = await Navigator.of(context)
+        .push<SubscriptionSweepCloseResult>(
+          FadePageRoute(builder: (_) => const SubscriptionSweepScreen()),
+        );
 
-  if (!context.mounted || result == null) {
-    return;
+    if (!context.mounted || result == null) {
+      return;
+    }
+
+    await controller.recordArcadeRun(
+      gameId: 'subscription_sweep',
+      score: result.finalBalance,
+    );
+    if (!context.mounted) {
+      return;
+    }
+
+    GameToast.show(
+      context,
+      title: 'Sweep complete',
+      message:
+          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+      icon: Icons.receipt_long_rounded,
+      accent: const Color(0xFFD49B7E),
+    );
   }
 
-  GameToast.show(
-    context,
-    title: 'Horde cleared',
-    message:
-        '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
-    icon: Icons.gavel_rounded,
-    accent: const Color(0xFFE1BB72),
-  );
-}
+  Future<void> _openFinanceBrawl(BuildContext context) async {
+    final controller = context.read<UserStatsController>();
+    final result = await Navigator.of(context).push<FinanceBrawlCloseResult>(
+      FadePageRoute(builder: (_) => const FinanceBrawlScreen()),
+    );
+
+    if (!context.mounted || result == null) {
+      return;
+    }
+
+    await controller.recordArcadeRun(
+      gameId: 'finance_brawl',
+      score: result.xpEarned,
+    );
+    if (!context.mounted) {
+      return;
+    }
+
+    GameToast.show(
+      context,
+      title: 'Horde cleared',
+      message:
+          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+      icon: Icons.gavel_rounded,
+      accent: const Color(0xFFE1BB72),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final minigames = <_MinigamePosterData>[
-      _MinigamePosterData(
-        title: 'Market Board',
-        accent: const Color(0xFF58C7FF),
-        icon: Icons.show_chart_rounded,
-        onPressed: () => _openStockMarket(context),
-      ),
-      _MinigamePosterData(
-        title: 'Finance Brawl',
-        accent: const Color(0xFF85EFAC),
-        icon: Icons.gavel_rounded,
-        onPressed: () => _openFinanceBrawl(context),
-      ),
-    ];
+    return Consumer<UserStatsController>(
+      builder: (context, controller, _) {
+        final stats = controller.stats;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF071711),
-      bottomNavigationBar: onNavSelected == null
-          ? null
-          : CustomBottomNav(
-              activeIndex: activeTabIndex,
-              onSelected: onNavSelected!,
-            ),
-      body: Stack(
-        children: [
-          const _MinigameBackdrop(),
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final wide = constraints.maxWidth >= 760;
-                return ListView(
-                  padding: EdgeInsets.fromLTRB(
-                    wide ? 22 : 16,
-                    16,
-                    wide ? 22 : 16,
-                    120,
-                  ),
-                  children: [
-                    const _PageHeader(
-                      title: 'Arcade',
-                      subtitle: 'Choose a quick run and jump in.',
-                    ),
-                    const SizedBox(height: 14),
-                    _ArcadeTopGameBar(games: minigames),
-                    SizedBox(height: wide ? 18 : 14),
-                    if (wide) ...[
-                      _FeaturedArcadeShelf(games: minigames, wide: wide),
-                      const SizedBox(height: 20),
-                    ],
-                    const _SectionTitle(title: 'All Games'),
-                    const SizedBox(height: 12),
-                    _ArcadePosterGrid(games: minigames, wide: wide),
-                  ],
-                );
-              },
-            ),
+        return Scaffold(
+          backgroundColor: const Color(0xFF071711),
+          bottomNavigationBar: onNavSelected == null
+              ? null
+              : CustomBottomNav(
+                  activeIndex: activeTabIndex,
+                  onSelected: onNavSelected!,
+                ),
+          body: Stack(
+            children: [
+              const _MinigameBackdrop(),
+              SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    final pad = width >= 760 ? 22.0 : 16.0;
+                    // Tile width target keeps cards readable from a 320pt
+                    // phone up to a tablet in landscape.
+                    final columns = ((width - (pad * 2)) / 300).floor().clamp(
+                      1,
+                      3,
+                    );
+
+                    // Lead with whatever the player has touched least, so the
+                    // hub keeps pointing somewhere new rather than always
+                    // showing the same hero card.
+                    final sorted = [...arcadeCatalog]
+                      ..sort(
+                        (a, b) => stats
+                            .arcadePlays(a.id)
+                            .compareTo(stats.arcadePlays(b.id)),
+                      );
+                    final featured = sorted.first;
+
+                    return CustomScrollView(
+                      slivers: [
+                        SliverPadding(
+                          padding: EdgeInsets.fromLTRB(pad, 16, pad, 0),
+                          sliver: SliverList.list(
+                            children: [
+                              _ArcadeHeader(stats: stats),
+                              const SizedBox(height: 16),
+                              _FeaturedCard(
+                                game: featured,
+                                best: stats.bestArcadeScore(featured.id),
+                                plays: stats.arcadePlays(featured.id),
+                                onPlay: () => _launch(context, featured),
+                              ),
+                              const SizedBox(height: 22),
+                              Text(
+                                'ALL GAMES',
+                                style: GoogleFonts.baloo2(
+                                  color: Colors.white.withValues(alpha: 0.55),
+                                  fontSize: 12,
+                                  letterSpacing: 1.2,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                          ),
+                        ),
+                        SliverPadding(
+                          padding: EdgeInsets.fromLTRB(pad, 0, pad, 130),
+                          sliver: SliverGrid.builder(
+                            itemCount: arcadeCatalog.length,
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: columns,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                  mainAxisExtent: 168,
+                                ),
+                            itemBuilder: (context, index) {
+                              final game = arcadeCatalog[index];
+                              return _GameCard(
+                                game: game,
+                                best: stats.bestArcadeScore(game.id),
+                                plays: stats.arcadePlays(game.id),
+                                onPlay: () => _launch(context, game),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
-class _MinigamePosterData {
-  const _MinigamePosterData({
-    required this.title,
-    required this.accent,
-    required this.icon,
-    required this.onPressed,
-  });
+class _ArcadeHeader extends StatelessWidget {
+  const _ArcadeHeader({required this.stats});
 
-  final String title;
-  final Color accent;
-  final IconData icon;
-  final VoidCallback onPressed;
-}
-
-class _PageHeader extends StatelessWidget {
-  const _PageHeader({required this.title, required this.subtitle});
-
-  final String title;
-  final String subtitle;
+  final UserStats stats;
 
   @override
   Widget build(BuildContext context) {
+    final totalPlays = arcadeCatalog.fold<int>(
+      0,
+      (sum, game) => sum + stats.arcadePlays(game.id),
+    );
+    final played = arcadeCatalog
+        .where((game) => stats.arcadePlays(game.id) > 0)
+        .length;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -150,17 +310,19 @@ class _PageHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                title,
-                style: const TextStyle(
+                'Arcade',
+                style: GoogleFonts.baloo2(
                   color: Colors.white,
-                  fontSize: 30,
+                  fontSize: 32,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 2),
               Text(
-                subtitle,
-                style: TextStyle(
+                totalPlays == 0
+                    ? 'Five ways to practise money without spending any.'
+                    : '$totalPlays runs • $played of ${arcadeCatalog.length} games tried',
+                style: GoogleFonts.quicksand(
                   color: Colors.white.withValues(alpha: 0.72),
                   fontWeight: FontWeight.w700,
                 ),
@@ -168,56 +330,134 @@ class _PageHeader extends StatelessWidget {
             ],
           ),
         ),
+        _GoldPill(gold: stats.gold),
       ],
     );
   }
 }
 
-class _ArcadeTopGameBar extends StatefulWidget {
-  const _ArcadeTopGameBar({required this.games});
+class _GoldPill extends StatelessWidget {
+  const _GoldPill({required this.gold});
 
-  final List<_MinigamePosterData> games;
-
-  @override
-  State<_ArcadeTopGameBar> createState() => _ArcadeTopGameBarState();
-}
-
-class _ArcadeTopGameBarState extends State<_ArcadeTopGameBar> {
-  final ScrollController _controller = ScrollController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  final int gold;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 96),
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF071711).withValues(alpha: 0.58),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        color: const Color(0xFFFFD45C).withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: const Color(0xFFFFD45C).withValues(alpha: 0.30),
+        ),
       ),
-      child: Scrollbar(
-        controller: _controller,
-        thumbVisibility: true,
-        trackVisibility: true,
-        interactive: true,
-        thickness: 5,
-        radius: const Radius.circular(999),
-        child: SingleChildScrollView(
-          controller: _controller,
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Row(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.paid_rounded, color: Color(0xFFFFD45C), size: 16),
+          const SizedBox(width: 6),
+          Text(
+            '$gold',
+            style: const TextStyle(
+              color: Color(0xFFFFD45C),
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The large "start here" card at the top of the hub.
+class _FeaturedCard extends StatelessWidget {
+  const _FeaturedCard({
+    required this.game,
+    required this.best,
+    required this.plays,
+    required this.onPlay,
+  });
+
+  final ArcadeGame game;
+  final int? best;
+  final int plays;
+  final VoidCallback onPlay;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Play ${game.title}',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(28),
+        onTap: onPlay,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: _cardDecoration(game.accent, radius: 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (var index = 0; index < widget.games.length; index++) ...[
-                _TopGameButton(data: widget.games[index]),
-                if (index != widget.games.length - 1) const SizedBox(width: 10),
-              ],
+              Row(
+                children: [
+                  _GameArt(game: game, size: 62),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          plays == 0 ? 'TRY NEXT' : 'PICK UP AGAIN',
+                          style: GoogleFonts.baloo2(
+                            color: game.accent,
+                            fontSize: 11,
+                            letterSpacing: 1.2,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        Text(
+                          game.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.baloo2(
+                            color: Colors.white,
+                            fontSize: 26,
+                            height: 1.1,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                game.tagline,
+                style: GoogleFonts.quicksand(
+                  color: Colors.white.withValues(alpha: 0.82),
+                  fontWeight: FontWeight.w600,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _MetaChip(
+                    label: game.difficulty.label,
+                    color: game.difficulty.color,
+                  ),
+                  _MetaChip(label: game.length.label, color: Colors.white70),
+                  _MetaChip(label: game.teaches, color: game.accent),
+                  if (best != null)
+                    _MetaChip(
+                      label: '${game.scoreLabel}: $best',
+                      color: const Color(0xFFFFD45C),
+                    ),
+                ],
+              ),
             ],
           ),
         ),
@@ -226,280 +466,111 @@ class _ArcadeTopGameBarState extends State<_ArcadeTopGameBar> {
   }
 }
 
-class _TopGameButton extends StatelessWidget {
-  const _TopGameButton({required this.data});
+class _GameCard extends StatelessWidget {
+  const _GameCard({
+    required this.game,
+    required this.best,
+    required this.plays,
+    required this.onPlay,
+  });
 
-  final _MinigamePosterData data;
-
-  @override
-  Widget build(BuildContext context) {
-    return _PosterTap(
-      data: data,
-      child: Container(
-        constraints: const BoxConstraints(minWidth: 158, minHeight: 66),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: _posterDecoration(data.accent, radius: 18),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _PosterArt(icon: data.icon, accent: data.accent, size: 44),
-            const SizedBox(width: 10),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 96),
-              child: Text(
-                data.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  height: 1.05,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FeaturedArcadeShelf extends StatelessWidget {
-  const _FeaturedArcadeShelf({required this.games, required this.wide});
-
-  final List<_MinigamePosterData> games;
-  final bool wide;
-
-  @override
-  Widget build(BuildContext context) {
-    if (wide) {
-      return Row(
-        children: [
-          for (var index = 0; index < games.length; index++) ...[
-            if (index != 0) const SizedBox(width: 14),
-            Expanded(child: _FeaturePoster(data: games[index])),
-          ],
-        ],
-      );
-    }
-
-    return SizedBox(
-      height: 218,
-      child: PageView.builder(
-        itemCount: games.length,
-        padEnds: false,
-        pageSnapping: true,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: EdgeInsets.only(right: index == games.length - 1 ? 0 : 10),
-            child: _GamePoster(data: games[index], featured: true),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _ArcadePosterGrid extends StatelessWidget {
-  const _ArcadePosterGrid({required this.games, required this.wide});
-
-  final List<_MinigamePosterData> games;
-  final bool wide;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!wide) {
-      return Column(
-        children: [
-          for (var index = 0; index < games.length; index++) ...[
-            _MiniPoster(data: games[index]),
-            if (index != games.length - 1) const SizedBox(height: 10),
-          ],
-        ],
-      );
-    }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth >= 1120 ? 5 : 3;
-        return GridView.builder(
-          itemCount: games.length,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 14,
-            mainAxisSpacing: 14,
-            mainAxisExtent: 190,
-          ),
-          itemBuilder: (context, index) => _GamePoster(data: games[index]),
-        );
-      },
-    );
-  }
-}
-
-class _FeaturePoster extends StatelessWidget {
-  const _FeaturePoster({required this.data});
-
-  final _MinigamePosterData data;
-
-  @override
-  Widget build(BuildContext context) {
-    return _PosterTap(
-      data: data,
-      child: Container(
-        height: 292,
-        padding: const EdgeInsets.all(24),
-        decoration: _posterDecoration(data.accent, radius: 30),
-        child: Stack(
-          children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: _PosterArt(
-                icon: data.icon,
-                accent: data.accent,
-                size: 156,
-              ),
-            ),
-            Align(
-              alignment: Alignment.bottomLeft,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 360),
-                child: Text(
-                  data.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 38,
-                    height: 0.98,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GamePoster extends StatelessWidget {
-  const _GamePoster({required this.data, this.featured = false});
-
-  final _MinigamePosterData data;
-  final bool featured;
-
-  @override
-  Widget build(BuildContext context) {
-    return _PosterTap(
-      data: data,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: _posterDecoration(data.accent, radius: 26),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Center(
-                child: _PosterArt(
-                  icon: data.icon,
-                  accent: data.accent,
-                  size: featured ? 104 : 86,
-                ),
-              ),
-            ),
-            Text(
-              data.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: featured ? 21 : 18,
-                height: 1.05,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MiniPoster extends StatelessWidget {
-  const _MiniPoster({required this.data});
-
-  final _MinigamePosterData data;
-
-  @override
-  Widget build(BuildContext context) {
-    return _PosterTap(
-      data: data,
-      child: Container(
-        height: 92,
-        padding: const EdgeInsets.all(14),
-        decoration: _posterDecoration(data.accent, radius: 22),
-        child: Row(
-          children: [
-            _PosterArt(icon: data.icon, accent: data.accent, size: 58),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                data.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  height: 1.05,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-            const Icon(Icons.play_arrow_rounded, color: Color(0xFF85EFAC)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PosterTap extends StatelessWidget {
-  const _PosterTap({required this.data, required this.child});
-
-  final _MinigamePosterData data;
-  final Widget child;
+  final ArcadeGame game;
+  final int? best;
+  final int plays;
+  final VoidCallback onPlay;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Play ${data.title}',
+      label: 'Play ${game.title}',
       child: InkWell(
-        borderRadius: BorderRadius.circular(26),
-        onTap: () {
-          HapticFeedback.selectionClick();
-          data.onPressed();
-        },
-        child: child,
+        borderRadius: BorderRadius.circular(24),
+        onTap: onPlay,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: _cardDecoration(game.accent, radius: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _GameArt(game: game, size: 44),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      game.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.baloo2(
+                        color: Colors.white,
+                        fontSize: 18,
+                        height: 1.05,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Expanded(
+                child: Text(
+                  game.tagline,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white.withValues(alpha: 0.70),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _MetaChip(
+                    label: game.difficulty.label,
+                    color: game.difficulty.color,
+                    dense: true,
+                  ),
+                  const SizedBox(width: 6),
+                  _MetaChip(
+                    label: game.length.label,
+                    color: Colors.white60,
+                    dense: true,
+                  ),
+                  const Spacer(),
+                  Icon(Icons.play_arrow_rounded, color: game.accent),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                best == null
+                    ? 'Not played yet'
+                    : '${game.scoreLabel}: $best  •  $plays ${plays == 1 ? 'run' : 'runs'}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: best == null
+                      ? Colors.white.withValues(alpha: 0.42)
+                      : const Color(0xFFFFD45C),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _PosterArt extends StatelessWidget {
-  const _PosterArt({
-    required this.icon,
-    required this.accent,
-    required this.size,
-  });
+class _GameArt extends StatelessWidget {
+  const _GameArt({required this.game, required this.size});
 
-  final IconData icon;
-  final Color accent;
+  final ArcadeGame game;
   final double size;
 
   @override
@@ -508,23 +579,68 @@ class _PosterArt extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(size * 0.24),
-        border: Border.all(color: accent.withValues(alpha: 0.30), width: 2),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            game.accent.withValues(alpha: 0.28),
+            game.accent.withValues(alpha: 0.10),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(size * 0.26),
+        border: Border.all(
+          color: game.accent.withValues(alpha: 0.34),
+          width: 2,
+        ),
       ),
-      child: Icon(icon, color: accent, size: size * 0.48),
+      child: Icon(game.icon, color: game.accent, size: size * 0.48),
     );
   }
 }
 
-BoxDecoration _posterDecoration(Color accent, {required double radius}) {
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({
+    required this.label,
+    required this.color,
+    this.dense = false,
+  });
+
+  final String label;
+  final Color color;
+  final bool dense;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: dense ? 7 : 10,
+        vertical: dense ? 3 : 5,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: dense ? 10 : 11.5,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+BoxDecoration _cardDecoration(Color accent, {required double radius}) {
   return BoxDecoration(
     gradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [
         const Color(0xFF173B2E),
-        Color.lerp(const Color(0xFF10281F), accent, 0.10)!,
+        Color.lerp(const Color(0xFF10281F), accent, 0.12)!,
       ],
     ),
     borderRadius: BorderRadius.circular(radius),
@@ -537,24 +653,6 @@ BoxDecoration _posterDecoration(Color accent, {required double radius}) {
       ),
     ],
   );
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 20,
-        fontWeight: FontWeight.w900,
-      ),
-    );
-  }
 }
 
 class _MinigameBackdrop extends StatelessWidget {

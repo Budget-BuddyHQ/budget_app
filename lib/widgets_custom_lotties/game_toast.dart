@@ -211,4 +211,3 @@ class _GameToastBannerState extends State<_GameToastBanner>
     );
   }
 }
-

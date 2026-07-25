@@ -83,8 +83,8 @@ class GameHubPage extends StatelessWidget {
                     final horizontalPadding = constraints.maxWidth >= 1200
                         ? 26.0
                         : constraints.maxWidth >= 860
-                            ? 20.0
-                            : 16.0;
+                        ? 20.0
+                        : 16.0;
 
                     return SingleChildScrollView(
                       padding: EdgeInsets.fromLTRB(
@@ -102,7 +102,8 @@ class GameHubPage extends StatelessWidget {
                             literacyPoints: stats.literacyPoints,
                             levelTitle: stats.levelTitle,
                             turtleSkin: turtleSkin,
-                            onOpenMainGameplay: () => _openMainGameplay(context),
+                            onOpenMainGameplay: () =>
+                                _openMainGameplay(context),
                             onOpenMinigames: () => _openMinigames(context),
                           ),
                           const SizedBox(height: 20),
@@ -151,7 +152,11 @@ class GameHubPage extends StatelessWidget {
                               if (stacked) {
                                 return Column(
                                   children: [
-                                    for (var index = 0; index < cards.length; index++) ...[
+                                    for (
+                                      var index = 0;
+                                      index < cards.length;
+                                      index++
+                                    ) ...[
                                       cards[index],
                                       if (index != cards.length - 1)
                                         const SizedBox(height: 14),
@@ -204,7 +209,11 @@ class GameHubPage extends StatelessWidget {
                               if (stacked) {
                                 return Column(
                                   children: [
-                                    for (var index = 0; index < widgets.length; index++) ...[
+                                    for (
+                                      var index = 0;
+                                      index < widgets.length;
+                                      index++
+                                    ) ...[
                                       widgets[index],
                                       if (index != widgets.length - 1)
                                         const SizedBox(height: 12),
@@ -215,7 +224,11 @@ class GameHubPage extends StatelessWidget {
 
                               return Row(
                                 children: [
-                                  for (var index = 0; index < widgets.length; index++) ...[
+                                  for (
+                                    var index = 0;
+                                    index < widgets.length;
+                                    index++
+                                  ) ...[
                                     Expanded(child: widgets[index]),
                                     if (index != widgets.length - 1)
                                       const SizedBox(width: 12),
@@ -307,7 +320,7 @@ class _HubHero extends StatelessWidget {
               padding: EdgeInsets.all(stacked ? 12 : 16),
               child: ClipOval(
                 child: Image.asset(
-                  turtleSkin.assetPath,
+                  turtleSkin.previewAsset,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -315,8 +328,9 @@ class _HubHero extends StatelessWidget {
           );
 
           final content = Column(
-            crossAxisAlignment:
-                stacked ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+            crossAxisAlignment: stacked
+                ? CrossAxisAlignment.center
+                : CrossAxisAlignment.start,
             children: [
               Text(
                 'GAMEPLAY PORTAL',
@@ -373,7 +387,8 @@ class _HubHero extends StatelessWidget {
               const SizedBox(height: 18),
               LayoutBuilder(
                 builder: (context, buttonConstraints) {
-                  final buttonStacked = stacked || buttonConstraints.maxWidth < 440;
+                  final buttonStacked =
+                      stacked || buttonConstraints.maxWidth < 440;
 
                   final mainButton = CustomButton(
                     label: 'Main Gameplay',
@@ -420,11 +435,7 @@ class _HubHero extends StatelessWidget {
 
           if (stacked) {
             return Column(
-              children: [
-                avatar,
-                const SizedBox(height: 18),
-                content,
-              ],
+              children: [avatar, const SizedBox(height: 18), content],
             );
           }
 
@@ -679,10 +690,7 @@ class _HeroPill extends StatelessWidget {
 }
 
 class _SectionHeading extends StatelessWidget {
-  const _SectionHeading({
-    required this.title,
-    required this.subtitle,
-  });
+  const _SectionHeading({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
@@ -751,10 +759,7 @@ class _GameHubBackdrop extends StatelessWidget {
 }
 
 class _GlowOrb extends StatelessWidget {
-  const _GlowOrb({
-    required this.color,
-    required this.size,
-  });
+  const _GlowOrb({required this.color, required this.size});
 
   final Color color;
   final double size;
@@ -780,4 +785,3 @@ class _GlowOrb extends StatelessWidget {
     );
   }
 }
-

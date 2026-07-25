@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
-import '../../constants/app_assets.dart';
 import '../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../widgets_custom_lotties/ambient_lottie_card.dart';
@@ -31,8 +30,7 @@ class CustomizeScreen extends StatefulWidget {
 class _CustomizeScreenState extends State<CustomizeScreen> {
   bool _openingCase = false;
   bool _showCaseOdds = false;
-  late AvatarSkin skin;
-  bool _initalized = false;
+
   Future<void> _openCase() async {
     if (_openingCase) {
       return;
@@ -67,7 +65,6 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
   Future<void> _equipSkin(AvatarSkin skin) async {
     final result = await context.read<UserStatsController>().equipSkin(skin.id);
 
-    this.skin = skin;
     if (!mounted) {
       return;
     }
@@ -83,20 +80,27 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
     );
   }
 
+  void _showLockedSkinInfo(AvatarSkin skin) {
+    HapticFeedback.selectionClick();
+    final odds = oddsForRarity(skin.rarity);
+    GameToast.show(
+      context,
+      title: '${skin.name} is locked',
+      message:
+          '${skin.rarityLabel} • ${odds.oddsLabel} from an Emerald Case. '
+          'Duplicates refund ${odds.refundGold} gold.',
+      icon: Icons.lock_outline_rounded,
+      accent: skin.accent,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // The a moving arua animation for each skin
     return Consumer<UserStatsController>(
       builder: (context, controller, _) {
         final stats = controller.stats;
         final equippedSkin = skinFromId(stats.equippedSkin);
-        final inventorySkins = controller.unlockedAvatarSkins;
-
-        // Initialize skin if not already set
-        if (!_initalized) {
-          skin = equippedSkin;
-          _initalized = true;
-        }
+        final unlockedIds = stats.unlockedSkins.toSet();
 
         return Scaffold(
           backgroundColor: const Color(0xFF071711),
@@ -108,66 +112,75 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
                 ),
           body: Stack(
             children: [
-              _CustomizeBackdrop(skin: skin),
+              _CustomizeBackdrop(skin: equippedSkin),
               SafeArea(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final width = constraints.maxWidth;
-                    final crossAxisCount = width < 340 ? 3 : 4;
-                    final childAspectRatio = width < 340 ? 0.84 : 0.76;
+                    // Landscape and tablets get a two-column split so the
+                    // preview stays visible while browsing the collection.
+                    final split = width >= 900;
+                    final gridWidth = split ? width * 0.55 : width;
+
+                    final header = Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _CharacterPreviewCard(
+                          stats: stats,
+                          equippedSkin: equippedSkin,
+                        ),
+                        const SizedBox(height: 18),
+                        _StorePanel(
+                          gold: stats.gold,
+                          isOpeningCase: _openingCase,
+                          showOdds: _showCaseOdds,
+                          onOpenCase: _openCase,
+                          onToggleOdds: () {
+                            setState(() => _showCaseOdds = !_showCaseOdds);
+                          },
+                        ),
+                      ],
+                    );
+
+                    final collection = _SkinCollection(
+                      unlockedIds: unlockedIds,
+                      equippedId: stats.equippedSkin,
+                      availableWidth: gridWidth - 36,
+                      onEquip: _equipSkin,
+                      onLockedTap: _showLockedSkinInfo,
+                    );
+
+                    if (split) {
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 4,
+                              child: SingleChildScrollView(child: header),
+                            ),
+                            const SizedBox(width: 18),
+                            Expanded(
+                              flex: 5,
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsets.only(bottom: 108),
+                                child: collection,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
 
                     return SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(18, 18, 18, 126),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _CharacterPreviewCard(
-                            stats: stats,
-                            equippedSkin: equippedSkin,
-                          ),
+                          header,
                           const SizedBox(height: 18),
-                          _StorePanel(
-                            gold: stats.gold,
-                            isOpeningCase: _openingCase,
-                            showOdds: _showCaseOdds,
-                            onOpenCase: _openCase,
-                            onToggleOdds: () {
-                              setState(() => _showCaseOdds = !_showCaseOdds);
-                            },
-                          ),
-                          const SizedBox(height: 18),
-                          const Text(
-                            'Skin Inventory',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: inventorySkins.length,
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: crossAxisCount,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 12,
-                                  childAspectRatio: childAspectRatio,
-                                ),
-                            itemBuilder: (context, index) {
-                              final skin = inventorySkins[index];
-                              final equipped = stats.equippedSkin == skin.id;
-
-                              return _SkinTile(
-                                skin: skin,
-                                unlocked: true,
-                                equipped: equipped,
-                                onTap: () => _equipSkin(skin),
-                              );
-                            },
-                          ),
+                          collection,
                         ],
                       ),
                     );
@@ -517,6 +530,163 @@ class _CaseOddsPanel extends StatelessWidget {
   }
 }
 
+/// Small rarity pip in the corner of a skin tile. Common is left unmarked so
+/// the grid does not get noisy — only the notable pulls get a badge.
+class _RarityDot extends StatelessWidget {
+  const _RarityDot({required this.rarity, required this.accent});
+
+  final SkinRarity rarity;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    if (rarity == SkinRarity.common) {
+      return const SizedBox.shrink();
+    }
+
+    final label = switch (rarity) {
+      SkinRarity.rare => 'R',
+      SkinRarity.epic => 'E',
+      SkinRarity.legendary => 'L',
+      SkinRarity.mythic => 'M',
+      SkinRarity.common => '',
+    };
+
+    return Container(
+      width: 18,
+      height: 18,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.22),
+        shape: BoxShape.circle,
+        border: Border.all(color: accent.withValues(alpha: 0.55)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: accent,
+          fontSize: 10,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+/// The full skin catalogue, grouped by family, with locked entries shown as
+/// dimmed silhouettes so players can see what they are collecting toward.
+class _SkinCollection extends StatelessWidget {
+  const _SkinCollection({
+    required this.unlockedIds,
+    required this.equippedId,
+    required this.availableWidth,
+    required this.onEquip,
+    required this.onLockedTap,
+  });
+
+  final Set<String> unlockedIds;
+  final String equippedId;
+  final double availableWidth;
+  final ValueChanged<AvatarSkin> onEquip;
+  final ValueChanged<AvatarSkin> onLockedTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = budgetBuddySkins.length;
+    final owned = budgetBuddySkins
+        .where((skin) => unlockedIds.contains(skin.id))
+        .length;
+
+    // Size tiles by a target width rather than a fixed column count so the
+    // grid stays readable from a 320pt phone through to a tablet in landscape.
+    final columns = (availableWidth / 132).floor().clamp(2, 6);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Collection',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF85EFAC).withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: const Color(0xFF85EFAC).withValues(alpha: 0.28),
+                ),
+              ),
+              child: Text(
+                '$owned / $total',
+                style: const TextStyle(
+                  color: Color(0xFF85EFAC),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: total == 0 ? 0 : owned / total,
+            minHeight: 6,
+            backgroundColor: Colors.white.withValues(alpha: 0.08),
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF85EFAC)),
+          ),
+        ),
+        for (final family in SkinFamily.values) ...[
+          if (skinsInFamily(family).isNotEmpty) ...[
+            const SizedBox(height: 20),
+            Text(
+              family.label.toUpperCase(),
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.55),
+                fontSize: 12,
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 10),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: skinsInFamily(family).length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columns,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.74,
+              ),
+              itemBuilder: (context, index) {
+                final skin = skinsInFamily(family)[index];
+                final unlocked = unlockedIds.contains(skin.id);
+                return _SkinTile(
+                  skin: skin,
+                  unlocked: unlocked,
+                  equipped: equippedId == skin.id,
+                  onTap: () => unlocked ? onEquip(skin) : onLockedTap(skin),
+                );
+              },
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+}
+
 class _SkinTile extends StatelessWidget {
   const _SkinTile({
     required this.skin,
@@ -564,19 +734,43 @@ class _SkinTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Center(
-                child: ColorFiltered(
-                  colorFilter: unlocked
-                      ? const ColorFilter.mode(
-                          Colors.transparent,
-                          BlendMode.srcOver,
-                        )
-                      : ColorFilter.mode(
-                          Colors.black.withValues(alpha: 0.55),
-                          BlendMode.srcATop,
-                        ),
-                  child: Image.asset(skin.assetPath, fit: BoxFit.contain),
-                ),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Center(
+                    child: ColorFiltered(
+                      // Locked skins render as a flat silhouette so the shape
+                      // is still recognisable but clearly not owned yet.
+                      colorFilter: unlocked
+                          ? const ColorFilter.mode(
+                              Colors.transparent,
+                              BlendMode.srcOver,
+                            )
+                          : ColorFilter.mode(
+                              const Color(0xFF071711).withValues(alpha: 0.82),
+                              BlendMode.srcATop,
+                            ),
+                      child: Image.asset(
+                        skin.previewAsset,
+                        fit: BoxFit.contain,
+                        filterQuality: FilterQuality.none,
+                      ),
+                    ),
+                  ),
+                  if (!unlocked)
+                    Center(
+                      child: Icon(
+                        Icons.lock_rounded,
+                        size: 20,
+                        color: Colors.white.withValues(alpha: 0.72),
+                      ),
+                    ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: _RarityDot(rarity: skin.rarity, accent: skin.accent),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 6),
@@ -584,8 +778,8 @@ class _SkinTile extends StatelessWidget {
               skin.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: unlocked ? Colors.white : Colors.white70,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
               ),
@@ -596,9 +790,11 @@ class _SkinTile extends StatelessWidget {
                   ? equipped
                         ? 'Equipped'
                         : 'Tap to equip'
-                  : '${skin.rarityLabel} • Locked',
+                  : skin.rarityLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: unlocked ? skin.accent : Colors.white60,
+                color: unlocked ? skin.accent : Colors.white54,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
@@ -1027,7 +1223,7 @@ class _RollTrack extends StatelessWidget {
             border: Border.all(color: skin.accent.withValues(alpha: 0.2)),
           ),
           padding: const EdgeInsets.all(10),
-          child: Image.asset(skin.assetPath, fit: BoxFit.contain),
+          child: Image.asset(skin.previewAsset, fit: BoxFit.contain),
         );
       }).toList(),
     );
@@ -1130,7 +1326,7 @@ class _CustomizeBackdrop extends StatelessWidget {
           child: Opacity(
             opacity: 0.20,
             child: AmbientLottieCard(
-              assetPath: AppAssets.arcadeLoopAnimation,
+              motif: AmbientMotif.coin,
               semanticLabel: 'Sparkling game ambience',
               width: 110,
               height: 110,
@@ -1146,7 +1342,7 @@ class _CustomizeBackdrop extends StatelessWidget {
           child: Opacity(
             opacity: 0.16,
             child: AmbientLottieCard(
-              assetPath: AppAssets.academyLoopAnimation,
+              motif: AmbientMotif.turtle,
               semanticLabel: 'Floating animation accent',
               width: 90,
               height: 90,
@@ -1251,7 +1447,7 @@ class _RarityAura extends StatelessWidget {
               SizedBox(
                 width: imageSize,
                 height: imageSize,
-                child: Image.asset(skin.assetPath, fit: BoxFit.contain),
+                child: Image.asset(skin.previewAsset, fit: BoxFit.contain),
               ),
           ],
         ),

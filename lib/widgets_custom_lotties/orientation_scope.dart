@@ -2,14 +2,25 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+/// Orientations the app supports everywhere outside of screens that
+/// deliberately lock themselves (the Bonfire world, for example).
+///
+/// Every page is expected to lay out in both portrait and landscape, so this
+/// is the default the app starts in and the state any locking screen restores
+/// on the way out.
+const List<DeviceOrientation> kAppOrientations = <DeviceOrientation>[
+  DeviceOrientation.portraitUp,
+  DeviceOrientation.portraitDown,
+  DeviceOrientation.landscapeLeft,
+  DeviceOrientation.landscapeRight,
+];
+
 class OrientationScope extends StatefulWidget {
   const OrientationScope({
     super.key,
     required this.orientations,
     required this.child,
-    this.fallbackOrientations = const <DeviceOrientation>[
-      DeviceOrientation.portraitUp,
-    ],
+    this.fallbackOrientations = kAppOrientations,
   });
 
   final List<DeviceOrientation> orientations;

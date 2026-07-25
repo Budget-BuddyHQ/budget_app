@@ -1,6 +1,5 @@
 [
   {
-    "_teamNote": "Add new React Challenge questions by copying this object format. Do not use // comments because this file must stay valid JSON. WILL NEED TO GET QUESTIONS FROM CURRICULUM DEPARTMENT",
     "prompt": "Your grocery cart is $12 over budget. Which swap helps most?",
     "choices": [
       "Trade bottled water for a reusable bottle",
