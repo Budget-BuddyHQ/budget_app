@@ -59,7 +59,8 @@ class ArcadeGame {
   final String scoreLabel;
 }
 
-const List<ArcadeGame> arcadeCatalog = <ArcadeGame>[
+/// All arcade games remain preserved in code here.
+const List<ArcadeGame> _allArcadeGames = <ArcadeGame>[
   ArcadeGame(
     id: 'bill_dodger',
     title: 'Bill Dodger',
@@ -116,3 +117,14 @@ const List<ArcadeGame> arcadeCatalog = <ArcadeGame>[
     scoreLabel: 'Best run',
   ),
 ];
+
+/// Add or remove IDs here to control which games appear in the app.
+const Set<String> activeArcadeGameIds = <String>{
+  'finance_brawl',
+  'market_board',
+};
+
+/// Public catalog consumed by your UI — contains ONLY enabled games.
+final List<ArcadeGame> arcadeCatalog = _allArcadeGames
+    .where((game) => activeArcadeGameIds.contains(game.id))
+    .toList(growable: false);
