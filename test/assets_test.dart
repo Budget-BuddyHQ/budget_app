@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:budget_app/constants/app_assets.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/avatar_skin.dart';
@@ -45,24 +46,50 @@ void main() {
   }
 
   group('AppAssets', () {
-    test('every skin preview resolves to a declared file', () {
-      for (final skin in budgetBuddySkins) {
+    test('every non-villager skin preview resolves to a declared file', () {
+      // Villagers render from a packed sheet and have no single preview file;
+      // they are covered by the sheet tests below instead.
+      for (final skin in budgetBuddySkins.where((skin) => !skin.isHuman)) {
         expectUsable(skin.previewAsset, label: 'Skin "${skin.name}" preview');
       }
     });
 
-    test('every villager walk frame resolves to a declared file', () {
+    test('every villager has a sheet for both bodies', () {
+      // The whole point of the packed sheets is that choosing a body never
+      // costs a pull, so a missing female sheet would silently fall back to
+      // a broken image for half the players.
       for (final skin in budgetBuddySkins.where((s) => s.isHuman)) {
-        for (final direction in ['south', 'north', 'west', 'east']) {
-          final frames = AppAssets.humanWalk(skin.humanVariantId, direction);
-          expect(
-            frames,
-            isNotEmpty,
-            reason: '${skin.name} has no $direction frames',
+        for (final body in VillagerBody.values) {
+          expectUsable(
+            skin.sheetAsset(body),
+            label: '${skin.name} (${body.label}) sheet',
           );
-          for (final frame in frames) {
-            expectUsable(frame, label: '${skin.name} $direction frame');
-          }
+        }
+      }
+    });
+
+    test('villager sheets are the expected grid size', () async {
+      // A cell-size drift would misalign every frame in the game and in the
+      // customise grid, so pin the packed dimensions to what AppAssets assumes.
+      final expectedW =
+          (AppAssets.villagerCellWidth * AppAssets.villagerSheetColumns)
+              .round();
+      final expectedH =
+          (AppAssets.villagerCellHeight * AppAssets.villagerSheetRows).round();
+
+      for (final skin in budgetBuddySkins.where((s) => s.isHuman)) {
+        for (final body in VillagerBody.values) {
+          final bytes = await File(skin.sheetAsset(body)).readAsBytes();
+          final codec = await instantiateImageCodec(bytes);
+          final decoded = (await codec.getNextFrame()).image;
+          expect(
+            [decoded.width, decoded.height],
+            [expectedW, expectedH],
+            reason:
+                '${skin.name} (${body.label}) sheet is '
+                '${decoded.width}x${decoded.height}, expected '
+                '${expectedW}x$expectedH. Re-run tool/pack_skin_sheets.ps1.',
+          );
         }
       }
     });

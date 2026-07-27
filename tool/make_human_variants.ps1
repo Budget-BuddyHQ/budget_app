@@ -91,20 +91,38 @@ $variants = [ordered]@{
     'aurora_prime'  = @{ $SHIRT = 'FFD45C'; $SHIRT_DK = 'C79A1F'; $PANTS = '1F7049'; $HAIR = 'EDF1F7'; $HAIR_HI = 'FFFFFF'; $SKIN = 'F7DFC4' }
 }
 
-$frames = Get-ChildItem $baseDir -Filter '*.png' -File | Sort-Object Name
-Write-Host ("Source frames: {0}" -f $frames.Count)
+# Every variant is generated for both body types. The female base frames come
+# from make_female_bases.ps1, which edits the hair silhouette rather than just
+# recolouring, so the two genders are visually distinct characters before any
+# palette swap is applied.
+$bases = [ordered]@{
+    'male'   = $baseDir
+    'female' = (Join-Path $baseDir 'female')
+}
 
-foreach ($name in $variants.Keys) {
-    $outDir = Join-Path $baseDir $name
-    if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
-
-    $map = New-Object 'System.Collections.Generic.Dictionary[string,string]'
-    foreach ($k in $variants[$name].Keys) { $map[$k] = $variants[$name][$k] }
-
-    foreach ($f in $frames) {
-        [Recolor]::Apply($f.FullName, (Join-Path $outDir $f.Name), $map)
+foreach ($gender in $bases.Keys) {
+    $srcDir = $bases[$gender]
+    if (-not (Test-Path $srcDir)) {
+        throw "Missing $gender base frames at $srcDir (run make_female_bases.ps1 first)"
     }
-    Write-Host ("  {0}: {1} frames" -f $name, $frames.Count)
+
+    # -File with no -Recurse keeps this to the base frames, skipping the
+    # variant subfolders this script itself creates.
+    $frames = Get-ChildItem $srcDir -Filter '*.png' -File | Sort-Object Name
+    Write-Host ("{0}: {1} source frames" -f $gender, $frames.Count)
+
+    foreach ($name in $variants.Keys) {
+        $outDir = Join-Path $srcDir $name
+        if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
+
+        $map = New-Object 'System.Collections.Generic.Dictionary[string,string]'
+        foreach ($k in $variants[$name].Keys) { $map[$k] = $variants[$name][$k] }
+
+        foreach ($f in $frames) {
+            [Recolor]::Apply($f.FullName, (Join-Path $outDir $f.Name), $map)
+        }
+        Write-Host ("  {0}/{1}: {2} frames" -f $gender, $name, $frames.Count)
+    }
 }
 
 Write-Host 'Done.'

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
+import 'live_market_panel.dart';
 
 class StockMarketPage extends StatefulWidget {
   const StockMarketPage({super.key});
@@ -389,6 +390,8 @@ class _StockMarketPageState extends State<StockMarketPage> {
                   openingChangePercent: avgOpenChangePercent,
                   tip: portfolioTip,
                 ),
+                const SizedBox(height: 18),
+                const LiveMarketPanel(),
                 const SizedBox(height: 18),
                 const _SectionTitle(
                   title: 'Trade Board',

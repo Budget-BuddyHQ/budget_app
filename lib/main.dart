@@ -9,6 +9,7 @@ import 'config/dev_preview_flags.dart';
 import 'config/runtime_env.dart';
 import 'controllers_that_updates_stats/adventure_state_controller.dart';
 import 'controllers_that_updates_stats/app_settings_controller.dart';
+import 'controllers_that_updates_stats/daily_plan_controller.dart';
 import 'controllers_that_updates_stats/user_stats_controller.dart';
 import 'navigation_tools_and_animation/app_tab_index.dart';
 import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/game_canvas.dart';
@@ -20,6 +21,7 @@ import 'screens_minigames_admin_etc/auth/auth_screen.dart';
 import 'screens_minigames_admin_etc/loading/temporary_loading_screen.dart';
 import 'screens_minigames_admin_etc/onboarding/welcome_screen.dart';
 import 'services_backend_and_other_services/app_sound_service.dart';
+import 'services_backend_and_other_services/market_data_service.dart';
 import 'services_backend_and_other_services/supabase_service.dart';
 import 'themes_colors/app_theme.dart';
 import 'widgets_custom_lotties/orientation_scope.dart';
@@ -51,16 +53,13 @@ Future<void> main() async {
     }
   }
 
-  const fallbackSupabaseUrl = 'https://cwqjduingvevagrxbwts.supabase.co';
-  // This must be the anon-role key (matches supabase.env.json's
-  // SUPABASE_ANON_KEY) — the "sb_publishable_..." format previously here
-  // was a different, non-working key, which is why login only succeeded
-  // for people with their own local supabase.env.json overriding it.
-  const fallbackSupabaseAnonKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN3cWpkdWluZ3ZldmFncnhid3RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MTQ4OTEsImV4cCI6MjA5MTA5MDg5MX0.XIHeR4oRiwJHCjRj9XDr-2by_6YY67YolSxeggdgDdc';
-  final supabaseUrl = readRuntimeEnv('SUPABASE_URL') ?? fallbackSupabaseUrl;
-  final supabaseAnonKey =
-      readRuntimeEnv('SUPABASE_ANON_KEY') ?? fallbackSupabaseAnonKey;
+  // No hardcoded fallback on purpose: real credentials belong only in
+  // supabase.env.json (gitignored, see supabase.env.json.example) or in
+  // SUPABASE_URL / SUPABASE_ANON_KEY environment variables. If neither is
+  // set, SupabaseService.initialize() detects the empty values and runs the
+  // app in local-only mode instead of silently using a baked-in key.
+  final supabaseUrl = readRuntimeEnv('SUPABASE_URL') ?? '';
+  final supabaseAnonKey = readRuntimeEnv('SUPABASE_ANON_KEY') ?? '';
   final profileImageBucket = readRuntimeEnv('SUPABASE_PROFILE_IMAGE_BUCKET');
 
   await SupabaseService.instance.initialize(
@@ -76,6 +75,11 @@ Future<void> main() async {
         ChangeNotifierProvider<AppSettingsController>(
           create: (_) => AppSettingsController()..initialize(),
         ),
+        ChangeNotifierProvider<MarketDataService>(
+          // Lazily constructed: with no FINNHUB_API_KEY this never makes a
+          // network call, so the app runs fine with zero configuration.
+          create: (_) => MarketDataService(),
+        ),
         ChangeNotifierProvider<UserStatsController>(
           create: (_) =>
               UserStatsController(service: SupabaseService.instance)
@@ -89,6 +93,15 @@ Future<void> main() async {
           update: (_, userStats, adventure) =>
               (adventure ?? AdventureStateController())
                 ..attachUserStats(userStats),
+        ),
+        // Rebuilds its plan whenever stats change (a lesson finishes, an
+        // arcade run is logged, etc.), so the home checklist always reflects
+        // reality.
+        ChangeNotifierProxyProvider<UserStatsController, DailyPlanController>(
+          create: (context) =>
+              DailyPlanController(context.read<UserStatsController>()),
+          update: (_, userStats, previous) =>
+              previous ?? DailyPlanController(userStats),
         ),
       ],
       child: const MyApp(),

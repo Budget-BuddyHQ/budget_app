@@ -7,6 +7,7 @@ import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../constants/app_assets.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
+import '../../../widgets_custom_lotties/avatar_sprite.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
 import 'game_canvas.dart';
@@ -329,7 +330,7 @@ class _AdventureArt extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Image.asset(skin.previewAsset, fit: BoxFit.contain),
+              child: AvatarSprite(skin: skin),
             ),
             Positioned(
               right: size * 0.08,

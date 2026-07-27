@@ -82,3 +82,8 @@ supabase.env.json
 
 
 
+
+# Generated villager frames. Source art lives in assets/own_skins/; the
+# shipped sheets are assets/self_made_skins/. Regenerate with the tool/*.ps1
+# scripts — see tool/README.md.
+assets/images/humans/

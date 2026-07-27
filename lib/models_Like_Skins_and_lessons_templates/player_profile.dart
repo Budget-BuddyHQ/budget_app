@@ -107,6 +107,9 @@ class ProfileKeys {
 
   static const String ageBand = 'age_band';
   static const String gender = 'gender';
+
+  /// Explicit avatar body choice. Absent means "follow [gender]".
+  static const String villagerBody = 'villager_body';
   static const String displayPronoun = 'display_pronoun';
   static const String onboardingComplete = 'personal_details_complete';
 }
