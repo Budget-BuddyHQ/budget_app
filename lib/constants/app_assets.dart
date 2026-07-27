@@ -40,11 +40,27 @@ class AppAssets {
   static const String turtleExplorer =
       'assets/images/turtles/cuteTropicalhandDrawn_no_bg_i3ipxxln.png';
 
-  // Human villagers. Frames are cropped from the hand-drawn sheets in
-  // assets/own_skins by tool/crop_human_skins.ps1; the colour variants are
-  // generated from those frames by tool/make_human_variants.ps1. Every variant
-  // folder holds the same frame names, so a variant is just a path prefix.
-  static const String humansRoot = 'assets/images/humans';
+  // --- Villager sprite sheets -------------------------------------------
+  //
+  // Pipeline: hand-drawn sheets in assets/own_skins/
+  //   -> tool/crop_human_skins.ps1      (slice into per-frame PNGs)
+  //   -> tool/make_female_bases.ps1     (edit hair silhouette for the female body)
+  //   -> tool/make_human_variants.ps1   (palette-swap into colour variants)
+  //   -> tool/pack_skin_sheets.ps1      (pack into the sheets below)
+  //
+  // Only the sheets ship. The intermediate per-frame PNGs are build artifacts
+  // and are gitignored.
+  //
+  // Every sheet is an 8-column x 4-row grid of [villagerCellWidth] x
+  // [villagerCellHeight] cells, one row per facing:
+  //   row 0 south (8)  row 1 north (7, last cell empty)
+  //   row 2 west  (8)  row 3 east  (8)
+  static const String villagerSheetRoot = 'assets/self_made_skins';
+
+  static const double villagerCellWidth = 104;
+  static const double villagerCellHeight = 152;
+  static const int villagerSheetColumns = 8;
+  static const int villagerSheetRows = 4;
 
   static const List<String> humanVariantIds = <String>[
     'emerald_scout',
@@ -59,35 +75,39 @@ class AppAssets {
     'aurora_prime',
   ];
 
-  /// Preview frame (front-facing, standing) for [variantId]; pass null for the
-  /// original blue villager.
-  static String humanPreview(String? variantId) =>
-      humanFrame(variantId, 'south', 1);
-
-  static String humanFrame(String? variantId, String direction, int frame) {
-    final base = variantId == null ? humansRoot : '$humansRoot/$variantId';
-    return '$base/$direction$frame.png';
+  /// Sheet for one villager. [variantId] of null is the original blue outfit.
+  static String villagerSheet(String? variantId, {required bool female}) {
+    final gender = female ? 'female' : 'male';
+    final name = variantId ?? 'classic';
+    return '$villagerSheetRoot/villager_${gender}_$name.png';
   }
 
-  /// Walk-cycle frames for one direction: `south` (8), `north` (7), `west` (8)
-  /// or `east` (8, mirrored from west by the crop tool).
-  static List<String> humanWalk(String? variantId, String direction) {
-    final count = direction == 'north' ? 7 : 8;
-    return <String>[
-      for (var i = 1; i <= count; i++) humanFrame(variantId, direction, i),
-    ];
-  }
+  /// Same path relative to `assets/images/`, the root Flame resolves against.
+  /// The sheets live outside that root, so callers must use a zero-prefix
+  /// [Images] cache and pass the full path instead.
+  static String villagerSheetForFlame(
+    String? variantId, {
+    required bool female,
+  }) => villagerSheet(variantId, female: female);
 
-  /// Same as [humanWalk] but relative to `assets/images/`, which is the root
-  /// Flame/Bonfire resolves sprite paths against.
-  static List<String> humanWalkForFlame(String? variantId, String direction) =>
-      humanWalk(variantId, direction)
-          .map((path) => path.replaceFirst('assets/images/', ''))
-          .toList(growable: false);
+  static const Map<String, int> _villagerRowForDirection = <String, int>{
+    'south': 0,
+    'north': 1,
+    'west': 2,
+    'east': 3,
+  };
+
+  static int villagerRow(String direction) =>
+      _villagerRowForDirection[direction] ?? 0;
+
+  /// Frame count for a facing. North is 7; every other facing is 8.
+  static int villagerFrameCount(String direction) =>
+      direction == 'north' ? 7 : 8;
 
   // Mushroom Goomba — 4-frame directional walk cycle (south = toward camera,
   // north = away). The first south frame doubles as the skin preview image.
-  static const String goombaDir = 'assets/own_skins/mushroom_goomba/walking_animation/';
+  static const String goombaDir =
+      'assets/own_skins/mushroom_goomba/walking_animation/';
   static const String goombaWalk = '${goombaDir}walkingframe1.png';
   static const List<String> goombaWalkSouth = <String>[
     '${goombaDir}walkingframe1.png',

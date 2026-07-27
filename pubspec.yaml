@@ -48,19 +48,10 @@ flutter:
     - assets/images/turtles/
     - assets/images/ui/
     - assets/images/tiles/
-    # Flutter does not recurse into asset subfolders, so every human variant
+    # Villager sprite sheets (one per body+variant), packed by
+    # tool/pack_skin_sheets.ps1 from gitignored intermediate frames.
+    - assets/self_made_skins/
     # directory has to be listed on its own.
-    - assets/images/humans/
-    - assets/images/humans/emerald_scout/
-    - assets/images/humans/gold_banker/
-    - assets/images/humans/crimson_trader/
-    - assets/images/humans/violet_scholar/
-    - assets/images/humans/teal_analyst/
-    - assets/images/humans/sand_saver/
-    - assets/images/humans/rose_planner/
-    - assets/images/humans/slate_investor/
-    - assets/images/humans/midnight_ledger/
-    - assets/images/humans/aurora_prime/
     - assets/animations/
     - assets/audio/
     - assets/data/

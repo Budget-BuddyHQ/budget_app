@@ -4,11 +4,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
+import '../../../controllers_that_updates_stats/daily_plan_controller.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
+import '../../../models_Like_Skins_and_lessons_templates/daily_quest.dart';
 import '../../../constants/app_assets.dart';
+import 'daily_plan_card.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
+import '../../../widgets_custom_lotties/avatar_sprite.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../minigames_pages/react_challenge_screen.dart';
@@ -58,6 +62,26 @@ class HomeScreen extends StatelessWidget {
     await Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const LeaderboardScreen()));
+  }
+
+  /// Sends the player to the quest's target surface. The completion for
+  /// learning quests is credited when the underlying lesson/game reports
+  /// progress, but for now tapping also marks the quest done so the checklist
+  /// always advances — the modes route through the existing tab switcher.
+  void _openQuest(BuildContext context, DailyQuest quest) {
+    // Optimistically credit the daily plan; the actual lesson/game still
+    // awards its own XP through its own flow.
+    context.read<DailyPlanController>().completeQuest(quest.id);
+
+    switch (quest.surface) {
+      case QuestSurface.academyLesson:
+      case QuestSurface.academyPractice:
+        onNavSelected?.call(AppTabIndex.academy);
+      case QuestSurface.arcade:
+        onNavSelected?.call(AppTabIndex.minigames);
+      case QuestSurface.adventure:
+        onNavSelected?.call(AppTabIndex.adventure);
+    }
   }
 
   @override
@@ -145,6 +169,11 @@ class HomeScreen extends StatelessWidget {
                               onOpenAdventure: () =>
                                   onNavSelected?.call(AppTabIndex.adventure),
                             ),
+                          ),
+                          const SizedBox(height: 10),
+                          DailyPlanCard(
+                            compact: compactHeight,
+                            onOpenQuest: (quest) => _openQuest(context, quest),
                           ),
                           const SizedBox(height: 10),
                           _CurrentObjectiveCard(
@@ -414,10 +443,9 @@ class _HeroAvatar extends StatelessWidget {
             ? Image.network(
                 profileImageUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) =>
-                    Image.asset(turtleSkin.previewAsset, fit: BoxFit.contain),
+                errorBuilder: (_, _, _) => AvatarSprite(skin: turtleSkin),
               )
-            : Image.asset(turtleSkin.previewAsset, fit: BoxFit.contain),
+            : AvatarSprite(skin: turtleSkin),
       ),
     );
   }

@@ -281,6 +281,56 @@ class UserStatsController extends ChangeNotifier {
     return _saveStats(nextStats, savingMessage: 'Saving your profile...');
   }
 
+  /// Persists daily-plan progress: which quests are done today, and the
+  /// current streak. Called by DailyPlanController.
+  Future<StatsActionResult> updateDailyPlanProgress({
+    required String dateKey,
+    required List<String> completedQuestIds,
+    required int streak,
+    required String streakDateKey,
+  }) async {
+    return _saveStats(
+      _stats.copyWith(
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          'daily_plan_date': dateKey,
+          'daily_quests_done': completedQuestIds,
+          'daily_streak': streak,
+          'daily_streak_date': streakDateKey,
+        },
+        updatedAt: DateTime.now().toUtc(),
+      ),
+      savingMessage: 'Saving your daily progress...',
+    );
+  }
+
+  /// Switches the avatar body. Purely cosmetic — never gates a skin, and
+  /// every villager skin ships both bodies, so this costs nothing.
+  Future<StatsActionResult> setVillagerBody(VillagerBody body) async {
+    if (_stats.villagerBody == body) {
+      return const StatsActionResult(
+        success: true,
+        message: 'Already using that look.',
+        syncState: SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'No change.',
+        ),
+      );
+    }
+
+    return _saveStats(
+      _stats.copyWith(
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          ProfileKeys.villagerBody: body.id,
+        },
+        updatedAt: DateTime.now().toUtc(),
+      ),
+      savingMessage: 'Updating your look...',
+    );
+  }
+
   Future<StatsActionResult> buyIndexFund() async {
     const goldCost = 200;
     if (_stats.gold < goldCost) {
@@ -389,13 +439,18 @@ class UserStatsController extends ChangeNotifier {
 
     final holdingKey = 'stock_$symbol';
     final holdings = Map<String, int>.from(_stats.holdings)
-      ..update(holdingKey, (value) => value + quantity, ifAbsent: () => quantity)
+      ..update(
+        holdingKey,
+        (value) => value + quantity,
+        ifAbsent: () => quantity,
+      )
       ..update('stocks', (value) => value + quantity, ifAbsent: () => quantity);
 
     final existingCostBasis = Map<String, int>.from(
       (_stats.spendingHabits['cost_basis'] as Map?)?.cast<String, int>() ?? {},
     );
-    existingCostBasis[holdingKey] = (existingCostBasis[holdingKey] ?? 0) + goldCost;
+    existingCostBasis[holdingKey] =
+        (existingCostBasis[holdingKey] ?? 0) + goldCost;
 
     final nextHistory = _nextPortfolioSeries(0.04);
     final now = DateTime.now().toUtc();
@@ -497,7 +552,8 @@ class UserStatsController extends ChangeNotifier {
         LedgerTransaction(
           id: 'txn_${now.microsecondsSinceEpoch}',
           title: 'Sold $symbol',
-          description: 'Closed $quantity lot(s) of $label for $goldReturn gold.',
+          description:
+              'Closed $quantity lot(s) of $label for $goldReturn gold.',
           amount: goldReturn,
           createdAt: now,
           category: 'invest',

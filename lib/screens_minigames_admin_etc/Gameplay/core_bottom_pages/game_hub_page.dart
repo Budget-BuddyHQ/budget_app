@@ -6,6 +6,7 @@ import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../navigation_tools_and_animation/fade_page_route.dart';
+import '../../../widgets_custom_lotties/avatar_sprite.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
 import 'main_game_page.dart';
@@ -318,12 +319,7 @@ class _HubHero extends StatelessWidget {
             ),
             child: Padding(
               padding: EdgeInsets.all(stacked ? 12 : 16),
-              child: ClipOval(
-                child: Image.asset(
-                  turtleSkin.previewAsset,
-                  fit: BoxFit.contain,
-                ),
-              ),
+              child: ClipOval(child: AvatarSprite(skin: turtleSkin)),
             ),
           );
 
