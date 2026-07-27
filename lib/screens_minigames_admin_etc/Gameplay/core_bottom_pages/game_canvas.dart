@@ -100,6 +100,7 @@ class _GameCanvasState extends State<GameCanvas> {
   Widget build(BuildContext context) {
     final userStats = context.read<UserStatsController>().stats;
     final skin = widget.skin ?? skinFromId(userStats.equippedSkin);
+    final body = userStats.villagerBody;
 
     // Saved adventure positions from the old placeholder are in pixels;
     // convert anything outside the tile grid, then clamp inside the walls.
@@ -147,6 +148,7 @@ class _GameCanvasState extends State<GameCanvas> {
                   start.dy * GameCanvas.tileSize,
                 ),
                 skin: skin,
+                body: body,
               ),
               cameraConfig: CameraConfig(zoom: 1.4, moveOnlyMapArea: true),
             ),
@@ -238,12 +240,15 @@ class _GameCanvasState extends State<GameCanvas> {
 }
 
 class _TurtlePlayer extends SimplePlayer {
-  _TurtlePlayer({required super.position, required AvatarSkin skin})
-    : super(
-        size: Vector2.all(GameCanvas.tileSize * 0.9),
-        speed: 130,
-        animation: _animationFor(skin),
-      );
+  _TurtlePlayer({
+    required super.position,
+    required AvatarSkin skin,
+    required VillagerBody body,
+  }) : super(
+         size: Vector2.all(GameCanvas.tileSize * 0.9),
+         speed: 130,
+         animation: _animationFor(skin, body),
+       );
 
   /// Goomba lives under assets/own_skins/, outside Flame's default
   /// assets/images/ image root, so its sprites load through this
@@ -252,21 +257,23 @@ class _TurtlePlayer extends SimplePlayer {
 
   /// Skins that ship as a multi-frame walk cycle animate directionally; every
   /// other skin is a single static sprite reused for idle and run.
-  static SimpleDirectionAnimation _animationFor(AvatarSkin skin) {
+  static SimpleDirectionAnimation _animationFor(
+    AvatarSkin skin,
+    VillagerBody body,
+  ) {
     if (skin.isHuman) {
-      // Villagers have real art for all four facings. East is mirrored from
-      // west by the crop tool so it can be handed to SimpleDirectionAnimation
-      // as the right-facing set, which then derives left by flipping back.
-      final south = AppAssets.humanWalkForFlame(skin.humanVariantId, 'south');
-      final north = AppAssets.humanWalkForFlame(skin.humanVariantId, 'north');
-      final east = AppAssets.humanWalkForFlame(skin.humanVariantId, 'east');
+      // Villagers animate straight out of their packed sheet: one row per
+      // facing, so a direction is just a texturePosition offset. East is the
+      // mirrored west row, handed over as the right-facing set so
+      // SimpleDirectionAnimation derives left by flipping it back.
+      final sheet = skin.sheetAsset(body);
       return SimpleDirectionAnimation(
-        idleRight: _walk(<String>[east.first]),
-        runRight: _walk(east),
-        idleDown: _walk(<String>[south.first]),
-        runDown: _walk(south),
-        idleUp: _walk(<String>[north.first]),
-        runUp: _walk(north),
+        idleRight: _sheetRow(sheet, 'east', frames: 1),
+        runRight: _sheetRow(sheet, 'east'),
+        idleDown: _sheetRow(sheet, 'south', frames: 1),
+        runDown: _sheetRow(sheet, 'south'),
+        idleUp: _sheetRow(sheet, 'north', frames: 1),
+        runUp: _sheetRow(sheet, 'north'),
       );
     }
 
@@ -293,6 +300,35 @@ class _TurtlePlayer extends SimplePlayer {
     return SimpleDirectionAnimation(
       idleRight: _frame(path),
       runRight: _frame(path),
+    );
+  }
+
+  /// One facing's animation, read from a row of a packed villager sheet.
+  ///
+  /// Pass [frames] to take only the first N cells (used for idle poses).
+  static Future<SpriteAnimation> _sheetRow(
+    String sheetAsset,
+    String direction, {
+    int? frames,
+  }) {
+    final available = AppAssets.villagerFrameCount(direction);
+    final amount = (frames ?? available).clamp(1, available);
+    return SpriteAnimation.load(
+      // Sheets live outside assets/images/, so they need the zero-prefix cache.
+      sheetAsset,
+      SpriteAnimationData.sequenced(
+        amount: amount,
+        stepTime: amount > 1 ? 0.16 : 0.4,
+        textureSize: Vector2(
+          AppAssets.villagerCellWidth,
+          AppAssets.villagerCellHeight,
+        ),
+        texturePosition: Vector2(
+          0,
+          AppAssets.villagerRow(direction) * AppAssets.villagerCellHeight,
+        ),
+      ),
+      images: _fullPathImages,
     );
   }
 
