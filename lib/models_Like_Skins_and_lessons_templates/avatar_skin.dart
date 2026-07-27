@@ -4,6 +4,32 @@ import '../constants/app_assets.dart';
 
 enum SkinRarity { common, rare, epic, legendary, mythic }
 
+/// Which villager body a player's avatar uses.
+///
+/// This is a presentation choice, not a separate unlockable: every villager
+/// skin ships both bodies, so choosing one never costs a pull or changes the
+/// odds. Doubling the gacha pool instead would have halved everyone's chance
+/// of any given skin.
+enum VillagerBody {
+  masculine('masculine', 'Masculine'),
+  feminine('feminine', 'Feminine');
+
+  const VillagerBody(this.id, this.label);
+
+  final String id;
+  final String label;
+
+  bool get isFemale => this == VillagerBody.feminine;
+
+  static VillagerBody fromId(Object? raw) {
+    final value = raw?.toString().trim();
+    return VillagerBody.values.firstWhere(
+      (body) => body.id == value,
+      orElse: () => VillagerBody.masculine,
+    );
+  }
+}
+
 /// Broad look of an avatar, used to group the customise grid.
 enum SkinFamily {
   turtle('Turtles'),
@@ -94,16 +120,18 @@ class AvatarSkin {
   /// One-line flavour text shown in the customise grid.
   final String? blurb;
 
-  /// Still image used for previews, grid tiles and the case-roll reel.
-  String get previewAsset =>
-      isHuman ? AppAssets.humanPreview(humanVariantId) : assetPath;
+  /// Still image for non-villager skins. Villagers render from a sprite sheet
+  /// and need [sheetAsset] plus a cell index instead — see [VillagerBody].
+  String get previewAsset => assetPath;
 
-  /// Walk-cycle frames for [direction] (`south`, `north`, `west`).
-  /// Empty for skins that have no directional animation.
+  /// Sheet holding this villager's frames for the given [body].
+  /// Only meaningful when [isHuman].
+  String sheetAsset(VillagerBody body) =>
+      AppAssets.villagerSheet(humanVariantId, female: body.isFemale);
+
+  /// Walk-cycle frames for [direction], for skins that still use loose frames.
+  /// Villagers return empty — they animate from their sheet instead.
   List<String> walkFrames(String direction) {
-    if (isHuman) {
-      return AppAssets.humanWalk(humanVariantId, direction);
-    }
     if (id == 'mushroom_goomba') {
       return switch (direction) {
         'north' => AppAssets.goombaWalkNorth,

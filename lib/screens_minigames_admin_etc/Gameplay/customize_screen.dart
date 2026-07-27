@@ -10,6 +10,7 @@ import '../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../widgets_custom_lotties/ambient_lottie_card.dart';
+import '../../widgets_custom_lotties/avatar_sprite.dart';
 import '../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
 
@@ -280,10 +281,84 @@ class _CharacterPreviewCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                if (equippedSkin.isHuman) ...[
+                  const SizedBox(height: 14),
+                  _BodyToggle(current: stats.villagerBody),
+                ],
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Switches the avatar body. Free and instant — see [VillagerBody].
+class _BodyToggle extends StatelessWidget {
+  const _BodyToggle({required this.current});
+
+  final VillagerBody current;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final body in VillagerBody.values) ...[
+          if (body != VillagerBody.values.first) const SizedBox(width: 8),
+          _BodyChip(
+            body: body,
+            selected: body == current,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              context.read<UserStatsController>().setVillagerBody(body);
+            },
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _BodyChip extends StatelessWidget {
+  const _BodyChip({
+    required this.body,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final VillagerBody body;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color(0xFF85EFAC).withValues(alpha: 0.20)
+              : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected
+                ? const Color(0xFF85EFAC)
+                : Colors.white.withValues(alpha: 0.14),
+          ),
+        ),
+        child: Text(
+          body.label,
+          style: TextStyle(
+            color: selected ? const Color(0xFF85EFAC) : Colors.white70,
+            fontWeight: FontWeight.w800,
+            fontSize: 13,
+          ),
+        ),
       ),
     );
   }
@@ -750,11 +825,7 @@ class _SkinTile extends StatelessWidget {
                               const Color(0xFF071711).withValues(alpha: 0.82),
                               BlendMode.srcATop,
                             ),
-                      child: Image.asset(
-                        skin.previewAsset,
-                        fit: BoxFit.contain,
-                        filterQuality: FilterQuality.none,
-                      ),
+                      child: AvatarSprite(skin: skin),
                     ),
                   ),
                   if (!unlocked)
@@ -1223,7 +1294,7 @@ class _RollTrack extends StatelessWidget {
             border: Border.all(color: skin.accent.withValues(alpha: 0.2)),
           ),
           padding: const EdgeInsets.all(10),
-          child: Image.asset(skin.previewAsset, fit: BoxFit.contain),
+          child: AvatarSprite(skin: skin),
         );
       }).toList(),
     );
@@ -1447,7 +1518,7 @@ class _RarityAura extends StatelessWidget {
               SizedBox(
                 width: imageSize,
                 height: imageSize,
-                child: Image.asset(skin.previewAsset, fit: BoxFit.contain),
+                child: AvatarSprite(skin: skin, size: imageSize),
               ),
           ],
         ),

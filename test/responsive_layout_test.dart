@@ -1,4 +1,5 @@
 import 'package:budget_app/controllers_that_updates_stats/app_settings_controller.dart';
+import 'package:budget_app/controllers_that_updates_stats/daily_plan_controller.dart';
 import 'package:budget_app/controllers_that_updates_stats/user_stats_controller.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/lesson.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/lesson_data.dart';
@@ -16,6 +17,7 @@ import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/stock_market_page.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/subscription_sweep.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/home_screen.dart';
+import 'package:budget_app/services_backend_and_other_services/market_data_service.dart';
 import 'package:budget_app/services_backend_and_other_services/supabase_service.dart';
 import 'package:budget_app/themes_colors/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -48,6 +50,15 @@ Widget _wrap(Widget child) {
       ),
       ChangeNotifierProvider<AppSettingsController>(
         create: (_) => AppSettingsController(),
+      ),
+      ChangeNotifierProvider<MarketDataService>(
+        create: (_) => MarketDataService(),
+      ),
+      ChangeNotifierProxyProvider<UserStatsController, DailyPlanController>(
+        create: (context) =>
+            DailyPlanController(context.read<UserStatsController>()),
+        update: (_, userStats, previous) =>
+            previous ?? DailyPlanController(userStats),
       ),
     ],
     child: MaterialApp(theme: AppTheme.getLightTheme(), home: child),

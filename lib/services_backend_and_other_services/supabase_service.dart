@@ -307,6 +307,26 @@ class UserStats {
     return _readInt(entry['best_correct']) / total;
   }
 
+  /// Local date key (yyyy-mm-dd) the daily plan was last generated for.
+  String get dailyPlanDateKey =>
+      spendingHabits['daily_plan_date']?.toString() ?? '';
+
+  /// Quest ids completed within the current daily plan.
+  Set<String> get dailyQuestsDone {
+    final raw = spendingHabits['daily_quests_done'];
+    if (raw is List) {
+      return raw.map((e) => e.toString()).toSet();
+    }
+    return <String>{};
+  }
+
+  /// Consecutive days the player has completed at least one quest.
+  int get dailyStreak => _readInt(spendingHabits['daily_streak']);
+
+  /// Local date key the streak was last advanced on.
+  String get dailyStreakDateKey =>
+      spendingHabits['daily_streak_date']?.toString() ?? '';
+
   /// Skill ids the player has missed questions on and not yet recovered.
   List<String> get weakSkills {
     final raw = spendingHabits['weak_skills'];
@@ -326,6 +346,19 @@ class UserStats {
       return '';
     }
     return value;
+  }
+
+  /// Which villager body the avatar renders with. Defaults from the player's
+  /// self-described gender the first time, then follows any explicit choice
+  /// made in the customise screen.
+  VillagerBody get villagerBody {
+    final explicit = spendingHabits[ProfileKeys.villagerBody];
+    if (explicit != null) {
+      return VillagerBody.fromId(explicit);
+    }
+    return gender == GenderIdentity.female
+        ? VillagerBody.feminine
+        : VillagerBody.masculine;
   }
 
   AgeBand get ageBand => AgeBand.fromId(spendingHabits[ProfileKeys.ageBand]);
