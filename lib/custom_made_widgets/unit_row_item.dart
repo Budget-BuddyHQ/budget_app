@@ -9,22 +9,37 @@ class UnitRowItem extends StatelessWidget {
     required this.lessons,
     required this.statusFor,
     required this.onLessonTap,
+    this.unitIndex = 0,
   });
 
   final List<Lesson> lessons;
   final LessonStatus Function(String lessonId) statusFor;
   final ValueChanged<Lesson> onLessonTap;
 
+  /// Which unit (0-based) this row belongs to — shifts which icon each node
+  /// gets so the same node position doesn't always show the same tile
+  /// across units.
+  final int unitIndex;
+
   @override
   Widget build(BuildContext context) {
+    final typeSeen = <LessonNodeType, int>{};
     return Column(
       children: [
         for (var index = 0; index < lessons.length; index++) ...[
-          _UnitLessonBlock(
-            lesson: lessons[index],
-            status: statusFor(lessons[index].id),
-            index: index,
-            onTap: () => onLessonTap(lessons[index]),
+          Builder(
+            builder: (context) {
+              final type = lessons[index].type;
+              final occurrence = typeSeen[type] ?? 0;
+              typeSeen[type] = occurrence + 1;
+              return _UnitLessonBlock(
+                lesson: lessons[index],
+                status: statusFor(lessons[index].id),
+                index: index,
+                iconSeed: unitIndex + occurrence,
+                onTap: () => onLessonTap(lessons[index]),
+              );
+            },
           ),
           if (index != lessons.length - 1) const SizedBox(height: 10),
         ],
@@ -33,17 +48,58 @@ class UnitRowItem extends StatelessWidget {
   }
 }
 
+/// Distinct icon pools per node type — picking by [iconSeed] means every
+/// individual lesson/quiz gets its own tile, and the order shifts unit to
+/// unit instead of repeating identically.
+const List<IconData> _lessonIcons = [
+  Icons.savings_rounded,
+  Icons.account_balance_wallet_rounded,
+  Icons.pie_chart_rounded,
+  Icons.credit_card_rounded,
+  Icons.trending_up_rounded,
+  Icons.receipt_long_rounded,
+  Icons.lightbulb_rounded,
+  Icons.shield_rounded,
+  Icons.handshake_rounded,
+  Icons.calculate_rounded,
+];
+const List<IconData> _quizIcons = [
+  Icons.bolt_rounded,
+  Icons.psychology_rounded,
+  Icons.quiz_rounded,
+  Icons.flash_on_rounded,
+  Icons.extension_rounded,
+  Icons.whatshot_rounded,
+];
+const List<IconData> _unitTestIcons = [
+  Icons.star_rounded,
+  Icons.emoji_events_rounded,
+  Icons.military_tech_rounded,
+  Icons.workspace_premium_rounded,
+];
+
+IconData _iconFor(LessonNodeType type, int seed) {
+  final pool = switch (type) {
+    LessonNodeType.lesson => _lessonIcons,
+    LessonNodeType.quiz => _quizIcons,
+    LessonNodeType.unitTest => _unitTestIcons,
+  };
+  return pool[seed % pool.length];
+}
+
 class _UnitLessonBlock extends StatelessWidget {
   const _UnitLessonBlock({
     required this.lesson,
     required this.status,
     required this.index,
+    required this.iconSeed,
     required this.onTap,
   });
 
   final Lesson lesson;
   final LessonStatus status;
   final int index;
+  final int iconSeed;
   final VoidCallback onTap;
 
   @override
@@ -66,11 +122,7 @@ class _UnitLessonBlock extends StatelessWidget {
       ),
     };
 
-    final icon = switch (lesson.type) {
-      LessonNodeType.lesson => Icons.crop_square_rounded,
-      LessonNodeType.quiz => Icons.bolt_rounded,
-      LessonNodeType.unitTest => Icons.star_rounded,
-    };
+    final icon = _iconFor(lesson.type, iconSeed);
     final statusLabel = _statusLabel(status);
     final compact = MediaQuery.sizeOf(context).width < 430;
 

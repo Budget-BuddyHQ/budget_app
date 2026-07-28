@@ -15,7 +15,6 @@ import 'package:budget_app/screens_minigames_admin_etc/Gameplay/customize_screen
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/bill_dodger.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/finance_brawl_game.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/stock_market_page.dart';
-import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/subscription_sweep.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/home_screen.dart';
 import 'package:budget_app/services_backend_and_other_services/market_data_service.dart';
 import 'package:budget_app/services_backend_and_other_services/supabase_service.dart';
@@ -107,7 +106,6 @@ void main() {
       ),
     ),
     'Bill Dodger': () => const BillDodgerScreen(),
-    'Subscription Sweep': () => const SubscriptionSweepScreen(),
     'Finance Brawl': () => const FinanceBrawlScreen(),
     'Market Board': () => const StockMarketPage(),
   };
