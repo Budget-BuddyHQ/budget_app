@@ -58,17 +58,27 @@ class AvatarSprite extends StatelessWidget {
     // Fit the cell's aspect ratio inside the requested square.
     final targetW = size == null ? cellW : size! * (cellW / cellH);
 
-    return SpriteSheetImage(
-      sheetAsset: skin.sheetAsset(effectiveBody),
-      columns: AppAssets.villagerSheetColumns,
-      rows: AppAssets.villagerSheetRows,
-      column: frame.clamp(0, AppAssets.villagerFrameCount(direction) - 1),
-      row: AppAssets.villagerRow(direction),
-      cellWidth: cellW,
-      cellHeight: cellH,
-      width: targetW,
-      height: size ?? cellH,
-      errorBuilder: (context, error, stack) => _MissingArt(size: size),
+    // Villager cells are taller than wide (104x152), but almost every call
+    // site wraps this in a SQUARE box (a circular avatar frame, a grid tile).
+    // A plain SizedBox ancestor with tight constraints would force
+    // SpriteSheetImage's aspect-corrected inner SizedBox to stretch to that
+    // square, which widens the OverflowBox clip window past one cell and
+    // bleeds in slivers of the neighbouring frames. Center loosens whatever
+    // tight constraint the ancestor imposes so the sprite always lays out at
+    // its own correct aspect ratio, centred in the space it's given.
+    return Center(
+      child: SpriteSheetImage(
+        sheetAsset: skin.sheetAsset(effectiveBody),
+        columns: AppAssets.villagerSheetColumns,
+        rows: AppAssets.villagerSheetRows,
+        column: frame.clamp(0, AppAssets.villagerFrameCount(direction) - 1),
+        row: AppAssets.villagerRow(direction),
+        cellWidth: cellW,
+        cellHeight: cellH,
+        width: targetW,
+        height: size ?? cellH,
+        errorBuilder: (context, error, stack) => _MissingArt(size: size),
+      ),
     );
   }
 }

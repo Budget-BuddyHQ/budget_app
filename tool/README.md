@@ -39,7 +39,8 @@ cp supabase.env.json.example supabase.env.json
 | --- | --- | --- |
 | `SUPABASE_URL` / `SUPABASE_ANON_KEY` | for login/leaderboard | Without them the app runs in local-only mode. |
 | `SUPABASE_PROFILE_IMAGE_BUCKET` | optional | Defaults to `profile_pictures`. |
-| `FINNHUB_API_KEY` | **optional** | Powers the live "Real Market Today" panel. Leave blank and the panel hides itself; the game's simulated market is unaffected. Free key: https://finnhub.io/register |
+| `FINNHUB_API_KEY` | **optional** | Powers real-stock quotes and symbol search on the Market Board. Leave blank and the board asks for a key instead of a trade list; the rest of the app is unaffected. Free key: https://finnhub.io/register |
+| `TWELVE_DATA_API_KEY` | **optional** | Powers chart timeframes (1D/5D/1M/3M/1Y) and candlestick bars on the order ticket. Finnhub moved historical candles to a paid plan, so this comes from Twelve Data instead. Without it the chart falls back to quote-derived prices. Free key (800 req/day): https://twelvedata.com/pricing |
 
 Values can also come from real environment variables of the same name, which
 take priority over the JSON file (useful for CI).
