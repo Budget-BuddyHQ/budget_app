@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../constants/app_assets.dart';
 import '../models_Like_Skins_and_lessons_templates/lesson.dart';
 
 class UnitRowItem extends StatelessWidget {
@@ -37,6 +36,9 @@ class UnitRowItem extends StatelessWidget {
                 status: statusFor(lessons[index].id),
                 index: index,
                 iconSeed: unitIndex + occurrence,
+                // Stride by 5 so adjacent nodes land on different tiles, and
+                // offset by the unit so unit 2's nodes don't mirror unit 1's.
+                tileSeed: unitIndex + index * 5,
                 onTap: () => onLessonTap(lessons[index]),
               );
             },
@@ -87,12 +89,34 @@ IconData _iconFor(LessonNodeType type, int seed) {
   return pool[seed % pool.length];
 }
 
+/// Curated full-coverage terrain tiles behind each node's icon — grass, dirt,
+/// sand, stone, wood, water. Picking one per node by a seed stops every stop
+/// from sharing the same two tiles (the old grass/shore pair), and the seed
+/// shifts unit to unit so the sequence doesn't repeat identically either.
+const List<String> _nodeTiles = [
+  'assets/map_assets_coins/PNG_more_map_tiles/rpgTile001.png', // grass
+  'assets/map_assets_coins/PNG_more_map_tiles/rpgTile020.png', // grass
+  'assets/map_assets_coins/PNG_more_map_tiles/rpgTile040.png', // grass
+  'assets/map_assets_coins/PNG_more_map_tiles/rpgTile024.png', // dirt
+  'assets/map_assets_coins/PNG_more_map_tiles/rpgTile042.png', // dirt
+  'assets/map_assets_coins/PNG_more_map_tiles/rpgTile049.png', // sand
+  'assets/map_assets_coins/PNG_more_map_tiles/rpgTile052.png', // sand
+  'assets/map_assets_coins/PNG_more_map_tiles/rpgTile057.png', // stone
+  'assets/map_assets_coins/PNG_more_map_tiles/rpgTile076.png', // stone
+  'assets/map_assets_coins/PNG_more_map_tiles/rpgTile122.png', // wood
+  'assets/map_assets_coins/PNG_more_map_tiles/rpgTile142.png', // wood
+  'assets/map_assets_coins/PNG_more_map_tiles/rpgTile032.png', // water
+];
+
+String _tileFor(int seed) => _nodeTiles[seed % _nodeTiles.length];
+
 class _UnitLessonBlock extends StatelessWidget {
   const _UnitLessonBlock({
     required this.lesson,
     required this.status,
     required this.index,
     required this.iconSeed,
+    required this.tileSeed,
     required this.onTap,
   });
 
@@ -100,6 +124,7 @@ class _UnitLessonBlock extends StatelessWidget {
   final LessonStatus status;
   final int index;
   final int iconSeed;
+  final int tileSeed;
   final VoidCallback onTap;
 
   @override
@@ -181,14 +206,14 @@ class _UnitLessonBlock extends StatelessWidget {
                               BlendMode.multiply,
                             ),
                       child: Image.asset(
-                        status == LessonStatus.available
-                            ? AppAssets.tileShore
-                            : AppAssets.tileGrass,
+                        _tileFor(tileSeed),
                         fit: BoxFit.cover,
                         filterQuality: FilterQuality.none,
                       ),
                     ),
-                    Container(color: palette.fill.withValues(alpha: 0.30)),
+                    // A lighter status tint than before so the varied tile art
+                    // stays visible while green/gold/grey still signals state.
+                    Container(color: palette.fill.withValues(alpha: 0.24)),
                     Center(
                       child: Icon(
                         icon,

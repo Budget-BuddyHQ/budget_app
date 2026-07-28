@@ -140,6 +140,30 @@ const List<LiveSymbol> kLiveSymbols = <LiveSymbol>[
   LiveSymbol('AMD', 'AMD'),
 ];
 
+/// How many in-game coins one US dollar of share price is worth.
+///
+/// Real quotes come back in dollars; the Market Board trades in coins. Keeping
+/// coins distinct from dollars (rather than the old 1:1) makes it read as game
+/// currency — a $337 share costs ~3,370 coins — and is why buying *fractions*
+/// of a share matters: a few thousand coins is a slice of one pricey share.
+const int kCoinsPerDollar = 10;
+
+/// Converts a real-world dollar price into coins.
+int coinsForUsd(double usd) => (usd * kCoinsPerDollar).round();
+
+/// Formats a (possibly fractional) share count without a trailing `.0`:
+/// `2` → "2", `0.5` → "0.5", `1.25` → "1.25".
+String formatShares(num shares) {
+  final value = shares.toDouble();
+  if (value == value.roundToDouble()) {
+    return value.toInt().toString();
+  }
+  return value
+      .toStringAsFixed(3)
+      .replaceAll(RegExp(r'0+$'), '')
+      .replaceAll(RegExp(r'\.$'), '');
+}
+
 /// Why live data is unavailable, so the UI can explain rather than just fail.
 enum LiveMarketStatus {
   /// Never attempted yet.
