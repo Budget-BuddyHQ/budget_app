@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -7,25 +9,35 @@ import '../../../widgets_custom_lotties/price_chart.dart';
 
 /// What kind of order the player is placing.
 ///
-/// A game with no order book cannot rest a limit order overnight, so a limit
-/// order here fills immediately when it is marketable and is otherwise
-/// rejected with an explanation — which is the part actually worth teaching.
+/// A market order crosses the spread and fills now. A limit order fills now if
+/// it is already marketable; if it isn't (a buy below the ask, a sell above the
+/// bid) it *rests as a working order* and fills later when the price comes to
+/// it — which is the entire point of a limit order.
 enum OrderType { market, limit }
 
-/// The filled order handed back to the caller, which owns the gold/holdings.
+/// The order handed back to the caller, which owns the gold/holdings.
 @immutable
 class OrderRequest {
   const OrderRequest({
     required this.isBuy,
     required this.quantity,
     required this.pricePerShare,
+    this.isWorking = false,
   });
 
   final bool isBuy;
-  final int quantity;
+
+  /// Fractional — a coin buys a slice of a share, so 0.5 is a valid quantity.
+  final double quantity;
+
+  /// The immediate fill price, or — when [isWorking] — the resting limit price.
   final int pricePerShare;
 
-  int get total => quantity * pricePerShare;
+  /// True when this order can't fill right now and should rest as a working
+  /// (pending) limit order instead of executing immediately.
+  final bool isWorking;
+
+  int get total => (quantity * pricePerShare).round();
 }
 
 class OrderTicketPage extends StatefulWidget {
@@ -54,7 +66,7 @@ class OrderTicketPage extends StatefulWidget {
   final int bidPrice;
   final int askPrice;
 
-  final int ownedLots;
+  final double ownedLots;
   final int availableGold;
 
   /// Quote-derived prices, drawn when no historical-data key is configured.
@@ -108,9 +120,10 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
     });
   }
 
-  int get _quantity {
-    final parsed = int.tryParse(_quantityController.text.trim()) ?? 0;
-    return parsed < 1 ? 1 : parsed;
+  /// Fractional: a coin is a slice of a share, so 0.5 of a share is valid.
+  double get _quantity {
+    final parsed = double.tryParse(_quantityController.text.trim()) ?? 0;
+    return parsed < 0 ? 0 : parsed;
   }
 
   int get _limitPrice {
@@ -123,55 +136,99 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
       ? (_isBuy ? widget.askPrice : widget.bidPrice)
       : _limitPrice;
 
-  int get _maxQuantity {
+  int get _effectiveTotal => (_quantity * _effectivePrice).round();
+
+  /// True when a limit order would fill the instant it is placed: a buy limit
+  /// at or above the ask, a sell limit at or below the bid.
+  bool get _marketableNow {
+    if (_orderType != OrderType.limit) {
+      return true;
+    }
+    return _isBuy
+        ? _limitPrice >= widget.askPrice
+        : _limitPrice <= widget.bidPrice;
+  }
+
+  /// True when the order rests as a working (pending) order rather than filling
+  /// immediately. This is a normal, expected state — not an error.
+  bool get _restsAsWorkingOrder =>
+      _orderType == OrderType.limit && !_marketableNow;
+
+  double get _maxQuantity {
     if (!_isBuy) {
       return widget.ownedLots;
     }
     final price = _effectivePrice;
-    return price <= 0 ? 0 : widget.availableGold ~/ price;
+    return price <= 0 ? 0 : widget.availableGold / price;
   }
 
-  /// Why this order cannot be placed, or null when it can.
+  /// Why this order genuinely cannot be placed, or null when it can.
+  ///
+  /// A non-marketable limit is *not* a block — it rests as a working order. The
+  /// only real blocks are running out of gold on an immediate buy, or not
+  /// owning the shares a sell (immediate or resting) needs to reserve.
   String? get _blockReason {
-    if (_isBuy && widget.availableGold < _effectivePrice) {
-      return 'You need ${_effectivePrice}g to buy one share.';
+    if (_quantity <= 0) {
+      return 'Enter a quantity greater than zero.';
     }
-    if (!_isBuy && widget.ownedLots <= 0) {
-      return 'You do not own any ${widget.symbol} to sell.';
-    }
-    if (_quantity > _maxQuantity) {
-      return _isBuy
-          ? 'You can afford $_maxQuantity share(s) at this price.'
-          : 'You only own ${widget.ownedLots} share(s).';
-    }
-    if (_orderType == OrderType.limit) {
-      if (_isBuy && _limitPrice < widget.askPrice) {
-        return 'Limit ${_limitPrice}g is below the ask of ${widget.askPrice}g, '
-            'so this order would not fill right now.';
+    if (!_isBuy) {
+      if (widget.ownedLots <= 0) {
+        return 'You do not own any ${widget.symbol} to sell.';
       }
-      if (!_isBuy && _limitPrice > widget.bidPrice) {
-        return 'Limit ${_limitPrice}g is above the bid of ${widget.bidPrice}g, '
-            'so this order would not fill right now.';
+      if (_quantity > widget.ownedLots) {
+        return 'You only own ${formatShares(widget.ownedLots)} share(s) to '
+            'sell or reserve.';
+      }
+      return null;
+    }
+    // Buying. A resting buy reserves nothing now — it only needs gold when it
+    // fills — so it is never blocked for affordability here.
+    if (!_restsAsWorkingOrder) {
+      if (widget.availableGold < _effectiveTotal) {
+        return 'You need ${_effectiveTotal}g for this order — you have '
+            '${widget.availableGold}g.';
       }
     }
     return null;
   }
 
-  void _nudgePrice(int delta) {
+  /// A friendly, non-blocking explanation shown when the order will rest.
+  String? get _workingOrderNote {
+    if (!_restsAsWorkingOrder) {
+      return null;
+    }
+    return _isBuy
+        ? 'Limit ${_limitPrice}g is below the ask (${widget.askPrice}g), so '
+              'this rests as a working order and fills if ${widget.symbol} '
+              'trades down to ${_limitPrice}g.'
+        : 'Limit ${_limitPrice}g is above the bid (${widget.bidPrice}g), so '
+              'this rests as a working order and fills if ${widget.symbol} '
+              'trades up to ${_limitPrice}g.';
+  }
+
+  void _nudgePrice(int direction) {
+    // Prices are in the thousands of coins, so step by ~1% (min 1) instead of
+    // a single coin, which would barely move the field.
+    final step = math.max(1, (_limitPrice * 0.01).round());
     setState(() {
-      _priceController.text = '${(_limitPrice + delta).clamp(1, 1000000)}';
+      _priceController.text =
+          '${(_limitPrice + direction * step).clamp(1, 100000000)}';
     });
   }
 
-  void _nudgeQuantity(int delta) {
+  void _nudgeQuantity(double delta) {
+    // Half-share steps so buying fractions (the point of the coin rate) is one
+    // tap away, while whole-share counts still land on round numbers.
+    final next = (_quantity + delta).clamp(0.5, 1000000.0);
     setState(() {
-      _quantityController.text = '${(_quantity + delta).clamp(1, 1000000)}';
+      _quantityController.text = formatShares(next);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final blockReason = _blockReason;
+    final workingNote = _workingOrderNote;
     final sideColor = _isBuy
         ? const Color(0xFF85EFAC)
         : const Color(0xFFFF8A80);
@@ -275,8 +332,9 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                 controller: _quantityController,
                 accent: widget.accent,
                 suffix: 'sh',
-                onDecrement: () => _nudgeQuantity(-1),
-                onIncrement: () => _nudgeQuantity(1),
+                allowDecimal: true,
+                onDecrement: () => _nudgeQuantity(-0.5),
+                onIncrement: () => _nudgeQuantity(0.5),
                 onChanged: () => setState(() {}),
               ),
             ),
@@ -291,41 +349,25 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
             ),
             if (blockReason != null) ...[
               const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFB084).withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFFFFB084).withValues(alpha: 0.28),
-                  ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.info_outline_rounded,
-                      color: Color(0xFFFFB084),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        blockReason,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              _NoteCard(
+                text: blockReason,
+                color: const Color(0xFFFFB084),
+                icon: Icons.info_outline_rounded,
+              ),
+            ] else if (workingNote != null) ...[
+              const SizedBox(height: 12),
+              _NoteCard(
+                text: workingNote,
+                color: const Color(0xFF58C7FF),
+                icon: Icons.schedule_rounded,
               ),
             ],
             const SizedBox(height: 20),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: sideColor,
+                backgroundColor: _restsAsWorkingOrder
+                    ? const Color(0xFF58C7FF)
+                    : sideColor,
                 foregroundColor: const Color(0xFF08251A),
                 padding: const EdgeInsets.symmetric(vertical: 17),
                 disabledBackgroundColor: Colors.white.withValues(alpha: 0.10),
@@ -338,10 +380,13 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                         isBuy: _isBuy,
                         quantity: _quantity,
                         pricePerShare: _effectivePrice,
+                        isWorking: _restsAsWorkingOrder,
                       ),
                     ),
               child: Text(
-                '${_isBuy ? 'Buy' : 'Sell'} ${widget.symbol}',
+                _restsAsWorkingOrder
+                    ? 'Place ${_isBuy ? 'buy' : 'sell'} limit order'
+                    : '${_isBuy ? 'Buy' : 'Sell'} ${widget.symbol}',
                 style: const TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 16,
@@ -461,6 +506,45 @@ class _ChartSection extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// A small info panel — orange for a genuine block, blue for the (normal)
+/// "this will rest as a working order" explanation.
+class _NoteCard extends StatelessWidget {
+  const _NoteCard({
+    required this.text,
+    required this.color,
+    required this.icon,
+  });
+
+  final String text;
+  final Color color;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(color: Colors.white70, height: 1.4),
+            ),
+          ),
         ],
       ),
     );
@@ -778,6 +862,7 @@ class _StepperField extends StatelessWidget {
     required this.onDecrement,
     required this.onIncrement,
     required this.onChanged,
+    this.allowDecimal = false,
   });
 
   final TextEditingController controller;
@@ -786,6 +871,9 @@ class _StepperField extends StatelessWidget {
   final VoidCallback onDecrement;
   final VoidCallback onIncrement;
   final VoidCallback onChanged;
+
+  /// Quantity allows fractional shares; price stays whole coins.
+  final bool allowDecimal;
 
   @override
   Widget build(BuildContext context) {
@@ -803,8 +891,12 @@ class _StepperField extends StatelessWidget {
             child: TextField(
               controller: controller,
               onChanged: (_) => onChanged(),
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              keyboardType: TextInputType.numberWithOptions(
+                decimal: allowDecimal,
+              ),
+              inputFormatters: allowDecimal
+                  ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
+                  : [FilteringTextInputFormatter.digitsOnly],
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w900,
@@ -855,11 +947,11 @@ class _EstimateCard extends StatelessWidget {
   });
 
   final bool isBuy;
-  final int quantity;
+  final double quantity;
   final int pricePerShare;
   final int availableGold;
-  final int ownedLots;
-  final int maxQuantity;
+  final double ownedLots;
+  final double maxQuantity;
 
   @override
   Widget build(BuildContext context) {
@@ -874,7 +966,7 @@ class _EstimateCard extends StatelessWidget {
         children: [
           _EstimateLine(
             label: isBuy ? 'Estimated cost' : 'Estimated credit',
-            value: '${quantity * pricePerShare}g',
+            value: '${(quantity * pricePerShare).round()}g',
             emphasise: true,
           ),
           const SizedBox(height: 10),
@@ -882,10 +974,13 @@ class _EstimateCard extends StatelessWidget {
           const SizedBox(height: 10),
           _EstimateLine(
             label: isBuy ? 'Available gold' : 'Shares owned',
-            value: isBuy ? '${availableGold}g' : '$ownedLots',
+            value: isBuy ? '${availableGold}g' : formatShares(ownedLots),
           ),
           const SizedBox(height: 10),
-          _EstimateLine(label: 'Max at this price', value: '$maxQuantity'),
+          _EstimateLine(
+            label: 'Max at this price',
+            value: formatShares(maxQuantity),
+          ),
         ],
       ),
     );

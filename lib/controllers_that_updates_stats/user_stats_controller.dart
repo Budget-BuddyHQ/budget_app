@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../models_Like_Skins_and_lessons_templates/player_profile.dart';
+import '../services_backend_and_other_services/market_data_service.dart'
+    show formatShares;
 import '../services_backend_and_other_services/supabase_service.dart';
 
 @immutable
@@ -345,7 +347,7 @@ class UserStatsController extends ChangeNotifier {
       );
     }
 
-    final holdings = Map<String, int>.from(_stats.holdings)
+    final holdings = Map<String, double>.from(_stats.holdings)
       ..update('indexFunds', (value) => value + 1, ifAbsent: () => 1);
     final nextHistory = _nextPortfolioSeries(0.06);
     final now = DateTime.now().toUtc();
@@ -377,7 +379,7 @@ class UserStatsController extends ChangeNotifier {
   }
 
   Future<StatsActionResult> sellStocks() async {
-    final currentStockLots = _stats.holdings['stocks'] ?? 0;
+    final currentStockLots = _stats.holdings['stocks'] ?? 0.0;
     if (currentStockLots <= 0) {
       return const StatsActionResult(
         success: false,
@@ -391,8 +393,8 @@ class UserStatsController extends ChangeNotifier {
     }
 
     const goldReturn = 140;
-    final holdings = Map<String, int>.from(_stats.holdings)
-      ..update('stocks', (value) => value > 0 ? value - 1 : 0);
+    final holdings = Map<String, double>.from(_stats.holdings)
+      ..update('stocks', (value) => value > 0 ? value - 1 : 0.0);
     final nextHistory = _nextPortfolioSeries(-0.05);
     final now = DateTime.now().toUtc();
 
@@ -423,7 +425,7 @@ class UserStatsController extends ChangeNotifier {
     required String symbol,
     required int goldCost,
     String? companyName,
-    int quantity = 1,
+    double quantity = 1,
   }) async {
     if (_stats.gold < goldCost) {
       return StatsActionResult(
@@ -438,7 +440,7 @@ class UserStatsController extends ChangeNotifier {
     }
 
     final holdingKey = 'stock_$symbol';
-    final holdings = Map<String, int>.from(_stats.holdings)
+    final holdings = Map<String, double>.from(_stats.holdings)
       ..update(
         holdingKey,
         (value) => value + quantity,
@@ -460,8 +462,8 @@ class UserStatsController extends ChangeNotifier {
 
     final nextStats = _stats.copyWith(
       gold: _stats.gold - goldCost,
-      xp: _stats.xp + (14 * quantity),
-      literacyPoints: _stats.literacyPoints + (7 * quantity),
+      xp: _stats.xp + (14 * quantity).round(),
+      literacyPoints: _stats.literacyPoints + (7 * quantity).round(),
       holdings: holdings,
       portfolioHistory: nextHistory,
       spendingHabits: <String, dynamic>{
@@ -472,7 +474,8 @@ class UserStatsController extends ChangeNotifier {
         LedgerTransaction(
           id: 'txn_${now.microsecondsSinceEpoch}',
           title: 'Bought $symbol',
-          description: 'Opened $quantity lot(s) of $label for $goldCost gold.',
+          description:
+              'Opened ${formatShares(quantity)} share(s) of $label for $goldCost gold.',
           amount: -goldCost,
           createdAt: now,
           category: 'invest',
@@ -489,10 +492,10 @@ class UserStatsController extends ChangeNotifier {
     required String symbol,
     required int goldReturn,
     String? companyName,
-    int quantity = 1,
+    double quantity = 1,
   }) async {
     final holdingKey = 'stock_$symbol';
-    final currentLots = _stats.holdings[holdingKey] ?? 0;
+    final currentLots = _stats.holdings[holdingKey] ?? 0.0;
     if (currentLots < quantity) {
       return StatsActionResult(
         success: false,
@@ -505,12 +508,12 @@ class UserStatsController extends ChangeNotifier {
       );
     }
 
-    final holdings = Map<String, int>.from(_stats.holdings)
-      ..update(holdingKey, (value) => value > quantity ? value - quantity : 0)
+    final holdings = Map<String, double>.from(_stats.holdings)
+      ..update(holdingKey, (value) => value > quantity ? value - quantity : 0.0)
       ..update(
         'stocks',
-        (value) => value > quantity ? value - quantity : 0,
-        ifAbsent: () => 0,
+        (value) => value > quantity ? value - quantity : 0.0,
+        ifAbsent: () => 0.0,
       );
     if ((holdings[holdingKey] ?? 0) <= 0) {
       holdings.remove(holdingKey);
@@ -540,8 +543,8 @@ class UserStatsController extends ChangeNotifier {
 
     final nextStats = _stats.copyWith(
       gold: _stats.gold + goldReturn,
-      xp: _stats.xp + (10 * quantity),
-      literacyPoints: _stats.literacyPoints + (5 * quantity),
+      xp: _stats.xp + (10 * quantity).round(),
+      literacyPoints: _stats.literacyPoints + (5 * quantity).round(),
       holdings: holdings,
       portfolioHistory: nextHistory,
       spendingHabits: <String, dynamic>{
@@ -553,7 +556,7 @@ class UserStatsController extends ChangeNotifier {
           id: 'txn_${now.microsecondsSinceEpoch}',
           title: 'Sold $symbol',
           description:
-              'Closed $quantity lot(s) of $label for $goldReturn gold.',
+              'Closed ${formatShares(quantity)} share(s) of $label for $goldReturn gold.',
           amount: goldReturn,
           createdAt: now,
           category: 'invest',
@@ -564,6 +567,274 @@ class UserStatsController extends ChangeNotifier {
     );
 
     return _saveStats(nextStats, savingMessage: 'Selling $symbol...');
+  }
+
+  /// Rests a limit order that is not immediately marketable.
+  ///
+  /// This is the whole point of a limit order: a buy limit *below* the ask (or
+  /// a sell limit *above* the bid) does not fill now — it waits for the price
+  /// to come to it. [settleWorkingOrders] fills it later when the market
+  /// crosses the limit. Sell orders reserve their shares up front (so the same
+  /// shares can't be double-sold); buy orders reserve nothing and simply check
+  /// affordability at fill time.
+  Future<StatsActionResult> placeWorkingOrder({
+    required String symbol,
+    required bool isBuy,
+    required double quantity,
+    required int limitPrice,
+    String? companyName,
+  }) async {
+    if (quantity <= 0 || limitPrice < 1) {
+      return const StatsActionResult(
+        success: false,
+        message: 'Enter a quantity and limit price first.',
+        syncState: SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'Invalid order.',
+        ),
+      );
+    }
+
+    final holdingKey = 'stock_$symbol';
+    final holdings = Map<String, double>.from(_stats.holdings);
+    final costBasis = Map<String, int>.from(
+      (_stats.spendingHabits['cost_basis'] as Map?)?.cast<String, int>() ?? {},
+    );
+
+    var reservedCost = 0;
+    if (!isBuy) {
+      final owned = holdings[holdingKey] ?? 0.0;
+      if (owned < quantity) {
+        return StatsActionResult(
+          success: false,
+          message:
+              'You only own ${formatShares(owned)} share(s) of $symbol to reserve.',
+          syncState: const SyncState(
+            synced: false,
+            usedCache: true,
+            message: 'No changes saved.',
+          ),
+        );
+      }
+      // Pull the shares (and their slice of cost basis) out of the live
+      // holding so the resting order can't sell shares that were meanwhile
+      // sold elsewhere. Both come back if the order is cancelled.
+      final currentCost = costBasis[holdingKey] ?? 0;
+      if (owned > 0 && currentCost > 0) {
+        reservedCost = (currentCost / owned * quantity).round();
+        costBasis[holdingKey] = max(0, currentCost - reservedCost);
+      }
+      holdings[holdingKey] = owned - quantity;
+      holdings['stocks'] = max(0.0, (holdings['stocks'] ?? 0.0) - quantity);
+      if ((holdings[holdingKey] ?? 0) <= 0) {
+        holdings.remove(holdingKey);
+        costBasis.remove(holdingKey);
+      }
+      if ((holdings['stocks'] ?? 0) <= 0) {
+        holdings.remove('stocks');
+      }
+    }
+
+    final now = DateTime.now().toUtc();
+    final order = WorkingOrder(
+      id: 'wo_${now.microsecondsSinceEpoch}',
+      symbol: symbol,
+      company: companyName?.trim().isNotEmpty == true ? companyName!.trim() : symbol,
+      isBuy: isBuy,
+      quantity: quantity,
+      limitPrice: limitPrice,
+      reservedCost: reservedCost,
+      createdAt: now,
+    );
+    final orders = <WorkingOrder>[..._stats.workingOrders, order];
+
+    final nextStats = _stats.copyWith(
+      holdings: holdings,
+      spendingHabits: <String, dynamic>{
+        ..._stats.spendingHabits,
+        'cost_basis': costBasis,
+        'working_orders': orders.map((o) => o.toJson()).toList(),
+      },
+      updatedAt: now,
+    );
+
+    return _saveStats(
+      nextStats,
+      savingMessage: 'Placing ${isBuy ? 'buy' : 'sell'} limit order...',
+    );
+  }
+
+  /// Cancels a resting order, returning whatever it reserved (shares + their
+  /// cost basis for sells; nothing for buys).
+  Future<StatsActionResult> cancelWorkingOrder(String orderId) async {
+    WorkingOrder? target;
+    for (final order in _stats.workingOrders) {
+      if (order.id == orderId) {
+        target = order;
+        break;
+      }
+    }
+    if (target == null) {
+      return const StatsActionResult(
+        success: false,
+        message: 'That order is no longer working.',
+        syncState: SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'No changes saved.',
+        ),
+      );
+    }
+
+    final holdings = Map<String, double>.from(_stats.holdings);
+    final costBasis = Map<String, int>.from(
+      (_stats.spendingHabits['cost_basis'] as Map?)?.cast<String, int>() ?? {},
+    );
+    if (!target.isBuy) {
+      final holdingKey = 'stock_${target.symbol}';
+      holdings[holdingKey] = (holdings[holdingKey] ?? 0.0) + target.quantity;
+      holdings['stocks'] = (holdings['stocks'] ?? 0.0) + target.quantity;
+      if (target.reservedCost > 0) {
+        costBasis[holdingKey] = (costBasis[holdingKey] ?? 0) + target.reservedCost;
+      }
+    }
+
+    final orders = _stats.workingOrders
+        .where((o) => o.id != orderId)
+        .map((o) => o.toJson())
+        .toList();
+    final now = DateTime.now().toUtc();
+
+    return _saveStats(
+      _stats.copyWith(
+        holdings: holdings,
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          'cost_basis': costBasis,
+          'working_orders': orders,
+        },
+        updatedAt: now,
+      ),
+      savingMessage: 'Cancelling order...',
+    );
+  }
+
+  /// Fills any resting orders the market has now crossed.
+  ///
+  /// [lastBySymbol] is the current price per symbol. A buy limit fills when the
+  /// price drops to/through it; a sell limit fills when the price rises to/
+  /// through it. Only saves (and only returns non-zero) when something actually
+  /// changes, so it is safe to call on every price refresh. Returns the number
+  /// of orders that filled.
+  Future<int> settleWorkingOrders(Map<String, int> lastBySymbol) async {
+    final open = _stats.workingOrders;
+    if (open.isEmpty) {
+      return 0;
+    }
+
+    final holdings = Map<String, double>.from(_stats.holdings);
+    final costBasis = Map<String, int>.from(
+      (_stats.spendingHabits['cost_basis'] as Map?)?.cast<String, int>() ?? {},
+    );
+    final remaining = <WorkingOrder>[];
+    final filledTxns = <LedgerTransaction>[];
+    var gold = _stats.gold;
+    var xp = _stats.xp;
+    var literacy = _stats.literacyPoints;
+    var fills = 0;
+    var idBump = 0;
+
+    for (final order in open) {
+      final last = lastBySymbol[order.symbol];
+      if (last == null) {
+        remaining.add(order);
+        continue;
+      }
+      final buyFills = order.isBuy && last <= order.limitPrice;
+      final sellFills = !order.isBuy && last >= order.limitPrice;
+      if (!buyFills && !sellFills) {
+        remaining.add(order);
+        continue;
+      }
+
+      final holdingKey = 'stock_${order.symbol}';
+      final total = (order.limitPrice * order.quantity).round();
+      final now = DateTime.now().toUtc().add(Duration(microseconds: idBump++));
+
+      if (buyFills) {
+        if (gold < total) {
+          // Can no longer afford it — drop the resting order rather than
+          // letting it linger unfillable.
+          continue;
+        }
+        gold -= total;
+        holdings[holdingKey] = (holdings[holdingKey] ?? 0.0) + order.quantity;
+        holdings['stocks'] = (holdings['stocks'] ?? 0.0) + order.quantity;
+        costBasis[holdingKey] = (costBasis[holdingKey] ?? 0) + total;
+        xp += (14 * order.quantity).round();
+        literacy += (7 * order.quantity).round();
+        filledTxns.add(
+          LedgerTransaction(
+            id: 'txn_${now.microsecondsSinceEpoch}',
+            title: 'Bought ${order.symbol}',
+            description:
+                'Limit order filled: ${formatShares(order.quantity)} share(s) of ${order.company} at ${order.limitPrice}g.',
+            amount: -total,
+            createdAt: now,
+            category: 'invest',
+          ),
+        );
+      } else {
+        // Sell fill — the shares and their cost basis were already removed
+        // when the order was placed, so this only credits the gold.
+        gold += total;
+        xp += (10 * order.quantity).round();
+        literacy += (5 * order.quantity).round();
+        filledTxns.add(
+          LedgerTransaction(
+            id: 'txn_${now.microsecondsSinceEpoch}',
+            title: 'Sold ${order.symbol}',
+            description:
+                'Limit order filled: ${formatShares(order.quantity)} share(s) of ${order.company} at ${order.limitPrice}g.',
+            amount: total,
+            createdAt: now,
+            category: 'invest',
+          ),
+        );
+      }
+      fills++;
+    }
+
+    final changed = fills > 0 || remaining.length != open.length;
+    if (!changed) {
+      return 0;
+    }
+
+    final now = DateTime.now().toUtc();
+    await _saveStats(
+      _stats.copyWith(
+        gold: gold,
+        xp: xp,
+        literacyPoints: literacy,
+        holdings: holdings,
+        portfolioHistory: fills > 0
+            ? _nextPortfolioSeries(0.03)
+            : _stats.portfolioHistory,
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          'cost_basis': costBasis,
+          'working_orders': remaining.map((o) => o.toJson()).toList(),
+        },
+        transactions: <LedgerTransaction>[
+          ...filledTxns.reversed,
+          ..._stats.transactions,
+        ],
+        updatedAt: now,
+      ),
+      savingMessage: 'Filling working orders...',
+    );
+    return fills;
   }
 
   Future<StatsActionResult> applyChallengePayload(
@@ -1185,6 +1456,16 @@ int _readInt(dynamic value) {
   return 0;
 }
 
+double _readDouble(dynamic value) {
+  if (value is num) {
+    return value.toDouble();
+  }
+  if (value is String) {
+    return double.tryParse(value) ?? 0;
+  }
+  return 0;
+}
+
 extension UserStatsCostBasisExtension on UserStats {
   Map<String, int> get costBasis {
     final raw = spendingHabits['cost_basis'];
@@ -1192,5 +1473,80 @@ extension UserStatsCostBasisExtension on UserStats {
       return raw.map((k, v) => MapEntry(k.toString(), _readInt(v)));
     }
     return const {};
+  }
+}
+
+/// A resting limit order — placed but not yet filled — that lives in
+/// `spendingHabits['working_orders']` so it survives a reload and a cloud sync.
+@immutable
+class WorkingOrder {
+  const WorkingOrder({
+    required this.id,
+    required this.symbol,
+    required this.company,
+    required this.isBuy,
+    required this.quantity,
+    required this.limitPrice,
+    required this.reservedCost,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String symbol;
+  final String company;
+  final bool isBuy;
+  final double quantity;
+  final int limitPrice;
+
+  /// Cost basis pulled aside when a sell order reserved its shares, so a
+  /// cancel can restore the position's average cost exactly. Zero for buys.
+  final int reservedCost;
+  final DateTime createdAt;
+
+  int get total => (quantity * limitPrice).round();
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'id': id,
+    'symbol': symbol,
+    'company': company,
+    'is_buy': isBuy,
+    'quantity': quantity,
+    'limit_price': limitPrice,
+    'reserved_cost': reservedCost,
+    'created_at': createdAt.toIso8601String(),
+  };
+
+  static WorkingOrder? fromJson(Map<String, dynamic> json) {
+    final symbol = (json['symbol'] ?? '').toString();
+    if (symbol.isEmpty) {
+      return null;
+    }
+    return WorkingOrder(
+      id: (json['id'] ?? 'wo_${DateTime.now().microsecondsSinceEpoch}')
+          .toString(),
+      symbol: symbol,
+      company: (json['company'] ?? symbol).toString(),
+      isBuy: json['is_buy'] == true,
+      quantity: _readDouble(json['quantity']),
+      limitPrice: _readInt(json['limit_price']),
+      reservedCost: _readInt(json['reserved_cost']),
+      createdAt:
+          DateTime.tryParse((json['created_at'] ?? '').toString())?.toLocal() ??
+          DateTime.now(),
+    );
+  }
+}
+
+extension UserStatsWorkingOrdersExtension on UserStats {
+  List<WorkingOrder> get workingOrders {
+    final raw = spendingHabits['working_orders'];
+    if (raw is! List) {
+      return const <WorkingOrder>[];
+    }
+    return raw
+        .whereType<Map>()
+        .map((m) => WorkingOrder.fromJson(m.cast<String, dynamic>()))
+        .whereType<WorkingOrder>()
+        .toList(growable: false);
   }
 }
