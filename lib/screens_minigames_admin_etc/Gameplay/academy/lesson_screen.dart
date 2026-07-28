@@ -142,12 +142,17 @@ class _LessonScreenState extends State<LessonScreen> {
     }
   }
 
-  List<Widget> _unitCards(List<LessonUnit> units, {required bool compact}) {
+  List<Widget> _unitCards(
+    List<LessonUnit> units, {
+    required bool compact,
+    required int unitIndexOffset,
+  }) {
     return <Widget>[
       for (var index = 0; index < units.length; index++) ...[
         _UnitCard(
           compact: compact,
           unit: units[index],
+          unitIndex: unitIndexOffset + index,
           progress: _progressionService.getUnitProgress(units[index].id),
           mastery: _progressionService.getUnitMastery(units[index].id),
           accuracy: _progressionService.getUnitAccuracy(units[index].id),
@@ -159,6 +164,16 @@ class _LessonScreenState extends State<LessonScreen> {
       ],
     ];
   }
+
+  /// Existing tile backgrounds, reused so each unit tab reads as its own
+  /// place without drawing new art.
+  static const List<String> _unitBackgrounds = [
+    AppAssets.homeTileBackground,
+    AppAssets.arcadeTileBackground,
+    AppAssets.meadowTileBackground,
+    AppAssets.adventureMapBackground,
+    AppAssets.profileTileBackground,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -189,7 +204,8 @@ class _LessonScreenState extends State<LessonScreen> {
           children: [
             Positioned.fill(
               child: Image.asset(
-                AppAssets.villageMapBackground,
+                _unitBackgrounds[selectedUnitIndex % _unitBackgrounds.length],
+                key: ValueKey(selectedUnitIndex),
                 fit: BoxFit.cover,
                 filterQuality: FilterQuality.none,
               ),
@@ -244,7 +260,11 @@ class _LessonScreenState extends State<LessonScreen> {
                       const SizedBox(height: 12),
                       const _MasteryLegend(compact: true),
                       const SizedBox(height: 16),
-                      ..._unitCards([selectedUnit], compact: true),
+                      ..._unitCards(
+                        [selectedUnit],
+                        compact: true,
+                        unitIndexOffset: selectedUnitIndex,
+                      ),
                     ],
                   );
                 }
@@ -286,7 +306,11 @@ class _LessonScreenState extends State<LessonScreen> {
                     const SizedBox(height: 12),
                     const _MasteryLegend(),
                     const SizedBox(height: 16),
-                    ..._unitCards([selectedUnit], compact: compactLayout),
+                    ..._unitCards(
+                      [selectedUnit],
+                      compact: compactLayout,
+                      unitIndexOffset: selectedUnitIndex,
+                    ),
                   ],
                 );
               },
@@ -924,6 +948,7 @@ class _MasteryLegend extends StatelessWidget {
 class _UnitCard extends StatelessWidget {
   const _UnitCard({
     required this.unit,
+    required this.unitIndex,
     required this.progress,
     required this.mastery,
     required this.accuracy,
@@ -934,6 +959,7 @@ class _UnitCard extends StatelessWidget {
   });
 
   final LessonUnit unit;
+  final int unitIndex;
   final double progress;
   final MasteryLevel mastery;
 
@@ -1056,6 +1082,7 @@ class _UnitCard extends StatelessWidget {
             lessons: unit.lessons,
             statusFor: statusFor,
             onLessonTap: onLessonTap,
+            unitIndex: unitIndex,
           ),
           if (practiceFor(unit.id).isNotEmpty) ...[
             const SizedBox(height: 14),

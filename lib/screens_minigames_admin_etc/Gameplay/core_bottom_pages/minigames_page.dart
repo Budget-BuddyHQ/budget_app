@@ -14,7 +14,6 @@ import '../minigames_pages/bill_dodger.dart';
 import '../minigames_pages/finance_brawl_game.dart';
 import '../minigames_pages/react_challenge_screen.dart';
 import '../minigames_pages/stock_market_page.dart';
-import '../minigames_pages/subscription_sweep.dart';
 import 'arcade_catalog.dart';
 
 class MinigamesPage extends StatelessWidget {
@@ -36,8 +35,6 @@ class MinigamesPage extends StatelessWidget {
         await _openBillDodger(context);
       case 'market_board':
         await _openStockMarket(context);
-      case 'subscription_sweep':
-        await _openSubscriptionSweep(context);
       case 'finance_brawl':
         await _openFinanceBrawl(context);
     }
@@ -114,35 +111,6 @@ class MinigamesPage extends StatelessWidget {
     await Navigator.of(
       context,
     ).push(FadePageRoute(builder: (_) => const StockMarketPage()));
-  }
-
-  Future<void> _openSubscriptionSweep(BuildContext context) async {
-    final controller = context.read<UserStatsController>();
-    final result = await Navigator.of(context)
-        .push<SubscriptionSweepCloseResult>(
-          FadePageRoute(builder: (_) => const SubscriptionSweepScreen()),
-        );
-
-    if (!context.mounted || result == null) {
-      return;
-    }
-
-    await controller.recordArcadeRun(
-      gameId: 'subscription_sweep',
-      score: result.finalBalance,
-    );
-    if (!context.mounted) {
-      return;
-    }
-
-    GameToast.show(
-      context,
-      title: 'Sweep complete',
-      message:
-          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
-      icon: Icons.receipt_long_rounded,
-      accent: const Color(0xFFD49B7E),
-    );
   }
 
   Future<void> _openFinanceBrawl(BuildContext context) async {
