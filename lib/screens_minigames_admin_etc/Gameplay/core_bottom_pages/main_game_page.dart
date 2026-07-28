@@ -42,6 +42,11 @@ class MainGamePage extends StatelessWidget {
     await Navigator.of(context).pushNamed('/minigames');
   }
 
+  Future<void> _openLifeBoard(BuildContext context) async {
+    HapticFeedback.mediumImpact();
+    await Navigator.of(context).pushNamed('/life-board');
+  }
+
   Future<void> _enterWorld(
     BuildContext context,
     UserStats stats,
@@ -104,6 +109,7 @@ class MainGamePage extends StatelessWidget {
                               _enterWorld(context, stats, equippedSkin),
                           onOpenAcademy: () => _openAcademy(context),
                           onOpenArcade: () => _openArcade(context),
+                          onOpenLifeBoard: () => _openLifeBoard(context),
                         ),
                       ],
                     );
@@ -176,6 +182,7 @@ class _AdventureLaunchPanel extends StatelessWidget {
     required this.onEnterWorld,
     required this.onOpenAcademy,
     required this.onOpenArcade,
+    required this.onOpenLifeBoard,
   });
 
   final UserStats stats;
@@ -184,6 +191,7 @@ class _AdventureLaunchPanel extends StatelessWidget {
   final VoidCallback onEnterWorld;
   final VoidCallback onOpenAcademy;
   final VoidCallback onOpenArcade;
+  final VoidCallback onOpenLifeBoard;
 
   @override
   Widget build(BuildContext context) {
@@ -250,6 +258,7 @@ class _AdventureLaunchPanel extends StatelessWidget {
           onEnterWorld: onEnterWorld,
           onOpenAcademy: onOpenAcademy,
           onOpenArcade: onOpenArcade,
+          onOpenLifeBoard: onOpenLifeBoard,
         ),
       ],
     );
@@ -519,12 +528,14 @@ class _ActionRow extends StatelessWidget {
     required this.onEnterWorld,
     required this.onOpenAcademy,
     required this.onOpenArcade,
+    required this.onOpenLifeBoard,
   });
 
   final bool compact;
   final VoidCallback onEnterWorld;
   final VoidCallback onOpenAcademy;
   final VoidCallback onOpenArcade;
+  final VoidCallback onOpenLifeBoard;
 
   @override
   Widget build(BuildContext context) {
@@ -558,11 +569,23 @@ class _ActionRow extends StatelessWidget {
       ),
       style: const CustomButtonStyle.tertiary(),
     );
+    final lifeBoard = CustomButton(
+      label: 'Play Life Board',
+      onPressed: onOpenLifeBoard,
+      prefixIcon: const Icon(
+        Icons.casino_rounded,
+        color: Color(0xFF062C21),
+        size: 18,
+      ),
+      style: const CustomButtonStyle.primary(),
+    );
 
     if (compact) {
       return Column(
         children: [
           enterWorld,
+          const SizedBox(height: 10),
+          lifeBoard,
           const SizedBox(height: 10),
           academy,
           const SizedBox(height: 10),
@@ -574,6 +597,8 @@ class _ActionRow extends StatelessWidget {
     return Column(
       children: [
         enterWorld,
+        const SizedBox(height: 12),
+        lifeBoard,
         const SizedBox(height: 12),
         Row(
           children: [

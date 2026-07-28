@@ -15,6 +15,7 @@ import 'navigation_tools_and_animation/app_tab_index.dart';
 import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/game_canvas.dart';
 import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/main_game_page.dart';
 import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.dart';
+import 'screens_minigames_admin_etc/Gameplay/minigames_pages/life_board_page.dart';
 import 'screens_minigames_admin_etc/Gameplay/dashboard/dashboard_shell.dart';
 import 'screens_minigames_admin_etc/Gameplay/dashboard/leaderboard_screen.dart';
 import 'screens_minigames_admin_etc/auth/auth_screen.dart';
@@ -117,6 +118,7 @@ class MyApp extends StatelessWidget {
             const DashboardShell(initialIndex: AppTabIndex.academy),
         '/game-canvas': (context) => const GameCanvas(),
         '/main-gameplay': (context) => const MainGamePage(),
+        '/life-board': (context) => const LifeBoardPage(),
         '/minigames': (context) => const MinigamesPage(),
         '/leaderboard': (context) => const LeaderboardScreen(),
       },
