@@ -103,7 +103,10 @@ class UserStats {
   final Map<String, dynamic> spendingHabits;
   final List<LedgerTransaction> transactions;
   final List<double> portfolioHistory;
-  final Map<String, int> holdings;
+
+  /// Share/lot counts, keyed like `stock_AAPL`. Fractional because a coin is
+  /// worth a fraction of a share, so you buy slices (e.g. 0.5 of a share).
+  final Map<String, double> holdings;
   final DateTime updatedAt;
 
   factory UserStats.defaults(String userId) {
@@ -152,14 +155,14 @@ class UserStats {
         ),
       ],
       portfolioHistory: const <double>[0.24, 0.3, 0.36, 0.41, 0.48, 0.55, 0.61],
-      holdings: const <String, int>{'indexFunds': 3, 'stocks': 2},
+      holdings: const <String, double>{'indexFunds': 3, 'stocks': 2},
       updatedAt: now,
     );
   }
 
   factory UserStats.fromMap(Map<String, dynamic> json) {
     final spendingHabits = _readMap(json['spending_habits']);
-    final holdings = _readIntMap(json['holdings']);
+    final holdings = _readDoubleMap(json['holdings']);
     final transactions = _readTransactions(json['transaction_ledger']);
     final portfolioHistory = _readDoubleList(json['portfolio_history']);
 
@@ -430,7 +433,7 @@ class UserStats {
     Map<String, dynamic>? spendingHabits,
     List<LedgerTransaction>? transactions,
     List<double>? portfolioHistory,
-    Map<String, int>? holdings,
+    Map<String, double>? holdings,
     DateTime? updatedAt,
   }) {
     return UserStats(
@@ -1438,9 +1441,14 @@ Map<String, dynamic> _readMap(dynamic value) {
   return <String, dynamic>{};
 }
 
-Map<String, int> _readIntMap(dynamic value) {
+Map<String, double> _readDoubleMap(dynamic value) {
   final map = _readMap(value);
-  return map.map((key, mapValue) => MapEntry(key, _readInt(mapValue)));
+  return map.map((key, mapValue) {
+    final number = mapValue is num
+        ? mapValue.toDouble()
+        : double.tryParse('$mapValue') ?? 0;
+    return MapEntry(key, number);
+  });
 }
 
 String? _readString(dynamic value) {

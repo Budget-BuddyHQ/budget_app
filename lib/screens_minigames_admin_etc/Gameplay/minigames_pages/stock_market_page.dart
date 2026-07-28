@@ -150,7 +150,8 @@ _kSymbolStyle = {
 /// selling the same lot back to back was a free, infinite source of gold.
 _TradeQuote _tradeQuoteFor(LiveQuote quote) {
   final style = _kSymbolStyle[quote.symbol];
-  final price = quote.current.round();
+  // Real prices arrive in dollars; the board trades in coins (10 coins = $1).
+  final price = coinsForUsd(quote.current);
   final spreadFraction = (0.015 + quote.percentChange.abs() / 100 * 0.5)
       .clamp(0.01, 0.06);
   final buyCost = (price * (1 + spreadFraction / 2)).round();
@@ -164,7 +165,7 @@ _TradeQuote _tradeQuoteFor(LiveQuote quote) {
     changePercent: quote.percentChange,
     buyCost: buyCost,
     sellValue: sellValue,
-    history: quote.miniSeries.map((v) => v.round()).toList(growable: false),
+    history: quote.miniSeries.map(coinsForUsd).toList(growable: false),
     thesis: style?.thesis ?? 'A real, publicly traded company.',
     icon: style?.icon ?? Icons.show_chart_rounded,
     accent: style?.accent ?? const Color(0xFF85EFAC),
@@ -186,10 +187,10 @@ class _StockMarketPageState extends State<StockMarketPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<MarketDataService>().refresh();
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await context.read<MarketDataService>().refresh();
+      await _settleWorkingOrders();
     });
   }
 
@@ -206,7 +207,7 @@ class _StockMarketPageState extends State<StockMarketPage>
     required _TradeQuote quote,
     required bool startAsBuy,
     required int availableGold,
-    required int ownedLots,
+    required double ownedLots,
   }) async {
     final request = await Navigator.of(context).push<OrderRequest>(
       MaterialPageRoute(
@@ -234,6 +235,35 @@ class _StockMarketPageState extends State<StockMarketPage>
 
     final controller = context.read<UserStatsController>();
     final totalValue = request.total;
+
+    // A non-marketable limit rests as a working order rather than filling now.
+    if (request.isWorking) {
+      final result = await controller.placeWorkingOrder(
+        symbol: quote.symbol,
+        isBuy: request.isBuy,
+        quantity: request.quantity,
+        limitPrice: request.pricePerShare,
+        companyName: quote.company,
+      );
+      if (!context.mounted) return;
+      GameToast.show(
+        context,
+        title: result.success ? 'Working order placed' : 'Order not placed',
+        message: result.success
+            ? '${request.isBuy ? 'Buy' : 'Sell'} ${formatShares(request.quantity)} '
+                  '${quote.symbol} at ${request.pricePerShare}g is now working. '
+                  'It fills when the price reaches your limit.'
+            : result.message,
+        icon: result.success
+            ? Icons.schedule_rounded
+            : Icons.info_outline_rounded,
+        accent: result.success
+            ? const Color(0xFF58C7FF)
+            : const Color(0xFFFFB084),
+      );
+      return;
+    }
+
     final result = request.isBuy
         ? await controller.buyStockLot(
             symbol: quote.symbol,
@@ -256,7 +286,7 @@ class _StockMarketPageState extends State<StockMarketPage>
           ? (request.isBuy ? 'Buy order filled' : 'Sell order filled')
           : 'Trade blocked',
       message: result.success
-          ? '${request.isBuy ? 'Bought' : 'Sold'} ${request.quantity} share${request.quantity > 1 ? 's' : ''} of ${quote.symbol} for ${totalValue}g.'
+          ? '${request.isBuy ? 'Bought' : 'Sold'} ${formatShares(request.quantity)} share${request.quantity == 1 ? '' : 's'} of ${quote.symbol} for ${totalValue}g.'
           : result.message,
       icon: result.success
           ? (request.isBuy
@@ -267,6 +297,40 @@ class _StockMarketPageState extends State<StockMarketPage>
           ? (request.isBuy ? const Color(0xFF85EFAC) : const Color(0xFFE1BB72))
           : const Color(0xFFFFB084),
     );
+  }
+
+  /// Fills any resting orders the live price has crossed. Called after each
+  /// price refresh. Pulls a quote for working-order symbols that aren't in the
+  /// scheduled watch list so limit orders on searched stocks settle too.
+  Future<void> _settleWorkingOrders() async {
+    if (!mounted) return;
+    final controller = context.read<UserStatsController>();
+    final market = context.read<MarketDataService>();
+    final orders = controller.stats.workingOrders;
+    if (orders.isEmpty) return;
+
+    final lastBySymbol = <String, int>{};
+    for (final order in orders) {
+      var quote = market.quoteFor(order.symbol);
+      quote ??= await market.fetchQuoteFor(order.symbol, company: order.company);
+      if (quote != null && quote.isValid) {
+        // Compare in coins, matching the order's limit price.
+        lastBySymbol[order.symbol] = coinsForUsd(quote.current);
+      }
+    }
+    if (lastBySymbol.isEmpty || !mounted) return;
+
+    final fills = await controller.settleWorkingOrders(lastBySymbol);
+    if (fills > 0 && mounted) {
+      GameToast.show(
+        context,
+        title: 'Working order${fills > 1 ? 's' : ''} filled',
+        message: '$fills resting limit order${fills > 1 ? 's' : ''} '
+            'reached the price and filled.',
+        icon: Icons.check_circle_rounded,
+        accent: const Color(0xFF85EFAC),
+      );
+    }
   }
 
   /// Pulls a quote for a symbol found through search (which is almost never
@@ -303,7 +367,7 @@ class _StockMarketPageState extends State<StockMarketPage>
       quote: _tradeQuoteFor(quote),
       startAsBuy: true,
       availableGold: stats.gold,
-      ownedLots: stats.holdings['stock_${match.symbol}'] ?? 0,
+      ownedLots: stats.holdings['stock_${match.symbol}'] ?? 0.0,
     );
   }
 
@@ -320,16 +384,17 @@ class _StockMarketPageState extends State<StockMarketPage>
           0,
           (sum, quote) =>
               sum +
-              ((stats.holdings['stock_${quote.symbol}'] ?? 0) *
-                  quote.currentPrice),
+              ((stats.holdings['stock_${quote.symbol}'] ?? 0.0) *
+                      quote.currentPrice)
+                  .round(),
         );
-        final totalLots = quotes.fold<int>(
+        final totalLots = quotes.fold<double>(
           0,
-          (sum, quote) => sum + (stats.holdings['stock_${quote.symbol}'] ?? 0),
+          (sum, quote) => sum + (stats.holdings['stock_${quote.symbol}'] ?? 0.0),
         );
         final totalAssets = stats.gold + totalMarketValue;
         final weightedChange = quotes.fold<double>(0, (sum, quote) {
-          final lots = stats.holdings['stock_${quote.symbol}'] ?? 0;
+          final lots = stats.holdings['stock_${quote.symbol}'] ?? 0.0;
           return sum + (quote.changePercent * lots);
         });
         final avgChangePercent = totalLots > 0
@@ -337,7 +402,7 @@ class _StockMarketPageState extends State<StockMarketPage>
             : 0.0;
         final ownedSymbols = quotes
             .where(
-              (quote) => (stats.holdings['stock_${quote.symbol}'] ?? 0) > 0,
+              (quote) => (stats.holdings['stock_${quote.symbol}'] ?? 0.0) > 0,
             )
             .length;
         final portfolioTip = _portfolioTip(
@@ -359,7 +424,10 @@ class _StockMarketPageState extends State<StockMarketPage>
             actions: [
               IconButton(
                 tooltip: 'Refresh prices',
-                onPressed: () => market.refresh(force: true),
+                onPressed: () async {
+                  await market.refresh(force: true);
+                  await _settleWorkingOrders();
+                },
                 icon: const Icon(Icons.refresh_rounded),
               ),
             ],
@@ -402,14 +470,14 @@ class _StockMarketPageState extends State<StockMarketPage>
                     quote: quote,
                     startAsBuy: true,
                     availableGold: stats.gold,
-                    ownedLots: stats.holdings['stock_${quote.symbol}'] ?? 0,
+                    ownedLots: stats.holdings['stock_${quote.symbol}'] ?? 0.0,
                   ),
                   onSell: (quote) => _openOrderTicket(
                     context: context,
                     quote: quote,
                     startAsBuy: false,
                     availableGold: stats.gold,
-                    ownedLots: stats.holdings['stock_${quote.symbol}'] ?? 0,
+                    ownedLots: stats.holdings['stock_${quote.symbol}'] ?? 0.0,
                   ),
                   onOpenMatch: (match) => _openSearchResult(
                     context: context,
@@ -417,14 +485,38 @@ class _StockMarketPageState extends State<StockMarketPage>
                     stats: stats,
                   ),
                 ),
-                _OrdersTab(transactions: stats.transactions),
+                _OrdersTab(
+                  transactions: stats.transactions,
+                  workingOrders: stats.workingOrders,
+                  onCancel: (order) async {
+                    final result = await statsController.cancelWorkingOrder(
+                      order.id,
+                    );
+                    if (!context.mounted) return;
+                    GameToast.show(
+                      context,
+                      title: result.success
+                          ? 'Order cancelled'
+                          : 'Could not cancel',
+                      message: result.success
+                          ? '${order.isBuy ? 'Buy' : 'Sell'} ${order.quantity} '
+                                '${order.symbol} limit at ${order.limitPrice}g '
+                                'was cancelled.'
+                          : result.message,
+                      icon: result.success
+                          ? Icons.cancel_rounded
+                          : Icons.info_outline_rounded,
+                      accent: const Color(0xFFFFB084),
+                    );
+                  },
+                ),
                 _PnlTab(
                   portfolioHistory: stats.portfolioHistory,
                   netWorth: totalAssets,
                   totalEarned: quotes
                       .fold<double>(0, (sum, quote) {
                         final owned =
-                            stats.holdings['stock_${quote.symbol}'] ?? 0;
+                            stats.holdings['stock_${quote.symbol}'] ?? 0.0;
                         final basis =
                             stats.costBasis['stock_${quote.symbol}'] ?? 0;
                         return sum +
@@ -450,7 +542,7 @@ class _StockMarketPageState extends State<StockMarketPage>
 /// two never drift out of sync.
 ({double averageCost, double currentValue, double totalProfitLoss, double profitLossPercent})
 _holdingMetrics({
-  required int ownedLots,
+  required double ownedLots,
   required int costBasis,
   required int currentPrice,
 }) {
@@ -468,7 +560,11 @@ _holdingMetrics({
   );
 }
 
-String _portfolioTip(int totalLots, int ownedSymbols, double avgChangePercent) {
+String _portfolioTip(
+  double totalLots,
+  int ownedSymbols,
+  double avgChangePercent,
+) {
   if (totalLots <= 0) {
     return 'No stock positions yet. Start with a small position and build a more balanced portfolio over time.';
   }
@@ -740,7 +836,7 @@ class _SearchResultRow extends StatelessWidget {
   });
 
   final SymbolMatch match;
-  final int ownedLots;
+  final double ownedLots;
   final VoidCallback onTap;
 
   @override
@@ -809,7 +905,7 @@ class _SearchResultRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  '$ownedLots sh',
+                  '${formatShares(ownedLots)} sh',
                   style: const TextStyle(
                     color: Color(0xFF58C7FF),
                     fontSize: 11,
@@ -853,7 +949,7 @@ class _PortfolioTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final holdings = quotes
         .map((quote) {
-          final owned = stats.holdings['stock_${quote.symbol}'] ?? 0;
+          final owned = stats.holdings['stock_${quote.symbol}'] ?? 0.0;
           final basis = stats.costBasis['stock_${quote.symbol}'] ?? 0;
           return (
             quote: quote,
@@ -893,8 +989,9 @@ class _PortfolioTab extends StatelessWidget {
             cash: stats.gold,
             holdings: holdings.map((h) => h.quote).toList(),
             valueOf: (quote) =>
-                (stats.holdings['stock_${quote.symbol}'] ?? 0) *
-                quote.currentPrice,
+                ((stats.holdings['stock_${quote.symbol}'] ?? 0.0) *
+                        quote.currentPrice)
+                    .round(),
           ),
         const SizedBox(height: 22),
         const _SectionTitle(
@@ -926,7 +1023,7 @@ class _HoldingRow extends StatelessWidget {
   });
 
   final _TradeQuote quote;
-  final int ownedLots;
+  final double ownedLots;
   final ({
     double averageCost,
     double currentValue,
@@ -967,7 +1064,7 @@ class _HoldingRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${quote.symbol} • $ownedLots sh',
+                  '${quote.symbol} • ${formatShares(ownedLots)} sh',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
@@ -1387,7 +1484,7 @@ class _StockCard extends StatelessWidget {
   });
 
   final _TradeQuote quote;
-  final int ownedLots;
+  final double ownedLots;
   final int costBasis;
   final VoidCallback onBuy;
   final VoidCallback onSell;
@@ -1485,7 +1582,7 @@ class _StockCard extends StatelessWidget {
                   ),
                   _ValueBadge(
                     label: 'Owned',
-                    value: '$ownedLots',
+                    value: formatShares(ownedLots),
                     color: const Color(0xFF58C7FF),
                   ),
                 ],
@@ -1777,9 +1874,15 @@ _StockOrder? _parseStockOrder(LedgerTransaction transaction) {
 }
 
 class _OrdersTab extends StatelessWidget {
-  const _OrdersTab({required this.transactions});
+  const _OrdersTab({
+    required this.transactions,
+    required this.workingOrders,
+    required this.onCancel,
+  });
 
   final List<LedgerTransaction> transactions;
+  final List<WorkingOrder> workingOrders;
+  final ValueChanged<WorkingOrder> onCancel;
 
   @override
   Widget build(BuildContext context) {
@@ -1791,9 +1894,23 @@ class _OrdersTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
+        if (workingOrders.isNotEmpty) ...[
+          const _SectionTitle(
+            title: 'Working',
+            subtitle:
+                'Limit orders resting until the price reaches them. They fill '
+                'automatically on the next refresh once the market crosses.',
+          ),
+          const SizedBox(height: 14),
+          for (final order in workingOrders) ...[
+            _WorkingOrderRow(order: order, onCancel: () => onCancel(order)),
+            const SizedBox(height: 10),
+          ],
+          const SizedBox(height: 12),
+        ],
         const _SectionTitle(
-          title: 'Orders',
-          subtitle: 'Every stock trade you have placed, most recent first.',
+          title: 'Filled',
+          subtitle: 'Every stock trade that has executed, most recent first.',
         ),
         const SizedBox(height: 14),
         if (orders.isEmpty)
@@ -1813,7 +1930,7 @@ class _OrdersTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'No orders yet.',
+                  'No filled orders yet.',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w800,
@@ -1828,6 +1945,98 @@ class _OrdersTab extends StatelessWidget {
             const SizedBox(height: 10),
           ],
       ],
+    );
+  }
+}
+
+/// A resting limit order, with the cancel control that returns its reservation.
+class _WorkingOrderRow extends StatelessWidget {
+  const _WorkingOrderRow({required this.order, required this.onCancel});
+
+  final WorkingOrder order;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = _kSymbolStyle[order.symbol];
+    final sideColor = order.isBuy
+        ? const Color(0xFF85EFAC)
+        : const Color(0xFFFF8A80);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF58C7FF).withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF58C7FF).withValues(alpha: 0.30)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            style?.icon ?? Icons.show_chart_rounded,
+            color: style?.accent ?? Colors.white70,
+            size: 22,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '${order.symbol} • ${order.isBuy ? 'Buy' : 'Sell'} '
+                      '${order.quantity}',
+                      style: TextStyle(
+                        color: sideColor,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF58C7FF).withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Text(
+                        'WORKING',
+                        style: TextStyle(
+                          color: Color(0xFF58C7FF),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Limit ${order.limitPrice}g • total ${order.total}g',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: onCancel,
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFFF8A80),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
