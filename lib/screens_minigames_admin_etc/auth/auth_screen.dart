@@ -519,8 +519,18 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                             Align(
                               alignment: Alignment.centerLeft,
                               child: IconButton(
-                                onPressed: () =>
-                                    Navigator.of(context).maybePop(),
+                                // Pop back to wherever we came from; if this is
+                                // the first route (cold start straight into
+                                // login/signup), fall back to the welcome page
+                                // so the back arrow is never a dead end.
+                                onPressed: () {
+                                  final navigator = Navigator.of(context);
+                                  if (navigator.canPop()) {
+                                    navigator.pop();
+                                  } else {
+                                    navigator.pushReplacementNamed('/welcome');
+                                  }
+                                },
                                 icon: const Icon(
                                   Icons.arrow_back_ios_new_rounded,
                                   color: Colors.white,
