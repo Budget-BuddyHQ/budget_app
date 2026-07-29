@@ -4,22 +4,29 @@ import '../services_backend_and_other_services/market_data_service.dart';
 
 enum ChartMode { line, candle }
 
-/// A price chart that draws either a filled line or candlestick bars.
+/// A price chart that draws either a filled line or candlestick bars, with a
+/// price axis (labels + gridlines on the right) and a current-price marker.
 ///
 /// Like [MiniSparkline] this maps values straight onto the canvas with no
-/// axis/grid/interval machinery, which is deliberate — that machinery is
-/// exactly what made fl_chart throw "Infinity or NaN" at small widths.
+/// axis/grid/interval machinery of a chart package, which is deliberate — that
+/// machinery is exactly what made fl_chart throw "Infinity or NaN" at small
+/// widths. The price labels here are computed directly from min/max, so there
+/// is no interval solver that can blow up.
 class PriceChart extends StatelessWidget {
   const PriceChart({
     super.key,
     required this.candles,
     required this.mode,
     required this.accent,
+    this.showAxis = true,
   });
 
   final List<Candle> candles;
   final ChartMode mode;
   final Color accent;
+
+  /// Draws the right-hand price labels, gridlines, and current-price line.
+  final bool showAxis;
 
   @override
   Widget build(BuildContext context) {
@@ -37,13 +44,18 @@ class PriceChart extends StatelessWidget {
         candles: candles,
         mode: mode,
         accent: accent,
+        showAxis: showAxis,
       ),
     );
   }
 }
 
-class _PriceChartPainter extends CustomPainter {
-  _PriceChartPainter({
+/// Wraps [PriceChart] with pinch-to-zoom and drag-to-pan by slicing the visible
+/// candle window, so the price axis stays honest — it always labels the candles
+/// actually on screen.
+class InteractivePriceChart extends StatefulWidget {
+  const InteractivePriceChart({
+    super.key,
     required this.candles,
     required this.mode,
     required this.accent,
@@ -53,13 +65,86 @@ class _PriceChartPainter extends CustomPainter {
   final ChartMode mode;
   final Color accent;
 
+  @override
+  State<InteractivePriceChart> createState() => _InteractivePriceChartState();
+}
+
+class _InteractivePriceChartState extends State<InteractivePriceChart> {
+  double _zoom = 1;
+  double _centerFrac = 1; // start focused on the most recent candles
+  double _zoomAtStart = 1;
+
+  @override
+  void didUpdateWidget(covariant InteractivePriceChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A new range/timeframe was loaded — reset the view.
+    if (oldWidget.candles.length != widget.candles.length) {
+      _zoom = 1;
+      _centerFrac = 1;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final total = widget.candles.length;
+    return GestureDetector(
+      onScaleStart: (_) => _zoomAtStart = _zoom,
+      onScaleUpdate: (details) {
+        setState(() {
+          _zoom = (_zoomAtStart * details.scale).clamp(1.0, 8.0);
+          final width = context.size?.width ?? 1;
+          // Drag right → pan back in time.
+          _centerFrac =
+              (_centerFrac - details.focalPointDelta.dx / (width * _zoom))
+                  .clamp(0.0, 1.0);
+        });
+      },
+      child: PriceChart(
+        candles: _visibleCandles(total),
+        mode: widget.mode,
+        accent: widget.accent,
+      ),
+    );
+  }
+
+  List<Candle> _visibleCandles(int total) {
+    if (total < 2 || _zoom <= 1.0) {
+      return widget.candles;
+    }
+    final visibleCount = (total / _zoom).round().clamp(2, total);
+    final center = (_centerFrac * total).round();
+    final start = (center - visibleCount ~/ 2).clamp(0, total - visibleCount);
+    return widget.candles.sublist(start, start + visibleCount);
+  }
+}
+
+class _PriceChartPainter extends CustomPainter {
+  _PriceChartPainter({
+    required this.candles,
+    required this.mode,
+    required this.accent,
+    required this.showAxis,
+  });
+
+  final List<Candle> candles;
+  final ChartMode mode;
+  final Color accent;
+  final bool showAxis;
+
   static const Color _up = Color(0xFF85EFAC);
   static const Color _down = Color(0xFFFF8A80);
+  static const double _gutter = 52; // room for price labels on the right
 
   @override
   void paint(Canvas canvas, Size size) {
     final bars = candles.where((c) => c.isValid).toList(growable: false);
     if (bars.length < 2 || size.width <= 0 || size.height <= 0) {
+      return;
+    }
+
+    final gutter = showAxis ? _gutter : 0.0;
+    final chartWidth = size.width - gutter;
+    if (chartWidth <= 0) {
       return;
     }
 
@@ -71,22 +156,92 @@ class _PriceChartPainter extends CustomPainter {
     }
     final range = (maxV - minV) <= 0 ? 1.0 : (maxV - minV);
 
-    double y(double value) => size.height - ((value - minV) / range) * size.height;
+    double y(double value) =>
+        size.height - ((value - minV) / range) * size.height;
+
+    if (showAxis) {
+      _paintGrid(canvas, size, chartWidth, minV, maxV, y);
+    }
 
     if (mode == ChartMode.line) {
-      _paintLine(canvas, size, bars, y);
+      _paintLine(canvas, size, chartWidth, bars, y);
     } else {
-      _paintCandles(canvas, size, bars, y);
+      _paintCandles(canvas, size, chartWidth, bars, y);
     }
+
+    if (showAxis) {
+      _paintCurrentPrice(canvas, size, chartWidth, bars.last.close, y);
+    }
+  }
+
+  void _paintGrid(
+    Canvas canvas,
+    Size size,
+    double chartWidth,
+    double minV,
+    double maxV,
+    double Function(double) y,
+  ) {
+    const levels = 4;
+    final gridPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.06)
+      ..strokeWidth = 1;
+    for (var i = 0; i <= levels; i++) {
+      final value = minV + (maxV - minV) * (i / levels);
+      final gy = y(value).clamp(0.0, size.height);
+      canvas.drawLine(Offset(0, gy), Offset(chartWidth, gy), gridPaint);
+      _label(
+        canvas,
+        _fmt(value),
+        Offset(chartWidth + 6, gy),
+        Colors.white.withValues(alpha: 0.5),
+      );
+    }
+  }
+
+  void _paintCurrentPrice(
+    Canvas canvas,
+    Size size,
+    double chartWidth,
+    double price,
+    double Function(double) y,
+  ) {
+    final cy = y(price).clamp(0.0, size.height);
+    // Dashed line across the chart at the latest price.
+    final dash = Paint()
+      ..color = accent.withValues(alpha: 0.7)
+      ..strokeWidth = 1;
+    const dashW = 5.0;
+    for (var x = 0.0; x < chartWidth; x += dashW * 2) {
+      canvas.drawLine(Offset(x, cy), Offset(x + dashW, cy), dash);
+    }
+    // A filled tag with the current price in the right gutter.
+    final text = _fmt(price);
+    final tp = _textPainter(text, const Color(0xFF08251A), bold: true);
+    final tagRect = Rect.fromLTWH(
+      chartWidth + 2,
+      (cy - 9).clamp(0.0, size.height - 18),
+      size.width - chartWidth - 4,
+      18,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(tagRect, const Radius.circular(4)),
+      Paint()..color = accent,
+    );
+    tp.paint(
+      canvas,
+      Offset(tagRect.left + 4, tagRect.top + (tagRect.height - tp.height) / 2),
+    );
   }
 
   void _paintLine(
     Canvas canvas,
     Size size,
+    double chartWidth,
     List<Candle> bars,
     double Function(double) y,
   ) {
-    final stepX = size.width / (bars.length - 1);
+    final stepX = chartWidth / (bars.length - 1);
     final points = <Offset>[
       for (var i = 0; i < bars.length; i++) Offset(i * stepX, y(bars[i].close)),
     ];
@@ -108,7 +263,7 @@ class _PriceChartPainter extends CustomPainter {
             accent.withValues(alpha: 0.30),
             accent.withValues(alpha: 0.02),
           ],
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height)),
+        ).createShader(Rect.fromLTWH(0, 0, chartWidth, size.height)),
     );
 
     final line = Path()..moveTo(points.first.dx, points.first.dy);
@@ -129,10 +284,11 @@ class _PriceChartPainter extends CustomPainter {
   void _paintCandles(
     Canvas canvas,
     Size size,
+    double chartWidth,
     List<Candle> bars,
     double Function(double) y,
   ) {
-    final slot = size.width / bars.length;
+    final slot = chartWidth / bars.length;
     // Keep a visible gap between bars, but never let the body vanish on a
     // narrow phone with 90 bars on screen.
     final bodyWidth = (slot * 0.62).clamp(1.0, 14.0);
@@ -167,10 +323,39 @@ class _PriceChartPainter extends CustomPainter {
     }
   }
 
+  String _fmt(double value) {
+    // Coin prices are whole numbers in the thousands; keep them compact.
+    if (value.abs() >= 1000) {
+      return value.round().toString();
+    }
+    return value.toStringAsFixed(value == value.roundToDouble() ? 0 : 1);
+  }
+
+  TextPainter _textPainter(String text, Color color, {bool bold = false}) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: bold ? FontWeight.w900 : FontWeight.w600,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    return tp;
+  }
+
+  void _label(Canvas canvas, String text, Offset at, Color color) {
+    final tp = _textPainter(text, color);
+    tp.paint(canvas, Offset(at.dx, at.dy - tp.height / 2));
+  }
+
   @override
   bool shouldRepaint(covariant _PriceChartPainter oldDelegate) {
     return oldDelegate.candles != candles ||
         oldDelegate.mode != mode ||
-        oldDelegate.accent != accent;
+        oldDelegate.accent != accent ||
+        oldDelegate.showAxis != showAxis;
   }
 }

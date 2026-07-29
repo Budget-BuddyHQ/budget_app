@@ -95,16 +95,12 @@ class DailyPlanBuilder {
   static const Map<String, String> _arcadeSkillFocus = <String, String>{
     'finance_brawl': 'Recall under pressure',
     'market_board': 'Risk and volatility',
-    'bill_dodger': 'Needs vs wants',
-    'subscription_sweep': 'Recurring costs',
     'react_challenge': 'Quick judgement',
   };
 
   static const Map<String, IconData> _arcadeIcons = <String, IconData>{
     'finance_brawl': Icons.gavel_rounded,
     'market_board': Icons.show_chart_rounded,
-    'bill_dodger': Icons.sports_esports_rounded,
-    'subscription_sweep': Icons.receipt_long_rounded,
     'react_challenge': Icons.bolt_rounded,
   };
 
@@ -262,8 +258,6 @@ class DailyPlanBuilder {
   String _arcadeTitle(String gameId) => switch (gameId) {
     'finance_brawl' => 'Finance Brawl',
     'market_board' => 'Market Board',
-    'bill_dodger' => 'Bill Dodger',
-    'subscription_sweep' => 'Subscription Sweep',
     'react_challenge' => 'React Challenge',
     _ => gameId,
   };

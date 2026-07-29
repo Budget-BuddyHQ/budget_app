@@ -234,9 +234,9 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
         : const Color(0xFFFF8A80);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF071711),
+      backgroundColor: const Color(0xFF0D1117),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF071711),
+        backgroundColor: const Color(0xFF0D1117),
         foregroundColor: Colors.white,
         elevation: 0,
         title: Row(
@@ -487,12 +487,23 @@ class _ChartSection extends StatelessWidget {
                       strokeWidth: 2,
                     ),
                   )
-                : PriceChart(
+                : InteractivePriceChart(
                     candles: _effectiveCandles,
                     mode: mode,
                     accent: accent,
                   ),
           ),
+          if (!loading && hasRealCandles) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Pinch to zoom • drag to pan • prices on the right',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.4),
+                fontSize: 10.5,
+              ),
+            ),
+          ],
           if (!loading && !hasRealCandles) ...[
             const SizedBox(height: 10),
             Text(
@@ -833,7 +844,7 @@ class _OrderTypeSelector extends StatelessWidget {
         child: DropdownButton<OrderType>(
           value: value,
           isExpanded: true,
-          dropdownColor: const Color(0xFF10281F),
+          dropdownColor: const Color(0xFF1C222B),
           iconEnabledColor: Colors.white54,
           style: const TextStyle(
             color: Colors.white,

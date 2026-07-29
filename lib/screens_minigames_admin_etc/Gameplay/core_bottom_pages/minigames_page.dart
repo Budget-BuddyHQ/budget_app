@@ -10,7 +10,6 @@ import '../../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
-import '../minigames_pages/bill_dodger.dart';
 import '../minigames_pages/finance_brawl_game.dart';
 import '../minigames_pages/react_challenge_screen.dart';
 import '../minigames_pages/stock_market_page.dart';
@@ -31,8 +30,6 @@ class MinigamesPage extends StatelessWidget {
     switch (game.id) {
       case 'react_challenge':
         await _openReactChallenge(context);
-      case 'bill_dodger':
-        await _openBillDodger(context);
       case 'market_board':
         await _openStockMarket(context);
       case 'finance_brawl':
@@ -76,34 +73,6 @@ class MinigamesPage extends StatelessWidget {
           '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
       icon: Icons.bolt_rounded,
       accent: const Color(0xFF6CB6DA),
-    );
-  }
-
-  Future<void> _openBillDodger(BuildContext context) async {
-    final controller = context.read<UserStatsController>();
-    final result = await Navigator.of(context).push<BillDodgerCloseResult>(
-      FadePageRoute(builder: (_) => const BillDodgerScreen()),
-    );
-
-    if (!context.mounted || result == null) {
-      return;
-    }
-
-    await controller.recordArcadeRun(
-      gameId: 'bill_dodger',
-      score: result.finalScore,
-    );
-    if (!context.mounted) {
-      return;
-    }
-
-    GameToast.show(
-      context,
-      title: 'Arcade rewards saved',
-      message:
-          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
-      icon: Icons.sports_esports_rounded,
-      accent: const Color(0xFFE1BB72),
     );
   }
 

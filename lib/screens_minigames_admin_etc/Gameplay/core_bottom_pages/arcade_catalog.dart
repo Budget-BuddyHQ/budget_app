@@ -62,17 +62,6 @@ class ArcadeGame {
 /// All arcade games remain preserved in code here.
 const List<ArcadeGame> _allArcadeGames = <ArcadeGame>[
   ArcadeGame(
-    id: 'bill_dodger',
-    title: 'Bill Dodger',
-    tagline: 'Grab what you need, dodge what you do not.',
-    teaches: 'Needs vs wants',
-    accent: Color(0xFFE1BB72),
-    icon: Icons.sports_esports_rounded,
-    difficulty: ArcadeDifficulty.medium,
-    length: ArcadeLength.short,
-    scoreLabel: 'Best score',
-  ),
-  ArcadeGame(
     id: 'finance_brawl',
     title: 'Finance Brawl',
     tagline: 'Answer fast enough to hold off the horde.',

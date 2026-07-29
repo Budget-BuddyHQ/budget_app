@@ -171,6 +171,11 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 10),
+                          _PlayLifePromo(
+                            onPlay: () =>
+                                Navigator.of(context).pushNamed('/life'),
+                          ),
+                          const SizedBox(height: 10),
                           DailyPlanCard(
                             compact: compactHeight,
                             onOpenQuest: (quest) => _openQuest(context, quest),
@@ -199,6 +204,104 @@ class HomeScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Home-screen promo for the main game (Life), so it's front-and-centre rather
+/// than buried like a minigame.
+class _PlayLifePromo extends StatelessWidget {
+  const _PlayLifePromo({required this.onPlay});
+
+  final VoidCallback onPlay;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onPlay,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1C5038), Color(0xFF0C2A1E)],
+          ),
+          border: Border.all(color: const Color(0xFF85EFAC).withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.favorite_rounded,
+                color: Color(0xFF85EFAC),
+                size: 26,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      const Text(
+                        'Play Life',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFD45C).withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Text(
+                          'MAIN GAME',
+                          style: TextStyle(
+                            color: Color(0xFFFFD45C),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Grow up, make money decisions, explore the town.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.78),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.play_circle_fill_rounded, color: Color(0xFF85EFAC), size: 34),
+          ],
+        ),
+      ),
     );
   }
 }
