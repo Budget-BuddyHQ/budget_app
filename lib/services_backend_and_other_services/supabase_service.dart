@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
-import 'dart:ui' show Offset;
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,10 +8,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../models_Like_Skins_and_lessons_templates/player_profile.dart';
-
-const String defaultAdventureMapId = 'starter_village';
-const double defaultAdventurePositionX = 640;
-const double defaultAdventurePositionY = 800;
 
 @immutable
 class LedgerTransaction {
@@ -31,29 +26,6 @@ class LedgerTransaction {
   final int amount;
   final DateTime createdAt;
   final String category;
-
-  bool get isCredit => amount >= 0;
-
-  String get amountLabel => '${amount >= 0 ? '+' : ''}$amount gold';
-
-  String get relativeLabel {
-    final now = DateTime.now();
-    final difference = now.difference(createdAt.toLocal());
-
-    if (difference.inMinutes < 1) {
-      return 'Just now';
-    }
-    if (difference.inHours < 1) {
-      return '${difference.inMinutes} mins ago';
-    }
-    if (difference.inDays < 1) {
-      return '${difference.inHours} hrs ago';
-    }
-    if (difference.inDays == 1) {
-      return 'Yesterday';
-    }
-    return '${difference.inDays} days ago';
-  }
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
@@ -114,7 +86,7 @@ class UserStats {
     return UserStats(
       id: userId,
       username: 'Username3189',
-      gold: 2450,
+      gold: 999999,
       xp: 850,
       literacyPoints: 850,
       personalityType: 'Spender',
@@ -124,9 +96,6 @@ class UserStats {
         'missed_questions': <String>[],
         'equipped_skin': 'classic_turtle',
         'unlocked_skins': <String>['classic_turtle'],
-        'adventure_map_id': defaultAdventureMapId,
-        'adventure_position_x': defaultAdventurePositionX,
-        'adventure_position_y': defaultAdventurePositionY,
       },
       transactions: <LedgerTransaction>[
         LedgerTransaction(
@@ -201,24 +170,6 @@ class UserStats {
   int get level => math.max(1, xp ~/ 120);
 
   String get levelTitle => 'Level $level Finance Wizard';
-
-  String get wizardAdvice {
-    switch (personalityType.toLowerCase()) {
-      case 'spender':
-      case 'the spender':
-      case 'impulse spender':
-      case 'the impulse spender':
-        return 'The market is volatile today, maybe save your gold?';
-      case 'risk-taker':
-      case 'the risk-taker':
-        return 'Momentum is strong, but keep a safety stash before the next boss battle.';
-      case 'saver':
-      case 'the saver':
-        return 'Your discipline is working. A small, consistent investment could grow your kingdom.';
-      default:
-        return 'You are building smart habits. Keep balancing savings, learning, and strategic risks.';
-    }
-  }
 
   double get levelProgress => (xp % 120) / 120;
 
@@ -378,23 +329,6 @@ class UserStats {
   bool get hasCompletedPersonalDetails =>
       spendingHabits[ProfileKeys.onboardingComplete] == true;
 
-  String get adventureMapId {
-    final value = spendingHabits['adventure_map_id']?.toString().trim();
-    if (value == null || value.isEmpty) {
-      return defaultAdventureMapId;
-    }
-    return value;
-  }
-
-  Offset? get adventurePosition {
-    final x = _readDoubleOrNull(spendingHabits['adventure_position_x']);
-    final y = _readDoubleOrNull(spendingHabits['adventure_position_y']);
-    if (x == null || y == null || !x.isFinite || !y.isFinite) {
-      return null;
-    }
-    return Offset(x, y);
-  }
-
   Map<String, dynamic> toStorageMap() {
     return <String, dynamic>{
       'id': id,
@@ -408,11 +342,6 @@ class UserStats {
         'username': username,
         'equipped_skin': equippedSkin,
         'unlocked_skins': unlockedSkins,
-        'adventure_map_id': adventureMapId,
-        if (adventurePosition case final position?) ...<String, dynamic>{
-          'adventure_position_x': position.dx,
-          'adventure_position_y': position.dy,
-        },
       },
       'transaction_ledger': transactions
           .map((transaction) => transaction.toJson())
@@ -606,10 +535,8 @@ end
   bool _isSupabaseConnected = false;
 
   bool get isSupabaseConnected => _isSupabaseConnected;
-  bool get hasCachedPreferences => _preferences != null;
   User? get currentUser => _existingClient?.auth.currentUser;
   String? get currentUserId => currentUser?.id;
-  Session? get currentSession => _existingClient?.auth.currentSession;
 
   Stream<AuthState> authStateChanges() async* {
     final client = _existingClient;
@@ -1332,19 +1259,6 @@ int _readInt(dynamic value) {
     return int.tryParse(value) ?? 0;
   }
   return 0;
-}
-
-double? _readDoubleOrNull(dynamic value) {
-  if (value is double) {
-    return value;
-  }
-  if (value is num) {
-    return value.toDouble();
-  }
-  if (value is String) {
-    return double.tryParse(value);
-  }
-  return null;
 }
 
 DateTime? _readDate(dynamic value) {
