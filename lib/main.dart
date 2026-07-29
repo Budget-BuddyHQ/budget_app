@@ -7,15 +7,13 @@ import 'package:window_manager/window_manager.dart';
 
 import 'config/dev_preview_flags.dart';
 import 'config/runtime_env.dart';
-import 'controllers_that_updates_stats/adventure_state_controller.dart';
 import 'controllers_that_updates_stats/app_settings_controller.dart';
 import 'controllers_that_updates_stats/daily_plan_controller.dart';
 import 'controllers_that_updates_stats/user_stats_controller.dart';
 import 'navigation_tools_and_animation/app_tab_index.dart';
-import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/game_canvas.dart';
 import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/main_game_page.dart';
 import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.dart';
-import 'screens_minigames_admin_etc/Gameplay/minigames_pages/life_board_page.dart';
+import 'screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart';
 import 'screens_minigames_admin_etc/Gameplay/dashboard/dashboard_shell.dart';
 import 'screens_minigames_admin_etc/Gameplay/dashboard/leaderboard_screen.dart';
 import 'screens_minigames_admin_etc/auth/auth_screen.dart';
@@ -70,15 +68,6 @@ Future<void> main() async {
               UserStatsController(service: SupabaseService.instance)
                 ..initialize(),
         ),
-        ChangeNotifierProxyProvider<
-          UserStatsController,
-          AdventureStateController
-        >(
-          create: (_) => AdventureStateController(),
-          update: (_, userStats, adventure) =>
-              (adventure ?? AdventureStateController())
-                ..attachUserStats(userStats),
-        ),
         // Rebuilds its plan whenever stats change (a lesson finishes, an
         // arcade run is logged, etc.), so the home checklist always reflects
         // reality.
@@ -116,9 +105,8 @@ class MyApp extends StatelessWidget {
             const DashboardShell(initialIndex: AppTabIndex.customize),
         '/lessons': (context) =>
             const DashboardShell(initialIndex: AppTabIndex.academy),
-        '/game-canvas': (context) => const GameCanvas(),
         '/main-gameplay': (context) => const MainGamePage(),
-        '/life-board': (context) => const LifeBoardPage(),
+        '/life': (context) => const LifeSimPage(),
         '/minigames': (context) => const MinigamesPage(),
         '/leaderboard': (context) => const LeaderboardScreen(),
       },
@@ -166,9 +154,7 @@ class _AdventureSaveLoadingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const TemporaryLoadingScreen(
-      message: 'Loading your adventure save...',
-    );
+    return const TemporaryLoadingScreen(message: 'Loading your progress...');
   }
 }
 

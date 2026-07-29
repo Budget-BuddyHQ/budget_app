@@ -412,9 +412,9 @@ class _StockMarketPageState extends State<StockMarketPage>
         );
 
         return Scaffold(
-          backgroundColor: const Color(0xFF071711),
+          backgroundColor: const Color(0xFF0D1117),
           appBar: AppBar(
-            backgroundColor: const Color(0xFF071711),
+            backgroundColor: const Color(0xFF0D1117),
             foregroundColor: Colors.white,
             elevation: 0,
             title: const Text(
@@ -433,7 +433,7 @@ class _StockMarketPageState extends State<StockMarketPage>
             ],
             bottom: TabBar(
               controller: _tabController,
-              indicatorColor: const Color(0xFF85EFAC),
+              indicatorColor: const Color(0xFF4993FF),
               indicatorWeight: 3,
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white54,
@@ -1309,7 +1309,7 @@ class _TickerTapeState extends State<_TickerTape> {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: const Color(0xFF0A1D17),
+        color: const Color(0xFF161B22),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
