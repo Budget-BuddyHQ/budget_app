@@ -10,6 +10,7 @@ import '../../../services_backend_and_other_services/supabase_service.dart'
     show LedgerTransaction, UserStats;
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/mini_sparkline.dart';
+import '../../../widgets_custom_lotties/price_chart.dart';
 import 'order_ticket_page.dart';
 
 /// Real, tradeable stock: a [LiveQuote] plus the display/trade dressing
@@ -183,21 +184,62 @@ class _StockMarketPageState extends State<StockMarketPage>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
+  /// Polls live prices while the board is open, so quotes and charts move
+  /// without the player hitting refresh.
+  Timer? _livePoll;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-      await context.read<MarketDataService>().refresh();
-      await _settleWorkingOrders();
-    });
+    _tabController = TabController(length: 5, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _tick(force: true));
+    _livePoll = Timer.periodic(
+      MarketDataService.livePollInterval,
+      (_) => _tick(),
+    );
   }
 
   @override
   void dispose() {
+    _livePoll?.cancel();
     _tabController.dispose();
     super.dispose();
+  }
+
+  /// One live update: refresh quotes, pull real intraday shape for the cards,
+  /// settle any resting orders, then record the true net worth so the P&L
+  /// curve reflects what actually happened.
+  Future<void> _tick({bool force = false}) async {
+    if (!mounted) return;
+    final market = context.read<MarketDataService>();
+    await market.refresh(force: force);
+    if (!mounted) return;
+
+    await market.refreshSeries(
+      kLiveSymbols.where((s) => s.common).map((s) => s.symbol).toList(),
+      force: force,
+    );
+    if (!mounted) return;
+
+    await _settleWorkingOrders();
+    if (!mounted) return;
+    await _recordNetWorth();
+  }
+
+  /// Snapshots cash + live market value onto the equity curve.
+  Future<void> _recordNetWorth() async {
+    final controller = context.read<UserStatsController>();
+    final market = context.read<MarketDataService>();
+    final stats = controller.stats;
+
+    var marketValue = 0.0;
+    for (final entry in stats.holdings.entries) {
+      if (!entry.key.startsWith('stock_')) continue;
+      final quote = market.quoteFor(entry.key.substring(6));
+      if (quote == null || !quote.isValid) continue;
+      marketValue += entry.value * coinsForUsd(quote.current);
+    }
+    await controller.recordNetWorth((stats.gold + marketValue).round());
   }
 
   /// Opens the full-screen order ticket (chart, side, order type, price and
@@ -410,6 +452,16 @@ class _StockMarketPageState extends State<StockMarketPage>
           ownedSymbols,
           avgChangePercent,
         );
+        // Unrealised P&L across every open position: market value vs. what was
+        // actually paid for it.
+        final totalUnrealised = quotes.fold<double>(0, (sum, quote) {
+          return sum +
+              _holdingMetrics(
+                ownedLots: stats.holdings['stock_${quote.symbol}'] ?? 0.0,
+                costBasis: stats.costBasis['stock_${quote.symbol}'] ?? 0,
+                currentPrice: quote.currentPrice,
+              ).totalProfitLoss;
+        });
 
         return Scaffold(
           backgroundColor: const Color(0xFF0D1117),
@@ -422,17 +474,20 @@ class _StockMarketPageState extends State<StockMarketPage>
               style: TextStyle(fontWeight: FontWeight.w900),
             ),
             actions: [
+              _LiveBadge(
+                loading: market.status == LiveMarketStatus.loading,
+                lastFetch: market.lastFetch,
+              ),
               IconButton(
                 tooltip: 'Refresh prices',
-                onPressed: () async {
-                  await market.refresh(force: true);
-                  await _settleWorkingOrders();
-                },
+                onPressed: () => _tick(force: true),
                 icon: const Icon(Icons.refresh_rounded),
               ),
             ],
             bottom: TabBar(
               controller: _tabController,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
               indicatorColor: const Color(0xFF4993FF),
               indicatorWeight: 3,
               labelColor: Colors.white,
@@ -443,6 +498,7 @@ class _StockMarketPageState extends State<StockMarketPage>
                 Tab(text: 'Trade'),
                 Tab(text: 'Orders'),
                 Tab(text: 'P&L'),
+                Tab(text: 'Analytics'),
               ],
             ),
           ),
@@ -511,22 +567,16 @@ class _StockMarketPageState extends State<StockMarketPage>
                   },
                 ),
                 _PnlTab(
-                  portfolioHistory: stats.portfolioHistory,
+                  portfolioHistory: statsController.realPortfolioHistory,
                   netWorth: totalAssets,
-                  totalEarned: quotes
-                      .fold<double>(0, (sum, quote) {
-                        final owned =
-                            stats.holdings['stock_${quote.symbol}'] ?? 0.0;
-                        final basis =
-                            stats.costBasis['stock_${quote.symbol}'] ?? 0;
-                        return sum +
-                            _holdingMetrics(
-                              ownedLots: owned,
-                              costBasis: basis,
-                              currentPrice: quote.currentPrice,
-                            ).totalProfitLoss;
-                      })
-                      .round(),
+                  totalEarned: totalUnrealised.round(),
+                ),
+                _AnalyticsTab(
+                  quotes: quotes,
+                  stats: stats,
+                  equityCurve: statsController.realPortfolioHistory,
+                  totalMarketValue: totalMarketValue,
+                  totalUnrealised: totalUnrealised.round(),
                 ),
               ],
             ),
@@ -1405,7 +1455,7 @@ class _PortfolioSummary extends StatelessWidget {
         ? const Color(0xFF85EFAC)
         : const Color(0xFFFF8A80);
     final earnedPositive = totalEarned >= 0;
-    final earnedLabel = '${earnedPositive ? '+' : ''}${totalEarned}g';
+    final earnedLabel = '${earnedPositive ? '+' : ''}${coinLabel(totalEarned)}';
     final earnedColor = earnedPositive
         ? const Color(0xFF85EFAC)
         : const Color(0xFFFF8A80);
@@ -1435,22 +1485,26 @@ class _PortfolioSummary extends StatelessWidget {
             children: [
               _ValueBadge(
                 label: 'Cash',
-                value: '${cash}g',
+                value: coinLabel(cash),
+                sub: usdLabel(cash),
                 color: const Color(0xFFE1BB72),
               ),
               _ValueBadge(
                 label: 'Market Value',
-                value: '${marketValue}g',
+                value: coinLabel(marketValue),
+                sub: usdLabel(marketValue),
                 color: const Color(0xFF58C7FF),
               ),
               _ValueBadge(
                 label: 'Net Worth',
-                value: '${netWorth}g',
+                value: coinLabel(netWorth),
+                sub: usdLabel(netWorth),
                 color: const Color(0xFF85EFAC),
               ),
               _ValueBadge(
                 label: 'Total Earned',
                 value: earnedLabel,
+                sub: usdLabel(totalEarned.abs()),
                 color: earnedColor,
               ),
               _ValueBadge(
@@ -1571,7 +1625,8 @@ class _StockCard extends StatelessWidget {
                 children: [
                   _ValueBadge(
                     label: 'Price',
-                    value: '${quote.currentPrice}g',
+                    value: coinLabel(quote.currentPrice),
+                    sub: usdLabel(quote.currentPrice),
                     color: const Color(0xFFE1BB72),
                   ),
                   _ValueBadge(
@@ -1583,6 +1638,9 @@ class _StockCard extends StatelessWidget {
                   _ValueBadge(
                     label: 'Owned',
                     value: formatShares(ownedLots),
+                    sub: ownedLots > 0
+                        ? usdLabel(ownedLots * quote.currentPrice)
+                        : null,
                     color: const Color(0xFF58C7FF),
                   ),
                 ],
@@ -1677,7 +1735,7 @@ class _StockCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _StockSparkline(history: quote.history, accent: quote.accent),
+          _StockSparkline(symbol: quote.symbol, accent: quote.accent),
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -1742,11 +1800,16 @@ class _ValueBadge extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
+    this.sub,
   });
 
   final String label;
   final String value;
   final Color color;
+
+  /// Optional second line — used to show the real-money equivalent under a
+  /// coin amount, so coins never read as if they were dollars.
+  final String? sub;
 
   @override
   Widget build(BuildContext context) {
@@ -1772,6 +1835,15 @@ class _ValueBadge extends StatelessWidget {
             value,
             style: TextStyle(color: color, fontWeight: FontWeight.w900),
           ),
+          if (sub != null)
+            Text(
+              sub!,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
         ],
       ),
     );
@@ -1810,19 +1882,51 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
+/// The inline chart on a trade card.
+///
+/// Draws the symbol's **real intraday closes** (fetched once per few minutes
+/// and cached in [MarketDataService]) with a price axis, so the shape and the
+/// numbers are both real. Falls back to the quote's 3-point series when no
+/// historical-data key is configured.
 class _StockSparkline extends StatelessWidget {
-  const _StockSparkline({required this.history, required this.accent});
+  const _StockSparkline({required this.symbol, required this.accent});
 
-  final List<int> history;
+  final String symbol;
   final Color accent;
 
-  static const double height = 120;
+  static const double height = 130;
 
   @override
   Widget build(BuildContext context) {
-    if (history.length < 2) {
-      return SizedBox(height: height);
+    final market = context.watch<MarketDataService>();
+    // Coins, so the axis labels match the prices shown on the card.
+    final series = market
+        .seriesFor(symbol)
+        .map((usd) => coinsForUsd(usd).toDouble())
+        .toList(growable: false);
+
+    if (series.length < 2) {
+      return SizedBox(
+        height: height,
+        child: Center(
+          child: Text(
+            'No chart data yet',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.35),
+              fontSize: 12,
+            ),
+          ),
+        ),
+      );
     }
+
+    final first = series.first;
+    final last = series.last;
+    final rising = last >= first;
+    final lineColor = rising
+        ? const Color(0xFF00C287)
+        : const Color(0xFFE1454A);
+    final changePercent = first == 0 ? 0.0 : ((last - first) / first) * 100;
 
     return Container(
       width: double.infinity,
@@ -1832,10 +1936,55 @@ class _StockSparkline extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: accent.withValues(alpha: 0.18)),
       ),
-      padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
-      child: MiniSparkline(
-        values: history.map((v) => v.toDouble()).toList(),
-        color: accent,
+      padding: const EdgeInsets.fromLTRB(10, 10, 6, 6),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text(
+                series.length > 3 ? 'Today' : 'Recent',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                rising
+                    ? Icons.arrow_drop_up_rounded
+                    : Icons.arrow_drop_down_rounded,
+                color: lineColor,
+                size: 16,
+              ),
+              Text(
+                '${changePercent >= 0 ? '+' : ''}'
+                '${changePercent.toStringAsFixed(2)}%',
+                style: TextStyle(
+                  color: lineColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                usdLabel(last),
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          Expanded(
+            child: PriceChart(
+              candles: _flatCandles(series),
+              mode: ChartMode.line,
+              accent: lineColor,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2134,12 +2283,24 @@ class _PnlTab extends StatelessWidget {
     final positive = totalEarned >= 0;
     final color = positive ? const Color(0xFF85EFAC) : const Color(0xFFFF8A80);
 
+    // The curve is real net worth in coins, so its own direction — not the P&L
+    // sign — decides whether it reads as up or down.
+    final curveRising =
+        portfolioHistory.length < 2 ||
+        portfolioHistory.last >= portfolioHistory.first;
+    final curveColor = curveRising
+        ? const Color(0xFF85EFAC)
+        : const Color(0xFFFF8A80);
+    final curveDelta = portfolioHistory.length < 2
+        ? 0.0
+        : portfolioHistory.last - portfolioHistory.first;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
         const _SectionTitle(
           title: 'P&L',
-          subtitle: 'How your invested gold has moved over time.',
+          subtitle: 'Your real net worth, recorded every time prices refresh.',
         ),
         const SizedBox(height: 14),
         Container(
@@ -2153,37 +2314,536 @@ class _PnlTab extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${positive ? '+' : ''}${totalEarned}g',
+                '${positive ? '+' : ''}${coinLabel(totalEarned)}',
                 style: TextStyle(
                   color: color,
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 4),
               Text(
-                'Total P&L on open positions',
+                '${positive ? '+' : '-'}${usdLabel(totalEarned.abs())} '
+                'unrealised on open positions',
                 style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
               ),
               const SizedBox(height: 18),
-              SizedBox(
-                height: 140,
-                child: MiniSparkline(
-                  values: portfolioHistory,
-                  color: color,
-                  strokeWidth: 2.4,
+              if (portfolioHistory.length < 2)
+                _EquityCurveEmpty(netWorth: netWorth)
+              else ...[
+                Row(
+                  children: [
+                    Icon(
+                      curveRising
+                          ? Icons.trending_up_rounded
+                          : Icons.trending_down_rounded,
+                      color: curveColor,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${curveDelta >= 0 ? '+' : ''}${coinLabel(curveDelta)} '
+                      'since tracking started',
+                      style: TextStyle(
+                        color: curveColor,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 150,
+                  child: PriceChart(
+                    candles: _flatCandles(portfolioHistory),
+                    mode: ChartMode.line,
+                    accent: curveColor,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${portfolioHistory.length} snapshots • '
+                  'low ${coinLabel(portfolioHistory.reduce(math.min))} • '
+                  'high ${coinLabel(portfolioHistory.reduce(math.max))}',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.45),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
         const SizedBox(height: 16),
-        _ValueBadge(
-          label: 'Net Worth',
-          value: '${netWorth}g',
-          color: const Color(0xFF58C7FF),
+        Row(
+          children: [
+            Expanded(
+              child: _ValueBadge(
+                label: 'Net Worth',
+                value: coinLabel(netWorth),
+                color: const Color(0xFF58C7FF),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ValueBadge(
+                label: 'In real money',
+                value: usdLabel(netWorth),
+                color: const Color(0xFFE1BB72),
+              ),
+            ),
+          ],
         ),
       ],
+    );
+  }
+}
+
+/// Wraps a plain value series as flat-bodied candles so it can be drawn by
+/// [PriceChart], which gives it a price axis and a current-value tag.
+List<Candle> _flatCandles(List<double> values) {
+  final now = DateTime.now();
+  return [
+    for (var i = 0; i < values.length; i++)
+      Candle(
+        time: now.subtract(Duration(minutes: values.length - i)),
+        open: values[i],
+        high: values[i],
+        low: values[i],
+        close: values[i],
+      ),
+  ];
+}
+
+class _EquityCurveEmpty extends StatelessWidget {
+  const _EquityCurveEmpty({required this.netWorth});
+
+  final int netWorth;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 18),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.timeline_rounded,
+            color: Colors.white.withValues(alpha: 0.3),
+            size: 32,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Building your equity curve',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.8),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Net worth is ${coinLabel(netWorth)}. Each price refresh adds a '
+            'real point here, so the line rises and falls with your actual '
+            'portfolio.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.55),
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shows that quotes are polling, and when they last landed.
+class _LiveBadge extends StatelessWidget {
+  const _LiveBadge({required this.loading, required this.lastFetch});
+
+  final bool loading;
+  final DateTime? lastFetch;
+
+  @override
+  Widget build(BuildContext context) {
+    final fetched = lastFetch;
+    final label = fetched == null
+        ? '—'
+        : '${fetched.hour.toString().padLeft(2, '0')}:'
+              '${fetched.minute.toString().padLeft(2, '0')}:'
+              '${fetched.second.toString().padLeft(2, '0')}';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: const Color(0xFF00C287).withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 8,
+              height: 8,
+              child: loading
+                  ? const CircularProgressIndicator(
+                      strokeWidth: 1.6,
+                      color: Color(0xFF00C287),
+                    )
+                  : const DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Color(0xFF00C287),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'LIVE $label',
+              style: const TextStyle(
+                color: Color(0xFF00C287),
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Analytics: the numbers behind the portfolio — concentration, win/loss split,
+/// best and worst positions, and trading activity.
+class _AnalyticsTab extends StatelessWidget {
+  const _AnalyticsTab({
+    required this.quotes,
+    required this.stats,
+    required this.equityCurve,
+    required this.totalMarketValue,
+    required this.totalUnrealised,
+  });
+
+  final List<_TradeQuote> quotes;
+  final UserStats stats;
+  final List<double> equityCurve;
+  final int totalMarketValue;
+  final int totalUnrealised;
+
+  @override
+  Widget build(BuildContext context) {
+    final positions =
+        quotes
+            .map((quote) {
+              final owned = stats.holdings['stock_${quote.symbol}'] ?? 0.0;
+              return (
+                quote: quote,
+                owned: owned,
+                metrics: _holdingMetrics(
+                  ownedLots: owned,
+                  costBasis: stats.costBasis['stock_${quote.symbol}'] ?? 0,
+                  currentPrice: quote.currentPrice,
+                ),
+              );
+            })
+            .where((p) => p.owned > 0)
+            .toList()
+          ..sort(
+            (a, b) =>
+                b.metrics.totalProfitLoss.compareTo(a.metrics.totalProfitLoss),
+          );
+
+    final winners = positions
+        .where((p) => p.metrics.totalProfitLoss > 0)
+        .length;
+    final losers = positions.where((p) => p.metrics.totalProfitLoss < 0).length;
+    final orders = stats.transactions
+        .map(_parseStockOrder)
+        .whereType<_StockOrder>()
+        .toList(growable: false);
+    final buys = orders.where((o) => o.isBuy).length;
+    final invested = positions.fold<int>(
+      0,
+      (sum, p) => sum + (stats.costBasis['stock_${p.quote.symbol}'] ?? 0),
+    );
+    final returnPercent = invested > 0
+        ? (totalUnrealised / invested) * 100
+        : 0.0;
+    // Concentration: the largest position as a share of all holdings.
+    final topShare = totalMarketValue > 0 && positions.isNotEmpty
+        ? (positions
+                      .map((p) => p.metrics.currentValue)
+                      .reduce(math.max) /
+                  totalMarketValue) *
+              100
+        : 0.0;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        const _SectionTitle(
+          title: 'Analytics',
+          subtitle: 'What your trading actually adds up to.',
+        ),
+        const SizedBox(height: 14),
+        if (positions.isEmpty && orders.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.insights_rounded,
+                  color: Colors.white.withValues(alpha: 0.3),
+                  size: 34,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'No data to analyse yet.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Place a trade and your stats will appear here.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
+                ),
+              ],
+            ),
+          )
+        else ...[
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _MetricTile(
+                label: 'Return on cost',
+                value: '${returnPercent >= 0 ? '+' : ''}'
+                    '${returnPercent.toStringAsFixed(1)}%',
+                sub: 'on ${coinLabel(invested)} invested',
+                color: returnPercent >= 0
+                    ? const Color(0xFF85EFAC)
+                    : const Color(0xFFFF8A80),
+              ),
+              _MetricTile(
+                label: 'Positions',
+                value: '${positions.length}',
+                sub: '$winners up • $losers down',
+                color: const Color(0xFF58C7FF),
+              ),
+              _MetricTile(
+                label: 'Concentration',
+                value: '${topShare.toStringAsFixed(0)}%',
+                sub: 'in your largest holding',
+                color: topShare > 60
+                    ? const Color(0xFFFFB084)
+                    : const Color(0xFF85EFAC),
+              ),
+              _MetricTile(
+                label: 'Orders filled',
+                value: '${orders.length}',
+                sub: '$buys buys • ${orders.length - buys} sells',
+                color: const Color(0xFFB388FF),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          if (positions.isNotEmpty) ...[
+            const _SectionTitle(
+              title: 'Best & worst',
+              subtitle: 'Where the gains and losses are actually coming from.',
+            ),
+            const SizedBox(height: 12),
+            _PositionBar(
+              label: 'Best',
+              entry: positions.first,
+              color: const Color(0xFF85EFAC),
+            ),
+            if (positions.length > 1) ...[
+              const SizedBox(height: 10),
+              _PositionBar(
+                label: 'Worst',
+                entry: positions.last,
+                color: const Color(0xFFFF8A80),
+              ),
+            ],
+            const SizedBox(height: 20),
+          ],
+          if (equityCurve.length >= 2) ...[
+            const _SectionTitle(
+              title: 'Net worth trend',
+              subtitle: 'Every recorded snapshot, oldest to newest.',
+            ),
+            const SizedBox(height: 12),
+            Container(
+              height: 130,
+              padding: const EdgeInsets.fromLTRB(6, 12, 6, 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              child: PriceChart(
+                candles: _flatCandles(equityCurve),
+                mode: ChartMode.line,
+                accent: const Color(0xFF4993FF),
+              ),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+}
+
+class _MetricTile extends StatelessWidget {
+  const _MetricTile({
+    required this.label,
+    required this.value,
+    required this.sub,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final String sub;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Two per row on phones, four across on a tablet.
+        final maxWidth = MediaQuery.sizeOf(context).width;
+        final width = maxWidth >= 720 ? (maxWidth - 90) / 4 : (maxWidth - 44) / 2;
+        return Container(
+          width: width,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: color.withValues(alpha: 0.25)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label.toUpperCase(),
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.4,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                value,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                sub,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PositionBar extends StatelessWidget {
+  const _PositionBar({
+    required this.label,
+    required this.entry,
+    required this.color,
+  });
+
+  final String label;
+  final ({
+    _TradeQuote quote,
+    double owned,
+    ({
+      double averageCost,
+      double currentValue,
+      double totalProfitLoss,
+      double profitLossPercent,
+    })
+    metrics,
+  })
+  entry;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final pl = entry.metrics.totalProfitLoss;
+    final sign = pl >= 0 ? '+' : '';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Icon(entry.quote.icon, color: entry.quote.accent, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${entry.quote.symbol} • ${formatShares(entry.owned)} sh',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          Text(
+            '$sign${coinLabel(pl)} ($sign'
+            '${entry.metrics.profitLossPercent.toStringAsFixed(1)}%)',
+            style: TextStyle(color: color, fontWeight: FontWeight.w900),
+          ),
+        ],
+      ),
     );
   }
 }

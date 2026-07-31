@@ -10,6 +10,8 @@ import '../../../models_Like_Skins_and_lessons_templates/progression_service.dar
 import '../../../models_Like_Skins_and_lessons_templates/quiz_bank.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
+import '../../../services_backend_and_other_services/supabase_service.dart'
+    show UserStats;
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../loading/temporary_loading_screen.dart';
@@ -258,6 +260,13 @@ class _LessonScreenState extends State<LessonScreen> {
                             : () => _openLesson(nextLesson),
                       ),
                       const SizedBox(height: 12),
+                      _AcademyAnalyticsCard(
+                        compact: true,
+                        units: units,
+                        progression: _progressionService,
+                        stats: _statsController.stats,
+                      ),
+                      const SizedBox(height: 12),
                       const _MasteryLegend(compact: true),
                       const SizedBox(height: 16),
                       ..._unitCards(
@@ -302,6 +311,13 @@ class _LessonScreenState extends State<LessonScreen> {
                       onOpenNext: nextLesson == null
                           ? null
                           : () => _openLesson(nextLesson),
+                    ),
+                    const SizedBox(height: 12),
+                    _AcademyAnalyticsCard(
+                      compact: false,
+                      units: units,
+                      progression: _progressionService,
+                      stats: _statsController.stats,
                     ),
                     const SizedBox(height: 12),
                     const _MasteryLegend(),
@@ -1001,6 +1017,10 @@ class _UnitCard extends StatelessWidget {
               final copy = Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Who this unit is written for, so the path visibly grows
+                  // with the learner instead of reading as a flat list.
+                  _AgeStageChip(stage: unit.ageStage),
+                  const SizedBox(height: 10),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1134,6 +1154,243 @@ class _MasteryBadge extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(color: color, fontWeight: FontWeight.w900),
+      ),
+    );
+  }
+}
+
+/// Small badge naming the age range a unit is pitched at.
+class _AgeStageChip extends StatelessWidget {
+  const _AgeStageChip({required this.stage});
+
+  final AgeStage stage;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFD45C).withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: const Color(0xFFFFD45C).withValues(alpha: 0.32),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.cake_rounded,
+            size: 12,
+            color: Color(0xFFFFD45C),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '${stage.label} · ${stage.blurb}',
+            style: const TextStyle(
+              color: Color(0xFFFFD45C),
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Learning analytics: how much of the Academy is done, how accurate the
+/// player's answers are, which age stages they have reached, and which skills
+/// still need work. Uses only data the app already records.
+class _AcademyAnalyticsCard extends StatelessWidget {
+  const _AcademyAnalyticsCard({
+    required this.compact,
+    required this.units,
+    required this.progression,
+    required this.stats,
+  });
+
+  final bool compact;
+  final List<LessonUnit> units;
+  final ProgressionService progression;
+  final UserStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final completed = progression.completedCount;
+    final total = progression.totalCount;
+
+    // Average accuracy across units that have actually been attempted.
+    final accuracies = <double>[
+      for (final unit in units)
+        if (progression.getUnitAccuracy(unit.id) case final a?) a,
+    ];
+    final avgAccuracy = accuracies.isEmpty
+        ? null
+        : accuracies.reduce((a, b) => a + b) / accuracies.length;
+
+    final mastered = units
+        .where((u) => progression.getUnitMastery(u.id) == MasteryLevel.mastered)
+        .length;
+
+    // The furthest age stage with any progress — how far along the path they are.
+    AgeStage? reached;
+    for (final unit in units) {
+      if (progression.getUnitProgress(unit.id) > 0) {
+        if (reached == null || unit.ageStage.minAge > reached.minAge) {
+          reached = unit.ageStage;
+        }
+      }
+    }
+
+    final weakSkills = stats.weakSkills;
+
+    return Container(
+      padding: EdgeInsets.all(compact ? 16 : 20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF071711).withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: const Color(0x554BD2A3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.insights_rounded,
+                color: Color(0xFF85EFAC),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Your learning stats',
+                style: TextStyle(
+                  color: Color(0xFFF7FFFB),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _AnalyticStat(
+                label: 'Lessons done',
+                value: '$completed/$total',
+                color: const Color(0xFF85EFAC),
+              ),
+              _AnalyticStat(
+                label: 'Avg accuracy',
+                value: avgAccuracy == null
+                    ? '—'
+                    : '${(avgAccuracy * 100).round()}%',
+                color: avgAccuracy == null
+                    ? Colors.white54
+                    : (avgAccuracy >= 0.8
+                          ? const Color(0xFF85EFAC)
+                          : const Color(0xFFFFD45C)),
+              ),
+              _AnalyticStat(
+                label: 'Units mastered',
+                value: '$mastered/${units.length}',
+                color: const Color(0xFFFFD45C),
+              ),
+              _AnalyticStat(
+                label: 'Reached',
+                value: reached?.label ?? 'Not started',
+                color: const Color(0xFF58C7FF),
+              ),
+            ],
+          ),
+          if (weakSkills.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text(
+              'Worth reviewing',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.4,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final skill in weakSkills.take(6))
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFB084).withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      skill,
+                      style: const TextStyle(
+                        color: Color(0xFFFFB084),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _AnalyticStat extends StatelessWidget {
+  const _AnalyticStat({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 9.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.4,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w900,
+              fontSize: 15,
+            ),
+          ),
+        ],
       ),
     );
   }
