@@ -8,6 +8,7 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
     description:
         'Build the core habits behind budgeting, saving, and planning each dollar with intention.',
     order: 1,
+    ageStage: AgeStage.middleSchool,
     lessons: <Lesson>[
       Lesson(
         id: 'lesson_1',
@@ -70,6 +71,7 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
     description:
         'Learn how credit works, how to avoid harmful debt, and how long-term planning creates stability.',
     order: 2,
+    ageStage: AgeStage.graduating,
     lessons: <Lesson>[
       Lesson(
         id: 'lesson_6',
@@ -133,6 +135,7 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
     description:
         'Set up money systems that make saving easier, smoother, and more automatic.',
     order: 3,
+    ageStage: AgeStage.highSchool,
     lessons: <Lesson>[
       Lesson(
         id: 'lesson_11',
@@ -196,6 +199,7 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
     description:
         'Learn how investing grows wealth over time and how to manage risk without guessing.',
     order: 4,
+    ageStage: AgeStage.adult,
     lessons: <Lesson>[
       Lesson(
         id: 'lesson_16',
@@ -259,6 +263,7 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
     description:
         'Practice how budgeting, saving, credit, and investing connect in everyday life decisions.',
     order: 5,
+    ageStage: AgeStage.graduating,
     lessons: <Lesson>[
       Lesson(
         id: 'lesson_21',

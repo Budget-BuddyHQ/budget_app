@@ -1,20 +1,17 @@
 import 'dart:math';
 
 import 'package:budget_app/controllers_that_updates_stats/life_sim_controller.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// A Random with a scripted sequence so events/finances are deterministic.
-class _ScriptedRandom implements Random {
-  _ScriptedRandom(this._values);
-  final List<int> _values;
-  int _i = 0;
+/// A Random that always returns the same value, so results don't depend on how
+/// many times the controller happens to draw.
+class _FixedRandom implements Random {
+  _FixedRandom(this._value);
+  final int _value;
 
   @override
-  int nextInt(int max) {
-    final value = _values[_i % _values.length];
-    _i++;
-    return value % max;
-  }
+  int nextInt(int max) => _value % max;
 
   @override
   double nextDouble() => 0;
@@ -23,71 +20,144 @@ class _ScriptedRandom implements Random {
   bool nextBool() => false;
 }
 
+LifeSimController _adult({int value = 1, int money = 200}) =>
+    LifeSimController(
+      random: _FixedRandom(value),
+      initialAge: 15,
+      startMoney: money,
+    );
+
 void main() {
-  test('a new life starts as a teen student with starting money', () {
-    final life = LifeSimController(random: _ScriptedRandom([0]));
-    expect(life.age, 15);
-    expect(life.job, 'Student');
-    expect(life.money, 200);
-    expect(life.netWorth, 200);
-    expect(life.currentEvent, isNull);
+  test('a new life is born with the chosen identity and origin', () {
+    final life = LifeSimController(
+      random: _FixedRandom(1),
+      name: 'Sam Reyes',
+      gender: Gender.female,
+      origin: LifeOrigin.comfortable,
+      startMoney: LifeOrigin.comfortable.familyMoney,
+    );
+
+    expect(life.age, 0);
+    expect(life.name, 'Sam Reyes');
+    expect(life.gender, Gender.female);
+    expect(life.stage, LifeStage.baby);
+    expect(life.job, 'Newborn');
+    expect(life.money, LifeOrigin.comfortable.familyMoney);
+    expect(life.smarts, LifeOrigin.comfortable.startingSmarts);
+    // Birth is already narrated in the feed.
+    expect(life.history, isNotEmpty);
   });
 
-  test('ageing up advances the year and draws an event', () {
-    // nextInt(4)!=0 → an event is drawn (not a quiet year).
-    final life = LifeSimController(random: _ScriptedRandom([1, 0]));
+  test('a child pays no living costs while dependent', () {
+    final life = LifeSimController(random: _FixedRandom(1), startMoney: 100);
+    expect(life.isDependent, isTrue);
+    life.ageUp();
+    // Money is untouched: the family covers everything under 18.
+    expect(life.money, 100);
+  });
+
+  test('ageing up advances the year and can draw an event', () {
+    final life = _adult();
     life.ageUp();
     expect(life.age, 16);
     expect(life.currentEvent, isNotNull);
   });
 
-  test('a quiet year (roll 0) draws no event', () {
-    final life = LifeSimController(random: _ScriptedRandom([0]));
+  test('a quiet year draws no event', () {
+    // nextInt(4) == 0 is the quiet-year branch.
+    final life = _adult(value: 0);
     life.ageUp();
     expect(life.age, 16);
     expect(life.currentEvent, isNull);
   });
 
-  test('choosing an option applies its effects and clears the event', () {
-    final life = LifeSimController(random: _ScriptedRandom([1, 0]));
+  test('choosing an option applies effects and clears the event', () {
+    final life = _adult();
     life.ageUp();
-    final smartsBefore = life.smarts;
     final event = life.currentEvent!;
-    // Pick the first choice and confirm the event resolves.
+    final before = (
+      money: life.money,
+      happiness: life.happiness,
+      health: life.health,
+      smarts: life.smarts,
+      looks: life.looks,
+    );
+
     life.chooseOption(0);
+
     expect(life.currentEvent, isNull);
-    // Every first choice in the pool changes at least one stat/money.
-    final changed =
-        life.smarts != smartsBefore ||
-        life.money != 200 ||
-        event.choices[0].happiness != 0;
-    expect(changed, isTrue);
+    // The chosen option's deltas landed exactly (stats clamp 0..100, money
+    // floors at zero).
+    final choice = event.choices[0];
+    expect(life.smarts, (before.smarts + choice.smarts).clamp(0, 100));
+    expect(life.looks, (before.looks + choice.looks).clamp(0, 100));
+    expect(life.health, (before.health + choice.health).clamp(0, 100));
+    expect(life.happiness, (before.happiness + choice.happiness).clamp(0, 100));
+    expect(life.money, (before.money + choice.money).clamp(0, 1 << 30));
+    // And the outcome is narrated in the feed.
+    expect(life.history.last.text, choice.outcome);
+  });
+
+  test('a choice that adds a relationship records it once', () {
+    final life = _adult();
+    // Drive turns until an event offering a relationship comes up.
+    for (var i = 0; i < 12 && life.relationships.isEmpty; i++) {
+      if (life.currentEvent == null) {
+        life.ageUp();
+      }
+      final event = life.currentEvent;
+      if (event == null) continue;
+      final index = event.choices.indexWhere(
+        (c) => c.addRelationship != null,
+      );
+      life.chooseOption(index >= 0 ? index : 0);
+    }
+    // Either we found one, or none were eligible — both are valid, but if we
+    // did find one it must not be duplicated.
+    expect(life.relationships.length, life.relationships.toSet().length);
+  });
+
+  test('exercise raises health and looks', () {
+    final life = _adult();
+    final health = life.health;
+    final looks = life.looks;
+    life.exercise();
+    expect(life.health, greaterThan(health));
+    expect(life.looks, greaterThan(looks));
   });
 
   test('investing moves cash into compounding investments', () {
-    final life = LifeSimController(random: _ScriptedRandom([0]));
+    final life = _adult();
     life.invest(100);
     expect(life.money, 100);
     expect(life.investments, 100);
-    // Net worth is preserved by the move itself.
     expect(life.netWorth, 200);
   });
 
   test('cannot invest more than you hold', () {
-    final life = LifeSimController(random: _ScriptedRandom([0]));
+    final life = _adult();
     life.invest(9999);
     expect(life.money, 200);
     expect(life.investments, 0);
   });
 
   test('retiring stops the game and yields a reward', () {
-    final life = LifeSimController(random: _ScriptedRandom([0]));
+    final life = _adult();
     life.ageUp();
     life.retire();
     expect(life.retired, isTrue);
+    expect(life.finished, isTrue);
     final age = life.age;
-    life.ageUp(); // no-op after retiring
+    life.ageUp(); // no-op once finished
     expect(life.age, age);
     expect(life.goldReward, greaterThan(0));
+  });
+
+  test('a finished life ignores activities', () {
+    final life = _adult();
+    life.retire();
+    final smarts = life.smarts;
+    life.study();
+    expect(life.smarts, smarts);
   });
 }
