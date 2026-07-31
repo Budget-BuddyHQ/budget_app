@@ -38,13 +38,16 @@ class LiveQuote {
   /// Finnhub returns all-zero payloads for unknown symbols rather than a 404.
   bool get isValid => current > 0;
 
-  /// A small real-data shape for an inline sparkline, built entirely from
-  /// numbers the quote endpoint already returns — no extra API calls.
+  /// A tiny **chronological** fallback shape for an inline sparkline, built
+  /// from numbers the quote endpoint already returns — no extra API calls.
   ///
-  /// Not strictly chronological (Finnhub's free tier exposes only today's
-  /// quote, not intraday candles), but every point is a real traded price,
-  /// unlike the simulated Trade Board history.
-  List<double> get miniSeries => [previousClose, open, low, high, current];
+  /// Deliberately only the three points whose order in time is known:
+  /// yesterday's close → today's open → the current price. An earlier version
+  /// also spliced in [low] and [high], which made every stock render the exact
+  /// same silhouette (low is always the minimum and high always the maximum, so
+  /// the line always dipped to the floor then spiked to the ceiling). Real
+  /// intraday shape comes from [MarketDataService.seriesFor].
+  List<double> get miniSeries => [previousClose, open, current];
 }
 
 /// One hit from Finnhub's symbol-search endpoint.
@@ -151,6 +154,33 @@ const int kCoinsPerDollar = 10;
 /// Converts a real-world dollar price into coins.
 int coinsForUsd(double usd) => (usd * kCoinsPerDollar).round();
 
+/// Converts in-game coins back to the real-world dollar amount they track.
+double usdForCoins(num coins) => coins / kCoinsPerDollar;
+
+/// Formats a coin amount as the real money it represents, e.g. `$338.20`.
+String usdLabel(num coins) {
+  final usd = usdForCoins(coins);
+  if (usd.abs() >= 100000) {
+    return '\$${(usd / 1000).toStringAsFixed(1)}k';
+  }
+  return '\$${usd.toStringAsFixed(2)}';
+}
+
+/// Formats a coin amount with a thousands separator, e.g. `3,382g`.
+String coinLabel(num coins) {
+  final whole = coins.round();
+  final digits = whole.abs().toString();
+  final buffer = StringBuffer(whole < 0 ? '-' : '');
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) {
+      buffer.write(',');
+    }
+    buffer.write(digits[i]);
+  }
+  buffer.write('g');
+  return buffer.toString();
+}
+
 /// Formats a (possibly fractional) share count without a trailing `.0`:
 /// `2` → "2", `0.5` → "0.5", `1.25` → "1.25".
 String formatShares(num shares) {
@@ -196,14 +226,24 @@ class MarketDataService extends ChangeNotifier {
   static const String _host = 'finnhub.io';
   static const Duration _timeout = Duration(seconds: 8);
 
-  /// Free tier allows 60 calls/minute. Refreshing all six symbols costs six
-  /// calls, so a 60s floor keeps us at ~6/min with a wide safety margin even
-  /// if the user rapidly reopens the screen.
-  static const Duration _minRefreshInterval = Duration(seconds: 60);
+  /// Finnhub's free tier allows 60 calls/minute and one refresh costs one call
+  /// per tracked symbol. A 20s floor lets the board poll live (~3 refreshes a
+  /// minute) while staying well inside the limit.
+  static const Duration _minRefreshInterval = Duration(seconds: 20);
+
+  /// How often the Market Board re-polls quotes while it is open.
+  static const Duration livePollInterval = Duration(seconds: 30);
 
   final http.Client _client;
 
   final Map<String, LiveQuote> _quotes = <String, LiveQuote>{};
+
+  /// Real intraday closes per symbol, powering the inline card sparklines.
+  /// Without this the cards can only draw the 3-point quote fallback, which
+  /// carries almost no shape.
+  final Map<String, List<double>> _series = <String, List<double>>{};
+  DateTime? _lastSeriesFetch;
+
   LiveMarketStatus _status = LiveMarketStatus.idle;
   DateTime? _lastFetch;
   String? _errorDetail;
@@ -220,6 +260,55 @@ class MarketDataService extends ChangeNotifier {
   /// Any cached quote, including one pulled in by a search rather than by the
   /// scheduled [refresh] of [kLiveSymbols].
   LiveQuote? quoteFor(String symbol) => _quotes[symbol];
+
+  /// Real intraday closes for [symbol] (oldest first), or the quote-derived
+  /// 3-point fallback when no candle key is configured or the fetch failed.
+  List<double> seriesFor(String symbol) {
+    final cached = _series[symbol];
+    if (cached != null && cached.length >= 2) {
+      return cached;
+    }
+    return _quotes[symbol]?.miniSeries ?? const <double>[];
+  }
+
+  /// True once at least one symbol has real intraday shape to draw.
+  bool get hasIntradaySeries => _series.isNotEmpty;
+
+  /// Fetches real intraday closes for [symbols] so the cards draw a true
+  /// shape rather than a 3-point sketch.
+  ///
+  /// Twelve Data's free tier allows 8 requests/minute, so this is throttled and
+  /// deliberately fetches only the handful of symbols actually on screen.
+  Future<void> refreshSeries(
+    List<String> symbols, {
+    bool force = false,
+  }) async {
+    if (_candleApiKey == null || symbols.isEmpty) {
+      return;
+    }
+    final last = _lastSeriesFetch;
+    if (!force &&
+        last != null &&
+        DateTime.now().difference(last) < const Duration(minutes: 5)) {
+      return;
+    }
+    _lastSeriesFetch = DateTime.now();
+
+    var changed = false;
+    // Cap the batch so a long watchlist can't trip the per-minute limit.
+    for (final symbol in symbols.take(8)) {
+      final candles = await fetchCandles(symbol, ChartRange.day1);
+      if (candles.length >= 2) {
+        _series[symbol] = candles
+            .map((c) => c.close)
+            .toList(growable: false);
+        changed = true;
+      }
+    }
+    if (changed) {
+      notifyListeners();
+    }
+  }
 
   bool get hasApiKey => _apiKey != null;
 

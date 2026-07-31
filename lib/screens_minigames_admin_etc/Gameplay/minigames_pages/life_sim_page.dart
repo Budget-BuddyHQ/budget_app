@@ -5,6 +5,7 @@ import '../../../controllers_that_updates_stats/life_sim_controller.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
+import 'life_character_sheet.dart';
 
 /// **Life** — the main game, in the BitLife format: a scrolling life feed up
 /// top, a fixed bottom menu, and a big central Age button that advances time
@@ -20,13 +21,40 @@ class LifeSimPage extends StatefulWidget {
 }
 
 class _LifeSimPageState extends State<LifeSimPage> {
-  late final LifeSimController _life = LifeSimController();
+  LifeSimController? _life;
   final ScrollController _feedController = ScrollController();
   bool _cashedOut = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Character creation first, exactly like starting a new BitLife.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _createCharacter());
+  }
+
+  Future<void> _createCharacter() async {
+    final character = await Navigator.of(context).push<LifeCharacter>(
+      MaterialPageRoute(builder: (_) => const LifeCharacterSheet()),
+    );
+    if (!mounted) return;
+    if (character == null) {
+      // Backed out of creation — leave Life entirely.
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() {
+      _life = LifeSimController(
+        name: character.name,
+        gender: character.gender,
+        origin: character.origin,
+        startMoney: character.origin.familyMoney,
+      );
+    });
+  }
+
+  @override
   void dispose() {
-    _life.dispose();
+    _life?.dispose();
     _feedController.dispose();
     super.dispose();
   }
@@ -43,27 +71,29 @@ class _LifeSimPageState extends State<LifeSimPage> {
     });
   }
 
-  Future<void> _retire() async {
+  Future<void> _finish(LifeSimController life) async {
     if (_cashedOut) return;
     _cashedOut = true;
-    _life.retire();
-    final reward = _life.goldReward;
+    final died = life.dead;
+    life.retire();
+    final reward = life.goldReward;
 
     if (reward > 0) {
       await context.read<UserStatsController>().applyChallengePayload({
         'gold_earned': reward,
-        'xp_earned': 8 + _life.yearsLived,
+        'xp_earned': 8 + life.yearsLived,
         'title': 'Life',
         'description':
-            'Lived to ${_life.age} with a net worth of ${_life.netWorth} coins.',
+            '${life.name} lived to ${life.age} with a net worth of '
+            '${life.netWorth} coins.',
       });
     }
     if (!mounted) return;
     GameToast.show(
       context,
-      title: 'Life banked',
+      title: died ? 'Life complete' : 'Life banked',
       message: reward > 0
-          ? 'You earned $reward gold from this life run.'
+          ? 'You earned $reward gold from this life.'
           : 'Live a few more years to earn a gold reward.',
       icon: Icons.savings_rounded,
       accent: const Color(0xFFE1BB72),
@@ -71,8 +101,8 @@ class _LifeSimPageState extends State<LifeSimPage> {
     Navigator.of(context).pop();
   }
 
-  void _invest() {
-    if (_life.money < 100) {
+  void _invest(LifeSimController life) {
+    if (life.money < 100) {
       GameToast.show(
         context,
         title: 'Not enough cash',
@@ -82,15 +112,26 @@ class _LifeSimPageState extends State<LifeSimPage> {
       );
       return;
     }
-    _life.invest(100);
+    life.invest(100);
   }
 
   @override
   Widget build(BuildContext context) {
+    final life = _life;
+    if (life == null) {
+      // Character creation is on top; this is just the backdrop.
+      return const Scaffold(
+        backgroundColor: Color(0xFF071711),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF43D07E)),
+        ),
+      );
+    }
+
     return AnimatedBuilder(
-      animation: _life,
+      animation: life,
       builder: (context, _) {
-        final event = _life.currentEvent;
+        final event = life.currentEvent;
         _scrollFeedToEnd();
         return Scaffold(
           backgroundColor: const Color(0xFF071711),
@@ -100,21 +141,26 @@ class _LifeSimPageState extends State<LifeSimPage> {
             elevation: 0,
             titleSpacing: 12,
             title: _HeaderBar(
-              age: _life.age,
-              stage: _life.stage,
-              money: _life.money,
-              job: _life.job,
+              name: life.name,
+              gender: life.gender,
+              age: life.age,
+              stage: life.stage,
+              money: life.money,
+              job: life.job,
             ),
             actions: [
               TextButton.icon(
-                onPressed: _retire,
-                icon: const Icon(Icons.flag_rounded, size: 18),
+                onPressed: () => _finish(life),
+                icon: Icon(
+                  life.dead ? Icons.done_rounded : Icons.flag_rounded,
+                  size: 18,
+                ),
                 style: TextButton.styleFrom(
                   foregroundColor: const Color(0xFFE1BB72),
                 ),
-                label: const Text(
-                  'Retire',
-                  style: TextStyle(fontWeight: FontWeight.w900),
+                label: Text(
+                  life.dead ? 'Finish' : 'Retire',
+                  style: const TextStyle(fontWeight: FontWeight.w900),
                 ),
               ),
             ],
@@ -124,22 +170,27 @@ class _LifeSimPageState extends State<LifeSimPage> {
               Expanded(
                 child: _LifeFeed(
                   controller: _feedController,
-                  history: _life.history,
-                  netWorth: _life.netWorth,
-                  investments: _life.investments,
-                  smarts: _life.smarts,
-                  health: _life.health,
+                  history: life.history,
+                  netWorth: life.netWorth,
+                  investments: life.investments,
+                  smarts: life.smarts,
+                  health: life.health,
+                  looks: life.looks,
+                  relationships: life.relationships,
+                  isDependent: life.isDependent,
+                  dead: life.dead,
                   event: event,
-                  onChoose: _life.chooseOption,
+                  onChoose: life.chooseOption,
                 ),
               ),
               _BottomMenu(
-                happiness: _life.happiness,
-                blocked: event != null,
-                onStudy: _life.study,
-                onInvest: _invest,
-                onFun: _life.haveFun,
-                onAge: _life.ageUp,
+                happiness: life.happiness,
+                blocked: event != null || life.finished,
+                onStudy: life.study,
+                onInvest: () => _invest(life),
+                onFun: life.haveFun,
+                onExercise: life.exercise,
+                onAge: life.ageUp,
               ),
             ],
           ),
@@ -151,12 +202,16 @@ class _LifeSimPageState extends State<LifeSimPage> {
 
 class _HeaderBar extends StatelessWidget {
   const _HeaderBar({
+    required this.name,
+    required this.gender,
     required this.age,
     required this.stage,
     required this.money,
     required this.job,
   });
 
+  final String name;
+  final Gender gender;
   final int age;
   final LifeStage stage;
   final int money;
@@ -166,10 +221,10 @@ class _HeaderBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const CircleAvatar(
+        CircleAvatar(
           radius: 18,
-          backgroundColor: Color(0xFF173B2E),
-          child: Icon(Icons.face_rounded, color: Color(0xFF85EFAC)),
+          backgroundColor: const Color(0xFF173B2E),
+          child: Icon(gender.icon, color: const Color(0xFF85EFAC), size: 20),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -178,14 +233,16 @@ class _HeaderBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Age $age · ${stage.label}',
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 15,
                 ),
               ),
               Text(
-                job,
+                'Age $age · ${stage.label} · $job',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -232,6 +289,10 @@ class _LifeFeed extends StatelessWidget {
     required this.investments,
     required this.smarts,
     required this.health,
+    required this.looks,
+    required this.relationships,
+    required this.isDependent,
+    required this.dead,
     required this.event,
     required this.onChoose,
   });
@@ -242,6 +303,10 @@ class _LifeFeed extends StatelessWidget {
   final int investments;
   final int smarts;
   final int health;
+  final int looks;
+  final List<String> relationships;
+  final bool isDependent;
+  final bool dead;
   final LifeEvent? event;
   final ValueChanged<int> onChoose;
 
@@ -256,7 +321,48 @@ class _LifeFeed extends StatelessWidget {
           investments: investments,
           smarts: smarts,
           health: health,
+          looks: looks,
+          isDependent: isDependent,
         ),
+        if (relationships.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final person in relationships)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF8FB1).withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.favorite_rounded,
+                        size: 11,
+                        color: Color(0xFFFF8FB1),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        person,
+                        style: const TextStyle(
+                          color: Color(0xFFFF8FB1),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ],
         const SizedBox(height: 14),
         if (history.isEmpty)
           Padding(
@@ -279,6 +385,44 @@ class _LifeFeed extends StatelessWidget {
           const SizedBox(height: 14),
           _EventCard(event: event!, onChoose: onChoose),
         ],
+        if (dead) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+            ),
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.local_florist_rounded,
+                  color: Color(0xFFB388FF),
+                  size: 30,
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Your life has ended',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Tap Finish to bank what this life earned you.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -290,12 +434,16 @@ class _MiniStatsRow extends StatelessWidget {
     required this.investments,
     required this.smarts,
     required this.health,
+    required this.looks,
+    required this.isDependent,
   });
 
   final int netWorth;
   final int investments;
   final int smarts;
   final int health;
+  final int looks;
+  final bool isDependent;
 
   @override
   Widget build(BuildContext context) {
@@ -303,10 +451,23 @@ class _MiniStatsRow extends StatelessWidget {
       spacing: 10,
       runSpacing: 10,
       children: [
-        _Pill(label: 'Net worth', value: '$netWorth', color: const Color(0xFF85EFAC)),
-        _Pill(label: 'Invested', value: '$investments', color: const Color(0xFF58C7FF)),
         _Pill(label: 'Smarts', value: '$smarts', color: const Color(0xFF69C6FF)),
         _Pill(label: 'Health', value: '$health', color: const Color(0xFFFF8A80)),
+        _Pill(label: 'Looks', value: '$looks', color: const Color(0xFFFF8FB1)),
+        // Money only starts mattering once the family stops paying the bills.
+        if (!isDependent) ...[
+          _Pill(
+            label: 'Net worth',
+            value: '$netWorth',
+            color: const Color(0xFF85EFAC),
+          ),
+          if (investments > 0)
+            _Pill(
+              label: 'Invested',
+              value: '$investments',
+              color: const Color(0xFF58C7FF),
+            ),
+        ],
       ],
     );
   }
@@ -471,6 +632,7 @@ class _BottomMenu extends StatelessWidget {
     required this.onStudy,
     required this.onInvest,
     required this.onFun,
+    required this.onExercise,
     required this.onAge,
   });
 
@@ -479,6 +641,7 @@ class _BottomMenu extends StatelessWidget {
   final VoidCallback onStudy;
   final VoidCallback onInvest;
   final VoidCallback onFun;
+  final VoidCallback onExercise;
   final VoidCallback onAge;
 
   @override
@@ -553,10 +716,10 @@ class _BottomMenu extends StatelessWidget {
                     onTap: blocked ? null : onFun,
                   ),
                   _MenuButton(
-                    label: 'Health',
-                    icon: Icons.favorite_rounded,
+                    label: 'Gym',
+                    icon: Icons.fitness_center_rounded,
                     color: const Color(0xFFFF8A80),
-                    onTap: null,
+                    onTap: blocked ? null : onExercise,
                   ),
                 ],
               ),

@@ -349,7 +349,6 @@ class UserStatsController extends ChangeNotifier {
 
     final holdings = Map<String, double>.from(_stats.holdings)
       ..update('indexFunds', (value) => value + 1, ifAbsent: () => 1);
-    final nextHistory = _nextPortfolioSeries(0.06);
     final now = DateTime.now().toUtc();
 
     final nextStats = _stats.copyWith(
@@ -357,7 +356,6 @@ class UserStatsController extends ChangeNotifier {
       xp: _stats.xp + 18,
       literacyPoints: _stats.literacyPoints + 8,
       holdings: holdings,
-      portfolioHistory: nextHistory,
       transactions: <LedgerTransaction>[
         LedgerTransaction(
           id: 'txn_${now.microsecondsSinceEpoch}',
@@ -395,7 +393,6 @@ class UserStatsController extends ChangeNotifier {
     const goldReturn = 140;
     final holdings = Map<String, double>.from(_stats.holdings)
       ..update('stocks', (value) => value > 0 ? value - 1 : 0.0);
-    final nextHistory = _nextPortfolioSeries(-0.05);
     final now = DateTime.now().toUtc();
 
     final nextStats = _stats.copyWith(
@@ -403,7 +400,6 @@ class UserStatsController extends ChangeNotifier {
       xp: _stats.xp + 10,
       literacyPoints: _stats.literacyPoints + 4,
       holdings: holdings,
-      portfolioHistory: nextHistory,
       transactions: <LedgerTransaction>[
         LedgerTransaction(
           id: 'txn_${now.microsecondsSinceEpoch}',
@@ -454,7 +450,6 @@ class UserStatsController extends ChangeNotifier {
     existingCostBasis[holdingKey] =
         (existingCostBasis[holdingKey] ?? 0) + goldCost;
 
-    final nextHistory = _nextPortfolioSeries(0.04);
     final now = DateTime.now().toUtc();
     final label = companyName?.trim().isNotEmpty == true
         ? companyName!
@@ -465,7 +460,6 @@ class UserStatsController extends ChangeNotifier {
       xp: _stats.xp + (14 * quantity).round(),
       literacyPoints: _stats.literacyPoints + (7 * quantity).round(),
       holdings: holdings,
-      portfolioHistory: nextHistory,
       spendingHabits: <String, dynamic>{
         ..._stats.spendingHabits,
         'cost_basis': existingCostBasis,
@@ -535,7 +529,6 @@ class UserStatsController extends ChangeNotifier {
       existingCostBasis.remove(holdingKey);
     }
 
-    final nextHistory = _nextPortfolioSeries(-0.03);
     final now = DateTime.now().toUtc();
     final label = companyName?.trim().isNotEmpty == true
         ? companyName!
@@ -546,7 +539,6 @@ class UserStatsController extends ChangeNotifier {
       xp: _stats.xp + (10 * quantity).round(),
       literacyPoints: _stats.literacyPoints + (5 * quantity).round(),
       holdings: holdings,
-      portfolioHistory: nextHistory,
       spendingHabits: <String, dynamic>{
         ..._stats.spendingHabits,
         'cost_basis': existingCostBasis,
@@ -818,9 +810,6 @@ class UserStatsController extends ChangeNotifier {
         xp: xp,
         literacyPoints: literacy,
         holdings: holdings,
-        portfolioHistory: fills > 0
-            ? _nextPortfolioSeries(0.03)
-            : _stats.portfolioHistory,
         spendingHabits: <String, dynamic>{
           ..._stats.spendingHabits,
           'cost_basis': costBasis,
@@ -1368,16 +1357,45 @@ class UserStatsController extends ChangeNotifier {
         );
   }
 
-  List<double> _nextPortfolioSeries(double delta) {
-    final series = List<double>.from(_stats.portfolioHistory);
-    final current = series.isEmpty ? 0.42 : series.last;
-    final nextPoint = (current + delta).clamp(0.16, 0.95).toDouble();
-    if (series.length >= 8) {
+  /// Appends a **real** net-worth reading (in coins) to the equity curve the
+  /// P&L tab draws.
+  ///
+  /// This replaces an earlier synthetic series that nudged a 0..1 number up by
+  /// a fixed amount on every buy and down on every sell — so the curve rose
+  /// whenever you traded, even while you were losing money. Callers pass the
+  /// genuine `cash + market value` so the line can actually fall.
+  Future<void> recordNetWorth(int netWorth) async {
+    if (netWorth <= 0) {
+      return;
+    }
+    final series = List<double>.from(realPortfolioHistory);
+    // Ignore no-op ticks so idle polling can't flood the curve with duplicates.
+    if (series.isNotEmpty && (series.last - netWorth).abs() < 1) {
+      return;
+    }
+    series.add(netWorth.toDouble());
+    // Keep the curve bounded; 60 points is plenty for a readable sparkline.
+    while (series.length > 60) {
       series.removeAt(0);
     }
-    series.add(nextPoint);
-    return series;
+
+    await _saveStats(
+      _stats.copyWith(
+        portfolioHistory: series,
+        updatedAt: DateTime.now().toUtc(),
+      ),
+      savingMessage: 'Updating portfolio history...',
+    );
   }
+
+  /// The equity curve with any legacy synthetic points stripped.
+  ///
+  /// The old series stored normalised 0..1 values; real net worth is always
+  /// well above 1 coin, so anything below that is leftover fiction and is
+  /// dropped rather than migrated.
+  List<double> get realPortfolioHistory => _stats.portfolioHistory
+      .where((value) => value.isFinite && value >= 1)
+      .toList(growable: false);
 
   AvatarSkin _pickWeightedSkin(List<AvatarSkin> skins) {
     var rarityRoll = _random.nextInt(skinCaseTotalWeight);

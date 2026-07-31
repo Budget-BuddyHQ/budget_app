@@ -12,7 +12,7 @@ import '../../../constants/app_assets.dart';
 import 'daily_plan_card.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
-import '../../../widgets_custom_lotties/avatar_sprite.dart';
+import '../../../widgets_custom_lotties/profile_avatar.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../minigames_pages/react_challenge_screen.dart';
@@ -525,31 +525,10 @@ class _HeroAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      padding: EdgeInsets.all(size * 0.12),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: const Color(0xFF071711).withValues(alpha: 0.74),
-        border: Border.all(color: const Color(0xFF85EFAC), width: 2.4),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF85EFAC).withValues(alpha: 0.28),
-            blurRadius: 26,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: ClipOval(
-        child: profileImageUrl.isNotEmpty
-            ? Image.network(
-                profileImageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => AvatarSprite(skin: turtleSkin),
-              )
-            : AvatarSprite(skin: turtleSkin),
-      ),
+    return ProfileAvatar(
+      imageUrl: profileImageUrl,
+      fallbackSkin: turtleSkin,
+      size: size,
     );
   }
 }
