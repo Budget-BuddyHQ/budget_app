@@ -895,8 +895,10 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
   bool _revealed = false;
   bool _skipped = false;
 
-  static const double _itemWidth = 92;
-  static const double _itemSpacing = 14;
+  // Sized so the whole reveal — reel, sprite, name and button — fits on a
+  // phone without the dialog scrolling or clipping the action button.
+  static const double _itemWidth = 70;
+  static const double _itemSpacing = 12;
   static const int _minCycles = 4;
 
   double get _itemExtent => _itemWidth + _itemSpacing;
@@ -999,7 +1001,7 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
               // full fixed layout — shrink the reel and drop the reveal
               // aura rather than overflow.
               final compact = dialogConstraints.maxHeight < 560;
-              final reelHeight = compact ? 120.0 : 188.0;
+              final reelHeight = compact ? 96.0 : 140.0;
 
               return ConstrainedBox(
                 constraints: BoxConstraints(
@@ -1146,13 +1148,13 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
                                 children: [
                                   _RarityAura(
                                     skin: preview,
-                                    size: compact ? 92 : 132,
+                                    size: compact ? 74 : 100,
                                     imageSize: compact ? 66 : 96,
                                     showImage: true,
                                   ),
                                   _RollShineOverlay(
                                     color: preview.accent,
-                                    size: compact ? 92 : 132,
+                                    size: compact ? 74 : 100,
                                     moving: false,
                                   ),
                                 ],

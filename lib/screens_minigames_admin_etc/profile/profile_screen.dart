@@ -1,3 +1,6 @@
+import 'dart:io' show File;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -80,36 +83,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       );
 
-      if (avatarUrl == null || avatarUrl.isEmpty) {
-        if (!context.mounted) {
-          return;
-        }
-        GameToast.show(
-          context,
-          title: 'Upload unavailable',
-          message:
-              'Supabase storage is not ready yet. Connect storage and try again.',
-          icon: Icons.cloud_off_rounded,
-          accent: const Color(0xFFFFB084),
-        );
-        return;
-      }
+      // Cloud storage may not be configured. Rather than dead-ending, fall
+      // back to the picked file's own path so the photo still shows on this
+      // device — the picture works either way.
+      final uploaded = avatarUrl != null && avatarUrl.isNotEmpty;
+      final resolvedUrl = uploaded ? avatarUrl : pickedFile.path;
 
-      await SupabaseService.instance.updateProfileAvatarUrl(
-        userId: user.id,
-        avatarUrl: avatarUrl,
-      );
-      final result = await controller.updateProfilePhoto(avatarUrl);
+      if (uploaded) {
+        await SupabaseService.instance.updateProfileAvatarUrl(
+          userId: user.id,
+          avatarUrl: avatarUrl,
+        );
+      }
+      final result = await controller.updateProfilePhoto(resolvedUrl);
       if (!context.mounted) {
         return;
       }
 
       GameToast.show(
         context,
-        title: result.success ? 'Photo updated' : 'Photo saved locally',
-        message: result.syncState.message,
+        title: uploaded ? 'Photo updated' : 'Photo set on this device',
+        message: uploaded
+            ? result.syncState.message
+            : 'Cloud storage is unavailable, so it is saved locally only.',
         icon: Icons.camera_alt_rounded,
-        accent: const Color(0xFF4BD2A3),
+        accent: uploaded
+            ? const Color(0xFF4BD2A3)
+            : const Color(0xFFFFB084),
       );
     } catch (error) {
       if (!context.mounted) {
@@ -305,21 +305,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: Color(0xFF091914),
                     ),
                     child: ClipOval(
-                      child: avatarUrl.isNotEmpty
-                          ? Image.network(
-                              avatarUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => const Icon(
-                                Icons.person_rounded,
-                                color: Color(0xFF4BD2A3),
-                                size: 40,
-                              ),
-                            )
-                          : const Icon(
+                      child: avatarUrl.isEmpty
+                          ? const Icon(
                               Icons.person_rounded,
                               color: Color(0xFF4BD2A3),
                               size: 40,
-                            ),
+                            )
+                          : _AvatarImage(url: avatarUrl),
                     ),
                   ),
                 ),
@@ -708,3 +700,39 @@ class _InsightMetric extends StatelessWidget {
       ],
     );
   }
+
+/// Renders a profile photo from either a remote URL or a local file path,
+/// so the picture still shows when cloud storage isn't available.
+class _AvatarImage extends StatelessWidget {
+  const _AvatarImage({required this.url});
+
+  final String url;
+
+  static const Widget _placeholder = Icon(
+    Icons.person_rounded,
+    color: Color(0xFF4BD2A3),
+    size: 40,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final isRemote = url.startsWith('http://') || url.startsWith('https://');
+    if (isRemote) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+        errorBuilder: (_, _, _) => _placeholder,
+      );
+    }
+    if (kIsWeb) {
+      return _placeholder;
+    }
+    return Image.file(
+      File(url),
+      fit: BoxFit.cover,
+      alignment: Alignment.center,
+      errorBuilder: (_, _, _) => _placeholder,
+    );
+  }
+}
