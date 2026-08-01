@@ -3,8 +3,10 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 
@@ -61,6 +63,16 @@ class BrawlUpgrade {
   final IconData icon;
   final VoidCallback action;
 }
+
+const Color _brawlInk = Color(0xFF071711);
+const Color _brawlPanel = Color(0xFF10281F);
+const Color _brawlPanelDeep = Color(0xFF0A1814);
+const Color _brawlBorder = Color(0xFF1F4D3E);
+const Color _brawlMint = Color(0xFF85EFAC);
+const Color _brawlGold = Color(0xFFE1BB72);
+const Color _brawlBlue = Color(0xFF6CB6DA);
+const Color _brawlRed = Color(0xFFE25C5C);
+const Color _brawlDanger = Color(0xFFFF2F55);
 
 class FinanceBrawlScreen extends StatefulWidget {
   const FinanceBrawlScreen({super.key});
@@ -2041,7 +2053,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
         return KeyEventResult.handled;
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFF0F1E19),
+        backgroundColor: _brawlInk,
         body: LayoutBuilder(
           builder: (context, constraints) {
             _canvasSize = Size(constraints.maxWidth, constraints.maxHeight);
@@ -2063,6 +2075,16 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
 
             return Stack(
               children: [
+                Positioned.fill(
+                  child: Image.asset(
+                    AppAssets.arcadeTileBackground,
+                    repeat: ImageRepeat.repeat,
+                    filterQuality: FilterQuality.none,
+                  ),
+                ),
+                Positioned.fill(
+                  child: ColoredBox(color: _brawlInk.withValues(alpha: 0.42)),
+                ),
                 ClipRect(
                   child: CustomPaint(
                     size: Size.infinite,
@@ -2094,213 +2116,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                   top: MediaQuery.of(context).padding.top + 12,
                   left: 16,
                   right: 16,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // The HUD panels have to share a phone-width row, so
-                      // each side flexes instead of taking its natural width.
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(
-                              0xFF0A1814,
-                            ).withValues(alpha: 0.92),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFF1F4D3E)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _wave % 5 == 0
-                                    ? "CRISIS WAVE $_wave"
-                                    : "WAVE $_wave",
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: _wave % 5 == 0
-                                      ? const Color(0xFFFF2F55)
-                                      : const Color(0xFF85EFAC),
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                _wave % 5 == 0
-                                    ? "Neutralize Market Crisis!"
-                                    : "Debts Paid: $_debtsCleared / $_debtsNeededForLevelUp",
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      // Bank Balance HUD
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(
-                              0xFF0A1814,
-                            ).withValues(alpha: 0.92),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFF85EFAC)),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text(
-                                "NET WORTH BALANCE",
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                "\$$_bankBalance",
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: _bankBalance < 2500
-                                      ? const Color(0xFFFF2F55)
-                                      : const Color(0xFF85EFAC),
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFF0A1814,
-                                ).withValues(alpha: 0.9),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: const Color(0xFF1F4D3E),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.toll_rounded,
-                                    color: Color(0xFFE1BB72),
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Flexible(
-                                    child: Text(
-                                      "$_goldAccumulated",
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          IconButton(
-                            style: IconButton.styleFrom(
-                              backgroundColor: const Color(
-                                0xFFE25C5C,
-                              ).withValues(alpha: 0.95),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.all(12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            icon: const Icon(Icons.logout_rounded, size: 20),
-                            onPressed: () {
-                              _ticker.stop();
-                              showDialog(
-                                context: context,
-                                barrierDismissible: false,
-                                builder: (ctx) => AlertDialog(
-                                  backgroundColor: const Color(0xFF10281F),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                    side: const BorderSide(
-                                      color: Color(0xFF1F4D3E),
-                                    ),
-                                  ),
-                                  title: const Text(
-                                    "PAUSE & BANK EARNINGS?",
-                                    style: TextStyle(
-                                      color: Color(0xFF85EFAC),
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                  content: Text(
-                                    "Do you want to exit? Accumulated interest gains ($_goldAccumulated gold) will be stored safely.",
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      child: const Text(
-                                        "RESUME GAME",
-                                        style: TextStyle(color: Colors.white60),
-                                      ),
-                                      onPressed: () {
-                                        Navigator.of(ctx).pop();
-                                        _ticker.start();
-                                      },
-                                    ),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(
-                                          0xFFE25C5C,
-                                        ),
-                                      ),
-                                      child: const Text("SAVE AND QUIT"),
-                                      onPressed: () {
-                                        Navigator.of(ctx).pop();
-                                        _exitAndSyncData();
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                  child: _buildHud(context),
                 ),
 
                 if (_isQuizOpen) _buildQuizOverlay(),
@@ -2314,41 +2130,191 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     );
   }
 
+  Widget _buildHud(BuildContext context) {
+    final isCrisis = _wave % 5 == 0;
+    final balanceAccent = _bankBalance < 2500 ? _brawlDanger : _brawlMint;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 640;
+        final wavePanel = _HudStatPanel(
+          icon: Icons.waves_rounded,
+          label: isCrisis ? 'CRISIS' : 'WAVE',
+          value: isCrisis ? 'WAVE $_wave' : 'WAVE $_wave',
+          detail: isCrisis
+              ? 'Neutralize Market Crisis'
+              : 'Debts Paid $_debtsCleared/$_debtsNeededForLevelUp',
+          accent: isCrisis ? _brawlDanger : _brawlMint,
+          alignStart: true,
+        );
+        final balancePanel = _HudStatPanel(
+          icon: Icons.account_balance_wallet_rounded,
+          label: 'NET WORTH',
+          value: '\$$_bankBalance',
+          detail: 'Balance shield',
+          accent: balanceAccent,
+        );
+        final rewardPanel = _PixelPanel(
+          accent: _brawlGold,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.toll_rounded, color: _brawlGold, size: 20),
+              const SizedBox(width: 7),
+              Text(
+                '$_goldAccumulated',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.pixelifySans(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        );
+        final exitButton = _PixelIconButton(
+          icon: Icons.logout_rounded,
+          accent: _brawlRed,
+          tooltip: 'Pause and quit',
+          onPressed: () => _showPauseDialog(context),
+        );
+
+        if (compact) {
+          return Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              SizedBox(width: (constraints.maxWidth - 8) / 2, child: wavePanel),
+              SizedBox(
+                width: (constraints.maxWidth - 8) / 2,
+                child: balancePanel,
+              ),
+              rewardPanel,
+              exitButton,
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: wavePanel),
+            const SizedBox(width: 10),
+            Expanded(child: balancePanel),
+            const Spacer(),
+            rewardPanel,
+            const SizedBox(width: 10),
+            exitButton,
+          ],
+        );
+      },
+    );
+  }
+
+  void _showPauseDialog(BuildContext context) {
+    _ticker.stop();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(22),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: _PixelPanel(
+            accent: _brawlMint,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'PAUSE & BANK?',
+                  style: GoogleFonts.pixelifySans(
+                    color: _brawlMint,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Exit now and store $_goldAccumulated gold safely.',
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white.withValues(alpha: 0.78),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    _PixelButton(
+                      label: 'RESUME',
+                      accent: Colors.white70,
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        _ticker.start();
+                      },
+                    ),
+                    _PixelButton(
+                      label: 'SAVE + QUIT',
+                      accent: _brawlRed,
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        _exitAndSyncData();
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildQuizOverlay() {
     final q = _activeQuizQuestions[_quizQuestionIndex];
-    return Container(
-      color: Colors.black.withValues(alpha: 0.85),
+    return _BrawlOverlayBackdrop(
       padding: const EdgeInsets.all(24),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 500),
-          child: Card(
-            color: const Color(0xFF12231C),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-              side: const BorderSide(color: Color(0xFF6CB6DA), width: 2),
-            ),
+          child: _PixelPanel(
+            accent: _brawlBlue,
+            padding: const EdgeInsets.all(20),
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.zero,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     "LITERACY CHECKPOINT (${_quizQuestionIndex + 1}/3)",
-                    style: const TextStyle(
-                      color: Color(0xFF6CB6DA),
-                      fontWeight: FontWeight.w900,
+                    style: GoogleFonts.pixelifySans(
+                      color: _brawlBlue,
                       fontSize: 14,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     q.question,
-                    style: const TextStyle(
+                    style: GoogleFonts.baloo2(
                       color: Colors.white,
                       fontSize: 18,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w900,
+                      height: 1.1,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -2361,14 +2327,14 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
 
                     if (_isAnswerSubmitted) {
                       if (optionText == q.correctOptionText) {
-                        optionBorderColor = const Color(0xFF85EFAC);
+                        optionBorderColor = _brawlMint;
                         optionBgColor = const Color(0xFF143525);
                       } else if (_selectedAnswerIndex == idx) {
-                        optionBorderColor = const Color(0xFFE25C5C);
+                        optionBorderColor = _brawlRed;
                         optionBgColor = const Color(0xFF381B1B);
                       }
                     } else if (_selectedAnswerIndex == idx) {
-                      optionBorderColor = const Color(0xFF6CB6DA);
+                      optionBorderColor = _brawlBlue;
                       optionBgColor = const Color(0xFF14222B);
                     }
 
@@ -2378,21 +2344,17 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                         onTap: _isAnswerSubmitted
                             ? null
                             : () => setState(() => _selectedAnswerIndex = idx),
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: optionBgColor,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: optionBorderColor,
-                              width: 2,
-                            ),
-                          ),
+                        child: _PixelPanel(
+                          accent: optionBorderColor,
+                          background: optionBgColor,
+                          padding: const EdgeInsets.all(13),
+                          dense: true,
                           child: Text(
                             optionText,
-                            style: const TextStyle(
+                            style: GoogleFonts.quicksand(
                               color: Colors.white,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w800,
+                              height: 1.25,
                             ),
                           ),
                         ),
@@ -2403,28 +2365,24 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                     const SizedBox(height: 10),
                     Text(
                       q.explanation,
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 13,
                         fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.w700,
+                        height: 1.35,
                       ),
                     ),
                     const SizedBox(height: 16),
                   ],
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6CB6DA),
-                      foregroundColor: Colors.black,
-                    ),
+                  _PixelButton(
+                    accent: _brawlBlue,
                     onPressed: _selectedAnswerIndex == null
                         ? null
                         : (_isAnswerSubmitted
                               ? _nextQuizQuestion
                               : _submitQuizAnswer),
-                    child: Text(
-                      _isAnswerSubmitted ? "CONTINUE" : "SUBMIT ANSWER",
-                      style: const TextStyle(fontWeight: FontWeight.w900),
-                    ),
+                    label: _isAnswerSubmitted ? "CONTINUE" : "SUBMIT ANSWER",
                   ),
                 ],
               ),
@@ -2437,123 +2395,398 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
 
   Widget _buildUpgradeOverlay() {
     final upgrades = _getUpgradeOptions().take(3).toList();
-    return Container(
-      color: Colors.black.withValues(alpha: 0.85),
+    return _BrawlOverlayBackdrop(
       padding: const EdgeInsets.all(24),
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              "PROFIT CHANNELS UNLOCKED!",
-              style: TextStyle(
-                color: Color(0xFFE1BB72),
-                fontSize: 26,
-                fontWeight: FontWeight.w900,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                "PROFIT CHANNELS UNLOCKED!",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.pixelifySans(
+                  color: _brawlGold,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: upgrades.map((up) {
-                return Container(
-                  width: 175,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Card(
-                    color: const Color(0xFF14241F),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: const BorderSide(
-                        color: Color(0xFFE1BB72),
-                        width: 1.5,
-                      ),
-                    ),
+              const SizedBox(height: 8),
+              Text(
+                "Pick a build path",
+                style: GoogleFonts.quicksand(
+                  color: Colors.white.withValues(alpha: 0.68),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Wrap(
+                alignment: WrapAlignment.center,
+                runAlignment: WrapAlignment.center,
+                spacing: 12,
+                runSpacing: 12,
+                children: upgrades.map((up) {
+                  return SizedBox(
+                    width: 178,
                     child: InkWell(
                       onTap: () => _selectUpgrade(up),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
+                      child: _PixelPanel(
+                        accent: _brawlGold,
+                        padding: const EdgeInsets.all(15),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              up.icon,
-                              color: const Color(0xFFE1BB72),
-                              size: 28,
-                            ),
+                            _PixelIconBadge(icon: up.icon, accent: _brawlGold),
                             const SizedBox(height: 14),
                             Text(
                               up.name,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
+                              style: GoogleFonts.pixelifySans(
                                 color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                height: 1.05,
                               ),
                             ),
                             const SizedBox(height: 10),
                             Text(
                               up.description,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.white70,
+                              style: GoogleFonts.quicksand(
+                                color: Colors.white.withValues(alpha: 0.72),
                                 fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                height: 1.25,
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildGameOverOverlay() {
-    return Container(
-      color: Colors.black.withValues(alpha: 0.9),
+    final accent = _isSavingAndExiting ? _brawlMint : _brawlRed;
+    return _BrawlOverlayBackdrop(
+      padding: const EdgeInsets.all(24),
+      opacity: 0.9,
       child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _isSavingAndExiting ? "SAVING DATA..." : "BANKRUPT!",
-              style: TextStyle(
-                color: _isSavingAndExiting
-                    ? const Color(0xFF85EFAC)
-                    : const Color(0xFFE25C5C),
-                fontSize: 34,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              "Your bank balance reached zero.",
-              style: TextStyle(color: Colors.white70, fontSize: 15),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              "Gold Banked: +$_goldAccumulated gold",
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-            ),
-            const SizedBox(height: 32),
-            if (!_isSavingAndExiting)
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF85EFAC),
-                  foregroundColor: Colors.black,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 430),
+          child: _PixelPanel(
+            accent: accent,
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  _isSavingAndExiting ? "SAVING DATA..." : "BANKRUPT!",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.pixelifySans(
+                    color: accent,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                onPressed: _exitAndSyncData,
-                child: const Text(
-                  "BANK REWARDS & EXIT",
-                  style: TextStyle(fontWeight: FontWeight.w900),
+                const SizedBox(height: 12),
+                Text(
+                  _isSavingAndExiting
+                      ? "Banking your run rewards."
+                      : "Your bank balance reached zero.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white.withValues(alpha: 0.72),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-          ],
+                const SizedBox(height: 22),
+                _PixelPanel(
+                  accent: _brawlGold,
+                  background: _brawlPanelDeep,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  dense: true,
+                  child: Text(
+                    "GOLD BANKED: +$_goldAccumulated",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.pixelifySans(
+                      color: _brawlGold,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 22),
+                if (!_isSavingAndExiting)
+                  _PixelButton(
+                    accent: _brawlMint,
+                    onPressed: _exitAndSyncData,
+                    label: "BANK REWARDS & EXIT",
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BrawlOverlayBackdrop extends StatelessWidget {
+  const _BrawlOverlayBackdrop({
+    required this.child,
+    this.padding = EdgeInsets.zero,
+    this.opacity = 0.85,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double opacity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          AppAssets.arcadeTileBackground,
+          repeat: ImageRepeat.repeat,
+          filterQuality: FilterQuality.none,
+        ),
+        ColoredBox(color: Colors.black.withValues(alpha: opacity)),
+        Padding(padding: padding, child: child),
+      ],
+    );
+  }
+}
+
+class _PixelPanel extends StatelessWidget {
+  const _PixelPanel({
+    required this.child,
+    required this.accent,
+    this.background,
+    this.padding = const EdgeInsets.all(12),
+    this.dense = false,
+  });
+
+  final Widget child;
+  final Color accent;
+  final Color? background;
+  final EdgeInsetsGeometry padding;
+  final bool dense;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = background ?? _brawlPanel;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: bg.withValues(alpha: dense ? 0.94 : 0.96),
+        borderRadius: BorderRadius.circular(dense ? 6 : 8),
+        border: Border.all(color: accent.withValues(alpha: 0.78), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.42),
+            blurRadius: 0,
+            spreadRadius: 2,
+            offset: const Offset(3, 3),
+          ),
+          BoxShadow(
+            color: _brawlBorder.withValues(alpha: 0.65),
+            blurRadius: 0,
+            offset: const Offset(-2, -2),
+          ),
+        ],
+      ),
+      child: Padding(padding: padding, child: child),
+    );
+  }
+}
+
+class _HudStatPanel extends StatelessWidget {
+  const _HudStatPanel({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.detail,
+    required this.accent,
+    this.alignStart = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final String detail;
+  final Color accent;
+  final bool alignStart;
+
+  @override
+  Widget build(BuildContext context) {
+    return _PixelPanel(
+      accent: accent,
+      background: _brawlPanelDeep,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _PixelIconBadge(icon: icon, accent: accent, size: 32),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: alignStart
+                  ? CrossAxisAlignment.start
+                  : CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.pixelifySans(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.pixelifySans(
+                    color: accent,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  detail,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white.withValues(alpha: 0.70),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PixelIconBadge extends StatelessWidget {
+  const _PixelIconBadge({
+    required this.icon,
+    required this.accent,
+    this.size = 40,
+  });
+
+  final IconData icon;
+  final Color accent;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: accent.withValues(alpha: 0.70), width: 2),
+      ),
+      child: Icon(icon, color: accent, size: size * 0.55),
+    );
+  }
+}
+
+class _PixelIconButton extends StatelessWidget {
+  const _PixelIconButton({
+    required this.icon,
+    required this.accent,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final Color accent;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(6),
+        child: _PixelPanel(
+          accent: accent,
+          background: _brawlPanelDeep,
+          padding: const EdgeInsets.all(11),
+          dense: true,
+          child: Icon(icon, color: accent, size: 21),
+        ),
+      ),
+    );
+  }
+}
+
+class _PixelButton extends StatelessWidget {
+  const _PixelButton({
+    required this.label,
+    required this.accent,
+    required this.onPressed,
+  });
+
+  final String label;
+  final Color accent;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    final effectiveAccent = enabled
+        ? accent
+        : Colors.white.withValues(alpha: 0.26);
+
+    return Opacity(
+      opacity: enabled ? 1 : 0.52,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(6),
+        child: _PixelPanel(
+          accent: effectiveAccent,
+          background: enabled ? _brawlPanelDeep : const Color(0xFF111A17),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          dense: true,
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.pixelifySans(
+              color: enabled && accent != Colors.white70
+                  ? effectiveAccent
+                  : Colors.white.withValues(alpha: 0.78),
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
       ),
     );
