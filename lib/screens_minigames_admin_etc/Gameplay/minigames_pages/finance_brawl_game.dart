@@ -94,8 +94,8 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   int _bankBalance = 10000;
   final int _maxBankBalance = 10000;
 
-  final double _mapWidth = 1600.0;
-  final double _mapHeight = 1600.0;
+  final double _mapWidth = 2400.0;
+  final double _mapHeight = 2400.0;
 
   final List<Offset> _treePositions = [];
   final double _treeRadius = 20.0;
@@ -2151,7 +2151,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
           icon: Icons.account_balance_wallet_rounded,
           label: 'NET WORTH',
           value: '\$$_bankBalance',
-          detail: 'Balance shield',
+          detail: "Don't Let it Hit Zero!",
           accent: balanceAccent,
         );
         final rewardPanel = _PixelPanel(
@@ -2393,7 +2393,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     );
   }
 
-  Widget _buildUpgradeOverlay() {
+Widget _buildUpgradeOverlay() {
     final upgrades = _getUpgradeOptions().take(3).toList();
     return _BrawlOverlayBackdrop(
       padding: const EdgeInsets.all(24),
@@ -2420,51 +2420,79 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                 ),
               ),
               const SizedBox(height: 24),
-              Wrap(
-                alignment: WrapAlignment.center,
-                runAlignment: WrapAlignment.center,
-                spacing: 12,
-                runSpacing: 12,
-                children: upgrades.map((up) {
-                  return SizedBox(
-                    width: 178,
-                    child: InkWell(
-                      onTap: () => _selectUpgrade(up),
-                      child: _PixelPanel(
-                        accent: _brawlGold,
-                        padding: const EdgeInsets.all(15),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _PixelIconBadge(icon: up.icon, accent: _brawlGold),
-                            const SizedBox(height: 14),
-                            Text(
-                              up.name,
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.pixelifySans(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                                height: 1.05,
+              // Restricts the overall width of the 3 cards
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 650),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: upgrades.map((up) {
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: InkWell(
+                            onTap: () => _selectUpgrade(up),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: _brawlPanel,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: _brawlGold.withValues(alpha: 0.4),
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  _PixelIconBadge(
+                                    icon: up.icon,
+                                    accent: _brawlGold,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    up.name,
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.pixelifySans(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
+                                      height: 1.1,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Expanded(
+                                    child: Center(
+                                      child: Text(
+                                        up.description,
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.quicksand(
+                                          color: Colors.white.withValues(alpha: 0.72),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          height: 1.25,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 10),
-                            Text(
-                              up.description,
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.quicksand(
-                                color: Colors.white.withValues(alpha: 0.72),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                height: 1.25,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-                  );
-                }).toList(),
+                      );
+                    }).toList(),
+                  ),
+                ),
               ),
             ],
           ),
