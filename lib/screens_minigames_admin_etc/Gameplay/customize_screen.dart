@@ -406,7 +406,10 @@ class _StorePanel extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
                 gradient: const LinearGradient(
-                  colors: [Color(0xFFFFD45C), Color(0xFF85EFAC)],
+                  colors: [
+                    Color.fromARGB(255, 125, 255, 92),
+                    Color(0xFF85EFAC),
+                  ],
                 ),
                 boxShadow: [
                   BoxShadow(
