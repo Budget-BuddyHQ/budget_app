@@ -2929,21 +2929,6 @@ class _BrawlPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     canvas.save();
     canvas.translate(camOffset.dx, camOffset.dy);
-
-    // Map background
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, mapWidth, mapHeight),
-      Paint()..color = const Color(0xFF1E3A2B),
-    );
-    final grassPaint = Paint()..color = const Color(0xFF244433);
-    for (double x = 0; x < mapWidth; x += 160) {
-      for (double y = 0; y < mapHeight; y += 160) {
-        canvas.drawRect(Rect.fromLTWH(x, y, 80, 80), grassPaint);
-        canvas.drawRect(Rect.fromLTWH(x + 80, y + 80, 80, 80), grassPaint);
-      }
-    }
-
-    // Border
     canvas.drawRect(
       Rect.fromLTWH(0, 0, mapWidth, mapHeight),
       Paint()
