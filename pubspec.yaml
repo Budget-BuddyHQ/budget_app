@@ -48,6 +48,7 @@ flutter:
     - assets/images/turtles/
     - assets/images/ui/
     - assets/images/tiles/
+    - assets/images/finance_brawl_ui/
     # Villager sprite sheets (one per body+variant), packed by
     # tool/pack_skin_sheets.ps1 from gitignored intermediate frames.
     - assets/self_made_skins/
