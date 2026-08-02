@@ -11,7 +11,9 @@ The app has three pillars:
 | **Academy** | Khan-Academy-style units of lessons, quizzes and unit tests. | `lib/screens_minigames_admin_etc/Gameplay/academy/` |
 
 Supporting features: auth (login / sign-up / welcome), profile, skins &
-customization, daily quests, leaderboard, arcade mini-games, and an admin page.
+customization, daily quests, leaderboard, arcade mini-games, in-app feedback
+(`lib/screens_minigames_admin_etc/profile/feedback_screen.dart`, toggleable via
+`kFeedbackEnabled` in `lib/config/dev_preview_flags.dart`), and an admin page.
 
 ---
 
@@ -172,9 +174,32 @@ A square ancestor's *tight* constraints forced the sprite's aspect-corrected
 *Fix:* wrap in `Center`, which loosens tight constraints so the child lays out at
 its own intrinsic size. Regression test in `test/avatar_sprite_test.dart`.
 
+**Human skins looked distorted in the case-open reel and skin grid**
+`AvatarSprite` defaults to a villager's *natural* sheet-cell size (104x152)
+when no explicit `size` is given. Three call sites relied on that default
+inside boxes far smaller than 104x152 — the 70px-wide case-roll reel item, the
+skin inventory grid tile, and `ProfileAvatar`'s sprite fallback — so the
+sprite rendered oversized and bled into its neighbours or got clipped by the
+surrounding `ClipOval`/reel mask. Turtles/critters looked mostly fine because
+their source art happens to be closer to square already, which is why this
+went unnoticed for a while.
+*Fix:* the case-roll reel now passes an explicit `size` computed from the
+item's actual content box (accounting for the villager sheet's aspect ratio);
+the skin grid tile and `ProfileAvatar` fallback wrap the sprite in a
+`FittedBox` instead, since their box size varies with screen width and isn't
+known ahead of time.
+*Files:* `customize_screen.dart`, `profile_avatar.dart`
+
 **Home "Play Life" promo card overflowed 130px on narrow phones**
 A `Row` holding the title plus a badge.
 *Fix:* `Wrap`. Caught by `responsive_layout_test.dart` before shipping.
+
+**Feedback screen header overflowed on the smallest phone width**
+The back button + title lived in a plain `Row`; at 320px wide the title text
+pushed 53px past the right edge.
+*Fix:* wrap the title in `Expanded` with `TextOverflow.ellipsis`. Caught by
+`responsive_layout_test.dart` before shipping — the same pattern that's
+caught every overflow bug in this table since it was added.
 
 **Skins too large in the Case Opened dialog**
 The reveal reel and sprite pushed the action button off-screen.
@@ -221,6 +246,14 @@ roughly evenly across all four positions (currently 13/15/18/13 across 59
 questions in `quiz_bank.dart`). Options are not shuffled at runtime — the fix
 is in the authored data, not the widget.
 
+**Finance Brawl's daily-plan icon was a courtroom gavel**
+`DailyQuest`'s arcade icon map used `Icons.gavel_rounded` for Finance Brawl —
+a placeholder that never matched what the game actually is.
+*Fix:* arcade quests can now carry an optional `spriteMotif` alongside the
+Material icon fallback; Finance Brawl uses the existing animated turtle
+mascot (`AmbientMotif.turtle`) instead. Other quest types are untouched.
+*Files:* `daily_quest.dart`, `daily_plan_card.dart`
+
 **Subscription Sweep: starting subscriptions could never be cancelled**
 The game shipped with subscriptions the player was structurally unable to remove.
 *Fix:* corrected the cancel path. (Game later deleted for other reasons.)
@@ -259,6 +292,6 @@ does not ship.
 flutter analyze && flutter test
 ```
 
-130+ tests covering responsive layout at seven viewports, chart painters against
-pathological input, working-order accounting, the Life simulation rules, the
-quiz bank, and asset integrity.
+137 tests covering responsive layout at seven viewports (now including the
+Feedback screen), chart painters against pathological input, working-order
+accounting, the Life simulation rules, the quiz bank, and asset integrity.
