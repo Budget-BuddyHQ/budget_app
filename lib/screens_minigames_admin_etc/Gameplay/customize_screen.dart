@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/app_assets.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../navigation_tools_and_animation/app_tab_index.dart';
@@ -828,7 +829,14 @@ class _SkinTile extends StatelessWidget {
                               const Color(0xFF071711).withValues(alpha: 0.82),
                               BlendMode.srcATop,
                             ),
-                      child: AvatarSprite(skin: skin),
+                      // The grid tile's size varies with screen width, so
+                      // there's no fixed value to hand AvatarSprite — scale
+                      // its natural sheet-cell size down to fit instead of
+                      // letting it render oversized and get clipped.
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: AvatarSprite(skin: skin),
+                      ),
                     ),
                   ),
                   if (!unlocked)
@@ -1287,6 +1295,13 @@ class _RollTrack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The item's actual content box after its own padding — sprites must be
+    // sized to fit inside this, not their natural sheet-cell size, or a
+    // villager cell (104x152) overflows this 70px-wide slot and bleeds into
+    // neighbouring reel items.
+    final contentWidth = itemWidth - 20;
+    const villagerAspect = AppAssets.villagerCellHeight / AppAssets.villagerCellWidth;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: rollSkins.map((skin) {
@@ -1299,7 +1314,14 @@ class _RollTrack extends StatelessWidget {
             border: Border.all(color: skin.accent.withValues(alpha: 0.2)),
           ),
           padding: const EdgeInsets.all(10),
-          child: AvatarSprite(skin: skin),
+          child: AvatarSprite(
+            skin: skin,
+            // AvatarSprite treats `size` as a height for villagers (width is
+            // derived from the sheet's aspect ratio) but as a width/height
+            // square for everything else, so the two need different values
+            // to both land at the same on-screen content width.
+            size: skin.isHuman ? contentWidth * villagerAspect : contentWidth,
+          ),
         );
       }).toList(),
     );

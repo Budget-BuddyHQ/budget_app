@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../../config/dev_preview_flags.dart';
 import '../../constants/app_assets.dart';
 import '../../controllers_that_updates_stats/app_settings_controller.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
@@ -18,6 +19,7 @@ import '../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
 import '../admin/admin_screen.dart';
 import '../auth/auth_screen.dart';
+import 'feedback_screen.dart';
 import 'personal_details_sheet.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -218,6 +220,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               color: Color(0xFFB7F7D7),
                             ),
                         ),
+                        if (kFeedbackEnabled) ...[
+                          const SizedBox(height: 12),
+                          _SettingsCard(
+                            title: 'Send Feedback',
+                            subtitle: 'Report a bug, share an idea, or say hi.',
+                            icon: Icons.mail_rounded,
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const FeedbackScreen(),
+                                ),
+                              );
+                            },
+                            trailing: const Icon(
+                              Icons.chevron_right_rounded,
+                              color: Color(0xFFB7F7D7),
+                            ),
+                          ),
+                        ],
 
                               ),
                               boxShadow: const [

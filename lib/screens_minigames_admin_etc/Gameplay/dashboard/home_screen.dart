@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,6 +14,7 @@ import '../../../constants/app_assets.dart';
 import 'daily_plan_card.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
+import '../../../widgets_custom_lotties/idle_hover_icon.dart';
 import '../../../widgets_custom_lotties/profile_avatar.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
@@ -240,10 +243,12 @@ class _PlayLifePromo extends StatelessWidget {
                 color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(
-                Icons.favorite_rounded,
-                color: Color(0xFF85EFAC),
-                size: 26,
+              child: const IdleHoverIcon(
+                child: Icon(
+                  Icons.favorite_rounded,
+                  color: Color(0xFF85EFAC),
+                  size: 26,
+                ),
               ),
             ),
             const SizedBox(width: 14),
@@ -298,7 +303,14 @@ class _PlayLifePromo extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.play_circle_fill_rounded, color: Color(0xFF85EFAC), size: 34),
+            const IdleHoverIcon(
+              phaseShift: 0.5,
+              child: Icon(
+                Icons.play_circle_fill_rounded,
+                color: Color(0xFF85EFAC),
+                size: 34,
+              ),
+            ),
           ],
         ),
       ),
@@ -320,9 +332,14 @@ class _DashboardBackdrop extends StatelessWidget {
             filterQuality: FilterQuality.none,
           ),
         ),
+        // The tile art is a small repeating icon pattern meant as ambient
+        // texture, but the thin gaps between cards used to expose it at
+        // near-full strength — a crisp, chopped-off sliver of icons in every
+        // gap read as visual debris rather than intentional decoration.
+        // A much heavier dim turns it into a soft wash instead.
         Positioned.fill(
           child: Container(
-            color: const Color(0xFF071711).withValues(alpha: 0.48),
+            color: const Color(0xFF071711).withValues(alpha: 0.82),
           ),
         ),
         Positioned(
@@ -525,10 +542,14 @@ class _HeroAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ProfileAvatar(
-      imageUrl: profileImageUrl,
-      fallbackSkin: turtleSkin,
-      size: size,
+    return IdleHoverIcon(
+      idleAmplitude: 1.5,
+      hoverScale: 1.05,
+      child: ProfileAvatar(
+        imageUrl: profileImageUrl,
+        fallbackSkin: turtleSkin,
+        size: size,
+      ),
     );
   }
 }
@@ -808,7 +829,15 @@ class _ObjectiveIconButton extends StatelessWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
+/// The main CTA on the home hero — deliberately more theatrical than a plain
+/// button, since it's the single most-tapped element on the screen.
+///
+/// Three animations run together: a continuous diagonal shine sweeping
+/// across the button, a slow breathing glow behind it, and — on press — a
+/// 3D tilt-and-snap "flip" (a perspective rotation that dips away from the
+/// finger then springs back with an elastic overshoot) instead of a plain
+/// scale-down. Desktop/web additionally gets a hover lift.
+class _ActionButton extends StatefulWidget {
   const _ActionButton({
     required this.label,
     required this.accent,
@@ -822,47 +851,196 @@ class _ActionButton extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<_ActionButton> createState() => _ActionButtonState();
+}
+
+class _ActionButtonState extends State<_ActionButton>
+    with TickerProviderStateMixin {
+  late final AnimationController _loopController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2600),
+  )..repeat();
+
+  late final AnimationController _pressController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 420),
+    reverseDuration: const Duration(milliseconds: 200),
+  );
+
+  bool _hovering = false;
+
+  @override
+  void dispose() {
+    _loopController.dispose();
+    _pressController.dispose();
+    super.dispose();
+  }
+
+  void _setHover(bool value) {
+    if (_hovering != value) setState(() => _hovering = value);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap == null
-          ? null
-          : () {
-              HapticFeedback.lightImpact();
-              onTap!();
-            },
-      child: Container(
-        height: 56,
-        decoration: BoxDecoration(
-          color: accent,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.transparent),
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (reduceMotion && _loopController.isAnimating) {
+      _loopController.stop();
+    } else if (!reduceMotion && !_loopController.isAnimating) {
+      _loopController.repeat();
+    }
+
+    return MouseRegion(
+      onEnter: (_) => _setHover(true),
+      onExit: (_) => _setHover(false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: widget.onTap == null
+            ? null
+            : (_) => _pressController.forward(),
+        onTapCancel: () => _pressController.reverse(),
+        onTapUp: (_) => _pressController.reverse(),
+        onTap: widget.onTap == null
+            ? null
+            : () {
+                HapticFeedback.mediumImpact();
+                widget.onTap!();
+              },
+        child: AnimatedBuilder(
+          animation: Listenable.merge([_loopController, _pressController]),
+          builder: (context, child) {
+            final loop = _loopController.value;
+            // Elastic overshoot on the way back gives the "snap" feel; the
+            // press-down half stays a plain curve so it doesn't overshoot
+            // while the finger is still down.
+            final pressCurve = _pressController.status ==
+                    AnimationStatus.reverse
+                ? Curves.elasticOut.transform(1 - _pressController.value)
+                : Curves.easeOut.transform(_pressController.value);
+            final tilt = pressCurve * 0.22;
+            final dip = pressCurve * 5;
+            final lift = reduceMotion ? 0.0 : (_hovering ? -3.0 : 0.0);
+            final breathe = reduceMotion
+                ? 0.0
+                : math.sin(loop * 2 * math.pi) * 0.5 + 0.5;
+
+            return Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.0012)
+                ..translateByDouble(0.0, dip + lift, 0.0, 1.0)
+                ..rotateX(-tilt),
+              child: Container(
+                height: 56,
+                decoration: BoxDecoration(
+                  color: widget.accent,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: Colors.white.withValues(
+                      alpha: _hovering ? 0.55 : 0.0,
+                    ),
+                    width: 1.4,
+                  ),
+                  boxShadow: reduceMotion
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: widget.accent.withValues(
+                              alpha: 0.28 + breathe * 0.24,
+                            ),
+                            blurRadius: 16 + breathe * 14,
+                            spreadRadius: -2 + breathe * 2,
+                          ),
+                        ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  children: [
+                    if (!reduceMotion)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: _ShineSweep(progress: loop),
+                        ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      // These buttons sit in a Row of equal-width slots, so
+                      // on a narrow phone the label has to be allowed to
+                      // shrink rather than push the icon off the edge.
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            widget.icon,
+                            color: const Color(0xFF062C21),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              widget.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                              style: const TextStyle(
+                                color: Color(0xFF062C21),
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        // These buttons sit in a Row of equal-width slots, so on a narrow
-        // phone the label has to be allowed to shrink rather than push the
-        // icon off the edge.
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: const Color(0xFF062C21), size: 20),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                softWrap: false,
-                style: const TextStyle(
-                  color: Color(0xFF062C21),
-                  fontWeight: FontWeight.w900,
+      ),
+    );
+  }
+}
+
+/// A diagonal light band sweeping left-to-right on a loop — the "shine"
+/// effect used on game CTAs to keep an idle button from reading as inert.
+class _ShineSweep extends StatelessWidget {
+  const _ShineSweep({required this.progress});
+
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Travels from just off the left edge to just off the right edge,
+        // with a pause at each end so the sweep reads as a deliberate pulse
+        // rather than a constant scroll.
+        final t = Curves.easeInOutCubic.transform(
+          (progress * 1.6).clamp(0.0, 1.0) % 1.0,
+        );
+        final travel = constraints.maxWidth * 1.6;
+        final x = -constraints.maxWidth * 0.3 + travel * t;
+        return Transform.translate(
+          offset: Offset(x, 0),
+          child: Transform.rotate(
+            angle: -0.5,
+            child: Container(
+              width: constraints.maxWidth * 0.22,
+              height: constraints.maxHeight * 2.4,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: 0),
+                    Colors.white.withValues(alpha: 0.32),
+                    Colors.white.withValues(alpha: 0),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
