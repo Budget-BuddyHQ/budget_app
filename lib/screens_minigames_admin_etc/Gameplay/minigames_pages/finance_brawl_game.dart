@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -89,6 +90,21 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   late Size _canvasSize;
   Offset _playerPos = const Offset(800, 800);
   final double _playerRadius = 24.0;
+
+  ui.Image? _treeImage;
+
+
+  // 3. Add the loading helper method:
+  Future<void> _loadTreeSprite() async {
+    final ByteData data = await rootBundle.load(AppAssets.treeSprite);
+    final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    final ui.FrameInfo fi = await codec.getNextFrame();
+    if (mounted) {
+      setState(() {
+        _treeImage = fi.image;
+      });
+    }
+  }
 
   // Finance Overhaul: Balance instead of health
   int _bankBalance = 10000;
@@ -1370,9 +1386,11 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     ),
   ];
 
-  @override
+ @override
   void initState() {
     super.initState();
+    _loadTreeSprite(); // <-- Added to load your Piskel sprite!
+
     for (int i = 0; i < 20; i++) {
       Offset pos = Offset(
         _rand.nextDouble() * (_mapWidth - 200) + 100,
@@ -1382,6 +1400,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
         _treePositions.add(pos);
       }
     }
+
     for (int i = 0; i < 20; i++) {
       Offset pos = Offset(
         _rand.nextDouble() * (_mapWidth - 200) + 100,
@@ -2077,7 +2096,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
               children: [
                 Positioned.fill(
                   child: Image.asset(
-                    AppAssets.arcadeTileBackground,
+                    AppAssets.brawlGrasstile,
                     repeat: ImageRepeat.repeat,
                     filterQuality: FilterQuality.none,
                   ),
@@ -2108,6 +2127,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                       mapWidth: _mapWidth,
                       mapHeight: _mapHeight,
                       camOffset: Offset(camX, camY),
+                      treeImage: _treeImage,
                     ),
                   ),
                 ),
@@ -2589,7 +2609,7 @@ class _BrawlOverlayBackdrop extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         Image.asset(
-          AppAssets.arcadeTileBackground,
+          AppAssets.brawlGrasstile,
           repeat: ImageRepeat.repeat,
           filterQuality: FilterQuality.none,
         ),
@@ -2902,6 +2922,7 @@ class _BrawlPainter extends CustomPainter {
     required this.mapWidth,
     required this.mapHeight,
     required this.camOffset,
+    this.treeImage,
   });
 
   final Offset playerPos;
@@ -2924,36 +2945,146 @@ class _BrawlPainter extends CustomPainter {
   final double mapWidth;
   final double mapHeight;
   final Offset camOffset;
+  final ui.Image? treeImage;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
     canvas.translate(camOffset.dx, camOffset.dy);
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, mapWidth, mapHeight),
-      Paint()
-        ..color = const Color(0xFF9E4242)
-        ..strokeWidth = 10
-        ..style = PaintingStyle.stroke,
-    );
+    // canvas.drawRect(
+    //   Rect.fromLTWH(0, 0, mapWidth, mapHeight),
+    //   Paint()
+    //     ..color = const Color(0xFF9E4242)
+    //     ..strokeWidth = 10
+    //     ..style = PaintingStyle.stroke,
+    // );
+// -------------------------------------------------------------------------
+// SMOOTH RETRO STONE BORDER (No Spikes - Clean Rim Only)
+// -------------------------------------------------------------------------
+const double wallThickness = 20.0;
+const double segmentLength = 24.0;
+
+final baseStonePaint = Paint()
+  ..color = const Color(0xFF595858)
+  ..style = PaintingStyle.stroke
+  ..strokeWidth = wallThickness;
+
+final highlightPaint = Paint()
+  ..color = const Color(0xFF6E7681)
+  ..strokeWidth = 1.5;
+
+final shadowPaint = Paint()
+  ..color = const Color(0xFF6E7681)
+  ..strokeWidth = 1.5;
+
+final innerLinePaint = Paint()
+  ..color = const Color(0xFF484F58)
+  ..style = PaintingStyle.stroke
+  ..strokeWidth = 2.0;
+
+canvas.drawRect(
+  Rect.fromLTWH(
+    -wallThickness / 2,
+    -wallThickness / 2,
+    mapWidth + wallThickness,
+    mapHeight + wallThickness,
+  ),
+  baseStonePaint,
+);
+
+canvas.drawLine(
+  Offset(-wallThickness, -wallThickness),
+  Offset(mapWidth + wallThickness, -wallThickness),
+  highlightPaint,
+);
+
+canvas.drawLine(
+  Offset(-wallThickness, -wallThickness),
+  Offset(-wallThickness, mapHeight + wallThickness),
+  highlightPaint,
+);
+
+canvas.drawLine(
+  Offset(-wallThickness, mapHeight + wallThickness),
+  Offset(mapWidth + wallThickness, mapHeight + wallThickness),
+  shadowPaint,
+);
+
+canvas.drawLine(
+  Offset(mapWidth + wallThickness, -wallThickness),
+  Offset(mapWidth + wallThickness, mapHeight + wallThickness),
+  shadowPaint,
+);
+
+for (double x = 0; x < mapWidth; x += segmentLength) {
+  // Top Wall Seams
+  canvas.drawLine(
+    Offset(x, -wallThickness),
+    Offset(x, 0),
+    highlightPaint,
+  );
+
+  canvas.drawLine(
+    Offset(x, mapHeight),
+    Offset(x, mapHeight + wallThickness),
+    shadowPaint,
+  );
+}
+
+for (double y = 0; y < mapHeight; y += segmentLength) {
+  // Left Wall Seams
+  canvas.drawLine(
+    Offset(-wallThickness, y),
+    Offset(0, y),
+    highlightPaint,
+  );
+  // Right Wall Seams
+  canvas.drawLine(
+    Offset(mapWidth, y),
+    Offset(mapWidth + wallThickness, y),
+    shadowPaint,
+  );
+}
+
+// 4. Crisp Inner Line Framing the Arena Field
+canvas.drawRect(
+  Rect.fromLTWH(0, 0, mapWidth, mapHeight),
+  innerLinePaint,
+);
 
     final rockPaint = Paint()..color = const Color(0xFF5A635E);
     for (final rock in rockPositions) {
       canvas.drawCircle(rock, rockRadius, rockPaint);
     }
 
-    final treeTrunkPaint = Paint()..color = const Color(0xFF4A2F13);
-    final treeLeavesPaint = Paint()..color = const Color(0xFF165231);
     for (final tree in treePositions) {
-      canvas.drawRect(
-        Rect.fromCenter(center: tree, width: 8, height: 26),
-        treeTrunkPaint,
-      );
-      canvas.drawCircle(
-        tree - const Offset(0, 14),
-        treeRadius,
-        treeLeavesPaint,
-      );
+      if (treeImage != null) {
+        final Rect treeRect = Rect.fromCenter(
+          center: tree,
+          width: treeRadius * 2.4,  // Adjust size to match your sprite proportions
+          height: treeRadius * 2.8,
+        );
+        paintImage(
+          canvas: canvas,
+          rect: treeRect,
+          image: treeImage!,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.none, // Retains crisp pixel art!
+        );
+      } else {
+        // Fallback drawing while image loads
+        final treeTrunkPaint = Paint()..color = const Color(0xFF4A2F13);
+        final treeLeavesPaint = Paint()..color = const Color(0xFF165231);
+        canvas.drawRect(
+          Rect.fromCenter(center: tree, width: 8, height: 26),
+          treeTrunkPaint,
+        );
+        canvas.drawCircle(
+          tree - const Offset(0, 14),
+          treeRadius,
+          treeLeavesPaint,
+        );
+      }
     }
 
     // Track occupied bounding boxes to prevent overlapping label text
