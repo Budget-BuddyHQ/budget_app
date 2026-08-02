@@ -8,6 +8,7 @@ import 'package:budget_app/models_Like_Skins_and_lessons_templates/progression_s
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/academy/lesson_detail_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/academy/lesson_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/academy/practice_screen.dart';
+import 'package:budget_app/screens_minigames_admin_etc/profile/feedback_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/personal_details_sheet.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/core_bottom_pages/main_game_page.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.dart';
@@ -106,6 +107,7 @@ void main() {
     ),
     'Finance Brawl': () => const FinanceBrawlScreen(),
     'Market Board': () => const StockMarketPage(),
+    'Feedback': () => const FeedbackScreen(),
   };
 
   for (final screenEntry in screens.entries) {

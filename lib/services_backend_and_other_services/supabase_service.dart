@@ -450,6 +450,7 @@ class SupabaseService {
   static final SupabaseService instance = SupabaseService._();
 
   static const String userStatsTable = 'user_stats';
+  static const String feedbackTable = 'app_feedback';
   static const String leaderboardView = 'leaderboard';
   static const String defaultProfileImageBucket = 'profile_pictures';
   static const Duration _supabaseReadTimeout = Duration(seconds: 6);
@@ -821,6 +822,49 @@ end
           .eq('id', userId);
     } catch (error) {
       debugPrint('Supabase profile image URL update failed: $error');
+    }
+  }
+
+  /// Sends a piece of user feedback to the `app_feedback` table.
+  ///
+  /// Always writes a local copy first so nothing is lost if the device is
+  /// offline or Supabase isn't configured — matching the rest of this
+  /// service's "degrade gracefully" behaviour rather than failing the whole
+  /// submission when only the network leg is unavailable.
+  Future<bool> submitFeedback({
+    required String category,
+    required String message,
+    String? userId,
+    String? userEmail,
+  }) async {
+    final prefs = await _ensurePreferences();
+    final entry = <String, dynamic>{
+      'category': category,
+      'message': message,
+      'user_id': userId,
+      'user_email': userEmail,
+      'submitted_at': DateTime.now().toUtc().toIso8601String(),
+    };
+
+    final queued = prefs.getStringList('pending_feedback_queue') ?? <String>[];
+    queued.add(jsonEncode(entry));
+    await prefs.setStringList('pending_feedback_queue', queued);
+
+    if (!_isSupabaseConnected) {
+      return false;
+    }
+
+    try {
+      await Supabase.instance.client
+          .from(feedbackTable)
+          .insert(entry)
+          .timeout(_supabaseReadTimeout);
+      queued.remove(jsonEncode(entry));
+      await prefs.setStringList('pending_feedback_queue', queued);
+      return true;
+    } catch (error) {
+      debugPrint('Supabase feedback submit failed, queued locally: $error');
+      return false;
     }
   }
 
