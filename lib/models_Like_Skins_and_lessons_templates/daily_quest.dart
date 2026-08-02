@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../widgets_custom_lotties/ambient_lottie_card.dart' show AmbientMotif;
 import 'lesson.dart';
 import 'lesson_data.dart';
 import 'quiz_bank.dart';
@@ -26,6 +27,7 @@ class DailyQuest {
     this.unitId,
     this.arcadeGameId,
     this.skillLabel,
+    this.spriteMotif,
   });
 
   final String id;
@@ -35,6 +37,11 @@ class DailyQuest {
   final IconData icon;
   final Color accent;
   final int xpReward;
+
+  /// When set, the quest row renders this animated pixel sprite instead of
+  /// [icon] — used for arcade games that have their own mascot art rather
+  /// than a generic Material icon.
+  final AmbientMotif? spriteMotif;
 
   /// For academy quests: which unit to open.
   final String? unitId;
@@ -104,6 +111,12 @@ class DailyPlanBuilder {
     'react_challenge': Icons.bolt_rounded,
   };
 
+  // Arcade games with their own mascot art use that instead of the generic
+  // icon above — Finance Brawl gets the celebrating turtle sprite rather
+  // than a courtroom gavel, which never actually matched the game.
+  static const Map<String, AmbientMotif> _arcadeSpriteMotifs =
+      <String, AmbientMotif>{'finance_brawl': AmbientMotif.turtle};
+
   DailyPlan build({
     required String dateKey,
     required Set<String> completedIds,
@@ -168,6 +181,7 @@ class DailyPlanBuilder {
           xpReward: 10,
           arcadeGameId: game,
           skillLabel: _arcadeSkillFocus[game],
+          spriteMotif: _arcadeSpriteMotifs[game],
         ),
       );
     }

@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/daily_plan_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/daily_quest.dart';
+import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
+import '../../../widgets_custom_lotties/idle_hover_icon.dart';
 
 /// The home screen's spine: today's ordered checklist.
 ///
@@ -196,7 +198,12 @@ class _QuestRow extends StatelessWidget {
           ),
           child: Row(
             children: [
-              _StatusDot(done: done, accent: quest.accent, icon: quest.icon),
+              _StatusDot(
+                done: done,
+                accent: quest.accent,
+                icon: quest.icon,
+                spriteMotif: quest.spriteMotif,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -268,11 +275,13 @@ class _StatusDot extends StatelessWidget {
     required this.done,
     required this.accent,
     required this.icon,
+    this.spriteMotif,
   });
 
   final bool done;
   final Color accent;
   final IconData icon;
+  final AmbientMotif? spriteMotif;
 
   @override
   Widget build(BuildContext context) {
@@ -284,10 +293,24 @@ class _StatusDot extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: accent.withValues(alpha: 0.3)),
       ),
-      child: Icon(
-        icon,
-        color: accent.withValues(alpha: done ? 0.5 : 1),
-        size: 20,
+      child: Opacity(
+        opacity: done ? 0.5 : 1,
+        child: spriteMotif == null
+            ? IdleHoverIcon(child: Icon(icon, color: accent, size: 20))
+            : IdleHoverIcon(
+                // AmbientLottieCard already bobs on its own, so this only
+                // adds the hover scale-up rather than a second, competing bob.
+                idleAmplitude: 0,
+                child: AmbientLottieCard(
+                  motif: spriteMotif!,
+                  semanticLabel: 'Finance Brawl',
+                  width: 38,
+                  height: 38,
+                  padding: const EdgeInsets.all(2),
+                  backgroundColor: Colors.transparent,
+                  borderColor: Colors.transparent,
+                ),
+              ),
       ),
     );
   }

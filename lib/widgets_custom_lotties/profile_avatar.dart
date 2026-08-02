@@ -115,9 +115,18 @@ class ProfileAvatar extends StatelessWidget {
   /// The equipped skin, padded and centred so the sprite never gets clipped by
   /// the circle the way a cover-fitted photo intentionally is.
   Widget _fallback(double inner) {
+    // AvatarSprite has no idea how big `inner` is, so an unsized call
+    // renders a villager at its natural 104x152 sheet-cell size — bigger
+    // than most avatar circles — and gets clipped by the ClipOval above.
+    // FittedBox scales it down to actually fit the inset content box.
     return Padding(
       padding: EdgeInsets.all(inner * 0.14),
-      child: Center(child: AvatarSprite(skin: fallbackSkin)),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.contain,
+          child: AvatarSprite(skin: fallbackSkin),
+        ),
+      ),
     );
   }
 }
