@@ -30,6 +30,10 @@ class AppAssets {
   static const String tileShore =
       'assets/map_assets_coins/PNG_more_map_tiles/rpgTile010.png';
   static const String tileCoin = 'assets/images/tiles/coin.png';
+  static const String brawlGrasstile =
+    'assets/self_made_backgrounds/brawl_grass_tile.png';
+  static const String treeSprite =
+    'assets/images/finance_brawl_ui/brawl_tree.png';
 
   static const String turtleClassic =
       'assets/images/turtles/Wface_no_bg_l7nvmfum.png';
