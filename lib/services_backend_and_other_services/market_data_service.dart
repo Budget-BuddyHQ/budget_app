@@ -261,6 +261,18 @@ class MarketDataService extends ChangeNotifier {
   /// scheduled [refresh] of [kLiveSymbols].
   LiveQuote? quoteFor(String symbol) => _quotes[symbol];
 
+  /// Test-only: populates [quotes] without a network call, so widget tests
+  /// can exercise the ticker tape / trending strip / card list, which
+  /// otherwise never render in a test (no live fetch ever completes, so
+  /// [quotes] stays empty and that whole UI branch goes untested).
+  @visibleForTesting
+  void seedQuotesForTest(Iterable<LiveQuote> quotes) {
+    for (final quote in quotes) {
+      _quotes[quote.symbol] = quote;
+    }
+    notifyListeners();
+  }
+
   /// Real intraday closes for [symbol] (oldest first), or the quote-derived
   /// 3-point fallback when no candle key is configured or the fetch failed.
   List<double> seriesFor(String symbol) {

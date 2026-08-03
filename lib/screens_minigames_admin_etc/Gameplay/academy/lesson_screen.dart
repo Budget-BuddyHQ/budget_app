@@ -148,6 +148,7 @@ class _LessonScreenState extends State<LessonScreen> {
     List<LessonUnit> units, {
     required bool compact,
     required int unitIndexOffset,
+    AgeStage? recommendedStage,
   }) {
     return <Widget>[
       for (var index = 0; index < units.length; index++) ...[
@@ -161,6 +162,7 @@ class _LessonScreenState extends State<LessonScreen> {
           onLessonTap: _openLesson,
           onPractice: () => _openPractice(units[index]),
           statusFor: _progressionService.getLessonStatus,
+          isRecommended: units[index].ageStage == recommendedStage,
         ),
         if (index != units.length - 1) const SizedBox(height: 16),
       ],
@@ -192,6 +194,7 @@ class _LessonScreenState extends State<LessonScreen> {
         : (activeUnitIndex < 0 ? 0 : activeUnitIndex);
     final selectedUnit = units[selectedUnitIndex];
     final overallProgress = _progressionService.getProgress();
+    final recommendedStage = _statsController.stats.ageBand.recommendedStage;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D2B20),
@@ -212,9 +215,44 @@ class _LessonScreenState extends State<LessonScreen> {
                 filterQuality: FilterQuality.none,
               ),
             ),
+            // A vignette instead of a flat dim: darker top/bottom so header
+            // text and the bottom nav stay readable, lighter through the
+            // middle so the hand-composited unit art actually reads instead
+            // of looking like a flat muted wash.
             Positioned.fill(
-              child: Container(
-                color: const Color(0xFF0D2B20).withValues(alpha: 0.58),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      const Color(0xFF0D2B20).withValues(alpha: 0.62),
+                      const Color(0xFF0D2B20).withValues(alpha: 0.30),
+                      const Color(0xFF0D2B20).withValues(alpha: 0.58),
+                    ],
+                    stops: const [0.0, 0.42, 1.0],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: -70,
+              right: -50,
+              child: IgnorePointer(
+                child: _AcademyGlowOrb(
+                  color: const Color(0xFF85EFAC).withValues(alpha: 0.20),
+                  size: 210,
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 40,
+              left: -60,
+              child: IgnorePointer(
+                child: _AcademyGlowOrb(
+                  color: const Color(0xFF58C7FF).withValues(alpha: 0.14),
+                  size: 190,
+                ),
               ),
             ),
             LayoutBuilder(
@@ -273,6 +311,7 @@ class _LessonScreenState extends State<LessonScreen> {
                         [selectedUnit],
                         compact: true,
                         unitIndexOffset: selectedUnitIndex,
+                        recommendedStage: recommendedStage,
                       ),
                     ],
                   );
@@ -326,6 +365,7 @@ class _LessonScreenState extends State<LessonScreen> {
                       [selectedUnit],
                       compact: compactLayout,
                       unitIndexOffset: selectedUnitIndex,
+                      recommendedStage: recommendedStage,
                     ),
                   ],
                 );
@@ -972,12 +1012,14 @@ class _UnitCard extends StatelessWidget {
     required this.onPractice,
     required this.statusFor,
     this.compact = false,
+    this.isRecommended = false,
   });
 
   final LessonUnit unit;
   final int unitIndex;
   final double progress;
   final MasteryLevel mastery;
+  final bool isRecommended;
 
   /// Mean best accuracy across attempted assessments, null if none taken yet.
   final double? accuracy;
@@ -1019,7 +1061,10 @@ class _UnitCard extends StatelessWidget {
                 children: [
                   // Who this unit is written for, so the path visibly grows
                   // with the learner instead of reading as a flat list.
-                  _AgeStageChip(stage: unit.ageStage),
+                  _AgeStageChip(
+                    stage: unit.ageStage,
+                    isRecommended: isRecommended,
+                  ),
                   const SizedBox(height: 10),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1161,34 +1206,44 @@ class _MasteryBadge extends StatelessWidget {
 
 /// Small badge naming the age range a unit is pitched at.
 class _AgeStageChip extends StatelessWidget {
-  const _AgeStageChip({required this.stage});
+  const _AgeStageChip({required this.stage, this.isRecommended = false});
 
   final AgeStage stage;
 
+  /// True when this unit's [AgeStage] matches the player's own age band.
+  /// Purely informational — it never unlocks or reorders anything, since
+  /// every unit still requires the previous unit's test to be completed
+  /// first regardless of age. See `player_profile.dart`'s
+  /// `AgeBand.recommendedStage`.
+  final bool isRecommended;
+
   @override
   Widget build(BuildContext context) {
+    final accent = isRecommended
+        ? const Color(0xFF85EFAC)
+        : const Color(0xFFFFD45C);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFD45C).withValues(alpha: 0.16),
+        color: accent.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: const Color(0xFFFFD45C).withValues(alpha: 0.32),
-        ),
+        border: Border.all(color: accent.withValues(alpha: 0.32)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.cake_rounded,
+          Icon(
+            isRecommended ? Icons.star_rounded : Icons.cake_rounded,
             size: 12,
-            color: Color(0xFFFFD45C),
+            color: accent,
           ),
           const SizedBox(width: 6),
           Text(
-            '${stage.label} · ${stage.blurb}',
-            style: const TextStyle(
-              color: Color(0xFFFFD45C),
+            isRecommended
+                ? '${stage.label} · For you'
+                : '${stage.label} · ${stage.blurb}',
+            style: TextStyle(
+              color: accent,
               fontSize: 11,
               fontWeight: FontWeight.w900,
             ),
@@ -1389,6 +1444,34 @@ class _AnalyticStat extends StatelessWidget {
               fontWeight: FontWeight.w900,
               fontSize: 15,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A soft ambient glow, same treatment as the one on the Home dashboard —
+/// gives the backdrop some depth instead of reading as a flat tint.
+class _AcademyGlowOrb extends StatelessWidget {
+  const _AcademyGlowOrb({required this.color, required this.size});
+
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        boxShadow: [
+          BoxShadow(
+            color: color,
+            blurRadius: size * 0.40,
+            spreadRadius: size * 0.06,
           ),
         ],
       ),
