@@ -34,6 +34,10 @@ class AppAssets {
     'assets/self_made_backgrounds/brawl_grass_tile.png';
   static const String treeSprite =
     'assets/images/finance_brawl_ui/brawl_tree.png';
+  static const String rockSprite = 
+    'assets/images/finance_brawl_ui/brawl_rock.png';
+  static const String dollarSprite =
+    'assets/images/finance_brawl_ui/brawl_dollar.png';
 
   static const String turtleClassic =
       'assets/images/turtles/Wface_no_bg_l7nvmfum.png';
