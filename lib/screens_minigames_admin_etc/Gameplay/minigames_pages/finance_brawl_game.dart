@@ -94,6 +94,9 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   ui.Image? _treeImage;
   ui.Image? _rockImage;
   ui.Image? _dollarImage;
+  ui.Image? _enemyOneImage;
+  ui.Image? _enemyTwoImage;
+  ui.Image? _bossImage;
   
 
 
@@ -130,6 +133,39 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     });
   }
 }
+
+Future<void> _loadEnemyOneSprite() async {
+  final ByteData data = await rootBundle.load(AppAssets.enemyOneSprite);
+  final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+  final ui.FrameInfo fi = await codec.getNextFrame();
+  if (mounted) {
+    setState(() {
+      _enemyOneImage = fi.image;
+    });
+  }
+}
+
+Future<void> _loadEnemyTwoSprite() async {
+  final ByteData data = await rootBundle.load(AppAssets.enemyTwoSprite);
+  final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+  final ui.FrameInfo fi = await codec.getNextFrame();
+  if (mounted) {
+    setState(() {
+      _enemyTwoImage = fi.image;
+    });
+  }
+  }
+
+Future<void> _loadBossSprite() async {
+  final ByteData data = await rootBundle.load(AppAssets.bossSprite);
+  final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+  final ui.FrameInfo fi = await codec.getNextFrame();
+  if (mounted) {
+    setState(() {
+      _bossImage = fi.image;
+    });
+  }
+  }
 
   // Finance Overhaul: Balance instead of health
   int _bankBalance = 10000;
@@ -1417,6 +1453,9 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     _loadTreeSprite();
     _loadRockSprite();
     _loadDollarSprite();
+    _loadEnemyOneSprite();
+    _loadEnemyTwoSprite();
+    _loadBossSprite();
 
     for (int i = 0; i < 20; i++) {
       Offset pos = Offset(
@@ -1766,57 +1805,63 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   }
 
   void _spawnLiability() {
-    if (!mounted) return;
+  if (!mounted) return;
 
-    double angle = _rand.nextDouble() * pi * 2;
-    double spawnDist = 520.0;
-    double x = (_playerPos.dx + cos(angle) * spawnDist).clamp(
-      20.0,
-      _mapWidth - 20.0,
-    );
-    double y = (_playerPos.dy + sin(angle) * spawnDist).clamp(
-      20.0,
-      _mapHeight - 20.0,
-    );
+  double angle = _rand.nextDouble() * pi * 2;
+  double spawnDist = 520.0;
+  double x = (_playerPos.dx + cos(angle) * spawnDist).clamp(
+    20.0,
+    _mapWidth - 20.0,
+  );
+  double y = (_playerPos.dy + sin(angle) * spawnDist).clamp(
+    20.0,
+    _mapHeight - 20.0,
+  );
 
-    // Incremental Health and Damage scaling per wave
-    double scaleFactor = pow(1.12, _wave - 1).toDouble();
+  // Incremental Health and Damage scaling per wave
+  double scaleFactor = pow(1.12, _wave - 1).toDouble();
 
-    List<String> debtNames = [
-      "Credit Card Debt",
-      "Payday Loan",
-      "Medical Bill",
-      "Auto Loan",
-    ];
-    String name = debtNames[_rand.nextInt(debtNames.length)];
+  List<String> debtNames = [
+    "Credit Card Debt",
+    "Payday Loan",
+    "Medical Bill",
+    "Auto Loan",
+  ];
+  String name = debtNames[_rand.nextInt(debtNames.length)];
 
-    Color color = const Color(0xFFE25C5C);
-    double hp = (40.0 + (_wave * 10)) * scaleFactor;
-    double speed = 85.0 + _rand.nextInt(30);
-    double radius = 15.0;
-    int gold = 5;
+  Color color = const Color(0xFFE25C5C);
+  double hp = (40.0 + (_wave * 10)) * scaleFactor;
+  double speed = 85.0 + _rand.nextInt(30);
+  double radius = 30.0;
+  int gold = 5;
+  
+ 
+  bool isEnemyTwo = false; 
 
-    if (_wave >= 3 && _rand.nextDouble() > 0.6) {
-      name = "Subprime Mortgage";
-      color = const Color(0xFFA65CE2);
-      hp *= 1.8;
-      radius = 19.0;
-      gold = 12;
-    }
+ 
+  if (_wave >= 3 && _rand.nextDouble() > 0.6) {
+    name = "Subprime Mortgage";
+    color = const Color(0xFFA65CE2); // Purple tint matching your new palette!
+    hp *= 1.8;
+    radius = 30.0;
+    gold = 12;
+    isEnemyTwo = true;
+  }
 
-    _liabilities.add(
-      _FinancialLiability(
-        name: name,
-        pos: Offset(x, y),
-        principalRemaining: hp,
-        maxPrincipal: hp,
-        speed: speed,
-        radius: radius,
-        color: color,
-        drainRate: (450.0 + (_wave * 50.0)) * scaleFactor,
-        rewardGold: gold,
-      ),
-    );
+  _liabilities.add(
+    _FinancialLiability(
+      name: name,
+      pos: Offset(x, y),
+      principalRemaining: hp,
+      maxPrincipal: hp,
+      speed: speed,
+      radius: radius,
+      color: color,
+      drainRate: (450.0 + (_wave * 50.0)) * scaleFactor,
+      rewardGold: gold,
+      isEnemyTwo: isEnemyTwo,
+    ),
+  );
   }
 
   void _spawnMarketCrashBoss() {
@@ -1849,7 +1894,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
         principalRemaining: hp,
         maxPrincipal: hp,
         speed: 120.0 + ((_wave ~/ 5) * 20.0),
-        radius: 60.0,
+        radius: 100.0,
         color: const Color(0xFFFF2F55),
         drainRate: (750.0 + (_wave * 80.0)) * bossMultiplier,
         rewardGold: 150,
@@ -2157,6 +2202,9 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                       treeImage: _treeImage,
                       rockImage: _rockImage,
                       dollarImage: _dollarImage,
+                      enemyOneImage: _enemyOneImage,
+                      enemyTwoImage: _enemyTwoImage,
+                      bossImage: _bossImage,
                     ),
                   ),
                 ),
@@ -2884,6 +2932,7 @@ class _FinancialLiability {
     required this.drainRate,
     required this.rewardGold,
     this.isBoss = false,
+    this.isEnemyTwo = true,
   });
 
   String name;
@@ -2896,6 +2945,7 @@ class _FinancialLiability {
   double drainRate;
   int rewardGold;
   bool isBoss;
+  bool isEnemyTwo;
 }
 
 class _CoinProjectile {
@@ -2955,7 +3005,10 @@ class _BrawlPainter extends CustomPainter {
     required this.camOffset,
     this.treeImage,
     this.rockImage,
-    this.dollarImage
+    this.dollarImage,
+    this.enemyOneImage,
+    this.enemyTwoImage,
+    this.bossImage,
   });
 
   final Offset playerPos;
@@ -2981,6 +3034,10 @@ class _BrawlPainter extends CustomPainter {
   final ui.Image? treeImage;
   final ui.Image? rockImage;
   final ui.Image? dollarImage;
+  final ui.Image? enemyOneImage;
+  final ui.Image? enemyTwoImage;
+  final ui.Image? bossImage;
+  
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -3139,74 +3196,61 @@ canvas.drawRect(
     }
 
     // Track occupied bounding boxes to prevent overlapping label text
-    final List<Rect> drawnLabelBounds = [];
+    //final List<Rect> drawnLabelBounds = [];
 
     // Sort so boss labels are evaluated first and given render priority
     final sortedLiabilities = List<_FinancialLiability>.from(liabilities)
       ..sort((a, b) => (b.isBoss ? 1 : 0).compareTo(a.isBoss ? 1 : 0));
 
     for (final mob in sortedLiabilities) {
-      // 1. Draw enemy circle
-      canvas.drawCircle(mob.pos, mob.radius, Paint()..color = mob.color);
+  // 1. Select the correct sprite based on enemy hierarchy
+  ui.Image? spriteToDraw;
+  
+  if (mob.isBoss) {
+    spriteToDraw = bossImage;
+  } else if (mob.isEnemyTwo) {
+    spriteToDraw = enemyTwoImage;
+  } else {
+    spriteToDraw = enemyOneImage;
+  }
 
-      // Remaining Principal Bar
-      double hpPercent = (mob.principalRemaining / mob.maxPrincipal).clamp(
-        0.0,
-        1.0,
-      );
-      final barW = mob.radius * 2.2;
-      final barH = mob.isBoss ? 7.0 : 4.0;
-      final barLeft = mob.pos.dx - (barW / 2);
-      final barTop = mob.pos.dy - mob.radius - (mob.isBoss ? 16 : 10);
+  // 2. Render Sprite or Fallback Circle
+  if (spriteToDraw != null) {
+    final Rect enemyRect = Rect.fromCircle(
+      center: mob.pos,
+      radius: mob.radius,
+    );
+    paintImage(
+      canvas: canvas,
+      rect: enemyRect,
+      image: spriteToDraw,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.none, // Keeps pixel art sharp!
+    );
+  } else {
+    canvas.drawCircle(mob.pos, mob.radius, Paint()..color = mob.color);
+  }
 
-      canvas.drawRect(
-        Rect.fromLTWH(barLeft, barTop, barW, barH),
-        Paint()..color = Colors.black45,
-      );
-      canvas.drawRect(
-        Rect.fromLTWH(barLeft, barTop, barW * hpPercent, barH),
-        Paint()
-          ..color = mob.isBoss
-              ? const Color(0xFFFF2F55)
-              : const Color(0xFFE25C5C),
-      );
+  // 3. Health Bar Rendering
+  double hpPercent = (mob.principalRemaining / mob.maxPrincipal).clamp(0.0, 1.0);
+  final barW = mob.radius * 2.2;
+  final barH = mob.isBoss ? 8.0 : 4.0;
+  final barLeft = mob.pos.dx - (barW / 2);
+  final barTop = mob.pos.dy - mob.radius - (mob.isBoss ? 18 : 10);
 
-      // 3. Layout text and check for label overlap
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: mob.name,
-          style: TextStyle(
-            color: Colors.white70,
-            fontSize: mob.isBoss ? 12 : 9,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
+  canvas.drawRect(
+    Rect.fromLTWH(barLeft, barTop, barW, barH),
+    Paint()..color = Colors.black45,
+  );
 
-      final Offset labelPos =
-          mob.pos -
-          Offset(textPainter.width / 2, mob.radius + (mob.isBoss ? 32 : 22));
-
-      // Expand bounding box slightly for padding around text
-      final Rect currentLabelRect = Rect.fromLTWH(
-        labelPos.dx - 2,
-        labelPos.dy - 2,
-        textPainter.width + 4,
-        textPainter.height + 4,
-      );
-
-      // Check if this label collides with any already drawn label
-      bool overlaps = drawnLabelBounds.any(
-        (rect) => rect.overlaps(currentLabelRect),
-      );
-
-      if (!overlaps) {
-        textPainter.paint(canvas, labelPos);
-        drawnLabelBounds.add(currentLabelRect);
-      }
-    }
-
+  canvas.drawRect(
+    Rect.fromLTWH(barLeft, barTop, barW * hpPercent, barH),
+    Paint()
+      ..color = mob.isBoss
+          ? const Color(0xFFFF2F55)
+          : const Color(0xFFE25C5C),
+  );
+  }
     // Render Projectiles (Player Coins vs Boss Threat Spheres)
     final playerCoinPaint = Paint()..color = const Color(0xFFFFD700);
     final playerCoinBorder = Paint()
@@ -3214,7 +3258,7 @@ canvas.drawRect(
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 
-    final bossCoinPaint = Paint()..color = const Color(0xFFFF2F55);
+    final bossCoinPaint = Paint()..color = const Color(0xFFFF0033);
     final bossCoinBorder = Paint()
       ..color = const Color(0xFF8B0000)
       ..style = PaintingStyle.stroke
