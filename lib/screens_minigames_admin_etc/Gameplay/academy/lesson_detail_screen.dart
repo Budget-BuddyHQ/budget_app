@@ -730,6 +730,17 @@ String _sinkingFundExample(int income, LifeStage stage) {
       'landing on one month all at once.';
 }
 
+String _savingsGoalExample(int income, LifeStage stage) {
+  // 20% of monthly income, spread across ~4 weeks — the "savings" slice of
+  // the 50/30/20 split from lesson_1, turned into a weekly number.
+  final weeklySaving = ((income * 0.2) / 4).round();
+  final target = (income * 0.75).round();
+  final weeks = weeklySaving > 0 ? (target / weeklySaving).ceil() : 0;
+  return 'Saving $weeklySaving a week toward a $target dollar goal takes about '
+      '$weeks weeks. Written down like that, "I want this" becomes "I need '
+      '$weeklySaving, $weeks more times."';
+}
+
 String _compoundingExample(int income, LifeStage stage) {
   final monthly = (income * 0.1).round();
   final yearOne = monthly * 12;
@@ -859,6 +870,40 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         title: 'Start smaller than feels impressive',
         content:
             'Consistency beats intensity. A small automatic transfer repeated every week usually wins over occasional big efforts.',
+      ),
+    ],
+  ),
+  'lesson_savings_goal': _LessonContent(
+    icon: Icons.flag_rounded,
+    workedExample: WorkedExample(_savingsGoalExample),
+    objectives: [
+      'Turn a savings goal into a specific number and deadline',
+      'Divide a goal into a weekly savings target',
+      'Adjust a goal that feels too slow instead of giving up on it',
+    ],
+    keyTerms: {
+      'Savings goal':
+          'a specific amount you are saving toward, with a target and a rough deadline',
+      'Time-to-goal':
+          'how many weeks or months it takes to reach a goal at a given savings rate',
+    },
+    takeaway:
+        'A goal without a number and a timeline is just a wish — divide the price by what you can save each week and it becomes a plan.',
+    sections: [
+      _LessonSection(
+        title: 'Name the number',
+        content:
+            '"I want to save up for something" is not a plan yet. Write down the exact price and roughly when you want it by — that is what turns a wish into a goal.',
+      ),
+      _LessonSection(
+        title: 'Divide it into weeks',
+        content:
+            'Take the price and divide it by how much you can realistically save each week. That gives you a real timeline instead of a guess — and a weekly number small enough to actually hit.',
+      ),
+      _LessonSection(
+        title: 'If it feels too slow',
+        content:
+            'A timeline that feels discouraging has two honest fixes: save a bit more each week, or lower the target. Both beat quietly giving up on the goal.',
       ),
     ],
   ),
