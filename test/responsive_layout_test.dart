@@ -8,6 +8,7 @@ import 'package:budget_app/models_Like_Skins_and_lessons_templates/progression_s
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/academy/lesson_detail_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/academy/lesson_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/academy/practice_screen.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/adventure/adventure_world_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/feedback_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/personal_details_sheet.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/core_bottom_pages/main_game_page.dart';
@@ -38,6 +39,35 @@ const Map<String, Size> _viewports = <String, Size>{
   'tablet landscape': Size(1024, 768),
 };
 
+/// A handful of fake quotes, including some of the Market Board's
+/// logo-carrying symbols, so the ticker tape and trending-now strip
+/// actually render during the layout sweep below instead of staying empty
+/// (no test environment ever completes a real live-price fetch).
+List<LiveQuote> _fakeQuotes() {
+  final now = DateTime.now();
+  const symbols = <(String, String, double, double)>[
+    ('AAPL', 'Apple Inc.', 1900.0, 1.8),
+    ('TSLA', 'Tesla, Inc.', 2200.0, -2.4),
+    ('MSFT', 'Microsoft Corp.', 3600.0, 0.6),
+    ('SBUX', 'Starbucks Corp.', 850.0, -0.3),
+  ];
+  return [
+    for (final (symbol, company, price, pct) in symbols)
+      LiveQuote(
+        symbol: symbol,
+        company: company,
+        current: price,
+        change: price * pct / 100,
+        percentChange: pct,
+        high: price * 1.02,
+        low: price * 0.98,
+        open: price * 0.995,
+        previousClose: price / (1 + pct / 100),
+        fetchedAt: now,
+      ),
+  ];
+}
+
 Widget _wrap(Widget child) {
   return MultiProvider(
     providers: [
@@ -51,7 +81,7 @@ Widget _wrap(Widget child) {
         create: (_) => AppSettingsController(),
       ),
       ChangeNotifierProvider<MarketDataService>(
-        create: (_) => MarketDataService(),
+        create: (_) => MarketDataService()..seedQuotesForTest(_fakeQuotes()),
       ),
       ChangeNotifierProxyProvider<UserStatsController, DailyPlanController>(
         create: (context) =>
@@ -108,6 +138,9 @@ void main() {
     'Finance Brawl': () => const FinanceBrawlScreen(),
     'Market Board': () => const StockMarketPage(),
     'Feedback': () => const FeedbackScreen(),
+    // No map file exists yet, so this exercises the "waiting for the map"
+    // fallback screen, not the Bonfire game canvas itself.
+    'Adventure (map pending)': () => const AdventureWorldScreen(),
   };
 
   for (final screenEntry in screens.entries) {

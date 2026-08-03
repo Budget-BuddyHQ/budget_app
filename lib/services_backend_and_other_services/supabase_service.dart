@@ -348,6 +348,14 @@ class UserStats {
           .toList(growable: false),
       'portfolio_history': portfolioHistory,
       'holdings': holdings,
+      // Mirror columns for the `age`/`gender` columns added directly in
+      // Supabase. The app's own logic keeps reading the bucketed AgeBand /
+      // GenderIdentity out of spending_habits above (deliberately coarse —
+      // no exact birthdate is ever collected, especially for minors); these
+      // two are written only so the raw table is readable/queryable without
+      // having to unpack the JSON blob by hand.
+      'age': ageBand.representativeAge,
+      'gender': gender.label,
       'updated_at': updatedAt.toUtc().toIso8601String(),
     };
   }

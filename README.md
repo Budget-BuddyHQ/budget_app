@@ -7,13 +7,18 @@ The app has three pillars:
 | Pillar | What it is | Where |
 | --- | --- | --- |
 | **Life** (main game) | A BitLife-style life simulator. You are born, age up one year at a time, and your choices move Happiness, Health, Smarts, Looks and money. | `lib/screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart` |
-| **Market Board** | A Webull-style stock trading board using **real live market data**, priced in in-game coins. | `lib/screens_minigames_admin_etc/Gameplay/minigames_pages/stock_market_page.dart` |
-| **Academy** | Khan-Academy-style units of lessons, quizzes and unit tests. | `lib/screens_minigames_admin_etc/Gameplay/academy/` |
+| **Market Board** | A Webull-style stock trading board using **real live market data**, priced in in-game coins. Opens on a "Trending Now" strip of real company logos (Wikimedia Commons — `assets/images/stock_logos/`, ~88KB total across 6 tickers) over the always-on ticker tape. | `lib/screens_minigames_admin_etc/Gameplay/minigames_pages/stock_market_page.dart` |
+| **Academy** | Khan-Academy-style units of lessons, quizzes and unit tests. Units badge "Recommended for you" against the player's self-described age band — a signal only, never a lock; every unit still unlocks purely by finishing the previous one's test. | `lib/screens_minigames_admin_etc/Gameplay/academy/` |
 
 Supporting features: auth (login / sign-up / welcome), profile, skins &
 customization, daily quests, leaderboard, arcade mini-games, in-app feedback
 (`lib/screens_minigames_admin_etc/profile/feedback_screen.dart`, toggleable via
-`kFeedbackEnabled` in `lib/config/dev_preview_flags.dart`), and an admin page.
+`kFeedbackEnabled` in `lib/config/dev_preview_flags.dart`), an admin page, and
+an in-progress **Adventure** RPG overworld built on the `bonfire` engine
+(`lib/screens_minigames_admin_etc/Gameplay/adventure/adventure_world_screen.dart`).
+It's fully wired (player, joystick, camera) but has no map yet — see
+`assets/images/maps/README.md` for exactly where to drop one; until then it
+shows a "map on the way" placeholder instead of a blank/broken screen.
 
 ---
 
@@ -29,6 +34,7 @@ customization, daily quests, leaderboard, arcade mini-games, in-app feedback
 | Shared user state | `lib/controllers_that_updates_stats/user_stats_controller.dart` |
 | Life game rules | `lib/controllers_that_updates_stats/life_sim_controller.dart` |
 | Config / API keys | `tool/README.md` |
+| How auth → username → gameplay data → "analytics" fit together | `docs/ARCHITECTURE.md` |
 
 Run it:
 
@@ -201,6 +207,40 @@ pushed 53px past the right edge.
 `responsive_layout_test.dart` before shipping — the same pattern that's
 caught every overflow bug in this table since it was added.
 
+**Arcade game card taglines got silently clipped mid-line**
+The grid tile's `mainAxisExtent: 168` was the *exact* sum of every fixed row
+plus a full 2-line tagline, with zero slack. Any tagline that actually
+wrapped to 2 lines (Market Board's did; Finance Brawl's happened to fit on
+one) had its second line clipped by the `Expanded`'s tight height. This one
+slipped past `responsive_layout_test.dart` because it isn't a `RenderFlex`
+overflow — the flex box itself was never too small, `Text` just painted past
+a box that was too short for its own content, which Flutter doesn't warn
+about the way it does for `Row`/`Column` overflow.
+*Fix:* `mainAxisExtent` bumped to 192 for real margin.
+*Files:* `minigames_page.dart`
+
+**Small repeating background icons read as clutter, not decoration**
+Home, Arcade and Style each draw a small repeating icon tile
+(`home_tile_bg`/`arcade_tile_bg`/`meadow_tile_bg`) as ambient texture behind
+their cards, dimmed at only ~0.48–0.55 alpha. In the narrow gaps between
+cards there was nothing else covering it, so a crisp, chopped-off sliver of
+icons showed through every gap — it read as visual debris, not intentional
+texture.
+*Fix:* dim bumped to 0.82 alpha on all three screens, so the pattern fades to
+a soft wash instead of legible confetti. Academy uses the same tile assets
+too, but at `BoxFit.cover` as one large image rather than a tight repeat, so
+it never had this problem — that one got a *lighter* vignette instead, to
+make the art pop more rather than wash it out further.
+*Files:* `home_screen.dart`, `minigames_page.dart`, `customize_screen.dart`
+
+**Adventure world's "map on the way" screen overflowed 56px on short viewports**
+Its content sat in a `Column` inside `Center` with no scroll fallback — fine
+until the viewport got short enough (568x320 landscape) that the icon, title,
+body copy and button no longer fit.
+*Fix:* `SingleChildScrollView`. Caught immediately by
+`responsive_layout_test.dart` since the new screen was added to its coverage
+the same session it was written.
+
 **Skins too large in the Case Opened dialog**
 The reveal reel and sprite pushed the action button off-screen.
 *Fix:* reel items 92→70px, reel height 188→140, revealed sprite 132→100.
@@ -211,6 +251,13 @@ Three screens each had their own avatar implementation, each subtly different.
 `BoxFit.cover`, sprite fallback inset and centred so it is never clipped.
 
 ### Logic
+
+**Arcade header claimed "Five ways to practise money" with two games active**
+The subtitle was a hardcoded string written when the catalog had 5 entries;
+`activeArcadeGameIds` was later trimmed to 2 (`finance_brawl`, `market_board`)
+without touching the copy.
+*Fix:* `'${arcadeCatalog.length} ways...'`, driven by the actual catalog.
+*Files:* `minigames_page.dart`
 
 **Limit orders were rejected instead of resting**
 A buy limit *below* the ask was blocked with "this order would not fill" — which
@@ -278,6 +325,18 @@ tests asserting the defaults failed.
 *Fix:* tests now pass starting values explicitly and assert *behaviour* rather
 than defaults.
 
+**Market Board's ticker tape and trending strip were never actually tested**
+`MarketDataService.quotes` only populates from a real live-price fetch, which
+never completes in a widget test — so `responsive_layout_test.dart`'s "Market
+Board" case was silently exercising an empty board the whole time. The
+`if (quotes.isNotEmpty)` branch holding the ticker tape (and, this session,
+the new trending-stocks strip) had zero layout coverage despite the test
+"passing".
+*Fix:* added `MarketDataService.seedQuotesForTest()` (`@visibleForTesting`)
+and seeded a handful of fake quotes in the test wrapper, so that branch
+actually renders during the sweep now.
+*Files:* `market_data_service.dart`, `test/responsive_layout_test.dart`
+
 **Sprite tooling only runs on Windows PowerShell 5.1**
 The `tool/*.ps1` sprite scripts use `System.Drawing`, which PowerShell 7 (`pwsh`)
 does not ship.
@@ -292,6 +351,7 @@ does not ship.
 flutter analyze && flutter test
 ```
 
-137 tests covering responsive layout at seven viewports (now including the
-Feedback screen), chart painters against pathological input, working-order
-accounting, the Life simulation rules, the quiz bank, and asset integrity.
+144 tests covering responsive layout at seven viewports (now including
+Feedback and the Adventure map-pending screen), chart painters against
+pathological input, working-order accounting, the Life simulation rules, the
+quiz bank, and asset integrity.

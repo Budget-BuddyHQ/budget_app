@@ -55,6 +55,21 @@ extension AgeStageInfo on AgeStage {
   };
 }
 
+/// The stage a given age falls into, by [AgeStageInfo.minAge]. [AgeStage]'s
+/// declaration order is already ascending by minAge, so this is a simple
+/// "last stage whose floor we've reached" scan rather than a sorted lookup.
+AgeStage stageForAge(int age) {
+  var result = AgeStage.values.first;
+  for (final stage in AgeStage.values) {
+    if (age >= stage.minAge) {
+      result = stage;
+    } else {
+      break;
+    }
+  }
+  return result;
+}
+
 class LessonUnit {
   const LessonUnit({
     required this.id,

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
@@ -9,6 +10,7 @@ import '../../../services_backend_and_other_services/market_data_service.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart'
     show LedgerTransaction, UserStats;
 import '../../../widgets_custom_lotties/game_toast.dart';
+import '../../../widgets_custom_lotties/hover_lift.dart';
 import '../../../widgets_custom_lotties/mini_sparkline.dart';
 import '../../../widgets_custom_lotties/price_chart.dart';
 import 'order_ticket_page.dart';
@@ -145,6 +147,24 @@ _kSymbolStyle = {
     thesis: 'Processors and graphics chips competing with Nvidia and Intel.',
   ),
 };
+
+/// Tickers with a real downloaded company logo (Wikimedia Commons — freely
+/// licensed, used here only to identify the real public company each ticker
+/// trades as) under `assets/images/stock_logos/`. Everything else falls back
+/// to the Material-icon treatment above; this set is intentionally small and
+/// curated rather than covering every symbol in [_kSymbolStyle].
+const Set<String> _kLogoSymbols = {
+  'AAPL',
+  'TSLA',
+  'MSFT',
+  'NVDA',
+  'AMZN',
+  'GOOGL',
+};
+
+String? _logoAssetFor(String symbol) => _kLogoSymbols.contains(symbol)
+    ? 'assets/images/stock_logos/$symbol.png'
+    : null;
 
 /// Bid-ask spread: what a buyer pays and a seller receives always differ a
 /// little, and it widens on more volatile days — without this, buying and
@@ -696,6 +716,172 @@ final Set<String> _kCommonSymbols = kLiveSymbols
     .map((s) => s.symbol)
     .toSet();
 
+/// A horizontally-scrolling strip of real-logo cards for a handful of
+/// well-known tickers, so the board opens with something that reads as a
+/// real trading floor rather than a plain list. Prices/changes come from
+/// the same live [quotes] the rest of the board uses — this is a different
+/// presentation of real data, not separate promotional content.
+class _TrendingPromoStrip extends StatelessWidget {
+  const _TrendingPromoStrip({required this.quotes, required this.onTap});
+
+  final List<_TradeQuote> quotes;
+  final ValueChanged<_TradeQuote> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final featured = quotes
+        .where((quote) => _kLogoSymbols.contains(quote.symbol))
+        .toList(growable: false);
+    if (featured.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.local_fire_department_rounded,
+              color: Color(0xFFFF8A5B),
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'TRENDING NOW',
+              style: GoogleFonts.baloo2(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 12,
+                letterSpacing: 1.1,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 138,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: featured.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final quote = featured[index];
+              return _TrendingPromoCard(
+                quote: quote,
+                onTap: () => onTap(quote),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TrendingPromoCard extends StatelessWidget {
+  const _TrendingPromoCard({required this.quote, required this.onTap});
+
+  final _TradeQuote quote;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final up = quote.changePercent >= 0;
+    final changeColor = up ? const Color(0xFF4BD2A3) : const Color(0xFFFF6B6B);
+    final logo = _logoAssetFor(quote.symbol);
+
+    return HoverLift(
+      accent: quote.accent,
+      borderRadius: 22,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: onTap,
+        child: Container(
+          width: 122,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF173B2E),
+                Color.lerp(const Color(0xFF10281F), quote.accent, 0.14)!,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: quote.accent.withValues(alpha: 0.30)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // A white badge behind every logo — several of these marks
+              // (Apple's, Amazon's) are solid black/dark and would nearly
+              // vanish straight on this dark card, the same reason real
+              // trading apps put a white circle behind ticker logos
+              // regardless of their own app theme.
+              Container(
+                width: 38,
+                height: 38,
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: logo == null
+                    ? Icon(quote.icon, color: quote.accent, size: 20)
+                    : Image.asset(logo, fit: BoxFit.contain),
+              ),
+              const Spacer(),
+              Text(
+                quote.symbol,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${quote.currentPrice}g',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.72),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    up
+                        ? Icons.arrow_drop_up_rounded
+                        : Icons.arrow_drop_down_rounded,
+                    color: changeColor,
+                    size: 16,
+                  ),
+                  Flexible(
+                    child: Text(
+                      '${quote.changePercent.abs().toStringAsFixed(1)}%',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: changeColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TradeTab extends StatefulWidget {
   const _TradeTab({
     required this.status,
@@ -789,6 +975,8 @@ class _TradeTabState extends State<_TradeTab> {
       children: [
         if (widget.quotes.isNotEmpty) ...[
           _TickerTape(quotes: widget.quotes),
+          const SizedBox(height: 18),
+          _TrendingPromoStrip(quotes: widget.quotes, onTap: widget.onBuy),
           const SizedBox(height: 18),
         ],
         _SectionTitle(
