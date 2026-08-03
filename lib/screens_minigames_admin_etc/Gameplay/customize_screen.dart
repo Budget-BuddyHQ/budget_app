@@ -14,6 +14,7 @@ import '../../widgets_custom_lotties/ambient_lottie_card.dart';
 import '../../widgets_custom_lotties/avatar_sprite.dart';
 import '../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
+import '../../widgets_custom_lotties/hover_lift.dart';
 
 class CustomizeScreen extends StatefulWidget {
   const CustomizeScreen({
@@ -781,107 +782,114 @@ class _SkinTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap == null
-          ? null
-          : () {
-              HapticFeedback.lightImpact();
-              onTap!();
-            },
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: equipped
-                ? skin.accent.withValues(alpha: 0.52)
-                : Colors.white.withValues(alpha: 0.08),
+    return HoverLift(
+      accent: skin.accent,
+      lift: 3,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap == null
+            ? null
+            : () {
+                HapticFeedback.lightImpact();
+                onTap!();
+              },
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: equipped
+                  ? skin.accent.withValues(alpha: 0.52)
+                  : Colors.white.withValues(alpha: 0.08),
+            ),
+            boxShadow: equipped
+                ? [
+                    BoxShadow(
+                      color: skin.accent.withValues(alpha: 0.14),
+                      blurRadius: 18,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : null,
           ),
-          boxShadow: equipped
-              ? [
-                  BoxShadow(
-                    color: skin.accent.withValues(alpha: 0.14),
-                    blurRadius: 18,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Center(
-                    child: ColorFiltered(
-                      // Locked skins render as a flat silhouette so the shape
-                      // is still recognisable but clearly not owned yet.
-                      colorFilter: unlocked
-                          ? const ColorFilter.mode(
-                              Colors.transparent,
-                              BlendMode.srcOver,
-                            )
-                          : ColorFilter.mode(
-                              const Color(0xFF071711).withValues(alpha: 0.82),
-                              BlendMode.srcATop,
-                            ),
-                      // The grid tile's size varies with screen width, so
-                      // there's no fixed value to hand AvatarSprite — scale
-                      // its natural sheet-cell size down to fit instead of
-                      // letting it render oversized and get clipped.
-                      child: FittedBox(
-                        fit: BoxFit.contain,
-                        child: AvatarSprite(skin: skin),
-                      ),
-                    ),
-                  ),
-                  if (!unlocked)
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
                     Center(
-                      child: Icon(
-                        Icons.lock_rounded,
-                        size: 20,
-                        color: Colors.white.withValues(alpha: 0.72),
+                      child: ColorFiltered(
+                        // Locked skins render as a flat silhouette so the shape
+                        // is still recognisable but clearly not owned yet.
+                        colorFilter: unlocked
+                            ? const ColorFilter.mode(
+                                Colors.transparent,
+                                BlendMode.srcOver,
+                              )
+                            : ColorFilter.mode(
+                                const Color(0xFF071711).withValues(alpha: 0.82),
+                                BlendMode.srcATop,
+                              ),
+                        // The grid tile's size varies with screen width, so
+                        // there's no fixed value to hand AvatarSprite — scale
+                        // its natural sheet-cell size down to fit instead of
+                        // letting it render oversized and get clipped.
+                        child: FittedBox(
+                          fit: BoxFit.contain,
+                          child: AvatarSprite(skin: skin),
+                        ),
                       ),
                     ),
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: _RarityDot(rarity: skin.rarity, accent: skin.accent),
-                  ),
-                ],
+                    if (!unlocked)
+                      Center(
+                        child: Icon(
+                          Icons.lock_rounded,
+                          size: 20,
+                          color: Colors.white.withValues(alpha: 0.72),
+                        ),
+                      ),
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: _RarityDot(
+                        rarity: skin.rarity,
+                        accent: skin.accent,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              skin.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: unlocked ? Colors.white : Colors.white70,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
+              const SizedBox(height: 6),
+              Text(
+                skin.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: unlocked ? Colors.white : Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              unlocked
-                  ? equipped
-                        ? 'Equipped'
-                        : 'Tap to equip'
-                  : skin.rarityLabel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: unlocked ? skin.accent : Colors.white54,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+              const SizedBox(height: 4),
+              Text(
+                unlocked
+                    ? equipped
+                          ? 'Equipped'
+                          : 'Tap to equip'
+                    : skin.rarityLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: unlocked ? skin.accent : Colors.white54,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1300,7 +1308,8 @@ class _RollTrack extends StatelessWidget {
     // villager cell (104x152) overflows this 70px-wide slot and bleeds into
     // neighbouring reel items.
     final contentWidth = itemWidth - 20;
-    const villagerAspect = AppAssets.villagerCellHeight / AppAssets.villagerCellWidth;
+    const villagerAspect =
+        AppAssets.villagerCellHeight / AppAssets.villagerCellWidth;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -1413,9 +1422,11 @@ class _CustomizeBackdrop extends StatelessWidget {
             filterQuality: FilterQuality.none,
           ),
         ),
+        // Matches the dim used on Home/Arcade — the tile art reads as a
+        // soft wash instead of a legible, cluttered repeating pattern.
         Positioned.fill(
           child: Container(
-            color: const Color(0xFF071711).withValues(alpha: 0.55),
+            color: const Color(0xFF071711).withValues(alpha: 0.82),
           ),
         ),
         Positioned(

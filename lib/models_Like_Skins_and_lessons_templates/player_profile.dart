@@ -5,6 +5,8 @@
 /// dedicated Supabase columns, so adding them needs no schema migration.
 library;
 
+import 'lesson.dart' show AgeStage, stageForAge;
+
 /// Age bracket rather than an exact birthday: it is enough to tailor lesson
 /// examples and it keeps the app from storing a date of birth for minors.
 enum AgeBand {
@@ -43,6 +45,24 @@ enum AgeBand {
 
   /// Under-13 accounts get the conservative default: no leaderboard presence.
   bool get isMinorUnder13 => this == AgeBand.under13;
+
+  /// A single representative number for this bucket, used only where a plain
+  /// integer is needed (e.g. mirroring into a numeric database column) — the
+  /// app's own logic should keep using the bucket, not this.
+  int get representativeAge => switch (this) {
+    AgeBand.under13 => 12,
+    AgeBand.teen13to15 => 14,
+    AgeBand.teen16to17 => 16,
+    AgeBand.adult18plus => 19,
+    AgeBand.undisclosed => 13,
+  };
+
+  /// Which Academy [AgeStage] to lead with for this band — null when the
+  /// player didn't say, since there's nothing to recommend from. This never
+  /// hides any other unit; see [AgeStageInfo] — it only affects default
+  /// ordering and a "Recommended for you" badge.
+  AgeStage? get recommendedStage =>
+      this == AgeBand.undisclosed ? null : stageForAge(representativeAge);
 }
 
 /// Framing used for lesson examples and money amounts.
