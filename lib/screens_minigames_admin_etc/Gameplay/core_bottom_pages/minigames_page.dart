@@ -10,6 +10,7 @@ import '../../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
+import '../../../widgets_custom_lotties/hover_lift.dart';
 import '../minigames_pages/finance_brawl_game.dart';
 import '../minigames_pages/react_challenge_screen.dart';
 import '../minigames_pages/stock_market_page.dart';
@@ -187,7 +188,16 @@ class MinigamesPage extends StatelessWidget {
                                   crossAxisCount: columns,
                                   crossAxisSpacing: 12,
                                   mainAxisSpacing: 12,
-                                  mainAxisExtent: 168,
+                                  // Was 168 — that's the exact sum of every
+                                  // fixed row plus a full 2-line tagline with
+                                  // zero slack, so any tagline that actually
+                                  // wrapped to 2 lines (e.g. Market Board's)
+                                  // got its second line silently clipped by
+                                  // the Expanded's tight height. This isn't
+                                  // the "RenderFlex overflowed" error the
+                                  // layout tests catch — Text just paints
+                                  // past a box that's too short for it.
+                                  mainAxisExtent: 192,
                                 ),
                             itemBuilder: (context, index) {
                               final game = arcadeCatalog[index];
@@ -257,7 +267,7 @@ class _ArcadeHeader extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 totalPlays == 0
-                    ? 'Five ways to practise money without spending any.'
+                    ? '${arcadeCatalog.length} ways to practise money without spending any.'
                     : '$totalPlays runs • $played of ${arcadeCatalog.length} games tried',
                 style: GoogleFonts.quicksand(
                   color: Colors.white.withValues(alpha: 0.72),
@@ -326,76 +336,80 @@ class _FeaturedCard extends StatelessWidget {
     return Semantics(
       button: true,
       label: 'Play ${game.title}',
-      child: InkWell(
-        borderRadius: BorderRadius.circular(28),
-        onTap: onPlay,
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: _cardDecoration(game.accent, radius: 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _GameArt(game: game, size: 62),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          plays == 0 ? 'TRY NEXT' : 'PICK UP AGAIN',
-                          style: GoogleFonts.baloo2(
-                            color: game.accent,
-                            fontSize: 11,
-                            letterSpacing: 1.2,
-                            fontWeight: FontWeight.w900,
+      child: HoverLift(
+        accent: game.accent,
+        borderRadius: 28,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(28),
+          onTap: onPlay,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: _cardDecoration(game.accent, radius: 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _GameArt(game: game, size: 62),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            plays == 0 ? 'TRY NEXT' : 'PICK UP AGAIN',
+                            style: GoogleFonts.baloo2(
+                              color: game.accent,
+                              fontSize: 11,
+                              letterSpacing: 1.2,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
-                        ),
-                        Text(
-                          game.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.baloo2(
-                            color: Colors.white,
-                            fontSize: 26,
-                            height: 1.1,
-                            fontWeight: FontWeight.w900,
+                          Text(
+                            game.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.baloo2(
+                              color: Colors.white,
+                              fontSize: 26,
+                              height: 1.1,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                game.tagline,
-                style: GoogleFonts.quicksand(
-                  color: Colors.white.withValues(alpha: 0.82),
-                  fontWeight: FontWeight.w600,
-                  height: 1.4,
+                  ],
                 ),
-              ),
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _MetaChip(
-                    label: game.difficulty.label,
-                    color: game.difficulty.color,
+                const SizedBox(height: 12),
+                Text(
+                  game.tagline,
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white.withValues(alpha: 0.82),
+                    fontWeight: FontWeight.w600,
+                    height: 1.4,
                   ),
-                  _MetaChip(label: game.length.label, color: Colors.white70),
-                  _MetaChip(label: game.teaches, color: game.accent),
-                  if (best != null)
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
                     _MetaChip(
-                      label: '${game.scoreLabel}: $best',
-                      color: const Color(0xFFFFD45C),
+                      label: game.difficulty.label,
+                      color: game.difficulty.color,
                     ),
-                ],
-              ),
-            ],
+                    _MetaChip(label: game.length.label, color: Colors.white70),
+                    _MetaChip(label: game.teaches, color: game.accent),
+                    if (best != null)
+                      _MetaChip(
+                        label: '${game.scoreLabel}: $best',
+                        color: const Color(0xFFFFD45C),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -421,82 +435,85 @@ class _GameCard extends StatelessWidget {
     return Semantics(
       button: true,
       label: 'Play ${game.title}',
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: onPlay,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: _cardDecoration(game.accent, radius: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _GameArt(game: game, size: 44),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      game.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.baloo2(
-                        color: Colors.white,
-                        fontSize: 18,
-                        height: 1.05,
-                        fontWeight: FontWeight.w900,
+      child: HoverLift(
+        accent: game.accent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: onPlay,
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: _cardDecoration(game.accent, radius: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _GameArt(game: game, size: 44),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        game.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.baloo2(
+                          color: Colors.white,
+                          fontSize: 18,
+                          height: 1.05,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: Text(
+                    game.tagline,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white.withValues(alpha: 0.70),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      height: 1.35,
+                    ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Expanded(
-                child: Text(
-                  game.tagline,
-                  maxLines: 2,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _MetaChip(
+                      label: game.difficulty.label,
+                      color: game.difficulty.color,
+                      dense: true,
+                    ),
+                    const SizedBox(width: 6),
+                    _MetaChip(
+                      label: game.length.label,
+                      color: Colors.white60,
+                      dense: true,
+                    ),
+                    const Spacer(),
+                    Icon(Icons.play_arrow_rounded, color: game.accent),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  best == null
+                      ? 'Not played yet'
+                      : '${game.scoreLabel}: $best  •  $plays ${plays == 1 ? 'run' : 'runs'}',
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.quicksand(
-                    color: Colors.white.withValues(alpha: 0.70),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    height: 1.35,
+                  style: TextStyle(
+                    color: best == null
+                        ? Colors.white.withValues(alpha: 0.42)
+                        : const Color(0xFFFFD45C),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  _MetaChip(
-                    label: game.difficulty.label,
-                    color: game.difficulty.color,
-                    dense: true,
-                  ),
-                  const SizedBox(width: 6),
-                  _MetaChip(
-                    label: game.length.label,
-                    color: Colors.white60,
-                    dense: true,
-                  ),
-                  const Spacer(),
-                  Icon(Icons.play_arrow_rounded, color: game.accent),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                best == null
-                    ? 'Not played yet'
-                    : '${game.scoreLabel}: $best  •  $plays ${plays == 1 ? 'run' : 'runs'}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: best == null
-                      ? Colors.white.withValues(alpha: 0.42)
-                      : const Color(0xFFFFD45C),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -605,7 +622,10 @@ class _MinigameBackdrop extends StatelessWidget {
           repeat: ImageRepeat.repeat,
           filterQuality: FilterQuality.none,
         ),
-        Container(color: const Color(0xFF071711).withValues(alpha: 0.50)),
+        // Same fix as the home dashboard backdrop: a light dim let the
+        // small repeating tile icons read crisply behind the header text
+        // and card gaps, which looked like clutter rather than texture.
+        Container(color: const Color(0xFF071711).withValues(alpha: 0.82)),
       ],
     );
   }
