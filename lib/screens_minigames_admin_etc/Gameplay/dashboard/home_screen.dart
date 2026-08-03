@@ -6,6 +6,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
+import '../adventure/adventure_world_screen.dart';
+import '../../../config/dev_preview_flags.dart';
+import '../../../controllers_that_updates_stats/app_settings_controller.dart';
 import '../../../controllers_that_updates_stats/daily_plan_controller.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
@@ -14,6 +17,7 @@ import '../../../constants/app_assets.dart';
 import 'daily_plan_card.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
+import '../../../widgets_custom_lotties/feedback_prompt_sheet.dart';
 import '../../../widgets_custom_lotties/idle_hover_icon.dart';
 import '../../../widgets_custom_lotties/profile_avatar.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
@@ -58,6 +62,13 @@ class HomeScreen extends StatelessWidget {
       icon: Icons.workspace_premium_rounded,
       accent: const Color(0xFFFFD45C),
     );
+  }
+
+  Future<void> _openAdventureWorld(BuildContext context) async {
+    HapticFeedback.mediumImpact();
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const AdventureWorldScreen()));
   }
 
   Future<void> _openLeaderboard(BuildContext context) async {
@@ -170,7 +181,7 @@ class HomeScreen extends StatelessWidget {
                               profileImageUrl: stats.profileImageUrl,
                               compact: compactHeight,
                               onOpenAdventure: () =>
-                                  onNavSelected?.call(AppTabIndex.adventure),
+                                  _openAdventureWorld(context),
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -203,12 +214,49 @@ class HomeScreen extends StatelessWidget {
                   },
                 ),
               ),
+              if (kFeedbackEnabled && stats.hasCompletedPersonalDetails)
+                const _FeedbackPromptTrigger(),
             ],
           ),
         );
       },
     );
   }
+}
+
+/// Invisible — checks once per Home mount (tabs are kept alive in an
+/// `IndexedStack`, so this only runs once per app session) whether the
+/// occasional feedback prompt is due, and shows it if so. Split out from
+/// [HomeScreen] itself just so that screen can stay a plain
+/// [StatelessWidget]; this is the only part of Home that needs `initState`.
+class _FeedbackPromptTrigger extends StatefulWidget {
+  const _FeedbackPromptTrigger();
+
+  @override
+  State<_FeedbackPromptTrigger> createState() =>
+      _FeedbackPromptTriggerState();
+}
+
+class _FeedbackPromptTriggerState extends State<_FeedbackPromptTrigger> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybePrompt());
+  }
+
+  Future<void> _maybePrompt() async {
+    if (!mounted) return;
+    final settings = context.read<AppSettingsController>();
+    if (!settings.isFeedbackPromptDue) {
+      return;
+    }
+    await settings.recordFeedbackPromptShown();
+    if (!mounted) return;
+    await FeedbackPromptSheet.show(context);
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 /// Home-screen promo for the main game (Life), so it's front-and-centre rather
@@ -232,7 +280,9 @@ class _PlayLifePromo extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: [Color(0xFF1C5038), Color(0xFF0C2A1E)],
           ),
-          border: Border.all(color: const Color(0xFF85EFAC).withValues(alpha: 0.4)),
+          border: Border.all(
+            color: const Color(0xFF85EFAC).withValues(alpha: 0.4),
+          ),
         ),
         child: Row(
           children: [
@@ -275,7 +325,9 @@ class _PlayLifePromo extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFD45C).withValues(alpha: 0.18),
+                          color: const Color(
+                            0xFFFFD45C,
+                          ).withValues(alpha: 0.18),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: const Text(
@@ -912,8 +964,8 @@ class _ActionButtonState extends State<_ActionButton>
             // Elastic overshoot on the way back gives the "snap" feel; the
             // press-down half stays a plain curve so it doesn't overshoot
             // while the finger is still down.
-            final pressCurve = _pressController.status ==
-                    AnimationStatus.reverse
+            final pressCurve =
+                _pressController.status == AnimationStatus.reverse
                 ? Curves.elasticOut.transform(1 - _pressController.value)
                 : Curves.easeOut.transform(_pressController.value);
             final tilt = pressCurve * 0.22;
