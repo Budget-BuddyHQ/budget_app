@@ -38,6 +38,12 @@ class AppAssets {
     'assets/images/finance_brawl_ui/brawl_rock.png';
   static const String dollarSprite =
     'assets/images/finance_brawl_ui/brawl_dollar.png';
+  static const String enemyOneSprite =
+    'assets/images/finance_brawl_ui/brawl_enemy_one.png';
+  static const String enemyTwoSprite =
+    'assets/images/finance_brawl_ui/brawl_enemy_two.png';
+  static const String bossSprite =
+    'assets/images/finance_brawl_ui/brawl_boss.png';
 
   static const String turtleClassic =
       'assets/images/turtles/Wface_no_bg_l7nvmfum.png';
