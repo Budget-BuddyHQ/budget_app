@@ -92,6 +92,9 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   final double _playerRadius = 24.0;
 
   ui.Image? _treeImage;
+  ui.Image? _rockImage;
+  ui.Image? _dollarImage;
+  
 
 
   // 3. Add the loading helper method:
@@ -106,6 +109,28 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     }
   }
 
+  Future<void> _loadRockSprite() async {
+    final ByteData data = await rootBundle.load(AppAssets.rockSprite);
+    final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    final ui.FrameInfo fi = await codec.getNextFrame();
+    if (mounted) {
+      setState(() {
+        _rockImage = fi.image;
+      });
+    }
+  }
+
+  Future<void> _loadDollarSprite() async {
+  final ByteData data = await rootBundle.load(AppAssets.dollarSprite);
+  final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+  final ui.FrameInfo fi = await codec.getNextFrame();
+  if (mounted) {
+    setState(() {
+      _dollarImage = fi.image;
+    });
+  }
+}
+
   // Finance Overhaul: Balance instead of health
   int _bankBalance = 10000;
   final int _maxBankBalance = 10000;
@@ -114,9 +139,9 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   final double _mapHeight = 2400.0;
 
   final List<Offset> _treePositions = [];
-  final double _treeRadius = 20.0;
+  final double _treeRadius = 35.0;
   final List<Offset> _rockPositions = [];
-  final double _rockRadius = 14.0;
+  final double _rockRadius = 20.0;
 
   final Set<LogicalKeyboardKey> _pressedKeys = {};
 
@@ -1389,7 +1414,9 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
  @override
   void initState() {
     super.initState();
-    _loadTreeSprite(); // <-- Added to load your Piskel sprite!
+    _loadTreeSprite();
+    _loadRockSprite();
+    _loadDollarSprite();
 
     for (int i = 0; i < 20; i++) {
       Offset pos = Offset(
@@ -2128,21 +2155,38 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                       mapHeight: _mapHeight,
                       camOffset: Offset(camX, camY),
                       treeImage: _treeImage,
+                      rockImage: _rockImage,
+                      dollarImage: _dollarImage,
                     ),
                   ),
                 ),
 
                 Positioned(
                   top: MediaQuery.of(context).padding.top + 12,
-                  left: 16,
+                  left: 0,
+                  right: 0,
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 650), // Adjust width as desired
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: _buildHud(context),
+                      ),
+                    ),
+                  ),
+                ),
+
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 12,
                   right: 16,
-                  child: _buildHud(context),
+                  child: _buildRightControls(context),
                 ),
 
                 if (_isQuizOpen) _buildQuizOverlay(),
                 if (_isUpgradeChoiceOpen) _buildUpgradeOverlay(),
                 if (_isGameOver || _isSavingAndExiting) _buildGameOverOverlay(),
-              ],
+                ],
             );
           },
         ),
@@ -2151,89 +2195,76 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   }
 
   Widget _buildHud(BuildContext context) {
-    final isCrisis = _wave % 5 == 0;
-    final balanceAccent = _bankBalance < 2500 ? _brawlDanger : _brawlMint;
+  final isCrisis = _wave % 5 == 0;
+  final balanceAccent = _bankBalance < 2500 ? _brawlDanger : _brawlMint;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 640;
-        final wavePanel = _HudStatPanel(
-          icon: Icons.waves_rounded,
-          label: isCrisis ? 'CRISIS' : 'WAVE',
-          value: isCrisis ? 'WAVE $_wave' : 'WAVE $_wave',
-          detail: isCrisis
-              ? 'Neutralize Market Crisis'
-              : 'Debts Paid $_debtsCleared/$_debtsNeededForLevelUp',
-          accent: isCrisis ? _brawlDanger : _brawlMint,
-          alignStart: true,
-        );
-        final balancePanel = _HudStatPanel(
-          icon: Icons.account_balance_wallet_rounded,
-          label: 'NET WORTH',
-          value: '\$$_bankBalance',
-          detail: "Don't Let it Hit Zero!",
-          accent: balanceAccent,
-        );
-        final rewardPanel = _PixelPanel(
-          accent: _brawlGold,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.toll_rounded, color: _brawlGold, size: 20),
-              const SizedBox(width: 7),
-              Text(
-                '$_goldAccumulated',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.pixelifySans(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
+  final wavePanel = _HudStatPanel(
+    icon: Icons.waves_rounded,
+    label: isCrisis ? 'CRISIS' : 'WAVE',
+    value: 'WAVE $_wave',
+    detail: isCrisis
+        ? 'Neutralize Market Crisis'
+        : 'Debts Paid $_debtsCleared/$_debtsNeededForLevelUp',
+    accent: isCrisis ? _brawlDanger : _brawlMint,
+    alignStart: false,
+  );
+
+  final balancePanel = _HudStatPanel(
+    icon: Icons.account_balance_wallet_rounded,
+    label: 'NET WORTH',
+    value: '\$$_bankBalance',
+    detail: "Don't Let it Hit Zero!",
+    accent: balanceAccent,
+    alignStart: false,
+  );
+
+  return Row(
+    children: [
+      Expanded(child: wavePanel),
+      const SizedBox(width: 10),
+      Expanded(child: balancePanel),
+    ],
+  );
+}
+
+Widget _buildRightControls(BuildContext context) {
+  final rewardPanel = _PixelPanel(
+    accent: _brawlGold,
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.toll_rounded, color: _brawlGold, size: 20),
+        const SizedBox(width: 7),
+        Text(
+          '$_goldAccumulated',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.pixelifySans(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
           ),
-        );
-        final exitButton = _PixelIconButton(
-          icon: Icons.logout_rounded,
-          accent: _brawlRed,
-          tooltip: 'Pause and quit',
-          onPressed: () => _showPauseDialog(context),
-        );
+        ),
+      ],
+    ),
+  );
 
-        if (compact) {
-          return Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              SizedBox(width: (constraints.maxWidth - 8) / 2, child: wavePanel),
-              SizedBox(
-                width: (constraints.maxWidth - 8) / 2,
-                child: balancePanel,
-              ),
-              rewardPanel,
-              exitButton,
-            ],
-          );
-        }
+  final exitButton = _PixelIconButton(
+    icon: Icons.logout_rounded,
+    accent: _brawlRed,
+    tooltip: 'Pause and quit',
+    onPressed: () => _showPauseDialog(context),
+  );
 
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: wavePanel),
-            const SizedBox(width: 10),
-            Expanded(child: balancePanel),
-            const Spacer(),
-            rewardPanel,
-            const SizedBox(width: 10),
-            exitButton,
-          ],
-        );
-      },
-    );
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      rewardPanel,
+      const SizedBox(width: 10),
+      exitButton,
+    ],
+  );
   }
 
   void _showPauseDialog(BuildContext context) {
@@ -2923,6 +2954,8 @@ class _BrawlPainter extends CustomPainter {
     required this.mapHeight,
     required this.camOffset,
     this.treeImage,
+    this.rockImage,
+    this.dollarImage
   });
 
   final Offset playerPos;
@@ -2946,6 +2979,8 @@ class _BrawlPainter extends CustomPainter {
   final double mapHeight;
   final Offset camOffset;
   final ui.Image? treeImage;
+  final ui.Image? rockImage;
+  final ui.Image? dollarImage;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -3052,17 +3087,33 @@ canvas.drawRect(
   innerLinePaint,
 );
 
-    final rockPaint = Paint()..color = const Color(0xFF5A635E);
     for (final rock in rockPositions) {
-      canvas.drawCircle(rock, rockRadius, rockPaint);
+      if (rockImage != null) {
+        final Rect rockRect = Rect.fromCenter(
+          center: rock,
+          width: rockRadius * 2.4,  // Adjust size multiplier as needed
+          height: rockRadius * 2.4,
+        );
+        paintImage(
+          canvas: canvas,
+          rect: rockRect,
+          image: rockImage!,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.none, // Keeps pixel art crisp!
+        );
+      } else {
+        // Fallback circle while loading
+        final rockPaint = Paint()..color = const Color(0xFF5A635E);
+        canvas.drawCircle(rock, rockRadius, rockPaint);
+      }
     }
 
     for (final tree in treePositions) {
       if (treeImage != null) {
         final Rect treeRect = Rect.fromCenter(
           center: tree,
-          width: treeRadius * 2.4,  // Adjust size to match your sprite proportions
-          height: treeRadius * 2.8,
+          width: treeRadius * 5,
+          height: treeRadius * 5.9,
         );
         paintImage(
           canvas: canvas,
@@ -3216,27 +3267,44 @@ canvas.drawRect(
     }
 
     if (emergencyFundLevel > 0) {
-      double shieldRadius = 55.0 + (emergencyFundLevel * 10.0);
-      int shieldCount = min(4, 1 + emergencyFundLevel);
-      final shieldPaint = Paint()..color = const Color(0xFF85EFAC);
+  const double billWidth = 84.0;  
+  const double billHeight = 52.0; 
 
-      for (int s = 0; s < shieldCount; s++) {
-        double angleOffset = shieldAngle + (s * (2 * pi / shieldCount));
-        Offset shieldPos =
-            playerPos +
-            Offset(cos(angleOffset), sin(angleOffset)) * shieldRadius;
+  final double shieldRadius = 55.0 + (emergencyFundLevel * 10.0);
+  final int shieldCount = min(4, 1 + emergencyFundLevel);
 
-        canvas.drawCircle(shieldPos, 10.0, shieldPaint);
-        canvas.drawCircle(
-          shieldPos,
-          10.0,
-          Paint()
-            ..color = Colors.black45
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 2,
-        );
-      }
+  for (int s = 0; s < shieldCount; s++) {
+    final double angleOffset = shieldAngle + (s * (2 * pi / shieldCount));
+    final Offset shieldPos = playerPos +
+        Offset(cos(angleOffset), sin(angleOffset)) * shieldRadius;
+
+    canvas.save();
+    
+    canvas.translate(shieldPos.dx, shieldPos.dy);
+    canvas.rotate(angleOffset + (pi / 2)); 
+
+    final Rect billRect = Rect.fromCenter(
+      center: Offset.zero,
+      width: billWidth,
+      height: billHeight,
+    );
+
+    if (dollarImage != null) {
+      paintImage(
+        canvas: canvas,
+        rect: billRect,
+        image: dollarImage!,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.none,
+      );
+    } else {
+      final fallbackPaint = Paint()..color = const Color(0xFF00FF88);
+      canvas.drawRect(billRect, fallbackPaint);
     }
+
+    canvas.restore();
+  }
+}
 
     // Player
     canvas.drawCircle(
