@@ -48,6 +48,15 @@ flutter:
     - assets/images/ui/
     - assets/images/tiles/
     - assets/images/finance_brawl_ui/
+    # Adventure map: Bonfire's TiledAssetReader is hardcoded to read Tiled
+    # maps from under assets/images/, so the exported map JSON + its
+    # tileset image(s) both live here. See assets/images/maps/README.md.
+    - assets/images/maps/
+    # Real company logos for the Market Board's "Trending Now" promo strip —
+    # sourced from Wikimedia Commons (freely licensed, used here purely to
+    # identify the real public company each ticker trades as). See
+    # stock_market_page.dart's _kLogoSymbols for which tickers have one.
+    - assets/images/stock_logos/
     # Villager sprite sheets (one per body+variant), packed by
     # tool/pack_skin_sheets.ps1 from gitignored intermediate frames.
     - assets/self_made_skins/
