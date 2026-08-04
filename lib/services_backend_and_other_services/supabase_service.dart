@@ -201,6 +201,21 @@ class UserStats {
     return <String>[budgetBuddySkins.first.id];
   }
 
+  /// Ids of [LifeEndingArchetype]s the player has actually reached in Life.
+  /// Endings used to be computed, shown once on the epilogue, then forgotten —
+  /// persisting them turns them into a collection worth chasing.
+  List<String> get discoveredEndings {
+    final raw = spendingHabits['discovered_endings'];
+    if (raw is! List) {
+      return const <String>[];
+    }
+    return raw
+        .map((entry) => entry.toString().trim())
+        .where((entry) => entry.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+  }
+
   List<String> get completedLessons {
     final raw = spendingHabits['completed_lessons'];
     if (raw is! List) {
@@ -567,6 +582,11 @@ end
   bool get isSupabaseConnected => _isSupabaseConnected;
   User? get currentUser => _existingClient?.auth.currentUser;
   String? get currentUserId => currentUser?.id;
+
+  /// The raw client, for the rare screen (e.g. Admin) that needs to run its
+  /// own queries directly. Null — never throws — when Supabase was never
+  /// initialized (no keys configured), same as every other accessor here.
+  SupabaseClient? get client => _existingClient;
 
   Stream<AuthState> authStateChanges() async* {
     final client = _existingClient;

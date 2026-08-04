@@ -488,10 +488,15 @@ class _GameCard extends StatelessWidget {
                       dense: true,
                     ),
                     const SizedBox(width: 6),
-                    _MetaChip(
-                      label: game.length.label,
-                      color: Colors.white60,
-                      dense: true,
+                    // Flexible so a long label (e.g. ArcadeLength.none's
+                    // "As much time as you need") shrinks and ellipsizes
+                    // instead of pushing the row past its width.
+                    Flexible(
+                      child: _MetaChip(
+                        label: game.length.label,
+                        color: Colors.white60,
+                        dense: true,
+                      ),
                     ),
                     const Spacer(),
                     Icon(Icons.play_arrow_rounded, color: game.accent),
@@ -577,6 +582,8 @@ class _MetaChip extends StatelessWidget {
       ),
       child: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: color,
           fontSize: dense ? 10 : 11.5,

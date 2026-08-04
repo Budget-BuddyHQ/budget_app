@@ -12,12 +12,19 @@ class AdminScreen extends StatefulWidget {
 }
 
 class _AdminScreenState extends State<AdminScreen> {
-  final supabase = Supabase.instance.client;
+  // Null when Supabase was never initialized (no keys configured) — the
+  // rest of this screen checks for that via _canAccessAdminPanel() rather
+  // than crashing on a bare Supabase.instance access.
+  final SupabaseClient? supabase = SupabaseService.instance.client;
 
   bool showDeleted = false;
 
   Future<List<Map<String, dynamic>>> _fetchUsers() async {
-    final profilesQuery = supabase
+    final client = supabase;
+    if (client == null) {
+      return const <Map<String, dynamic>>[];
+    }
+    final profilesQuery = client
         .from('profiles')
         .select('id, email, role, disabled');
 
@@ -34,7 +41,7 @@ class _AdminScreenState extends State<AdminScreen> {
     final statsByLegacyId = <String, Map<String, dynamic>>{};
     final statsByEmail = <String, Map<String, dynamic>>{};
     try {
-      final statsData = await supabase
+      final statsData = await client
           .from(SupabaseService.userStatsTable)
           .select('id, username, gold, xp, spending_habits');
       for (final stats in List<Map<String, dynamic>>.from(statsData)) {
@@ -97,19 +104,21 @@ class _AdminScreenState extends State<AdminScreen> {
         ? 'user'
         : 'admin';
 
-    await supabase.from('profiles').update({'role': newRole}).eq('id', userId);
+    // Only ever called from a button that's already past the
+    // _canAccessAdminPanel gate, which requires supabase to be non-null.
+    await supabase!.from('profiles').update({'role': newRole}).eq('id', userId);
 
     _refresh();
   }
 
   Future<void> _deleteUser(String userId) async {
-    await supabase.from('profiles').update({'disabled': true}).eq('id', userId);
+    await supabase!.from('profiles').update({'disabled': true}).eq('id', userId);
 
     _refresh();
   }
 
   Future<void> _restoreUser(String userId) async {
-    await supabase
+    await supabase!
         .from('profiles')
         .update({'disabled': false})
         .eq('id', userId);
@@ -142,7 +151,11 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Future<bool> _canAccessAdminPanel() async {
-    final user = supabase.auth.currentUser;
+    final client = supabase;
+    if (client == null) {
+      return false;
+    }
+    final user = client.auth.currentUser;
     if (SupabaseService.hasAdminMetadata(user) ||
         SupabaseService.isKnownAdminEmail(user?.email)) {
       return true;
@@ -153,7 +166,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = supabase.auth.currentUser;
+    final currentUser = supabase?.auth.currentUser;
 
     return FutureBuilder<bool>(
       future: _canAccessAdminPanel(),

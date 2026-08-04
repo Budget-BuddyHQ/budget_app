@@ -162,6 +162,7 @@ class _LessonScreenState extends State<LessonScreen> {
           onLessonTap: _openLesson,
           onPractice: () => _openPractice(units[index]),
           statusFor: _progressionService.getLessonStatus,
+          accuracyFor: _progressionService.accuracyFor,
           isRecommended: units[index].ageStage == recommendedStage,
         ),
         if (index != units.length - 1) const SizedBox(height: 16),
@@ -226,9 +227,12 @@ class _LessonScreenState extends State<LessonScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      const Color(0xFF0D2B20).withValues(alpha: 0.62),
-                      const Color(0xFF0D2B20).withValues(alpha: 0.30),
-                      const Color(0xFF0D2B20).withValues(alpha: 0.58),
+                      // Heavier than before: the tile art was reading through
+                      // the cards and making the whole tab feel like one busy
+                      // green wash. It still shows as texture, just quietly.
+                      const Color(0xFF07211A).withValues(alpha: 0.86),
+                      const Color(0xFF07211A).withValues(alpha: 0.72),
+                      const Color(0xFF07211A).withValues(alpha: 0.88),
                     ],
                     stops: const [0.0, 0.42, 1.0],
                   ),
@@ -473,6 +477,9 @@ class _UnitJumpChip extends StatelessWidget {
       MasteryLevel.proficient => const Color(0xFFFFD45C),
       MasteryLevel.mastered => const Color(0xFF85EFAC),
     };
+    // The selected chip fills with its unit's own colour, so the tab strip
+    // reads as five distinct places rather than five identical green pills.
+    final accent = unitAccentFor(index);
 
     return Semantics(
       button: true,
@@ -486,12 +493,14 @@ class _UnitJumpChip extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 60, minWidth: 146),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFF85EFAC) : const Color(0xFF14382C),
+            color: selected
+                ? accent
+                : Color.lerp(const Color(0xFF13332A), accent, 0.12)!,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected
-                  ? const Color(0xFFB8FFD6)
-                  : masteryColor.withValues(alpha: 0.42),
+                  ? Colors.white.withValues(alpha: 0.85)
+                  : accent.withValues(alpha: 0.45),
               width: selected ? 2 : 1,
             ),
           ),
@@ -500,7 +509,7 @@ class _UnitJumpChip extends StatelessWidget {
             children: [
               Icon(
                 Icons.menu_book_rounded,
-                color: selected ? const Color(0xFF062C21) : masteryColor,
+                color: selected ? const Color(0xFF062C21) : accent,
                 size: 22,
               ),
               const SizedBox(width: 10),
@@ -531,6 +540,26 @@ class _UnitJumpChip extends StatelessWidget {
                             : Colors.white,
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  // Mastery used to be carried by this chip's icon/border
+                  // colour, which the per-unit accent now owns — so it moves
+                  // to its own progress bar rather than being dropped.
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    width: 118,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        minHeight: 4,
+                        value: progress,
+                        backgroundColor: selected
+                            ? const Color(0x33062C21)
+                            : Colors.white.withValues(alpha: 0.14),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          selected ? const Color(0xFF062C21) : masteryColor,
+                        ),
                       ),
                     ),
                   ),
@@ -1011,6 +1040,7 @@ class _UnitCard extends StatelessWidget {
     required this.onLessonTap,
     required this.onPractice,
     required this.statusFor,
+    required this.accuracyFor,
     this.compact = false,
     this.isRecommended = false,
   });
@@ -1027,25 +1057,42 @@ class _UnitCard extends StatelessWidget {
   final ValueChanged<Lesson> onLessonTap;
   final VoidCallback onPractice;
   final LessonStatus Function(String lessonId) statusFor;
+
+  /// Best accuracy on one specific quiz/unit-test node, null if not
+  /// attempted yet — shown as a score on that node's row.
+  final double? Function(String lessonId) accuracyFor;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    // Each unit carries its own hue so the Academy isn't one flat green.
+    final accent = unitAccentFor(unitIndex);
     return Container(
       padding: EdgeInsets.all(compact ? 18 : 24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF15392D), Color(0xFF10281F)],
+          colors: [
+            // Tint the panel toward this unit's accent, but keep it dark and
+            // fully opaque so it reads as a solid card over the tile art
+            // rather than letting the busy background show through.
+            Color.lerp(const Color(0xFF14332A), accent, 0.13)!,
+            const Color(0xFF0C1F19),
+          ],
         ),
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Color(0x554BD2A3)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x33000000),
+        border: Border.all(color: accent.withValues(alpha: 0.42), width: 1.4),
+        boxShadow: [
+          const BoxShadow(
+            color: Color(0x44000000),
             blurRadius: 28,
             offset: Offset(0, 16),
+          ),
+          BoxShadow(
+            color: accent.withValues(alpha: 0.13),
+            blurRadius: 26,
+            spreadRadius: -6,
           ),
         ],
       ),
@@ -1137,15 +1184,14 @@ class _UnitCard extends StatelessWidget {
               minHeight: 9,
               value: progress,
               backgroundColor: Colors.white24,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFF2F9E68),
-              ),
+              valueColor: AlwaysStoppedAnimation<Color>(accent),
             ),
           ),
           const SizedBox(height: 16),
           UnitRowItem(
             lessons: unit.lessons,
             statusFor: statusFor,
+            accuracyFor: accuracyFor,
             onLessonTap: onLessonTap,
             unitIndex: unitIndex,
           ),

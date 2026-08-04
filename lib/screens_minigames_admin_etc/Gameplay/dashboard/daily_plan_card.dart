@@ -296,7 +296,12 @@ class _StatusDot extends StatelessWidget {
       child: Opacity(
         opacity: done ? 0.5 : 1,
         child: spriteMotif == null
-            ? IdleHoverIcon(child: Icon(icon, color: accent, size: 20))
+            ? IdleHoverIcon(
+                // A wobble on top of the bob so the quest icons read as
+                // genuinely playful rather than just gently floating.
+                rotationAmplitude: 0.14,
+                child: Icon(icon, color: accent, size: 20),
+              )
             : IdleHoverIcon(
                 // AmbientLottieCard already bobs on its own, so this only
                 // adds the hover scale-up rather than a second, competing bob.

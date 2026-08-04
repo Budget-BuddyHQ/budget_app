@@ -1452,56 +1452,155 @@ class _AllocationBar extends StatelessWidget {
               fontSize: 16,
             ),
           ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: SizedBox(
-              height: 14,
-              child: Row(
-                children: [
-                  for (final s in segments)
-                    Expanded(
-                      flex: math.max(1, ((s.value / total) * 1000).round()),
-                      child: ColoredBox(color: s.color),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 14,
-            runSpacing: 8,
+          const SizedBox(height: 14),
+          // A donut instead of the old 14px stacked bar — at a realistic
+          // split (99% cash, 1% each in two stocks) that bar was a solid
+          // block with two invisible slivers, so the section read as pure
+          // text. The ring gives the tab an actual graphic centrepiece and
+          // the slivers still register as ticks on the edge.
+          Row(
             children: [
-              for (final s in segments)
-                Row(
+              SizedBox(
+                width: 108,
+                height: 108,
+                child: CustomPaint(
+                  painter: _AllocationDonutPainter(
+                    segments: segments
+                        .map((s) => (value: s.value.toDouble(), color: s.color))
+                        .toList(growable: false),
+                    total: total.toDouble(),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${segments.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            height: 1,
+                          ),
+                        ),
+                        Text(
+                          segments.length == 1 ? 'slice' : 'slices',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.55),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: s.color,
-                        shape: BoxShape.circle,
+                    for (final s in segments)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: s.color,
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                s.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '${((s.value / total) * 100).toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                color: s.color,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${s.label} ${((s.value / total) * 100).toStringAsFixed(0)}%',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
                   ],
                 ),
+              ),
             ],
           ),
         ],
       ),
     );
   }
+}
+
+/// Draws the allocation ring. Hand-rolled for the same reason the price
+/// charts are (see the README's fl_chart entry): no interval solver, no
+/// upstream NaN/Infinity crash class — values map straight onto sweep angles.
+class _AllocationDonutPainter extends CustomPainter {
+  const _AllocationDonutPainter({required this.segments, required this.total});
+
+  final List<({double value, Color color})> segments;
+  final double total;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (total <= 0 || size.shortestSide <= 0) {
+      return;
+    }
+    final stroke = size.shortestSide * 0.17;
+    final rect = Rect.fromCircle(
+      center: Offset(size.width / 2, size.height / 2),
+      radius: (size.shortestSide - stroke) / 2,
+    );
+
+    final track = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..color = Colors.white.withValues(alpha: 0.06);
+    canvas.drawCircle(rect.center, rect.width / 2, track);
+
+    // Start at 12 o'clock and sweep clockwise.
+    var start = -math.pi / 2;
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.butt;
+
+    for (final segment in segments) {
+      final fraction = segment.value / total;
+      if (fraction <= 0) {
+        continue;
+      }
+      // Floor every slice at ~1.2 degrees so a 1% holding is still visible
+      // as a tick rather than vanishing into the ring entirely.
+      final sweep = math.max(fraction * 2 * math.pi, 0.02);
+      paint.color = segment.color;
+      canvas.drawArc(rect, start, sweep, false, paint);
+      start += sweep;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_AllocationDonutPainter oldDelegate) =>
+      oldDelegate.total != total ||
+      oldDelegate.segments.length != segments.length;
 }
 
 class _TickerTape extends StatefulWidget {

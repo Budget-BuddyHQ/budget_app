@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../constants/app_assets.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
@@ -68,7 +67,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     HapticFeedback.lightImpact();
 
     final stats = context.read<UserStatsController>().stats;
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = SupabaseService.instance.currentUser;
     final category = _categories[_selectedCategory].label;
 
     final sentToServer = await SupabaseService.instance.submitFeedback(
