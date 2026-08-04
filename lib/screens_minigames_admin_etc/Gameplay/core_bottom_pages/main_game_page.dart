@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
+import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
+import '../../../widgets_custom_lotties/idle_hover_icon.dart';
 
 /// The main-game tab: a launcher for **Life** (the BitLife-style main game),
 /// with quick jumps to Academy and Arcade. The old open-world map lived here
@@ -64,7 +66,12 @@ class MainGamePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 _LifeHeroCard(onPlay: () => _playLife(context)),
-                const SizedBox(height: 14),
+                const SizedBox(height: 18),
+                _EndingsCollection(
+                  discovered: stats.discoveredEndings.toSet(),
+                  onPlay: () => _playLife(context),
+                ),
+                const SizedBox(height: 18),
                 Row(
                   children: [
                     Expanded(
@@ -93,6 +100,190 @@ class MainGamePage extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// The endings collection — every [LifeEndingArchetype] as a slot, filled in
+/// once the player actually reaches it.
+///
+/// This is what turns Life from "a run you finish" into "a set you complete":
+/// endings were already computed and shown on the epilogue, but nothing
+/// remembered them, so there was no reason to replay for a different one.
+class _EndingsCollection extends StatelessWidget {
+  const _EndingsCollection({required this.discovered, required this.onPlay});
+
+  final Set<String> discovered;
+  final VoidCallback onPlay;
+
+  @override
+  Widget build(BuildContext context) {
+    const all = LifeEndingArchetype.values;
+    final found = all.where((e) => discovered.contains(e.name)).length;
+    final complete = found == all.length;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // The spinning/glowing treatment, on the one element that
+              // earns it: the collection's own trophy.
+              IdleHoverIcon(
+                idleAmplitude: 0,
+                continuousSpin: complete,
+                pulseAmplitude: complete ? 0.0 : 0.10,
+                period: const Duration(seconds: 6),
+                child: Icon(
+                  complete
+                      ? Icons.workspace_premium_rounded
+                      : Icons.auto_stories_rounded,
+                  color: const Color(0xFFFFD45C),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Endings',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              Text(
+                '$found / ${all.length}',
+                style: const TextStyle(
+                  color: Color(0xFFFFD45C),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            complete
+                ? 'Every ending found. However you live it, you have seen where it goes.'
+                : 'How your life turns out decides the ending you get. Play differently to find the rest.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.62),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 14),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // Slot grid sized off available width so it reflows from a
+              // narrow phone up to a tablet without a fixed column count.
+              final columns = (constraints.maxWidth / 108).floor().clamp(2, 7);
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: all.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  mainAxisExtent: 92,
+                ),
+                itemBuilder: (context, index) {
+                  final ending = all[index];
+                  return _EndingSlot(
+                    ending: ending,
+                    found: discovered.contains(ending.name),
+                  );
+                },
+              );
+            },
+          ),
+          if (!complete) ...[
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onPlay,
+                icon: const Icon(Icons.play_arrow_rounded, size: 18),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF85EFAC),
+                  side: BorderSide(
+                    color: const Color(0xFF85EFAC).withValues(alpha: 0.45),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                label: const Text(
+                  'Live another life',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _EndingSlot extends StatelessWidget {
+  const _EndingSlot({required this.ending, required this.found});
+
+  final LifeEndingArchetype ending;
+  final bool found;
+
+  @override
+  Widget build(BuildContext context) {
+    // Undiscovered slots deliberately keep their silhouette and colour but
+    // hide the name — enough to hint the set's shape without spoiling it.
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+      decoration: BoxDecoration(
+        color: found
+            ? ending.color.withValues(alpha: 0.13)
+            : Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: found
+              ? ending.color.withValues(alpha: 0.5)
+              : Colors.white.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            found ? ending.icon : Icons.lock_rounded,
+            color: found
+                ? ending.color
+                : Colors.white.withValues(alpha: 0.28),
+            size: 24,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            found ? ending.label : 'Undiscovered',
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: found
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.35),
+              fontSize: 10.5,
+              height: 1.15,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

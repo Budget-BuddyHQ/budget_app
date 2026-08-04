@@ -1,8 +1,29 @@
+import 'package:flutter/material.dart' show Color;
+
 enum LessonStatus { completed, available, locked }
 
 enum LessonNodeType { lesson, quiz, unitTest }
 
 enum MasteryLevel { novice, familiar, proficient, mastered }
+
+/// One accent per unit, in curriculum order.
+///
+/// The Academy used to draw every unit in the same emerald, which made the
+/// whole tab read as one dense wall of green and made units visually
+/// indistinguishable from each other. Giving each its own hue lets the path
+/// show progression at a glance and balances the green with blue/gold/violet.
+const List<Color> kUnitAccents = <Color>[
+  Color(0xFF4BD2A3), // Unit 1 · Budgeting — emerald (the app's home colour)
+  Color(0xFF58C7FF), // Unit 2 · Credit — blue
+  Color(0xFF5EE7D6), // Unit 3 · Saving Systems — cyan
+  Color(0xFFFFD45C), // Unit 4 · Investing Basics — gold
+  Color(0xFFB388FF), // Unit 5 · Real-World Money — violet
+];
+
+/// Accent for a unit by its 0-based position, wrapping if the curriculum
+/// ever grows past the palette.
+Color unitAccentFor(int unitIndex) =>
+    kUnitAccents[unitIndex % kUnitAccents.length];
 
 class Lesson {
   const Lesson({

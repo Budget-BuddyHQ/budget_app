@@ -7,12 +7,16 @@ class UnitRowItem extends StatelessWidget {
     super.key,
     required this.lessons,
     required this.statusFor,
+    required this.accuracyFor,
     required this.onLessonTap,
     this.unitIndex = 0,
   });
 
   final List<Lesson> lessons;
   final LessonStatus Function(String lessonId) statusFor;
+
+  /// Best accuracy on a quiz/unit-test node, null if not attempted.
+  final double? Function(String lessonId) accuracyFor;
   final ValueChanged<Lesson> onLessonTap;
 
   /// Which unit (0-based) this row belongs to — shifts which icon each node
@@ -34,7 +38,9 @@ class UnitRowItem extends StatelessWidget {
               return _UnitLessonBlock(
                 lesson: lessons[index],
                 status: statusFor(lessons[index].id),
+                accuracy: accuracyFor(lessons[index].id),
                 index: index,
+                unitIndex: unitIndex,
                 iconSeed: unitIndex + occurrence,
                 // Stride by 5 so adjacent nodes land on different tiles, and
                 // offset by the unit so unit 2's nodes don't mirror unit 1's.
@@ -114,7 +120,9 @@ class _UnitLessonBlock extends StatelessWidget {
   const _UnitLessonBlock({
     required this.lesson,
     required this.status,
+    required this.accuracy,
     required this.index,
+    required this.unitIndex,
     required this.iconSeed,
     required this.tileSeed,
     required this.onTap,
@@ -122,7 +130,15 @@ class _UnitLessonBlock extends StatelessWidget {
 
   final Lesson lesson;
   final LessonStatus status;
+
+  /// Best accuracy on this node, if it's a quiz/unit-test that's been
+  /// attempted. Null for lesson-type nodes and for anything not yet done.
+  final double? accuracy;
   final int index;
+
+  /// 0-based unit position — picks this row's colour family via
+  /// [unitAccentFor].
+  final int unitIndex;
   final int iconSeed;
   final int tileSeed;
   final VoidCallback onTap;
@@ -149,6 +165,9 @@ class _UnitLessonBlock extends StatelessWidget {
 
     final icon = _iconFor(lesson.type, iconSeed);
     final statusLabel = _statusLabel(status);
+    final isAssessment =
+        lesson.type == LessonNodeType.quiz ||
+        lesson.type == LessonNodeType.unitTest;
     final compact = MediaQuery.sizeOf(context).width < 430;
 
     return Semantics(
@@ -164,10 +183,19 @@ class _UnitLessonBlock extends StatelessWidget {
             vertical: compact ? 12 : 14,
           ),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF173B2E), Color(0xFF10291F)],
+              colors: [
+                // Carries the parent unit's accent so a whole unit reads as
+                // one colour family instead of every row being the same green.
+                Color.lerp(
+                  const Color(0xFF163A2D),
+                  unitAccentFor(unitIndex),
+                  0.10,
+                )!,
+                const Color(0xFF0E241C),
+              ],
             ),
             borderRadius: BorderRadius.circular(22),
             border: Border.all(color: palette.border.withValues(alpha: 0.32)),
@@ -248,23 +276,52 @@ class _UnitLessonBlock extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color: palette.border.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  statusLabel,
-                  style: TextStyle(
-                    color: palette.border,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: palette.border.withValues(alpha: 0.22),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: palette.border.withValues(alpha: 0.55),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(_statusIcon(status), color: palette.border, size: 13),
+                        const SizedBox(width: 4),
+                        Text(
+                          statusLabel,
+                          style: TextStyle(
+                            color: palette.border,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  // The score itself — what the badge above can't show — for
+                  // any quiz/unit-test the player has actually attempted.
+                  if (isAssessment && accuracy != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '${(accuracy! * 100).round()}% score',
+                      style: TextStyle(
+                        color: palette.border.withValues(alpha: 0.85),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
@@ -278,6 +335,14 @@ class _UnitLessonBlock extends StatelessWidget {
       LessonStatus.completed => 'Mastered',
       LessonStatus.available => 'Ready',
       LessonStatus.locked => 'Locked',
+    };
+  }
+
+  IconData _statusIcon(LessonStatus status) {
+    return switch (status) {
+      LessonStatus.completed => Icons.check_circle_rounded,
+      LessonStatus.available => Icons.play_circle_fill_rounded,
+      LessonStatus.locked => Icons.lock_rounded,
     };
   }
 }

@@ -16,6 +16,9 @@ class IdleHoverIcon extends StatefulWidget {
     super.key,
     required this.child,
     this.idleAmplitude = 2.5,
+    this.rotationAmplitude = 0.0,
+    this.pulseAmplitude = 0.0,
+    this.continuousSpin = false,
     this.period = const Duration(seconds: 3),
     this.hoverScale = 1.08,
     this.phaseShift = 0.0,
@@ -26,13 +29,28 @@ class IdleHoverIcon extends StatefulWidget {
   /// How many pixels the child drifts up/down at the peak of the bob.
   final double idleAmplitude;
 
-  /// One full bob cycle. Kept slow so it reads as "gently alive", not busy.
+  /// Peak rotation in radians for a pendulum-style wobble (oscillates
+  /// side to side, does not spin all the way around). ~0.05-0.1 reads as a
+  /// playful wiggle without looking broken.
+  final double rotationAmplitude;
+
+  /// Peak scale swing for a "breathing"/heartbeat pulse, e.g. 0.08 means the
+  /// icon grows to 108% and back. Stacks with [hoverScale] multiplicatively.
+  final double pulseAmplitude;
+
+  /// A full, continuous 360-degree rotation once per [period] instead of a
+  /// wobble — for icons where spinning makes sense (a coin, a loading-style
+  /// mark) rather than ones with an up/down orientation like most icons.
+  final bool continuousSpin;
+
+  /// One full idle cycle. Kept slow so it reads as "gently alive", not busy.
   final Duration period;
 
   /// Scale applied while the pointer is hovering.
   final double hoverScale;
 
-  /// 0..1 offset into the cycle, so a row of icons doesn't bob in lockstep.
+  /// 0..1 offset into the cycle, so a row of icons doesn't animate in
+  /// lockstep.
   final double phaseShift;
 
   @override
@@ -74,10 +92,24 @@ class _IdleHoverIconState extends State<IdleHoverIcon>
           animation: _controller,
           builder: (context, child) {
             final phase = (_controller.value + widget.phaseShift) % 1.0;
-            final bob = reduceMotion
+            final wave = math.sin(phase * 2 * math.pi);
+            final bob = reduceMotion ? 0.0 : wave * widget.idleAmplitude;
+            final wobble = reduceMotion
                 ? 0.0
-                : math.sin(phase * 2 * math.pi) * widget.idleAmplitude;
-            return Transform.translate(offset: Offset(0, bob), child: child);
+                : wave * widget.rotationAmplitude;
+            final spin = reduceMotion || !widget.continuousSpin
+                ? 0.0
+                : phase * 2 * math.pi;
+            final pulse = reduceMotion
+                ? 1.0
+                : 1.0 + wave * widget.pulseAmplitude;
+            return Transform.translate(
+              offset: Offset(0, bob),
+              child: Transform.rotate(
+                angle: wobble + spin,
+                child: Transform.scale(scale: pulse, child: child),
+              ),
+            );
           },
           child: widget.child,
         ),

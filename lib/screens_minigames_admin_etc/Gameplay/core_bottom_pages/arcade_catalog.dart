@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 enum ArcadeLength {
   quick('1–2 min'),
   short('3–5 min'),
-  medium('5–10 min');
+  medium('5–10 min'),
+  none('As much time as you need ☺️');
+
 
   const ArcadeLength(this.label);
 
@@ -80,19 +82,8 @@ const List<ArcadeGame> _allArcadeGames = <ArcadeGame>[
     accent: Color(0xFF58C7FF),
     icon: Icons.show_chart_rounded,
     difficulty: ArcadeDifficulty.hard,
-    length: ArcadeLength.medium,
+    length: ArcadeLength.none,
     scoreLabel: 'Best portfolio',
-  ),
-  ArcadeGame(
-    id: 'subscription_sweep',
-    title: 'Subscription Sweep',
-    tagline: 'Cancel the dead weight, keep what you love.',
-    teaches: 'Recurring costs',
-    accent: Color(0xFFD49B7E),
-    icon: Icons.receipt_long_rounded,
-    difficulty: ArcadeDifficulty.easy,
-    length: ArcadeLength.short,
-    scoreLabel: 'Best balance',
   ),
   ArcadeGame(
     id: 'react_challenge',

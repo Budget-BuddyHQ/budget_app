@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/life_sim_controller.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
+import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import 'life_character_sheet.dart';
+import 'life_epilogue_screen.dart';
 
 /// **Life** — the main game, in the BitLife format: a scrolling life feed up
 /// top, a fixed bottom menu, and a big central Age button that advances time
@@ -77,9 +79,13 @@ class _LifeSimPageState extends State<LifeSimPage> {
     final died = life.dead;
     life.retire();
     final reward = life.goldReward;
+    // Snapshot now — the controller is disposed once this page navigates
+    // away, so the epilogue screen needs its own frozen copy of the numbers.
+    final summary = LifeSummary.fromController(life);
 
+    final controller = context.read<UserStatsController>();
     if (reward > 0) {
-      await context.read<UserStatsController>().applyChallengePayload({
+      await controller.applyChallengePayload({
         'gold_earned': reward,
         'xp_earned': 8 + life.yearsLived,
         'title': 'Life',
@@ -88,6 +94,8 @@ class _LifeSimPageState extends State<LifeSimPage> {
             '${life.netWorth} coins.',
       });
     }
+    // Adds this ending to the collection shown on the Adventure hub.
+    await controller.recordLifeEnding(summary.archetype.name);
     if (!mounted) return;
     GameToast.show(
       context,
@@ -98,7 +106,9 @@ class _LifeSimPageState extends State<LifeSimPage> {
       icon: Icons.savings_rounded,
       accent: const Color(0xFFE1BB72),
     );
-    Navigator.of(context).pop();
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => LifeEpilogueScreen(summary: summary)),
+    );
   }
 
   void _invest(LifeSimController life) {

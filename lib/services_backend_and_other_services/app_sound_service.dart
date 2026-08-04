@@ -43,13 +43,18 @@ class AppSoundService {
   static AppSoundEffect? _lastEffect;
   static SharedPreferences? _preferences;
   static bool _playersReady = false;
-  static bool enabled = true;
+
+  // Off by default — the bundled SFX read as harsh/abrupt rather than
+  // subtle, so nothing plays until a real, quieter sound pass replaces
+  // them. The toggle in Profile still works for anyone who wants them on
+  // in the meantime; this only changes what a fresh install starts with.
+  static bool enabled = false;
 
   static bool get _canUseAssetPlayers => true;
 
   static Future<void> initialize() async {
     _preferences ??= await SharedPreferences.getInstance();
-    enabled = _preferences?.getBool(_soundEnabledKey) ?? true;
+    enabled = _preferences?.getBool(_soundEnabledKey) ?? false;
 
     if (!_canUseAssetPlayers) {
       _playersReady = true;
