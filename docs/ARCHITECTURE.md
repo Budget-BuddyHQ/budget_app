@@ -177,3 +177,96 @@ just reads whatever's cached locally.
   any layout overflow. New screens get added to its `screens` map as part
   of building them, not as an afterthought; several real bugs (see the
   README error log) were only caught because of this.
+
+---
+
+## 5. Academy row status: what "Mastered" actually shows
+
+Every lesson/quiz/unit-test row in `UnitRowItem`
+([unit_row_item.dart](../lib/custom_made_widgets/unit_row_item.dart)) reads
+two different things from `ProgressionService`:
+
+- `statusFor(lessonId)` → `LessonStatus` (completed/available/locked) — drives
+  the badge's icon, color, and label ("Mastered"/"Ready"/"Locked").
+- `accuracyFor(lessonId)` → `double?` — the best-attempt accuracy on that
+  *specific* node, not a unit-wide average. Only meaningful for
+  `LessonNodeType.quiz`/`unitTest` nodes; always `null` for plain lessons.
+
+For an attempted quiz/test, the row shows the accuracy as a second line
+under the badge (e.g. "92% score") — the status badge alone couldn't answer
+"how did I actually do", only "did I finish it". Plain lesson rows don't get
+a score line (there's nothing to score), but got the same badge-visibility
+treatment anyway — bigger font, a status icon, stronger contrast — since
+"more visible" was a general ask, not just about quizzes specifically.
+
+## 6. The idle-animation vocabulary (`IdleHoverIcon`)
+
+[idle_hover_icon.dart](../lib/widgets_custom_lotties/idle_hover_icon.dart) is
+the shared building block for "this icon should read as alive, not static."
+It composes four independent motions, all driven off one looping
+`AnimationController` so they can combine without fighting each other:
+
+| Param | Motion | Used for |
+| --- | --- | --- |
+| `idleAmplitude` | vertical bob | the default — most icons |
+| `rotationAmplitude` | pendulum wobble (side to side, not a full spin) | daily-quest status icons — reads as playful |
+| `pulseAmplitude` | breathing scale | the Play Life heart — a pulse fits a heart, a bob doesn't |
+| `continuousSpin` | full 360° rotation over one `period` | the Play Life play-button icon — a slow, subtle spin as a CTA cue |
+
+Deliberately **not** one-size-fits-all: which motion(s) an icon gets is a
+per-call-site choice (see `daily_plan_card.dart` and `home_screen.dart`),
+picked for what actually suits that icon rather than reusing the same
+animation everywhere. `hoverScale` (desktop/web pointer hover) and reduced-
+motion handling are shared across all of them regardless of which motion
+params are set.
+
+## 7. Sound is off by default
+
+`AppSoundService.enabled` ([app_sound_service.dart](../lib/services_backend_and_other_services/app_sound_service.dart))
+now defaults to `false` — the 10 bundled SFX (`assets/audio/*.wav`) read as
+harsh rather than subtle. This is a default change, not a removal: the
+service, the asset files, and all 37 `AppSoundService.play(...)` call sites
+across the app are untouched, and the existing "Sound" toggle in Profile
+(`AppSettingsController.setSoundEnabled`) still works for anyone who wants
+them on. The right long-term fix is a quieter, more deliberate sound pass —
+this just stops the current set from playing until that happens.
+
+---
+
+## 8. Life's endings — Phase 1 of the "main game" framework
+
+Life could always be *played*, but until this session it had no real
+*ending* — `retire()` was a flat "set retired, done" with zero branching,
+and `_finish()` in `life_sim_page.dart` computed a gold reward, showed one
+toast, and called `Navigator.pop()` straight back to Home. A whole run —
+name, origin, however many years — ended in silence.
+
+**[life_ending.dart](../lib/models_Like_Skins_and_lessons_templates/life_ending.dart)**
+adds:
+- `LifeEndingArchetype` — 7 distinct, non-horror outcomes (Gone Too Soon,
+  Cautionary Tale, Rich but Lonely, Broke but Happy, Legacy Builder,
+  Comfortable Retiree, A Quiet Life), each with a label/icon/color/blurb —
+  same `enum` + metadata shape as `ArcadeDifficulty` and `MasteryLevel`
+  elsewhere in the codebase, not a new modeling style.
+- `resolveLifeEnding(...)` — a deterministic, first-match-wins resolver over
+  stats `LifeSimController` **already tracked** (`netWorth`, `happiness`,
+  `smarts`, `age`, `died`) — no new stat plumbing, same pattern as
+  `stageForAge` in `lesson.dart`.
+- `LifeSummary` — an immutable snapshot (`LifeSummary.fromController`) taken
+  the instant a life ends. It has to be a snapshot, not a live reference:
+  `LifeSimController` gets disposed once the page navigates away, so
+  whatever shows the ending needs its own frozen copy of the numbers.
+
+**[life_epilogue_screen.dart](../lib/screens_minigames_admin_etc/Gameplay/minigames_pages/life_epilogue_screen.dart)**
+is the screen that was missing — archetype card, stat recap, relationship
+chips, gold banked, "Back to Home." `life_sim_page.dart`'s `_finish()` now
+builds the `LifeSummary` right after `life.retire()` and
+`pushReplacement`s to it instead of popping (`pushReplacement`, not `push`,
+so the back button can't return to a finished life and "Back to Home" is a
+single `pop()`).
+
+**Deliberately out of scope for this phase** (see the approved plan for the
+full reasoning): no change to `_drawEvent()`'s uniform-random event draw, no
+achievement/milestone system, and no Adventure-world tie-in — that's
+Phase 2, blocked on the user providing a real map file, and needs real zone
+names to design concretely rather than guessing them now.

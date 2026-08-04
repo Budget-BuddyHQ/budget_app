@@ -283,6 +283,31 @@ class UserStatsController extends ChangeNotifier {
     return _saveStats(nextStats, savingMessage: 'Saving your profile...');
   }
 
+  /// Records that a Life run reached [endingId], so the endings collection
+  /// on the Adventure hub can show it as discovered. Idempotent — reaching
+  /// the same ending twice is a no-op rather than a duplicate entry.
+  Future<StatsActionResult> recordLifeEnding(String endingId) async {
+    final existing = _stats.discoveredEndings;
+    if (existing.contains(endingId)) {
+      return StatsActionResult(
+        success: true,
+        message: 'Already discovered.',
+        syncState: const SyncState(synced: true, usedCache: false, message: ''),
+      );
+    }
+
+    return _saveStats(
+      _stats.copyWith(
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          'discovered_endings': <String>[...existing, endingId],
+        },
+        updatedAt: DateTime.now().toUtc(),
+      ),
+      savingMessage: 'Saving your story...',
+    );
+  }
+
   /// Persists daily-plan progress: which quests are done today, and the
   /// current streak. Called by DailyPlanController.
   Future<StatsActionResult> updateDailyPlanProgress({

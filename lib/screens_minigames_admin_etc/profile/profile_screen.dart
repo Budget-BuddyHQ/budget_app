@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
 import '../../config/dev_preview_flags.dart';
 import '../../constants/app_assets.dart';
@@ -177,6 +178,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Consumer2<UserStatsController, AppSettingsController>(
       builder: (context, controller, settings, _) {
         final stats = controller.stats;
+        final user = SupabaseService.instance.currentUser;
             final profileData = snapshot.data;
             final avatarUrl = stats.profileImageUrl.isNotEmpty
                 ? stats.profileImageUrl
