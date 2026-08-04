@@ -9,6 +9,9 @@ import 'package:budget_app/screens_minigames_admin_etc/Gameplay/academy/lesson_d
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/academy/lesson_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/academy/practice_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/adventure/adventure_world_screen.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_ending.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_sim_models.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/life_epilogue_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/feedback_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/personal_details_sheet.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/core_bottom_pages/main_game_page.dart';
@@ -141,6 +144,30 @@ void main() {
     // No map file exists yet, so this exercises the "waiting for the map"
     // fallback screen, not the Bonfire game canvas itself.
     'Adventure (map pending)': () => const AdventureWorldScreen(),
+    'Life epilogue': () => LifeEpilogueScreen(
+      summary: LifeSummary(
+        name: 'Alexandria Montgomery-Whitfield',
+        gender: Gender.nonBinary,
+        origin: LifeOrigin.comfortable,
+        job: 'Senior Financial Wellness Consultant',
+        age: 84,
+        yearsLived: 84,
+        died: false,
+        netWorth: 128400,
+        happiness: 76,
+        health: 62,
+        smarts: 91,
+        looks: 58,
+        relationships: const [
+          'Jordan',
+          'Priya',
+          'Marcus',
+          'Grandma Lucille',
+        ],
+        goldReward: 512,
+        archetype: LifeEndingArchetype.legacyBuilder,
+      ),
+    ),
   };
 
   for (final screenEntry in screens.entries) {

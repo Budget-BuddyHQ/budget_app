@@ -8,27 +8,44 @@ class AppSettingsController extends ChangeNotifier {
       'budget_buddy_notifications_enabled';
   static const String _lastFeedbackPromptKey =
       'budget_buddy_last_feedback_prompt';
+  static const String _launchCountKey = 'budget_buddy_launch_count';
 
   /// How long to wait before asking again after the prompt is shown —
   /// dismissed or not. Deliberately not "every launch"; that reads as
   /// nagging rather than occasionally checking in.
   static const Duration _feedbackPromptCooldown = Duration(days: 4);
 
+  /// Don't ask someone for feedback the first time they ever open the app —
+  /// they have nothing to say yet. This replaced an earlier "wait until
+  /// they've finished the age/gender onboarding sheet" gate, which looked
+  /// equivalent but silently made the prompt *unreachable* without Supabase
+  /// keys: that sheet only shows when authenticated, so in local-only mode
+  /// the flag it set was never written and the prompt could never fire.
+  /// A launch counter means the same thing and works in both modes.
+  static const int _minLaunchesBeforeFeedbackPrompt = 3;
+
   bool _soundEnabled = AppSoundService.enabled;
   bool _notificationsEnabled = true;
   bool _initialized = false;
   SharedPreferences? _preferences;
   DateTime? _lastFeedbackPromptShown;
+  int _launchCount = 0;
 
   bool get soundEnabled => _soundEnabled;
   bool get notificationsEnabled => _notificationsEnabled;
   bool get isInitialized => _initialized;
 
-  /// Whether enough time has passed since the feedback prompt was last shown
-  /// (or this is the first time) that it's due again. Callers still need to
-  /// apply their own conditions on top (onboarding finished, feature flag
-  /// on, etc.) — this only tracks the cooldown.
+  /// How many times the app has been opened, counting this session.
+  int get launchCount => _launchCount;
+
+  /// Whether the occasional feedback prompt is due: the player has opened the
+  /// app a few times, and enough time has passed since it was last shown.
+  /// Callers still apply their own conditions on top (the `kFeedbackEnabled`
+  /// flag) — this owns the "is now a reasonable moment" part.
   bool get isFeedbackPromptDue {
+    if (_launchCount < _minLaunchesBeforeFeedbackPrompt) {
+      return false;
+    }
     final last = _lastFeedbackPromptShown;
     if (last == null) {
       return true;
@@ -51,6 +68,9 @@ class AppSettingsController extends ChangeNotifier {
     _lastFeedbackPromptShown = lastPromptRaw == null
         ? null
         : DateTime.tryParse(lastPromptRaw);
+
+    _launchCount = (_preferences?.getInt(_launchCountKey) ?? 0) + 1;
+    await _preferences?.setInt(_launchCountKey, _launchCount);
 
     _initialized = true;
     notifyListeners();

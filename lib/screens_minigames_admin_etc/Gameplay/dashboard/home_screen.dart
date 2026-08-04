@@ -214,8 +214,10 @@ class HomeScreen extends StatelessWidget {
                   },
                 ),
               ),
-              if (kFeedbackEnabled && stats.hasCompletedPersonalDetails)
-                const _FeedbackPromptTrigger(),
+              // "Is now a reasonable moment" lives in
+              // AppSettingsController.isFeedbackPromptDue (launch count +
+              // cooldown) so it works with or without Supabase configured.
+              if (kFeedbackEnabled) const _FeedbackPromptTrigger(),
             ],
           ),
         );
@@ -294,6 +296,11 @@ class _PlayLifePromo extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const IdleHoverIcon(
+                // A heartbeat pulse instead of a bob — fits the icon itself
+                // rather than just reusing the same motion everywhere.
+                idleAmplitude: 0,
+                pulseAmplitude: 0.14,
+                period: Duration(milliseconds: 1400),
                 child: Icon(
                   Icons.favorite_rounded,
                   color: Color(0xFF85EFAC),
@@ -357,6 +364,9 @@ class _PlayLifePromo extends StatelessWidget {
             const SizedBox(width: 8),
             const IdleHoverIcon(
               phaseShift: 0.5,
+              idleAmplitude: 0,
+              continuousSpin: true,
+              period: Duration(seconds: 8),
               child: Icon(
                 Icons.play_circle_fill_rounded,
                 color: Color(0xFF85EFAC),
@@ -1006,6 +1016,11 @@ class _ActionButtonState extends State<_ActionButton>
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Stack(
+                  // Stack defaults non-positioned children to top-start, so
+                  // the shrink-wrapped icon+label Row below was hugging the
+                  // left edge instead of sitting in the middle of the
+                  // button — this is what actually centers it.
+                  alignment: Alignment.center,
                   children: [
                     if (!reduceMotion)
                       Positioned.fill(

@@ -6,7 +6,7 @@ The app has three pillars:
 
 | Pillar | What it is | Where |
 | --- | --- | --- |
-| **Life** (main game) | A BitLife-style life simulator. You are born, age up one year at a time, and your choices move Happiness, Health, Smarts, Looks and money. | `lib/screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart` |
+| **Life** (main game) | A BitLife-style life simulator. You are born, age up one year at a time, and your choices move Happiness, Health, Smarts, Looks and money. Ends on one of 7 distinct **ending archetypes** (`life_ending.dart`) resolved from your final stats, shown on a dedicated epilogue recap screen instead of the old silent pop-back. | `lib/screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart` |
 | **Market Board** | A Webull-style stock trading board using **real live market data**, priced in in-game coins. Opens on a "Trending Now" strip of real company logos (Wikimedia Commons — `assets/images/stock_logos/`, ~88KB total across 6 tickers) over the always-on ticker tape. | `lib/screens_minigames_admin_etc/Gameplay/minigames_pages/stock_market_page.dart` |
 | **Academy** | Khan-Academy-style units of lessons, quizzes and unit tests. Units badge "Recommended for you" against the player's self-described age band — a signal only, never a lock; every unit still unlocks purely by finishing the previous one's test. | `lib/screens_minigames_admin_etc/Gameplay/academy/` |
 
@@ -19,6 +19,11 @@ an in-progress **Adventure** RPG overworld built on the `bonfire` engine
 It's fully wired (player, joystick, camera) but has no map yet — see
 `assets/images/maps/README.md` for exactly where to drop one; until then it
 shows a "map on the way" placeholder instead of a blank/broken screen.
+
+**Sound effects are off by default.** The bundled SFX (`AppSoundService`,
+`assets/audio/`) read as harsh rather than subtle, so `enabled` now defaults
+to `false` — the toggle in Profile still works for anyone who wants them on
+in the meantime. See `docs/ARCHITECTURE.md` for details.
 
 ---
 
@@ -172,7 +177,45 @@ widgets (`MiniSparkline`, `PriceChart`) that map values straight onto the canvas
 with no interval solver. 8 regression tests cover NaN, Infinity, empty, single
 point, zero width and zero height.
 
+**Profile crashed with no Supabase keys configured** (`Assertion failed: You
+must initialize the supabase instance before calling Supabase.instance`)
+Four call sites reached into `Supabase.instance.client` directly instead of
+through `SupabaseService`'s safe accessors, so on a phone/device with no
+`supabase.env.json` — no keys, `Supabase.initialize()` never runs — the very
+first thing that touched `Supabase.instance` threw, taking out whichever
+screen (or tab, since all tabs mount at once in an `IndexedStack`) hit it
+first. Profile hit it on every load; Admin would have hit it the moment its
+`State` was constructed, before even reaching its own "not connected" check.
+*Fix:* `SupabaseService.currentUser` (already existed, just wasn't used
+everywhere) and a new `SupabaseService.client` getter — both return `null`
+instead of throwing when Supabase was never initialized, same pattern as
+every other accessor in that file. Four call sites switched over:
+`profile_screen.dart`, `feedback_screen.dart`, `admin_screen.dart` (also
+made its `SupabaseClient` field nullable so a disconnected admin sees "Access
+denied" instead of a crash).
+*Files:* `supabase_service.dart`, `profile_screen.dart`, `feedback_screen.dart`,
+`admin_screen.dart`
+
 ### Layout
+
+**"Enter World" button's icon+label sat left-aligned instead of centered**
+The `Row` holding them used `mainAxisSize: MainAxisSize.min` inside a `Stack`
+with no explicit `alignment` — `Stack` defaults non-positioned children to
+top-*start*, so the shrink-wrapped Row hugged the left edge of the button
+instead of sitting in the middle.
+*Fix:* `Stack(alignment: Alignment.center, ...)`.
+*Files:* `home_screen.dart`
+
+**Arcade game card overflowed once a game had a long length label**
+`ArcadeLength.none` ("As much time as you need") is far longer than the
+"5–10 min"-style labels the row was built around; the difficulty chip,
+length chip, and play icon sat in a plain `Row` with no give, so the long
+label pushed the row past its width.
+*Fix:* the length chip is now `Flexible` (shrinks + ellipsizes) and
+`_MetaChip`'s `Text` got `overflow: TextOverflow.ellipsis` to match — the
+same "give the unpredictable-length element room to shrink" fix as most of
+the other overflow bugs in this section.
+*Files:* `minigames_page.dart`
 
 **Villager sprites bled outside their frame**
 A square ancestor's *tight* constraints forced the sprite's aspect-corrected
@@ -251,6 +294,21 @@ Three screens each had their own avatar implementation, each subtly different.
 `BoxFit.cover`, sprite fallback inset and centred so it is never clipped.
 
 ### Logic
+
+**The feedback prompt could never fire without Supabase keys**
+The occasional prompt was gated on `stats.hasCompletedPersonalDetails`, the
+flag set by finishing the age/gender onboarding sheet — a sensible-looking
+"don't ask before they've onboarded" rule. But that sheet only shows when
+`controller.isAuthenticated` is true (`main_navigation.dart`), which is
+false in local-only mode, so the flag was never written and the prompt was
+**unreachable** on any device without `supabase.env.json`. Same shape as the
+Profile crash above: a feature silently dead in the exact configuration most
+people run locally.
+*Fix:* replaced the gate with a persisted launch counter in
+`AppSettingsController` — "they've opened the app at least 3 times" means
+the same thing ("not brand new"), works identically with or without
+Supabase, and keeps the 4-day cooldown on top.
+*Files:* `app_settings_controller.dart`, `home_screen.dart`
 
 **Arcade header claimed "Five ways to practise money" with two games active**
 The subtitle was a hardcoded string written when the catalog had 5 entries;
