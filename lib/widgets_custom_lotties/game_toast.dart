@@ -12,6 +12,7 @@ class GameToast {
     BuildContext context, {
     required String message,
     String? title,
+    TextAlign textAlign = TextAlign.center,
     IconData icon = Icons.auto_awesome_rounded,
     Color accent = const Color(0xFF85EFAC),
     Duration duration = const Duration(milliseconds: 2100),
@@ -28,6 +29,7 @@ class GameToast {
       builder: (context) => _GameToastBanner(
         title: title,
         message: message,
+        textAlign: textAlign,
         icon: icon,
         accent: accent,
         duration: duration,
@@ -48,6 +50,7 @@ class GameToast {
 class _GameToastBanner extends StatefulWidget {
   const _GameToastBanner({
     required this.message,
+    this.textAlign = TextAlign.center,
     required this.icon,
     required this.accent,
     required this.duration,
@@ -57,6 +60,7 @@ class _GameToastBanner extends StatefulWidget {
 
   final String? title;
   final String message;
+  final TextAlign textAlign;
   final IconData icon;
   final Color accent;
   final Duration duration;
@@ -173,12 +177,13 @@ class _GameToastBannerState extends State<_GameToastBanner>
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               if (widget.title != null)
                                 Text(
                                   widget.title!,
+                                  textAlign: widget.textAlign,
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 13,
@@ -189,6 +194,7 @@ class _GameToastBannerState extends State<_GameToastBanner>
                                 const SizedBox(height: 2),
                               Text(
                                 widget.message,
+                                textAlign: widget.textAlign,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
