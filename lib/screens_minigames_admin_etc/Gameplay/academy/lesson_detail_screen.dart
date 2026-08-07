@@ -43,60 +43,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   /// Assessment questions for this node, empty for reading lessons.
   late final List<QuizQuestion> _quiz = quizFor(widget.lesson.id);
 
-      Future<void> _completeLesson({List<QuizQuestion> quiz = const []}) async {
-      if (_isSaving) {
-        return;
-      }
-
-      if (_isCompleted) {
-        Navigator.of(context).pop();
-        return;
-      }
-
-      setState(() => _isSaving = true);
-      widget.progressionService.completeLesson(widget.lesson.id);
-
-      final hasQuiz = quiz.isNotEmpty;
-      final bonusXp = hasQuiz ? _correctCount * 2 : 0;
-
-      final xpEarned = 12 + bonusXp;
-      final goldEarned = 50 + (hasQuiz ? _correctCount * 5 : 0);
-
-      final result = await context
-          .read<UserStatsController>()
-          .completeLessonProgress(
-            lessonId: widget.lesson.id,
-            lessonTitle: widget.lesson.title,
-            xpEarned: xpEarned,
-            literacyPointsEarned: 20,
-            goldEarned: goldEarned,
-            quizCorrect: hasQuiz ? _correctCount : null,
-            quizTotal: hasQuiz ? quiz.length : null,
-            missedSkills: _missed.map((question) => question.skillId),
-          );
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _isCompleted = true;
-        _isSaving = false;
-      });
-
-      // 3. Define rewards string
-      final String rewardsText = '+$xpEarned XP, +$goldEarned Gold';
-
-      GameToast.show(
-        context,
-        title: 'Lesson complete',
-        message: hasQuiz
-            ? 'Scored $_correctCount/${quiz.length}. Earned $rewardsText! ${result.message}'
-            : '${widget.lesson.title} saved. Earned $rewardsText!',
-        icon: Icons.school_rounded,
-        accent: const Color(0xFF2F9E68),
-        soundEffect: AppSoundEffect.celebration,
-      );
+  Future<void> _completeLesson({List<QuizQuestion> quiz = const []}) async {
+    if (_isSaving) {
+      return;
     }
 
     if (_isCompleted) {
@@ -109,34 +58,41 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
 
     final hasQuiz = quiz.isNotEmpty;
     final bonusXp = hasQuiz ? _correctCount * 2 : 0;
+    final xpEarned = 12 + bonusXp;
+    final goldEarned = 50 + (hasQuiz ? _correctCount * 5 : 0);
 
     final result = await context
         .read<UserStatsController>()
         .completeLessonProgress(
           lessonId: widget.lesson.id,
           lessonTitle: widget.lesson.title,
-          xpEarned: 12 + bonusXp,
+          xpEarned: xpEarned,
           literacyPointsEarned: 20,
+          goldEarned: goldEarned,
           quizCorrect: hasQuiz ? _correctCount : null,
           quizTotal: hasQuiz ? quiz.length : null,
           missedSkills: _missed.map((question) => question.skillId),
         );
 
+    if (!mounted) {
+      return;
+    }
+
     // Unit 6 pays out real gold and tradeable shares — the point is that
     // finishing the trading lessons hands you something to actually trade on
     // the Market Board rather than just XP.
     final payout = kLessonPayouts[widget.lesson.id];
-    if (payout != null && mounted) {
+    if (payout != null) {
       await context.read<UserStatsController>().applyChallengePayload({
         'gold_earned': payout.gold,
         'shares_earned': payout.shares,
         'title': 'Academy: ${widget.lesson.title}',
         'description': payout.blurb,
       });
-    }
 
-    if (!mounted) {
-      return;
+      if (!mounted) {
+        return;
+      }
     }
 
     setState(() {
@@ -144,18 +100,20 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       _isSaving = false;
     });
 
+    final String rewardsText = '+$xpEarned XP, +$goldEarned Gold';
+
     GameToast.show(
       context,
       title: 'Lesson complete',
       message: hasQuiz
-          ? 'Scored $_correctCount/${quiz.length}. ${result.message}'
-          : '${widget.lesson.title} saved. ${result.message}',
+          ? 'Scored $_correctCount/${quiz.length}. Earned $rewardsText! ${result.message}'
+          : '${widget.lesson.title} saved. Earned $rewardsText! ${result.message}',
       icon: Icons.school_rounded,
       accent: const Color(0xFF2F9E68),
       soundEffect: AppSoundEffect.celebration,
     );
 
-    if (payout != null && mounted) {
+    if (payout != null) {
       GameToast.show(
         context,
         title: 'Payout unlocked',
@@ -1676,8 +1634,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Share': 'one unit of ownership in a company',
       'Market cap':
           'share price multiplied by the number of shares — the market\'s price tag on the whole company',
-      'Dividend':
-          'a slice of profit some companies pay out to shareholders',
+      'Dividend': 'a slice of profit some companies pay out to shareholders',
     },
     takeaway:
         'A share is a piece of a real business, not a lottery ticket with a ticker on it.',
@@ -1738,7 +1695,8 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Judge concentration risk in a portfolio',
     ],
     keyTerms: {
-      'Diversification': 'spreading money across many holdings so no single one can sink you',
+      'Diversification':
+          'spreading money across many holdings so no single one can sink you',
       'Index fund':
           'one fund that holds hundreds of companies at once, tracking a whole market',
       'Concentration risk':
