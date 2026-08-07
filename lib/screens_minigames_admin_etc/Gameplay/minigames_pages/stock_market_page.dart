@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../services_backend_and_other_services/market_data_service.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart'
@@ -45,10 +46,7 @@ class _TradeQuote {
   final Color accent;
 }
 
-const Map<
-  String,
-  ({IconData icon, Color accent, String sector, String thesis})
->
+const Map<String, ({IconData icon, Color accent, String sector, String thesis})>
 _kSymbolStyle = {
   'AAPL': (
     icon: Icons.apple,
@@ -173,8 +171,10 @@ _TradeQuote _tradeQuoteFor(LiveQuote quote) {
   final style = _kSymbolStyle[quote.symbol];
   // Real prices arrive in dollars; the board trades in coins (10 coins = $1).
   final price = coinsForUsd(quote.current);
-  final spreadFraction = (0.015 + quote.percentChange.abs() / 100 * 0.5)
-      .clamp(0.01, 0.06);
+  final spreadFraction = (0.015 + quote.percentChange.abs() / 100 * 0.5).clamp(
+    0.01,
+    0.06,
+  );
   final buyCost = (price * (1 + spreadFraction / 2)).round();
   final sellValue = math.max(1, (price * (1 - spreadFraction / 2)).round());
 
@@ -374,7 +374,10 @@ class _StockMarketPageState extends State<StockMarketPage>
     final lastBySymbol = <String, int>{};
     for (final order in orders) {
       var quote = market.quoteFor(order.symbol);
-      quote ??= await market.fetchQuoteFor(order.symbol, company: order.company);
+      quote ??= await market.fetchQuoteFor(
+        order.symbol,
+        company: order.company,
+      );
       if (quote != null && quote.isValid) {
         // Compare in coins, matching the order's limit price.
         lastBySymbol[order.symbol] = coinsForUsd(quote.current);
@@ -387,7 +390,8 @@ class _StockMarketPageState extends State<StockMarketPage>
       GameToast.show(
         context,
         title: 'Working order${fills > 1 ? 's' : ''} filled',
-        message: '$fills resting limit order${fills > 1 ? 's' : ''} '
+        message:
+            '$fills resting limit order${fills > 1 ? 's' : ''} '
             'reached the price and filled.',
         icon: Icons.check_circle_rounded,
         accent: const Color(0xFF85EFAC),
@@ -404,10 +408,7 @@ class _StockMarketPageState extends State<StockMarketPage>
   }) async {
     final market = context.read<MarketDataService>();
     var quote = market.quoteFor(match.symbol);
-    quote ??= await market.fetchQuoteFor(
-      match.symbol,
-      company: match.company,
-    );
+    quote ??= await market.fetchQuoteFor(match.symbol, company: match.company);
 
     if (!context.mounted) return;
 
@@ -438,9 +439,9 @@ class _StockMarketPageState extends State<StockMarketPage>
     return Consumer2<UserStatsController, MarketDataService>(
       builder: (context, statsController, market, _) {
         final stats = statsController.stats;
-        final quotes = market.quotes.map(_tradeQuoteFor).toList(
-          growable: false,
-        );
+        final quotes = market.quotes
+            .map(_tradeQuoteFor)
+            .toList(growable: false);
 
         final totalMarketValue = quotes.fold<int>(
           0,
@@ -452,7 +453,8 @@ class _StockMarketPageState extends State<StockMarketPage>
         );
         final totalLots = quotes.fold<double>(
           0,
-          (sum, quote) => sum + (stats.holdings['stock_${quote.symbol}'] ?? 0.0),
+          (sum, quote) =>
+              sum + (stats.holdings['stock_${quote.symbol}'] ?? 0.0),
         );
         final totalAssets = stats.gold + totalMarketValue;
         final weightedChange = quotes.fold<double>(0, (sum, quote) {
@@ -484,9 +486,12 @@ class _StockMarketPageState extends State<StockMarketPage>
         });
 
         return Scaffold(
-          backgroundColor: const Color(0xFF0D1117),
+          backgroundColor: const Color(0xFF0A2019),
           appBar: AppBar(
-            backgroundColor: const Color(0xFF0D1117),
+            // Transparent so the tile backdrop below runs behind the bar and
+            // the whole board reads as one green surface rather than a black
+            // sheet with a green scaffold hidden underneath it.
+            backgroundColor: Colors.transparent,
             foregroundColor: Colors.white,
             elevation: 0,
             title: const Text(
@@ -522,84 +527,116 @@ class _StockMarketPageState extends State<StockMarketPage>
               ],
             ),
           ),
-          body: SafeArea(
-            top: false,
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _PortfolioTab(
-                  quotes: quotes,
-                  stats: stats,
-                  totalMarketValue: totalMarketValue,
-                  totalAssets: totalAssets,
-                  avgChangePercent: avgChangePercent,
-                  portfolioTip: portfolioTip,
-                  onGoToTrade: () => _tabController.animateTo(1),
+          extendBodyBehindAppBar: true,
+          body: Stack(
+            children: [
+              // Same hand-made tile art the rest of the app uses, so the
+              // Market Board stops looking like a different product bolted
+              // on next to Home/Arcade/Style.
+              Positioned.fill(
+                child: Image.asset(
+                  AppAssets.arcadeTileBackground,
+                  repeat: ImageRepeat.repeat,
+                  filterQuality: FilterQuality.none,
                 ),
-                _TradeTab(
-                  status: market.status,
-                  errorDetail: market.errorDetail,
-                  quotes: quotes,
-                  stats: stats,
-                  onBuy: (quote) => _openOrderTicket(
-                    context: context,
-                    quote: quote,
-                    startAsBuy: true,
-                    availableGold: stats.gold,
-                    ownedLots: stats.holdings['stock_${quote.symbol}'] ?? 0.0,
-                  ),
-                  onSell: (quote) => _openOrderTicket(
-                    context: context,
-                    quote: quote,
-                    startAsBuy: false,
-                    availableGold: stats.gold,
-                    ownedLots: stats.holdings['stock_${quote.symbol}'] ?? 0.0,
-                  ),
-                  onOpenMatch: (match) => _openSearchResult(
-                    context: context,
-                    match: match,
-                    stats: stats,
+              ),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        const Color(0xFF0A2019).withValues(alpha: 0.94),
+                        const Color(0xFF0C2A21).withValues(alpha: 0.88),
+                        const Color(0xFF081B15).withValues(alpha: 0.95),
+                      ],
+                    ),
                   ),
                 ),
-                _OrdersTab(
-                  transactions: stats.transactions,
-                  workingOrders: stats.workingOrders,
-                  onCancel: (order) async {
-                    final result = await statsController.cancelWorkingOrder(
-                      order.id,
-                    );
-                    if (!context.mounted) return;
-                    GameToast.show(
-                      context,
-                      title: result.success
-                          ? 'Order cancelled'
-                          : 'Could not cancel',
-                      message: result.success
-                          ? '${order.isBuy ? 'Buy' : 'Sell'} ${order.quantity} '
-                                '${order.symbol} limit at ${order.limitPrice}g '
-                                'was cancelled.'
-                          : result.message,
-                      icon: result.success
-                          ? Icons.cancel_rounded
-                          : Icons.info_outline_rounded,
-                      accent: const Color(0xFFFFB084),
-                    );
-                  },
+              ),
+              SafeArea(
+                top: false,
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _PortfolioTab(
+                      quotes: quotes,
+                      stats: stats,
+                      totalMarketValue: totalMarketValue,
+                      totalAssets: totalAssets,
+                      avgChangePercent: avgChangePercent,
+                      portfolioTip: portfolioTip,
+                      onGoToTrade: () => _tabController.animateTo(1),
+                    ),
+                    _TradeTab(
+                      status: market.status,
+                      errorDetail: market.errorDetail,
+                      quotes: quotes,
+                      stats: stats,
+                      onBuy: (quote) => _openOrderTicket(
+                        context: context,
+                        quote: quote,
+                        startAsBuy: true,
+                        availableGold: stats.gold,
+                        ownedLots:
+                            stats.holdings['stock_${quote.symbol}'] ?? 0.0,
+                      ),
+                      onSell: (quote) => _openOrderTicket(
+                        context: context,
+                        quote: quote,
+                        startAsBuy: false,
+                        availableGold: stats.gold,
+                        ownedLots:
+                            stats.holdings['stock_${quote.symbol}'] ?? 0.0,
+                      ),
+                      onOpenMatch: (match) => _openSearchResult(
+                        context: context,
+                        match: match,
+                        stats: stats,
+                      ),
+                    ),
+                    _OrdersTab(
+                      transactions: stats.transactions,
+                      workingOrders: stats.workingOrders,
+                      onCancel: (order) async {
+                        final result = await statsController.cancelWorkingOrder(
+                          order.id,
+                        );
+                        if (!context.mounted) return;
+                        GameToast.show(
+                          context,
+                          title: result.success
+                              ? 'Order cancelled'
+                              : 'Could not cancel',
+                          message: result.success
+                              ? '${order.isBuy ? 'Buy' : 'Sell'} ${order.quantity} '
+                                    '${order.symbol} limit at ${order.limitPrice}g '
+                                    'was cancelled.'
+                              : result.message,
+                          icon: result.success
+                              ? Icons.cancel_rounded
+                              : Icons.info_outline_rounded,
+                          accent: const Color(0xFFFFB084),
+                        );
+                      },
+                    ),
+                    _PnlTab(
+                      portfolioHistory: statsController.realPortfolioHistory,
+                      netWorth: totalAssets,
+                      totalEarned: totalUnrealised.round(),
+                    ),
+                    _AnalyticsTab(
+                      quotes: quotes,
+                      stats: stats,
+                      equityCurve: statsController.realPortfolioHistory,
+                      totalMarketValue: totalMarketValue,
+                      totalUnrealised: totalUnrealised.round(),
+                    ),
+                  ],
                 ),
-                _PnlTab(
-                  portfolioHistory: statsController.realPortfolioHistory,
-                  netWorth: totalAssets,
-                  totalEarned: totalUnrealised.round(),
-                ),
-                _AnalyticsTab(
-                  quotes: quotes,
-                  stats: stats,
-                  equityCurve: statsController.realPortfolioHistory,
-                  totalMarketValue: totalMarketValue,
-                  totalUnrealised: totalUnrealised.round(),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
@@ -610,7 +647,12 @@ class _StockMarketPageState extends State<StockMarketPage>
 /// (averageCost, currentValue, totalProfitLoss, profitLossPercent) for a
 /// position — shared by the Trade card and the Portfolio holdings row so the
 /// two never drift out of sync.
-({double averageCost, double currentValue, double totalProfitLoss, double profitLossPercent})
+({
+  double averageCost,
+  double currentValue,
+  double totalProfitLoss,
+  double profitLossPercent,
+})
 _holdingMetrics({
   required double ownedLots,
   required int costBasis,
@@ -1039,8 +1081,7 @@ class _TradeTabState extends State<_TradeTab> {
             for (final match in _matches) ...[
               _SearchResultRow(
                 match: match,
-                ownedLots:
-                    widget.stats.holdings['stock_${match.symbol}'] ?? 0,
+                ownedLots: widget.stats.holdings['stock_${match.symbol}'] ?? 0,
                 onTap: () => widget.onOpenMatch(match),
               ),
               const SizedBox(height: 8),
@@ -1134,10 +1175,7 @@ class _SearchResultRow extends StatelessWidget {
             ),
             if (ownedLots > 0)
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 9,
-                  vertical: 5,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                 decoration: BoxDecoration(
                   color: const Color(0xFF58C7FF).withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(999),
@@ -1185,25 +1223,26 @@ class _PortfolioTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final holdings = quotes
-        .map((quote) {
-          final owned = stats.holdings['stock_${quote.symbol}'] ?? 0.0;
-          final basis = stats.costBasis['stock_${quote.symbol}'] ?? 0;
-          return (
-            quote: quote,
-            ownedLots: owned,
-            metrics: _holdingMetrics(
-              ownedLots: owned,
-              costBasis: basis,
-              currentPrice: quote.currentPrice,
-            ),
+    final holdings =
+        quotes
+            .map((quote) {
+              final owned = stats.holdings['stock_${quote.symbol}'] ?? 0.0;
+              final basis = stats.costBasis['stock_${quote.symbol}'] ?? 0;
+              return (
+                quote: quote,
+                ownedLots: owned,
+                metrics: _holdingMetrics(
+                  ownedLots: owned,
+                  costBasis: basis,
+                  currentPrice: quote.currentPrice,
+                ),
+              );
+            })
+            .where((h) => h.ownedLots > 0)
+            .toList()
+          ..sort(
+            (a, b) => b.metrics.currentValue.compareTo(a.metrics.currentValue),
           );
-        })
-        .where((h) => h.ownedLots > 0)
-        .toList()
-      ..sort(
-        (a, b) => b.metrics.currentValue.compareTo(a.metrics.currentValue),
-      );
 
     final totalProfitLoss = holdings.fold<double>(
       0,
@@ -1421,13 +1460,50 @@ class _AllocationBar extends StatelessWidget {
   final List<_TradeQuote> holdings;
   final int Function(_TradeQuote) valueOf;
 
+  /// Colours reserved for the allocation chart, chosen to stay legible next
+  /// to each other on a dark card.
+  static const List<Color> _distinctPalette = <Color>[
+    Color(0xFFE1BB72), // sand
+    Color(0xFF58C7FF), // blue
+    Color(0xFFFF8FB1), // pink
+    Color(0xFF85EFAC), // mint
+    Color(0xFFB388FF), // violet
+    Color(0xFFFFD45C), // gold
+    Color(0xFF5EE7D6), // cyan
+    Color(0xFFFF8A5B), // orange
+    Color(0xFF9BE564), // lime
+    Color(0xFFFF6B6B), // red
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final segments = <({String label, int value, Color color})>[
+    final raw = <({String label, int value, Color color})>[
       (label: 'Cash', value: cash, color: const Color(0xFFE1BB72)),
       for (final quote in holdings)
         (label: quote.symbol, value: valueOf(quote), color: quote.accent),
     ].where((s) => s.value > 0).toList();
+
+    // A stock's own accent can collide with another slice's — Cash and AAPL
+    // are both 0xFFE1BB72, so the chart drew two "different" slices in the
+    // identical colour and the legend was unreadable. Reassign any repeat to
+    // the next unused palette colour so every slice is visually distinct.
+    final used = <int>{};
+    final segments = <({String label, int value, Color color})>[];
+    for (final segment in raw) {
+      var color = segment.color;
+      if (used.contains(color.toARGB32())) {
+        color = _distinctPalette.firstWhere(
+          (candidate) => !used.contains(candidate.toARGB32()),
+          // More slices than palette entries: fall back to spinning the hue
+          // so they still differ rather than silently repeating.
+          orElse: () => HSLColor.fromColor(segment.color)
+              .withHue((HSLColor.fromColor(segment.color).hue + 137) % 360)
+              .toColor(),
+        );
+      }
+      used.add(color.toARGB32());
+      segments.add((label: segment.label, value: segment.value, color: color));
+    }
 
     final total = segments.fold<int>(0, (sum, s) => sum + s.value);
     if (total <= 0) {
@@ -1646,7 +1722,7 @@ class _TickerTapeState extends State<_TickerTape> {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: const Color(0xFF161B22),
+        color: const Color(0xFF0F2A21),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -2404,7 +2480,9 @@ class _WorkingOrderRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF58C7FF).withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF58C7FF).withValues(alpha: 0.30)),
+        border: Border.all(
+          color: const Color(0xFF58C7FF).withValues(alpha: 0.30),
+        ),
       ),
       child: Row(
         children: [
@@ -2865,9 +2943,7 @@ class _AnalyticsTab extends StatelessWidget {
         : 0.0;
     // Concentration: the largest position as a share of all holdings.
     final topShare = totalMarketValue > 0 && positions.isNotEmpty
-        ? (positions
-                      .map((p) => p.metrics.currentValue)
-                      .reduce(math.max) /
+        ? (positions.map((p) => p.metrics.currentValue).reduce(math.max) /
                   totalMarketValue) *
               100
         : 0.0;
@@ -2919,7 +2995,8 @@ class _AnalyticsTab extends StatelessWidget {
             children: [
               _MetricTile(
                 label: 'Return on cost',
-                value: '${returnPercent >= 0 ? '+' : ''}'
+                value:
+                    '${returnPercent >= 0 ? '+' : ''}'
                     '${returnPercent.toStringAsFixed(1)}%',
                 sub: 'on ${coinLabel(invested)} invested',
                 color: returnPercent >= 0
@@ -3016,7 +3093,9 @@ class _MetricTile extends StatelessWidget {
       builder: (context, constraints) {
         // Two per row on phones, four across on a tablet.
         final maxWidth = MediaQuery.sizeOf(context).width;
-        final width = maxWidth >= 720 ? (maxWidth - 90) / 4 : (maxWidth - 44) / 2;
+        final width = maxWidth >= 720
+            ? (maxWidth - 90) / 4
+            : (maxWidth - 44) / 2;
         return Container(
           width: width,
           padding: const EdgeInsets.all(14),

@@ -327,4 +327,70 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
       ),
     ],
   ),
+  LessonUnit(
+    id: 'unit_6',
+    title: 'Unit 6: Stocks and Trading',
+    subtitle: 'Owning a piece of a company',
+    description:
+        'What a share actually is, how markets move, and why patience beats '
+        'reacting. Completing these pays out real gold and starter shares you '
+        'can trade on the Market Board.',
+    order: 6,
+    ageStage: AgeStage.adult,
+    lessons: <Lesson>[
+      Lesson(
+        id: 'lesson_26',
+        title: 'What a Share Really Is',
+        unitId: 'unit_6',
+        order: 1,
+        prerequisites: <String>['test_5'],
+      ),
+      Lesson(
+        id: 'lesson_27',
+        title: 'Why Prices Move',
+        unitId: 'unit_6',
+        order: 2,
+        prerequisites: <String>['lesson_26'],
+      ),
+      Lesson(
+        id: 'quiz_6',
+        title: 'Quick Quiz',
+        unitId: 'unit_6',
+        order: 3,
+        type: LessonNodeType.quiz,
+        prerequisites: <String>['lesson_27'],
+        estimatedMinutes: 4,
+      ),
+      Lesson(
+        id: 'lesson_28',
+        title: 'Risk, Diversification, and Index Funds',
+        unitId: 'unit_6',
+        order: 4,
+        prerequisites: <String>['quiz_6'],
+      ),
+      Lesson(
+        id: 'lesson_29',
+        title: 'Orders, Spreads, and Fees',
+        unitId: 'unit_6',
+        order: 5,
+        prerequisites: <String>['lesson_28'],
+      ),
+      Lesson(
+        id: 'lesson_30',
+        title: 'Time in the Market',
+        unitId: 'unit_6',
+        order: 6,
+        prerequisites: <String>['lesson_29'],
+      ),
+      Lesson(
+        id: 'test_6',
+        title: 'Unit Test',
+        unitId: 'unit_6',
+        order: 7,
+        type: LessonNodeType.unitTest,
+        prerequisites: <String>['lesson_30'],
+        estimatedMinutes: 6,
+      ),
+    ],
+  ),
 ];

@@ -81,6 +81,11 @@ class QuizSkills {
   static const String livingCosts = 'living_costs';
   static const String taxes = 'taxes';
   static const String moneyPlan = 'money_plan';
+  static const String shareOwnership = 'share_ownership';
+  static const String priceMovement = 'price_movement';
+  static const String diversification = 'diversification';
+  static const String tradingCosts = 'trading_costs';
+  static const String timeInMarket = 'time_in_market';
 
   /// Human-readable name for the mastery breakdown in the learning path.
   static String label(String skillId) => switch (skillId) {
@@ -109,6 +114,11 @@ class QuizSkills {
     livingCosts => 'Living costs',
     taxes => 'Taxes',
     moneyPlan => 'Personal money plan',
+    shareOwnership => 'What a share is',
+    priceMovement => 'Why prices move',
+    diversification => 'Diversification',
+    tradingCosts => 'Trading costs',
+    timeInMarket => 'Time in the market',
     _ => skillId,
   };
 }
@@ -1201,7 +1211,175 @@ const Map<String, List<QuizQuestion>> quizBank = <String, List<QuizQuestion>>{
   'test_4': _unit4Test,
   'quiz_5': _unit5Quiz,
   'test_5': _unit5Test,
+  'quiz_6': _unit6Quiz,
+  'test_6': _unit6Test,
 };
+
+// ---------------------------------------------------------------------------
+// Unit 6 — Stocks and Trading
+// ---------------------------------------------------------------------------
+
+const List<QuizQuestion> _unit6Practice = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u6p1',
+    skillId: QuizSkills.shareOwnership,
+    prompt: 'Owning one share of a company means you own:',
+    options: [
+      'A loan the company must repay you',
+      'A real fraction of that business',
+      'A guarantee of future dividends',
+      'A fixed amount of the company\'s cash',
+    ],
+    correctIndex: 1,
+    explanation:
+        'A share is ownership — a genuine slice of the business and whatever '
+        'it earns. It is not a loan, and nothing about it is guaranteed.',
+  ),
+  QuizQuestion(
+    id: 'u6p2',
+    skillId: QuizSkills.diversification,
+    prompt: 'Your whole portfolio is in one company. That is mainly:',
+    options: [
+      'Efficient, because you can follow it closely',
+      'Concentration risk',
+      'Diversification',
+      'A guaranteed higher return',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Everything riding on one outcome is concentration risk. One bad '
+        'result takes the whole portfolio with it.',
+  ),
+  QuizQuestion(
+    id: 'u6p3',
+    skillId: QuizSkills.tradingCosts,
+    prompt: 'You buy and immediately sell the same share. You most likely:',
+    options: [
+      'Break exactly even',
+      'Lose the spread',
+      'Make a small profit',
+      'Pay nothing, since there is no commission',
+    ],
+    correctIndex: 1,
+    explanation:
+        'You buy at the ask and sell at the lower bid. That gap is a real '
+        'cost even when no fee is listed.',
+  ),
+];
+
+const List<QuizQuestion> _unit6Quiz = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u6q1',
+    skillId: QuizSkills.shareOwnership,
+    prompt: 'A share priced at 8 coins is:',
+    options: [
+      'Always cheaper value than one priced at 800 coins',
+      'Not necessarily cheap — it depends what you get for it',
+      'A sign the company is failing',
+      'Better for beginners by definition',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Share price alone says nothing about value. A company can split its '
+        'ownership into more pieces and each piece costs less without the '
+        'business being worth any less.',
+  ),
+  QuizQuestion(
+    id: 'u6q2',
+    skillId: QuizSkills.priceMovement,
+    prompt:
+        'A company reports record profits and the share price falls. The most '
+        'likely reason is:',
+    options: [
+      'The report must have been wrong',
+      'Investors expected even better results',
+      'Profits always push prices down',
+      'Someone made a trading error',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Prices move on expectations, not just results. Beating last year but '
+        'missing what the market priced in still reads as a disappointment.',
+  ),
+  QuizQuestion(
+    id: 'u6q3',
+    skillId: QuizSkills.priceMovement,
+    prompt: 'A holding you plan to keep for years drops 1.5% today. This is:',
+    options: [
+      'A signal to sell immediately',
+      'Normal day-to-day noise',
+      'Proof the company is in trouble',
+      'A reason to check the price hourly',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Moves of a percent or two happen constantly and usually reflect '
+        'nothing about the underlying business.',
+  ),
+];
+
+const List<QuizQuestion> _unit6Test = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u6t1',
+    skillId: QuizSkills.diversification,
+    prompt: 'The clearest reason to hold an index fund is that it:',
+    options: [
+      'Guarantees you cannot lose money',
+      'Spreads your money across many companies in one purchase',
+      'Always beats picking individual stocks in any given year',
+      'Removes the need to ever review your plan',
+    ],
+    correctIndex: 1,
+    explanation:
+        'One index fund holds hundreds of companies, so a single failure is a '
+        'dent rather than a disaster. It does not guarantee gains.',
+  ),
+  QuizQuestion(
+    id: 'u6t2',
+    skillId: QuizSkills.tradingCosts,
+    prompt: 'You want to buy only if the price drops to a level you choose:',
+    options: [
+      'Use a market order',
+      'Use a limit order',
+      'Buy now and sell later if it drops',
+      'There is no way to do this',
+    ],
+    correctIndex: 1,
+    explanation:
+        'A limit order only fills at your price or better. A market order '
+        'takes whatever price is available right now.',
+  ),
+  QuizQuestion(
+    id: 'u6t3',
+    skillId: QuizSkills.timeInMarket,
+    prompt: 'Selling everything during a sharp crash most often backfires because:',
+    options: [
+      'Selling is never allowed',
+      'The strongest recovery days tend to come soon after the worst days',
+      'Prices never fall twice in a row',
+      'You always pay a penalty fee',
+    ],
+    correctIndex: 1,
+    explanation:
+        'The best days cluster right after the worst ones. Selling to escape '
+        'the drop usually means missing the rebound too.',
+  ),
+  QuizQuestion(
+    id: 'u6t4',
+    skillId: QuizSkills.timeInMarket,
+    prompt: 'The most reliable protection against panic-selling is:',
+    options: [
+      'Watching the market more closely',
+      'Deciding your rule in advance, while things are calm',
+      'Only investing when prices are rising',
+      'Keeping your holdings secret',
+    ],
+    correctIndex: 1,
+    explanation:
+        'A rule written before a crash — hold, or buy more — beats a decision '
+        'made while watching the number fall.',
+  ),
+];
 
 /// Extra practice items per unit, used by the "Practice" action in the
 /// learning path and by the review flow for missed skills.
@@ -1212,6 +1390,7 @@ const Map<String, List<QuizQuestion>> practiceBank =
       'unit_3': _unit3Practice,
       'unit_4': _unit4Practice,
       'unit_5': _unit5Practice,
+      'unit_6': _unit6Practice,
     };
 
 List<QuizQuestion> quizFor(String nodeId) =>

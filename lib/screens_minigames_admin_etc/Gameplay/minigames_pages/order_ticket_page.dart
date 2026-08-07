@@ -234,9 +234,9 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
         : const Color(0xFFFF8A80);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1117),
+      backgroundColor: const Color(0xFF071711),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1117),
+        backgroundColor: const Color(0xFF071711),
         foregroundColor: Colors.white,
         elevation: 0,
         title: Row(

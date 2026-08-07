@@ -9,6 +9,21 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../models_Like_Skins_and_lessons_templates/player_profile.dart';
 
+/// Where the emailed password-reset link sends the player back to.
+///
+/// **This must also be allowlisted** in the Supabase dashboard under
+/// Authentication → URL Configuration → Redirect URLs, otherwise Supabase
+/// ignores it and falls back to the project's Site URL — the app then never
+/// receives the recovery session and the reset silently dead-ends.
+///
+/// Web runs on the dev server's origin. Mobile needs a custom scheme, which
+/// also has to be declared natively (Android: an intent-filter in
+/// AndroidManifest.xml; iOS: CFBundleURLTypes in Info.plist) before the OS
+/// will hand the link back to the app.
+const String passwordResetRedirectUrl = kIsWeb
+    ? 'http://localhost:5960/'
+    : 'budgetbuddy://password-reset';
+
 @immutable
 class LedgerTransaction {
   const LedgerTransaction({
@@ -206,6 +221,22 @@ class UserStats {
   /// persisting them turns them into a collection worth chasing.
   List<String> get discoveredEndings {
     final raw = spendingHabits['discovered_endings'];
+    if (raw is! List) {
+      return const <String>[];
+    }
+    return raw
+        .map((entry) => entry.toString().trim())
+        .where((entry) => entry.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+  }
+
+  /// Badge ids the player has already been shown the celebration for.
+  /// Badges themselves are *derived* from progress, so this only records
+  /// "we already congratulated them" — it never decides whether a badge is
+  /// earned.
+  List<String> get celebratedBadges {
+    final raw = spendingHabits['celebrated_badges'];
     if (raw is! List) {
       return const <String>[];
     }
@@ -693,10 +724,28 @@ end
     final client = _requireClient();
     // Supabase has captcha protection enabled project-wide, so the reset
     // request is rejected with captcha_failed unless a token is included.
+    //
+    // `redirectTo` is where the emailed link sends the user back to. It must
+    // also be listed under Authentication → URL Configuration → Redirect URLs
+    // in the Supabase dashboard, or Supabase silently falls back to the
+    // project's Site URL and the app never sees the recovery session.
     await client.auth.resetPasswordForEmail(
       email.trim().toLowerCase(),
       captchaToken: captchaToken,
+      redirectTo: passwordResetRedirectUrl,
     );
+  }
+
+  /// Sets a new password for the currently-signed-in user.
+  ///
+  /// After the player taps the emailed recovery link, Supabase signs them in
+  /// with a short-lived recovery session — this is the call that actually
+  /// changes the password on that session. Without it the whole reset flow
+  /// dead-ends: the email arrives, the link signs you in, and there is no way
+  /// to pick a new password.
+  Future<void> updatePassword(String newPassword) async {
+    final client = _requireClient();
+    await client.auth.updateUser(UserAttributes(password: newPassword));
   }
 
   Future<void> signOut({String? userId}) async {
