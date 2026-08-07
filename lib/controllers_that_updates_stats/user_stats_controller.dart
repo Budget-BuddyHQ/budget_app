@@ -221,6 +221,40 @@ class UserStatsController extends ChangeNotifier {
     }
   }
 
+  /// Sets a new password on the current (usually recovery) session.
+  Future<StatsActionResult> updatePassword(String newPassword) async {
+    if (newPassword.length < 6) {
+      return const StatsActionResult(
+        success: false,
+        message: 'Use at least 6 characters.',
+        syncState: SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'Password too short.',
+        ),
+      );
+    }
+
+    try {
+      await _service.updatePassword(newPassword);
+      return const StatsActionResult(
+        success: true,
+        message: 'Password updated. You are signed in.',
+        syncState: SyncState(
+          synced: true,
+          usedCache: false,
+          message: 'Password updated.',
+        ),
+      );
+    } on AuthException catch (error) {
+      return _authFailure(error.message);
+    } on StateError catch (error) {
+      return _authFailure(error.message);
+    } catch (error) {
+      return _authFailure('Could not update password: $error');
+    }
+  }
+
   Future<StatsActionResult> sendPasswordReset({
     required String email,
     String? captchaToken,
@@ -334,6 +368,32 @@ class UserStatsController extends ChangeNotifier {
         updatedAt: DateTime.now().toUtc(),
       ),
       savingMessage: 'Saving your story...',
+    );
+  }
+
+  /// Marks badges as already celebrated so their unlock popup shows once.
+  Future<StatsActionResult> markBadgesCelebrated(
+    Iterable<String> badgeIds,
+  ) async {
+    final existing = _stats.celebratedBadges.toSet();
+    final next = {...existing, ...badgeIds};
+    if (next.length == existing.length) {
+      return StatsActionResult(
+        success: true,
+        message: 'Already recorded.',
+        syncState: const SyncState(synced: true, usedCache: false, message: ''),
+      );
+    }
+
+    return _saveStats(
+      _stats.copyWith(
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          'celebrated_badges': next.toList(growable: false),
+        },
+        updatedAt: DateTime.now().toUtc(),
+      ),
+      savingMessage: 'Saving achievements...',
     );
   }
 
@@ -890,9 +950,26 @@ class UserStatsController extends ChangeNotifier {
       payload['literacy_points_earned'] ?? payload['literacy_points'],
     );
 
+    // `shares_earned: {'AAPL': 0.5}` grants real Market Board holdings, so a
+    // lesson can pay out in stock and not just coins. Keyed by bare symbol
+    // here and stored under the `stock_` prefix the board reads.
+    final sharesEarned = payload['shares_earned'];
+    var nextHoldings = _stats.holdings;
+    if (sharesEarned is Map) {
+      nextHoldings = <String, double>{..._stats.holdings};
+      sharesEarned.forEach((symbol, amount) {
+        final key = 'stock_${symbol.toString().trim().toUpperCase()}';
+        final granted = (amount is num) ? amount.toDouble() : 0.0;
+        if (granted > 0) {
+          nextHoldings[key] = (nextHoldings[key] ?? 0.0) + granted;
+        }
+      });
+    }
+
     final nextStats = _stats.copyWith(
       gold: _stats.gold + goldEarned,
       xp: _stats.xp + xpEarned,
+      holdings: nextHoldings,
       literacyPoints: _stats.literacyPoints + literacyEarned,
       personalityType:
           (payload['personality_type'] ?? '').toString().trim().isEmpty

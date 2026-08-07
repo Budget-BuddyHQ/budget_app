@@ -12,12 +12,16 @@ import '../../config/dev_preview_flags.dart';
 import '../../constants/app_assets.dart';
 import '../../controllers_that_updates_stats/app_settings_controller.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
+import '../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
+import '../../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import '../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../services_backend_and_other_services/supabase_service.dart';
+import '../../widgets_custom_lotties/achievement_celebration.dart';
 import '../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
+import '../../widgets_custom_lotties/idle_hover_icon.dart';
 import '../admin/admin_screen.dart';
 import '../auth/auth_screen.dart';
 import 'feedback_screen.dart';
@@ -223,6 +227,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 18),
                         _ProfileInsightCard(stats: stats),
+                        const SizedBox(height: 12),
+                        _BadgeShowcase(stats: stats),
                         const SizedBox(height: 12),
                         _SettingsCard(
                           title: 'Notifications',
@@ -521,6 +527,304 @@ class _ProfileHero extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// One earnable badge. Every tier is derived from progress the app *already*
+/// records — endings reached, skins unlocked, lessons completed, level — so
+/// nothing here needs a parallel achievement-tracking system to stay honest.
+@immutable
+class _Badge {
+  const _Badge({
+    required this.id,
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.earned,
+    required this.detail,
+  });
+
+  /// Stable key used to remember whether its unlock popup already played.
+  final String id;
+  final String label;
+  final IconData icon;
+  final Color color;
+  final bool earned;
+  final String detail;
+}
+
+/// The profile badge shelf.
+///
+/// Doubles as the "show skins more" surface: a skins-collected badge sits
+/// alongside the story/learning ones, so the customise grid isn't the only
+/// place unlocked skins are acknowledged.
+class _BadgeShowcase extends StatefulWidget {
+  const _BadgeShowcase({required this.stats});
+
+  final UserStats stats;
+
+  @override
+  State<_BadgeShowcase> createState() => _BadgeShowcaseState();
+}
+
+class _BadgeShowcaseState extends State<_BadgeShowcase> {
+  bool _checking = false;
+
+  UserStats get stats => widget.stats;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _celebrateNew());
+  }
+
+  @override
+  void didUpdateWidget(covariant _BadgeShowcase oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Stats can change while Profile is mounted (finishing a life, unlocking
+    // a skin), so re-check rather than only firing on first build.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _celebrateNew());
+  }
+
+  /// Shows the celebration once per newly-earned badge. `celebratedBadges`
+  /// only records "already congratulated" — it never decides what's earned,
+  /// so this can't accidentally grant anything.
+  Future<void> _celebrateNew() async {
+    if (_checking || !mounted) {
+      return;
+    }
+    final alreadySeen = stats.celebratedBadges.toSet();
+    final fresh = _badges()
+        .where((badge) => badge.earned && !alreadySeen.contains(badge.id))
+        .toList(growable: false);
+    if (fresh.isEmpty) {
+      return;
+    }
+
+    _checking = true;
+    // Record first: if the popup is dismissed by a navigation change we
+    // still don't want to re-congratulate the same badge forever.
+    await context.read<UserStatsController>().markBadgesCelebrated(
+      fresh.map((badge) => badge.id),
+    );
+
+    for (final badge in fresh) {
+      if (!mounted) break;
+      await AchievementCelebration.show(
+        context,
+        title: badge.label,
+        subtitle: badge.detail,
+        accent: badge.color,
+      );
+    }
+    _checking = false;
+  }
+
+  List<_Badge> _badges() {
+    final endings = stats.discoveredEndings.length;
+    final totalEndings = LifeEndingArchetype.values.length;
+    final skins = stats.unlockedSkins.length;
+    final totalSkins = budgetBuddySkins.length;
+    final lessons = stats.completedLessons.length;
+
+    return <_Badge>[
+      _Badge(
+        id: 'first_life',
+        label: 'First Life',
+        icon: Icons.auto_stories_rounded,
+        color: const Color(0xFF85EFAC),
+        earned: endings >= 1,
+        detail: 'Finish a life',
+      ),
+      _Badge(
+        id: 'storyteller',
+        label: 'Storyteller',
+        icon: Icons.menu_book_rounded,
+        color: const Color(0xFFB388FF),
+        earned: endings >= 3,
+        detail: '3 endings ($endings/$totalEndings)',
+      ),
+      _Badge(
+        id: 'completionist',
+        label: 'Completionist',
+        icon: Icons.workspace_premium_rounded,
+        color: const Color(0xFFFFD45C),
+        earned: endings >= totalEndings,
+        detail: 'All $totalEndings endings',
+      ),
+      _Badge(
+        id: 'collector',
+        label: 'Collector',
+        icon: Icons.checkroom_rounded,
+        color: const Color(0xFFFF8FB1),
+        earned: skins >= 5,
+        detail: '5 skins ($skins/$totalSkins)',
+      ),
+      _Badge(
+        id: 'wardrobe',
+        label: 'Wardrobe',
+        icon: Icons.diamond_rounded,
+        color: const Color(0xFF5EE7D6),
+        earned: skins >= totalSkins,
+        detail: 'Every skin',
+      ),
+      _Badge(
+        id: 'scholar',
+        label: 'Scholar',
+        icon: Icons.school_rounded,
+        color: const Color(0xFF58C7FF),
+        earned: lessons >= 5,
+        detail: '5 lessons ($lessons)',
+      ),
+      _Badge(
+        id: 'graduate',
+        label: 'Graduate',
+        icon: Icons.military_tech_rounded,
+        color: const Color(0xFFE1BB72),
+        earned: lessons >= 20,
+        detail: '20 lessons',
+      ),
+      _Badge(
+        id: 'veteran',
+        label: 'Veteran',
+        icon: Icons.local_fire_department_rounded,
+        color: const Color(0xFFFF8A5B),
+        earned: stats.level >= 10,
+        detail: 'Reach level 10',
+      ),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final badges = _badges();
+    final earned = badges.where((b) => b.earned).length;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              IdleHoverIcon(
+                idleAmplitude: 0,
+                continuousSpin: earned == badges.length,
+                pulseAmplitude: earned == badges.length ? 0.0 : 0.09,
+                period: const Duration(seconds: 6),
+                child: const Icon(
+                  Icons.military_tech_rounded,
+                  color: Color(0xFFFFD45C),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Badges',
+                  style: GoogleFonts.baloo2(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              Text(
+                '$earned / ${badges.length}',
+                style: const TextStyle(
+                  color: Color(0xFFFFD45C),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = (constraints.maxWidth / 96).floor().clamp(3, 8);
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: badges.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  mainAxisExtent: 96,
+                ),
+                itemBuilder: (context, index) =>
+                    _BadgeTile(badge: badges[index]),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BadgeTile extends StatelessWidget {
+  const _BadgeTile({required this.badge});
+
+  final _Badge badge;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = badge.earned
+        ? badge.color
+        : Colors.white.withValues(alpha: 0.26);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+      decoration: BoxDecoration(
+        color: badge.earned
+            ? badge.color.withValues(alpha: 0.12)
+            : Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: badge.earned
+              ? badge.color.withValues(alpha: 0.45)
+              : Colors.white.withValues(alpha: 0.07),
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(badge.icon, color: color, size: 22),
+          const SizedBox(height: 5),
+          Text(
+            badge.label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: badge.earned
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.4),
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            badge.detail,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: badge.earned ? 0.55 : 0.3),
+              fontSize: 8.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }

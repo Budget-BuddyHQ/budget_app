@@ -8,7 +8,7 @@ The app has three pillars:
 | --- | --- | --- |
 | **Life** (main game) | A BitLife-style life simulator. You are born, age up one year at a time, and your choices move Happiness, Health, Smarts, Looks and money. Ends on one of 7 distinct **ending archetypes** (`life_ending.dart`) resolved from your final stats, shown on a dedicated epilogue recap screen instead of the old silent pop-back. | `lib/screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart` |
 | **Market Board** | A Webull-style stock trading board using **real live market data**, priced in in-game coins. Opens on a "Trending Now" strip of real company logos (Wikimedia Commons — `assets/images/stock_logos/`, ~88KB total across 6 tickers) over the always-on ticker tape. | `lib/screens_minigames_admin_etc/Gameplay/minigames_pages/stock_market_page.dart` |
-| **Academy** | Khan-Academy-style units of lessons, quizzes and unit tests. Units badge "Recommended for you" against the player's self-described age band — a signal only, never a lock; every unit still unlocks purely by finishing the previous one's test. | `lib/screens_minigames_admin_etc/Gameplay/academy/` |
+| **Academy** | Khan-Academy-style units of lessons, quizzes and unit tests — 6 units, each with its own accent colour. Units badge "Recommended for you" against the player's self-described age band — a signal only, never a lock; every unit still unlocks purely by finishing the previous one's test. **Unit 6 (Stocks and Trading) pays out real gold and tradeable shares** via `kLessonPayouts`. | `lib/screens_minigames_admin_etc/Gameplay/academy/` |
 
 Supporting features: auth (login / sign-up / welcome), profile, skins &
 customization, daily quests, leaderboard, arcade mini-games, in-app feedback
@@ -294,6 +294,50 @@ Three screens each had their own avatar implementation, each subtly different.
 `BoxFit.cover`, sprite fallback inset and centred so it is never clipped.
 
 ### Logic
+
+**Two allocation slices drew in the identical colour**
+Cash was hardcoded `0xFFE1BB72` and AAPL's accent in `_kSymbolStyle` is
+*also* `0xFFE1BB72`, so a portfolio holding both drew two "different" donut
+slices in exactly the same colour and the legend became unreadable. Three
+more collisions sit in the symbol palette too (MSFT/PYPL, SPY/MCD,
+NFLX/AMD).
+*Fix:* rather than hand-editing the palette (which would silently re-collide
+the next time a symbol is added), the chart now de-duplicates at render
+time — any repeat colour is reassigned to the next unused entry from a
+dedicated 10-colour chart palette, falling back to a hue rotation if a
+portfolio ever has more slices than the palette.
+*Files:* `stock_market_page.dart`
+
+**Password reset sent the email but could never change a password**
+The half of the flow the app owned worked — the captcha token was attached
+(that fix is above) and Supabase sent the recovery email. But nothing
+downstream existed: `resetPasswordForEmail` passed no `redirectTo`, there
+was **no `auth.updateUser` call anywhere in `lib/`**, no screen to type a new
+password into, and no listener for `AuthChangeEvent.passwordRecovery`. So
+tapping the emailed link signed you in on a recovery session, the auth gate
+in `main.dart` treated that like any normal sign-in and dropped you on the
+dashboard — password unchanged, no way to change it.
+*Fix:* added `SupabaseService.updatePassword()` (the missing
+`auth.updateUser(UserAttributes(password:))`), a `SetNewPasswordScreen`, a
+`passwordRecovery` branch in the auth gate that shows it, and a
+`passwordResetRedirectUrl` constant wired into `resetPasswordForEmail`.
+*Still needs configuring by hand:* that redirect URL must be allowlisted in
+Supabase → Authentication → URL Configuration → Redirect URLs, and mobile
+needs the `budgetbuddy://` scheme declared natively (Android intent-filter /
+iOS `CFBundleURLTypes`) before the OS hands the link back to the app.
+*Files:* `supabase_service.dart`, `user_stats_controller.dart`,
+`set_new_password_screen.dart`, `main.dart`
+
+**Two named routes would have stranded the player with no bottom nav**
+`/main-gameplay` and `/minigames` built `MainGamePage()`/`MinigamesPage()`
+directly with no `onNavSelected`, which makes those screens render their
+`bottomNavigationBar` as null — a tab screen you cannot navigate out of.
+Latent rather than live (nothing pushed them by name; only `/life` is
+actually used), but a trap for the next person who wires a button to one.
+*Fix:* both now route through `DashboardShell(initialIndex: ...)` like
+`/dashboard` and `/customize` already did. `/life` deliberately stays
+full-screen — it's a game with its own exit, not a tab.
+*Files:* `main.dart`
 
 **The feedback prompt could never fire without Supabase keys**
 The occasional prompt was gated on `stats.hasCompletedPersonalDetails`, the

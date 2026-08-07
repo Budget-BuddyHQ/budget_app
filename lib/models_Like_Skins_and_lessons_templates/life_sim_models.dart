@@ -694,4 +694,372 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
       ),
     ],
   ),
+
+  // ---------------- Childhood (expansion) ----------------
+  LifeEvent(
+    id: 'lemonade_stand',
+    prompt: 'You want to run a lemonade stand outside the house.',
+    icon: Icons.local_drink_rounded,
+    minAge: 6,
+    maxAge: 12,
+    choices: [
+      LifeChoice(
+        label: 'Charge a fair price',
+        outcome: 'Steady customers all afternoon. Your first real profit.',
+        money: 25,
+        happiness: 8,
+        smarts: 5,
+      ),
+      LifeChoice(
+        label: 'Charge way too much',
+        outcome: 'Two sales, then nothing. Turns out price matters.',
+        money: 6,
+        smarts: 7,
+        happiness: -2,
+      ),
+      LifeChoice(
+        label: 'Give it away free',
+        outcome: 'Everyone loved you. You made zero coins.',
+        happiness: 12,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'birthday_money',
+    prompt: 'Relatives gave you 120 coins for your birthday.',
+    icon: Icons.cake_rounded,
+    minAge: 7,
+    maxAge: 15,
+    choices: [
+      LifeChoice(
+        label: 'Save all of it',
+        outcome: 'Straight into savings. Boring now, useful later.',
+        money: 120,
+        smarts: 6,
+        happiness: -2,
+      ),
+      LifeChoice(
+        label: 'Save half, spend half',
+        outcome: 'A treat today and something left over. Balanced.',
+        money: 60,
+        happiness: 8,
+        smarts: 4,
+      ),
+      LifeChoice(
+        label: 'Spend it immediately',
+        outcome: 'Gone in a weekend. Worth it? Debatable.',
+        happiness: 12,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'lost_wallet',
+    prompt: 'You find a wallet with 200 coins and an ID inside.',
+    icon: Icons.badge_rounded,
+    minAge: 9,
+    choices: [
+      LifeChoice(
+        label: 'Return it',
+        outcome: 'They insisted on a reward. Doing the right thing paid twice.',
+        money: 50,
+        happiness: 10,
+        smarts: 4,
+      ),
+      LifeChoice(
+        label: 'Keep the money',
+        outcome: 'You are richer. It sat badly with you for weeks.',
+        money: 200,
+        happiness: -12,
+      ),
+    ],
+  ),
+
+  // ---------------- Teen (expansion) ----------------
+  LifeEvent(
+    id: 'first_bank_account',
+    prompt: 'You are old enough to open your own bank account.',
+    icon: Icons.account_balance_rounded,
+    minAge: 14,
+    maxAge: 22,
+    choices: [
+      LifeChoice(
+        label: 'Open a savings account',
+        outcome: 'Your money finally lives somewhere that pays you to keep it.',
+        smarts: 10,
+        happiness: 4,
+      ),
+      LifeChoice(
+        label: 'Stick to cash',
+        outcome: 'Under the mattress it is. Nothing grows there.',
+        happiness: -2,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'concert_tickets',
+    prompt: 'Your favourite artist is playing. Tickets are 250 coins.',
+    icon: Icons.music_note_rounded,
+    minAge: 14,
+    maxAge: 30,
+    choices: [
+      LifeChoice(
+        label: 'Buy them',
+        outcome: 'One of the best nights of your life. Expensive, but real.',
+        money: -250,
+        happiness: 18,
+      ),
+      LifeChoice(
+        label: 'Wait for the next tour',
+        outcome: 'You kept the money. You also watched clips of it all week.',
+        happiness: -6,
+        smarts: 4,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'side_hustle',
+    prompt: 'A neighbour offers you weekend work for 40 coins a time.',
+    icon: Icons.handyman_rounded,
+    minAge: 13,
+    maxAge: 24,
+    choices: [
+      LifeChoice(
+        label: 'Take every shift',
+        outcome: 'Your first steady income. Tiring, but the money is yours.',
+        money: 320,
+        happiness: -4,
+        smarts: 6,
+      ),
+      LifeChoice(
+        label: 'Take a few',
+        outcome: 'Some money, some weekends still free.',
+        money: 120,
+        happiness: 3,
+      ),
+      LifeChoice(
+        label: 'Pass',
+        outcome: 'You kept your weekends. Your wallet noticed.',
+        happiness: 5,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'impulse_sale',
+    prompt: 'A "70% OFF TODAY ONLY" banner is staring at you.',
+    icon: Icons.local_offer_rounded,
+    minAge: 13,
+    choices: [
+      LifeChoice(
+        label: 'Buy it — it is a deal!',
+        outcome:
+            'A discount on something you did not need is still money spent.',
+        money: -150,
+        happiness: 6,
+      ),
+      LifeChoice(
+        label: 'Check if you actually wanted it',
+        outcome: 'You did not. The banner was the whole reason.',
+        smarts: 8,
+        happiness: 2,
+      ),
+    ],
+  ),
+
+  // ---------------- Adult (expansion) ----------------
+  LifeEvent(
+    id: 'credit_card_offer',
+    prompt: 'A card with a 2,000 coin limit is pre-approved for you.',
+    icon: Icons.credit_card_rounded,
+    minAge: 18,
+    choices: [
+      LifeChoice(
+        label: 'Take it, pay in full monthly',
+        outcome: 'Used carefully, it quietly builds your credit history.',
+        smarts: 10,
+        happiness: 4,
+      ),
+      LifeChoice(
+        label: 'Take it and max it out',
+        outcome: 'A great month. The interest is going to hurt.',
+        money: 2000,
+        happiness: 14,
+        smarts: -8,
+      ),
+      LifeChoice(
+        label: 'Decline',
+        outcome: 'No debt, no credit history either. A real tradeoff.',
+        smarts: 3,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'rent_increase',
+    prompt: 'Your landlord is raising the rent by 200 coins a month.',
+    icon: Icons.home_work_rounded,
+    minAge: 20,
+    choices: [
+      LifeChoice(
+        label: 'Negotiate',
+        outcome: 'You talked them down. Asking cost nothing.',
+        money: -60,
+        smarts: 8,
+        happiness: 3,
+      ),
+      LifeChoice(
+        label: 'Move somewhere cheaper',
+        outcome: 'A hassle, and a smaller place — but the budget breathes.',
+        money: -300,
+        happiness: -6,
+        smarts: 6,
+      ),
+      LifeChoice(
+        label: 'Just pay it',
+        outcome: 'Easiest now, tighter every month after.',
+        money: -600,
+        happiness: -3,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'salary_negotiation',
+    prompt: 'You have been offered a new role. The salary is negotiable.',
+    icon: Icons.trending_up_rounded,
+    minAge: 21,
+    choices: [
+      LifeChoice(
+        label: 'Ask for more',
+        outcome: 'They met you most of the way. The ask paid for itself.',
+        money: 400,
+        smarts: 10,
+        happiness: 8,
+        setJob: 'Analyst',
+        setSalary: 520,
+      ),
+      LifeChoice(
+        label: 'Accept the first offer',
+        outcome: 'A good job. You will always wonder what was on the table.',
+        happiness: 4,
+        setJob: 'Analyst',
+        setSalary: 420,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'subscription_audit',
+    prompt: 'You count nine active subscriptions on your statement.',
+    icon: Icons.receipt_long_rounded,
+    minAge: 19,
+    choices: [
+      LifeChoice(
+        label: 'Cancel the unused ones',
+        outcome: 'Five were dead weight. That is money back every month.',
+        money: 180,
+        smarts: 9,
+        happiness: 4,
+      ),
+      LifeChoice(
+        label: 'Keep them all',
+        outcome: 'Easier than deciding. It quietly adds up.',
+        money: -120,
+        happiness: 2,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'market_crash',
+    prompt: 'The market drops sharply. Your investments are down 30%.',
+    icon: Icons.trending_down_rounded,
+    minAge: 22,
+    choices: [
+      LifeChoice(
+        label: 'Hold and wait',
+        outcome:
+            'Painful to watch, but you did not lock in the loss by selling.',
+        smarts: 12,
+        happiness: -6,
+      ),
+      LifeChoice(
+        label: 'Sell everything',
+        outcome: 'You stopped the bleeding — and missed the recovery.',
+        money: -200,
+        happiness: -10,
+        smarts: -4,
+      ),
+      LifeChoice(
+        label: 'Buy more while it is cheap',
+        outcome: 'Nerve-racking. Historically, this is when it pays off.',
+        money: -400,
+        smarts: 10,
+        happiness: -3,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'insurance_choice',
+    prompt: 'Your renters insurance is up for renewal.',
+    icon: Icons.shield_rounded,
+    minAge: 21,
+    choices: [
+      LifeChoice(
+        label: 'Renew it',
+        outcome: 'Boring, cheap, and exactly what you want when it matters.',
+        money: -90,
+        smarts: 7,
+        health: 3,
+      ),
+      LifeChoice(
+        label: 'Skip it',
+        outcome: 'Saved a little. Carrying the whole risk yourself now.',
+        money: 90,
+        happiness: -3,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'family_support',
+    prompt: 'A parent is struggling and could use help with bills.',
+    icon: Icons.family_restroom_rounded,
+    minAge: 24,
+    choices: [
+      LifeChoice(
+        label: 'Help every month',
+        outcome: 'It costs you real money. You would do it again.',
+        money: -500,
+        happiness: 12,
+      ),
+      LifeChoice(
+        label: 'Help once',
+        outcome: 'What you could give without wrecking your own plan.',
+        money: -200,
+        happiness: 8,
+        smarts: 4,
+      ),
+      LifeChoice(
+        label: 'Explain you cannot',
+        outcome: 'Honest, and hard. Your own budget was already thin.',
+        happiness: -10,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'retirement_fund',
+    prompt: 'Work offers to match retirement contributions up to 5%.',
+    icon: Icons.savings_rounded,
+    minAge: 23,
+    choices: [
+      LifeChoice(
+        label: 'Contribute the full 5%',
+        outcome: 'A guaranteed 100% return on that slice. Nothing beats it.',
+        money: -300,
+        smarts: 14,
+        happiness: 5,
+      ),
+      LifeChoice(
+        label: 'Skip it for now',
+        outcome: 'More cash today. You left free money on the table.',
+        happiness: 3,
+        smarts: -5,
+      ),
+    ],
+  ),
 ];

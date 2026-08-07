@@ -11,12 +11,11 @@ import 'controllers_that_updates_stats/app_settings_controller.dart';
 import 'controllers_that_updates_stats/daily_plan_controller.dart';
 import 'controllers_that_updates_stats/user_stats_controller.dart';
 import 'navigation_tools_and_animation/app_tab_index.dart';
-import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/main_game_page.dart';
-import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.dart';
 import 'screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart';
 import 'screens_minigames_admin_etc/Gameplay/dashboard/dashboard_shell.dart';
 import 'screens_minigames_admin_etc/Gameplay/dashboard/leaderboard_screen.dart';
 import 'screens_minigames_admin_etc/auth/auth_screen.dart';
+import 'screens_minigames_admin_etc/auth/set_new_password_screen.dart';
 import 'screens_minigames_admin_etc/loading/temporary_loading_screen.dart';
 import 'screens_minigames_admin_etc/onboarding/welcome_screen.dart';
 import 'services_backend_and_other_services/app_sound_service.dart';
@@ -122,9 +121,19 @@ class MyApp extends StatelessWidget {
             const DashboardShell(initialIndex: AppTabIndex.customize),
         '/lessons': (context) =>
             const DashboardShell(initialIndex: AppTabIndex.academy),
-        '/main-gameplay': (context) => const MainGamePage(),
+        // These two used to build MainGamePage/MinigamesPage directly, with
+        // no `onNavSelected` — which renders them with no bottom nav, so
+        // anything routing here by name would strand the player on a
+        // tab screen they can't navigate out of. Routing through
+        // DashboardShell (like /dashboard and /customize already do) keeps
+        // the nav bar attached.
+        '/main-gameplay': (context) =>
+            const DashboardShell(initialIndex: AppTabIndex.adventure),
+        '/minigames': (context) =>
+            const DashboardShell(initialIndex: AppTabIndex.minigames),
+        // /life is intentionally full-screen: it's a game with its own exit,
+        // not a tab.
         '/life': (context) => const LifeSimPage(),
-        '/minigames': (context) => const MinigamesPage(),
         '/leaderboard': (context) => const LeaderboardScreen(),
       },
     );
@@ -145,6 +154,16 @@ class _AppBootstrapGate extends StatelessWidget {
       stream: service.authStateChanges(),
       builder: (context, snapshot) {
         final user = service.currentUser;
+
+        // Tapping the emailed reset link signs the player in on a recovery
+        // session. Without this branch the gate treated that like a normal
+        // sign-in and dropped them straight into the dashboard — so the
+        // reset flow could never actually change a password. The screen
+        // stays up until `updateUser` fires its own event, which replaces
+        // this snapshot and falls through to the dashboard below.
+        if (snapshot.data?.event == AuthChangeEvent.passwordRecovery) {
+          return const SetNewPasswordScreen();
+        }
 
         if (user == null) {
           if (!service.isSupabaseConnected) {
