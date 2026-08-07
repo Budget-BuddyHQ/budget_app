@@ -43,9 +43,60 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   /// Assessment questions for this node, empty for reading lessons.
   late final List<QuizQuestion> _quiz = quizFor(widget.lesson.id);
 
-  Future<void> _completeLesson({List<QuizQuestion> quiz = const []}) async {
-    if (_isSaving) {
-      return;
+      Future<void> _completeLesson({List<QuizQuestion> quiz = const []}) async {
+      if (_isSaving) {
+        return;
+      }
+
+      if (_isCompleted) {
+        Navigator.of(context).pop();
+        return;
+      }
+
+      setState(() => _isSaving = true);
+      widget.progressionService.completeLesson(widget.lesson.id);
+
+      final hasQuiz = quiz.isNotEmpty;
+      final bonusXp = hasQuiz ? _correctCount * 2 : 0;
+
+      final xpEarned = 12 + bonusXp;
+      final goldEarned = 50 + (hasQuiz ? _correctCount * 5 : 0);
+
+      final result = await context
+          .read<UserStatsController>()
+          .completeLessonProgress(
+            lessonId: widget.lesson.id,
+            lessonTitle: widget.lesson.title,
+            xpEarned: xpEarned,
+            literacyPointsEarned: 20,
+            goldEarned: goldEarned,
+            quizCorrect: hasQuiz ? _correctCount : null,
+            quizTotal: hasQuiz ? quiz.length : null,
+            missedSkills: _missed.map((question) => question.skillId),
+          );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isCompleted = true;
+        _isSaving = false;
+      });
+
+      // 3. Define rewards string
+      final String rewardsText = '+$xpEarned XP, +$goldEarned Gold';
+
+      GameToast.show(
+        context,
+        title: 'Lesson complete',
+        message: hasQuiz
+            ? 'Scored $_correctCount/${quiz.length}. Earned $rewardsText! ${result.message}'
+            : '${widget.lesson.title} saved. Earned $rewardsText!',
+        icon: Icons.school_rounded,
+        accent: const Color(0xFF2F9E68),
+        soundEffect: AppSoundEffect.celebration,
+      );
     }
 
     if (_isCompleted) {
