@@ -71,6 +71,19 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           missedSkills: _missed.map((question) => question.skillId),
         );
 
+    // Unit 6 pays out real gold and tradeable shares — the point is that
+    // finishing the trading lessons hands you something to actually trade on
+    // the Market Board rather than just XP.
+    final payout = kLessonPayouts[widget.lesson.id];
+    if (payout != null && mounted) {
+      await context.read<UserStatsController>().applyChallengePayload({
+        'gold_earned': payout.gold,
+        'shares_earned': payout.shares,
+        'title': 'Academy: ${widget.lesson.title}',
+        'description': payout.blurb,
+      });
+    }
+
     if (!mounted) {
       return;
     }
@@ -90,6 +103,16 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       accent: const Color(0xFF2F9E68),
       soundEffect: AppSoundEffect.celebration,
     );
+
+    if (payout != null && mounted) {
+      GameToast.show(
+        context,
+        title: 'Payout unlocked',
+        message: payout.blurb,
+        icon: Icons.savings_rounded,
+        accent: const Color(0xFFFFD45C),
+      );
+    }
   }
 
   void _selectOption(QuizQuestion question, int optionIndex) {
@@ -761,6 +784,60 @@ class _LessonSection {
   final String title;
   final String content;
 }
+
+/// A one-off reward for finishing a specific lesson.
+@immutable
+class LessonPayout {
+  const LessonPayout({
+    required this.gold,
+    required this.shares,
+    required this.blurb,
+  });
+
+  final int gold;
+
+  /// Bare ticker → share count. Granted through
+  /// `UserStatsController.applyChallengePayload`'s `shares_earned` key, so
+  /// these land as real Market Board holdings you can sell.
+  final Map<String, double> shares;
+  final String blurb;
+}
+
+/// Unit 6 only. Deliberately small amounts: enough to have something real to
+/// trade with and feel the market move, not enough to skip the game's
+/// economy. Each lesson pays once — `_isCompleted` guards a re-award.
+const Map<String, LessonPayout> kLessonPayouts = <String, LessonPayout>{
+  'lesson_26': LessonPayout(
+    gold: 500,
+    shares: <String, double>{'SPY': 0.25},
+    blurb: '+500 gold and a quarter share of SPY to start your portfolio.',
+  ),
+  'lesson_27': LessonPayout(
+    gold: 400,
+    shares: <String, double>{},
+    blurb: '+400 gold for learning what actually moves a price.',
+  ),
+  'lesson_28': LessonPayout(
+    gold: 600,
+    shares: <String, double>{'SPY': 0.25, 'KO': 0.5},
+    blurb: '+600 gold, plus SPY and KO shares — your first diversified mix.',
+  ),
+  'lesson_29': LessonPayout(
+    gold: 450,
+    shares: <String, double>{},
+    blurb: '+450 gold for understanding what the spread quietly costs you.',
+  ),
+  'lesson_30': LessonPayout(
+    gold: 800,
+    shares: <String, double>{'AAPL': 0.2},
+    blurb: '+800 gold and a slice of AAPL for going the distance.',
+  ),
+  'test_6': LessonPayout(
+    gold: 1500,
+    shares: <String, double>{'SPY': 0.5, 'MSFT': 0.2},
+    blurb: 'Unit cleared: +1500 gold, plus SPY and MSFT shares.',
+  ),
+};
 
 const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   'lesson_1': _LessonContent(
@@ -1532,6 +1609,173 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         title: 'Keep refining it',
         content:
             'Your plan should change when your life changes. Review it regularly so it stays realistic and useful.',
+      ),
+    ],
+  ),
+
+  // ---------------- Unit 6 · Stocks and Trading ----------------
+  'lesson_26': _LessonContent(
+    icon: Icons.pie_chart_outline_rounded,
+    objectives: [
+      'Explain what owning a share actually entitles you to',
+      'Tell the difference between a share price and a company\'s value',
+      'Describe why companies sell shares in the first place',
+    ],
+    keyTerms: {
+      'Share': 'one unit of ownership in a company',
+      'Market cap':
+          'share price multiplied by the number of shares — the market\'s price tag on the whole company',
+      'Dividend':
+          'a slice of profit some companies pay out to shareholders',
+    },
+    takeaway:
+        'A share is a piece of a real business, not a lottery ticket with a ticker on it.',
+    sections: [
+      _LessonSection(
+        title: 'You are buying a business',
+        content:
+            'When you buy a share you own a genuine fraction of a company — its buildings, its brand, its future profits. If the business does well over time, your slice is worth more.',
+      ),
+      _LessonSection(
+        title: 'Price is not the same as value',
+        content:
+            'A 500-coin share is not "expensive" and a 5-coin share is not "cheap". What matters is what you get for that price — a company worth ten times more can still have a lower share price if it simply split its ownership into more pieces.',
+      ),
+      _LessonSection(
+        title: 'Why companies sell shares',
+        content:
+            'Selling shares raises money without borrowing it. The company gets cash to grow; you get a claim on what that growth produces.',
+      ),
+    ],
+  ),
+  'lesson_27': _LessonContent(
+    icon: Icons.show_chart_rounded,
+    objectives: [
+      'Explain price as the meeting point of buyers and sellers',
+      'Separate news-driven moves from long-term value',
+      'Recognise why daily swings are mostly noise',
+    ],
+    keyTerms: {
+      'Volatility': 'how sharply a price swings up and down',
+      'Sentiment': 'how buyers and sellers currently feel, regardless of facts',
+    },
+    takeaway:
+        'Day to day, price mostly tracks what people expect. Over years, it tracks what the business actually does.',
+    sections: [
+      _LessonSection(
+        title: 'Price is an agreement',
+        content:
+            'A stock is worth exactly what someone will pay right now. More eager buyers than sellers pushes it up; the reverse pushes it down. That is the whole mechanism.',
+      ),
+      _LessonSection(
+        title: 'Expectations move faster than reality',
+        content:
+            'A company can report record profits and still drop, because the market expected even more. You are trading against expectations, not just results.',
+      ),
+      _LessonSection(
+        title: 'Most days are noise',
+        content:
+            'A 1-2% daily move usually means nothing changed about the business. Checking a long-term holding every hour mostly teaches you to feel anxious.',
+      ),
+    ],
+  ),
+  'lesson_28': _LessonContent(
+    icon: Icons.donut_large_rounded,
+    objectives: [
+      'Explain diversification in one sentence',
+      'Describe what an index fund holds and why that matters',
+      'Judge concentration risk in a portfolio',
+    ],
+    keyTerms: {
+      'Diversification': 'spreading money across many holdings so no single one can sink you',
+      'Index fund':
+          'one fund that holds hundreds of companies at once, tracking a whole market',
+      'Concentration risk':
+          'the danger of having too much riding on one company',
+    },
+    takeaway:
+        'Owning one stock is a bet on one company. Owning an index is a bet that the economy keeps producing — historically the safer bet.',
+    sections: [
+      _LessonSection(
+        title: 'Do not put it all in one place',
+        content:
+            'If everything you own is in one company and that company stumbles, so do you. Spreading across many means one bad result is a dent, not a disaster.',
+      ),
+      _LessonSection(
+        title: 'Index funds do it for you',
+        content:
+            'An index fund like SPY holds hundreds of companies in one share. Buying it once gives you a spread that would take a lot of separate purchases to build by hand.',
+      ),
+      _LessonSection(
+        title: 'Check your own mix',
+        content:
+            'Open the Market Board and look at the allocation ring. If one slice dominates the circle, that is concentration risk — visible at a glance.',
+      ),
+    ],
+  ),
+  'lesson_29': _LessonContent(
+    icon: Icons.receipt_long_rounded,
+    objectives: [
+      'Explain the bid-ask spread as a real cost',
+      'Choose between a market order and a limit order',
+      'Estimate what frequent trading costs over time',
+    ],
+    keyTerms: {
+      'Bid / Ask':
+          'the highest price a buyer will pay and the lowest a seller will accept',
+      'Spread': 'the gap between them — a cost you pay on every round trip',
+      'Limit order':
+          'an order that only fills at your price or better, instead of whatever is available',
+    },
+    takeaway:
+        'Every trade costs something even with no visible fee. Trading less is a strategy, not laziness.',
+    sections: [
+      _LessonSection(
+        title: 'The spread is a real cost',
+        content:
+            'You buy at the ask and sell at the bid, and the ask is always higher. Buy and immediately sell and you lose that gap — which is exactly why the Market Board charges one.',
+      ),
+      _LessonSection(
+        title: 'Market vs limit orders',
+        content:
+            'A market order fills instantly at whatever price is there. A limit order waits for your price. Instant certainty or price control — you pick which one matters more.',
+      ),
+      _LessonSection(
+        title: 'Costs compound too',
+        content:
+            'A small cost paid on every trade, many times a year, quietly becomes a large number. Frequent trading has to beat that drag before it beats simply holding.',
+      ),
+    ],
+  ),
+  'lesson_30': _LessonContent(
+    icon: Icons.hourglass_bottom_rounded,
+    workedExample: WorkedExample(_compoundingExample),
+    objectives: [
+      'Explain why time in the market beats timing the market',
+      'Describe what missing the best days costs',
+      'Build a rule for what to do when prices fall',
+    ],
+    keyTerms: {
+      'Timing the market': 'trying to buy the bottom and sell the top',
+      'Time in the market': 'staying invested and letting compounding work',
+    },
+    takeaway:
+        'The best recovery days cluster right after the worst crash days — sell to escape one and you usually miss the other.',
+    sections: [
+      _LessonSection(
+        title: 'Nobody reliably calls the top',
+        content:
+            'Timing requires being right twice: when to get out and when to get back in. Professionals with full-time teams mostly fail at this.',
+      ),
+      _LessonSection(
+        title: 'Missing a handful of days matters enormously',
+        content:
+            'Historically, a small number of days account for a huge share of long-run returns — and they usually land right after sharp drops, when selling feels most sensible.',
+      ),
+      _LessonSection(
+        title: 'Decide before it drops',
+        content:
+            'Write your rule while things are calm: "if my holdings fall 30%, I hold" or "I buy more". A rule made in advance beats a decision made in a panic.',
       ),
     ],
   ),

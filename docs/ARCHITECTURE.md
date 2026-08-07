@@ -270,3 +270,152 @@ full reasoning): no change to `_drawEvent()`'s uniform-random event draw, no
 achievement/milestone system, and no Adventure-world tie-in — that's
 Phase 2, blocked on the user providing a real map file, and needs real zone
 names to design concretely rather than guessing them now.
+
+---
+
+## 9. Progression surfaces: endings, badges, and the Life event pool
+
+Three things now read off the *same* persisted progress rather than each
+inventing their own tracking:
+
+**Discovered endings** live in `spendingHabits['discovered_endings']`
+(`UserStats.discoveredEndings`), written by
+`UserStatsController.recordLifeEnding()` when a life finishes. That single
+list drives both the endings collection grid on the Adventure hub
+(`main_game_page.dart`) and two of the profile badges.
+
+**Badges** (`_BadgeShowcase` in
+[profile_screen.dart](../lib/screens_minigames_admin_etc/profile/profile_screen.dart))
+are **derived, not stored** — every tier is computed from progress the app
+already records: discovered endings, `unlockedSkins.length`,
+`completedLessons.length`, and `level`. Nothing writes a badge, so badges
+can never drift out of sync with the progress they describe, and adding one
+is a pure data change to `_badges()`. The skin-count badges double as the
+"show skins somewhere other than the customise grid" surface.
+
+**The Life event pool** (`kLifeEvents` in `life_sim_models.dart`) went from
+21 to 37 events, keeping the existing age-gated structure
+(`minAge`/`maxAge`) and the childhood/teen/adult grouping. The additions are
+deliberately money-decision shaped rather than flavour — bank accounts,
+credit-card offers, rent increases, salary negotiation, a market crash,
+employer retirement matching — so the extra content also widens the range of
+final stats, which is what makes the seven endings actually reachable.
+
+## 10. Password reset, end to end
+
+The flow spans four pieces, and until this session only the first existed:
+
+1. **Request** — `AuthScreen._submitPasswordReset` grabs a Turnstile token
+   (Supabase enforces captcha on the recovery endpoint too) and calls
+   `SupabaseService.resetPasswordForEmail`, which now passes
+   `passwordResetRedirectUrl`.
+2. **The link** — Supabase emails a recovery link. Tapping it signs the user
+   in on a short-lived *recovery* session and fires
+   `AuthChangeEvent.passwordRecovery`.
+3. **Interception** — `_AppBootstrapGate` in `main.dart` checks for that
+   event *before* its normal signed-in branch and shows
+   `SetNewPasswordScreen`. Without this the gate saw "a user is signed in"
+   and went straight to the dashboard, which is exactly why the flow
+   silently did nothing.
+4. **The change** — `SupabaseService.updatePassword()` calls
+   `auth.updateUser(UserAttributes(password:))`. That fires its own auth
+   event, which replaces the `passwordRecovery` snapshot and lets the gate
+   fall through to the dashboard — so no manual navigation is needed after
+   success.
+
+**Two things still have to be configured by hand** (they're outside the Dart
+code and can't be fixed from here):
+- `passwordResetRedirectUrl` must be listed under Supabase → Authentication
+  → URL Configuration → **Redirect URLs**. If it isn't, Supabase ignores it
+  and falls back to the project Site URL — the app never sees step 2.
+- On mobile the `budgetbuddy://` scheme must be declared natively (Android
+  intent-filter in `AndroidManifest.xml`, iOS `CFBundleURLTypes` in
+  `Info.plist`) before the OS will hand the link back to the app. On web the
+  redirect is just the dev-server origin, so web works as soon as the URL is
+  allowlisted.
+
+---
+
+## 11. Rewards that pay out in shares, not just gold
+
+`UserStatsController.applyChallengePayload` originally understood three
+currencies — `gold_earned`, `xp_earned`, `literacy_points_earned`. It now
+also accepts:
+
+```dart
+'shares_earned': {'SPY': 0.25, 'KO': 0.5}
+```
+
+Keys are bare tickers; they're stored under the `stock_<SYMBOL>` prefix the
+Market Board reads, so granted shares are **real holdings** — they show in
+the allocation ring, move with live prices, and can be sold. Fractional on
+purpose (a whole share costs thousands of coins at `kCoinsPerDollar = 10`).
+
+**Unit 6 · Stocks and Trading** is the first consumer. Payouts live in
+`kLessonPayouts` in
+[lesson_detail_screen.dart](../lib/screens_minigames_admin_etc/Gameplay/academy/lesson_detail_screen.dart),
+keyed by lesson id, and fire from `_completeLesson` *after*
+`completeLessonProgress`. The `_isCompleted` guard means each lesson pays
+once — re-opening a finished lesson pops straight back out before reaching
+the payout.
+
+Amounts are deliberately modest (500–1500 gold, fractional shares): enough
+that finishing the trading lessons hands you something real to trade with
+and watch move, not enough to bypass the game's own economy.
+
+Adding a payout to any other lesson is a one-line entry in that map — no new
+plumbing.
+
+## 12. What "supporting more users" currently depends on
+
+Worth being precise, since this is easy to assume is handled:
+
+- **Per-user reads are already cheap** — everything for one player lives in a
+  single `user_stats` row keyed by their auth UUID, read with one
+  `.eq('id', userId).maybeSingle()`. No N+1, no joins, no fan-out. Adding
+  users scales that linearly.
+- **The leaderboard is the one query that touches all users** — a `select`
+  view over `user_stats`. It's read with a `limit`, but a growing table will
+  eventually need an index on the ordering column (gold/xp) to stay fast.
+  That's a dashboard-side change, not a code change.
+- **Row Level Security is the actual gate.** Every table a client touches
+  needs RLS policies that scope rows to `auth.uid()`; the new `app_feedback`
+  table needs an insert policy or feedback submissions will fail for real
+  users while appearing to work locally (the client queues them either way).
+- **Nothing in the app assumes a single user** — no global caches keyed by
+  anything but user id, and `clearCachedUserStats` runs on sign-out.
+
+The realistic scaling limits today are the **third-party API tiers**, not the
+database: Finnhub free is 60 calls/min shared across *all* users on the same
+key, and Twelve Data free is 800 requests/day total. Those are per-key, not
+per-user — so a real userbase needs either paid tiers or a server-side proxy
+that fetches once and fans out, rather than every client calling directly.
+
+---
+
+## 13. The achievement celebration (and what art actually exists)
+
+`AchievementCelebration.show()`
+([achievement_celebration.dart](../lib/widgets_custom_lotties/achievement_celebration.dart))
+is the "you earned something" moment, fired from `_BadgeShowcase` when a
+badge becomes newly earned.
+
+**On the art:** there is no celebrating-turtle sprite sheet in this project.
+Every turtle asset is a single static pose — `pixelMainTurtle.png` (the
+mascot/logo with a coin), `cool_turtle.png`, and three skin previews under
+`assets/images/turtles/`. None are multi-frame. The celebration is therefore
+*composed* rather than played back: the mascot pops in on an `elasticOut`
+spring, sitting inside hand-painted rotating rays and sparks that fly
+outward once on entrance (`_CelebrationPainter`). Same approach as the
+charts — a `CustomPainter`, no new dependency, nothing to crash on odd
+sizes. If a real multi-frame celebration sheet gets drawn later, it drops
+into the same widget with the painter removed.
+
+**Firing once, not every visit:** badges are derived from progress, so
+"newly earned" needs its own memory. `spendingHabits['celebrated_badges']`
+(`UserStats.celebratedBadges`, written by
+`UserStatsController.markBadgesCelebrated`) records *only* which badges have
+already been congratulated — it never decides what's earned, so it cannot
+accidentally grant a badge. `_BadgeShowcase` re-checks on both `initState`
+and `didUpdateWidget`, since stats can change while Profile is on screen
+(finishing a life, unlocking a skin).
