@@ -1788,4 +1788,593 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       ),
     ],
   ),
+
+  // ---------------- Unit 7 · Spending Traps (ages 11-13) ----------------
+  'lesson_31': _LessonContent(
+    icon: Icons.theater_comedy_rounded,
+    objectives: [
+      'Separate a need from a want using consequences, not price',
+      'Notice when a want is being dressed up as a need',
+      'Rank spending when there is not enough for everything',
+    ],
+    keyTerms: {
+      'Need': 'something your day genuinely breaks without',
+      'Want': 'something you would enjoy but can live without',
+      'Justification':
+          'the story you tell yourself to make a want sound necessary',
+    },
+    takeaway:
+        'Ask what actually breaks if you skip it. If the honest answer is '
+        '"nothing", it is a want — and wants are fine, as long as you know.',
+    sections: [
+      _LessonSection(
+        title: 'The test is consequence, not price',
+        content:
+            'A 2-coin snack you do not need is a want. A 40-coin bus pass you '
+            'cannot get to school without is a need. Cost tells you how much '
+            'it hurts, not which category it belongs to.',
+      ),
+      _LessonSection(
+        title: 'Wants in disguise',
+        content:
+            '"I need it for school." "Everyone has one." "It is on sale." '
+            'These are justifications, and they are the sound your brain makes '
+            'when it has already decided. Notice them and you get a second '
+            'chance to choose.',
+      ),
+      _LessonSection(
+        title: 'Order matters more than willpower',
+        content:
+            'When money is tight, fund the needs first and let the wants '
+            'compete for what is left. Deciding the order in advance means you '
+            'are not relying on self-control in the shop.',
+      ),
+    ],
+  ),
+  'lesson_32': _LessonContent(
+    icon: Icons.campaign_rounded,
+    objectives: [
+      'Explain what an advert is actually selling',
+      'Recognise sponsored content and influencer marketing',
+      'Name three pressure tactics used on young buyers',
+    ],
+    keyTerms: {
+      'Sponsored content': 'a paid advert made to look like a recommendation',
+      'Scarcity': 'making something feel limited so you decide faster',
+      'Social proof': 'suggesting everyone else already has it',
+    },
+    takeaway:
+        'Adverts sell a feeling and attach a product to it. Once you can name '
+        'the feeling being sold, it loses most of its grip.',
+    sections: [
+      _LessonSection(
+        title: 'You are the product being aimed at',
+        content:
+            'Companies pay a lot to reach people your age, because habits '
+            'formed now can last decades. That is not a conspiracy — it is '
+            'written down in their marketing plans.',
+      ),
+      _LessonSection(
+        title: 'Three tactics to watch for',
+        content:
+            'Scarcity ("only today") rushes you. Social proof ("everyone has '
+            'it") makes missing out feel like a loss. And a friendly face '
+            'reading a script borrows trust it did not earn.',
+      ),
+      _LessonSection(
+        title: 'The defence is naming it',
+        content:
+            'Say out loud what the advert wants you to feel — cool, included, '
+            'ahead of your friends. Naming it moves the decision from your gut '
+            'to your head, which is where it belongs.',
+      ),
+    ],
+  ),
+  'lesson_33': _LessonContent(
+    icon: Icons.videogame_asset_rounded,
+    objectives: [
+      'Trace in-game currency back to real money',
+      'Explain why bundles and battle passes are priced the way they are',
+      'Set a personal rule for in-game spending',
+    ],
+    keyTerms: {
+      'Premium currency': 'coins or gems you buy with real money',
+      'Bundle': 'a larger pack sold at a lower price per unit',
+      'Sunk cost': 'money already spent, which should not drive new spending',
+    },
+    takeaway:
+        'Game currency is a layer of paint over real money. The spending '
+        'happened when you bought the coins, not when you spent them.',
+    sections: [
+      _LessonSection(
+        title: 'Two currencies, one wallet',
+        content:
+            'Games rarely price items in real money. They price them in gems, '
+            'and sell gems in amounts that never quite match what you want. '
+            'The leftover balance is deliberate: it pulls you back.',
+      ),
+      _LessonSection(
+        title: 'Why the big bundle is cheaper',
+        content:
+            'A better price per coin is real, but the reason it is offered is '
+            'the bigger single payment. A discount only saves you money on '
+            'what you were already going to buy.',
+      ),
+      _LessonSection(
+        title: 'A rule beats a decision',
+        content:
+            'Decide once — a monthly cap, or only spending money you earned '
+            'yourself — instead of deciding again every time a limited offer '
+            'appears. Rules do not get tired; willpower does.',
+      ),
+    ],
+  ),
+  'lesson_34': _LessonContent(
+    icon: Icons.hourglass_bottom_rounded,
+    objectives: [
+      'Apply a waiting rule to non-urgent purchases',
+      'Explain why waiting costs almost nothing',
+      'Use a savings goal as a comparison point',
+    ],
+    keyTerms: {
+      'Impulse buy': 'a purchase decided in seconds, on feeling alone',
+      'Cooling-off period': 'deliberate time between wanting and buying',
+      'Opportunity cost': 'what you gave up by choosing this instead',
+    },
+    takeaway:
+        'If you still want it tomorrow, buy it tomorrow. Almost nothing real '
+        'is lost by waiting a day, and a lot of regret is avoided.',
+    sections: [
+      _LessonSection(
+        title: 'Excitement has a short half-life',
+        content:
+            'The feeling that makes something feel essential usually fades '
+            'within hours. A 24-hour gap lets you decide with the version of '
+            'yourself who has to live with the purchase.',
+      ),
+      _LessonSection(
+        title: 'What waiting actually costs',
+        content:
+            'Almost always: nothing. "Limited time" offers repeat. And if you '
+            'could not afford it today anyway, waiting was already the plan — '
+            'you just get to keep the choice.',
+      ),
+      _LessonSection(
+        title: 'Compare it to your goal',
+        content:
+            'Every purchase competes with something you are saving for. Write '
+            'the goal down, and the comparison happens on its own instead of '
+            'needing willpower.',
+      ),
+    ],
+  ),
+  'lesson_35': _LessonContent(
+    icon: Icons.gpp_maybe_rounded,
+    objectives: [
+      'Recognise the standard shape of a money scam',
+      'Explain why real prizes never ask you to pay',
+      'Know what to do when something feels off',
+    ],
+    keyTerms: {
+      'Advance-fee scam': 'paying a small amount to unlock a prize that is not real',
+      'Phishing': 'a fake message that copies a service you trust',
+      'Urgency': 'artificial time pressure used to stop you thinking',
+    },
+    takeaway:
+        'Urgency plus secrecy plus a payment from you is the signature of a '
+        'scam. Slowing down and telling an adult breaks all three.',
+    sections: [
+      _LessonSection(
+        title: 'The shape is always similar',
+        content:
+            'Something great is offered, there is a reason you must act now, '
+            'and there is a reason not to mention it to anyone. Those three '
+            'together are the pattern, whatever the story on top.',
+      ),
+      _LessonSection(
+        title: 'Real prizes do not charge you',
+        content:
+            'If you have to send money, pay postage, or buy a gift card to '
+            'collect something you "won", the fee was the whole point. Nothing '
+            'is waiting on the other side.',
+      ),
+      _LessonSection(
+        title: 'What to do instead',
+        content:
+            'Do not reply, do not click, and tell an adult you trust. Scammers '
+            'rely on embarrassment to keep people quiet — being scammed is not '
+            'a failure of intelligence, it is a crime committed against you.',
+      ),
+    ],
+  ),
+
+  // ---------------- Unit 8 · Money by the Numbers (ages 14-17) ----------------
+  'lesson_36': _LessonContent(
+    icon: Icons.percent_rounded,
+    objectives: [
+      'Calculate a discount, a tip, and an interest amount',
+      'Explain why percentages apply to the current value',
+      'Spot when a percentage hides a small real amount',
+    ],
+    keyTerms: {
+      'Base': 'the number a percentage is taken from',
+      'Percentage point': 'a difference between two percentages, not a ratio',
+      'Compounding': 'a percentage applied repeatedly to a growing number',
+    },
+    takeaway:
+        'A percentage means nothing without its base. "20% off" and "20% '
+        'return" can be tiny or huge depending on what they are 20% of.',
+    sections: [
+      _LessonSection(
+        title: 'The base is half the answer',
+        content:
+            '50% of 150 is less money than 5% of 2000. Whenever a percentage '
+            'is quoted at you, find the base before you react to the number.',
+      ),
+      _LessonSection(
+        title: 'Up then down does not cancel',
+        content:
+            'Fall 50% and rise 50% and you are down 25%, because the rise is '
+            'calculated on the smaller number. This is why a 50% loss needs a '
+            '100% gain to recover.',
+      ),
+      _LessonSection(
+        title: 'Percentages of your own money',
+        content:
+            'Saving 10% of what you earn is a rule that scales with you: it '
+            'stays sensible whether you earn 20 a week or 2000 a month. Fixed '
+            'amounts do not adapt; percentages do.',
+      ),
+    ],
+  ),
+  'lesson_37': _LessonContent(
+    icon: Icons.equalizer_rounded,
+    objectives: [
+      'Calculate a mean and a median',
+      'Explain how one outlier distorts an average',
+      'Choose the right summary for a given dataset',
+    ],
+    keyTerms: {
+      'Mean': 'the total divided by how many values there are',
+      'Median': 'the middle value when the data is sorted',
+      'Outlier': 'a value far away from the rest',
+    },
+    takeaway:
+        'When a headline quotes an average income, ask for the median. The gap '
+        'between them tells you how skewed the picture is.',
+    sections: [
+      _LessonSection(
+        title: 'Two different questions',
+        content:
+            'The mean answers "if we shared it out equally, how much each?" '
+            'The median answers "what does a typical one look like?" Those are '
+            'not the same question, and money data pulls them apart.',
+      ),
+      _LessonSection(
+        title: 'One value can move the mean',
+        content:
+            'Nine people earning 30 and one earning 1000 gives a mean of 127 — '
+            'a number nobody in the room earns. The median, 30, describes '
+            'almost everyone.',
+      ),
+      _LessonSection(
+        title: 'Which one is being quoted?',
+        content:
+            'Averages get quoted when they flatter the argument. Neither is '
+            'dishonest by itself; choosing without saying which is.',
+      ),
+    ],
+  ),
+  'lesson_38': _LessonContent(
+    icon: Icons.ssid_chart_rounded,
+    objectives: [
+      'Read the axes and time range on a price chart',
+      'Tell a trend apart from ordinary noise',
+      'Explain how zoom level changes the story',
+    ],
+    keyTerms: {
+      'Axis': 'the labelled scale along an edge of the chart',
+      'Time range': 'the window of history a chart covers',
+      'Noise': 'small movement that carries no information',
+    },
+    takeaway:
+        'A chart shape means nothing until you have read both axes and the '
+        'time range. The same data can look calm or catastrophic.',
+    sections: [
+      _LessonSection(
+        title: 'Read the labels first',
+        content:
+            'Price on the vertical, time on the horizontal — usually. Check '
+            'where the vertical axis starts and how long the window is before '
+            'you form any opinion about the line.',
+      ),
+      _LessonSection(
+        title: 'Zoom is a storyteller',
+        content:
+            'A 1% wobble is invisible across a year and looks like a cliff '
+            'across an hour. Nothing about the business changed; only the '
+            'window did.',
+      ),
+      _LessonSection(
+        title: 'Try it on the Market Board',
+        content:
+            'Open a stock in the Market Board and switch between the short and '
+            'long views. Watching the same holding change character is the '
+            'fastest way to internalise this.',
+      ),
+    ],
+  ),
+  'lesson_39': _LessonContent(
+    icon: Icons.warning_amber_rounded,
+    objectives: [
+      'Spot a truncated vertical axis',
+      'Recognise a cherry-picked time window',
+      'Ask the right question of any financial chart',
+    ],
+    keyTerms: {
+      'Truncated axis': 'a vertical scale that does not start at zero',
+      'Cherry-picking': 'choosing the window that flatters the result',
+      'Survivorship bias': 'only showing the ones that worked out',
+    },
+    takeaway:
+        'Most misleading charts are not fake data. They are honest data framed '
+        'to make one conclusion look obvious.',
+    sections: [
+      _LessonSection(
+        title: 'The axis that starts at 98',
+        content:
+            'Cutting the bottom off the vertical scale turns a 2% move into a '
+            'mountain. It is the single most common trick, and it appears in '
+            'news graphics as often as adverts.',
+      ),
+      _LessonSection(
+        title: 'The window that starts at the bottom',
+        content:
+            'Any investment has a three-month stretch that looks brilliant. '
+            'Choosing that stretch after the fact proves nothing. Ask what the '
+            'full period looks like.',
+      ),
+      _LessonSection(
+        title: 'The funds you never see',
+        content:
+            'Adverts show the funds that survived. The ones that closed are '
+            'not in the chart, which quietly lifts every average you are '
+            'shown.',
+      ),
+    ],
+  ),
+  'lesson_40': _LessonContent(
+    icon: Icons.query_stats_rounded,
+    objectives: [
+      'Record spending in categories for a full month',
+      'Turn small recurring amounts into annual figures',
+      'Change one specific behaviour based on the data',
+    ],
+    keyTerms: {
+      'Category': 'a spending group like food, transport, or games',
+      'Recurring cost': 'an amount that repeats on a schedule',
+      'Annualising': 'multiplying a repeating cost out over a year',
+    },
+    takeaway:
+        'Tracking does not reduce spending. It replaces a guess with a number, '
+        'and numbers are what you can actually argue with.',
+    sections: [
+      _LessonSection(
+        title: 'Categories, not a list',
+        content:
+            'A list of purchases is noise. The same purchases grouped into '
+            'five or six categories tell you immediately where the money '
+            'concentrates — usually somewhere surprising.',
+      ),
+      _LessonSection(
+        title: 'Annualise the small stuff',
+        content:
+            '12 a week is 624 a year. Nobody flinches at 12; almost everybody '
+            'flinches at 624. Multiplying out is the cheapest way to make a '
+            'recurring cost visible.',
+      ),
+      _LessonSection(
+        title: 'One change, measured',
+        content:
+            'Pick the largest category, set one specific limit, and track it '
+            'for a month. A single measured change beats a broad promise to '
+            'spend less, which nobody has ever kept.',
+      ),
+    ],
+  ),
+
+  // ---------------- Unit 9 · Retirement and the 401(k) (ages 21+) ----------------
+  'lesson_41': _LessonContent(
+    icon: Icons.account_balance_rounded,
+    objectives: [
+      'Explain what a retirement account is and who owns it',
+      'Describe the tax advantage in plain language',
+      'Understand why the money is hard to withdraw early',
+    ],
+    keyTerms: {
+      '401(k)': 'a tax-advantaged retirement account offered through a job',
+      'IRA': 'a retirement account you open yourself',
+      'Tax-advantaged': 'taxed less, or later, than an ordinary account',
+    },
+    takeaway:
+        'A retirement account is a wrapper around investments, with a tax '
+        'break attached and a lock on the door until you are much older.',
+    sections: [
+      _LessonSection(
+        title: 'It is yours, not the employer\'s',
+        content:
+            'Your contributions belong to you from the first day, even if you '
+            'leave the job. The employer administers the plan; it does not own '
+            'the balance.',
+      ),
+      _LessonSection(
+        title: 'The tax break is the point',
+        content:
+            'Ordinary investing is taxed as it grows. Retirement accounts '
+            'defer or eliminate that, which over forty years is worth far more '
+            'than it sounds in any single year.',
+      ),
+      _LessonSection(
+        title: 'The lock is a feature',
+        content:
+            'Penalties on early withdrawal exist to stop you raiding it. That '
+            'friction is doing real work — the accounts people never touch are '
+            'the ones that end up large.',
+      ),
+    ],
+  ),
+  'lesson_42': _LessonContent(
+    icon: Icons.handshake_rounded,
+    objectives: [
+      'Read a match formula correctly',
+      'Calculate the money a match is worth',
+      'Explain why the match comes before fund selection',
+    ],
+    keyTerms: {
+      'Employer match': 'money your employer adds when you contribute',
+      'Match formula': 'the rule setting how much they add and up to what limit',
+      'Contribution rate': 'the percentage of your pay you put in',
+    },
+    takeaway:
+        'The match is pay you have already earned but have not claimed. '
+        'Nothing else in investing offers a guaranteed instant return.',
+    sections: [
+      _LessonSection(
+        title: 'Read the formula slowly',
+        content:
+            '"50% of the first 6%" means you must contribute 6% to get 3% '
+            'added. It is not the same as "6%", and misreading it is the most '
+            'common way people leave money behind.',
+      ),
+      _LessonSection(
+        title: 'What it is actually worth',
+        content:
+            'On a 40,000 salary, contributing 6% is 2,400 of yours and 1,200 '
+            'of theirs. Skipping it is turning down a 3% raise every single '
+            'year you work there.',
+      ),
+      _LessonSection(
+        title: 'Priority order',
+        content:
+            'Get the full match first. Only after that does it make sense to '
+            'argue about which fund, how much extra, or anything else. No fund '
+            'reliably beats free money.',
+      ),
+    ],
+  ),
+  'lesson_43': _LessonContent(
+    icon: Icons.compare_arrows_rounded,
+    objectives: [
+      'State when tax is paid under each option',
+      'Match the choice to your expected future tax rate',
+      'Recognise that both can be used over a career',
+    ],
+    keyTerms: {
+      'Roth': 'tax paid now, qualified withdrawals later are untaxed',
+      'Traditional': 'tax deferred now, withdrawals taxed later',
+      'Marginal rate': 'the rate applied to your next unit of income',
+    },
+    takeaway:
+        'Pay the tax in the year your rate is lowest. Early in a career that '
+        'is usually now, which is why Roth suits people starting out.',
+    sections: [
+      _LessonSection(
+        title: 'Same money, different timing',
+        content:
+            'Both wrappers shelter the growth. The only real question is '
+            'whether you hand the tax over on the way in or on the way out.',
+      ),
+      _LessonSection(
+        title: 'Guess your future bracket',
+        content:
+            'If you expect to earn much more later, prepaying tax now at a low '
+            'rate wins. If you are at your peak earnings already, deferring is '
+            'usually better.',
+      ),
+      _LessonSection(
+        title: 'You do not have to pick forever',
+        content:
+            'Many people use Roth early and traditional later. The decision is '
+            'made fresh each year, not once for life.',
+      ),
+    ],
+  ),
+  'lesson_44': _LessonContent(
+    icon: Icons.trending_up_rounded,
+    objectives: [
+      'Explain why early contributions outweigh later, larger ones',
+      'Describe compounding over a multi-decade horizon',
+      'Identify the real cost of waiting to start',
+    ],
+    keyTerms: {
+      'Compounding': 'growth earning growth of its own',
+      'Time horizon': 'how many years the money has to grow',
+      'Contribution': 'money you put in, before any growth',
+    },
+    takeaway:
+        'Ten years of early contributions often beats thirty years of later '
+        'ones. Time is the input you cannot buy back.',
+    sections: [
+      _LessonSection(
+        title: 'The classic comparison',
+        content:
+            'One person saves from 25 to 35 and stops. Another saves the same '
+            'monthly amount from 35 to 65. At 65 the first is frequently ahead '
+            'despite contributing a third as much.',
+      ),
+      _LessonSection(
+        title: 'Why it works that way',
+        content:
+            'The earliest coins spend the longest compounding, and compounding '
+            'accelerates. The last decade before retirement does more for the '
+            'money already there than for anything newly added.',
+      ),
+      _LessonSection(
+        title: 'What waiting costs',
+        content:
+            'Delaying five years is not five years of contributions — it is '
+            'five years off the end of every future coin\'s growth. That is '
+            'the expensive part.',
+      ),
+    ],
+  ),
+  'lesson_45': _LessonContent(
+    icon: Icons.receipt_long_rounded,
+    objectives: [
+      'Find the expense ratio on a fund',
+      'Explain how vesting affects employer money',
+      'Know the options for an old account when changing jobs',
+    ],
+    keyTerms: {
+      'Expense ratio': 'the annual percentage a fund charges you',
+      'Vesting': 'the schedule on which employer contributions become yours',
+      'Rollover': 'moving an old account into a new one without penalty',
+    },
+    takeaway:
+        'Fees are charged every year, including the good ones. A 1% fund '
+        'versus a 0.05% fund is a large share of your balance over a career.',
+    sections: [
+      _LessonSection(
+        title: 'Fees compound too',
+        content:
+            'A percentage taken annually applies to a growing balance, so the '
+            'cost grows with your savings. Over forty years the gap between '
+            'cheap and expensive funds is measured in years of retirement.',
+      ),
+      _LessonSection(
+        title: 'Vesting only affects their money',
+        content:
+            'Your own contributions are yours immediately. The employer match '
+            'may need two to four years of service before you keep all of it '
+            'if you leave.',
+      ),
+      _LessonSection(
+        title: 'Do not lose the old account',
+        content:
+            'When you change jobs the account stays yours. Roll it into the '
+            'new plan or an IRA so it does not sit forgotten in cash for a '
+            'decade — a surprisingly common way to lose growth.',
+      ),
+    ],
+  ),
 };

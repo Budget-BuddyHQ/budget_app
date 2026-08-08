@@ -269,6 +269,17 @@ class MarketDataService extends ChangeNotifier {
   void seedQuotesForTest(Iterable<LiveQuote> quotes) {
     for (final quote in quotes) {
       _quotes[quote.symbol] = quote;
+      // Also seed an intraday series. Without this `seriesFor` returns the
+      // 3-point fallback, `_MiniPriceCard` bails out with "No chart data
+      // yet", and the whole charted branch of the trade cards goes
+      // unexercised by the layout sweep — which is exactly where a
+      // small-screen overflow hid.
+      _series[quote.symbol] = <double>[
+        for (var i = 0; i < 24; i++)
+          quote.previousClose +
+              (quote.current - quote.previousClose) * (i / 23) +
+              (i.isEven ? 0.4 : -0.4),
+      ];
     }
     notifyListeners();
   }

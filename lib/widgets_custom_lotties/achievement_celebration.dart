@@ -5,14 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../constants/app_assets.dart';
+import 'sprite_sheet_image.dart';
 
 /// The "you just earned something" moment.
 ///
-/// There is no pre-drawn celebrating-turtle sprite in the project — every
-/// turtle asset is a single static pose — so the celebration is *composed*:
-/// the Budget Buddy mascot ([AppAssets.pixelMainTurtle]) pops in with a
-/// spring, sitting inside a burst of rotating rays and outward-flying
-/// sparks. All painted, no new art needed.
+/// Plays the 8-frame celebration sprite sheet
+/// ([AppAssets.turtleCelebrateSheet]) at ~10 fps, sitting inside a burst of
+/// rotating rays and outward-flying sparks. This replaced an earlier
+/// composed-mascot version — the real animated art landed later.
 class AchievementCelebration {
   AchievementCelebration._();
 
@@ -52,8 +52,9 @@ class _AchievementDialog extends StatefulWidget {
 
 class _AchievementDialogState extends State<_AchievementDialog>
     with TickerProviderStateMixin {
-  // Two controllers on purpose: the burst plays once as an entrance, the
-  // shimmer loops underneath it so the card keeps breathing afterwards.
+  // Three controllers: the burst plays once as an entrance, the shimmer
+  // rays loop underneath forever, and the sprite cycles through its 8
+  // frames then holds on the final celebration pose.
   late final AnimationController _entrance = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 900),
@@ -64,10 +65,18 @@ class _AchievementDialogState extends State<_AchievementDialog>
     duration: const Duration(seconds: 8),
   )..repeat();
 
+  // 8 frames at ~10 fps runs ~800ms, so the sprite settles right as the
+  // entrance burst finishes — the two beats read as one moment.
+  late final AnimationController _sprite = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 800),
+  )..forward();
+
   @override
   void dispose() {
     _entrance.dispose();
     _loop.dispose();
+    _sprite.dispose();
     super.dispose();
   }
 
@@ -115,13 +124,22 @@ class _AchievementDialogState extends State<_AchievementDialog>
                   height: 150,
                   width: 150,
                   child: AnimatedBuilder(
-                    animation: Listenable.merge([_entrance, _loop]),
+                    animation: Listenable.merge([_entrance, _loop, _sprite]),
                     builder: (context, _) {
                       final pop = reduceMotion
                           ? 1.0
                           : Curves.elasticOut.transform(
                               _entrance.value.clamp(0.0, 1.0),
                             );
+                      // Advance through the 8 frames, then hold on the last
+                      // celebration pose. Reduce-motion pins straight to it.
+                      final frame = reduceMotion
+                          ? AppAssets.turtleCelebrateFrames - 1
+                          : (_sprite.value * AppAssets.turtleCelebrateFrames)
+                                .floor()
+                                .clamp(0, AppAssets.turtleCelebrateFrames - 1);
+                      final column = frame % AppAssets.turtleCelebrateColumns;
+                      final row = frame ~/ AppAssets.turtleCelebrateColumns;
                       return Stack(
                         alignment: Alignment.center,
                         children: [
@@ -137,14 +155,24 @@ class _AchievementDialogState extends State<_AchievementDialog>
                             ),
                           Transform.scale(
                             scale: pop.clamp(0.0, 1.4),
-                            child: Image.asset(
-                              AppAssets.pixelMainTurtle,
-                              width: 88,
-                              filterQuality: FilterQuality.none,
-                              errorBuilder: (_, _, _) => Icon(
-                                Icons.emoji_events_rounded,
-                                size: 64,
-                                color: widget.accent,
+                            child: SizedBox(
+                              width: 96,
+                              height: 96,
+                              child: SpriteSheetImage(
+                                sheetAsset: AppAssets.turtleCelebrateSheet,
+                                columns: AppAssets.turtleCelebrateColumns,
+                                rows: AppAssets.turtleCelebrateRows,
+                                column: column,
+                                row: row,
+                                cellWidth: AppAssets.turtleCelebrateCellSize,
+                                cellHeight: AppAssets.turtleCelebrateCellSize,
+                                width: 96,
+                                height: 96,
+                                errorBuilder: (_, _, _) => Icon(
+                                  Icons.emoji_events_rounded,
+                                  size: 64,
+                                  color: widget.accent,
+                                ),
                               ),
                             ),
                           ),
