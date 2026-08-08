@@ -69,6 +69,7 @@ flutter:
     - assets/imported/pond_loading_animation_source/pond.glb
     - assets/imported/
     - assets/own_skins/
+    - assets/own_skins/turtle_celebrate/
     - assets/self_made_backgrounds/
     - assets/map_assets_coins/PNG_more_map_tiles/
     - assets/own_skins/mushroom_goomba/walking_animation/

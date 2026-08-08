@@ -94,10 +94,14 @@ class _LessonScreenState extends State<LessonScreen> {
       return;
     }
 
-    final targetOffset = (index * 156.0).clamp(
-      0.0,
-      _unitQuickScrollController.position.maxScrollExtent,
-    );
+    // The strip is grouped by age band, so a unit's position in it is no
+    // longer its curriculum index — and each band adds a header of its own
+    // width ahead of the units under it.
+    final targetOffset =
+        _UnitQuickChangerBar.estimatedOffsetFor(
+          _progressionService.units,
+          index,
+        ).clamp(0.0, _unitQuickScrollController.position.maxScrollExtent);
     _unitQuickScrollController.animateTo(
       targetOffset,
       duration: const Duration(milliseconds: 260),
@@ -118,11 +122,24 @@ class _LessonScreenState extends State<LessonScreen> {
       return;
     }
 
+    final unit = _progressionService.getUnit(lesson.unitId)!;
+
+    // Age warning, not an age lock. The prerequisite chain is what gates the
+    // curriculum; this only makes sure nobody wanders into the 401(k) unit at
+    // twelve and assumes the salary-shaped examples are describing them.
+    if (isAboveReaderStage(
+      unit.ageStage,
+      _statsController.stats.ageBand.maxPlausibleStage,
+    )) {
+      final proceed = await _confirmAboveAge(unit);
+      if (!proceed || !mounted) return;
+    }
+
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => LessonDetailScreen(
           lesson: lesson,
-          unit: _progressionService.getUnit(lesson.unitId)!,
+          unit: unit,
           progressionService: _progressionService,
         ),
       ),
@@ -131,6 +148,77 @@ class _LessonScreenState extends State<LessonScreen> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  /// Asks before opening a unit written for an older band. Returns false if
+  /// the player backs out or dismisses the sheet.
+  Future<bool> _confirmAboveAge(LessonUnit unit) async {
+    final answer = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF0F2C22),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: Color(0x55FFB84D)),
+        ),
+        title: Row(
+          children: [
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: Color(0xFFFFB84D),
+              size: 24,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Written for ${unit.ageStage.label.toLowerCase()}',
+                style: GoogleFonts.baloo2(
+                  color: const Color(0xFFFFB84D),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          '${unit.title.split(':').last.trim()} assumes money and choices from '
+          'an older age group — things like a salary, taxes, or a workplace '
+          'plan. Nothing is stopping you reading it, but the numbers are a '
+          'preview of later, not a description of now.',
+          style: GoogleFonts.quicksand(
+            color: Colors.white.withValues(alpha: 0.82),
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white.withValues(alpha: 0.7),
+            ),
+            child: const Text(
+              'Go back',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFFFB84D),
+              foregroundColor: const Color(0xFF3A2400),
+            ),
+            child: const Text(
+              'Read it anyway',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+          ),
+        ],
+      ),
+    );
+    return answer ?? false;
   }
 
   Future<void> _openPractice(LessonUnit unit) async {
@@ -147,6 +235,7 @@ class _LessonScreenState extends State<LessonScreen> {
     required bool compact,
     required int unitIndexOffset,
     AgeStage? recommendedStage,
+    AgeStage? warnAboveStage,
   }) {
     return <Widget>[
       for (var index = 0; index < units.length; index++) ...[
@@ -162,6 +251,10 @@ class _LessonScreenState extends State<LessonScreen> {
           statusFor: _progressionService.getLessonStatus,
           accuracyFor: _progressionService.accuracyFor,
           isRecommended: units[index].ageStage == recommendedStage,
+          isAboveReader: isAboveReaderStage(
+            units[index].ageStage,
+            warnAboveStage,
+          ),
         ),
         if (index != units.length - 1) const SizedBox(height: 16),
       ],
@@ -194,8 +287,12 @@ class _LessonScreenState extends State<LessonScreen> {
     final selectedUnit = units[selectedUnitIndex];
     final overallProgress = _progressionService.getProgress();
     final recommendedStage = _statsController.stats.ageBand.recommendedStage;
+    // Warnings use the *top* of the player's age band, not its middle — see
+    // `AgeBand.maxPlausibleStage`.
+    final warnAboveStage = _statsController.stats.ageBand.maxPlausibleStage;
 
     return Scaffold(
+      backgroundColor: const Color(0xFF10352A),
       bottomNavigationBar: widget.onNavSelected == null
           ? null
           : CustomBottomNav(
@@ -224,12 +321,14 @@ class _LessonScreenState extends State<LessonScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      // Heavier than before: the tile art was reading through
-                      // the cards and making the whole tab feel like one busy
-                      // green wash. It still shows as texture, just quietly.
-                      const Color(0xFF07211A).withValues(alpha: 0.86),
-                      const Color(0xFF07211A).withValues(alpha: 0.72),
-                      const Color(0xFF07211A).withValues(alpha: 0.88),
+                      // Matches the welcome screen's light 0.55-0.62 range
+                      // rather than the 0.82-0.86 wash that was burying the
+                      // unit art completely. Slightly stronger at the very
+                      // top and bottom so the header text and bottom nav
+                      // still have something to sit against.
+                      const Color(0xFF0C2418).withValues(alpha: 0.66),
+                      const Color(0xFF0C2418).withValues(alpha: 0.48),
+                      const Color(0xFF0C2418).withValues(alpha: 0.70),
                     ],
                     stops: const [0.0, 0.42, 1.0],
                   ),
@@ -277,6 +376,8 @@ class _LessonScreenState extends State<LessonScreen> {
                         progressFor: _progressionService.getUnitProgress,
                         masteryFor: _progressionService.getUnitMastery,
                         onSelected: _selectUnit,
+                        readerStage: recommendedStage,
+                        warnAboveStage: warnAboveStage,
                       ),
                       const SizedBox(height: 12),
                       _HubHeader(
@@ -313,6 +414,7 @@ class _LessonScreenState extends State<LessonScreen> {
                         compact: true,
                         unitIndexOffset: selectedUnitIndex,
                         recommendedStage: recommendedStage,
+                        warnAboveStage: warnAboveStage,
                       ),
                     ],
                   );
@@ -332,6 +434,8 @@ class _LessonScreenState extends State<LessonScreen> {
                       progressFor: _progressionService.getUnitProgress,
                       masteryFor: _progressionService.getUnitMastery,
                       onSelected: _selectUnit,
+                      readerStage: recommendedStage,
+                      warnAboveStage: warnAboveStage,
                     ),
                     const SizedBox(height: 12),
                     _HubHeader(
@@ -367,6 +471,7 @@ class _LessonScreenState extends State<LessonScreen> {
                       compact: compactLayout,
                       unitIndexOffset: selectedUnitIndex,
                       recommendedStage: recommendedStage,
+                      warnAboveStage: warnAboveStage,
                     ),
                   ],
                 );
@@ -396,6 +501,8 @@ class _UnitQuickChangerBar extends StatelessWidget {
     required this.progressFor,
     required this.masteryFor,
     required this.onSelected,
+    this.readerStage,
+    this.warnAboveStage,
   });
 
   final ScrollController controller;
@@ -405,8 +512,57 @@ class _UnitQuickChangerBar extends StatelessWidget {
   final MasteryLevel Function(String unitId) masteryFor;
   final ValueChanged<int> onSelected;
 
+  /// The player's own [AgeStage], or null if they didn't share an age band.
+  final AgeStage? readerStage;
+
+  /// The top of the player's age band — anything above it gets a warning mark.
+  final AgeStage? warnAboveStage;
+
+  /// Chips grouped under age headers rather than left in curriculum order.
+  ///
+  /// The curriculum order is a prerequisite chain and isn't age-monotonic —
+  /// Unit 2 (credit) is written for 18-20s while Unit 3 (saving systems) is
+  /// for 14-17s — so reading the strip left to right told you nothing about
+  /// who a unit was for. Sorting the *strip* by age band (and only the strip;
+  /// `onSelected` still carries each unit's real index) makes the division by
+  /// age the first thing you see.
+  List<({int index, LessonUnit unit})> get _byAge => _sortByAge(units);
+
+  static List<({int index, LessonUnit unit})> _sortByAge(
+    List<LessonUnit> units,
+  ) {
+    final entries = <({int index, LessonUnit unit})>[
+      for (var i = 0; i < units.length; i++) (index: i, unit: units[i]),
+    ];
+    entries.sort((a, b) {
+      final byStage = a.unit.ageStage.minAge.compareTo(b.unit.ageStage.minAge);
+      return byStage != 0 ? byStage : a.unit.order.compareTo(b.unit.order);
+    });
+    return entries;
+  }
+
+  /// Roughly how far along the strip the unit at curriculum [index] sits, so
+  /// tapping a chip scrolls it into view. Approximate on purpose — chip widths
+  /// depend on their labels, and this only has to land near the right place.
+  static double estimatedOffsetFor(List<LessonUnit> units, int index) {
+    const chipWidth = 156.0;
+    const headerWidth = 174.0;
+    var offset = 0.0;
+    AgeStage? previousStage;
+    for (final entry in _sortByAge(units)) {
+      if (entry.unit.ageStage != previousStage) {
+        offset += headerWidth;
+        previousStage = entry.unit.ageStage;
+      }
+      if (entry.index == index) return offset;
+      offset += chipWidth;
+    }
+    return offset;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final entries = _byAge;
     return Container(
       constraints: const BoxConstraints(minHeight: 72),
       padding: const EdgeInsets.all(8),
@@ -430,20 +586,119 @@ class _UnitQuickChangerBar extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 10),
           child: Row(
             children: [
-              for (var index = 0; index < units.length; index++) ...[
+              for (var slot = 0; slot < entries.length; slot++) ...[
+                if (slot == 0 ||
+                    entries[slot].unit.ageStage !=
+                        entries[slot - 1].unit.ageStage) ...[
+                  if (slot != 0) const SizedBox(width: 10),
+                  _AgeGroupHeader(
+                    stage: entries[slot].unit.ageStage,
+                    isReaderStage: entries[slot].unit.ageStage == readerStage,
+                    isAboveReader: isAboveReaderStage(
+                      entries[slot].unit.ageStage,
+                      warnAboveStage,
+                    ),
+                  ),
+                ],
+                const SizedBox(width: 10),
                 _UnitJumpChip(
-                  unit: units[index],
-                  index: index,
-                  selected: index == activeIndex,
-                  progress: progressFor(units[index].id),
-                  mastery: masteryFor(units[index].id),
-                  onTap: () => onSelected(index),
+                  unit: entries[slot].unit,
+                  index: entries[slot].index,
+                  selected: entries[slot].index == activeIndex,
+                  progress: progressFor(entries[slot].unit.id),
+                  mastery: masteryFor(entries[slot].unit.id),
+                  isAboveReader: isAboveReaderStage(
+                    entries[slot].unit.ageStage,
+                    warnAboveStage,
+                  ),
+                  onTap: () => onSelected(entries[slot].index),
                 ),
-                if (index != units.length - 1) const SizedBox(width: 10),
               ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Age-band label that opens each group in the unit strip.
+///
+/// Not tappable — it's a heading, and the units under it are the controls.
+class _AgeGroupHeader extends StatelessWidget {
+  const _AgeGroupHeader({
+    required this.stage,
+    required this.isReaderStage,
+    required this.isAboveReader,
+  });
+
+  final AgeStage stage;
+  final bool isReaderStage;
+  final bool isAboveReader;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = isReaderStage
+        ? const Color(0xFF85EFAC)
+        : isAboveReader
+        ? const Color(0xFFFFB84D)
+        : const Color(0xFF9FB8AC);
+
+    return Container(
+      constraints: const BoxConstraints(minHeight: 60),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accent.withValues(alpha: 0.30)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isReaderStage
+                    ? Icons.star_rounded
+                    : isAboveReader
+                    ? Icons.warning_amber_rounded
+                    : Icons.cake_rounded,
+                size: 13,
+                color: accent,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                stage.label,
+                style: TextStyle(
+                  color: accent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 3),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 140),
+            child: Text(
+              isReaderStage
+                  ? 'Your age group'
+                  : isAboveReader
+                  ? 'Older than you'
+                  : stage.blurb,
+              maxLines: 2,
+              style: TextStyle(
+                color: accent.withValues(alpha: 0.8),
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                height: 1.15,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -457,6 +712,7 @@ class _UnitJumpChip extends StatelessWidget {
     required this.progress,
     required this.mastery,
     required this.onTap,
+    this.isAboveReader = false,
   });
 
   final LessonUnit unit;
@@ -465,6 +721,9 @@ class _UnitJumpChip extends StatelessWidget {
   final double progress;
   final MasteryLevel mastery;
   final VoidCallback onTap;
+
+  /// Pitched at an older band than the player's own — draws a warning mark.
+  final bool isAboveReader;
 
   @override
   Widget build(BuildContext context) {
@@ -481,7 +740,8 @@ class _UnitJumpChip extends StatelessWidget {
     return Semantics(
       button: true,
       label:
-          'Jump to ${unit.title}, ${(progress * 100).round()} percent complete',
+          'Jump to ${unit.title}, ${(progress * 100).round()} percent complete'
+          '${isAboveReader ? ', written for an older age group' : ''}',
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
@@ -1030,6 +1290,7 @@ class _UnitCard extends StatelessWidget {
     required this.accuracyFor,
     this.compact = false,
     this.isRecommended = false,
+    this.isAboveReader = false,
   });
 
   final LessonUnit unit;
@@ -1037,6 +1298,9 @@ class _UnitCard extends StatelessWidget {
   final double progress;
   final MasteryLevel mastery;
   final bool isRecommended;
+
+  /// This unit is written for an older age band than the player's own.
+  final bool isAboveReader;
 
   /// Mean best accuracy across attempted assessments, null if none taken yet.
   final double? accuracy;
@@ -1061,11 +1325,11 @@ class _UnitCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            // Tint the panel toward this unit's accent, but keep it dark and
-            // fully opaque so it reads as a solid card over the tile art
-            // rather than letting the busy background show through.
-            Color.lerp(const Color(0xFF14332A), accent, 0.13)!,
-            const Color(0xFF0C1F19),
+            // Lifted off the near-black end of the palette so the card sits
+            // *above* the backdrop tonally instead of merging into it — the
+            // main reason the tab read as one dense block of green.
+            Color.lerp(const Color(0xFF1B4536), accent, 0.16)!,
+            const Color(0xFF122F26),
           ],
         ),
         borderRadius: BorderRadius.circular(32),
@@ -1098,6 +1362,7 @@ class _UnitCard extends StatelessWidget {
                   _AgeStageChip(
                     stage: unit.ageStage,
                     isRecommended: isRecommended,
+                    isAboveReader: isAboveReader,
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -1141,6 +1406,10 @@ class _UnitCard extends StatelessWidget {
               );
             },
           ),
+          if (isAboveReader) ...[
+            const SizedBox(height: 14),
+            _TooYoungBanner(stage: unit.ageStage, compact: compact),
+          ],
           const SizedBox(height: 20),
           Row(
             children: [
@@ -1237,9 +1506,18 @@ class _MasteryBadge extends StatelessWidget {
 
 /// Small badge naming the age range a unit is pitched at.
 class _AgeStageChip extends StatelessWidget {
-  const _AgeStageChip({required this.stage, this.isRecommended = false});
+  const _AgeStageChip({
+    required this.stage,
+    this.isRecommended = false,
+    this.isAboveReader = false,
+  });
 
   final AgeStage stage;
+
+  /// True when this unit is pitched above the player's own band. Takes
+  /// precedence over [isRecommended] in the styling — the two can never both
+  /// be true, but a warning outranks a suggestion if they somehow are.
+  final bool isAboveReader;
 
   /// True when this unit's [AgeStage] matches the player's own age band.
   /// Purely informational — it never unlocks or reorders anything, since
@@ -1250,7 +1528,9 @@ class _AgeStageChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = isRecommended
+    final accent = isAboveReader
+        ? const Color(0xFFFFB84D)
+        : isRecommended
         ? const Color(0xFF85EFAC)
         : const Color(0xFFFFD45C);
     return Container(
@@ -1264,19 +1544,90 @@ class _AgeStageChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isRecommended ? Icons.star_rounded : Icons.cake_rounded,
+            isAboveReader
+                ? Icons.warning_amber_rounded
+                : isRecommended
+                ? Icons.star_rounded
+                : Icons.cake_rounded,
             size: 12,
             color: accent,
           ),
           const SizedBox(width: 6),
-          Text(
-            isRecommended
-                ? '${stage.label} · For you'
-                : '${stage.label} · ${stage.blurb}',
-            style: TextStyle(
-              color: accent,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
+          Flexible(
+            child: Text(
+              isAboveReader
+                  ? '${stage.label} · Older than you'
+                  : isRecommended
+                  ? '${stage.label} · For you'
+                  : '${stage.label} · ${stage.blurb}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: accent,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The "this is written for older readers" notice on a unit card.
+///
+/// Deliberately a warning and not a lock: the Academy's gating is the
+/// prerequisite chain, and a curious 12-year-old reading the 401(k) unit is a
+/// good outcome. What they need is a heads-up that the examples assume a
+/// salary and a tax bracket they don't have yet, so they don't read their own
+/// situation as the failure.
+class _TooYoungBanner extends StatelessWidget {
+  const _TooYoungBanner({required this.stage, this.compact = false});
+
+  final AgeStage stage;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    const accent = Color(0xFFFFB84D);
+    return Container(
+      padding: EdgeInsets.all(compact ? 12 : 14),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accent.withValues(alpha: 0.42)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: accent, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Written for ${stage.label.toLowerCase()}',
+                  style: const TextStyle(
+                    color: accent,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'This unit is above your age group, so the examples assume '
+                  'money and choices you may not have yet. You can still read '
+                  'it — just take the numbers as a preview.',
+                  style: TextStyle(
+                    color: accent.withValues(alpha: 0.85),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

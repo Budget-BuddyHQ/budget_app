@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/life_sim_controller.dart';
@@ -125,6 +127,19 @@ class _LifeSimPageState extends State<LifeSimPage> {
     life.invest(100);
   }
 
+  /// Skill practice. Until this existed, `LifeSimController.practise` had no
+  /// UI at all — the whole skill/career ladder was unreachable by the player
+  /// even though the events gating on it were already in the pool.
+  Future<void> _openSkills(LifeSimController life) async {
+    HapticFeedback.lightImpact();
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _SkillsSheet(life: life),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final life = _life;
@@ -196,10 +211,12 @@ class _LifeSimPageState extends State<LifeSimPage> {
               _BottomMenu(
                 happiness: life.happiness,
                 blocked: event != null || life.finished,
+                stage: life.stage,
                 onStudy: life.study,
                 onInvest: () => _invest(life),
                 onFun: life.haveFun,
                 onExercise: life.exercise,
+                onSkills: () => _openSkills(life),
                 onAge: life.ageUp,
               ),
             ],
@@ -639,19 +656,28 @@ class _BottomMenu extends StatelessWidget {
   const _BottomMenu({
     required this.happiness,
     required this.blocked,
+    required this.stage,
     required this.onStudy,
     required this.onInvest,
     required this.onFun,
     required this.onExercise,
+    required this.onSkills,
     required this.onAge,
   });
 
   final int happiness;
   final bool blocked;
+
+  /// The menu changes with life stage — a toddler has no use for an
+  /// investment button, and an adult shouldn't still be tapping "School".
+  /// Previously all four actions showed at every age, which is a large part
+  /// of why every year felt identical.
+  final LifeStage stage;
   final VoidCallback onStudy;
   final VoidCallback onInvest;
   final VoidCallback onFun;
   final VoidCallback onExercise;
+  final VoidCallback onSkills;
   final VoidCallback onAge;
 
   @override
@@ -706,18 +732,40 @@ class _BottomMenu extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _MenuButton(
-                    label: 'School',
-                    icon: Icons.menu_book_rounded,
-                    color: const Color(0xFF58C7FF),
-                    onTap: blocked ? null : onStudy,
-                  ),
-                  _MenuButton(
-                    label: 'Assets',
-                    icon: Icons.trending_up_rounded,
-                    color: const Color(0xFF85EFAC),
-                    onTap: blocked ? null : onInvest,
-                  ),
+                  // Left slot: school while young, money once independent.
+                  if (stage == LifeStage.baby ||
+                      stage == LifeStage.child ||
+                      stage == LifeStage.teen)
+                    _MenuButton(
+                      label: 'School',
+                      icon: Icons.menu_book_rounded,
+                      color: const Color(0xFF58C7FF),
+                      onTap: blocked ? null : onStudy,
+                    )
+                  else
+                    _MenuButton(
+                      label: 'Assets',
+                      icon: Icons.trending_up_rounded,
+                      color: const Color(0xFF85EFAC),
+                      onTap: blocked ? null : onInvest,
+                    ),
+                  // Skills open up once a character is old enough to
+                  // meaningfully practise — this is the entry point to the
+                  // whole music/sports/business career ladder.
+                  if (stage != LifeStage.baby)
+                    _MenuButton(
+                      label: 'Skills',
+                      icon: Icons.auto_awesome_rounded,
+                      color: const Color(0xFFB388FF),
+                      onTap: blocked ? null : onSkills,
+                    )
+                  else
+                    _MenuButton(
+                      label: 'Study',
+                      icon: Icons.menu_book_rounded,
+                      color: const Color(0xFF58C7FF),
+                      onTap: blocked ? null : onStudy,
+                    ),
                   _AgeButton(onTap: blocked ? null : onAge),
                   _MenuButton(
                     label: 'Fun',
@@ -831,6 +879,226 @@ class _MenuButton extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Where skills actually get practised.
+///
+/// The skill/career ladder (music → gigs → record deal → tour, and the
+/// sports/business equivalents) was already gating events on skill levels,
+/// but nothing in the UI could raise a skill — so those events were
+/// unreachable. This is that missing input.
+class _SkillsSheet extends StatefulWidget {
+  const _SkillsSheet({required this.life});
+
+  final LifeSimController life;
+
+  @override
+  State<_SkillsSheet> createState() => _SkillsSheetState();
+}
+
+class _SkillsSheetState extends State<_SkillsSheet> {
+  @override
+  Widget build(BuildContext context) {
+    final life = widget.life;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF0A1D17),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.22),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              Text(
+                'Skills',
+                style: GoogleFonts.baloo2(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                life.isDependent
+                    ? 'Practise now and career doors open later.'
+                    : 'Each session costs 20 coins and a little happiness.',
+                style: GoogleFonts.quicksand(
+                  color: Colors.white.withValues(alpha: 0.66),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 16),
+              for (final skill in LifeSkill.values) ...[
+                _SkillRow(
+                  skill: skill,
+                  level: life.skillLevel(skill),
+                  onPractise: life.finished
+                      ? null
+                      : () {
+                          life.practise(skill);
+                          setState(() {});
+                        },
+                ),
+                const SizedBox(height: 10),
+              ],
+              if (life.traits.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'TRAITS',
+                  style: GoogleFonts.baloo2(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    fontSize: 11,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final trait in life.traits)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFFB388FF,
+                          ).withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: const Color(
+                              0xFFB388FF,
+                            ).withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              trait.icon,
+                              size: 13,
+                              color: const Color(0xFFB388FF),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              trait.label,
+                              style: const TextStyle(
+                                color: Color(0xFFB388FF),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SkillRow extends StatelessWidget {
+  const _SkillRow({
+    required this.skill,
+    required this.level,
+    required this.onPractise,
+  });
+
+  final LifeSkill skill;
+  final int level;
+  final VoidCallback? onPractise;
+
+  @override
+  Widget build(BuildContext context) {
+    const accent = Color(0xFFB388FF);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        children: [
+          Icon(skill.icon, color: accent, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  skill.label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: level / 100,
+                    minHeight: 6,
+                    backgroundColor: Colors.white.withValues(alpha: 0.08),
+                    valueColor: const AlwaysStoppedAnimation<Color>(accent),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '$level',
+            style: const TextStyle(
+              color: accent,
+              fontWeight: FontWeight.w900,
+              fontSize: 15,
+            ),
+          ),
+          const SizedBox(width: 10),
+          FilledButton(
+            onPressed: onPractise,
+            style: FilledButton.styleFrom(
+              backgroundColor: accent,
+              foregroundColor: const Color(0xFF1A0B33),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text(
+              'Practise',
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
+            ),
+          ),
+        ],
       ),
     );
   }

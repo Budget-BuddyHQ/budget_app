@@ -485,77 +485,86 @@ class _StockMarketPageState extends State<StockMarketPage>
               ).totalProfitLoss;
         });
 
-        return Scaffold(
-          backgroundColor: const Color(0xFF0A2019),
-          appBar: AppBar(
-            // Transparent so the tile backdrop below runs behind the bar and
-            // the whole board reads as one green surface rather than a black
-            // sheet with a green scaffold hidden underneath it.
-            backgroundColor: Colors.transparent,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            title: const Text(
-              'Market Board',
-              style: TextStyle(fontWeight: FontWeight.w900),
-            ),
-            actions: [
-              _LiveBadge(
-                loading: market.status == LiveMarketStatus.loading,
-                lastFetch: market.lastFetch,
+        // The backdrop sits *behind* the Scaffold rather than inside its
+        // body. An earlier version used `extendBodyBehindAppBar: true` with
+        // `SafeArea(top: false)`, which pushed the ticker tape and trending
+        // strip up underneath the title and tab bar. Painting the art in a
+        // Stack behind a transparent, normally-laid-out Scaffold gets the
+        // same full-bleed green without any overlap.
+        return Stack(
+          children: [
+            // The exact welcome-screen recipe: the hand-made village map at
+            // BoxFit.cover, a light 0.62 dim, and a soft green glow. The
+            // repeating tile pattern used before read as faint texture at
+            // best; this is the treatment that actually pops.
+            Positioned.fill(
+              child: Image.asset(
+                AppAssets.villageMapBackground,
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.none,
               ),
-              IconButton(
-                tooltip: 'Refresh prices',
-                onPressed: () => _tick(force: true),
-                icon: const Icon(Icons.refresh_rounded),
-              ),
-            ],
-            bottom: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              indicatorColor: const Color(0xFF4993FF),
-              indicatorWeight: 3,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white54,
-              labelStyle: const TextStyle(fontWeight: FontWeight.w900),
-              tabs: const [
-                Tab(text: 'Assets'),
-                Tab(text: 'Trade'),
-                Tab(text: 'Orders'),
-                Tab(text: 'P&L'),
-                Tab(text: 'Analytics'),
-              ],
             ),
-          ),
-          extendBodyBehindAppBar: true,
-          body: Stack(
-            children: [
-              // Same hand-made tile art the rest of the app uses, so the
-              // Market Board stops looking like a different product bolted
-              // on next to Home/Arcade/Style.
-              Positioned.fill(
-                child: Image.asset(
-                  AppAssets.arcadeTileBackground,
-                  repeat: ImageRepeat.repeat,
-                  filterQuality: FilterQuality.none,
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0C2418).withValues(alpha: 0.62),
                 ),
               ),
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        const Color(0xFF0A2019).withValues(alpha: 0.94),
-                        const Color(0xFF0C2A21).withValues(alpha: 0.88),
-                        const Color(0xFF081B15).withValues(alpha: 0.95),
-                      ],
-                    ),
+            ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(0.3, -0.5),
+                    radius: 0.95,
+                    colors: [
+                      const Color(0xFF78E08F).withValues(alpha: 0.22),
+                      Colors.transparent,
+                    ],
                   ),
                 ),
               ),
-              SafeArea(
+            ),
+            Scaffold(
+              backgroundColor: Colors.transparent,
+              appBar: AppBar(
+                backgroundColor: Colors.transparent,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                title: const Text(
+                  'Market Board',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+                actions: [
+                  _LiveBadge(
+                    loading: market.status == LiveMarketStatus.loading,
+                    lastFetch: market.lastFetch,
+                  ),
+                  IconButton(
+                    tooltip: 'Refresh prices',
+                    onPressed: () => _tick(force: true),
+                    icon: const Icon(Icons.refresh_rounded),
+                  ),
+                ],
+                bottom: TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  indicatorColor: const Color(0xFF4993FF),
+                  indicatorWeight: 3,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.white54,
+                  labelStyle: const TextStyle(fontWeight: FontWeight.w900),
+                  tabs: const [
+                    Tab(text: 'Assets'),
+                    Tab(text: 'Trade'),
+                    Tab(text: 'Orders'),
+                    Tab(text: 'P&L'),
+                    Tab(text: 'Analytics'),
+                  ],
+                ),
+              ),
+              body: SafeArea(
                 top: false,
                 child: TabBarView(
                   controller: _tabController,
@@ -636,8 +645,8 @@ class _StockMarketPageState extends State<StockMarketPage>
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
@@ -1252,6 +1261,14 @@ class _PortfolioTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
+        // The trending logo strip lives on Trade primarily, but Assets is
+        // the default tab — surfacing it here too means the brand logos are
+        // the first "graphic, not text" thing every player sees, and
+        // tapping one hops straight into a trade ticket.
+        if (quotes.isNotEmpty) ...[
+          _TrendingPromoStrip(quotes: quotes, onTap: (_) => onGoToTrade()),
+          const SizedBox(height: 18),
+        ],
         _PortfolioSummary(
           cash: stats.gold,
           marketValue: totalMarketValue,
@@ -1366,6 +1383,9 @@ class _HoldingRow extends StatelessWidget {
               values: quote.history.map((v) => v.toDouble()).toList(),
               color: quote.accent,
               strokeWidth: 1.8,
+              // Pulsing last-price dot, so a holding reads as live rather
+              // than a frozen thumbnail between the 30s price polls.
+              livePulse: true,
             ),
           ),
           const SizedBox(width: 12),
@@ -1941,45 +1961,48 @@ class _StockCard extends StatelessWidget {
           LayoutBuilder(
             builder: (context, constraints) {
               final stacked = constraints.maxWidth < 520;
-              final headerInfo = Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: quote.accent.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(quote.icon, color: quote.accent),
+              // Deliberately *not* pre-wrapped in Expanded. It gets used in
+              // both a Row (below) and a Column (the stacked branch), and an
+              // Expanded inside a Column that has no height constraint — this
+              // card lives in a ListView — fails to lay out at all, leaving a
+              // render box with no size for the next paint to trip over.
+              final headerInfo = Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: quote.accent.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${quote.symbol} • ${quote.company}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                            ),
+                    child: Icon(quote.icon, color: quote.accent),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${quote.symbol} • ${quote.company}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            quote.sector,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.66),
-                              fontWeight: FontWeight.w700,
-                            ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          quote.sector,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.66),
+                            fontWeight: FontWeight.w700,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               );
 
               final badges = Wrap(
@@ -2019,7 +2042,7 @@ class _StockCard extends StatelessWidget {
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  headerInfo,
+                  Expanded(child: headerInfo),
                   const SizedBox(width: 14),
                   Flexible(child: badges),
                 ],
@@ -2295,9 +2318,11 @@ class _StockSparkline extends StatelessWidget {
       width: double.infinity,
       height: height,
       decoration: BoxDecoration(
+        // No border: this card is always nested inside a bordered parent
+        // (_StockCard / the holdings row), and stacking the two read as a
+        // doubled outline. The fill alone is enough separation.
         color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: accent.withValues(alpha: 0.18)),
       ),
       padding: const EdgeInsets.fromLTRB(10, 10, 6, 6),
       child: Column(

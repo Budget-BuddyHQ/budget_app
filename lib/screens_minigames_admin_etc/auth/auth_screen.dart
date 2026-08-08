@@ -477,9 +477,6 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    const deepForest = Color(0xFF0B241C);
-    const emerald = Color(0xFF173C2F);
-
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -489,16 +486,27 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
             fit: BoxFit.cover,
             filterQuality: FilterQuality.none,
           ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  deepForest.withValues(alpha: 0.86),
-                  emerald.withValues(alpha: 0.80),
-                  const Color(0xFF0A1C16).withValues(alpha: 0.90),
-                ],
+          // Matches the welcome screen's treatment rather than the old
+          // 0.86/0.90 wash: a light flat dim so the village art still reads,
+          // plus a soft green glow so it feels lit instead of murky.
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0xFF0C2418).withValues(alpha: 0.55),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0.3, -0.4),
+                  radius: 0.95,
+                  colors: [
+                    const Color(0xFF78E08F).withValues(alpha: 0.25),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),
@@ -804,8 +812,10 @@ class _AuthHero extends StatelessWidget {
                       ),
                     ],
                   ),
+                  // The 3D turtle, matching the welcome screen — the pixel
+                  // logo read as a different brand between the two screens.
                   child: Image.asset(
-                    AppAssets.logo,
+                    AppAssets.coolTurtle,
                     fit: BoxFit.contain,
                     errorBuilder: (_, _, _) => const Icon(
                       Icons.account_balance_wallet_rounded,

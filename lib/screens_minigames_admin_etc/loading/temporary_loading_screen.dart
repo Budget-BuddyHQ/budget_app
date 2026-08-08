@@ -43,6 +43,17 @@ class _TemporaryLoadingScreenState extends State<TemporaryLoadingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // `compact` was declared but never read, so a caller asking for a small
+    // inline indicator got the full-screen Scaffold below instead. The Academy
+    // puts this in a `Positioned(top: 10, right: 10)` — no width or height —
+    // which hands it unbounded constraints, and a Scaffold given unbounded
+    // constraints tries to be infinitely large and fails to lay out. That
+    // threw on the first frame of every Academy visit, while stats were still
+    // syncing.
+    if (widget.compact) {
+      return _CompactSyncBadge(message: widget.message);
+    }
+
     final Size screenSize = MediaQuery.of(context).size;
     final bool isLandscape = screenSize.width > screenSize.height;
 
@@ -185,6 +196,52 @@ class _TemporaryLoadingScreenState extends State<TemporaryLoadingScreen> {
       child: Flutter3DViewer(
         controller: _pondController,
         src: 'assets/imported/pond_loading_animation_source/pond.glb',
+      ),
+    );
+  }
+}
+
+/// The small inline form of [TemporaryLoadingScreen], for corners of a screen
+/// that is already rendering — sizes itself to its content, so it is safe
+/// inside an unbounded `Positioned`.
+class _CompactSyncBadge extends StatelessWidget {
+  const _CompactSyncBadge({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D1F1A).withValues(alpha: 0.88),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: const Color(0x5500E676)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 13,
+              height: 13,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFF00E676),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              message,
+              style: GoogleFonts.quicksand(
+                color: Colors.white,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
