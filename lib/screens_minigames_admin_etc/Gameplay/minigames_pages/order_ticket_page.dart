@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../../constants/app_assets.dart';
 import '../../../services_backend_and_other_services/market_data_service.dart';
 import '../../../widgets_custom_lotties/price_chart.dart';
 
@@ -225,6 +226,20 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
     });
   }
 
+  /// Sets the quantity to a fraction of the most that's affordable (buy) or
+  /// held (sell). Rounded down to 2dp so "Max" can never land a hair over
+  /// the balance and get rejected by [_blockReason].
+  void _applyQuantityFraction(double fraction) {
+    final max = _maxQuantity;
+    if (max <= 0) {
+      return;
+    }
+    final target = (max * fraction * 100).floor() / 100;
+    setState(() {
+      _quantityController.text = formatShares(math.max(0, target));
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final blockReason = _blockReason;
@@ -233,169 +248,220 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
         ? const Color(0xFF85EFAC)
         : const Color(0xFFFF8A80);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF071711),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF071711),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: Row(
-          children: [
-            Icon(widget.icon, color: widget.accent, size: 22),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    widget.symbol,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 17,
-                    ),
-                  ),
-                  Text(
-                    widget.company,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.6),
-                    ),
-                  ),
+    // Same backdrop pattern as the Market Board: art behind a transparent,
+    // normally-laid-out Scaffold — never `extendBodyBehindAppBar`, which
+    // pushes content up under the title.
+    return Stack(
+      children: [
+        // Same welcome-screen backdrop recipe as the Market Board.
+        Positioned.fill(
+          child: Image.asset(
+            AppAssets.villageMapBackground,
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.none,
+          ),
+        ),
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: const Color(0xFF0C2418).withValues(alpha: 0.66),
+            ),
+          ),
+        ),
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: const Alignment(0.3, -0.5),
+                radius: 0.95,
+                colors: [
+                  const Color(0xFF78E08F).withValues(alpha: 0.20),
+                  Colors.transparent,
                 ],
               ),
             ),
-          ],
+          ),
         ),
-      ),
-      body: SafeArea(
-        top: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-          children: [
-            _ChartSection(
-              candles: _candles,
-              fallbackSeries: widget.fallbackSeries,
-              loading: _loadingChart,
-              range: _range,
-              mode: _chartMode,
-              accent: widget.accent,
-              onRangeChanged: (range) {
-                setState(() => _range = range);
-                _loadChart();
-              },
-              onModeChanged: (mode) => setState(() => _chartMode = mode),
-            ),
-            const SizedBox(height: 18),
-            _QuoteRow(
-              bid: widget.bidPrice,
-              ask: widget.askPrice,
-              last: widget.lastPrice,
-            ),
-            const SizedBox(height: 18),
-            _LabelledRow(
-              label: 'Side',
-              child: _SideToggle(
-                isBuy: _isBuy,
-                onChanged: (value) => setState(() => _isBuy = value),
-              ),
-            ),
-            const SizedBox(height: 14),
-            _LabelledRow(
-              label: 'Order Type',
-              child: _OrderTypeSelector(
-                value: _orderType,
-                onChanged: (value) => setState(() => _orderType = value),
-              ),
-            ),
-            if (_orderType == OrderType.limit) ...[
-              const SizedBox(height: 14),
-              _LabelledRow(
-                label: 'Limit Price',
-                child: _StepperField(
-                  controller: _priceController,
-                  accent: widget.accent,
-                  suffix: 'g',
-                  onDecrement: () => _nudgePrice(-1),
-                  onIncrement: () => _nudgePrice(1),
-                  onChanged: () => setState(() {}),
-                ),
-              ),
-            ],
-            const SizedBox(height: 14),
-            _LabelledRow(
-              label: 'Quantity',
-              child: _StepperField(
-                controller: _quantityController,
-                accent: widget.accent,
-                suffix: 'sh',
-                allowDecimal: true,
-                onDecrement: () => _nudgeQuantity(-0.5),
-                onIncrement: () => _nudgeQuantity(0.5),
-                onChanged: () => setState(() {}),
-              ),
-            ),
-            const SizedBox(height: 18),
-            _EstimateCard(
-              isBuy: _isBuy,
-              quantity: _quantity,
-              pricePerShare: _effectivePrice,
-              availableGold: widget.availableGold,
-              ownedLots: widget.ownedLots,
-              maxQuantity: _maxQuantity,
-            ),
-            if (blockReason != null) ...[
-              const SizedBox(height: 12),
-              _NoteCard(
-                text: blockReason,
-                color: const Color(0xFFFFB084),
-                icon: Icons.info_outline_rounded,
-              ),
-            ] else if (workingNote != null) ...[
-              const SizedBox(height: 12),
-              _NoteCard(
-                text: workingNote,
-                color: const Color(0xFF58C7FF),
-                icon: Icons.schedule_rounded,
-              ),
-            ],
-            const SizedBox(height: 20),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: _restsAsWorkingOrder
-                    ? const Color(0xFF58C7FF)
-                    : sideColor,
-                foregroundColor: const Color(0xFF08251A),
-                padding: const EdgeInsets.symmetric(vertical: 17),
-                disabledBackgroundColor: Colors.white.withValues(alpha: 0.10),
-                disabledForegroundColor: Colors.white38,
-              ),
-              onPressed: blockReason != null
-                  ? null
-                  : () => Navigator.of(context).pop(
-                      OrderRequest(
-                        isBuy: _isBuy,
-                        quantity: _quantity,
-                        pricePerShare: _effectivePrice,
-                        isWorking: _restsAsWorkingOrder,
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            title: Row(
+              children: [
+                Icon(widget.icon, color: widget.accent, size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        widget.symbol,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 17,
+                        ),
                       ),
-                    ),
-              child: Text(
-                _restsAsWorkingOrder
-                    ? 'Place ${_isBuy ? 'buy' : 'sell'} limit order'
-                    : '${_isBuy ? 'Buy' : 'Sell'} ${widget.symbol}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 16,
+                      Text(
+                        widget.company,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
+          body: SafeArea(
+            top: false,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+              children: [
+                _ChartSection(
+                  candles: _candles,
+                  fallbackSeries: widget.fallbackSeries,
+                  loading: _loadingChart,
+                  range: _range,
+                  mode: _chartMode,
+                  accent: widget.accent,
+                  onRangeChanged: (range) {
+                    setState(() => _range = range);
+                    _loadChart();
+                  },
+                  onModeChanged: (mode) => setState(() => _chartMode = mode),
+                  rangesEnabled: context.read<MarketDataService>().hasCandleKey,
+                ),
+                const SizedBox(height: 18),
+                _QuoteRow(
+                  bid: widget.bidPrice,
+                  ask: widget.askPrice,
+                  last: widget.lastPrice,
+                ),
+                const SizedBox(height: 18),
+                _LabelledRow(
+                  label: 'Side',
+                  child: _SideToggle(
+                    isBuy: _isBuy,
+                    onChanged: (value) => setState(() => _isBuy = value),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _LabelledRow(
+                  label: 'Order Type',
+                  child: _OrderTypeSelector(
+                    value: _orderType,
+                    onChanged: (value) => setState(() => _orderType = value),
+                  ),
+                ),
+                if (_orderType == OrderType.limit) ...[
+                  const SizedBox(height: 14),
+                  _LabelledRow(
+                    label: 'Limit Price',
+                    child: _StepperField(
+                      controller: _priceController,
+                      accent: widget.accent,
+                      suffix: 'g',
+                      onDecrement: () => _nudgePrice(-1),
+                      onIncrement: () => _nudgePrice(1),
+                      onChanged: () => setState(() {}),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 14),
+                _LabelledRow(
+                  label: 'Quantity',
+                  child: _StepperField(
+                    controller: _quantityController,
+                    accent: widget.accent,
+                    suffix: 'sh',
+                    allowDecimal: true,
+                    onDecrement: () => _nudgeQuantity(-0.5),
+                    onIncrement: () => _nudgeQuantity(0.5),
+                    onChanged: () => setState(() {}),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Quick amounts. Without these the only way to size an order was
+                // typing a number or tapping +0.5 — and since a share costs
+                // thousands of coins while balances run into the millions, that
+                // meant hundreds of taps to spend a meaningful amount. `_maxQuantity`
+                // was already being computed and shown; this makes it usable.
+                _QuickAmountRow(
+                  accent: widget.accent,
+                  isBuy: _isBuy,
+                  enabled: _maxQuantity > 0,
+                  onSelect: _applyQuantityFraction,
+                ),
+                const SizedBox(height: 18),
+                _EstimateCard(
+                  isBuy: _isBuy,
+                  quantity: _quantity,
+                  pricePerShare: _effectivePrice,
+                  availableGold: widget.availableGold,
+                  ownedLots: widget.ownedLots,
+                  maxQuantity: _maxQuantity,
+                ),
+                if (blockReason != null) ...[
+                  const SizedBox(height: 12),
+                  _NoteCard(
+                    text: blockReason,
+                    color: const Color(0xFFFFB084),
+                    icon: Icons.info_outline_rounded,
+                  ),
+                ] else if (workingNote != null) ...[
+                  const SizedBox(height: 12),
+                  _NoteCard(
+                    text: workingNote,
+                    color: const Color(0xFF58C7FF),
+                    icon: Icons.schedule_rounded,
+                  ),
+                ],
+                const SizedBox(height: 20),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _restsAsWorkingOrder
+                        ? const Color(0xFF58C7FF)
+                        : sideColor,
+                    foregroundColor: const Color(0xFF08251A),
+                    padding: const EdgeInsets.symmetric(vertical: 17),
+                    disabledBackgroundColor: Colors.white.withValues(
+                      alpha: 0.10,
+                    ),
+                    disabledForegroundColor: Colors.white38,
+                  ),
+                  onPressed: blockReason != null
+                      ? null
+                      : () => Navigator.of(context).pop(
+                          OrderRequest(
+                            isBuy: _isBuy,
+                            quantity: _quantity,
+                            pricePerShare: _effectivePrice,
+                            isWorking: _restsAsWorkingOrder,
+                          ),
+                        ),
+                  child: Text(
+                    _restsAsWorkingOrder
+                        ? 'Place ${_isBuy ? 'buy' : 'sell'} limit order'
+                        : '${_isBuy ? 'Buy' : 'Sell'} ${widget.symbol}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -410,6 +476,7 @@ class _ChartSection extends StatelessWidget {
     required this.accent,
     required this.onRangeChanged,
     required this.onModeChanged,
+    required this.rangesEnabled,
   });
 
   final List<Candle> candles;
@@ -420,6 +487,11 @@ class _ChartSection extends StatelessWidget {
   final Color accent;
   final ValueChanged<ChartRange> onRangeChanged;
   final ValueChanged<ChartMode> onModeChanged;
+
+  /// False when no historical-data key is configured — every range would
+  /// return the same empty result, so the buttons are disabled rather than
+  /// silently doing nothing.
+  final bool rangesEnabled;
 
   /// Without a historical-data key there are no OHLC bars, but the quote
   /// endpoint still gives real prices — show those as a flat-bodied series so
@@ -465,7 +537,16 @@ class _ChartSection extends StatelessWidget {
                         _RangeChip(
                           label: option.label,
                           selected: option == range,
-                          onTap: () => onRangeChanged(option),
+                          // Without a Twelve Data key `fetchCandles` returns
+                          // an empty list for *every* range, so all five
+                          // buttons produced the identical quote-derived
+                          // shape and looked broken. Disabling them says so
+                          // honestly — the alternative would be inventing
+                          // price history, which this app must never do.
+                          enabled: rangesEnabled,
+                          onTap: rangesEnabled
+                              ? () => onRangeChanged(option)
+                              : null,
                         ),
                         const SizedBox(width: 6),
                       ],
@@ -525,6 +606,82 @@ class _ChartSection extends StatelessWidget {
 
 /// A small info panel — orange for a genuine block, blue for the (normal)
 /// "this will rest as a working order" explanation.
+/// 25% / 50% / 75% / Max — the standard sizing row every real trading app
+/// has, and the thing that makes fractional-share buying usable here.
+class _QuickAmountRow extends StatelessWidget {
+  const _QuickAmountRow({
+    required this.accent,
+    required this.isBuy,
+    required this.enabled,
+    required this.onSelect,
+  });
+
+  final Color accent;
+  final bool isBuy;
+  final bool enabled;
+  final ValueChanged<double> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    const options = <(String, double)>[
+      ('25%', 0.25),
+      ('50%', 0.50),
+      ('75%', 0.75),
+      ('Max', 1.0),
+    ];
+
+    return Row(
+      children: [
+        for (var i = 0; i < options.length; i++) ...[
+          if (i > 0) const SizedBox(width: 8),
+          Expanded(
+            child: Semantics(
+              button: true,
+              label: isBuy
+                  ? 'Buy ${options[i].$1} of what you can afford'
+                  : 'Sell ${options[i].$1} of your position',
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: enabled
+                    ? () {
+                        HapticFeedback.selectionClick();
+                        onSelect(options[i].$2);
+                      }
+                    : null,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: enabled
+                        ? accent.withValues(alpha: 0.12)
+                        : Colors.white.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: enabled
+                          ? accent.withValues(alpha: 0.38)
+                          : Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: Text(
+                    options[i].$1,
+                    style: TextStyle(
+                      color: enabled
+                          ? accent
+                          : Colors.white.withValues(alpha: 0.3),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _NoteCard extends StatelessWidget {
   const _NoteCard({
     required this.text,
@@ -567,31 +724,36 @@ class _RangeChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.enabled = true,
   });
 
   final String label;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFF2F6BFF)
-              : Colors.white.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.white : Colors.white70,
-            fontWeight: FontWeight.w800,
-            fontSize: 12,
+    return Opacity(
+      opacity: enabled ? 1 : 0.4,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected
+                ? const Color(0xFF2F6BFF)
+                : Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? Colors.white : Colors.white70,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+            ),
           ),
         ),
       ),
@@ -914,7 +1076,18 @@ class _StepperField extends StatelessWidget {
               ),
               decoration: InputDecoration(
                 isDense: true,
+                // All four must be cleared, not just `border`. The app theme
+                // sets enabled/focused/error borders, and those still draw
+                // even when `border` is none — which stacked a second
+                // outline inside this field's own container border.
+                filled: false,
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
                 suffixText: suffix,
                 suffixStyle: TextStyle(
                   color: Colors.white.withValues(alpha: 0.5),

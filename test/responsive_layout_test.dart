@@ -191,9 +191,13 @@ void main() {
             FlutterError.onError = previousOnError;
           }
 
+          // Every exception, not just "overflowed by". Filtering to overflow
+          // messages meant a screen could throw a null-check failure or fail
+          // to lay out entirely and this sweep would still report it clean --
+          // which is exactly how the Market Board's unbounded-Expanded crash
+          // survived a full pass at 320px wide.
           final overflows = errors
               .map((error) => error.exception.toString())
-              .where((message) => message.contains('overflowed by'))
               .toList(growable: false);
 
           expect(
@@ -208,4 +212,60 @@ void main() {
       }
     });
   }
+
+  // The Market Board's tabs are a TabBarView, which builds children lazily —
+  // so the sweep above only ever laid out the default "Assets" tab and
+  // reported the whole screen clean. Trade / Orders / P&L / Analytics were
+  // never rendered by any test. This walks each tab explicitly.
+  group('Market Board tabs', () {
+    const tabs = <String>['Assets', 'Trade', 'Orders', 'P&L', 'Analytics'];
+
+    for (final viewport in _viewports.entries) {
+      for (var tabIndex = 0; tabIndex < tabs.length; tabIndex++) {
+        testWidgets('${tabs[tabIndex]} tab lays out on ${viewport.key}', (
+          tester,
+        ) async {
+          final errors = <FlutterErrorDetails>[];
+          final previousOnError = FlutterError.onError;
+          FlutterError.onError = errors.add;
+
+          tester.view.physicalSize = viewport.value;
+          tester.view.devicePixelRatio = 1.0;
+          addTearDown(tester.view.reset);
+
+          try {
+            await tester.pumpWidget(_wrap(const StockMarketPage()));
+            await tester.pump(const Duration(milliseconds: 300));
+
+            if (tabIndex > 0) {
+              await tester.tap(find.text(tabs[tabIndex]));
+              await tester.pump();
+              await tester.pump(const Duration(milliseconds: 400));
+            }
+          } finally {
+            FlutterError.onError = previousOnError;
+          }
+
+          // Every exception, not just "overflowed by". Filtering to overflow
+          // messages meant a screen could throw a null-check failure or fail
+          // to lay out entirely and this sweep would still report it clean --
+          // which is exactly how the Market Board's unbounded-Expanded crash
+          // survived a full pass at 320px wide.
+          final overflows = errors
+              .map((error) => error.exception.toString())
+              .toList(growable: false);
+
+          expect(
+            overflows,
+            isEmpty,
+            reason:
+                'Market Board "${tabs[tabIndex]}" at ${viewport.key} '
+                '(${viewport.value.width.toInt()}x'
+                '${viewport.value.height.toInt()}):\n'
+                '${overflows.join('\n')}',
+          );
+        });
+      }
+    }
+  });
 }

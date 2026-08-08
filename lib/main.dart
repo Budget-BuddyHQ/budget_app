@@ -38,7 +38,14 @@ Future<void> main() async {
       await windowManager.ensureInitialized();
       const options = WindowOptions(
         size: Size(1000, 800),
-        minimumSize: Size(450, 400),
+        // Was 450x400. Dragging the window narrower than the declared
+        // minimum doesn't reflow the framework's layout — it keeps laying
+        // out for the minimum and the surplus is simply clipped, which read
+        // as "the Market Board breaks on smaller screens" (content cut off
+        // on the right, no overflow error anywhere because nothing actually
+        // overflowed). Every screen is layout-tested down to 320x568, so the
+        // floor can safely sit below the sizes people actually drag to.
+        minimumSize: Size(340, 480),
         center: true,
       );
 

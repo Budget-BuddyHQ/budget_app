@@ -570,56 +570,37 @@ class _BadgeShowcase extends StatefulWidget {
 }
 
 class _BadgeShowcaseState extends State<_BadgeShowcase> {
-  bool _checking = false;
-
   UserStats get stats => widget.stats;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _celebrateNew());
-  }
-
-  @override
-  void didUpdateWidget(covariant _BadgeShowcase oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Stats can change while Profile is mounted (finishing a life, unlocking
-    // a skin), so re-check rather than only firing on first build.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _celebrateNew());
-  }
-
-  /// Shows the celebration once per newly-earned badge. `celebratedBadges`
-  /// only records "already congratulated" — it never decides what's earned,
-  /// so this can't accidentally grant anything.
-  Future<void> _celebrateNew() async {
-    if (_checking || !mounted) {
+  /// Opens the celebration for a badge the player tapped.
+  ///
+  /// Deliberately **not** automatic. An earlier version fired this from
+  /// `initState`/`didUpdateWidget` whenever a badge became newly earned,
+  /// which meant the popup ambushed you on any screen that rebuilt Profile —
+  /// and stacked several at once when more than one unlocked together. Now
+  /// nothing pops on its own: earning a badge lights up its tile with a
+  /// "New" marker, and the celebration only plays when the player taps it.
+  Future<void> _openCelebration(_Badge badge) async {
+    if (!badge.earned) {
       return;
     }
-    final alreadySeen = stats.celebratedBadges.toSet();
-    final fresh = _badges()
-        .where((badge) => badge.earned && !alreadySeen.contains(badge.id))
-        .toList(growable: false);
-    if (fresh.isEmpty) {
-      return;
-    }
+    HapticFeedback.lightImpact();
+    final unseen = !stats.celebratedBadges.contains(badge.id);
 
-    _checking = true;
-    // Record first: if the popup is dismissed by a navigation change we
-    // still don't want to re-congratulate the same badge forever.
-    await context.read<UserStatsController>().markBadgesCelebrated(
-      fresh.map((badge) => badge.id),
+    await AchievementCelebration.show(
+      context,
+      title: badge.label,
+      subtitle: badge.detail,
+      accent: badge.color,
     );
 
-    for (final badge in fresh) {
-      if (!mounted) break;
-      await AchievementCelebration.show(
-        context,
-        title: badge.label,
-        subtitle: badge.detail,
-        accent: badge.color,
-      );
+    // Only clear the "New" marker after they've actually watched it, so an
+    // unopened badge keeps flagging itself.
+    if (unseen && mounted) {
+      await context.read<UserStatsController>().markBadgesCelebrated([
+        badge.id,
+      ]);
     }
-    _checking = false;
   }
 
   List<_Badge> _badges() {
@@ -759,8 +740,16 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
                   mainAxisSpacing: 10,
                   mainAxisExtent: 96,
                 ),
-                itemBuilder: (context, index) =>
-                    _BadgeTile(badge: badges[index]),
+                itemBuilder: (context, index) {
+                  final badge = badges[index];
+                  return _BadgeTile(
+                    badge: badge,
+                    isNew:
+                        badge.earned &&
+                        !stats.celebratedBadges.contains(badge.id),
+                    onTap: () => _openCelebration(badge),
+                  );
+                },
               );
             },
           ),
@@ -771,9 +760,18 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
 }
 
 class _BadgeTile extends StatelessWidget {
-  const _BadgeTile({required this.badge});
+  const _BadgeTile({
+    required this.badge,
+    required this.isNew,
+    required this.onTap,
+  });
 
   final _Badge badge;
+
+  /// Earned but the celebration hasn't been watched yet — shows a dot so
+  /// there's a reason to tap.
+  final bool isNew;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -781,50 +779,86 @@ class _BadgeTile extends StatelessWidget {
         ? badge.color
         : Colors.white.withValues(alpha: 0.26);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-      decoration: BoxDecoration(
-        color: badge.earned
-            ? badge.color.withValues(alpha: 0.12)
-            : Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: badge.earned
-              ? badge.color.withValues(alpha: 0.45)
-              : Colors.white.withValues(alpha: 0.07),
+    return Semantics(
+      button: badge.earned,
+      label: badge.earned
+          ? '${badge.label} earned. ${badge.detail}'
+          : '${badge.label} locked. ${badge.detail}',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: badge.earned ? onTap : null,
+        child: Stack(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              decoration: BoxDecoration(
+                color: badge.earned
+                    ? badge.color.withValues(alpha: isNew ? 0.20 : 0.12)
+                    : Colors.white.withValues(alpha: 0.03),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: badge.earned
+                      ? badge.color.withValues(alpha: isNew ? 0.75 : 0.45)
+                      : Colors.white.withValues(alpha: 0.07),
+                  width: isNew ? 1.6 : 1,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(badge.icon, color: color, size: 22),
+                  const SizedBox(height: 5),
+                  Text(
+                    badge.label,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: badge.earned
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.4),
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    badge.detail,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withValues(
+                        alpha: badge.earned ? 0.55 : 0.3,
+                      ),
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isNew)
+              Positioned(
+                top: 5,
+                right: 5,
+                child: Container(
+                  width: 9,
+                  height: 9,
+                  decoration: BoxDecoration(
+                    color: badge.color,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: badge.color.withValues(alpha: 0.8),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(badge.icon, color: color, size: 22),
-          const SizedBox(height: 5),
-          Text(
-            badge.label,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: badge.earned
-                  ? Colors.white
-                  : Colors.white.withValues(alpha: 0.4),
-              fontSize: 10.5,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            badge.detail,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: badge.earned ? 0.55 : 0.3),
-              fontSize: 8.5,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
       ),
     );
   }

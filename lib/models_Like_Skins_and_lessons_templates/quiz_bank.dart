@@ -87,6 +87,27 @@ class QuizSkills {
   static const String tradingCosts = 'trading_costs';
   static const String timeInMarket = 'time_in_market';
 
+  // Unit 7 — Spending Traps (middle school)
+  static const String wantsVsNeeds = 'wants_vs_needs';
+  static const String advertising = 'advertising';
+  static const String digitalSpending = 'digital_spending';
+  static const String impulseControl = 'impulse_control';
+  static const String scams = 'scams';
+
+  // Unit 8 — Money by the Numbers (high school)
+  static const String percentages = 'percentages';
+  static const String averages = 'averages';
+  static const String chartReading = 'chart_reading';
+  static const String misleadingCharts = 'misleading_charts';
+  static const String spendingTracking = 'spending_tracking';
+
+  // Unit 9 — Retirement and the 401(k) (adult)
+  static const String retirementAccounts = 'retirement_accounts';
+  static const String employerMatch = 'employer_match';
+  static const String rothVsTraditional = 'roth_vs_traditional';
+  static const String startingEarly = 'starting_early';
+  static const String feesAndVesting = 'fees_vesting';
+
   /// Human-readable name for the mastery breakdown in the learning path.
   static String label(String skillId) => switch (skillId) {
     budgetBasics => 'Budgeting basics',
@@ -119,6 +140,21 @@ class QuizSkills {
     diversification => 'Diversification',
     tradingCosts => 'Trading costs',
     timeInMarket => 'Time in the market',
+    wantsVsNeeds => 'Wants vs needs',
+    advertising => 'Spotting advertising',
+    digitalSpending => 'Digital and in-game spending',
+    impulseControl => 'Impulse control',
+    scams => 'Scams and fake deals',
+    percentages => 'Percentages',
+    averages => 'Averages and medians',
+    chartReading => 'Reading charts',
+    misleadingCharts => 'Misleading charts',
+    spendingTracking => 'Tracking your spending',
+    retirementAccounts => 'Retirement accounts',
+    employerMatch => 'Employer match',
+    rothVsTraditional => 'Roth vs traditional',
+    startingEarly => 'Starting early',
+    feesAndVesting => 'Fees and vesting',
     _ => skillId,
   };
 }
@@ -1213,6 +1249,12 @@ const Map<String, List<QuizQuestion>> quizBank = <String, List<QuizQuestion>>{
   'test_5': _unit5Test,
   'quiz_6': _unit6Quiz,
   'test_6': _unit6Test,
+  'quiz_7': _unit7Quiz,
+  'test_7': _unit7Test,
+  'quiz_8': _unit8Quiz,
+  'test_8': _unit8Test,
+  'quiz_9': _unit9Quiz,
+  'test_9': _unit9Test,
 };
 
 // ---------------------------------------------------------------------------
@@ -1391,6 +1433,9 @@ const Map<String, List<QuizQuestion>> practiceBank =
       'unit_4': _unit4Practice,
       'unit_5': _unit5Practice,
       'unit_6': _unit6Practice,
+      'unit_7': _unit7Practice,
+      'unit_8': _unit8Practice,
+      'unit_9': _unit9Practice,
     };
 
 List<QuizQuestion> quizFor(String nodeId) =>
@@ -1426,3 +1471,740 @@ bool get answerKeyIsBalanced {
   }
   return counts.values.every((count) => count / total <= 0.4);
 }
+
+// ---------------------------------------------------------------------------
+// Unit 7 - Spending Traps (ages 11-13)
+// ---------------------------------------------------------------------------
+
+const List<QuizQuestion> _unit7Practice = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u7p1',
+    skillId: QuizSkills.wantsVsNeeds,
+    prompt: 'Which of these is a need rather than a want?',
+    options: [
+      'The bus fare that gets you to school',
+      'The newest phone when yours still works',
+      'A skin for your favourite game',
+      'Concert tickets your friends are buying',
+    ],
+    correctIndex: 0,
+    explanation:
+        'A need is something your day genuinely stops working without. '
+        'Everything else is a want, no matter how badly you want it.',
+    misconception:
+        'Wanting something a lot does not promote it to a need. Urgency is a '
+        'feeling; necessity is a fact.',
+  ),
+  QuizQuestion(
+    id: 'u7p2',
+    skillId: QuizSkills.advertising,
+    prompt: 'A creator you follow is paid to show a product. That makes them:',
+    options: [
+      'A neutral reviewer, since they used it',
+      'An advertisement with a friendly face',
+      'Legally required to dislike it',
+      'Irrelevant to your decision either way',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Paid promotion is advertising. It can still be honest, but it was '
+        'bought, and you should weigh it that way.',
+    misconception:
+        'Trusting a recommendation because the person feels familiar is '
+        'exactly the effect the sponsor paid for.',
+  ),
+  QuizQuestion(
+    id: 'u7p3',
+    skillId: QuizSkills.digitalSpending,
+    prompt: 'You spend 800 in-game coins that cost real money. You have:',
+    options: [
+      'Spent nothing, since coins are not real',
+      'Spent only if you buy more coins later',
+      'Spent real money already, when you bought the coins',
+      'Made an investment you can cash out',
+    ],
+    correctIndex: 2,
+    explanation:
+        'The real cost happened when you converted money into coins. Game '
+        'currency is designed to make that moment feel far away.',
+    misconception:
+        'Treating in-game currency as free is the whole reason it exists as a '
+        'separate currency.',
+  ),
+  QuizQuestion(
+    id: 'u7p4',
+    skillId: QuizSkills.impulseControl,
+    prompt: 'What does a 24-hour rule mostly protect you from?',
+    options: [
+      'Prices going up overnight',
+      'Ever buying anything fun',
+      'Running out of storage space',
+      'Buying because of how you felt for ten minutes',
+    ],
+    correctIndex: 3,
+    explanation:
+        'A day is long enough for the excitement to fade. If you still want it '
+        'tomorrow, it was probably a real want.',
+  ),
+];
+
+const List<QuizQuestion> _unit7Quiz = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u7q1',
+    skillId: QuizSkills.wantsVsNeeds,
+    prompt:
+        'You have 40 coins. Lunch costs 15, and a limited-time skin costs 35. '
+        'What does the wants-versus-needs test say?',
+    options: [
+      'Buy the skin - limited time means it is urgent',
+      'Cover the 15 first, then decide about the rest',
+      'Split it evenly so both get something',
+      'Skip lunch, since you can eat at home later',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Needs get funded first, then wants compete for what is left. '
+        '"Limited time" is a pressure tactic, not a reason.',
+    misconception:
+        'Scarcity language is engineered to make wants feel like needs.',
+  ),
+  QuizQuestion(
+    id: 'u7q2',
+    skillId: QuizSkills.advertising,
+    prompt: 'The main job of an advert is to:',
+    options: [
+      'Inform you accurately about all options',
+      'Compare the product fairly with rivals',
+      'Change how you feel so you act',
+      'Warn you about the weaknesses of the product',
+    ],
+    correctIndex: 2,
+    explanation:
+        'Adverts sell a feeling first and a product second. Knowing that is '
+        'most of the defence.',
+  ),
+  QuizQuestion(
+    id: 'u7q3',
+    skillId: QuizSkills.digitalSpending,
+    prompt:
+        'A game sells coins in bundles: 100 for 1 unit, or 1200 for 10. Why '
+        'is the big bundle offered?',
+    options: [
+      'It is cheaper per coin, so more money gets spent up front',
+      'Small bundles are illegal in most places',
+      'Large bundles have better graphics',
+      'It costs the company more to sell small ones',
+    ],
+    correctIndex: 0,
+    explanation:
+        'A better unit price is real - but the design goal is a bigger single '
+        'payment and a balance you will feel obliged to use.',
+    misconception:
+        'A discount per unit is only a saving if you were going to buy that '
+        'much anyway.',
+  ),
+  QuizQuestion(
+    id: 'u7q4',
+    skillId: QuizSkills.scams,
+    prompt: 'A message says you won a prize but must pay postage first. This:',
+    options: [
+      'Is normal for large prizes',
+      'Is safe if the postage is small',
+      'Is fine if the sender knows your name',
+      'Is an advance-fee scam - real prizes never charge you',
+    ],
+    correctIndex: 3,
+    explanation:
+        'Any prize that requires a payment from you is not a prize. The small '
+        'fee is the entire point of the scam.',
+  ),
+  QuizQuestion(
+    id: 'u7q5',
+    skillId: QuizSkills.impulseControl,
+    prompt: 'Which habit best reduces regret purchases?',
+    options: [
+      'Keeping a written list of what you are saving for',
+      'Removing the price from your mind while shopping',
+      'Buying quickly before you talk yourself out of it',
+      'Only shopping when you feel low',
+    ],
+    correctIndex: 0,
+    explanation:
+        'A concrete goal gives every impulse something to lose to. Without one, '
+        'every purchase competes against nothing.',
+  ),
+];
+
+const List<QuizQuestion> _unit7Test = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u7t1',
+    skillId: QuizSkills.wantsVsNeeds,
+    prompt: 'The clearest sign something is a want, not a need, is that:',
+    options: [
+      'It costs more than 50 coins',
+      'Your day still works without it',
+      'Your friends do not have one',
+      'It is sold online rather than in shops',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Price does not decide the category. A cheap thing you do not need is '
+        'still a want; an expensive bus pass can still be a need.',
+  ),
+  QuizQuestion(
+    id: 'u7t2',
+    skillId: QuizSkills.advertising,
+    prompt:
+        'An advert shows people laughing on a beach holding a drink. What is '
+        'being sold?',
+    options: [
+      'Information about the ingredients',
+      'A comparison against other drinks',
+      'The feeling of belonging, attached to the drink',
+      'A discount for buying today',
+    ],
+    correctIndex: 2,
+    explanation:
+        'Almost nothing in that advert is about the product. The association '
+        'is the product.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u7t3',
+    skillId: QuizSkills.digitalSpending,
+    prompt: 'Why do games use their own currency instead of real prices?',
+    options: [
+      'It is required by app stores',
+      'It converts more accurately',
+      'It reduces their taxes',
+      'It hides the real cost behind an extra conversion step',
+    ],
+    correctIndex: 3,
+    explanation:
+        'One extra step between your money and the purchase is enough to blunt '
+        'the feeling of spending. That is the design.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u7t4',
+    skillId: QuizSkills.scams,
+    prompt: 'Which is the strongest warning sign of a scam?',
+    options: [
+      'Pressure to act right now and keep it quiet',
+      'A website that looks slightly old',
+      'A brand name you have not heard of',
+      'A price lower than a shop nearby',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Urgency plus secrecy is the signature. It exists to stop you asking '
+        'an adult you trust.',
+    misconception:
+        'Scams are not identified by how polished they look - plenty look '
+        'excellent.',
+  ),
+  QuizQuestion(
+    id: 'u7t5',
+    skillId: QuizSkills.impulseControl,
+    prompt:
+        'You want a 60-coin item and earn 15 a week. Waiting 24 hours means:',
+    options: [
+      'You lose the item permanently',
+      'You still need four weeks either way, so nothing is lost by thinking',
+      'The price will drop automatically',
+      'You should buy it on credit instead',
+    ],
+    correctIndex: 1,
+    explanation:
+        'When you cannot afford it today anyway, the only thing waiting costs '
+        'you is the impulse - and that is the thing worth losing.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u7t6',
+    skillId: QuizSkills.wantsVsNeeds,
+    prompt: 'Two friends both call a new console a need. The honest test is:',
+    options: [
+      'Whether more than half your friends agree',
+      'Whether the shop calls it essential',
+      'Whether skipping it actually breaks something in your week',
+      'Whether you have wanted it for over a month',
+    ],
+    correctIndex: 2,
+    explanation:
+        'Wanting something for a long time makes it a persistent want, not a '
+        'need. The test is consequence, not duration or popularity.',
+  ),
+];
+
+// ---------------------------------------------------------------------------
+// Unit 8 - Money by the Numbers (ages 14-17)
+// ---------------------------------------------------------------------------
+
+const List<QuizQuestion> _unit8Practice = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u8p1',
+    skillId: QuizSkills.percentages,
+    prompt: 'A 200-coin jacket is 25% off. You pay:',
+    options: ['175', '150', '160', '125'],
+    correctIndex: 1,
+    explanation: '25% of 200 is 50, so the price is 200 - 50 = 150.',
+  ),
+  QuizQuestion(
+    id: 'u8p2',
+    skillId: QuizSkills.averages,
+    prompt: 'The average of 4, 6 and 20 is:',
+    options: ['6', '8', '10', '30'],
+    correctIndex: 2,
+    explanation: '4 + 6 + 20 = 30, divided by 3 gives 10.',
+    misconception:
+        'The average here is larger than two of the three values - one big '
+        'number drags it up. That is exactly why medians exist.',
+  ),
+  QuizQuestion(
+    id: 'u8p3',
+    skillId: QuizSkills.chartReading,
+    prompt: 'On a price chart, the horizontal axis almost always shows:',
+    options: ['Time', 'Number of buyers', 'Company profit', 'Risk level'],
+    correctIndex: 0,
+    explanation:
+        'Price on the vertical, time on the horizontal. Check both labels '
+        'before reading any shape into the line.',
+  ),
+  QuizQuestion(
+    id: 'u8p4',
+    skillId: QuizSkills.spendingTracking,
+    prompt: 'The most useful thing tracking your spending gives you is:',
+    options: [
+      'A guarantee you will spend less',
+      'Proof for your parents',
+      'A tidier phone home screen',
+      'Real numbers instead of a guess about where money went',
+    ],
+    correctIndex: 3,
+    explanation:
+        'Tracking does not stop spending by itself. It replaces a vague memory '
+        'with data you can actually act on.',
+  ),
+];
+
+const List<QuizQuestion> _unit8Quiz = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u8q1',
+    skillId: QuizSkills.percentages,
+    prompt: 'A price falls 50%, then rises 50%. Compared with the start it is:',
+    options: [
+      'Back where it started',
+      'Still down 25%',
+      'Up 25%',
+      'Impossible to tell',
+    ],
+    correctIndex: 1,
+    explanation:
+        '100 falls to 50, then rises by half of 50 to 75. Percentages apply to '
+        'whatever the current number is, not the original.',
+    misconception:
+        'Adding and subtracting the same percentage does not cancel out - this '
+        'trips up far more adults than teenagers.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u8q2',
+    skillId: QuizSkills.averages,
+    prompt:
+        'Nine people earn 30 and one earns 1000. Which better describes a '
+        'typical earner?',
+    options: [
+      'The average, 127',
+      'The median, 30',
+      'The highest value, 1000',
+      'The total, 1270',
+    ],
+    correctIndex: 1,
+    explanation:
+        'The median is the middle value, so one extreme cannot drag it. When a '
+        'headline quotes an average income, ask what the median was.',
+  ),
+  QuizQuestion(
+    id: 'u8q3',
+    skillId: QuizSkills.misleadingCharts,
+    prompt: 'A chart whose vertical axis starts at 98 instead of 0 will:',
+    options: [
+      'Show the data more accurately',
+      'Hide the largest values',
+      'Make small changes look dramatic',
+      'Have no effect on how it reads',
+    ],
+    correctIndex: 2,
+    explanation:
+        'A truncated axis stretches tiny movements into cliffs. Always check '
+        'where the vertical axis begins.',
+  ),
+  QuizQuestion(
+    id: 'u8q4',
+    skillId: QuizSkills.chartReading,
+    prompt: 'A line that looks calm over a year and wild over a day means:',
+    options: [
+      'The day view is zoomed in, so normal noise fills the screen',
+      'Something serious happened that day',
+      'The yearly chart is wrong',
+      'The company changed its share count',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Zoom changes the story. The same 1% wobble is invisible on a year and '
+        'looks like a crash on an hour.',
+  ),
+  QuizQuestion(
+    id: 'u8q5',
+    skillId: QuizSkills.spendingTracking,
+    prompt:
+        'You tracked a month and found 40% went to food delivery. The useful '
+        'next step is:',
+    options: [
+      'Stop tracking, since you already know now',
+      'Set a specific limit for that one category and watch it',
+      'Cut every category by 40%',
+      'Assume next month will be different',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Data is only worth collecting if it changes a decision. One targeted '
+        'limit beats a vague resolve to spend less.',
+  ),
+];
+
+const List<QuizQuestion> _unit8Test = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u8t1',
+    skillId: QuizSkills.percentages,
+    prompt: 'Which is the largest amount of money?',
+    options: ['20% of 400', '5% of 2000', '50% of 150', 'They are all equal'],
+    correctIndex: 1,
+    explanation:
+        '20% of 400 is 80, 5% of 2000 is 100, and 50% of 150 is 75. The '
+        'smallest-looking rate wins because its base is far bigger.',
+    misconception:
+        'A larger percentage of a smaller base is often less money. The base '
+        'matters as much as the rate.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u8t2',
+    skillId: QuizSkills.averages,
+    prompt: 'An average is a poor summary when the data:',
+    options: [
+      'Contains a few extreme values',
+      'Has more than ten entries',
+      'Is measured in coins',
+      'Was collected over a year',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Outliers pull the mean toward themselves. In skewed data the median '
+        'describes the typical case far better.',
+  ),
+  QuizQuestion(
+    id: 'u8t3',
+    skillId: QuizSkills.misleadingCharts,
+    prompt:
+        'An advert shows a fund\'s best 3 months out of 5 years. The problem:',
+    options: [
+      'The chart type is wrong',
+      'Three months is too short to plot',
+      'Past results are always irrelevant',
+      'The window was chosen after the fact to flatter the result',
+    ],
+    correctIndex: 3,
+    explanation:
+        'Cherry-picking the window is the oldest trick in financial marketing. '
+        'Ask what the full period looks like.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u8t4',
+    skillId: QuizSkills.chartReading,
+    prompt: 'Before drawing any conclusion from a chart, check:',
+    options: [
+      'Both axis labels and the time range',
+      'The colour scheme',
+      'Whether the line is straight',
+      'How many people shared it',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Axes and range decide what the shape means. The shape alone means '
+        'nothing.',
+  ),
+  QuizQuestion(
+    id: 'u8t5',
+    skillId: QuizSkills.spendingTracking,
+    prompt:
+        'You spend 12 a week on a subscription you use twice a year. Over a '
+        'year that is roughly:',
+    options: ['144', '624', '96', '312'],
+    correctIndex: 1,
+    explanation:
+        '12 x 52 = 624. Small recurring amounts are where tracking pays for '
+        'itself - nobody notices 12 a week until they annualise it.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u8t6',
+    skillId: QuizSkills.percentages,
+    prompt: 'Your 500-coin holding grows 10%, then loses 10%. You now have:',
+    options: ['500', '505', '495', '450'],
+    correctIndex: 2,
+    explanation:
+        '500 becomes 550, then loses 55 to land at 495. Gains and losses of the '
+        'same percentage never cancel exactly.',
+  ),
+];
+
+// ---------------------------------------------------------------------------
+// Unit 9 - Retirement and the 401(k) (ages 21+)
+// ---------------------------------------------------------------------------
+
+const List<QuizQuestion> _unit9Practice = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u9p1',
+    skillId: QuizSkills.retirementAccounts,
+    prompt: 'A 401(k) is best described as:',
+    options: [
+      'A savings account your employer controls',
+      'A tax-advantaged account you invest in through work',
+      'A loan against your future salary',
+      'A government pension paid automatically',
+    ],
+    correctIndex: 1,
+    explanation:
+        'The money is yours and you choose the investments inside it. The tax '
+        'treatment is what makes it different from an ordinary account.',
+  ),
+  QuizQuestion(
+    id: 'u9p2',
+    skillId: QuizSkills.employerMatch,
+    prompt:
+        'Your employer matches 100% of the first 4% you contribute. Skipping '
+        'that 4% means:',
+    options: [
+      'Turning down a 4% raise you already earned',
+      'Nothing, since you can catch up later',
+      'A smaller tax bill this year',
+      'Better take-home pay overall',
+    ],
+    correctIndex: 0,
+    explanation:
+        'A match is part of your compensation. Not contributing enough to get '
+        'it is leaving agreed pay on the table.',
+  ),
+  QuizQuestion(
+    id: 'u9p3',
+    skillId: QuizSkills.rothVsTraditional,
+    prompt: 'With a Roth account you pay tax:',
+    options: [
+      'Never, on anything',
+      'Twice - going in and coming out',
+      'Now, on the money going in',
+      'Only if you withdraw early',
+    ],
+    correctIndex: 2,
+    explanation:
+        'Roth means tax paid up front, and qualified withdrawals later come '
+        'out untaxed. Traditional is the reverse.',
+  ),
+  QuizQuestion(
+    id: 'u9p4',
+    skillId: QuizSkills.startingEarly,
+    prompt: 'The main advantage of starting at 22 rather than 35 is:',
+    options: [
+      'Lower fees for young investors',
+      'Higher returns are offered early on',
+      'Guaranteed employer bonuses',
+      'Thirteen extra years of compounding on every coin',
+    ],
+    correctIndex: 3,
+    explanation:
+        'Time is the input you can never buy back later. The early coins do '
+        'the most work because they compound the longest.',
+  ),
+];
+
+const List<QuizQuestion> _unit9Quiz = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u9q1',
+    skillId: QuizSkills.employerMatch,
+    prompt:
+        'You earn 40,000 and your employer matches 50% of the first 6% you put '
+        'in. Contributing the full 6% earns you:',
+    options: ['600', '1,200', '2,400', 'Nothing extra'],
+    correctIndex: 1,
+    explanation:
+        '6% of 40,000 is 2,400, and the employer adds half of that: 1,200.',
+    misconception:
+        'Read match formulas carefully - "50% of the first 6%" is not the same '
+        'as "6%".',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u9q2',
+    skillId: QuizSkills.rothVsTraditional,
+    prompt: 'You expect to earn much more later. That leans toward:',
+    options: [
+      'Traditional, to pay tax at the higher future rate',
+      'Roth, paying tax now while your rate is low',
+      'Neither - the choice never matters',
+      'Whichever has the larger balance',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Pay the tax when your rate is lowest. Early career is usually that '
+        'moment, which is why Roth suits people starting out.',
+  ),
+  QuizQuestion(
+    id: 'u9q3',
+    skillId: QuizSkills.feesAndVesting,
+    prompt: 'A vesting schedule decides:',
+    options: [
+      'How your money is invested',
+      'When you can retire',
+      'When employer contributions become permanently yours',
+      'What tax rate applies to withdrawals',
+    ],
+    correctIndex: 2,
+    explanation:
+        'Your own contributions are always yours. The match may need a few '
+        'years of service before you keep it if you leave.',
+  ),
+  QuizQuestion(
+    id: 'u9q4',
+    skillId: QuizSkills.retirementAccounts,
+    prompt: 'Withdrawing from a retirement account at 30 usually means:',
+    options: [
+      'A penalty plus tax, on top of losing the growth',
+      'A small paperwork fee only',
+      'No consequence if you repay within a year',
+      'The employer must approve it first',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Early withdrawal costs you three ways: penalty, tax, and every year '
+        'of compounding that money would have done.',
+  ),
+  QuizQuestion(
+    id: 'u9q5',
+    skillId: QuizSkills.feesAndVesting,
+    prompt: 'A fund charging 1% a year instead of 0.05% matters because:',
+    options: [
+      'One percent is a legal maximum',
+      'Cheaper funds always perform better',
+      'Fees are charged only in losing years',
+      'Over decades that gap compounds into a large share of your balance',
+    ],
+    correctIndex: 3,
+    explanation:
+        'Fees are subtracted every year, including the years your money was '
+        'compounding. Small percentages become large sums over 40 years.',
+  ),
+];
+
+const List<QuizQuestion> _unit9Test = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u9t1',
+    skillId: QuizSkills.startingEarly,
+    prompt:
+        'A saves 200 a month from 25 to 35, then stops. B saves 200 a month '
+        'from 35 to 65. At 65, at the same return, typically:',
+    options: [
+      'B is far ahead, having saved three times as much',
+      'A is often ahead or level, despite saving far less',
+      'They finish exactly equal',
+      'Neither grows without new contributions',
+    ],
+    correctIndex: 1,
+    explanation:
+        'A\'s ten years of contributions had thirty extra years to grow, which '
+        'usually beats B\'s larger but later total. This is the whole argument '
+        'for starting early.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u9t2',
+    skillId: QuizSkills.employerMatch,
+    prompt: 'The first priority in a retirement plan is usually to:',
+    options: [
+      'Pick the fund with last year\'s best return',
+      'Max out contributions immediately whatever your debts',
+      'Contribute at least enough to get the full employer match',
+      'Wait until you earn more',
+    ],
+    correctIndex: 2,
+    explanation:
+        'The match is an immediate, guaranteed return no fund can promise. It '
+        'comes before fund-picking or chasing performance.',
+  ),
+  QuizQuestion(
+    id: 'u9t3',
+    skillId: QuizSkills.rothVsTraditional,
+    prompt: 'Traditional contributions lower your tax bill:',
+    options: [
+      'In the year you contribute, with tax due on withdrawal',
+      'In retirement only',
+      'In both years equally',
+      'Never - the benefit is purely psychological',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Traditional defers the tax. Roth prepays it. Which wins depends on '
+        'your tax rate now versus later.',
+  ),
+  QuizQuestion(
+    id: 'u9t4',
+    skillId: QuizSkills.feesAndVesting,
+    prompt: 'You leave a job two years into a four-year vesting schedule:',
+    options: [
+      'You lose everything in the account',
+      'You keep your own contributions and a partial share of the match',
+      'You keep all of it regardless',
+      'The account is frozen until you retire',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Your contributions are never at risk. How much of the employer money '
+        'you keep depends on the schedule.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u9t5',
+    skillId: QuizSkills.retirementAccounts,
+    prompt: 'Money inside a retirement account is:',
+    options: [
+      'Held as cash until you retire',
+      'Automatically split across every fund available',
+      'Invested in whatever you choose from the plan menu',
+      'Managed by the government',
+    ],
+    correctIndex: 2,
+    explanation:
+        'The account is a wrapper, not an investment. Contributions left '
+        'unallocated can sit in cash for years, earning almost nothing.',
+    misconception:
+        'Opening the account is not the same as investing the money in it - a '
+        'genuinely common and expensive mistake.',
+  ),
+  QuizQuestion(
+    id: 'u9t6',
+    skillId: QuizSkills.startingEarly,
+    prompt: 'The reason 20-somethings are told to start now is that:',
+    options: [
+      'Returns are higher for younger investors',
+      'Contribution limits shrink with age',
+      'Employers only match under 30',
+      'The cheapest years to buy are the ones you cannot get back',
+    ],
+    correctIndex: 3,
+    explanation:
+        'Nothing about the market favours the young. What favours them is the '
+        'number of years left for compounding to run.',
+  ),
+];
