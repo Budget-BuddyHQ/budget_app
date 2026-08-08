@@ -160,4 +160,117 @@ void main() {
     life.study();
     expect(life.smarts, smarts);
   });
+
+  group('event gating', () {
+    // Every gated event must be genuinely unreachable for a character who
+    // doesn't meet its requirements — that's the whole contract of the
+    // skill/trait/fame system, and it silently degrades to "uniform random"
+    // if `matches` ever stops being consulted.
+    LifeContext blank({
+      int age = 25,
+      int money = 0,
+      int fame = 0,
+      Map<LifeSkill, int> skills = const {},
+      Set<LifeTrait> traits = const {},
+      bool hasJob = false,
+    }) => LifeContext(
+      age: age,
+      money: money,
+      happiness: 50,
+      health: 50,
+      smarts: 50,
+      fame: fame,
+      skills: skills,
+      traits: traits,
+      hasJob: hasJob,
+    );
+
+    test('skill-gated events stay out of the pool below the threshold', () {
+      final gig = kLifeEvents.firstWhere((e) => e.id == 'first_gig');
+      expect(gig.matches(blank()), isFalse);
+      expect(
+        gig.matches(blank(skills: {LifeSkill.music: 10})),
+        isFalse,
+        reason: '10 is under the minSkill of 20',
+      );
+      expect(gig.matches(blank(skills: {LifeSkill.music: 25})), isTrue);
+    });
+
+    test('fame-gated events need both skill and fame', () {
+      final deal = kLifeEvents.firstWhere((e) => e.id == 'record_deal');
+      expect(
+        deal.matches(blank(skills: {LifeSkill.music: 60})),
+        isFalse,
+        reason: 'skill alone is not enough without fame',
+      );
+      expect(
+        deal.matches(blank(fame: 40)),
+        isFalse,
+        reason: 'fame alone is not enough without skill',
+      );
+      expect(
+        deal.matches(blank(skills: {LifeSkill.music: 60}, fame: 40)),
+        isTrue,
+      );
+    });
+
+    test('trait-gated events only reach characters with the trait', () {
+      final bet = kLifeEvents.firstWhere((e) => e.id == 'reckless_bet');
+      expect(bet.matches(blank(money: 1000)), isFalse);
+      expect(
+        bet.matches(blank(money: 1000, traits: {LifeTrait.cautious})),
+        isFalse,
+      );
+      expect(
+        bet.matches(blank(money: 1000, traits: {LifeTrait.reckless})),
+        isTrue,
+      );
+    });
+
+    test('money-gated events respect their floor', () {
+      final bet = kLifeEvents.firstWhere((e) => e.id == 'reckless_bet');
+      expect(
+        bet.matches(blank(money: 10, traits: {LifeTrait.reckless})),
+        isFalse,
+      );
+    });
+
+    test('every event declares a positive weight', () {
+      for (final event in kLifeEvents) {
+        expect(
+          event.weight,
+          greaterThan(0),
+          reason: '${event.id} would be unreachable in a weighted draw',
+        );
+      }
+    });
+  });
+
+  group('skills, traits and fame', () {
+    test('a new life is born with exactly two traits', () {
+      final life = _adult();
+      expect(life.traits.length, 2);
+    });
+
+    test('practising raises that skill and nothing else', () {
+      final life = _adult();
+      expect(life.skillLevel(LifeSkill.music), 0);
+      life.practise(LifeSkill.music);
+      expect(life.skillLevel(LifeSkill.music), greaterThan(0));
+      expect(life.skillLevel(LifeSkill.sports), 0);
+    });
+
+    test('a finished life cannot practise', () {
+      final life = _adult();
+      life.retire();
+      life.practise(LifeSkill.music);
+      expect(life.skillLevel(LifeSkill.music), 0);
+    });
+
+    test('fame stays clamped to 0..100', () {
+      final life = _adult();
+      expect(life.fame, 0);
+      expect(life.fame, inInclusiveRange(0, 100));
+    });
+  });
 }

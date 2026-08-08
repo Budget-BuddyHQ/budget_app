@@ -190,11 +190,11 @@ class _UnitLessonBlock extends StatelessWidget {
                 // Carries the parent unit's accent so a whole unit reads as
                 // one colour family instead of every row being the same green.
                 Color.lerp(
-                  const Color(0xFF163A2D),
+                  const Color(0xFF1D4A3A),
                   unitAccentFor(unitIndex),
-                  0.10,
+                  0.12,
                 )!,
-                const Color(0xFF0E241C),
+                const Color(0xFF153A2E),
               ],
             ),
             borderRadius: BorderRadius.circular(22),

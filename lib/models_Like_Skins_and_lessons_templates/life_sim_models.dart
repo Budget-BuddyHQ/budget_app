@@ -113,6 +113,10 @@ class LifeChoice {
     this.setJob,
     this.setSalary,
     this.addRelationship,
+    this.fame = 0,
+    this.skill,
+    this.skillGain = 0,
+    this.addTrait,
   });
 
   final String label;
@@ -129,6 +133,75 @@ class LifeChoice {
 
   /// If set, adds someone to the player's relationships list.
   final String? addRelationship;
+
+  /// Fame delta. Fame gates the bigger career events and scales their money.
+  final int fame;
+
+  /// Raises one skill — the mechanism behind "practise, then get the gig".
+  final LifeSkill? skill;
+  final int skillGain;
+
+  /// Some choices reveal a trait rather than requiring one.
+  final LifeTrait? addTrait;
+}
+
+/// A learnable skill. Skills gate career events and scale their payoff — a
+/// music contract should not fire for someone who has never practised.
+enum LifeSkill {
+  music('Music', Icons.music_note_rounded),
+  sports('Sports', Icons.sports_basketball_rounded),
+  business('Business', Icons.work_rounded),
+  charisma('Charisma', Icons.record_voice_over_rounded);
+
+  const LifeSkill(this.label, this.icon);
+
+  final String label;
+  final IconData icon;
+}
+
+/// A personality trait, rolled at birth. Traits are the "hidden modifiers"
+/// layer: they bias which events can fire and nudge outcomes, so two runs
+/// with identical stats still diverge.
+enum LifeTrait {
+  ambitious('Ambitious', Icons.trending_up_rounded),
+  cautious('Cautious', Icons.shield_rounded),
+  reckless('Reckless', Icons.bolt_rounded),
+  generous('Generous', Icons.volunteer_activism_rounded),
+  frugal('Frugal', Icons.savings_rounded);
+
+  const LifeTrait(this.label, this.icon);
+
+  final String label;
+  final IconData icon;
+}
+
+/// A snapshot of the character, passed to [LifeEvent.matches] so an event can
+/// state its own requirements instead of the controller hard-coding them.
+@immutable
+class LifeContext {
+  const LifeContext({
+    required this.age,
+    required this.money,
+    required this.happiness,
+    required this.health,
+    required this.smarts,
+    required this.fame,
+    required this.skills,
+    required this.traits,
+    required this.hasJob,
+  });
+
+  final int age;
+  final int money;
+  final int happiness;
+  final int health;
+  final int smarts;
+  final int fame;
+  final Map<LifeSkill, int> skills;
+  final Set<LifeTrait> traits;
+  final bool hasJob;
+
+  int skill(LifeSkill s) => skills[s] ?? 0;
 }
 
 /// A prompt that appears when you age up.
@@ -141,6 +214,13 @@ class LifeEvent {
     required this.choices,
     this.minAge = 0,
     this.maxAge = 200,
+    this.weight = 1.0,
+    this.requiresSkill,
+    this.minSkill = 0,
+    this.requiresTrait,
+    this.minFame = 0,
+    this.minMoney = 0,
+    this.requiresJob = false,
   });
 
   final String id;
@@ -150,7 +230,34 @@ class LifeEvent {
   final int minAge;
   final int maxAge;
 
+  /// Relative likelihood once eligible. Everything defaults to 1.0; rare or
+  /// dramatic events sit below that, common beats above.
+  final double weight;
+
+  /// Gates — an event only enters the pool when every one of these passes.
+  final LifeSkill? requiresSkill;
+  final int minSkill;
+  final LifeTrait? requiresTrait;
+  final int minFame;
+  final int minMoney;
+  final bool requiresJob;
+
   bool eligibleAt(int age) => age >= minAge && age <= maxAge;
+
+  /// Full eligibility: age plus every declared requirement.
+  bool matches(LifeContext c) {
+    if (!eligibleAt(c.age)) return false;
+    if (requiresSkill != null && c.skill(requiresSkill!) < minSkill) {
+      return false;
+    }
+    if (requiresTrait != null && !c.traits.contains(requiresTrait)) {
+      return false;
+    }
+    if (c.fame < minFame) return false;
+    if (c.money < minMoney) return false;
+    if (requiresJob && !c.hasJob) return false;
+    return true;
+  }
 }
 
 /// The event pool — childhood, school, friends, health and love alongside the
@@ -1059,6 +1166,302 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
         outcome: 'More cash today. You left free money on the table.',
         happiness: 3,
         smarts: -5,
+      ),
+    ],
+  ),
+
+  // ---------------- Skill discovery ----------------
+  // Entry points into each career track. Common (weight 1.2) and early, so
+  // most runs get the chance to start building something.
+  LifeEvent(
+    id: 'discover_music',
+    prompt: 'The school is handing out instruments. Want one?',
+    icon: Icons.music_note_rounded,
+    minAge: 8,
+    maxAge: 18,
+    weight: 1.2,
+    choices: [
+      LifeChoice(
+        label: 'Take the guitar',
+        outcome: 'Three chords and a lot of enthusiasm. It is a start.',
+        skill: LifeSkill.music,
+        skillGain: 12,
+        happiness: 6,
+      ),
+      LifeChoice(
+        label: 'Not for me',
+        outcome: 'You gave the last spot to someone else.',
+        happiness: 2,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'discover_sports',
+    prompt: 'Tryouts are open for the school team.',
+    icon: Icons.sports_basketball_rounded,
+    minAge: 8,
+    maxAge: 20,
+    weight: 1.2,
+    choices: [
+      LifeChoice(
+        label: 'Go all in',
+        outcome: 'You made the squad. Your legs hate you.',
+        skill: LifeSkill.sports,
+        skillGain: 12,
+        health: 6,
+        happiness: 4,
+      ),
+      LifeChoice(
+        label: 'Skip it',
+        outcome: 'More time for other things.',
+        smarts: 2,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'discover_business',
+    prompt: 'A local shop needs someone to help run the counter.',
+    icon: Icons.work_rounded,
+    minAge: 14,
+    maxAge: 30,
+    weight: 1.1,
+    choices: [
+      LifeChoice(
+        label: 'Take the shifts',
+        outcome: 'Stock, tills, and your first taste of running things.',
+        skill: LifeSkill.business,
+        skillGain: 14,
+        money: 150,
+        happiness: -2,
+      ),
+      LifeChoice(
+        label: 'Pass',
+        outcome: 'You kept your evenings.',
+        happiness: 4,
+      ),
+    ],
+  ),
+
+  // ---------------- Career: music ----------------
+  // Gated on real skill. None of these can fire for someone who never
+  // picked up an instrument, which is the whole point of the skill system.
+  LifeEvent(
+    id: 'first_gig',
+    prompt: 'A cafe offers you a Friday night slot.',
+    icon: Icons.mic_rounded,
+    minAge: 15,
+    weight: 0.9,
+    requiresSkill: LifeSkill.music,
+    minSkill: 20,
+    choices: [
+      LifeChoice(
+        label: 'Play the set',
+        outcome: 'Eleven people watched. Two of them clapped. You loved it.',
+        money: 60,
+        fame: 4,
+        skill: LifeSkill.music,
+        skillGain: 5,
+        happiness: 8,
+      ),
+      LifeChoice(
+        label: 'Too nervous',
+        outcome: 'You stayed home and practised instead.',
+        skill: LifeSkill.music,
+        skillGain: 3,
+        happiness: -4,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'record_deal',
+    prompt: 'A small label wants to record an EP with you.',
+    icon: Icons.album_rounded,
+    minAge: 17,
+    weight: 0.6,
+    requiresSkill: LifeSkill.music,
+    minSkill: 45,
+    minFame: 10,
+    choices: [
+      LifeChoice(
+        label: 'Sign it',
+        outcome: 'The EP does modestly well. People know your name now.',
+        money: 900,
+        fame: 18,
+        skill: LifeSkill.music,
+        skillGain: 6,
+        happiness: 12,
+      ),
+      LifeChoice(
+        label: 'Stay independent',
+        outcome: 'Less money up front, but the songs stay yours.',
+        money: 250,
+        fame: 8,
+        happiness: 6,
+        smarts: 5,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'sold_out_tour',
+    prompt: 'Your booking agent thinks you could sell out a tour.',
+    icon: Icons.travel_explore_rounded,
+    minAge: 19,
+    weight: 0.4,
+    requiresSkill: LifeSkill.music,
+    minSkill: 65,
+    minFame: 35,
+    choices: [
+      LifeChoice(
+        label: 'Book the tour',
+        outcome: 'Sixteen cities. Exhausting, lucrative, unforgettable.',
+        money: 4200,
+        fame: 25,
+        health: -10,
+        happiness: 15,
+      ),
+      LifeChoice(
+        label: 'Just a few dates',
+        outcome: 'Smaller run, and you still have a voice at the end.',
+        money: 1400,
+        fame: 10,
+        health: -3,
+        happiness: 9,
+      ),
+    ],
+  ),
+
+  // ---------------- Career: sports & business ----------------
+  LifeEvent(
+    id: 'scout_visit',
+    prompt: 'A scout came to watch your game.',
+    icon: Icons.sports_basketball_rounded,
+    minAge: 16,
+    weight: 0.6,
+    requiresSkill: LifeSkill.sports,
+    minSkill: 45,
+    choices: [
+      LifeChoice(
+        label: 'Play your hardest',
+        outcome: 'A semi-pro contract. Modest money, real progress.',
+        money: 1200,
+        fame: 14,
+        setJob: 'Athlete',
+        setSalary: 380,
+        happiness: 14,
+      ),
+      LifeChoice(
+        label: 'Play it safe',
+        outcome: 'No injury, no contract either.',
+        happiness: -2,
+        health: 3,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'start_business',
+    prompt: 'You have an idea worth actually starting.',
+    icon: Icons.storefront_rounded,
+    minAge: 20,
+    weight: 0.5,
+    requiresSkill: LifeSkill.business,
+    minSkill: 40,
+    minMoney: 500,
+    choices: [
+      LifeChoice(
+        label: 'Fund it yourself',
+        outcome: 'Lean, slow, and entirely yours.',
+        money: -500,
+        setJob: 'Founder',
+        setSalary: 460,
+        smarts: 8,
+        happiness: 10,
+      ),
+      LifeChoice(
+        label: 'Find an investor',
+        outcome: 'Faster start, smaller slice.',
+        money: 400,
+        setJob: 'Founder',
+        setSalary: 520,
+        smarts: 5,
+        happiness: 6,
+      ),
+      LifeChoice(
+        label: 'Keep it a daydream',
+        outcome: 'Maybe next year.',
+        happiness: -3,
+      ),
+    ],
+  ),
+
+  // ---------------- Trait-gated ----------------
+  // These only reach players carrying the matching trait — the "two runs
+  // with the same stats still diverge" layer.
+  LifeEvent(
+    id: 'reckless_bet',
+    prompt: 'Someone offers you a "sure thing" on a match.',
+    icon: Icons.casino_rounded,
+    minAge: 18,
+    weight: 0.5,
+    requiresTrait: LifeTrait.reckless,
+    minMoney: 300,
+    choices: [
+      LifeChoice(
+        label: 'Bet big',
+        outcome: 'It was not a sure thing. It never is.',
+        money: -300,
+        happiness: -8,
+        smarts: 6,
+      ),
+      LifeChoice(
+        label: 'Walk away',
+        outcome: 'Your gut said no, and for once you listened.',
+        happiness: 4,
+        smarts: 4,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'frugal_windfall',
+    prompt: 'You found an old account with money still in it.',
+    icon: Icons.savings_rounded,
+    minAge: 18,
+    weight: 0.5,
+    requiresTrait: LifeTrait.frugal,
+    choices: [
+      LifeChoice(
+        label: 'Invest all of it',
+        outcome: 'Straight to work. Exactly what you would do.',
+        money: 400,
+        smarts: 8,
+      ),
+      LifeChoice(
+        label: 'Treat yourself, just once',
+        outcome: 'You have earned it. It still felt strange.',
+        money: 150,
+        happiness: 10,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'fame_scandal',
+    prompt: 'A tabloid is running a story about you tomorrow.',
+    icon: Icons.newspaper_rounded,
+    minAge: 18,
+    weight: 0.45,
+    minFame: 40,
+    choices: [
+      LifeChoice(
+        label: 'Get ahead of it',
+        outcome: 'You told your side first. It mostly worked.',
+        fame: -6,
+        happiness: -4,
+        smarts: 6,
+      ),
+      LifeChoice(
+        label: 'Say nothing',
+        outcome: 'It ran anyway. Everyone talked about it for a week.',
+        fame: 8,
+        happiness: -10,
       ),
     ],
   ),

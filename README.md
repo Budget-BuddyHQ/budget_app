@@ -295,6 +295,97 @@ Three screens each had their own avatar implementation, each subtly different.
 
 ### Logic
 
+**Input fields drew two borders — `InputBorder.none` isn't enough**
+The order ticket's `_StepperField` wraps a `TextField` in its own bordered
+`Container` and set `border: InputBorder.none` to suppress the field's own
+outline. But `InputDecoration.border` is only the *fallback*: the app theme
+(`app_theme.dart`) also sets `enabledBorder`, `focusedBorder` and
+`errorBorder`, and those still painted — so every price/quantity box showed
+a second 1.5px outline nested inside the container's.
+*Fix:* clear all six border slots (`enabled`/`focused`/`error`/
+`focusedError`/`disabled` as well as `border`) plus `filled: false`, since
+the theme also sets a fill.
+*Files:* `order_ticket_page.dart`
+
+**Nested cards stacked two rounded outlines**
+`_MiniPriceCard` carried its own border while always being rendered inside
+an already-bordered `_StockCard`/holdings row, so the mini chart appeared to
+have a double frame.
+*Fix:* dropped the inner border and kept only the fill.
+*Files:* `stock_market_page.dart`
+
+**The Market Board "broke" below 450px — because the window minimum said so**
+`WindowOptions.minimumSize` was `450x400`. Forcing the Windows window
+narrower than its declared minimum doesn't make Flutter reflow — the
+framework keeps laying out for the minimum and the surplus is clipped, so
+content ran off the right edge with **no overflow error anywhere**, which is
+why three rounds of layout tests all came back clean. Every screen is
+layout-tested down to 320x568, so the floor was simply set higher than the
+sizes people actually drag to.
+*Fix:* `minimumSize` lowered to `340x480`.
+*Lesson:* "content is cut off" with zero overflow errors points at the
+window/viewport, not the widget tree.
+*Files:* `main.dart`
+
+**The layout sweep only ever tested one of the Market Board's five tabs**
+`TabBarView` builds its children lazily, so pumping `StockMarketPage` in
+`responsive_layout_test.dart` rendered **Assets** and nothing else. Trade,
+Orders, P&L and Analytics — including the most complex cards in the app —
+were never laid out by any test, while the suite reported the screen clean.
+*Fix:* a dedicated `Market Board tabs` group taps through all five tabs at
+all seven viewports (35 cases).
+*Files:* `test/responsive_layout_test.dart`
+
+**The layout sweep never exercised the charted trade cards**
+`seedQuotesForTest` seeded `_quotes` but not `_series`, so `seriesFor`
+returned the short quote-derived fallback, `_MiniPriceCard` short-circuited
+to "No chart data yet", and the entire charted branch of the trade cards was
+invisible to `responsive_layout_test.dart` — the test reported Market Board
+as clean without ever laying out its most complex widget.
+*Fix:* the seed now also populates a 24-point intraday series per symbol.
+*Files:* `market_data_service.dart`
+
+**`extendBodyBehindAppBar` pushed the Market Board's content under its own title**
+Giving the board a full-bleed green backdrop was done by setting
+`extendBodyBehindAppBar: true` and painting the art inside the body `Stack`,
+with `SafeArea(top: false)` on the content. That put the tab content at
+y=0 — so the ticker tape overlapped the "Market Board" title and the
+trending strip overlapped the tab row.
+*Fix:* the backdrop moved *outside* the Scaffold — `Stack(children: [art,
+Scaffold(backgroundColor: transparent, ...)])`. Same full-bleed result, but
+the Scaffold lays out normally so nothing can collide with the AppBar. The
+order ticket now uses the same pattern rather than repeating the mistake.
+*Files:* `stock_market_page.dart`, `order_ticket_page.dart`
+
+**The 1D/5D/1M/3M/1Y chart ranges did nothing**
+`MarketDataService.fetchCandles` returns an empty list whenever no Twelve
+Data key is configured, so every range produced the identical quote-derived
+3-point fallback — five buttons that visibly did nothing when pressed.
+*Fix:* the range chips now read `MarketDataService.hasCandleKey` and render
+disabled when history isn't available, alongside the existing "Add a
+TWELVE_DATA_API_KEY…" note. Deliberately *not* fixed by synthesising
+plausible history — inventing price data in an app that teaches investing
+would be worse than an honest disabled state.
+*Files:* `order_ticket_page.dart`
+
+**Every cloud save silently failed after mirroring age/gender**
+`UserStats.toStorageMap()` started writing `'age'` and `'gender'` keys to
+mirror columns that had been added in the Supabase dashboard. But those
+columns were on **`profiles`** (the table carrying `disabled` and
+`profiles_id_fkey`), not `user_stats` — so every upsert came back
+`PostgrestException: Could not find the 'age' column of 'user_stats' in the
+schema cache`, and the service's own catch-all quietly fell through to
+"keeping cached data". Progress looked fine in-app and stopped reaching the
+backend entirely. Only visible in the console.
+*Fix:* removed both keys. Nothing depended on them — the app reads the
+bucketed `AgeBand`/`GenderIdentity` from `spending_habits`, and the mirror
+was only ever for human readability in the table editor. If it's wanted
+again it has to be a separate write to `profiles`.
+*Lesson:* a `try/catch` that degrades gracefully will also hide a schema
+mismatch forever. Worth checking the console after any change to
+`toStorageMap`.
+*Files:* `supabase_service.dart`
+
 **Two allocation slices drew in the identical colour**
 Cash was hardcoded `0xFFE1BB72` and AAPL's accent in `_kSymbolStyle` is
 *also* `0xFFE1BB72`, so a portfolio holding both drew two "different" donut
@@ -391,8 +482,9 @@ nodes differ and the sequence shifts between units.
 Early quiz content skewed toward `correctIndex: 0` — a player could clear a
 quiz by always tapping the first option.
 *Fix:* rebalanced every question bank by hand so the correct answer is spread
-roughly evenly across all four positions (currently 13/15/18/13 across 59
-questions in `quiz_bank.dart`). Options are not shuffled at runtime — the fix
+roughly evenly across all four positions in `quiz_bank.dart`, guarded by
+`answerKeyIsBalanced` and a test that fails if any single position holds more
+than 40% of the answers. Options are not shuffled at runtime — the fix
 is in the authored data, not the widget.
 
 **Finance Brawl's daily-plan icon was a courtroom gavel**
@@ -438,6 +530,37 @@ the new trending-stocks strip) had zero layout coverage despite the test
 and seeded a handful of fake quotes in the test wrapper, so that branch
 actually renders during the sweep now.
 *Files:* `market_data_service.dart`, `test/responsive_layout_test.dart`
+
+**Age-band UI was untestable, so the age warning shipped unverified at first**
+`UserStatsController`'s only path to setting an age band is
+`updatePersonalDetails()`, which goes through a full save round-trip. A widget
+test can't complete that, so every branch keyed on the player's age band —
+the "Recommended for you" badge, the new "older than you" warning, the
+age-scaled worked examples — rendered as if nobody had ever set an age.
+*Fix:* added `UserStatsController.seedStatsForTest()` (`@visibleForTesting`),
+mirroring the existing `seedQuotesForTest` seam, and
+`test/academy_age_warning_test.dart` now renders the Academy as a 12-year-old,
+an adult, and an undisclosed player.
+*Files:* `user_stats_controller.dart`, `test/academy_age_warning_test.dart`
+
+**The age warning fired on adults**
+The first version compared a unit's `AgeStage` against `AgeBand.recommendedStage`,
+which is derived from `representativeAge` — 19 for the open-ended "18 or older"
+band. That put the 21+ retirement unit "above" every adult, so a 30-year-old
+was told the 401(k) lesson was written for people older than them.
+*Fix:* warnings now use `AgeBand.maxPlausibleStage` (the *top* of the band, and
+`AgeStage.adult` for the open-ended one) while the "For you" badge keeps using
+`recommendedStage`. Caught by the widget test above, which is exactly why it
+was worth adding the seam first.
+*Files:* `player_profile.dart`, `lesson_screen.dart`
+
+**The lesson graph had no integrity check at all**
+Prerequisites are plain strings. A typo doesn't throw — it silently makes a
+lesson permanently locked, which nobody would notice until a player got stuck
+partway through a unit.
+*Fix:* `test/lesson_data_test.dart` now asserts that every prerequisite id
+resolves to a real lesson, ids are unique, each lesson is filed under the unit
+it claims, and each unit opens off the previous one.
 
 **Sprite tooling only runs on Windows PowerShell 5.1**
 The `tool/*.ps1` sprite scripts use `System.Drawing`, which PowerShell 7 (`pwsh`)

@@ -91,6 +91,17 @@ AgeStage stageForAge(int age) {
   return result;
 }
 
+/// True when [unit] is written for an older band than the reader's own.
+///
+/// Nothing is locked by this — the unit still opens, because the curriculum
+/// gates on finishing the previous unit's test, not on age. It only decides
+/// whether the Academy shows an "older than you" warning first, so a 12-year-old
+/// who reaches the 401(k) unit knows the examples assume a salary they don't
+/// have yet. Returns false when the reader didn't share an age band, since
+/// there is nothing to compare against.
+bool isAboveReaderStage(AgeStage unit, AgeStage? reader) =>
+    reader != null && unit.minAge > reader.minAge;
+
 class LessonUnit {
   const LessonUnit({
     required this.id,

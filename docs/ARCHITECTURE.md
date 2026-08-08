@@ -273,6 +273,63 @@ names to design concretely rather than guessing them now.
 
 ---
 
+## 8b. The Life event engine
+
+Life follows the standard life-sim shape: character state → event generator
+→ choice/consequence → career progression, with hidden modifiers.
+
+**Character state** (`LifeSimController`): age, money, investments,
+happiness, health, smarts, looks, job, salary, relationships — plus
+`fame` (0–100), `skills` (`Map<LifeSkill, int>`, 0–100 each) and `traits`
+(`Set<LifeTrait>`, two rolled at birth).
+
+**The generator** is `_drawEvent()`. Each `LifeEvent` declares its own
+requirements rather than the controller hard-coding them:
+
+| Field | Gate |
+| --- | --- |
+| `minAge` / `maxAge` | life stage |
+| `requiresSkill` + `minSkill` | career track progression |
+| `requiresTrait` | personality-only branches |
+| `minFame` | the "you're known now" tier |
+| `minMoney` | can't gamble what you don't have |
+| `requiresJob` | employment-only beats |
+| `weight` | relative likelihood once eligible |
+
+`LifeEvent.matches(LifeContext)` checks all of them; the draw then does a
+weighted roll over survivors. **This replaced a uniform pick over an
+age-only filter** — previously a rare dramatic beat was exactly as likely as
+a routine one, and no event could depend on who the character had become.
+
+**Consequences** live on `LifeChoice`: the existing stat/job/relationship
+deltas plus `fame`, `skill` + `skillGain`, and `addTrait`.
+
+**Career progression** is the skill→fame→payoff ladder, e.g. music:
+`discover_music` (skill 12) → `first_gig` (needs skill 20, grants fame) →
+`record_deal` (skill 45 **and** fame 10) → `sold_out_tour` (skill 65, fame
+35). Nothing on that ladder can fire for a character who never practised —
+`practise(LifeSkill)` is the player-driven input that opens it.
+
+`test/life_sim_test.dart` locks the gating down: every gated event is
+asserted unreachable below its threshold, since the whole system silently
+degrades back to "uniform random" if `matches` ever stops being consulted.
+
+**The menu is the other half of the variety problem.** For a long time
+`_BottomMenu` rendered the same four actions — School, Assets, Fun, Gym — at
+every single age, and `practise(LifeSkill)` had no UI at all, so the entire
+skill/career ladder above was unreachable no matter how many events fed it.
+Two changes fixed that:
+
+- The left slot is **School** for baby/child/teen and **Assets** afterwards,
+  so a toddler isn't offered an investment button and an adult isn't still
+  tapping "School".
+- A **Skills** button opens `_SkillsSheet`, listing each `LifeSkill` with its
+  level, a practise action, and the traits rolled at birth. This is the only
+  input that raises a skill, so it is the door to every career track.
+
+The lesson worth keeping: adding content to the event pool does nothing for
+perceived variety if the *inputs* the player has each turn never change.
+
 ## 9. Progression surfaces: endings, badges, and the Life event pool
 
 Three things now read off the *same* persisted progress rather than each
@@ -294,12 +351,47 @@ is a pure data change to `_badges()`. The skin-count badges double as the
 "show skins somewhere other than the customise grid" surface.
 
 **The Life event pool** (`kLifeEvents` in `life_sim_models.dart`) went from
-21 to 37 events, keeping the existing age-gated structure
+21 to 48 events, keeping the existing age-gated structure
 (`minAge`/`maxAge`) and the childhood/teen/adult grouping. The additions are
 deliberately money-decision shaped rather than flavour — bank accounts,
 credit-card offers, rent increases, salary negotiation, a market crash,
 employer retirement matching — so the extra content also widens the range of
 final stats, which is what makes the seven endings actually reachable.
+
+## 9b. Age-divided curriculum and the "too young" warning
+
+The Academy carries nine units across four `AgeStage` bands
+(`lesson.dart`): middle school (11–13), high school (14–17), graduating
+(18–20), adult (21+). Three units were added to fill the bands out —
+**Spending Traps** (middle school: ads, in-game currency, scams),
+**Money by the Numbers** (high school: percentages, mean vs median, reading
+and misreading charts), and **Retirement and the 401(k)** (adult: employer
+match, Roth vs traditional, fees and vesting).
+
+**Curriculum order is not age order, and can't be.** Units chain on
+prerequisites — `lesson_31` requires `test_6` — so the list is a dependency
+graph, and it happens to zigzag across bands (Unit 2 is written for 18–20s,
+Unit 3 for 14–17s). Two consequences:
+
+- The **unit strip** sorts and groups a *copy* of the list by
+  `ageStage.minAge`, emitting an `_AgeGroupHeader` per band. Only the strip
+  reorders; `onSelected` still carries each unit's real index, and the
+  prerequisite chain is untouched. This is what makes the division by age the
+  first thing you see.
+- Nothing is **locked** by age. A unit above your band shows an amber chip, a
+  `_TooYoungBanner` on its card, and a confirm dialog before a lesson opens —
+  then opens anyway if you say so. The point is that a 12-year-old reading the
+  401(k) unit knows the salary-shaped examples are a preview of later, not a
+  description of now.
+
+**Two age concepts, and mixing them up is a bug.**
+`AgeBand.recommendedStage` derives from `representativeAge` (the lower-ish end
+of a bucket) and answers "what should we lead with?".
+`AgeBand.maxPlausibleStage` is the *top* of the band and answers "who should
+we warn?". The first version used `recommendedStage` for both and told every
+adult that the 21+ unit was above their age, because "18 or older" has a
+representative age of 19. Warnings use `maxPlausibleStage`; the "For you"
+badge keeps using `recommendedStage`.
 
 ## 10. Password reset, end to end
 
@@ -400,16 +492,17 @@ that fetches once and fans out, rather than every client calling directly.
 is the "you earned something" moment, fired from `_BadgeShowcase` when a
 badge becomes newly earned.
 
-**On the art:** there is no celebrating-turtle sprite sheet in this project.
-Every turtle asset is a single static pose — `pixelMainTurtle.png` (the
-mascot/logo with a coin), `cool_turtle.png`, and three skin previews under
-`assets/images/turtles/`. None are multi-frame. The celebration is therefore
-*composed* rather than played back: the mascot pops in on an `elasticOut`
-spring, sitting inside hand-painted rotating rays and sparks that fly
-outward once on entrance (`_CelebrationPainter`). Same approach as the
-charts — a `CustomPainter`, no new dependency, nothing to crash on odd
-sizes. If a real multi-frame celebration sheet gets drawn later, it drops
-into the same widget with the painter removed.
+**On the art:** the real celebration sprite sheet lives at
+`assets/own_skins/turtle_celebrate/turtle_celebrate.png` — 8 frames on a
+3×3 grid of 640×640 cells (last cell empty), progressing smile → sparkle
+burst. It's registered in `pubspec.yaml`, exposed through the constants
+`AppAssets.turtleCelebrateSheet` / `turtleCelebrateColumns` /
+`turtleCelebrateRows` / `turtleCelebrateFrames` / `turtleCelebrateCellSize`,
+and driven by a third `AnimationController` (`_sprite`) that walks the
+frame index over ~800ms and then holds on the final celebration pose. The
+`_CelebrationPainter` rays and sparks still play underneath — the sprite
+plus the painted burst read as one moment. Under reduce-motion the sprite
+pins straight to the last frame.
 
 **Firing once, not every visit:** badges are derived from progress, so
 "newly earned" needs its own memory. `spendingHabits['celebrated_badges']`

@@ -241,16 +241,13 @@ class _CharacterPreviewCard extends StatelessWidget {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  equippedSkin.accent.withValues(alpha: 0.22),
-                  const Color(0xFF0D2B20),
-                ],
-              ),
+              // Faint translucent panel instead of an opaque accent-to-dark
+              // gradient. The gradient was doing most of the work of making
+              // this screen feel like a solid slab of colour — a light fill
+              // lets the village map read through it instead.
+              color: Colors.white.withValues(alpha: 0.07),
               border: Border.all(
-                color: equippedSkin.accent.withValues(alpha: 0.38),
+                color: equippedSkin.accent.withValues(alpha: 0.30),
               ),
             ),
             child: Column(
@@ -1415,18 +1412,33 @@ class _CustomizeBackdrop extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        // The detailed village map, same as the starting screen — the flat
+        // repeating meadow tile behind a 0.82 wash left this screen reading
+        // as one solid block of green with no depth to it.
         Positioned.fill(
           child: Image.asset(
-            'assets/self_made_backgrounds/meadow_tile_bg.png',
-            repeat: ImageRepeat.repeat,
+            AppAssets.villageMapBackground,
+            fit: BoxFit.cover,
             filterQuality: FilterQuality.none,
           ),
         ),
-        // Matches the dim used on Home/Arcade — the tile art reads as a
-        // soft wash instead of a legible, cluttered repeating pattern.
         Positioned.fill(
           child: Container(
-            color: const Color(0xFF071711).withValues(alpha: 0.82),
+            color: const Color(0xFF0C2418).withValues(alpha: 0.62),
+          ),
+        ),
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: const Alignment(0.3, -0.5),
+                radius: 0.95,
+                colors: [
+                  const Color(0xFF78E08F).withValues(alpha: 0.20),
+                  Colors.transparent,
+                ],
+              ),
+            ),
           ),
         ),
         Positioned(

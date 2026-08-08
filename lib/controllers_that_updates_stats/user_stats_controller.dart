@@ -63,6 +63,19 @@ class UserStatsController extends ChangeNotifier {
   static const Duration _remoteSyncTimeout = Duration(seconds: 8);
 
   UserStats get stats => _stats;
+
+  /// Test-only: swaps in a stats snapshot without touching the network or
+  /// SharedPreferences. Age-band-dependent UI (the Academy's "older than you"
+  /// warning, personalised worked examples) only renders once an age band is
+  /// set, and the real setter goes through a save round-trip that a widget
+  /// test can't complete — so without this seam those branches never run.
+  @visibleForTesting
+  void seedStatsForTest(UserStats stats) {
+    _stats = stats;
+    _isLoading = false;
+    notifyListeners();
+  }
+
   String get userId => _userId;
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;

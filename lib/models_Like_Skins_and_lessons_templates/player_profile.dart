@@ -63,6 +63,24 @@ enum AgeBand {
   /// ordering and a "Recommended for you" badge.
   AgeStage? get recommendedStage =>
       this == AgeBand.undisclosed ? null : stageForAge(representativeAge);
+
+  /// The oldest stage this band could plausibly be in — the yardstick for the
+  /// Academy's "this unit is written for older readers" warning.
+  ///
+  /// Deliberately *not* [recommendedStage]. That one uses
+  /// [representativeAge], the bottom-ish end of the bucket, which is right for
+  /// deciding what to lead with but wrong for deciding whom to warn: it would
+  /// tell a 25-year-old who picked "18 or older" that the 401(k) unit is above
+  /// their age. Bands are ranges, and a warning should only fire when the
+  /// whole range sits below the unit.
+  AgeStage? get maxPlausibleStage => switch (this) {
+    AgeBand.under13 => AgeStage.middleSchool,
+    AgeBand.teen13to15 => AgeStage.highSchool,
+    AgeBand.teen16to17 => AgeStage.highSchool,
+    // Open-ended: this player could be any age at all, so nothing is above them.
+    AgeBand.adult18plus => AgeStage.adult,
+    AgeBand.undisclosed => null,
+  };
 }
 
 /// Framing used for lesson examples and money amounts.

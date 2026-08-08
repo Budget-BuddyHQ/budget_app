@@ -5,6 +5,16 @@ class AppAssets {
   static const String coolTurtle = 'assets/images/cool_turtle.png';
   static const String pixelMainTurtle = 'assets/own_skins/pixelMainTurtle.png';
 
+  /// 8-frame celebration sprite sheet — 3 columns × 3 rows of 640x640 cells,
+  /// with the bottom-right cell empty. Frames build from smile → sparkle
+  /// burst. Wired into `AchievementCelebration`.
+  static const String turtleCelebrateSheet =
+      'assets/own_skins/turtle_celebrate/turtle_celebrate.png';
+  static const int turtleCelebrateColumns = 3;
+  static const int turtleCelebrateRows = 3;
+  static const int turtleCelebrateFrames = 8;
+  static const double turtleCelebrateCellSize = 640;
+
   static const String loadingAnimation =
       'assets/animations/02_Manny_Run_Fill.json';
 
