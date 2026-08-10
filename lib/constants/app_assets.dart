@@ -54,6 +54,8 @@ class AppAssets {
     'assets/images/finance_brawl_ui/brawl_enemy_two.png';
   static const String brawlBossSprite =
     'assets/images/finance_brawl_ui/brawl_boss.png';
+  static const String brawlChestSprite =
+   'assets/images/finance_brawl_ui/brawl_vault.png';
 
     
   static const String turtleClassic =

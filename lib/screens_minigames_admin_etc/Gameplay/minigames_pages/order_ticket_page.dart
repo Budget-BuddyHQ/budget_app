@@ -92,12 +92,19 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
 
   List<Candle> _candles = const <Candle>[];
   bool _loadingChart = false;
+  bool _detailsLoading = false;
+  String? _detailsError;
+  TwelveDataQuoteDetails? _details;
+  bool _detailsExpanded = false;
 
   @override
   void initState() {
     super.initState();
     _priceController.text = '${widget.lastPrice}';
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadChart());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadChart();
+      _loadDetails();
+    });
   }
 
   @override
@@ -118,6 +125,32 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
     setState(() {
       _candles = candles;
       _loadingChart = false;
+    });
+  }
+
+  Future<void> _loadDetails() async {
+    if (!mounted) return;
+    final cached = context.read<MarketDataService>().detailsFor(widget.symbol);
+    if (cached != null) {
+      setState(() => _details = cached);
+      return;
+    }
+
+    setState(() {
+      _detailsLoading = true;
+      _detailsError = null;
+    });
+
+    final details = await context.read<MarketDataService>().fetchTwelveDataQuoteDetails(widget.symbol);
+    if (!mounted) return;
+
+    setState(() {
+      _detailsLoading = false;
+      if (details == null) {
+        _detailsError = 'Company details unavailable right now.';
+      } else {
+        _details = details;
+      }
     });
   }
 
@@ -345,6 +378,45 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                   ask: widget.askPrice,
                   last: widget.lastPrice,
                 ),
+                const SizedBox(height: 18),
+                GestureDetector(
+                  onTap: () => setState(() => _detailsExpanded = !_detailsExpanded),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _detailsExpanded ? 'Hide company details' : 'Show additional company details',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          _detailsExpanded
+                              ? Icons.keyboard_arrow_up_rounded
+                              : Icons.keyboard_arrow_down_rounded,
+                          color: Colors.white70,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (_detailsExpanded) ...[
+                  const SizedBox(height: 12),
+                  _CompanyDetailsSection(
+                    details: _details,
+                    loading: _detailsLoading,
+                    error: _detailsError,
+                  ),
+                ],
                 const SizedBox(height: 18),
                 _LabelledRow(
                   label: 'Side',
@@ -880,6 +952,135 @@ class _QuoteChip extends StatelessWidget {
           Text(
             value,
             style: TextStyle(color: color, fontWeight: FontWeight.w900),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 140,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.55),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompanyDetailsSection extends StatelessWidget {
+  const _CompanyDetailsSection({
+    required this.details,
+    required this.loading,
+    required this.error,
+  });
+
+  final TwelveDataQuoteDetails? details;
+  final bool loading;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Color(0xFF58C7FF),
+          ),
+        ),
+      );
+    }
+
+    if (error != null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.red.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.red.withValues(alpha: 0.18)),
+        ),
+        child: Text(
+          error!,
+          style: const TextStyle(color: Colors.white70),
+        ),
+      );
+    }
+
+    if (details == null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        ),
+        child: const Text(
+          'Company details are not available for this stock.',
+          style: TextStyle(color: Colors.white70),
+        ),
+      );
+    }
+
+    final loadedDetails = details!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+         // _DetailRow(label: 'Bid Size', value: loadedDetails.bidSize.toStringAsFixed(0)),
+          //_DetailRow(label: 'Ask Size', value: loadedDetails.askSize.toStringAsFixed(0)),
+          
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              _DetailRow(label: 'Last Price', value: usdLabel(loadedDetails.price)),
+              _DetailRow(label: 'Today High', value: usdLabel(loadedDetails.high)),
+              _DetailRow(label: 'Today Low', value: usdLabel(loadedDetails.low)),
+              _DetailRow(label: 'Volume', value: loadedDetails.volume.toStringAsFixed(0)),
+              _DetailRow(label: 'Avg Volume', value: loadedDetails.averageVolume.toStringAsFixed(0)),
+              //_DetailRow(label: 'Market Cap', value: _formatLargeNumber(loadedDetails.marketCap)),
+              _DetailRow(label: '52 week Range', value: loadedDetails.fiftyTwoWeekRange),
+            ],
           ),
         ],
       ),
