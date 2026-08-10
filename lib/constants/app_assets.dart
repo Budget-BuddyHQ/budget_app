@@ -42,19 +42,20 @@ class AppAssets {
   static const String tileCoin = 'assets/images/tiles/coin.png';
   static const String brawlGrasstile =
     'assets/self_made_backgrounds/brawl_grass_tile.png';
-  static const String treeSprite =
+  static const String brawlTreeSprite =
     'assets/images/finance_brawl_ui/brawl_tree.png';
-  static const String rockSprite = 
+  static const String brawlRockSprite = 
     'assets/images/finance_brawl_ui/brawl_rock.png';
-  static const String dollarSprite =
+  static const String brawlDollarSprite =
     'assets/images/finance_brawl_ui/brawl_dollar.png';
-  static const String enemyOneSprite =
+  static const String brawlEnemyOneSprite =
     'assets/images/finance_brawl_ui/brawl_enemy_one.png';
-  static const String enemyTwoSprite =
+  static const String brawlEnemyTwoSprite =
     'assets/images/finance_brawl_ui/brawl_enemy_two.png';
-  static const String bossSprite =
+  static const String brawlBossSprite =
     'assets/images/finance_brawl_ui/brawl_boss.png';
 
+    
   static const String turtleClassic =
       'assets/images/turtles/Wface_no_bg_l7nvmfum.png';
   static const String turtleCoinShell =

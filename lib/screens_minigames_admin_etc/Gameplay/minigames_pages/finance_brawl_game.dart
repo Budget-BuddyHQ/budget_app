@@ -107,8 +107,8 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
 
 
   // 3. Add the loading helper method:
-  Future<void> _loadTreeSprite() async {
-    final ByteData data = await rootBundle.load(AppAssets.treeSprite);
+  Future<void> _loadbrawlTreeSprite() async {
+    final ByteData data = await rootBundle.load(AppAssets.brawlTreeSprite);
     final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
     final ui.FrameInfo fi = await codec.getNextFrame();
     if (mounted) {
@@ -118,8 +118,8 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     }
   }
 
-  Future<void> _loadRockSprite() async {
-    final ByteData data = await rootBundle.load(AppAssets.rockSprite);
+  Future<void> _loadbrawlRockSprite() async {
+    final ByteData data = await rootBundle.load(AppAssets.brawlRockSprite);
     final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
     final ui.FrameInfo fi = await codec.getNextFrame();
     if (mounted) {
@@ -129,8 +129,8 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     }
   }
 
-  Future<void> _loadDollarSprite() async {
-  final ByteData data = await rootBundle.load(AppAssets.dollarSprite);
+  Future<void> _loadbrawlDollarSprite() async {
+  final ByteData data = await rootBundle.load(AppAssets.brawlDollarSprite);
   final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
   final ui.FrameInfo fi = await codec.getNextFrame();
   if (mounted) {
@@ -140,8 +140,8 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   }
 }
 
-Future<void> _loadEnemyOneSprite() async {
-  final ByteData data = await rootBundle.load(AppAssets.enemyOneSprite);
+Future<void> _loadbrawlEnemyOneSprite() async {
+  final ByteData data = await rootBundle.load(AppAssets.brawlEnemyOneSprite);
   final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
   final ui.FrameInfo fi = await codec.getNextFrame();
   if (mounted) {
@@ -151,8 +151,8 @@ Future<void> _loadEnemyOneSprite() async {
   }
 }
 
-Future<void> _loadEnemyTwoSprite() async {
-  final ByteData data = await rootBundle.load(AppAssets.enemyTwoSprite);
+Future<void> _loadbrawlEnemyTwoSprite() async {
+  final ByteData data = await rootBundle.load(AppAssets.brawlEnemyTwoSprite);
   final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
   final ui.FrameInfo fi = await codec.getNextFrame();
   if (mounted) {
@@ -162,8 +162,8 @@ Future<void> _loadEnemyTwoSprite() async {
   }
   }
 
-Future<void> _loadBossSprite() async {
-  final ByteData data = await rootBundle.load(AppAssets.bossSprite);
+Future<void> _loadbrawlBossSprite() async {
+  final ByteData data = await rootBundle.load(AppAssets.brawlBossSprite);
   final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
   final ui.FrameInfo fi = await codec.getNextFrame();
   if (mounted) {
@@ -1483,12 +1483,12 @@ Future<void> _loadBossSprite() async {
  @override
   void initState() {
     super.initState();
-    _loadTreeSprite();
-    _loadRockSprite();
-    _loadDollarSprite();
-    _loadEnemyOneSprite();
-    _loadEnemyTwoSprite();
-    _loadBossSprite();
+    _loadbrawlTreeSprite();
+    _loadbrawlRockSprite();
+    _loadbrawlDollarSprite();
+    _loadbrawlEnemyOneSprite();
+    _loadbrawlEnemyTwoSprite();
+    _loadbrawlBossSprite();
 
     for (int i = 0; i < 20; i++) {
       Offset pos = Offset(
