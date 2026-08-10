@@ -1911,7 +1911,7 @@ class _PortfolioSummary extends StatelessWidget {
   }
 }
 
-class _StockCard extends StatelessWidget {
+class _StockCard extends StatefulWidget {
   const _StockCard({
     required this.quote,
     required this.ownedLots,
@@ -1927,15 +1927,21 @@ class _StockCard extends StatelessWidget {
   final VoidCallback onSell;
 
   @override
+  State<_StockCard> createState() => _StockCardState();
+}
+
+class _StockCardState extends State<_StockCard> {
+  @override
   Widget build(BuildContext context) {
+    final quote = widget.quote;
     final positive = quote.changePercent >= 0;
     final changeColor = positive
         ? const Color(0xFF85EFAC)
         : const Color(0xFFFF8A80);
 
     final metrics = _holdingMetrics(
-      ownedLots: ownedLots,
-      costBasis: costBasis,
+      ownedLots: widget.ownedLots,
+      costBasis: widget.costBasis,
       currentPrice: quote.currentPrice,
     );
     final averageCost = metrics.averageCost;
@@ -2023,9 +2029,9 @@ class _StockCard extends StatelessWidget {
                   ),
                   _ValueBadge(
                     label: 'Owned',
-                    value: formatShares(ownedLots),
-                    sub: ownedLots > 0
-                        ? usdLabel(ownedLots * quote.currentPrice)
+                    value: formatShares(widget.ownedLots),
+                    sub: widget.ownedLots > 0
+                        ? usdLabel(widget.ownedLots * quote.currentPrice)
                         : null,
                     color: const Color(0xFF58C7FF),
                   ),
@@ -2050,7 +2056,7 @@ class _StockCard extends StatelessWidget {
             },
           ),
 
-          if (ownedLots > 0) ...[
+          if (widget.ownedLots > 0) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -2129,7 +2135,7 @@ class _StockCard extends StatelessWidget {
 
               final buyButton = Expanded(
                 child: FilledButton.icon(
-                  onPressed: onBuy,
+                  onPressed: widget.onBuy,
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFF85EFAC),
                     foregroundColor: const Color(0xFF103224),
@@ -2144,7 +2150,7 @@ class _StockCard extends StatelessWidget {
               );
               final sellButton = Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: ownedLots > 0 ? onSell : null,
+                  onPressed: widget.ownedLots > 0 ? widget.onSell : null,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: BorderSide(
@@ -2179,6 +2185,7 @@ class _StockCard extends StatelessWidget {
       ),
     );
   }
+
 }
 
 class _ValueBadge extends StatelessWidget {

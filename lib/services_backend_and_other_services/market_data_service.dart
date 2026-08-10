@@ -63,6 +63,64 @@ class SymbolMatch {
   final String company;
 }
 
+/// Rich metadata from Twelve Data's `/quote` endpoint, used by the stock
+/// card's company info dropdown.
+@immutable
+class TwelveDataQuoteDetails {
+  const TwelveDataQuoteDetails({
+    required this.symbol,
+    required this.name,
+    required this.exchange,
+    required this.price,
+    required this.open,
+    required this.high,
+    required this.low,
+    required this.previousClose,
+    required this.bidSize,
+    required this.askSize,
+    required this.volume,
+    required this.averageVolume,
+    required this.marketCap,
+    required this.fiftyTwoWeekLow,
+    required this.fiftyTwoWeekHigh,
+  });
+
+  final String symbol;
+  final String name;
+  final String exchange;
+  final double price;
+  final double open;
+  final double high;
+  final double low;
+  final double previousClose;
+  final double bidSize;
+  final double askSize;
+  final double volume;
+  final double averageVolume;
+  final double marketCap;
+  final double fiftyTwoWeekLow;
+  final double fiftyTwoWeekHigh;
+
+  String get fiftyTwoWeekRange =>
+      '${_formatLargeNumber(fiftyTwoWeekLow)} – ${_formatLargeNumber(fiftyTwoWeekHigh)}';
+
+  static String _formatLargeNumber(double value) {
+    if (value.isNaN || value.isInfinite) {
+      return '-';
+    }
+    if (value >= 1e9) {
+      return '${(value / 1e9).toStringAsFixed(2)}B';
+    }
+    if (value >= 1e6) {
+      return '${(value / 1e6).toStringAsFixed(2)}M';
+    }
+    if (value >= 1e3) {
+      return '${(value / 1e3).toStringAsFixed(1)}K';
+    }
+    return value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 2);
+  }
+}
+
 /// One OHLC bar. [Candle] is what both the line chart and the candlestick
 /// chart draw from — a line just uses [close].
 @immutable
@@ -279,6 +337,23 @@ class MarketDataService extends ChangeNotifier {
     'apikey': _proxyToken ?? '',
   };
 
+  Future<http.Response> _getWithProxyFallback(
+    Uri uri,
+    Map<String, String> headers, {
+    Uri? fallbackUri,
+    Map<String, String>? fallbackHeaders,
+  }) async {
+    final response = await _client.get(uri, headers: headers).timeout(_timeout);
+    if ((response.statusCode == 404 || response.statusCode == 502 || response.statusCode == 503) &&
+        fallbackUri != null) {
+      debugPrint(
+        'Proxy request failed with ${response.statusCode}; retrying direct vendor request.',
+      );
+      return _client.get(fallbackUri, headers: fallbackHeaders ?? {}).timeout(_timeout);
+    }
+    return response;
+  }
+
   /// Finnhub's free tier allows 60 calls/minute and one refresh costs one call
   /// per tracked symbol. A 20s floor lets the board poll live (~3 refreshes a
   /// minute) while staying well inside the limit.
@@ -290,6 +365,8 @@ class MarketDataService extends ChangeNotifier {
   final http.Client _client;
 
   final Map<String, LiveQuote> _quotes = <String, LiveQuote>{};
+
+  final Map<String, TwelveDataQuoteDetails> _details = <String, TwelveDataQuoteDetails>{};
 
   /// Real intraday closes per symbol, powering the inline card sparklines.
   /// Without this the cards can only draw the 3-point quote fallback, which
@@ -313,6 +390,8 @@ class MarketDataService extends ChangeNotifier {
   /// Any cached quote, including one pulled in by a search rather than by the
   /// scheduled [refresh] of [kLiveSymbols].
   LiveQuote? quoteFor(String symbol) => _quotes[symbol];
+
+  TwelveDataQuoteDetails? detailsFor(String symbol) => _details[symbol];
 
   /// Test-only: populates [quotes] without a network call, so widget tests
   /// can exercise the ticker tape / trending strip / card list, which
@@ -472,8 +551,12 @@ class MarketDataService extends ChangeNotifier {
         : {'X-Finnhub-Token': apiKey};
 
     try {
-      final response = await _client.get(uri, headers: headers).timeout(
-        _timeout,
+      final directUri = Uri.https(_host, '/api/v1/quote', {'symbol': entry.symbol});
+      final response = await _getWithProxyFallback(
+        uri,
+        headers,
+        fallbackUri: proxied == null ? null : directUri,
+        fallbackHeaders: proxied == null ? null : {'X-Finnhub-Token': apiKey},
       );
 
       if (response.statusCode == 429) {
@@ -531,17 +614,19 @@ class MarketDataService extends ChangeNotifier {
     }
 
     final proxied = _proxyUri({'op': 'search', 'q': trimmed});
-    final uri =
-        proxied ??
-        Uri.https(_host, '/api/v1/search', {'q': trimmed, 'exchange': 'US'});
+    final directUri = Uri.https(_host, '/api/v1/search', {'q': trimmed, 'exchange': 'US'});
+    final uri = proxied ?? directUri;
     final headers = proxied != null
         ? _proxyHeaders
         : {'X-Finnhub-Token': key ?? ''};
 
     try {
-      final response = await _client.get(uri, headers: headers).timeout(
-        _timeout,
-      );
+      final response = await _getWithProxyFallback(
+        uri,
+        headers,
+        fallbackUri: proxied == null ? null : directUri,
+        fallbackHeaders: proxied == null ? null : {'X-Finnhub-Token': key ?? ''},
+      ).timeout(_timeout);
 
       if (response.statusCode != 200) {
         return const <SymbolMatch>[];
@@ -604,6 +689,74 @@ class MarketDataService extends ChangeNotifier {
     return quote;
   }
 
+  Future<TwelveDataQuoteDetails?> fetchTwelveDataQuoteDetails(String symbol) async {
+    final key = _candleApiKey;
+    if (key == null && !usesProxy) {
+      return null;
+    }
+
+    final proxied = _proxyUri({'op': 'quote', 'symbol': symbol});
+    final directUri = Uri.https('api.twelvedata.com', '/quote', {
+      'symbol': symbol,
+      'apikey': key ?? '',
+    });
+    final uri = proxied ?? directUri;
+    final headers = proxied != null ? _proxyHeaders : const {};
+
+    try {
+      final response = await _getWithProxyFallback(
+        uri,
+        headers.cast<String, String>(),
+        fallbackUri: proxied == null ? null : directUri,
+        fallbackHeaders: <String, String>{},
+      ).timeout(_timeout);
+      if (response.statusCode != 200) {
+        return null;
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map) {
+        return null;
+      }
+
+      final symbolValue = (decoded['symbol'] ?? '').toString();
+      if (symbolValue.isEmpty) {
+        return null;
+      }
+
+      final fiftyTwoWeek = decoded['fifty_two_week'];
+      final details = TwelveDataQuoteDetails(
+        symbol: symbolValue,
+        name: (decoded['name'] ?? '').toString(),
+        exchange: (decoded['exchange'] ?? '').toString(),
+        price: _readDouble(decoded['close']) != 0
+            ? _readDouble(decoded['close'])
+            : _readDouble(decoded['price']),
+        open: _readDouble(decoded['open']),
+        high: _readDouble(decoded['high']),
+        low: _readDouble(decoded['low']),
+        previousClose: _readDouble(decoded['previous_close']),
+        bidSize: _readDouble(decoded['bid_size']),
+        askSize: _readDouble(decoded['ask_size']),
+        volume: _readDouble(decoded['volume']),
+        averageVolume: _readDouble(decoded['average_volume']),
+        marketCap: _readDouble(decoded['market_cap']),
+        fiftyTwoWeekLow: fiftyTwoWeek is Map
+            ? _readDouble(fiftyTwoWeek['low'])
+            : 0,
+        fiftyTwoWeekHigh: fiftyTwoWeek is Map
+            ? _readDouble(fiftyTwoWeek['high'])
+            : 0,
+      );
+
+      _details[symbol] = details;
+      notifyListeners();
+      return details;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// True once a historical-data key is configured. Finnhub moved its
   /// `/stock/candle` endpoint behind a paid plan, so timeframes and
   /// candlestick bars come from Twelve Data's free tier instead.
@@ -640,19 +793,21 @@ class MarketDataService extends ChangeNotifier {
       'interval': range.interval,
       'outputsize': '${range.points}',
     });
-    final uri =
-        proxied ??
-        Uri.https('api.twelvedata.com', '/time_series', {
-          'symbol': symbol,
-          'interval': range.interval,
-          'outputsize': '${range.points}',
-          'apikey': key ?? '',
-        });
+    final directUri = Uri.https('api.twelvedata.com', '/time_series', {
+      'symbol': symbol,
+      'interval': range.interval,
+      'outputsize': '${range.points}',
+      'apikey': key ?? '',
+    });
+    final uri = proxied ?? directUri;
 
     try {
-      final response = await _client
-          .get(uri, headers: proxied != null ? _proxyHeaders : const {})
-          .timeout(_timeout);
+      final response = await _getWithProxyFallback(
+        uri,
+        proxied != null ? _proxyHeaders : const {},
+        fallbackUri: proxied == null ? null : directUri,
+        fallbackHeaders: const {},
+      ).timeout(_timeout);
       if (response.statusCode != 200) {
         return const <Candle>[];
       }

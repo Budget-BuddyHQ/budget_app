@@ -45,6 +45,7 @@ const TTL_MS = {
   quote: 30_000,
   candles: 5 * 60_000,
   search: 60 * 60_000,
+  twelveQuote: 60_000,
 } as const;
 
 function cached(key: string): string | null {
@@ -171,6 +172,22 @@ Deno.serve(async (req) => {
           {},
           `candles:${symbol}:${interval}:${outputsize}`,
           TTL_MS.candles,
+        );
+      }
+
+      case 'twelve_quote': {
+        if (!TWELVE_DATA_KEY) {
+          return json({ error: 'TWELVE_DATA_API_KEY is not set' }, 503);
+        }
+        const symbol = cleanSymbol(url.searchParams.get('symbol'));
+        if (!symbol) return json({ error: 'bad symbol' }, 400);
+        const target =
+          `https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${TWELVE_DATA_KEY}`;
+        return await passthrough(
+          target,
+          {},
+          `twelve_quote:${symbol}`,
+          TTL_MS.twelveQuote,
         );
       }
 
