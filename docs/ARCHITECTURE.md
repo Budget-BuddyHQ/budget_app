@@ -393,6 +393,80 @@ adult that the 21+ unit was above their age, because "18 or older" has a
 representative age of 19. Warnings use `maxPlausibleStage`; the "For you"
 badge keeps using `recommendedStage`.
 
+## 9c. What is stored, and where — the complete list
+
+Every write goes through `UserStatsController._saveStats` →
+`SupabaseService.saveUserStats`, which does **three** things in order: updates
+an in-memory cache, writes SharedPreferences, then upserts the `user_stats`
+row. The first two always succeed; only the third can fail.
+
+### In the `user_stats` table
+
+| Data | Column | Notes |
+| --- | --- | --- |
+| Gold, XP, literacy points | own columns | |
+| Personality type | own column | |
+| **Stock holdings** | `holdings` | `{symbol: shares}`, fractional |
+| Transactions | `transaction_ledger` | full ledger, JSON array |
+| Net-worth curve | `portfolio_history` | real `cash + market value` readings |
+| Username, equipped/unlocked skins | `spending_habits` | |
+| Cost basis per symbol | `spending_habits.cost_basis` | what P&L is computed against |
+| Completed lessons | `spending_habits.completed_lessons` | |
+| Quiz scores, weak skills | `spending_habits.quiz_scores` / `.weak_skills` | |
+| Arcade high scores | `spending_habits.arcade_scores` | |
+| Life endings discovered | `spending_habits.discovered_endings` | |
+| Achievement celebrations seen | `spending_habits.celebrated_badges` | |
+| Daily quests + streak | `spending_habits.daily_*` | |
+| Age band, gender, pronoun | `spending_habits` | bucketed, never a date of birth |
+| Profile picture URL | `spending_habits.profile_image_url` | |
+
+`spending_habits` is a JSON column, which is why so much lives there — adding a
+field needs no migration. Age and gender are **deliberately not** mirrored into
+`age`/`gender` columns; those exist on `profiles`, not `user_stats`, and
+writing them here broke every save until it was removed.
+
+### Not stored, on purpose
+
+- **Badges** are *derived*, not saved. Every tier is recomputed from progress
+  the app already records — endings found, skins owned, lessons done, level —
+  so a badge can never disagree with the thing it describes. Only "have I seen
+  this celebration" is persisted.
+- **An in-progress Life run.** Lives reset per visit by design; only the
+  ending archetype and the gold payout survive.
+
+### The failure mode that matters
+
+`saveUserStats` catches upsert errors, keeps the local cache, and returns
+`synced: false`. That is the right behaviour for a flaky network — a player
+never loses a session to a dropped request. But it is also how a schema
+mismatch broke **every** cloud save for a long stretch with no visible symptom:
+local saving kept working, so the app looked fine, and the only way to notice
+was to sign in on another device and find an empty account.
+
+`UserStatsController.cloudSyncHealthy` now tracks this, and `CloudSyncBanner`
+(on the profile screen) shows it. It stays hidden when signed out, where
+device-only saving is the expected behaviour rather than a fault.
+
+## 9d. Market API keys live on the server
+
+`supabase/functions/market` proxies Finnhub and Twelve Data. The keys are
+Supabase secrets; the client authenticates with the anon key, which is already
+public.
+
+The security argument is the obvious one — a key in a client build is not a
+secret. The *practical* argument matters more: both free tiers are rated **per
+key, not per user**, so with a shipped key fifty simultaneous players
+rate-limit each other. The proxy caches responses (30s for quotes, 5min for
+candles, 1h for search), so a thousand players cost roughly the same upstream
+traffic as one.
+
+`MarketDataService.usesProxy` decides the path. Without Supabase configured it
+falls back to direct calls with a local key, so the repo still runs for a
+contributor who has only a Finnhub key. See `supabase/README.md` for deployment
+and `test/market_proxy_test.dart`, which asserts no `apikey` query parameter,
+no `X-Finnhub-Token` header, and no request to `finnhub.io` ever leaves the
+client.
+
 ## 10. Password reset, end to end
 
 The flow spans four pieces, and until this session only the first existed:

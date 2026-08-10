@@ -226,6 +226,59 @@ class MarketDataService extends ChangeNotifier {
   static const String _host = 'finnhub.io';
   static const Duration _timeout = Duration(seconds: 8);
 
+  // ---------------------------------------------------------------------
+  // Server-side proxy
+  //
+  // Preferred over calling the vendors directly. Shipping FINNHUB_API_KEY in
+  // the client meant the key sat inside every build for anyone to extract,
+  // and — more practically — Finnhub's 60 calls/minute is *per key*, so every
+  // player shared one quota and rate-limited each other. The edge function in
+  // `supabase/functions/market` holds the keys and caches responses, so a
+  // thousand players cost about the same upstream traffic as one.
+  //
+  // Direct calls remain as a fallback so a contributor with their own key can
+  // still run the app with no Supabase project at all.
+  // ---------------------------------------------------------------------
+
+  /// Base URL of the `market` edge function, or null when Supabase is not
+  /// configured — in which case the direct-key path below is used.
+  String? get _proxyBase {
+    final url = readRuntimeEnv('SUPABASE_URL');
+    if (url == null) return null;
+    final trimmed = url.trim();
+    if (trimmed.isEmpty || trimmed.contains('YOUR-PROJECT')) return null;
+    final origin = trimmed.endsWith('/')
+        ? trimmed.substring(0, trimmed.length - 1)
+        : trimmed;
+    return '$origin/functions/v1/market';
+  }
+
+  /// The anon key doubles as the bearer token for the function. It is already
+  /// public by design — the point of the proxy is that the *market* keys are
+  /// not.
+  String? get _proxyToken {
+    final key = readRuntimeEnv('SUPABASE_ANON_KEY');
+    final trimmed = key?.trim();
+    if (trimmed == null || trimmed.isEmpty || trimmed.contains('YOUR_')) {
+      return null;
+    }
+    return trimmed;
+  }
+
+  /// True when quotes can be fetched without a key in the client.
+  bool get usesProxy => _proxyBase != null && _proxyToken != null;
+
+  Uri? _proxyUri(Map<String, String> query) {
+    final base = _proxyBase;
+    if (base == null) return null;
+    return Uri.parse(base).replace(queryParameters: query);
+  }
+
+  Map<String, String> get _proxyHeaders => {
+    'Authorization': 'Bearer ${_proxyToken ?? ''}',
+    'apikey': _proxyToken ?? '',
+  };
+
   /// Finnhub's free tier allows 60 calls/minute and one refresh costs one call
   /// per tracked symbol. A 20s floor lets the board poll live (~3 refreshes a
   /// minute) while staying well inside the limit.
@@ -306,7 +359,7 @@ class MarketDataService extends ChangeNotifier {
     List<String> symbols, {
     bool force = false,
   }) async {
-    if (_candleApiKey == null || symbols.isEmpty) {
+    if ((_candleApiKey == null && !usesProxy) || symbols.isEmpty) {
       return;
     }
     final last = _lastSeriesFetch;
@@ -333,7 +386,9 @@ class MarketDataService extends ChangeNotifier {
     }
   }
 
-  bool get hasApiKey => _apiKey != null;
+  /// True when quotes are obtainable at all — either through the proxy or a
+  /// local key. The UI keys its "add an API key" empty state off this.
+  bool get hasApiKey => usesProxy || _apiKey != null;
 
   String? get _apiKey {
     final raw = readRuntimeEnv('FINNHUB_API_KEY');
@@ -357,7 +412,7 @@ class MarketDataService extends ChangeNotifier {
   /// failures land in [status] so the caller can render an explanation.
   Future<void> refresh({bool force = false}) async {
     final key = _apiKey;
-    if (key == null) {
+    if (key == null && !usesProxy) {
       _status = LiveMarketStatus.noApiKey;
       notifyListeners();
       return;
@@ -380,7 +435,7 @@ class MarketDataService extends ChangeNotifier {
       // a burst of six can trip a 429.
       final fetched = <String, LiveQuote>{};
       for (final entry in kLiveSymbols) {
-        final quote = await _fetchQuote(entry, key);
+        final quote = await _fetchQuote(entry, key ?? '');
         if (quote != null) {
           fetched[entry.symbol] = quote;
         }
@@ -406,14 +461,20 @@ class MarketDataService extends ChangeNotifier {
   }
 
   Future<LiveQuote?> _fetchQuote(LiveSymbol entry, String apiKey) async {
+    // Proxy first; only fall back to a direct call when Supabase is absent.
+    final proxied = _proxyUri({'op': 'quote', 'symbol': entry.symbol});
     // Token goes in a header, not the query string, so the key does not end up
     // in proxy or crash logs.
-    final uri = Uri.https(_host, '/api/v1/quote', {'symbol': entry.symbol});
+    final uri =
+        proxied ?? Uri.https(_host, '/api/v1/quote', {'symbol': entry.symbol});
+    final headers = proxied != null
+        ? _proxyHeaders
+        : {'X-Finnhub-Token': apiKey};
 
     try {
-      final response = await _client
-          .get(uri, headers: {'X-Finnhub-Token': apiKey})
-          .timeout(_timeout);
+      final response = await _client.get(uri, headers: headers).timeout(
+        _timeout,
+      );
 
       if (response.statusCode == 429) {
         _errorDetail = 'Rate limited by Finnhub. Try again in a minute.';
@@ -465,19 +526,22 @@ class MarketDataService extends ChangeNotifier {
   Future<List<SymbolMatch>> searchSymbols(String query) async {
     final key = _apiKey;
     final trimmed = query.trim();
-    if (key == null || trimmed.isEmpty) {
+    if ((key == null && !usesProxy) || trimmed.isEmpty) {
       return const <SymbolMatch>[];
     }
 
-    final uri = Uri.https(_host, '/api/v1/search', {
-      'q': trimmed,
-      'exchange': 'US',
-    });
+    final proxied = _proxyUri({'op': 'search', 'q': trimmed});
+    final uri =
+        proxied ??
+        Uri.https(_host, '/api/v1/search', {'q': trimmed, 'exchange': 'US'});
+    final headers = proxied != null
+        ? _proxyHeaders
+        : {'X-Finnhub-Token': key ?? ''};
 
     try {
-      final response = await _client
-          .get(uri, headers: {'X-Finnhub-Token': key})
-          .timeout(_timeout);
+      final response = await _client.get(uri, headers: headers).timeout(
+        _timeout,
+      );
 
       if (response.statusCode != 200) {
         return const <SymbolMatch>[];
@@ -526,12 +590,12 @@ class MarketDataService extends ChangeNotifier {
   /// so a searched-for stock becomes tradeable.
   Future<LiveQuote?> fetchQuoteFor(String symbol, {String? company}) async {
     final key = _apiKey;
-    if (key == null) {
+    if (key == null && !usesProxy) {
       return null;
     }
     final quote = await _fetchQuote(
       LiveSymbol(symbol, company ?? symbol),
-      key,
+      key ?? '',
     );
     if (quote != null) {
       _quotes[symbol] = quote;
@@ -543,7 +607,7 @@ class MarketDataService extends ChangeNotifier {
   /// True once a historical-data key is configured. Finnhub moved its
   /// `/stock/candle` endpoint behind a paid plan, so timeframes and
   /// candlestick bars come from Twelve Data's free tier instead.
-  bool get hasCandleKey => _candleApiKey != null;
+  bool get hasCandleKey => usesProxy || _candleApiKey != null;
 
   String? get _candleApiKey {
     final raw = readRuntimeEnv('TWELVE_DATA_API_KEY');
@@ -566,19 +630,29 @@ class MarketDataService extends ChangeNotifier {
   /// screen still renders something real.
   Future<List<Candle>> fetchCandles(String symbol, ChartRange range) async {
     final key = _candleApiKey;
-    if (key == null) {
+    if (key == null && !usesProxy) {
       return const <Candle>[];
     }
 
-    final uri = Uri.https('api.twelvedata.com', '/time_series', {
+    final proxied = _proxyUri({
+      'op': 'candles',
       'symbol': symbol,
       'interval': range.interval,
       'outputsize': '${range.points}',
-      'apikey': key,
     });
+    final uri =
+        proxied ??
+        Uri.https('api.twelvedata.com', '/time_series', {
+          'symbol': symbol,
+          'interval': range.interval,
+          'outputsize': '${range.points}',
+          'apikey': key ?? '',
+        });
 
     try {
-      final response = await _client.get(uri).timeout(_timeout);
+      final response = await _client
+          .get(uri, headers: proxied != null ? _proxyHeaders : const {})
+          .timeout(_timeout);
       if (response.statusCode != 200) {
         return const <Candle>[];
       }

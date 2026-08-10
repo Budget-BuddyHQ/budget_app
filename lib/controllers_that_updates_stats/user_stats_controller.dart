@@ -57,6 +57,17 @@ class UserStatsController extends ChangeNotifier {
   bool _isLoading = true;
   bool _isSaving = false;
   String? _statusMessage;
+
+  /// False once a save has failed to reach Supabase while signed in.
+  ///
+  /// `saveUserStats` catches every upsert error, writes to the local cache and
+  /// returns `synced: false` — graceful, but completely silent. That is how a
+  /// schema mismatch once broke *every* cloud save for a long stretch without
+  /// producing a single visible symptom: progress kept saving locally, so
+  /// nothing looked wrong until a player signed in on another device and found
+  /// their account empty. This flag is what makes that state visible.
+  bool _cloudSyncHealthy = true;
+  DateTime? _lastCloudSyncFailure;
   StreamSubscription<UserStats>? _subscription;
   StreamSubscription<AuthState>? _authSubscription;
   bool _initialized = false;
@@ -80,6 +91,14 @@ class UserStatsController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
   String? get statusMessage => _statusMessage;
+
+  /// True when the last save reached the server, or when there is no server to
+  /// reach (signed out, or Supabase not configured) — in which case
+  /// device-only saving is the expected behaviour, not a fault.
+  bool get cloudSyncHealthy => _cloudSyncHealthy || !isAuthenticated;
+
+  /// When cloud sync last failed, for the "last synced" line in the warning.
+  DateTime? get lastCloudSyncFailure => _lastCloudSyncFailure;
   bool get isAuthenticated => _service.currentUser != null;
   List<AvatarSkin> get unlockedAvatarSkins {
     final unlockedSkinIds = _stats.unlockedSkins.toSet();
@@ -1477,6 +1496,16 @@ class UserStatsController extends ChangeNotifier {
 
     _isSaving = false;
     _statusMessage = syncState.message;
+    // Only a signed-in player has a cloud save to lose; signed out, "saved on
+    // this device" is simply what is supposed to happen.
+    if (isAuthenticated) {
+      if (syncState.synced) {
+        _cloudSyncHealthy = true;
+      } else {
+        _cloudSyncHealthy = false;
+        _lastCloudSyncFailure = DateTime.now();
+      }
+    }
     notifyListeners();
 
     return StatsActionResult(

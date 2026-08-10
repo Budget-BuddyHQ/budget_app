@@ -562,6 +562,69 @@ partway through a unit.
 resolves to a real lesson, ids are unique, each lesson is filed under the unit
 it claims, and each unit opens off the previous one.
 
+**Life got repetitive after about age thirty — measured, not guessed**
+The complaint was that runs felt samey past a point. Simulating 400 full lives
+found three causes at once: `_drawEvent()` had **no memory**, so the same beat
+could fire repeatedly (`phone_breaks` and `crypto_tip` each landed eight times
+in a single life, and 24 of the ~40 events in an average run were reruns); the
+eligible pool sat **flat at ~19 events from age 32 to 85**, so half a
+playthrough drew from one small set; and three events had never fired in any
+run at all.
+*Fix:* `LifeEvent.repeatable` (default false) plus a six-year cooldown on the
+ones that genuinely recur; 27 new adult/senior events, taking the 40+ pool from
+19 to 31. Average repeats per life fell 24.4 → 9.8.
+*Files:* `life_sim_models.dart`, `life_sim_controller.dart`,
+`test/life_variety_test.dart`
+
+**The music career ladder was mathematically impossible**
+`first_gig` granted 4 fame, `record_deal` required 10, and no other event
+produced music fame — so the top three events on that track could never fire
+for anybody. `sold_out_tour` needed fame 35 against a reachable ceiling of 30.
+The simulation above is what exposed it; no amount of playtesting would
+reliably have.
+*Fix:* first_gig now grants 12, and the two ceilings dropped to reachable
+values. A test plays 120 lives as a committed musician and asserts the whole
+ladder completes.
+
+**A test suite that reported clean while screens were crashing**
+`responsive_layout_test.dart` collected every exception and then filtered to
+messages containing `overflowed by`, discarding the rest. A screen could fail
+to lay out entirely and the sweep still passed.
+*Fix:* it asserts on all exceptions now. That immediately surfaced seven real
+failures — see the two below, both of which had been shipping.
+*Files:* `test/responsive_layout_test.dart`
+
+**Market Board: `Null check operator used on a null value` when narrowing the window**
+`_StockCard` built its header pre-wrapped in `Expanded`, then used it in a
+`Row` *and*, below 520px wide, a `Column`. The card lives in a `ListView`, so
+that Column has unbounded height — an `Expanded` there cannot lay out, leaving
+a render box with no size for the next paint to dereference.
+*Fix:* the header is a plain `Row`, wrapped in `Expanded` only at the `Row`
+call site. `test/market_resize_test.dart` drags an already-mounted board from
+1280x800 down to the 340x480 minimum on every tab — the previous tests always
+set the viewport *before* the first pump, so live resizing had no coverage.
+
+**`TemporaryLoadingScreen.compact` was declared and never read**
+The Academy passes `compact: true` into a `Positioned(top: 10, right: 10)` —
+no width or height, so unbounded constraints — and got the full-screen
+`Scaffold` back, which tries to be infinitely large. That threw on the first
+frame of *every* Academy visit while stats were syncing.
+*Fix:* `compact` now returns a small self-sizing pill.
+
+**Cloud-save failures were completely invisible**
+`saveUserStats` catches upsert errors, keeps the local cache and returns
+`synced: false`. Correct for a flaky network, but nothing ever displayed that
+state — which is how the `age` column bug broke every cloud save for a long
+stretch with no symptom, since local saving kept working.
+*Fix:* `UserStatsController.cloudSyncHealthy` plus `CloudSyncBanner` on the
+profile screen. Hidden when signed out, where device-only saving is correct.
+
+**Finance Brawl drew a flat "C" for the player**
+The player token painted `equippedSkinId.characters.first` — the equipped skin
+happened to start with a C.
+*Fix:* it draws the player's uploaded profile picture, clipped to the existing
+ring, and falls back to the letter when there is no upload.
+
 **Sprite tooling only runs on Windows PowerShell 5.1**
 The `tool/*.ps1` sprite scripts use `System.Drawing`, which PowerShell 7 (`pwsh`)
 does not ship.

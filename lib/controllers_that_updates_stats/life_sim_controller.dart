@@ -220,23 +220,56 @@ class LifeSimController extends ChangeNotifier {
   /// an age-only filter, which meant a rare dramatic beat was exactly as
   /// likely as a routine one and nothing could ever depend on who the
   /// character had become.
+  /// Ids already used this life, so the draw doesn't serve the same beat twice.
+  final Set<String> _seen = <String>{};
+
+  /// Age at which each repeatable event last fired, for the cooldown.
+  final Map<String, int> _lastFiredAge = <String, int>{};
+
+  /// Years a repeatable event must sit out before it can come round again.
+  static const int _repeatCooldownYears = 6;
+
   LifeEvent? _drawEvent() {
     final ctx = context;
-    final eligible = kLifeEvents
-        .where((e) => e.matches(ctx))
-        .toList(growable: false);
-    if (eligible.isEmpty) {
-      return null;
-    }
+
     // ~25% of years are quiet, so events feel like events.
     if (_random.nextInt(4) == 0) {
       return null;
     }
 
-    final total = eligible.fold<double>(0, (sum, e) => sum + e.weight);
-    if (total <= 0) {
-      return eligible[_random.nextInt(eligible.length)];
+    bool fresh(LifeEvent e) {
+      if (!e.matches(ctx)) return false;
+      if (!_seen.contains(e.id)) return true;
+      if (!e.repeatable) return false;
+      final last = _lastFiredAge[e.id];
+      return last == null || _age - last >= _repeatCooldownYears;
     }
+
+    var eligible = kLifeEvents.where(fresh).toList(growable: false);
+
+    // Late in a long life the unseen pool can genuinely run dry. Rather than
+    // going silent for twenty years, fall back to anything repeatable that has
+    // served its cooldown — and only then to the raw eligible set.
+    if (eligible.isEmpty) {
+      eligible = kLifeEvents
+          .where((e) => e.matches(ctx) && e.repeatable)
+          .toList(growable: false);
+    }
+    if (eligible.isEmpty) {
+      return null;
+    }
+
+    final total = eligible.fold<double>(0, (sum, e) => sum + e.weight);
+    final chosen = total <= 0
+        ? eligible[_random.nextInt(eligible.length)]
+        : _weightedPick(eligible, total);
+
+    _seen.add(chosen.id);
+    _lastFiredAge[chosen.id] = _age;
+    return chosen;
+  }
+
+  LifeEvent _weightedPick(List<LifeEvent> eligible, double total) {
     var roll = _random.nextDouble() * total;
     for (final event in eligible) {
       roll -= event.weight;
