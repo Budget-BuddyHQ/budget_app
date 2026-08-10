@@ -221,6 +221,7 @@ class LifeEvent {
     this.minFame = 0,
     this.minMoney = 0,
     this.requiresJob = false,
+    this.repeatable = false,
   });
 
   final String id;
@@ -241,6 +242,20 @@ class LifeEvent {
   final int minFame;
   final int minMoney;
   final bool requiresJob;
+
+  /// Whether this beat can happen more than once in a single life.
+  ///
+  /// Defaults to **false**, because most events are once-in-a-lifetime by
+  /// nature — you discover you like music once, you leave home once. Before
+  /// this flag existed the draw had no memory at all, and a simulation of 400
+  /// lives showed 24 of the ~40 events in an average life were repeats, with
+  /// `phone_breaks` and `crypto_tip` each firing eight times in one run. That
+  /// is the single biggest reason the game felt repetitive.
+  ///
+  /// Set true only for things that genuinely recur — market crashes, rent
+  /// rises, a car that keeps breaking. Even then the controller enforces a
+  /// cooldown so they can't land in consecutive years.
+  final bool repeatable;
 
   bool eligibleAt(int age) => age >= minAge && age <= maxAge;
 
@@ -346,6 +361,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'allowance',
+    repeatable: true,
     prompt: 'Your parents offer 20 coins a week for chores.',
     icon: Icons.cleaning_services_rounded,
     minAge: 7,
@@ -486,6 +502,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'phone_breaks',
+    repeatable: true,
     prompt: 'Your phone screen cracks badly.',
     icon: Icons.phone_iphone_rounded,
     minAge: 12,
@@ -514,6 +531,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'party',
+    repeatable: true,
     prompt: 'There is a huge party the night before an exam.',
     icon: Icons.celebration_rounded,
     minAge: 14,
@@ -542,6 +560,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'crypto_tip',
+    repeatable: true,
     prompt: 'A classmate swears a coin will "10x by Friday". Get in?',
     icon: Icons.currency_bitcoin_rounded,
     minAge: 15,
@@ -686,6 +705,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'car_repair',
+    repeatable: true,
     prompt: 'Your car needs a 250-coin repair to get you to work.',
     icon: Icons.car_repair_rounded,
     minAge: 18,
@@ -708,6 +728,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'raise',
+    repeatable: true,
     prompt: 'Your boss offers a raise for more responsibility.',
     icon: Icons.trending_up_rounded,
     minAge: 20,
@@ -756,6 +777,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'checkup',
+    repeatable: true,
     prompt: 'You have been putting off a doctor visit.',
     icon: Icons.medical_services_rounded,
     minAge: 20,
@@ -776,6 +798,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'friend_loan',
+    repeatable: true,
     prompt: 'A close friend asks to borrow 300 coins.',
     icon: Icons.handshake_rounded,
     minAge: 18,
@@ -833,6 +856,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'birthday_money',
+    repeatable: true,
     prompt: 'Relatives gave you 120 coins for your birthday.',
     icon: Icons.cake_rounded,
     minAge: 7,
@@ -861,6 +885,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'lost_wallet',
+    repeatable: true,
     prompt: 'You find a wallet with 200 coins and an ID inside.',
     icon: Icons.badge_rounded,
     minAge: 9,
@@ -904,6 +929,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'concert_tickets',
+    repeatable: true,
     prompt: 'Your favourite artist is playing. Tickets are 250 coins.',
     icon: Icons.music_note_rounded,
     minAge: 14,
@@ -952,6 +978,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'impulse_sale',
+    repeatable: true,
     prompt: 'A "70% OFF TODAY ONLY" banner is staring at you.',
     icon: Icons.local_offer_rounded,
     minAge: 13,
@@ -1001,6 +1028,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'rent_increase',
+    repeatable: true,
     prompt: 'Your landlord is raising the rent by 200 coins a month.',
     icon: Icons.home_work_rounded,
     minAge: 20,
@@ -1029,6 +1057,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'salary_negotiation',
+    repeatable: true,
     prompt: 'You have been offered a new role. The salary is negotiable.',
     icon: Icons.trending_up_rounded,
     minAge: 21,
@@ -1053,6 +1082,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'subscription_audit',
+    repeatable: true,
     prompt: 'You count nine active subscriptions on your statement.',
     icon: Icons.receipt_long_rounded,
     minAge: 19,
@@ -1074,6 +1104,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'market_crash',
+    repeatable: true,
     prompt: 'The market drops sharply. Your investments are down 30%.',
     icon: Icons.trending_down_rounded,
     minAge: 22,
@@ -1103,6 +1134,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'insurance_choice',
+    repeatable: true,
     prompt: 'Your renters insurance is up for renewal.',
     icon: Icons.shield_rounded,
     minAge: 21,
@@ -1124,6 +1156,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ),
   LifeEvent(
     id: 'family_support',
+    repeatable: true,
     prompt: 'A parent is struggling and could use help with bills.',
     icon: Icons.family_restroom_rounded,
     minAge: 24,
@@ -1258,7 +1291,12 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
         label: 'Play the set',
         outcome: 'Eleven people watched. Two of them clapped. You loved it.',
         money: 60,
-        fame: 4,
+        // 12, not 4. record_deal below gates on fame 10, and first_gig was the
+        // only event that could supply any music fame at all — so at 4 the
+        // ladder stopped dead here and the top three music events were
+        // mathematically unreachable. A 400-life simulation never once fired
+        // record_deal, sold_out_tour or fame_scandal.
+        fame: 12,
         skill: LifeSkill.music,
         skillGain: 5,
         happiness: 8,
@@ -1309,7 +1347,10 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
     weight: 0.4,
     requiresSkill: LifeSkill.music,
     minSkill: 65,
-    minFame: 35,
+    // 26, not 35: the best reachable fame before this point is first_gig (12)
+    // plus record_deal (18) = 30, and only if both fired and the player took
+    // the bolder option each time.
+    minFame: 26,
     choices: [
       LifeChoice(
         label: 'Book the tour',
@@ -1448,7 +1489,8 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
     icon: Icons.newspaper_rounded,
     minAge: 18,
     weight: 0.45,
-    minFame: 40,
+    // 24, not 40 — above the reachable fame ceiling, so this never fired.
+    minFame: 24,
     choices: [
       LifeChoice(
         label: 'Get ahead of it',
@@ -1462,6 +1504,760 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
         outcome: 'It ran anyway. Everyone talked about it for a week.',
         fame: 8,
         happiness: -10,
+      ),
+    ],
+  ),
+  // -------------------------------------------------------------------------
+  // Adult and senior years (28+).
+  //
+  // A 400-life simulation showed the pool was flat at ~19 eligible events from
+  // age 32 all the way to 85 — so past thirty every run drew from the same
+  // handful and the back half of a life felt identical every time. These fill
+  // that stretch, and stay money-decision shaped rather than pure flavour so
+  // the extra length still teaches something.
+  // -------------------------------------------------------------------------
+  LifeEvent(
+    id: 'mortgage_offer',
+    prompt:
+        'You have enough saved for a deposit. The bank offers you a mortgage.',
+    icon: Icons.house_rounded,
+    minAge: 26,
+    maxAge: 55,
+    minMoney: 1200,
+    weight: 1.1,
+    choices: [
+      LifeChoice(
+        label: 'Buy within your means',
+        outcome:
+            'Smaller than you wanted, comfortably affordable. You sleep fine.',
+        money: -1200,
+        happiness: 12,
+        smarts: 10,
+      ),
+      LifeChoice(
+        label: 'Stretch for the bigger place',
+        outcome: 'Beautiful house. Every month is tight and you feel it.',
+        money: -2000,
+        happiness: 6,
+        health: -6,
+        smarts: -3,
+      ),
+      LifeChoice(
+        label: 'Keep renting and invest instead',
+        outcome:
+            'No garden, but the deposit stays invested and liquid.',
+        happiness: -2,
+        smarts: 8,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'promotion_or_balance',
+    prompt: 'You are offered a promotion. More money, noticeably more hours.',
+    icon: Icons.stairs_rounded,
+    minAge: 27,
+    maxAge: 58,
+    requiresJob: true,
+    weight: 1.2,
+    choices: [
+      LifeChoice(
+        label: 'Take it',
+        outcome: 'The pay rise is real. So is the calendar.',
+        setSalary: 520,
+        money: 200,
+        happiness: -5,
+        health: -5,
+        smarts: 6,
+      ),
+      LifeChoice(
+        label: 'Turn it down',
+        outcome: 'You kept your evenings. Your manager was surprised.',
+        happiness: 10,
+        health: 4,
+      ),
+      LifeChoice(
+        label: 'Negotiate a middle version',
+        outcome: 'Half the extra scope, most of the raise. Nobody expected it.',
+        setSalary: 440,
+        happiness: 4,
+        smarts: 12,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'first_child',
+    prompt: 'You are becoming a parent.',
+    icon: Icons.child_friendly_rounded,
+    minAge: 24,
+    maxAge: 45,
+    weight: 0.9,
+    choices: [
+      LifeChoice(
+        label: 'Start a savings account for them',
+        outcome:
+            'Small monthly amounts, eighteen years of compounding ahead.',
+        money: -300,
+        happiness: 18,
+        smarts: 10,
+        addRelationship: 'Your child',
+      ),
+      LifeChoice(
+        label: 'Focus on the here and now',
+        outcome: 'Everything goes on the present. It is a good present.',
+        money: -500,
+        happiness: 20,
+        addRelationship: 'Your child',
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'redundancy',
+    prompt: 'Your company restructures. Your role is gone.',
+    icon: Icons.work_off_rounded,
+    minAge: 25,
+    maxAge: 60,
+    requiresJob: true,
+    weight: 0.7,
+    choices: [
+      LifeChoice(
+        label: 'Live off the emergency fund and search properly',
+        outcome:
+            'Three stressful months, then a better job than the old one.',
+        money: -400,
+        setSalary: 480,
+        smarts: 12,
+        happiness: -6,
+      ),
+      LifeChoice(
+        label: 'Take the first thing offered',
+        outcome: 'The gap was short. The pay cut was not.',
+        setSalary: 260,
+        happiness: -8,
+      ),
+      LifeChoice(
+        label: 'Go freelance',
+        outcome: 'Unpredictable months, but the good ones are very good.',
+        setJob: 'Freelancer',
+        setSalary: 400,
+        happiness: 5,
+        smarts: 8,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'parent_needs_help',
+    prompt: 'A parent is struggling with money and has not asked directly.',
+    icon: Icons.elderly_rounded,
+    minAge: 30,
+    maxAge: 65,
+    weight: 0.9,
+    choices: [
+      LifeChoice(
+        label: 'Help monthly, within a set limit',
+        outcome: 'Sustainable for you, and it genuinely changes their year.',
+        money: -400,
+        happiness: 10,
+        smarts: 8,
+      ),
+      LifeChoice(
+        label: 'Give everything you can spare',
+        outcome: 'Generous. It also emptied your own buffer.',
+        money: -900,
+        happiness: 12,
+        smarts: -4,
+      ),
+      LifeChoice(
+        label: 'Help them build a budget instead',
+        outcome:
+            'Harder conversation, longer-lasting than any single transfer.',
+        happiness: 4,
+        smarts: 16,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'health_scare',
+    prompt: 'A routine scan finds something the doctor wants to watch.',
+    icon: Icons.monitor_heart_rounded,
+    minAge: 38,
+    weight: 0.8,
+    choices: [
+      LifeChoice(
+        label: 'Change how you live',
+        outcome: 'Duller weekends, considerably more of them.',
+        health: 18,
+        happiness: -4,
+        smarts: 6,
+      ),
+      LifeChoice(
+        label: 'Carry on as before',
+        outcome: 'You felt fine, so you did nothing. It stayed on the file.',
+        health: -12,
+        happiness: 3,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'pay_off_mortgage',
+    prompt: 'You could clear the rest of the mortgage in one payment.',
+    icon: Icons.done_all_rounded,
+    minAge: 40,
+    minMoney: 2500,
+    weight: 0.8,
+    choices: [
+      LifeChoice(
+        label: 'Clear it',
+        outcome: 'No more interest, no more monthly. The relief is physical.',
+        money: -2500,
+        happiness: 20,
+        smarts: 8,
+      ),
+      LifeChoice(
+        label: 'Keep the cash invested',
+        outcome:
+            'The maths favours you if returns beat the interest rate. If.',
+        smarts: 10,
+        happiness: -2,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'inheritance',
+    prompt: 'A relative leaves you a sum you were not expecting.',
+    icon: Icons.card_giftcard_rounded,
+    minAge: 30,
+    weight: 0.55,
+    choices: [
+      LifeChoice(
+        label: 'Invest most, spend a little',
+        outcome: 'One good holiday, and the rest still working for you.',
+        money: 1800,
+        happiness: 12,
+        smarts: 12,
+      ),
+      LifeChoice(
+        label: 'Spend it on something you have always wanted',
+        outcome: 'Wonderful. Gone within the year.',
+        money: 400,
+        happiness: 20,
+        smarts: -5,
+      ),
+      LifeChoice(
+        label: 'Split it with siblings beyond the will',
+        outcome: 'Less money, a family that still speaks at Christmas.',
+        money: 900,
+        happiness: 15,
+        addRelationship: 'Your sibling',
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'career_change',
+    prompt:
+        'You are good at your job and no longer interested in it.',
+    icon: Icons.swap_horiz_rounded,
+    minAge: 33,
+    maxAge: 55,
+    requiresJob: true,
+    weight: 0.75,
+    choices: [
+      LifeChoice(
+        label: 'Retrain while still employed',
+        outcome: 'Two exhausting years, then a job you actually want.',
+        money: -600,
+        setSalary: 460,
+        happiness: 14,
+        smarts: 16,
+      ),
+      LifeChoice(
+        label: 'Stay and make peace with it',
+        outcome: 'Stable, well paid, and quietly flat.',
+        money: 200,
+        happiness: -6,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'business_partner_offer',
+    prompt: 'A friend wants you to co-found something with them.',
+    icon: Icons.groups_rounded,
+    minAge: 26,
+    maxAge: 55,
+    minMoney: 600,
+    weight: 0.7,
+    choices: [
+      LifeChoice(
+        label: 'Invest and join',
+        outcome: 'Terrifying, occasionally brilliant. You learned a decade.',
+        money: -600,
+        happiness: 8,
+        smarts: 18,
+        skill: LifeSkill.business,
+        skillGain: 14,
+      ),
+      LifeChoice(
+        label: 'Advise without investing',
+        outcome: 'You kept the friendship and your deposit.',
+        smarts: 8,
+        happiness: 4,
+      ),
+      LifeChoice(
+        label: 'Say no clearly',
+        outcome: 'Awkward for a month. Correct for you.',
+        happiness: -3,
+        smarts: 5,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'pension_review',
+    prompt: 'You finally open the pension statement you have been ignoring.',
+    icon: Icons.savings_rounded,
+    minAge: 35,
+    weight: 1.0,
+    choices: [
+      LifeChoice(
+        label: 'Increase the contribution',
+        outcome:
+            'A few coins less each month now, a different retirement later.',
+        money: -250,
+        smarts: 16,
+        happiness: 4,
+      ),
+      LifeChoice(
+        label: 'Check the fees and switch funds',
+        outcome:
+            'You were paying 1% for nothing. Now you are paying almost none.',
+        money: 150,
+        smarts: 18,
+      ),
+      LifeChoice(
+        label: 'Close it again',
+        outcome: 'Out of sight. The default fund keeps doing whatever it does.',
+        happiness: 2,
+        smarts: -6,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'midlife_reassessment',
+    prompt: 'You catch yourself wondering whether this is it.',
+    icon: Icons.psychology_rounded,
+    minAge: 40,
+    maxAge: 58,
+    weight: 0.85,
+    choices: [
+      LifeChoice(
+        label: 'Buy the thing you have always wanted',
+        outcome: 'It was fun for a season. The feeling came back.',
+        money: -1100,
+        happiness: 12,
+        smarts: -4,
+      ),
+      LifeChoice(
+        label: 'Change something structural instead',
+        outcome:
+            'Fewer hours, less money, more of your own life. It stuck.',
+        money: -300,
+        happiness: 18,
+        health: 8,
+        smarts: 10,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'help_child_deposit',
+    prompt: 'Your child asks for help with a house deposit.',
+    icon: Icons.family_restroom_rounded,
+    minAge: 48,
+    minMoney: 1500,
+    weight: 0.85,
+    choices: [
+      LifeChoice(
+        label: 'Give what you can spare',
+        outcome: 'They got the place. You kept your own retirement intact.',
+        money: -1200,
+        happiness: 16,
+        smarts: 8,
+      ),
+      LifeChoice(
+        label: 'Lend it, written down',
+        outcome:
+            'Awkward to put on paper, much less awkward five years later.',
+        money: -1200,
+        happiness: 8,
+        smarts: 14,
+      ),
+      LifeChoice(
+        label: 'Explain why you cannot',
+        outcome: 'Hard to say. They understood more than you expected.',
+        happiness: -6,
+        smarts: 6,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'downsize_home',
+    prompt: 'The house is bigger than you need now.',
+    icon: Icons.holiday_village_rounded,
+    minAge: 55,
+    weight: 0.9,
+    choices: [
+      LifeChoice(
+        label: 'Downsize and free the money',
+        outcome: 'Smaller rooms, a much larger cushion.',
+        money: 2200,
+        happiness: 6,
+        smarts: 12,
+      ),
+      LifeChoice(
+        label: 'Stay for the memories',
+        outcome: 'Every room has something in it. Worth the upkeep to you.',
+        money: -400,
+        happiness: 12,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'retirement_decision',
+    prompt: 'You could retire now, or work three more years.',
+    icon: Icons.beach_access_rounded,
+    minAge: 60,
+    maxAge: 70,
+    weight: 1.2,
+    choices: [
+      LifeChoice(
+        label: 'Retire now',
+        outcome: 'Less money, and every morning is yours.',
+        happiness: 20,
+        health: 6,
+        setJob: 'Retired',
+        setSalary: 0,
+      ),
+      LifeChoice(
+        label: 'Work three more years',
+        outcome:
+            'The pension is meaningfully bigger for it. So were the years.',
+        money: 1400,
+        happiness: -6,
+        health: -6,
+        smarts: 4,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'scam_target',
+    prompt:
+        'Someone calls claiming to be your bank, urgently, asking you to move '
+        'money to a "safe account".',
+    icon: Icons.phone_in_talk_rounded,
+    minAge: 55,
+    weight: 1.0,
+    choices: [
+      LifeChoice(
+        label: 'Hang up and ring the bank yourself',
+        outcome: 'The bank had never called. You did exactly the right thing.',
+        smarts: 18,
+        happiness: 6,
+      ),
+      LifeChoice(
+        label: 'Do as they ask',
+        outcome:
+            'It was not your bank. Some of it came back, slowly.',
+        money: -1400,
+        happiness: -18,
+        smarts: 8,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'write_a_will',
+    prompt: 'You have been meaning to write a will for years.',
+    icon: Icons.description_rounded,
+    minAge: 50,
+    weight: 0.95,
+    choices: [
+      LifeChoice(
+        label: 'Write it properly',
+        outcome:
+            'An unpleasant afternoon that saves your family a terrible year.',
+        money: -200,
+        smarts: 16,
+        happiness: 8,
+      ),
+      LifeChoice(
+        label: 'Put it off again',
+        outcome: 'Next year. Definitely next year.',
+        happiness: 2,
+        smarts: -4,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'grandchild',
+    prompt: 'You become a grandparent.',
+    icon: Icons.child_care_rounded,
+    minAge: 55,
+    weight: 1.0,
+    choices: [
+      LifeChoice(
+        label: 'Open a long-term account for them',
+        outcome:
+            'Eighteen years of compounding, started the week they were born.',
+        money: -400,
+        happiness: 22,
+        smarts: 12,
+        addRelationship: 'Your grandchild',
+      ),
+      LifeChoice(
+        label: 'Spoil them thoroughly',
+        outcome: 'You are the favourite and you know exactly why.',
+        money: -500,
+        happiness: 24,
+        addRelationship: 'Your grandchild',
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'late_life_investing',
+    prompt:
+        'A friend insists you should move your savings into something with '
+        'much higher returns.',
+    icon: Icons.query_stats_rounded,
+    minAge: 62,
+    minMoney: 800,
+    weight: 0.9,
+    choices: [
+      LifeChoice(
+        label: 'Keep it conservative',
+        outcome:
+            'Boring, and appropriate — you no longer have decades to recover.',
+        money: 200,
+        smarts: 16,
+      ),
+      LifeChoice(
+        label: 'Chase the return',
+        outcome: 'It moved a lot. Not always upward, and not for long enough.',
+        money: -700,
+        happiness: -10,
+        smarts: 6,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'volunteer_years',
+    prompt: 'A local charity needs someone with your experience.',
+    icon: Icons.volunteer_activism_rounded,
+    minAge: 58,
+    weight: 1.0,
+    choices: [
+      LifeChoice(
+        label: 'Give them a day a week',
+        outcome: 'You are useful again, on your own terms.',
+        happiness: 16,
+        health: 6,
+        smarts: 6,
+        addRelationship: 'The Thursday crew',
+      ),
+      LifeChoice(
+        label: 'Donate money instead',
+        outcome: 'Genuinely helpful, and considerably less of your time.',
+        money: -300,
+        happiness: 8,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'teach_someone',
+    prompt: 'A younger colleague asks you to mentor them.',
+    icon: Icons.school_rounded,
+    minAge: 35,
+    maxAge: 68,
+    weight: 1.0,
+    choices: [
+      LifeChoice(
+        label: 'Say yes',
+        outcome:
+            'You learned as much as they did, which nobody warns you about.',
+        happiness: 12,
+        smarts: 10,
+        skill: LifeSkill.charisma,
+        skillGain: 10,
+        addRelationship: 'Your mentee',
+      ),
+      LifeChoice(
+        label: 'You have no time',
+        outcome: 'True, and it stayed true.',
+        happiness: -3,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'big_repair_bill',
+    prompt: 'The roof needs work. It is not optional.',
+    icon: Icons.roofing_rounded,
+    minAge: 30,
+    repeatable: true,
+    weight: 1.0,
+    choices: [
+      LifeChoice(
+        label: 'Pay from the emergency fund',
+        outcome: 'Exactly what the fund was for. Rebuild it next year.',
+        money: -700,
+        smarts: 10,
+      ),
+      LifeChoice(
+        label: 'Put it on credit',
+        outcome: 'Fixed today, and more expensive by the time it is paid off.',
+        money: -950,
+        happiness: -6,
+        smarts: -3,
+      ),
+      LifeChoice(
+        label: 'Patch it yourself',
+        outcome: 'Held for two winters, then cost more than doing it properly.',
+        money: -250,
+        health: -5,
+        happiness: -2,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'tax_return_choice',
+    prompt: 'Your tax return is more complicated than last year.',
+    icon: Icons.receipt_long_rounded,
+    minAge: 26,
+    repeatable: true,
+    requiresJob: true,
+    weight: 0.9,
+    choices: [
+      LifeChoice(
+        label: 'Pay an accountant',
+        outcome: 'They found reliefs you had never heard of. Net positive.',
+        money: 220,
+        smarts: 10,
+      ),
+      LifeChoice(
+        label: 'Do it yourself carefully',
+        outcome: 'A long weekend, and you now understand your own money.',
+        money: 80,
+        smarts: 16,
+        happiness: -4,
+      ),
+      LifeChoice(
+        label: 'Rush it the night before',
+        outcome: 'Filed on time. Probably overpaid.',
+        money: -180,
+        happiness: -4,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'friend_business_pitch',
+    prompt:
+        'An old friend pitches you an investment that "cannot lose".',
+    icon: Icons.campaign_rounded,
+    minAge: 28,
+    minMoney: 500,
+    repeatable: true,
+    weight: 0.8,
+    choices: [
+      LifeChoice(
+        label: 'Ask for the numbers in writing',
+        outcome: 'They never sent them. That was the answer.',
+        smarts: 16,
+        happiness: 2,
+      ),
+      LifeChoice(
+        label: 'Put in what you can afford to lose',
+        outcome: 'It went sideways, but only a slice of you went with it.',
+        money: -300,
+        smarts: 10,
+      ),
+      LifeChoice(
+        label: 'Go all in',
+        outcome: 'Nothing that cannot lose has ever been described that way.',
+        money: -1100,
+        happiness: -14,
+        smarts: 6,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'sabbatical',
+    prompt: 'Your employer offers unpaid leave for three months.',
+    icon: Icons.flight_takeoff_rounded,
+    minAge: 30,
+    maxAge: 60,
+    requiresJob: true,
+    minMoney: 900,
+    weight: 0.7,
+    choices: [
+      LifeChoice(
+        label: 'Take it and travel',
+        outcome: 'Expensive, and one of the things you still talk about.',
+        money: -900,
+        happiness: 22,
+        health: 6,
+      ),
+      LifeChoice(
+        label: 'Take it and rest',
+        outcome: 'You slept, walked, and came back a different colleague.',
+        money: -400,
+        happiness: 16,
+        health: 12,
+      ),
+      LifeChoice(
+        label: 'Decline',
+        outcome: 'Three more months of salary, and the offer did not return.',
+        money: 500,
+        happiness: -6,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'estate_conversation',
+    prompt: 'Your family has never talked about what happens later.',
+    icon: Icons.forum_rounded,
+    minAge: 62,
+    weight: 0.95,
+    choices: [
+      LifeChoice(
+        label: 'Have the conversation',
+        outcome:
+            'Uncomfortable for an hour, and it removed a decade of guessing.',
+        happiness: 10,
+        smarts: 16,
+      ),
+      LifeChoice(
+        label: 'Leave instructions in a drawer',
+        outcome: 'Better than nothing. Somebody will find it eventually.',
+        smarts: 4,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'second_wind',
+    prompt: 'You have time, savings, and an idea you never tried.',
+    icon: Icons.wb_sunny_rounded,
+    minAge: 63,
+    minMoney: 700,
+    weight: 0.85,
+    choices: [
+      LifeChoice(
+        label: 'Start it small',
+        outcome: 'It never made much. It made your seventies.',
+        money: -400,
+        happiness: 20,
+        smarts: 10,
+        skill: LifeSkill.business,
+        skillGain: 10,
+      ),
+      LifeChoice(
+        label: 'Enjoy the rest instead',
+        outcome: 'You had earned it, and you knew it.',
+        happiness: 12,
+        health: 6,
       ),
     ],
   ),

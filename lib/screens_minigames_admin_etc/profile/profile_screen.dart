@@ -18,6 +18,7 @@ import '../../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import '../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../services_backend_and_other_services/supabase_service.dart';
+import '../../widgets_custom_lotties/cloud_sync_banner.dart';
 import '../../widgets_custom_lotties/achievement_celebration.dart';
 import '../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
@@ -188,6 +189,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ? stats.profileImageUrl
                 : remoteAvatarUrl;
                     ),
+                        const CloudSyncBanner(),
                         _ProfileHero(
                           stats: stats,
                           avatarUrl: avatarUrl,
