@@ -97,6 +97,12 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   ui.Image? _enemyOneImage;
   ui.Image? _enemyTwoImage;
   ui.Image? _bossImage;
+
+  /// The player's own uploaded profile picture, drawn inside the player token.
+  /// Null until it loads, or permanently null when they haven't uploaded one —
+  /// the painter falls back to a letter in that case.
+  ui.Image? _profileImage;
+  String? _profileImageUrlLoaded;
   
 
 
@@ -165,6 +171,33 @@ Future<void> _loadBossSprite() async {
       _bossImage = fi.image;
     });
   }
+  }
+
+  /// Resolves the profile picture URL into a raw [ui.Image] the canvas can
+  /// draw. Unlike the sprites above this is a network image, so it goes
+  /// through the image cache rather than rootBundle, and failure is silent —
+  /// a broken avatar should never take the game down.
+  void _loadProfileImage(String url) {
+    if (url.isEmpty || url == _profileImageUrlLoaded) {
+      return;
+    }
+    _profileImageUrlLoaded = url;
+    final stream = NetworkImage(
+      url,
+    ).resolve(const ImageConfiguration(size: Size(96, 96)));
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (info, _) {
+        stream.removeListener(listener);
+        if (mounted) {
+          setState(() => _profileImage = info.image);
+        }
+      },
+      onError: (_, _) {
+        stream.removeListener(listener);
+      },
+    );
+    stream.addListener(listener);
   }
 
   // Finance Overhaul: Balance instead of health
@@ -2132,6 +2165,7 @@ Future<void> _loadBossSprite() async {
   Widget build(BuildContext context) {
     final controller = context.watch<UserStatsController>();
     final equippedSkinId = controller.stats.equippedSkin;
+    _loadProfileImage(controller.stats.profileImageUrl);
 
     return Focus(
       focusNode: _keyboardFocusNode,
@@ -2202,6 +2236,7 @@ Future<void> _loadBossSprite() async {
                       treeImage: _treeImage,
                       rockImage: _rockImage,
                       dollarImage: _dollarImage,
+                      profileImage: _profileImage,
                       enemyOneImage: _enemyOneImage,
                       enemyTwoImage: _enemyTwoImage,
                       bossImage: _bossImage,
@@ -3006,6 +3041,7 @@ class _BrawlPainter extends CustomPainter {
     this.treeImage,
     this.rockImage,
     this.dollarImage,
+    this.profileImage,
     this.enemyOneImage,
     this.enemyTwoImage,
     this.bossImage,
@@ -3034,6 +3070,9 @@ class _BrawlPainter extends CustomPainter {
   final ui.Image? treeImage;
   final ui.Image? rockImage;
   final ui.Image? dollarImage;
+
+  /// The player's uploaded avatar, or null to fall back to a letter.
+  final ui.Image? profileImage;
   final ui.Image? enemyOneImage;
   final ui.Image? enemyTwoImage;
   final ui.Image? bossImage;
@@ -3365,23 +3404,45 @@ canvas.drawRect(
         ..style = PaintingStyle.stroke,
     );
 
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: equippedSkinId.isNotEmpty
-            ? equippedSkinId.characters.first.toUpperCase()
-            : '\$',
-        style: const TextStyle(
-          color: Color(0xFF85EFAC),
-          fontWeight: FontWeight.w900,
-          fontSize: 18,
+    // The player token used to draw the first letter of the equipped skin id,
+    // which is why it read as a flat "C" — the skin happened to start with one.
+    // If they have uploaded a profile picture, draw that instead, clipped to
+    // the same circle so it sits inside the existing ring.
+    final avatar = profileImage;
+    if (avatar != null) {
+      canvas.save();
+      canvas.clipPath(
+        Path()..addOval(
+          Rect.fromCircle(center: playerPos, radius: playerRadius - 2),
         ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    textPainter.paint(
-      canvas,
-      playerPos - Offset(textPainter.width / 2, textPainter.height / 2),
-    );
+      );
+      paintImage(
+        canvas: canvas,
+        rect: Rect.fromCircle(center: playerPos, radius: playerRadius - 2),
+        image: avatar,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.medium,
+      );
+      canvas.restore();
+    } else {
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: equippedSkinId.isNotEmpty
+              ? equippedSkinId.characters.first.toUpperCase()
+              : '\$',
+          style: const TextStyle(
+            color: Color(0xFF85EFAC),
+            fontWeight: FontWeight.w900,
+            fontSize: 18,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      textPainter.paint(
+        canvas,
+        playerPos - Offset(textPainter.width / 2, textPainter.height / 2),
+      );
+    }
 
     // Player Balance HUD Bar
     double playerBalancePercent = (bankBalance / maxBankBalance).clamp(

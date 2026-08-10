@@ -2274,16 +2274,45 @@ class _SectionTitle extends StatelessWidget {
 /// and cached in [MarketDataService]) with a price axis, so the shape and the
 /// numbers are both real. Falls back to the quote's 3-point series when no
 /// historical-data key is configured.
-class _StockSparkline extends StatelessWidget {
+class _StockSparkline extends StatefulWidget {
   const _StockSparkline({required this.symbol, required this.accent});
 
   final String symbol;
   final Color accent;
 
-  static const double height = 130;
+  static const double height = 168;
+
+  @override
+  State<_StockSparkline> createState() => _StockSparklineState();
+}
+
+class _StockSparklineState extends State<_StockSparkline> {
+  /// Index of the point the pointer is over, or null when not hovering.
+  int? _hoverIndex;
+
+  void _updateHover(Offset local, double width, int points) {
+    if (points < 2 || width <= 0) return;
+    // The painter reserves a 52px gutter on the right for its price labels,
+    // so the plotted area stops short of the widget's full width.
+    const gutter = 52.0;
+    final chartWidth = (width - gutter).clamp(1.0, width);
+    final frac = (local.dx / chartWidth).clamp(0.0, 1.0);
+    final index = (frac * (points - 1)).round();
+    if (index != _hoverIndex) {
+      setState(() => _hoverIndex = index);
+    }
+  }
+
+  void _clearHover() {
+    if (_hoverIndex != null) {
+      setState(() => _hoverIndex = null);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final symbol = widget.symbol;
+    final height = _StockSparkline.height;
     final market = context.watch<MarketDataService>();
     // Coins, so the axis labels match the prices shown on the card.
     final series = market
@@ -2313,6 +2342,10 @@ class _StockSparkline extends StatelessWidget {
         ? const Color(0xFF00C287)
         : const Color(0xFFE1454A);
     final changePercent = first == 0 ? 0.0 : ((last - first) / first) * 100;
+    final hoverIndex = _hoverIndex;
+    final hovered = hoverIndex != null && hoverIndex < series.length
+        ? series[hoverIndex]
+        : null;
 
     return Container(
       width: double.infinity,
@@ -2356,24 +2389,151 @@ class _StockSparkline extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                usdLabel(last),
+                // While scrubbing, this reads the hovered point rather than
+                // the latest one — the number people actually want when they
+                // put a finger on a chart.
+                usdLabel(hovered ?? last),
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: hovered == null
+                      ? Colors.white.withValues(alpha: 0.7)
+                      : Colors.white,
                   fontSize: 11,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: hovered == null
+                      ? FontWeight.w700
+                      : FontWeight.w900,
                 ),
               ),
             ],
           ),
           Expanded(
-            child: PriceChart(
-              candles: _flatCandles(series),
-              mode: ChartMode.line,
-              accent: lineColor,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final chart = PriceChart(
+                  candles: _flatCandles(series),
+                  mode: ChartMode.line,
+                  accent: lineColor,
+                  hoverIndex: _hoverIndex,
+                );
+                return MouseRegion(
+                  onHover: (event) => _updateHover(
+                    event.localPosition,
+                    constraints.maxWidth,
+                    series.length,
+                  ),
+                  onExit: (_) => _clearHover(),
+                  child: GestureDetector(
+                    // Touch devices have no hover, so a press-and-drag scrubs.
+                    behavior: HitTestBehavior.opaque,
+                    onHorizontalDragStart: (d) => _updateHover(
+                      d.localPosition,
+                      constraints.maxWidth,
+                      series.length,
+                    ),
+                    onHorizontalDragUpdate: (d) => _updateHover(
+                      d.localPosition,
+                      constraints.maxWidth,
+                      series.length,
+                    ),
+                    onHorizontalDragEnd: (_) => _clearHover(),
+                    onHorizontalDragCancel: _clearHover,
+                    child: chart,
+                  ),
+                );
+              },
             ),
           ),
+          const SizedBox(height: 6),
+          _DayRangeStrip(quote: market.quoteFor(symbol), series: series),
         ],
       ),
+    );
+  }
+}
+
+/// The day's high, low, open and previous close under a chart.
+///
+/// Prefers the real quote's own figures — Finnhub reports the true session
+/// high/low, which the sampled intraday series will usually miss, since the
+/// series only holds the points we happened to poll.
+class _DayRangeStrip extends StatelessWidget {
+  const _DayRangeStrip({required this.quote, required this.series});
+
+  final LiveQuote? quote;
+  final List<double> series;
+
+  @override
+  Widget build(BuildContext context) {
+    final live = quote;
+    final high = live != null
+        ? coinsForUsd(live.high).toDouble()
+        : series.reduce(math.max).toDouble();
+    final low = live != null
+        ? coinsForUsd(live.low).toDouble()
+        : series.reduce(math.min).toDouble();
+    final open = live != null ? coinsForUsd(live.open).toDouble() : series.first;
+    final prev = live != null
+        ? coinsForUsd(live.previousClose).toDouble()
+        : series.first;
+
+    return Row(
+      children: [
+        Expanded(child: _RangeCell(label: 'HIGH', value: high, tone: 1)),
+        Expanded(child: _RangeCell(label: 'LOW', value: low, tone: -1)),
+        Expanded(child: _RangeCell(label: 'OPEN', value: open, tone: 0)),
+        Expanded(child: _RangeCell(label: 'PREV', value: prev, tone: 0)),
+      ],
+    );
+  }
+}
+
+class _RangeCell extends StatelessWidget {
+  const _RangeCell({
+    required this.label,
+    required this.value,
+    required this.tone,
+  });
+
+  final String label;
+  final double value;
+
+  /// 1 green, -1 red, 0 neutral.
+  final int tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (tone) {
+      1 => const Color(0xFF00C287),
+      -1 => const Color(0xFFE1454A),
+      _ => Colors.white.withValues(alpha: 0.72),
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.40),
+            fontSize: 8.5,
+            letterSpacing: 0.6,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 1),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            usdLabel(value),
+            maxLines: 1,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

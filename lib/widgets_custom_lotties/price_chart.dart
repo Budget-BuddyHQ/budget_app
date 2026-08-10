@@ -19,6 +19,7 @@ class PriceChart extends StatelessWidget {
     required this.mode,
     required this.accent,
     this.showAxis = true,
+    this.hoverIndex,
   });
 
   final List<Candle> candles;
@@ -27,6 +28,12 @@ class PriceChart extends StatelessWidget {
 
   /// Draws the right-hand price labels, gridlines, and current-price line.
   final bool showAxis;
+
+  /// Index of the candle the pointer is over, if any. Drawn as a crosshair.
+  /// Lives here rather than in an overlay so it shares the painter's exact
+  /// min/max scaling — an overlay would have to duplicate that maths and would
+  /// drift out of alignment the moment either side changed.
+  final int? hoverIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +52,7 @@ class PriceChart extends StatelessWidget {
         mode: mode,
         accent: accent,
         showAxis: showAxis,
+        hoverIndex: hoverIndex,
       ),
     );
   }
@@ -124,12 +132,14 @@ class _PriceChartPainter extends CustomPainter {
     required this.mode,
     required this.accent,
     required this.showAxis,
+    this.hoverIndex,
   });
 
   final List<Candle> candles;
   final ChartMode mode;
   final Color accent;
   final bool showAxis;
+  final int? hoverIndex;
 
   static const Color _up = Color(0xFF85EFAC);
   static const Color _down = Color(0xFFFF8A80);
@@ -172,6 +182,39 @@ class _PriceChartPainter extends CustomPainter {
     if (showAxis) {
       _paintCurrentPrice(canvas, size, chartWidth, bars.last.close, y);
     }
+
+    _paintCrosshair(canvas, size, chartWidth, bars, y);
+  }
+
+  /// Vertical scrub line plus a dot on the series at the hovered point.
+  void _paintCrosshair(
+    Canvas canvas,
+    Size size,
+    double chartWidth,
+    List<Candle> bars,
+    double Function(double) y,
+  ) {
+    final index = hoverIndex;
+    if (index == null || index < 0 || index >= bars.length) {
+      return;
+    }
+    final stepX = chartWidth / (bars.length - 1);
+    final x = (index * stepX).clamp(0.0, chartWidth);
+    final cy = y(bars[index].close).clamp(0.0, size.height);
+
+    canvas.drawLine(
+      Offset(x, 0),
+      Offset(x, size.height),
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.45)
+        ..strokeWidth = 1,
+    );
+    canvas.drawCircle(
+      Offset(x, cy),
+      5,
+      Paint()..color = accent.withValues(alpha: 0.30),
+    );
+    canvas.drawCircle(Offset(x, cy), 2.6, Paint()..color = Colors.white);
   }
 
   void _paintGrid(
@@ -356,6 +399,7 @@ class _PriceChartPainter extends CustomPainter {
     return oldDelegate.candles != candles ||
         oldDelegate.mode != mode ||
         oldDelegate.accent != accent ||
-        oldDelegate.showAxis != showAxis;
+        oldDelegate.showAxis != showAxis ||
+        oldDelegate.hoverIndex != hoverIndex;
   }
 }
