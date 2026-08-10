@@ -97,6 +97,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   ui.Image? _enemyOneImage;
   ui.Image? _enemyTwoImage;
   ui.Image? _bossImage;
+  ui.Image? _chestImage;
 
   /// The player's own uploaded profile picture, drawn inside the player token.
   /// Null until it loads, or permanently null when they haven't uploaded one —
@@ -172,6 +173,17 @@ Future<void> _loadbrawlBossSprite() async {
     });
   }
   }
+
+Future<void> _loadbrawlChestSprite() async {
+  final ByteData data = await rootBundle.load(AppAssets.brawlChestSprite);
+  final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+  final ui.FrameInfo fi = await codec.getNextFrame();
+  if (mounted) {
+    setState(() {
+      _chestImage = fi.image;
+    });
+  }
+}
 
   /// Resolves the profile picture URL into a raw [ui.Image] the canvas can
   /// draw. Unlike the sprites above this is a network image, so it goes
@@ -1489,6 +1501,7 @@ Future<void> _loadbrawlBossSprite() async {
     _loadbrawlEnemyOneSprite();
     _loadbrawlEnemyTwoSprite();
     _loadbrawlBossSprite();
+    _loadbrawlChestSprite();
 
     for (int i = 0; i < 20; i++) {
       Offset pos = Offset(
@@ -2240,6 +2253,7 @@ Future<void> _loadbrawlBossSprite() async {
                       enemyOneImage: _enemyOneImage,
                       enemyTwoImage: _enemyTwoImage,
                       bossImage: _bossImage,
+                      chestImage: _chestImage,
                     ),
                   ),
                 ),
@@ -3045,6 +3059,7 @@ class _BrawlPainter extends CustomPainter {
     this.enemyOneImage,
     this.enemyTwoImage,
     this.bossImage,
+    this.chestImage,
   });
 
   final Offset playerPos;
@@ -3070,25 +3085,18 @@ class _BrawlPainter extends CustomPainter {
   final ui.Image? treeImage;
   final ui.Image? rockImage;
   final ui.Image? dollarImage;
-
   /// The player's uploaded avatar, or null to fall back to a letter.
   final ui.Image? profileImage;
   final ui.Image? enemyOneImage;
   final ui.Image? enemyTwoImage;
   final ui.Image? bossImage;
+  final ui.Image? chestImage;
   
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
     canvas.translate(camOffset.dx, camOffset.dy);
-    // canvas.drawRect(
-    //   Rect.fromLTWH(0, 0, mapWidth, mapHeight),
-    //   Paint()
-    //     ..color = const Color(0xFF9E4242)
-    //     ..strokeWidth = 10
-    //     ..style = PaintingStyle.stroke,
-    // );
 // -------------------------------------------------------------------------
 // SMOOTH RETRO STONE BORDER (No Spikes - Clean Rim Only)
 // -------------------------------------------------------------------------
@@ -3324,30 +3332,26 @@ canvas.drawRect(
       );
     }
 
-    final chestPaint = Paint()..color = const Color(0xFFE1BB72);
-    final chestTrimPaint = Paint()..color = const Color(0xFF8C6621);
     for (final chest in chests) {
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(
-            center: chest.pos,
-            width: chestRadius * 2,
-            height: chestRadius * 1.5,
-          ),
-          const Radius.circular(4),
-        ),
-        chestPaint,
-      );
-      canvas.drawRect(
-        Rect.fromLTWH(
-          chest.pos.dx - chestRadius,
-          chest.pos.dy - 2,
-          chestRadius * 2,
-          4,
-        ),
-        chestTrimPaint,
-      );
-    }
+  if (chestImage != null) {
+    final Rect chestRect = Rect.fromCenter(
+      center: chest.pos,
+      width: chestRadius * 2.8,
+      height: chestRadius * 2.8,
+    );
+    paintImage(
+      canvas: canvas,
+      rect: chestRect,
+      image: chestImage!,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.none, // Keeps pixel art crisp
+    );
+  } else {
+    // Fallback circle while image asset is loading
+    final chestPaint = Paint()..color = const Color(0xFFE1BB72);
+    canvas.drawCircle(chest.pos, chestRadius, chestPaint);
+  }
+}
 
     if (emergencyFundLevel > 0) {
   const double billWidth = 84.0;  
