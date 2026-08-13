@@ -1738,36 +1738,65 @@ Future<void> _loadbrawlChestSprite() async {
         }
       }
 
-      // 6. Liability Movement & Obstacle Slide-Routing
+      // 6. Liability Movement & Continuous Tangent Sliding
       for (int i = _liabilities.length - 1; i >= 0; i--) {
         final mob = _liabilities[i];
-        Offset direction = _playerPos - mob.pos;
-        double dist = direction.distance;
+        Offset moveDir = _playerPos - mob.pos;
+        double dist = moveDir.distance;
 
         if (dist > 2) {
-          Offset dirNormalized = direction / dist;
-          Offset step = dirNormalized * mob.speed * dt;
-          Offset targetPos = mob.pos + step;
+          moveDir = moveDir / dist; // Normalize direction vector toward player
 
-          if (!_isCollidingWithObstacles(targetPos, mob.radius)) {
-            mob.pos = targetPos;
-          } else {
-            Offset slideLeft =
-                Offset(-dirNormalized.dy, dirNormalized.dx) * mob.speed * dt;
-            Offset slideRight =
-                Offset(dirNormalized.dy, -dirNormalized.dx) * mob.speed * dt;
+          // Check collisions against Trees
+          for (final treePos in _treePositions) {
+            final offsetToMob = mob.pos - treePos;
+            final distToTree = offsetToMob.distance;
+            final minAllowedDist = (_treeRadius * 0.75) + mob.radius;
 
-            Offset testLeft = mob.pos + slideLeft;
-            Offset testRight = mob.pos + slideRight;
+            if (distToTree < minAllowedDist && distToTree > 0) {
+              // 1. Push mob out so it sits cleanly on the edge
+              final collisionNormal = offsetToMob / distToTree;
+              mob.pos = treePos + (collisionNormal * minAllowedDist);
 
-            if (!_isCollidingWithObstacles(testLeft, mob.radius)) {
-              mob.pos = testLeft;
-            } else if (!_isCollidingWithObstacles(testRight, mob.radius)) {
-              mob.pos = testRight;
-            } else {
-              mob.pos -= dirNormalized * (mob.speed * 0.4) * dt;
+              // 2. Calculate tangent vector along circle curve
+              final tangent = Offset(-collisionNormal.dy, collisionNormal.dx);
+              final dot = (moveDir.dx * tangent.dx) + (moveDir.dy * tangent.dy);
+              final slideDir = dot >= 0 ? tangent : tangent * -1;
+
+              // 3. Blend 80% slide along edge + 20% gentle push outward
+              moveDir = (slideDir * 0.8) + (collisionNormal * 0.2);
+              if (moveDir.distance > 0) {
+                moveDir = moveDir / moveDir.distance;
+              }
             }
           }
+
+          // Check collisions against Rocks
+          for (final rockPos in _rockPositions) {
+            final offsetToMob = mob.pos - rockPos;
+            final distToRock = offsetToMob.distance;
+            final minAllowedDist = (_rockRadius * 0.75) + mob.radius;
+
+            if (distToRock < minAllowedDist && distToRock > 0) {
+              // 1. Push mob out so it sits cleanly on the edge
+              final collisionNormal = offsetToMob / distToRock;
+              mob.pos = rockPos + (collisionNormal * minAllowedDist);
+
+              // 2. Calculate tangent vector along circle curve
+              final tangent = Offset(-collisionNormal.dy, collisionNormal.dx);
+              final dot = (moveDir.dx * tangent.dx) + (moveDir.dy * tangent.dy);
+              final slideDir = dot >= 0 ? tangent : tangent * -1;
+
+              // 3. Blend 80% slide along edge + 20% gentle push outward
+              moveDir = (slideDir * 0.8) + (collisionNormal * 0.2);
+              if (moveDir.distance > 0) {
+                moveDir = moveDir / moveDir.distance;
+              }
+            }
+          }
+
+          // Apply the final smooth movement step
+          mob.pos += moveDir * mob.speed * dt;
         }
 
         // Drains Bank Balance when touching player directly
