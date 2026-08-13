@@ -707,6 +707,150 @@ class UserStatsController extends ChangeNotifier {
     return _saveStats(nextStats, savingMessage: 'Selling $symbol...');
   }
 
+  Future<StatsActionResult> shortStockLot({
+    required String symbol,
+    required int goldCredit,
+    String? companyName,
+    double quantity = 1,
+  }) async {
+    if (quantity <= 0) {
+      return const StatsActionResult(
+        success: false,
+        message: 'Enter a positive quantity to short.',
+        syncState: SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'No changes saved.',
+        ),
+      );
+    }
+
+    final holdingKey = 'stock_$symbol';
+    final holdings = Map<String, double>.from(_stats.holdings);
+    final currentLots = holdings[holdingKey] ?? 0.0;
+    final nextLots = currentLots - quantity;
+    holdings[holdingKey] = nextLots;
+    holdings['stocks'] = (holdings['stocks'] ?? 0.0) - quantity;
+    if (nextLots == 0) {
+      holdings.remove(holdingKey);
+    }
+    if ((holdings['stocks'] ?? 0.0) == 0) {
+      holdings.remove('stocks');
+    }
+
+    final existingCostBasis = Map<String, int>.from(
+      (_stats.spendingHabits['cost_basis'] as Map?)?.cast<String, int>() ?? {},
+    );
+    existingCostBasis[holdingKey] =
+        (existingCostBasis[holdingKey] ?? 0) - goldCredit;
+    if (nextLots == 0) {
+      existingCostBasis.remove(holdingKey);
+    }
+
+    final now = DateTime.now().toUtc();
+    final label = companyName?.trim().isNotEmpty == true
+        ? companyName!
+        : symbol;
+
+    final nextStats = _stats.copyWith(
+      gold: _stats.gold + goldCredit,
+      xp: _stats.xp + (12 * quantity).round(),
+      literacyPoints: _stats.literacyPoints + (6 * quantity).round(),
+      holdings: holdings,
+      spendingHabits: <String, dynamic>{
+        ..._stats.spendingHabits,
+        'cost_basis': existingCostBasis,
+      },
+      transactions: <LedgerTransaction>[
+        LedgerTransaction(
+          id: 'txn_${now.microsecondsSinceEpoch}',
+          title: 'Shorted $symbol',
+          description:
+              'Borrowed and sold ${formatShares(quantity)} share(s) of $label for $goldCredit gold.',
+          amount: goldCredit,
+          createdAt: now,
+          category: 'invest',
+        ),
+        ..._stats.transactions,
+      ],
+      updatedAt: now,
+    );
+
+    return _saveStats(nextStats, savingMessage: 'Shorting $symbol...');
+  }
+
+  Future<StatsActionResult> coverShortLot({
+    required String symbol,
+    required int goldCost,
+    String? companyName,
+    double quantity = 1,
+  }) async {
+    final holdingKey = 'stock_$symbol';
+    final currentLots = _stats.holdings[holdingKey] ?? 0.0;
+    if (currentLots >= 0 || currentLots.abs() < quantity) {
+      return StatsActionResult(
+        success: false,
+        message: 'You are not short enough $symbol to cover that amount.',
+        syncState: const SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'No changes saved.',
+        ),
+      );
+    }
+
+    final holdings = Map<String, double>.from(_stats.holdings);
+    final nextLots = currentLots + quantity;
+    holdings[holdingKey] = nextLots;
+    holdings['stocks'] = (holdings['stocks'] ?? 0.0) + quantity;
+    if (nextLots == 0) {
+      holdings.remove(holdingKey);
+    }
+    if ((holdings['stocks'] ?? 0.0) == 0) {
+      holdings.remove('stocks');
+    }
+
+    final existingCostBasis = Map<String, int>.from(
+      (_stats.spendingHabits['cost_basis'] as Map?)?.cast<String, int>() ?? {},
+    );
+    final currentCost = existingCostBasis[holdingKey] ?? 0;
+    existingCostBasis[holdingKey] = currentCost + goldCost;
+    if (nextLots == 0) {
+      existingCostBasis.remove(holdingKey);
+    }
+
+    final now = DateTime.now().toUtc();
+    final label = companyName?.trim().isNotEmpty == true
+        ? companyName!
+        : symbol;
+
+    final nextStats = _stats.copyWith(
+      gold: _stats.gold - goldCost,
+      xp: _stats.xp + (12 * quantity).round(),
+      literacyPoints: _stats.literacyPoints + (6 * quantity).round(),
+      holdings: holdings,
+      spendingHabits: <String, dynamic>{
+        ..._stats.spendingHabits,
+        'cost_basis': existingCostBasis,
+      },
+      transactions: <LedgerTransaction>[
+        LedgerTransaction(
+          id: 'txn_${now.microsecondsSinceEpoch}',
+          title: 'Covered $symbol',
+          description:
+              'Bought back ${formatShares(quantity)} share(s) of $label for $goldCost gold.',
+          amount: -goldCost,
+          createdAt: now,
+          category: 'invest',
+        ),
+        ..._stats.transactions,
+      ],
+      updatedAt: now,
+    );
+
+    return _saveStats(nextStats, savingMessage: 'Covering $symbol...');
+  }
+
   /// Rests a limit order that is not immediately marketable.
   ///
   /// This is the whole point of a limit order: a buy limit *below* the ask (or
