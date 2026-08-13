@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../constants/app_assets.dart';
 import '../../../services_backend_and_other_services/market_data_service.dart';
@@ -16,17 +17,23 @@ import '../../../widgets_custom_lotties/price_chart.dart';
 /// it — which is the entire point of a limit order.
 enum OrderType { market, limit }
 
+enum TradeAction { buy, sell, short, cover }
+
 /// The order handed back to the caller, which owns the gold/holdings.
 @immutable
 class OrderRequest {
   const OrderRequest({
-    required this.isBuy,
+    required this.action,
     required this.quantity,
     required this.pricePerShare,
     this.isWorking = false,
   });
 
-  final bool isBuy;
+  final TradeAction action;
+
+  bool get isBuy => action == TradeAction.buy;
+  bool get isShort => action == TradeAction.short;
+  bool get isCover => action == TradeAction.cover;
 
   /// Fractional — a coin buys a slice of a share, so 0.5 is a valid quantity.
   final double quantity;
@@ -80,7 +87,9 @@ class OrderTicketPage extends StatefulWidget {
 }
 
 class _OrderTicketPageState extends State<OrderTicketPage> {
-  late bool _isBuy = widget.startAsBuy;
+  late TradeAction _action = widget.ownedLots < 0
+      ? TradeAction.cover
+      : (widget.startAsBuy ? TradeAction.buy : TradeAction.sell);
   OrderType _orderType = OrderType.limit;
   ChartRange _range = ChartRange.day1;
   ChartMode _chartMode = ChartMode.line;
@@ -96,11 +105,14 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
   String? _detailsError;
   TwelveDataQuoteDetails? _details;
   bool _detailsExpanded = false;
+  bool _hideShortingWarning = false;
+  static const String _shortingWarningKey = 'budget_buddy_shorting_warning_hidden';
 
   @override
   void initState() {
     super.initState();
     _priceController.text = '${widget.lastPrice}';
+    _loadShortingWarningPreference();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadChart();
       _loadDetails();
@@ -126,6 +138,21 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
       _candles = candles;
       _loadingChart = false;
     });
+  }
+
+  Future<void> _loadShortingWarningPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _hideShortingWarning = prefs.getBool(_shortingWarningKey) ?? false;
+    });
+  }
+
+  Future<void> _saveShortingWarningPreference(bool hide) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_shortingWarningKey, hide);
+    if (!mounted) return;
+    setState(() => _hideShortingWarning = hide);
   }
 
   Future<void> _loadDetails() async {
@@ -172,10 +199,21 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
 
   int get _effectiveTotal => (_quantity * _effectivePrice).round();
 
+  bool get _isBuy => _action == TradeAction.buy;
+  bool get _isShort => _action == TradeAction.short;
+  bool get _isCover => _action == TradeAction.cover;
+
+  int get _dailyBorrowCost => _isShort ? ((
+        _effectiveTotal * 0.0015
+      )).round() : 0;
+
   /// True when a limit order would fill the instant it is placed: a buy limit
   /// at or above the ask, a sell limit at or below the bid.
   bool get _marketableNow {
     if (_orderType != OrderType.limit) {
+      return true;
+    }
+    if (_isShort || _isCover) {
       return true;
     }
     return _isBuy
@@ -186,9 +224,16 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
   /// True when the order rests as a working (pending) order rather than filling
   /// immediately. This is a normal, expected state — not an error.
   bool get _restsAsWorkingOrder =>
-      _orderType == OrderType.limit && !_marketableNow;
+      _orderType == OrderType.limit && !_marketableNow && !_isShort && !_isCover;
 
   double get _maxQuantity {
+    if (_isShort) {
+      final price = _effectivePrice;
+      return price <= 0 ? 0 : widget.availableGold / price;
+    }
+    if (_isCover) {
+      return widget.ownedLots.abs();
+    }
     if (!_isBuy) {
       return widget.ownedLots;
     }
@@ -204,6 +249,19 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
   String? get _blockReason {
     if (_quantity <= 0) {
       return 'Enter a quantity greater than zero.';
+    }
+    if (_isCover) {
+      final held = widget.ownedLots.abs();
+      if (held <= 0) {
+        return 'You are not short ${widget.symbol} right now.';
+      }
+      if (_quantity > held) {
+        return 'You are only short ${formatShares(held)} share(s) of ${widget.symbol}.';
+      }
+      return null;
+    }
+    if (_isShort) {
+      return null;
     }
     if (!_isBuy) {
       if (widget.ownedLots <= 0) {
@@ -238,6 +296,145 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
         : 'Limit ${_limitPrice}g is above the bid (${widget.bidPrice}g), so '
               'this rests as a working order and fills if ${widget.symbol} '
               'trades up to ${_limitPrice}g.';
+  }
+
+  Future<void> _showShortingEducationDialog() async {
+    if (_hideShortingWarning) {
+      return;
+    }
+
+    var dontShowAgain = false;
+    final acknowledged = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF14231B),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+              titleTextStyle: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 18,
+              ),
+              contentTextStyle: const TextStyle(
+                color: Colors.white70,
+                height: 1.5,
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD166).withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Color(0xFFFFD166),
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(child: Text('Shorting is risky')),
+                ],
+              ),
+              content: SizedBox(
+                width: 340,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Shorting means borrowing shares and selling them now, then buying them back later. It can work well if the price falls, but it can also cause fast losses if the stock rises. Daily borrow costs and price swings are both real risks.',
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.10),
+                        ),
+                      ),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Key risks:',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text('• Unlimited loss potential if price climbs.'),
+                          Text('• Daily borrow interest can add up.'),
+                          Text('• Covering at a higher price can erase gains fast.'),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    CheckboxListTile(
+                      value: dontShowAgain,
+                      onChanged: (value) {
+                        setState(() => dontShowAgain = value ?? false);
+                      },
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: const Color(0xFF58C7FF),
+                      checkColor: Colors.black,
+                      title: const Text(
+                        "Don't show again",
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: Colors.white60,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFD166),
+                    foregroundColor: const Color(0xFF1B1B1B),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: const Text(
+                    'I understand',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (acknowledged == true && dontShowAgain) {
+      await _saveShortingWarningPreference(true);
+    }
   }
 
   void _nudgePrice(int direction) {
@@ -277,9 +474,12 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
   Widget build(BuildContext context) {
     final blockReason = _blockReason;
     final workingNote = _workingOrderNote;
-    final sideColor = _isBuy
-        ? const Color(0xFF85EFAC)
-        : const Color(0xFFFF8A80);
+    final sideColor = switch (_action) {
+      TradeAction.buy => const Color(0xFF85EFAC),
+      TradeAction.sell => const Color(0xFFFF8A80),
+      TradeAction.short => const Color(0xFFFFD166),
+      TradeAction.cover => const Color(0xFF8BC6FF),
+    };
 
     // Same backdrop pattern as the Market Board: art behind a transparent,
     // normally-laid-out Scaffold — never `extendBodyBehindAppBar`, which
@@ -421,8 +621,14 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                 _LabelledRow(
                   label: 'Side',
                   child: _SideToggle(
-                    isBuy: _isBuy,
-                    onChanged: (value) => setState(() => _isBuy = value),
+                    action: _action,
+                    canCover: widget.ownedLots < 0,
+                    onChanged: (value) {
+                      if (value == TradeAction.short) {
+                        _showShortingEducationDialog();
+                      }
+                      setState(() => _action = value);
+                    },
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -475,12 +681,21 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                 const SizedBox(height: 18),
                 _EstimateCard(
                   isBuy: _isBuy,
+                  isShort: _isShort,
                   quantity: _quantity,
                   pricePerShare: _effectivePrice,
                   availableGold: widget.availableGold,
                   ownedLots: widget.ownedLots,
                   maxQuantity: _maxQuantity,
                 ),
+                if (_isShort) ...[
+                  const SizedBox(height: 12),
+                  _NoteCard(
+                    text: 'Daily borrow cost estimate: ${_dailyBorrowCost}g (~0.15% of notional per day).',
+                    color: const Color(0xFFE1BB72),
+                    icon: Icons.warning_amber_rounded,
+                  ),
+                ],
                 if (blockReason != null) ...[
                   const SizedBox(height: 12),
                   _NoteCard(
@@ -513,7 +728,7 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                       ? null
                       : () => Navigator.of(context).pop(
                           OrderRequest(
-                            isBuy: _isBuy,
+                            action: _action,
                             quantity: _quantity,
                             pricePerShare: _effectivePrice,
                             isWorking: _restsAsWorkingOrder,
@@ -522,7 +737,12 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                   child: Text(
                     _restsAsWorkingOrder
                         ? 'Place ${_isBuy ? 'buy' : 'sell'} limit order'
-                        : '${_isBuy ? 'Buy' : 'Sell'} ${widget.symbol}',
+                        : switch (_action) {
+                            TradeAction.buy => 'Buy ${widget.symbol}',
+                            TradeAction.sell => 'Sell ${widget.symbol}',
+                            TradeAction.short => 'Short ${widget.symbol}',
+                            TradeAction.cover => 'Cover ${widget.symbol}',
+                          },
                     style: const TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
@@ -1115,13 +1335,46 @@ class _LabelledRow extends StatelessWidget {
 }
 
 class _SideToggle extends StatelessWidget {
-  const _SideToggle({required this.isBuy, required this.onChanged});
+  const _SideToggle({
+    required this.action,
+    required this.canCover,
+    required this.onChanged,
+  });
 
-  final bool isBuy;
-  final ValueChanged<bool> onChanged;
+  final TradeAction action;
+  final bool canCover;
+  final ValueChanged<TradeAction> onChanged;
 
   @override
   Widget build(BuildContext context) {
+    final actions = <_SideOption>[
+      _SideOption(
+        label: 'Buy',
+        selected: action == TradeAction.buy,
+        color: const Color(0xFF00C287),
+        value: TradeAction.buy,
+      ),
+      _SideOption(
+        label: 'Sell',
+        selected: action == TradeAction.sell,
+        color: const Color(0xFFE1454A),
+        value: TradeAction.sell,
+      ),
+      _SideOption(
+        label: 'Short',
+        selected: action == TradeAction.short,
+        color: const Color(0xFFFFD166),
+        value: TradeAction.short,
+      ),
+      if (canCover)
+        _SideOption(
+          label: 'Cover',
+          selected: action == TradeAction.cover,
+          color: const Color(0xFF8BC6FF),
+          value: TradeAction.cover,
+        ),
+    ];
+
     return Container(
       height: 44,
       decoration: BoxDecoration(
@@ -1130,26 +1383,33 @@ class _SideToggle extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Expanded(
-            child: _SideHalf(
-              label: 'Buy',
-              selected: isBuy,
-              color: const Color(0xFF00C287),
-              onTap: () => onChanged(true),
+          for (final option in actions)
+            Expanded(
+              child: _SideHalf(
+                label: option.label,
+                selected: option.selected,
+                color: option.color,
+                onTap: () => onChanged(option.value),
+              ),
             ),
-          ),
-          Expanded(
-            child: _SideHalf(
-              label: 'Sell',
-              selected: !isBuy,
-              color: const Color(0xFFE1454A),
-              onTap: () => onChanged(false),
-            ),
-          ),
         ],
       ),
     );
   }
+}
+
+class _SideOption {
+  const _SideOption({
+    required this.label,
+    required this.selected,
+    required this.color,
+    required this.value,
+  });
+
+  final String label;
+  final bool selected;
+  final Color color;
+  final TradeAction value;
 }
 
 class _SideHalf extends StatelessWidget {
@@ -1324,6 +1584,7 @@ class _StepperField extends StatelessWidget {
 class _EstimateCard extends StatelessWidget {
   const _EstimateCard({
     required this.isBuy,
+    required this.isShort,
     required this.quantity,
     required this.pricePerShare,
     required this.availableGold,
@@ -1332,6 +1593,7 @@ class _EstimateCard extends StatelessWidget {
   });
 
   final bool isBuy;
+  final bool isShort;
   final double quantity;
   final int pricePerShare;
   final int availableGold;
@@ -1361,6 +1623,13 @@ class _EstimateCard extends StatelessWidget {
             label: isBuy ? 'Available gold' : 'Shares owned',
             value: isBuy ? '${availableGold}g' : formatShares(ownedLots),
           ),
+          if (isShort) ...[
+            const SizedBox(height: 10),
+            _EstimateLine(
+              label: 'Daily borrow',
+              value: '${((quantity * pricePerShare * 0.0015).round())}g',
+            ),
+          ],
           const SizedBox(height: 10),
           _EstimateLine(
             label: 'Max at this price',
