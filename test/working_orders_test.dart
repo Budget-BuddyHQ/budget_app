@@ -145,4 +145,27 @@ void main() {
     expect(controller.stats.workingOrders, isEmpty);
     expect(controller.stats.holdings['stock_AAPL'], 3);
   });
+
+  test('a stale saved snapshot does not overwrite newer portfolio state', () async {
+    final service = SupabaseService.instance;
+    final userId = 'stale_state_user';
+
+    final freshStats = UserStats.defaults(userId).copyWith(
+      gold: 2500,
+      holdings: <String, double>{'stock_AAPL': 2.5},
+      updatedAt: DateTime.now().toUtc(),
+    );
+    await service.saveUserStats(freshStats);
+
+    final staleStats = UserStats.defaults(userId).copyWith(
+      gold: 0,
+      holdings: const <String, double>{},
+      updatedAt: DateTime.now().toUtc().subtract(const Duration(days: 1)),
+    );
+    await service.saveUserStats(staleStats);
+
+    final latest = await service.loadUserStats(userId);
+    expect(latest.gold, 2500);
+    expect(latest.holdings['stock_AAPL'] ?? 0, 2.5);
+  });
 }

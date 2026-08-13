@@ -326,37 +326,67 @@ class _StockMarketPageState extends State<StockMarketPage>
       return;
     }
 
-    final result = request.isBuy
-        ? await controller.buyStockLot(
-            symbol: quote.symbol,
-            goldCost: totalValue,
-            companyName: quote.company,
-            quantity: request.quantity,
-          )
-        : await controller.sellStockLot(
-            symbol: quote.symbol,
-            goldReturn: totalValue,
-            companyName: quote.company,
-            quantity: request.quantity,
-          );
+    final result = switch (request.action) {
+      TradeAction.buy => await controller.buyStockLot(
+          symbol: quote.symbol,
+          goldCost: totalValue,
+          companyName: quote.company,
+          quantity: request.quantity,
+        ),
+      TradeAction.sell => await controller.sellStockLot(
+          symbol: quote.symbol,
+          goldReturn: totalValue,
+          companyName: quote.company,
+          quantity: request.quantity,
+        ),
+      TradeAction.short => await controller.shortStockLot(
+          symbol: quote.symbol,
+          goldCredit: totalValue,
+          companyName: quote.company,
+          quantity: request.quantity,
+        ),
+      TradeAction.cover => await controller.coverShortLot(
+          symbol: quote.symbol,
+          goldCost: totalValue,
+          companyName: quote.company,
+          quantity: request.quantity,
+        ),
+    };
 
     if (!context.mounted) return;
 
+    final actionLabel = switch (request.action) {
+      TradeAction.buy => 'Buy order filled',
+      TradeAction.sell => 'Sell order filled',
+      TradeAction.short => 'Short order filled',
+      TradeAction.cover => 'Cover order filled',
+    };
+    final actionMessage = switch (request.action) {
+      TradeAction.buy => 'Bought ${formatShares(request.quantity)} share${request.quantity == 1 ? '' : 's'} of ${quote.symbol} for ${totalValue}g.',
+      TradeAction.sell => 'Sold ${formatShares(request.quantity)} share${request.quantity == 1 ? '' : 's'} of ${quote.symbol} for ${totalValue}g.',
+      TradeAction.short => 'Shorted ${formatShares(request.quantity)} share${request.quantity == 1 ? '' : 's'} of ${quote.symbol} for ${totalValue}g. Borrow cost is charged daily.',
+      TradeAction.cover => 'Covered ${formatShares(request.quantity)} share${request.quantity == 1 ? '' : 's'} of ${quote.symbol} for ${totalValue}g.',
+    };
+
     GameToast.show(
       context,
-      title: result.success
-          ? (request.isBuy ? 'Buy order filled' : 'Sell order filled')
-          : 'Trade blocked',
-      message: result.success
-          ? '${request.isBuy ? 'Bought' : 'Sold'} ${formatShares(request.quantity)} share${request.quantity == 1 ? '' : 's'} of ${quote.symbol} for ${totalValue}g.'
-          : result.message,
+      title: result.success ? actionLabel : 'Trade blocked',
+      message: result.success ? actionMessage : result.message,
       icon: result.success
-          ? (request.isBuy
-                ? Icons.trending_up_rounded
-                : Icons.attach_money_rounded)
+          ? switch (request.action) {
+              TradeAction.buy => Icons.trending_up_rounded,
+              TradeAction.sell => Icons.attach_money_rounded,
+              TradeAction.short => Icons.warning_amber_rounded,
+              TradeAction.cover => Icons.check_circle_rounded,
+            }
           : Icons.info_outline_rounded,
       accent: result.success
-          ? (request.isBuy ? const Color(0xFF85EFAC) : const Color(0xFFE1BB72))
+          ? switch (request.action) {
+              TradeAction.buy => const Color(0xFF85EFAC),
+              TradeAction.sell => const Color(0xFFE1BB72),
+              TradeAction.short => const Color(0xFFFFD166),
+              TradeAction.cover => const Color(0xFF8BC6FF),
+            }
           : const Color(0xFFFFB084),
     );
   }
@@ -461,12 +491,13 @@ class _StockMarketPageState extends State<StockMarketPage>
           final lots = stats.holdings['stock_${quote.symbol}'] ?? 0.0;
           return sum + (quote.changePercent * lots);
         });
-        final avgChangePercent = totalLots > 0
-            ? weightedChange / totalLots
+        final activeLots = totalLots.abs();
+        final avgChangePercent = activeLots > 0
+            ? weightedChange / activeLots
             : 0.0;
         final ownedSymbols = quotes
             .where(
-              (quote) => (stats.holdings['stock_${quote.symbol}'] ?? 0.0) > 0,
+              (quote) => (stats.holdings['stock_${quote.symbol}'] ?? 0.0) != 0,
             )
             .length;
         final portfolioTip = _portfolioTip(
@@ -667,12 +698,15 @@ _holdingMetrics({
   required int costBasis,
   required int currentPrice,
 }) {
-  final averageCost = ownedLots > 0 ? (costBasis / ownedLots) : 0.0;
+  final absLots = ownedLots.abs();
+  final isShort = ownedLots < 0;
+  final averageCost = absLots > 0 ? (costBasis.abs() / absLots) : 0.0;
   final currentValue = (ownedLots * currentPrice).toDouble();
-  final totalProfitLoss = ownedLots > 0 ? (currentValue - costBasis) : 0.0;
-  final profitLossPercent = averageCost > 0
+  final totalProfitLoss = absLots > 0 ? (currentValue - costBasis) : 0.0;
+  final priceDeltaPercent = averageCost > 0
       ? ((currentPrice - averageCost) / averageCost) * 100
       : 0.0;
+  final profitLossPercent = isShort ? -priceDeltaPercent : priceDeltaPercent;
   return (
     averageCost: averageCost,
     currentValue: currentValue,
@@ -686,7 +720,7 @@ String _portfolioTip(
   int ownedSymbols,
   double avgChangePercent,
 ) {
-  if (totalLots <= 0) {
+  if (totalLots.abs() <= 0) {
     return 'No stock positions yet. Start with a small position and build a more balanced portfolio over time.';
   }
   if (ownedSymbols <= 1) {
@@ -1247,7 +1281,7 @@ class _PortfolioTab extends StatelessWidget {
                 ),
               );
             })
-            .where((h) => h.ownedLots > 0)
+            .where((h) => h.ownedLots != 0)
             .toList()
           ..sort(
             (a, b) => b.metrics.currentValue.compareTo(a.metrics.currentValue),
@@ -2552,26 +2586,83 @@ class _StockOrder {
   const _StockOrder({
     required this.symbol,
     required this.isBuy,
+    required this.isShort,
+    required this.isCover,
     required this.amount,
     required this.createdAt,
   });
 
   final String symbol;
   final bool isBuy;
+  final bool isShort;
+  final bool isCover;
   final int amount;
   final DateTime createdAt;
+
+  String get actionLabel => switch ((isBuy, isShort, isCover)) {
+        (true, false, false) => 'Buy',
+        (false, false, false) => 'Sell',
+        (false, true, false) => 'Sell Short',
+        (false, false, true) => 'Cover Short',
+        _ => 'Trade',
+      };
 }
 
-final RegExp _stockOrderPattern = RegExp(r'^(Bought|Sold) ([A-Z]{1,5})$');
+final RegExp _stockOrderPattern = RegExp(r'^(Bought|Sold|Shorted|Covered) ([A-Z]{1,5})$');
 
-_StockOrder? _parseStockOrder(LedgerTransaction transaction) {
-  final match = _stockOrderPattern.firstMatch(transaction.title);
+({String symbol, bool isBuy, bool isShort, bool isCover})? parseStockOrderTitle(
+  String title,
+) {
+  final match = _stockOrderPattern.firstMatch(title);
   if (match == null) {
     return null;
   }
+
+  final verb = match.group(1)!;
+  switch (verb) {
+    case 'Bought':
+      return (
+        symbol: match.group(2)!,
+        isBuy: true,
+        isShort: false,
+        isCover: false,
+      );
+    case 'Sold':
+      return (
+        symbol: match.group(2)!,
+        isBuy: false,
+        isShort: false,
+        isCover: false,
+      );
+    case 'Shorted':
+      return (
+        symbol: match.group(2)!,
+        isBuy: false,
+        isShort: true,
+        isCover: false,
+      );
+    case 'Covered':
+      return (
+        symbol: match.group(2)!,
+        isBuy: false,
+        isShort: false,
+        isCover: true,
+      );
+    default:
+      return null;
+  }
+}
+
+_StockOrder? _parseStockOrder(LedgerTransaction transaction) {
+  final parsed = parseStockOrderTitle(transaction.title);
+  if (parsed == null) {
+    return null;
+  }
   return _StockOrder(
-    symbol: match.group(2)!,
-    isBuy: match.group(1) == 'Bought',
+    symbol: parsed.symbol,
+    isBuy: parsed.isBuy,
+    isShort: parsed.isShort,
+    isCover: parsed.isCover,
     amount: transaction.amount.abs(),
     createdAt: transaction.createdAt,
   );
@@ -2755,9 +2846,13 @@ class _OrderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = _kSymbolStyle[order.symbol];
-    final sideColor = order.isBuy
-        ? const Color(0xFF85EFAC)
-        : const Color(0xFFFF8A80);
+    final sideColor = order.isShort
+        ? const Color(0xFFFFD166)
+        : order.isCover
+            ? const Color(0xFF8BC6FF)
+            : order.isBuy
+                ? const Color(0xFF85EFAC)
+                : const Color(0xFFFF8A80);
     final date = order.createdAt.toLocal();
     final dateLabel =
         '${date.month}/${date.day}/${date.year} '
@@ -2805,7 +2900,7 @@ class _OrderRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                order.isBuy ? 'Buy' : 'Sell',
+                order.actionLabel,
                 style: TextStyle(color: sideColor, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 2),
@@ -3110,7 +3205,7 @@ class _AnalyticsTab extends StatelessWidget {
                 ),
               );
             })
-            .where((p) => p.owned > 0)
+            .where((p) => p.owned != 0)
             .toList()
           ..sort(
             (a, b) =>

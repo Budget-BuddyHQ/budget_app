@@ -897,6 +897,10 @@ end
       }
 
       final stats = UserStats.fromMap(response);
+      final current = _memoryCache[userId] ?? fallback;
+      if (stats.updatedAt.isBefore(current.updatedAt)) {
+        return current;
+      }
       await _cacheUserStats(stats);
       _memoryCache[userId] = stats;
       return stats;
@@ -1036,10 +1040,14 @@ end
               return fallback;
             }
 
-            final stats = UserStats.fromMap(rows.first);
-            _memoryCache[userId] = stats;
-            await _cacheUserStats(stats);
-            return stats;
+            final incoming = UserStats.fromMap(rows.first);
+            final current = _memoryCache[userId];
+            if (current != null && incoming.updatedAt.isBefore(current.updatedAt)) {
+              return current;
+            }
+            _memoryCache[userId] = incoming;
+            await _cacheUserStats(incoming);
+            return incoming;
           });
       return;
     }
@@ -1049,6 +1057,16 @@ end
 
   Future<SyncState> saveUserStats(UserStats stats) async {
     await _ensurePreferences();
+    final current = _memoryCache[stats.id] ?? await _readCachedUserStats(stats.id);
+    if (current != null && stats.updatedAt.isBefore(current.updatedAt)) {
+      _localController.add(current);
+      return const SyncState(
+        synced: true,
+        usedCache: true,
+        message: 'Newer stats already saved.',
+      );
+    }
+
     _memoryCache[stats.id] = stats;
     await _cacheUserStats(stats);
     _localController.add(stats);
