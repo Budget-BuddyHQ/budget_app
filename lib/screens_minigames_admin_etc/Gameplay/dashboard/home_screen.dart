@@ -164,8 +164,8 @@ class HomeScreen extends StatelessWidget {
                   builder: (context, constraints) {
                     final compactHeight = constraints.maxHeight < 650;
                     final heroHeight =
-                        (constraints.maxHeight * (compactHeight ? 0.36 : 0.40))
-                            .clamp(210.0, 300.0)
+                        (constraints.maxHeight * (compactHeight ? 0.38 : 0.40))
+                            .clamp(compactHeight ? 225.0 : 240.0, 300.0)
                             .toDouble();
 
                     return SingleChildScrollView(
@@ -235,8 +235,7 @@ class _FeedbackPromptTrigger extends StatefulWidget {
   const _FeedbackPromptTrigger();
 
   @override
-  State<_FeedbackPromptTrigger> createState() =>
-      _FeedbackPromptTriggerState();
+  State<_FeedbackPromptTrigger> createState() => _FeedbackPromptTriggerState();
 }
 
 class _FeedbackPromptTriggerState extends State<_FeedbackPromptTrigger> {
@@ -452,7 +451,7 @@ class _AdventureLaunchHero extends StatelessWidget {
             },
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.all(compact ? 16 : 20),
+        padding: EdgeInsets.all(compact ? 14 : 20),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
@@ -479,20 +478,22 @@ class _AdventureLaunchHero extends StatelessWidget {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final veryTight = constraints.maxHeight < 240;
+            final veryTight = constraints.maxHeight < 196;
+            final narrow = constraints.maxWidth < 520;
+            final phone = constraints.maxWidth < 430;
             return Stack(
               children: [
                 if (!veryTight)
                   Positioned(
-                    right: constraints.maxWidth < 520 ? 8 : 128,
-                    top: 18,
+                    right: narrow ? 74 : 128,
+                    top: narrow ? 10 : 18,
                     child: Opacity(
                       opacity: 0.52,
                       child: AmbientLottieCard(
                         motif: AmbientMotif.turtle,
                         semanticLabel: 'Moving turtle decoration',
-                        width: constraints.maxWidth < 520 ? 88 : 126,
-                        height: constraints.maxWidth < 520 ? 72 : 96,
+                        width: narrow ? 74 : 126,
+                        height: narrow ? 58 : 96,
                         padding: const EdgeInsets.all(6),
                         backgroundColor: Colors.white.withValues(alpha: 0.04),
                         borderColor: Colors.white.withValues(alpha: 0.08),
@@ -511,7 +512,7 @@ class _AdventureLaunchHero extends StatelessWidget {
                   alignment: Alignment.bottomLeft,
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
-                      maxWidth: constraints.maxWidth < 520
+                      maxWidth: narrow
                           ? constraints.maxWidth * 0.78
                           : constraints.maxWidth * 0.58,
                     ),
@@ -521,8 +522,8 @@ class _AdventureLaunchHero extends StatelessWidget {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
+                            horizontal: 10,
+                            vertical: 6,
                           ),
                           decoration: BoxDecoration(
                             color: const Color(
@@ -541,19 +542,19 @@ class _AdventureLaunchHero extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Color(0xFF85EFAC),
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
                         ),
-                        SizedBox(height: veryTight ? 8 : 12),
+                        SizedBox(height: veryTight ? 6 : 10),
                         Text(
                           'Adventure Soon',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: veryTight ? 27 : 34,
+                            fontSize: veryTight ? 25 : (phone ? 30 : 34),
                             fontWeight: FontWeight.w900,
                             height: 1,
                           ),
@@ -576,6 +577,7 @@ class _AdventureLaunchHero extends StatelessWidget {
                           label: 'Enter World',
                           accent: const Color(0xFF85EFAC),
                           icon: Icons.explore_rounded,
+                          compact: phone || veryTight,
                           onTap: onOpenAdventure,
                         ),
                       ],
@@ -643,6 +645,8 @@ class _CurrentObjectiveCard extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final tight = compact;
+          final decorationWidth = tight ? 58.0 : 92.0;
+          final decorationHeight = tight ? 46.0 : 70.0;
 
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -692,18 +696,16 @@ class _CurrentObjectiveCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (!tight) ...[
-                    const SizedBox(width: 12),
-                    AmbientLottieCard(
-                      motif: AmbientMotif.arcade,
-                      semanticLabel: 'Arcade decoration',
-                      width: 92,
-                      height: 70,
-                      padding: const EdgeInsets.all(6),
-                      backgroundColor: Colors.white.withValues(alpha: 0.04),
-                      borderColor: Colors.white.withValues(alpha: 0.08),
-                    ),
-                  ],
+                  const SizedBox(width: 12),
+                  AmbientLottieCard(
+                    motif: AmbientMotif.arcade,
+                    semanticLabel: 'Arcade decoration',
+                    width: decorationWidth,
+                    height: decorationHeight,
+                    padding: EdgeInsets.all(tight ? 4 : 6),
+                    backgroundColor: Colors.white.withValues(alpha: 0.04),
+                    borderColor: Colors.white.withValues(alpha: 0.08),
+                  ),
                 ],
               ),
               if (!tight) ...[
@@ -904,12 +906,14 @@ class _ActionButton extends StatefulWidget {
     required this.label,
     required this.accent,
     required this.icon,
+    this.compact = false,
     required this.onTap,
   });
 
   final String label;
   final Color accent;
   final IconData icon;
+  final bool compact;
   final VoidCallback? onTap;
 
   @override
@@ -992,7 +996,7 @@ class _ActionButtonState extends State<_ActionButton>
                 ..translateByDouble(0.0, dip + lift, 0.0, 1.0)
                 ..rotateX(-tilt),
               child: Container(
-                height: 56,
+                height: widget.compact ? 48 : 56,
                 decoration: BoxDecoration(
                   color: widget.accent,
                   borderRadius: BorderRadius.circular(18),
@@ -1040,9 +1044,9 @@ class _ActionButtonState extends State<_ActionButton>
                           Icon(
                             widget.icon,
                             color: const Color(0xFF062C21),
-                            size: 20,
+                            size: widget.compact ? 18 : 20,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: widget.compact ? 6 : 8),
                           Flexible(
                             child: Text(
                               widget.label,
