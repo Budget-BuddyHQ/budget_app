@@ -298,6 +298,40 @@ void main() {
     expect(errors.map((e) => e.exception.toString()), isEmpty);
   });
 
+  testWidgets('Finance Brawl accepts touch drag movement on phones', (
+    tester,
+  ) async {
+    final errors = <FlutterErrorDetails>[];
+    final previousOnError = FlutterError.onError;
+    FlutterError.onError = errors.add;
+
+    tester.view.physicalSize = const Size(393, 852);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    try {
+      await tester.pumpWidget(_wrap(const FinanceBrawlScreen()));
+      await tester.pump(const Duration(milliseconds: 300));
+      final gesture = await tester.startGesture(const Offset(196, 520));
+      await gesture.moveBy(const Offset(72, 0));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget.runtimeType.toString() == '_TouchJoystick',
+        ),
+        findsOneWidget,
+      );
+
+      await gesture.up();
+      await tester.pump(const Duration(milliseconds: 100));
+    } finally {
+      FlutterError.onError = previousOnError;
+    }
+
+    expect(errors.map((e) => e.exception.toString()), isEmpty);
+  });
+
   group('Dashboard shell tabs', () {
     const tabs = <String>['Adventure', 'Arcade', 'Style', 'Academy', 'Profile'];
 
