@@ -97,11 +97,10 @@ class _LessonScreenState extends State<LessonScreen> {
     // The strip is grouped by age band, so a unit's position in it is no
     // longer its curriculum index — and each band adds a header of its own
     // width ahead of the units under it.
-    final targetOffset =
-        _UnitQuickChangerBar.estimatedOffsetFor(
-          _progressionService.units,
-          index,
-        ).clamp(0.0, _unitQuickScrollController.position.maxScrollExtent);
+    final targetOffset = _UnitQuickChangerBar.estimatedOffsetFor(
+      _progressionService.units,
+      index,
+    ).clamp(0.0, _unitQuickScrollController.position.maxScrollExtent);
     _unitQuickScrollController.animateTo(
       targetOffset,
       duration: const Duration(milliseconds: 260),
@@ -360,10 +359,10 @@ class _LessonScreenState extends State<LessonScreen> {
                 // Treat landscape or short heights as compact to avoid vertical overflow.
                 final orientation = MediaQuery.of(context).orientation;
                 final compactLayout =
-                    constraints.maxWidth < 980 ||
-                    constraints.maxHeight < 720 ||
+                    constraints.maxWidth < 620 ||
+                    constraints.maxHeight < 560 ||
                     (orientation == Orientation.landscape &&
-                        constraints.maxHeight < 720);
+                        constraints.maxHeight < 460);
 
                 if (compactLayout) {
                   return ListView(
@@ -856,7 +855,7 @@ class _HubHeader extends StatelessWidget {
         compact ? 0 : 20,
         compact ? 0 : 12,
       ),
-      padding: EdgeInsets.all(compact ? 20 : 24),
+      padding: EdgeInsets.all(compact ? 18 : 24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -875,7 +874,7 @@ class _HubHeader extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final showIllustration = !compact && constraints.maxWidth >= 760;
+          final showIllustration = !compact && constraints.maxWidth >= 520;
           final copy = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -893,22 +892,22 @@ class _HubHeader extends StatelessWidget {
                 'Units and mastery',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: compact ? 24 : 30,
+                  fontSize: compact ? 23 : 30,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: compact ? 8 : 10),
               Text(
                 'Pick up the next lesson, clear quizzes, and keep mastery moving.',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.82),
-                  height: 1.45,
+                  height: compact ? 1.32 : 1.45,
                 ),
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: compact ? 14 : 18),
               Wrap(
-                spacing: 12,
-                runSpacing: 12,
+                spacing: compact ? 8 : 12,
+                runSpacing: compact ? 8 : 12,
                 children: [
                   _MetricPill(
                     label: 'Completed',
@@ -927,7 +926,7 @@ class _HubHeader extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: compact ? 14 : 18),
               LayoutBuilder(
                 builder: (context, constraints) {
                   final stackedActions = constraints.maxWidth < 520;
@@ -969,7 +968,7 @@ class _HubHeader extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         progressBar,
-                        const SizedBox(height: 18),
+                        SizedBox(height: compact ? 12 : 18),
                         ...buttons.expand(
                           (button) => <Widget>[
                             SizedBox(width: double.infinity, child: button),
@@ -993,8 +992,37 @@ class _HubHeader extends StatelessWidget {
             ],
           );
 
-          if (!showIllustration) {
-            return copy;
+          if (compact || !showIllustration) {
+            final illustrationHeight = constraints.maxWidth < 380
+                ? 112.0
+                : 136.0;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                copy,
+                SizedBox(height: compact ? 14 : 18),
+                AmbientLottieCard(
+                  motif: AmbientMotif.academy,
+                  semanticLabel: 'Animated academy illustration',
+                  height: illustrationHeight,
+                ),
+              ],
+            );
+          }
+
+          if (constraints.maxWidth < 760) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                copy,
+                const SizedBox(height: 18),
+                const AmbientLottieCard(
+                  motif: AmbientMotif.academy,
+                  semanticLabel: 'Animated academy illustration',
+                  height: 150,
+                ),
+              ],
+            );
           }
 
           return Row(
@@ -1187,8 +1215,8 @@ class _MetricPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: BoxConstraints(minWidth: compact ? 132 : 150),
-      padding: const EdgeInsets.all(14),
+      constraints: BoxConstraints(minWidth: compact ? 96 : 150),
+      padding: EdgeInsets.all(compact ? 12 : 14),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(18),
@@ -1204,14 +1232,14 @@ class _MetricPill extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: compact ? 4 : 6),
           Text(
             value,
-            maxLines: compact ? 3 : 2,
+            maxLines: compact ? 2 : 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: Colors.white,
-              fontSize: compact ? 15 : 16,
+              fontSize: compact ? 14 : 16,
               fontWeight: FontWeight.w900,
             ),
           ),

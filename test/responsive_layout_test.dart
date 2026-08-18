@@ -19,10 +19,12 @@ import 'package:budget_app/screens_minigames_admin_etc/Gameplay/core_bottom_page
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/customize_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/finance_brawl_game.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/stock_market_page.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/dashboard_shell.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/home_screen.dart';
 import 'package:budget_app/services_backend_and_other_services/market_data_service.dart';
 import 'package:budget_app/services_backend_and_other_services/supabase_service.dart';
 import 'package:budget_app/themes_colors/app_theme.dart';
+import 'package:budget_app/widgets_custom_lotties/ambient_lottie_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -35,6 +37,7 @@ import 'package:provider/provider.dart';
 const Map<String, Size> _viewports = <String, Size>{
   'small phone portrait': Size(320, 568),
   'phone portrait': Size(375, 812),
+  'mid phone portrait': Size(393, 852),
   'large phone portrait': Size(430, 932),
   'phone landscape': Size(812, 375),
   'small phone landscape': Size(568, 320),
@@ -122,6 +125,7 @@ void main() {
       );
 
   final screens = <String, Widget Function()>{
+    'Dashboard shell': () => const DashboardShell(),
     'Home': () => const HomeScreen(),
     'Adventure': () => const MainGamePage(),
     'Arcade': () => const MinigamesPage(),
@@ -158,12 +162,7 @@ void main() {
         health: 62,
         smarts: 91,
         looks: 58,
-        relationships: const [
-          'Jordan',
-          'Priya',
-          'Marcus',
-          'Grandma Lucille',
-        ],
+        relationships: const ['Jordan', 'Priya', 'Marcus', 'Grandma Lucille'],
         goldReward: 512,
         archetype: LifeEndingArchetype.legacyBuilder,
       ),
@@ -212,6 +211,134 @@ void main() {
       }
     });
   }
+
+  testWidgets('Dashboard shell keeps rich visuals at the normal Windows size', (
+    tester,
+  ) async {
+    final errors = <FlutterErrorDetails>[];
+    final previousOnError = FlutterError.onError;
+    FlutterError.onError = errors.add;
+
+    tester.view.physicalSize = const Size(1000, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    try {
+      await tester.pumpWidget(_wrap(const DashboardShell()));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is AmbientLottieCard &&
+              widget.semanticLabel == 'Moving turtle decoration',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Academy').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is AmbientLottieCard &&
+              widget.semanticLabel == 'Animated academy illustration',
+        ),
+        findsOneWidget,
+      );
+    } finally {
+      FlutterError.onError = previousOnError;
+    }
+
+    expect(errors.map((e) => e.exception.toString()), isEmpty);
+  });
+
+  testWidgets('compact dashboard keeps the turtle and shop visuals', (
+    tester,
+  ) async {
+    final errors = <FlutterErrorDetails>[];
+    final previousOnError = FlutterError.onError;
+    FlutterError.onError = errors.add;
+
+    tester.view.physicalSize = const Size(340, 480);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    try {
+      await tester.pumpWidget(_wrap(const DashboardShell()));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is AmbientLottieCard &&
+              widget.semanticLabel == 'Arcade decoration',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Academy').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is AmbientLottieCard &&
+              widget.semanticLabel == 'Animated academy illustration',
+        ),
+        findsOneWidget,
+      );
+    } finally {
+      FlutterError.onError = previousOnError;
+    }
+
+    expect(errors.map((e) => e.exception.toString()), isEmpty);
+  });
+
+  group('Dashboard shell tabs', () {
+    const tabs = <String>['Adventure', 'Arcade', 'Style', 'Academy', 'Profile'];
+
+    for (final viewport in _viewports.entries) {
+      for (final tab in tabs) {
+        testWidgets('$tab tab lays out on ${viewport.key}', (tester) async {
+          final errors = <FlutterErrorDetails>[];
+          final previousOnError = FlutterError.onError;
+          FlutterError.onError = errors.add;
+
+          tester.view.physicalSize = viewport.value;
+          tester.view.devicePixelRatio = 1.0;
+          addTearDown(tester.view.reset);
+
+          try {
+            await tester.pumpWidget(_wrap(const DashboardShell()));
+            await tester.pump(const Duration(milliseconds: 300));
+            await tester.tap(find.text(tab).last);
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 500));
+          } finally {
+            FlutterError.onError = previousOnError;
+          }
+
+          final overflows = errors
+              .map((error) => error.exception.toString())
+              .toList(growable: false);
+
+          expect(
+            overflows,
+            isEmpty,
+            reason:
+                'Dashboard shell "$tab" at ${viewport.key} '
+                '(${viewport.value.width.toInt()}x'
+                '${viewport.value.height.toInt()}):\n'
+                '${overflows.join('\n')}',
+          );
+        });
+      }
+    }
+  });
 
   // The Market Board's tabs are a TabBarView, which builds children lazily —
   // so the sweep above only ever laid out the default "Assets" tab and
