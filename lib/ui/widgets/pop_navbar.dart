@@ -52,15 +52,22 @@ class PopNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final dense = screenWidth < 360;
+    final screenSize = MediaQuery.sizeOf(context);
+    final dense = screenSize.width < 360 || screenSize.height < 560;
+    final veryTight = screenSize.height < 430;
+    final barHeight = veryTight ? 62.0 : (dense ? 70.0 : 86.0);
 
     return SafeArea(
       top: false,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(10, 0, 10, dense ? 8 : 12),
+        padding: EdgeInsets.fromLTRB(
+          10,
+          0,
+          10,
+          veryTight ? 6 : (dense ? 8 : 12),
+        ),
         child: Container(
-          height: dense ? 78 : 86,
+          height: barHeight,
           decoration: BoxDecoration(
             color: _deepCharcoalStrong,
             borderRadius: BorderRadius.circular(28),
@@ -78,6 +85,7 @@ class PopNavBar extends StatelessWidget {
                     item: items[i],
                     active: i == activeIndex,
                     dense: dense,
+                    veryTight: veryTight,
                     onTap: () => _handleTap(context, i),
                   ),
                 ),
@@ -95,12 +103,14 @@ class _PopNavTile extends StatefulWidget {
     required this.item,
     required this.active,
     required this.dense,
+    required this.veryTight,
     required this.onTap,
   });
 
   final PopNavBarItem item;
   final bool active;
   final bool dense;
+  final bool veryTight;
   final VoidCallback onTap;
 
   @override
@@ -170,7 +180,7 @@ class _PopNavTileState extends State<_PopNavTile>
               margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
               padding: EdgeInsets.symmetric(
                 horizontal: widget.dense ? 6 : 8,
-                vertical: widget.dense ? 6 : 8,
+                vertical: widget.veryTight ? 4 : (widget.dense ? 6 : 8),
               ),
               decoration: BoxDecoration(
                 color: widget.active
@@ -197,18 +207,22 @@ class _PopNavTileState extends State<_PopNavTile>
                   Icon(
                     widget.item.icon,
                     color: widget.active ? _deepCharcoal : Colors.white70,
-                    size: widget.dense ? 19 : 22,
+                    size: widget.veryTight ? 18 : (widget.dense ? 19 : 22),
                   ),
-                  SizedBox(height: widget.dense ? 3 : 4),
                   SizedBox(
-                    height: widget.dense ? 12 : 14,
+                    height: widget.veryTight ? 2 : (widget.dense ? 3 : 4),
+                  ),
+                  SizedBox(
+                    height: widget.veryTight ? 10 : (widget.dense ? 12 : 14),
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
                         widget.item.label,
                         style: GoogleFonts.pixelifySans(
                           color: widget.active ? _deepCharcoal : Colors.white70,
-                          fontSize: widget.dense ? 9.2 : 10.2,
+                          fontSize: widget.veryTight
+                              ? 8
+                              : (widget.dense ? 9.2 : 10.2),
                           fontWeight: widget.active
                               ? FontWeight.w700
                               : FontWeight.w500,

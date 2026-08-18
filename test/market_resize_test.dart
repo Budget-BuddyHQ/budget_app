@@ -1,6 +1,7 @@
 import 'package:budget_app/controllers_that_updates_stats/daily_plan_controller.dart';
 import 'package:budget_app/controllers_that_updates_stats/app_settings_controller.dart';
 import 'package:budget_app/controllers_that_updates_stats/user_stats_controller.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/dashboard_shell.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/stock_market_page.dart';
 import 'package:budget_app/services_backend_and_other_services/market_data_service.dart';
 import 'package:budget_app/services_backend_and_other_services/supabase_service.dart';
@@ -115,6 +116,37 @@ void main() {
       );
     }
   });
+
+  testWidgets(
+    'Dashboard shell survives being dragged down to the minimum size',
+    (tester) async {
+      final errors = <FlutterErrorDetails>[];
+      final previousOnError = FlutterError.onError;
+      FlutterError.onError = errors.add;
+      addTearDown(() => FlutterError.onError = previousOnError);
+
+      tester.view.devicePixelRatio = 1.0;
+      tester.view.physicalSize = _shrinkSteps.first;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_wrap(const DashboardShell()));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      for (final size in _shrinkSteps.skip(1)) {
+        tester.view.physicalSize = size;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(
+          errors.map((e) => e.exception.toString()),
+          isEmpty,
+          reason:
+              'shrinking dashboard to ${size.width.toInt()}x'
+              '${size.height.toInt()} threw',
+        );
+      }
+    },
+  );
 
   testWidgets('every Market Board tab survives the same shrink', (
     tester,
