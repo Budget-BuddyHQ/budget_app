@@ -115,9 +115,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ? result.syncState.message
             : 'Cloud storage is unavailable, so it is saved locally only.',
         icon: Icons.camera_alt_rounded,
-        accent: uploaded
-            ? const Color(0xFF4BD2A3)
-            : const Color(0xFFFFB084),
+        accent: uploaded ? const Color(0xFF4BD2A3) : const Color(0xFFFFB084),
       );
     } catch (error) {
       if (!context.mounted) {
@@ -587,7 +585,7 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
     final earned = badges.where((b) => b.earned).length;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
@@ -629,19 +627,20 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, constraints) {
-              final columns = (constraints.maxWidth / 96).floor().clamp(3, 8);
+              final columns = (constraints.maxWidth / 84).floor().clamp(3, 8);
+              final compact = constraints.maxWidth < 380;
               return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: badges.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: columns,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  mainAxisExtent: 96,
+                  crossAxisSpacing: compact ? 8 : 10,
+                  mainAxisSpacing: compact ? 8 : 10,
+                  mainAxisExtent: compact ? 86 : 90,
                 ),
                 itemBuilder: (context, index) {
                   final badge = badges[index];
@@ -693,7 +692,7 @@ class _BadgeTile extends StatelessWidget {
         child: Stack(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 7),
               decoration: BoxDecoration(
                 color: badge.earned
                     ? badge.color.withValues(alpha: isNew ? 0.20 : 0.12)
@@ -709,33 +708,43 @@ class _BadgeTile extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(badge.icon, color: color, size: 22),
-                  const SizedBox(height: 5),
-                  Text(
-                    badge.label,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: badge.earned
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.4),
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
+                  Icon(badge.icon, color: color, size: 20),
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    height: 13,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        badge.label,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: badge.earned
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.4),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    badge.detail,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white.withValues(
-                        alpha: badge.earned ? 0.55 : 0.3,
+                  SizedBox(
+                    height: 11,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        badge.detail,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: Colors.white.withValues(
+                            alpha: badge.earned ? 0.55 : 0.3,
+                          ),
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                      fontSize: 8.5,
-                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
