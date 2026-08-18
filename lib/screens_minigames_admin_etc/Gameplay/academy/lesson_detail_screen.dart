@@ -787,6 +787,23 @@ String _compoundingExample(int income, LifeStage stage) {
       'came out of your pocket.';
 }
 
+String _taxWithholdingExample(int income, LifeStage stage) {
+  final hourly = stage == LifeStage.allowance ? 12 : 18;
+  final hours = stage == LifeStage.allowance ? 50 : 80;
+  final gross = hourly * hours;
+  final federal = (gross * 0.10).roundToDouble();
+  final socialSecurity = gross * 0.062;
+  final medicare = gross * 0.0145;
+  final net = gross - federal - socialSecurity - medicare;
+  return 'Sam earns $hourly dollars an hour for $hours hours, so gross pay is '
+      '${gross.toStringAsFixed(0)} dollars. If 10 percent is withheld for '
+      'federal income tax, ${federal.toStringAsFixed(2)} dollars comes out. '
+      'Social Security at 6.2 percent is ${socialSecurity.toStringAsFixed(2)} '
+      'dollars, and Medicare at 1.45 percent is '
+      '${medicare.toStringAsFixed(2)} dollars. Take-home pay is about '
+      '${net.toStringAsFixed(2)} dollars.';
+}
+
 class _LessonSection {
   const _LessonSection({required this.title, required this.content});
 
@@ -1562,13 +1579,26 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   'lesson_24': _LessonContent(
     icon: Icons.request_quote_rounded,
     objectives: [
-      'Explain what withholding is and why it happens during the year',
-      'Describe what a refund or a bill at filing time actually means',
-      'Know which documents you need before filing',
+      'Use W-4, W-2 and Form 1040 correctly in a first-job tax story',
+      'Tell marginal and average tax rates apart',
+      'Compare income, payroll, sales and property taxes',
+      'Explain why credits and deductions lower taxes in different ways',
     ],
     keyTerms: {
       'Withholding':
           'tax your employer sends to the government on your behalf as you earn',
+      'W-4':
+          'the form employees use to tell an employer how much federal income tax to withhold',
+      'W-2':
+          'the year-end wage and tax statement an employer sends to the worker and the IRS',
+      'Form 1040': 'the main federal income tax return form for individuals',
+      'Payroll tax':
+          'tax taken from wages for Social Security and Medicare programs',
+      'Marginal tax rate':
+          'the rate that applies to your next dollar of income',
+      'Average tax rate': 'total tax paid divided by total taxable income',
+      'Tax deduction': 'an amount that lowers taxable income',
+      'Tax credit': 'an amount that lowers the tax bill itself',
       'Tax refund':
           'money returned because you overpaid during the year — your own money coming back',
       'Filing':
@@ -1577,17 +1607,38 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
           'the form or setting that tells your employer how much to withhold',
     },
     takeaway:
-        'A big refund is not a prize — it means the government held your money interest-free all year, and your withholding may be set too high.',
+        'Taxes are not just money disappearing — they fund public services, change take-home pay, and reward careful paperwork.',
+    workedExample: WorkedExample(_taxWithholdingExample),
     sections: [
       _LessonSection(
-        title: 'Taxes reduce take-home pay',
+        title: 'Taxes pay for shared services',
         content:
-            'Withholding is money set aside from each paycheck for taxes. It changes how much cash reaches you right now.',
+            'Roads, schools, courts, emergency services and public programs are paid for partly by taxes. Paying tax is one way workers contribute to the community they use every day.',
       ),
       _LessonSection(
-        title: 'Understand the tradeoff',
+        title: 'Your first job starts with forms',
         content:
-            'Too little withholding can create a bill later, while too much means you are giving up cash flow during the year.',
+            'A W-4 tells your employer how much federal income tax to withhold from each paycheck. Later, a W-2 summarizes your wages and withheld taxes for the year. When you file a Form 1040, those numbers are reconciled with what you actually owe.',
+      ),
+      _LessonSection(
+        title: 'Refunds and bills are corrections',
+        content:
+            'Withholding is an estimate. If too much was withheld, you may get a refund. If too little was withheld, you may owe money at filing time. A refund can feel good, but it is usually your own overpaid money coming back.',
+      ),
+      _LessonSection(
+        title: 'Not every tax works the same way',
+        content:
+            'Income tax is based on earnings. Payroll tax funds Social Security and Medicare. Sales tax is added when you buy many goods and services. Property tax is based on the value of property such as a home or car, and often funds local services.',
+      ),
+      _LessonSection(
+        title: 'Marginal is not average',
+        content:
+            'A marginal tax rate applies to the next dollar you earn. An average tax rate is total tax divided by taxable income. In a progressive system, higher chunks of income can be taxed at higher rates without making every dollar taxed at the top rate.',
+      ),
+      _LessonSection(
+        title: 'Credits beat deductions dollar-for-dollar',
+        content:
+            'A deduction lowers taxable income before tax is calculated. A credit lowers the tax bill after it is calculated. Both matter, but a 100 dollar credit cuts the bill by 100 dollars, while a 100 dollar deduction only removes 100 dollars from the income being taxed.',
       ),
     ],
   ),
@@ -1956,7 +2007,8 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Know what to do when something feels off',
     ],
     keyTerms: {
-      'Advance-fee scam': 'paying a small amount to unlock a prize that is not real',
+      'Advance-fee scam':
+          'paying a small amount to unlock a prize that is not real',
       'Phishing': 'a fake message that copies a service you trust',
       'Urgency': 'artificial time pressure used to stop you thinking',
     },
@@ -2232,7 +2284,8 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     ],
     keyTerms: {
       'Employer match': 'money your employer adds when you contribute',
-      'Match formula': 'the rule setting how much they add and up to what limit',
+      'Match formula':
+          'the rule setting how much they add and up to what limit',
       'Contribution rate': 'the percentage of your pay you put in',
     },
     takeaway:

@@ -8,7 +8,7 @@ The app has three pillars:
 | --- | --- | --- |
 | **Life** (main game) | A BitLife-style life simulator. You are born, age up one year at a time, and your choices move Happiness, Health, Smarts, Looks and money. Ends on one of 7 distinct **ending archetypes** (`life_ending.dart`) resolved from your final stats, shown on a dedicated epilogue recap screen instead of the old silent pop-back. | `lib/screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart` |
 | **Market Board** | A Webull-style stock trading board using **real live market data**, priced in in-game coins. Opens on a "Trending Now" strip of real company logos (Wikimedia Commons — `assets/images/stock_logos/`, ~88KB total across 6 tickers) over the always-on ticker tape. | `lib/screens_minigames_admin_etc/Gameplay/minigames_pages/stock_market_page.dart` |
-| **Academy** | Khan-Academy-style units of lessons, quizzes and unit tests — 6 units, each with its own accent colour. Units badge "Recommended for you" against the player's self-described age band — a signal only, never a lock; every unit still unlocks purely by finishing the previous one's test. **Unit 6 (Stocks and Trading) pays out real gold and tradeable shares** via `kLessonPayouts`. | `lib/screens_minigames_admin_etc/Gameplay/academy/` |
+| **Academy** | Khan-Academy-style units of lessons, quizzes and unit tests — 9 units, each with its own accent colour. Units badge "Recommended for you" against the player's self-described age band — a signal only, never a lock; every unit still unlocks purely by finishing the previous one's test. **Unit 5 includes Taxes and Withholding**, and **Unit 6 (Stocks and Trading) pays out real gold and tradeable shares** via `kLessonPayouts`. | `lib/screens_minigames_admin_etc/Gameplay/academy/` |
 
 Supporting features: auth (login / sign-up / welcome), profile, skins &
 customization, daily quests, leaderboard, arcade mini-games, in-app feedback
@@ -197,6 +197,43 @@ denied" instead of a crash).
 `admin_screen.dart`
 
 ### Layout
+
+**Phone UI got cramped and key visuals disappeared**
+The dashboard and Academy had separate compact-mode decisions: the bottom nav
+only reacted to width, the Academy turtle illustration was removed in compact
+layouts, the Current Objective shop/arcade icon was hidden behind `if (!tight)`,
+and profile badges used roomy desktop-ish tiles. On phone-shaped windows this
+made the UI feel oversized, caused the `Enter World` button to overflow, and
+made achievement labels like `Completionist` truncate too aggressively.
+*Fix:* compact sizing now considers height, the turtle and shop visuals scale
+instead of disappearing, the home hero/CTA and Academy metric pills use tighter
+phone spacing, and the badge grid uses denser columns with fixed text bands and
+`FittedBox` scaling for long labels/details.
+*Files:* `pop_navbar.dart`, `home_screen.dart`, `lesson_screen.dart`,
+`profile_screen.dart`, `responsive_layout_test.dart`, `market_resize_test.dart`
+
+**Finance Brawl only accepted keyboard movement**
+Movement was built only from `_pressedKeys`, so WASD/arrow keys worked on
+desktop but a phone/tablet finger drag did nothing. That made Finance Brawl
+technically launch on mobile while being functionally unplayable.
+*Fix:* a transparent drag layer over the game canvas now records a normalized
+touch movement vector, feeds it into the same movement calculation as keyboard
+input, and shows a temporary joystick knob while the finger is down. HUD buttons
+and overlays stay above that layer, so exit/quiz/upgrade interactions still win
+the hit test.
+*Files:* `finance_brawl_game.dart`, `responsive_layout_test.dart`
+
+**Tax lesson existed by title but not as a complete teen-friendly lesson**
+Unit 5 had `Taxes and Withholding`, but the Academy lesson content only covered
+withholding/refunds at a high level. The pasted lesson introduced the actual
+first-job flow — W-4, W-2, Form 1040, payroll taxes, sales/property tax,
+marginal vs average rates, credits, deductions, and paycheck/sales-tax
+scenarios — but none of that was represented in the Academy.
+*Fix:* `lesson_24` now teaches those concepts in the existing lesson-content
+system and includes a worked paycheck example. Unit 5 quiz/test coverage now
+checks W-4 withholding, Social Security/Medicare payroll taxes, sales tax,
+credits vs deductions, and filing for a refund when tax was withheld.
+*Files:* `lesson_detail_screen.dart`, `quiz_bank.dart`
 
 **"Enter World" button's icon+label sat left-aligned instead of centered**
 The `Row` holding them used `mainAxisSize: MainAxisSize.min` inside a `Stack`

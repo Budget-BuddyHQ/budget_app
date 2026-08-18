@@ -1130,6 +1130,31 @@ const List<QuizQuestion> _unit5Quiz = <QuizQuestion>[
         'Your employer forwards estimated tax as you earn. At filing time the '
         'estimate is reconciled, which is why refunds and bills both happen.',
   ),
+  QuizQuestion(
+    id: 'u5q4',
+    skillId: QuizSkills.taxes,
+    prompt: 'Which form tells your employer how much tax to withhold?',
+    options: ['W-2', 'W-4', 'Form 1040', 'A sales receipt'],
+    correctIndex: 1,
+    explanation:
+        'The W-4 is the employee withholding form. A W-2 reports what you '
+        'earned and what was withheld after the year is over.',
+  ),
+  QuizQuestion(
+    id: 'u5q5',
+    skillId: QuizSkills.taxes,
+    prompt: 'Payroll taxes mainly fund:',
+    options: [
+      'Social Security and Medicare',
+      'Private schools',
+      'Sports teams',
+      'Your employer\'s profits',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Payroll taxes include Social Security and Medicare taxes. They are '
+        'separate from ordinary federal income tax withholding.',
+  ),
 ];
 
 const List<QuizQuestion> _unit5Test = <QuizQuestion>[
@@ -1227,6 +1252,50 @@ const List<QuizQuestion> _unit5Test = <QuizQuestion>[
     misconception:
         'Lifestyle creep is invisible because nothing goes wrong — the surplus '
         'just stops existing.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u5t7',
+    skillId: QuizSkills.taxes,
+    prompt: r'A $80 pair of jeans has 6% sales tax. The total price is:',
+    options: [r'$80.60', r'$84.80', r'$86.00', r'$88.00'],
+    correctIndex: 1,
+    explanation:
+        r'6% of $80 is $4.80, so the total is $84.80. Sales tax is added at '
+        'purchase rather than withheld from a paycheck.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u5t8',
+    skillId: QuizSkills.taxes,
+    prompt: 'A tax credit is different from a deduction because a credit:',
+    options: [
+      'Lowers taxable income before tax is calculated',
+      'Only applies to sales tax',
+      'Lowers the actual tax bill dollar-for-dollar',
+      'Increases withholding automatically',
+    ],
+    correctIndex: 2,
+    explanation:
+        'Deductions reduce taxable income. Credits reduce the tax owed after '
+        'the bill is calculated.',
+  ),
+  QuizQuestion(
+    id: 'u5t9',
+    skillId: QuizSkills.taxes,
+    prompt:
+        'Lucas earned summer lifeguard wages below the filing threshold, but '
+        'tax was withheld. A smart next step is to:',
+    options: [
+      'Ignore it because filing is impossible',
+      'File if needed or useful so withheld tax can be refunded',
+      'Claim payroll taxes from his employer in cash',
+      'Wait three years before checking the W-2',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Even when income is low enough that filing may not be required, filing '
+        'can still be useful if income tax was withheld and a refund is due.',
     difficulty: QuizDifficulty.stretch,
   ),
 ];
@@ -1394,7 +1463,8 @@ const List<QuizQuestion> _unit6Test = <QuizQuestion>[
   QuizQuestion(
     id: 'u6t3',
     skillId: QuizSkills.timeInMarket,
-    prompt: 'Selling everything during a sharp crash most often backfires because:',
+    prompt:
+        'Selling everything during a sharp crash most often backfires because:',
     options: [
       'Selling is never allowed',
       'The strongest recovery days tend to come soon after the worst days',
