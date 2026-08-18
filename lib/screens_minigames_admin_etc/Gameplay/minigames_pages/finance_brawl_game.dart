@@ -104,13 +104,13 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   /// the painter falls back to a letter in that case.
   ui.Image? _profileImage;
   String? _profileImageUrlLoaded;
-  
-
 
   // 3. Add the loading helper method:
   Future<void> _loadbrawlTreeSprite() async {
     final ByteData data = await rootBundle.load(AppAssets.brawlTreeSprite);
-    final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    final ui.Codec codec = await ui.instantiateImageCodec(
+      data.buffer.asUint8List(),
+    );
     final ui.FrameInfo fi = await codec.getNextFrame();
     if (mounted) {
       setState(() {
@@ -121,7 +121,9 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
 
   Future<void> _loadbrawlRockSprite() async {
     final ByteData data = await rootBundle.load(AppAssets.brawlRockSprite);
-    final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    final ui.Codec codec = await ui.instantiateImageCodec(
+      data.buffer.asUint8List(),
+    );
     final ui.FrameInfo fi = await codec.getNextFrame();
     if (mounted) {
       setState(() {
@@ -131,59 +133,69 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   }
 
   Future<void> _loadbrawlDollarSprite() async {
-  final ByteData data = await rootBundle.load(AppAssets.brawlDollarSprite);
-  final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-  final ui.FrameInfo fi = await codec.getNextFrame();
-  if (mounted) {
-    setState(() {
-      _dollarImage = fi.image;
-    });
-  }
-}
-
-Future<void> _loadbrawlEnemyOneSprite() async {
-  final ByteData data = await rootBundle.load(AppAssets.brawlEnemyOneSprite);
-  final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-  final ui.FrameInfo fi = await codec.getNextFrame();
-  if (mounted) {
-    setState(() {
-      _enemyOneImage = fi.image;
-    });
-  }
-}
-
-Future<void> _loadbrawlEnemyTwoSprite() async {
-  final ByteData data = await rootBundle.load(AppAssets.brawlEnemyTwoSprite);
-  final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-  final ui.FrameInfo fi = await codec.getNextFrame();
-  if (mounted) {
-    setState(() {
-      _enemyTwoImage = fi.image;
-    });
-  }
+    final ByteData data = await rootBundle.load(AppAssets.brawlDollarSprite);
+    final ui.Codec codec = await ui.instantiateImageCodec(
+      data.buffer.asUint8List(),
+    );
+    final ui.FrameInfo fi = await codec.getNextFrame();
+    if (mounted) {
+      setState(() {
+        _dollarImage = fi.image;
+      });
+    }
   }
 
-Future<void> _loadbrawlBossSprite() async {
-  final ByteData data = await rootBundle.load(AppAssets.brawlBossSprite);
-  final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-  final ui.FrameInfo fi = await codec.getNextFrame();
-  if (mounted) {
-    setState(() {
-      _bossImage = fi.image;
-    });
-  }
+  Future<void> _loadbrawlEnemyOneSprite() async {
+    final ByteData data = await rootBundle.load(AppAssets.brawlEnemyOneSprite);
+    final ui.Codec codec = await ui.instantiateImageCodec(
+      data.buffer.asUint8List(),
+    );
+    final ui.FrameInfo fi = await codec.getNextFrame();
+    if (mounted) {
+      setState(() {
+        _enemyOneImage = fi.image;
+      });
+    }
   }
 
-Future<void> _loadbrawlChestSprite() async {
-  final ByteData data = await rootBundle.load(AppAssets.brawlChestSprite);
-  final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-  final ui.FrameInfo fi = await codec.getNextFrame();
-  if (mounted) {
-    setState(() {
-      _chestImage = fi.image;
-    });
+  Future<void> _loadbrawlEnemyTwoSprite() async {
+    final ByteData data = await rootBundle.load(AppAssets.brawlEnemyTwoSprite);
+    final ui.Codec codec = await ui.instantiateImageCodec(
+      data.buffer.asUint8List(),
+    );
+    final ui.FrameInfo fi = await codec.getNextFrame();
+    if (mounted) {
+      setState(() {
+        _enemyTwoImage = fi.image;
+      });
+    }
   }
-}
+
+  Future<void> _loadbrawlBossSprite() async {
+    final ByteData data = await rootBundle.load(AppAssets.brawlBossSprite);
+    final ui.Codec codec = await ui.instantiateImageCodec(
+      data.buffer.asUint8List(),
+    );
+    final ui.FrameInfo fi = await codec.getNextFrame();
+    if (mounted) {
+      setState(() {
+        _bossImage = fi.image;
+      });
+    }
+  }
+
+  Future<void> _loadbrawlChestSprite() async {
+    final ByteData data = await rootBundle.load(AppAssets.brawlChestSprite);
+    final ui.Codec codec = await ui.instantiateImageCodec(
+      data.buffer.asUint8List(),
+    );
+    final ui.FrameInfo fi = await codec.getNextFrame();
+    if (mounted) {
+      setState(() {
+        _chestImage = fi.image;
+      });
+    }
+  }
 
   /// Resolves the profile picture URL into a raw [ui.Image] the canvas can
   /// draw. Unlike the sprites above this is a network image, so it goes
@@ -225,6 +237,9 @@ Future<void> _loadbrawlChestSprite() async {
   final double _rockRadius = 20.0;
 
   final Set<LogicalKeyboardKey> _pressedKeys = {};
+  Offset? _touchMoveAnchor;
+  Offset _touchMoveVector = Offset.zero;
+  Offset _touchMoveKnob = Offset.zero;
 
   int _debtsCleared = 0;
   int _debtsNeededForLevelUp = 6;
@@ -1492,7 +1507,7 @@ Future<void> _loadbrawlChestSprite() async {
     ),
   ];
 
- @override
+  @override
   void initState() {
     super.initState();
     _loadbrawlTreeSprite();
@@ -1581,6 +1596,8 @@ Future<void> _loadbrawlChestSprite() async {
           _pressedKeys.contains(LogicalKeyboardKey.keyD)) {
         dx += 1.0;
       }
+      dx += _touchMoveVector.dx;
+      dy += _touchMoveVector.dy;
 
       if (dx != 0 || dy != 0) {
         double len = sqrt(dx * dx + dy * dy);
@@ -1880,63 +1897,61 @@ Future<void> _loadbrawlChestSprite() async {
   }
 
   void _spawnLiability() {
-  if (!mounted) return;
+    if (!mounted) return;
 
-  double angle = _rand.nextDouble() * pi * 2;
-  double spawnDist = 520.0;
-  double x = (_playerPos.dx + cos(angle) * spawnDist).clamp(
-    20.0,
-    _mapWidth - 20.0,
-  );
-  double y = (_playerPos.dy + sin(angle) * spawnDist).clamp(
-    20.0,
-    _mapHeight - 20.0,
-  );
+    double angle = _rand.nextDouble() * pi * 2;
+    double spawnDist = 520.0;
+    double x = (_playerPos.dx + cos(angle) * spawnDist).clamp(
+      20.0,
+      _mapWidth - 20.0,
+    );
+    double y = (_playerPos.dy + sin(angle) * spawnDist).clamp(
+      20.0,
+      _mapHeight - 20.0,
+    );
 
-  // Incremental Health and Damage scaling per wave
-  double scaleFactor = pow(1.12, _wave - 1).toDouble();
+    // Incremental Health and Damage scaling per wave
+    double scaleFactor = pow(1.12, _wave - 1).toDouble();
 
-  List<String> debtNames = [
-    "Credit Card Debt",
-    "Payday Loan",
-    "Medical Bill",
-    "Auto Loan",
-  ];
-  String name = debtNames[_rand.nextInt(debtNames.length)];
+    List<String> debtNames = [
+      "Credit Card Debt",
+      "Payday Loan",
+      "Medical Bill",
+      "Auto Loan",
+    ];
+    String name = debtNames[_rand.nextInt(debtNames.length)];
 
-  Color color = const Color(0xFFE25C5C);
-  double hp = (40.0 + (_wave * 10)) * scaleFactor;
-  double speed = 85.0 + _rand.nextInt(30);
-  double radius = 30.0;
-  int gold = 5;
-  
- 
-  bool isEnemyTwo = false; 
+    Color color = const Color(0xFFE25C5C);
+    double hp = (40.0 + (_wave * 10)) * scaleFactor;
+    double speed = 85.0 + _rand.nextInt(30);
+    double radius = 30.0;
+    int gold = 5;
 
- 
-  if (_wave >= 3 && _rand.nextDouble() > 0.6) {
-    name = "Subprime Mortgage";
-    color = const Color(0xFFA65CE2); // Purple tint matching your new palette!
-    hp *= 1.8;
-    radius = 30.0;
-    gold = 12;
-    isEnemyTwo = true;
-  }
+    bool isEnemyTwo = false;
 
-  _liabilities.add(
-    _FinancialLiability(
-      name: name,
-      pos: Offset(x, y),
-      principalRemaining: hp,
-      maxPrincipal: hp,
-      speed: speed,
-      radius: radius,
-      color: color,
-      drainRate: (450.0 + (_wave * 50.0)) * scaleFactor,
-      rewardGold: gold,
-      isEnemyTwo: isEnemyTwo,
-    ),
-  );
+    if (_wave >= 3 && _rand.nextDouble() > 0.6) {
+      name = "Subprime Mortgage";
+      color = const Color(0xFFA65CE2); // Purple tint matching your new palette!
+      hp *= 1.8;
+      radius = 30.0;
+      gold = 12;
+      isEnemyTwo = true;
+    }
+
+    _liabilities.add(
+      _FinancialLiability(
+        name: name,
+        pos: Offset(x, y),
+        principalRemaining: hp,
+        maxPrincipal: hp,
+        speed: speed,
+        radius: radius,
+        color: color,
+        drainRate: (450.0 + (_wave * 50.0)) * scaleFactor,
+        rewardGold: gold,
+        isEnemyTwo: isEnemyTwo,
+      ),
+    );
   }
 
   void _spawnMarketCrashBoss() {
@@ -2203,6 +2218,37 @@ Future<void> _loadbrawlChestSprite() async {
     }
   }
 
+  void _startTouchMove(DragStartDetails details) {
+    _keyboardFocusNode.requestFocus();
+    setState(() {
+      _touchMoveAnchor = details.localPosition;
+      _touchMoveVector = Offset.zero;
+      _touchMoveKnob = Offset.zero;
+    });
+  }
+
+  void _updateTouchMove(DragUpdateDetails details) {
+    final anchor = _touchMoveAnchor ?? details.localPosition;
+    final delta = details.localPosition - anchor;
+    final distance = delta.distance;
+    final vector = distance <= 6 ? Offset.zero : delta / distance;
+    setState(() {
+      _touchMoveVector = vector;
+      _touchMoveKnob = vector * min(distance, 38.0);
+    });
+  }
+
+  void _stopTouchMove([DragEndDetails? _]) {
+    if (_touchMoveAnchor == null && _touchMoveVector == Offset.zero) {
+      return;
+    }
+    setState(() {
+      _touchMoveAnchor = null;
+      _touchMoveVector = Offset.zero;
+      _touchMoveKnob = Offset.zero;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<UserStatsController>();
@@ -2287,6 +2333,34 @@ Future<void> _loadbrawlChestSprite() async {
                   ),
                 ),
 
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onPanStart: _startTouchMove,
+                    onPanUpdate: _updateTouchMove,
+                    onPanEnd: _stopTouchMove,
+                    onPanCancel: _stopTouchMove,
+                  ),
+                ),
+
+                if (_touchMoveAnchor != null)
+                  Positioned(
+                    left: (_touchMoveAnchor!.dx - 54).clamp(
+                      12.0,
+                      max(12.0, _canvasSize.width - 120),
+                    ),
+                    top: (_touchMoveAnchor!.dy - 54).clamp(
+                      MediaQuery.of(context).padding.top + 72,
+                      max(
+                        MediaQuery.of(context).padding.top + 72,
+                        _canvasSize.height - 126,
+                      ),
+                    ),
+                    child: IgnorePointer(
+                      child: _TouchJoystick(knobOffset: _touchMoveKnob),
+                    ),
+                  ),
+
                 Positioned(
                   top: MediaQuery.of(context).padding.top + 12,
                   left: 0,
@@ -2294,7 +2368,9 @@ Future<void> _loadbrawlChestSprite() async {
                   child: Align(
                     alignment: Alignment.topCenter,
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 650), // Adjust width as desired
+                      constraints: const BoxConstraints(
+                        maxWidth: 650,
+                      ), // Adjust width as desired
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: _buildHud(context),
@@ -2312,7 +2388,7 @@ Future<void> _loadbrawlChestSprite() async {
                 if (_isQuizOpen) _buildQuizOverlay(),
                 if (_isUpgradeChoiceOpen) _buildUpgradeOverlay(),
                 if (_isGameOver || _isSavingAndExiting) _buildGameOverOverlay(),
-                ],
+              ],
             );
           },
         ),
@@ -2321,76 +2397,72 @@ Future<void> _loadbrawlChestSprite() async {
   }
 
   Widget _buildHud(BuildContext context) {
-  final isCrisis = _wave % 5 == 0;
-  final balanceAccent = _bankBalance < 2500 ? _brawlDanger : _brawlMint;
+    final isCrisis = _wave % 5 == 0;
+    final balanceAccent = _bankBalance < 2500 ? _brawlDanger : _brawlMint;
 
-  final wavePanel = _HudStatPanel(
-    icon: Icons.waves_rounded,
-    label: isCrisis ? 'CRISIS' : 'WAVE',
-    value: 'WAVE $_wave',
-    detail: isCrisis
-        ? 'Neutralize Market Crisis'
-        : 'Debts Paid $_debtsCleared/$_debtsNeededForLevelUp',
-    accent: isCrisis ? _brawlDanger : _brawlMint,
-    alignStart: false,
-  );
+    final wavePanel = _HudStatPanel(
+      icon: Icons.waves_rounded,
+      label: isCrisis ? 'CRISIS' : 'WAVE',
+      value: 'WAVE $_wave',
+      detail: isCrisis
+          ? 'Neutralize Market Crisis'
+          : 'Debts Paid $_debtsCleared/$_debtsNeededForLevelUp',
+      accent: isCrisis ? _brawlDanger : _brawlMint,
+      alignStart: false,
+    );
 
-  final balancePanel = _HudStatPanel(
-    icon: Icons.account_balance_wallet_rounded,
-    label: 'NET WORTH',
-    value: '\$$_bankBalance',
-    detail: "Don't Let it Hit Zero!",
-    accent: balanceAccent,
-    alignStart: false,
-  );
+    final balancePanel = _HudStatPanel(
+      icon: Icons.account_balance_wallet_rounded,
+      label: 'NET WORTH',
+      value: '\$$_bankBalance',
+      detail: "Don't Let it Hit Zero!",
+      accent: balanceAccent,
+      alignStart: false,
+    );
 
-  return Row(
-    children: [
-      Expanded(child: wavePanel),
-      const SizedBox(width: 10),
-      Expanded(child: balancePanel),
-    ],
-  );
-}
-
-Widget _buildRightControls(BuildContext context) {
-  final rewardPanel = _PixelPanel(
-    accent: _brawlGold,
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
+    return Row(
       children: [
-        const Icon(Icons.toll_rounded, color: _brawlGold, size: 20),
-        const SizedBox(width: 7),
-        Text(
-          '$_goldAccumulated',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.pixelifySans(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        Expanded(child: wavePanel),
+        const SizedBox(width: 10),
+        Expanded(child: balancePanel),
       ],
-    ),
-  );
+    );
+  }
 
-  final exitButton = _PixelIconButton(
-    icon: Icons.logout_rounded,
-    accent: _brawlRed,
-    tooltip: 'Pause and quit',
-    onPressed: () => _showPauseDialog(context),
-  );
+  Widget _buildRightControls(BuildContext context) {
+    final rewardPanel = _PixelPanel(
+      accent: _brawlGold,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.toll_rounded, color: _brawlGold, size: 20),
+          const SizedBox(width: 7),
+          Text(
+            '$_goldAccumulated',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.pixelifySans(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
 
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      rewardPanel,
-      const SizedBox(width: 10),
-      exitButton,
-    ],
-  );
+    final exitButton = _PixelIconButton(
+      icon: Icons.logout_rounded,
+      accent: _brawlRed,
+      tooltip: 'Pause and quit',
+      onPressed: () => _showPauseDialog(context),
+    );
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [rewardPanel, const SizedBox(width: 10), exitButton],
+    );
   }
 
   void _showPauseDialog(BuildContext context) {
@@ -2570,7 +2642,7 @@ Widget _buildRightControls(BuildContext context) {
     );
   }
 
-Widget _buildUpgradeOverlay() {
+  Widget _buildUpgradeOverlay() {
     final upgrades = _getUpgradeOptions().take(3).toList();
     return _BrawlOverlayBackdrop(
       padding: const EdgeInsets.all(24),
@@ -2653,7 +2725,9 @@ Widget _buildUpgradeOverlay() {
                                         up.description,
                                         textAlign: TextAlign.center,
                                         style: GoogleFonts.quicksand(
-                                          color: Colors.white.withValues(alpha: 0.72),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.72,
+                                          ),
                                           fontSize: 11,
                                           fontWeight: FontWeight.w700,
                                           height: 1.25,
@@ -2816,6 +2890,44 @@ class _PixelPanel extends StatelessWidget {
         ],
       ),
       child: Padding(padding: padding, child: child),
+    );
+  }
+}
+
+class _TouchJoystick extends StatelessWidget {
+  const _TouchJoystick({required this.knobOffset});
+
+  final Offset knobOffset;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 108,
+      height: 108,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: _brawlPanelDeep.withValues(alpha: 0.46),
+          border: Border.all(
+            color: _brawlMint.withValues(alpha: 0.55),
+            width: 2,
+          ),
+        ),
+        child: Center(
+          child: Transform.translate(
+            offset: knobOffset,
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _brawlMint.withValues(alpha: 0.72),
+                border: Border.all(color: Colors.white70, width: 2),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -3114,117 +3226,106 @@ class _BrawlPainter extends CustomPainter {
   final ui.Image? treeImage;
   final ui.Image? rockImage;
   final ui.Image? dollarImage;
+
   /// The player's uploaded avatar, or null to fall back to a letter.
   final ui.Image? profileImage;
   final ui.Image? enemyOneImage;
   final ui.Image? enemyTwoImage;
   final ui.Image? bossImage;
   final ui.Image? chestImage;
-  
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
     canvas.translate(camOffset.dx, camOffset.dy);
-// -------------------------------------------------------------------------
-// SMOOTH RETRO STONE BORDER (No Spikes - Clean Rim Only)
-// -------------------------------------------------------------------------
-const double wallThickness = 20.0;
-const double segmentLength = 24.0;
+    // -------------------------------------------------------------------------
+    // SMOOTH RETRO STONE BORDER (No Spikes - Clean Rim Only)
+    // -------------------------------------------------------------------------
+    const double wallThickness = 20.0;
+    const double segmentLength = 24.0;
 
-final baseStonePaint = Paint()
-  ..color = const Color(0xFF595858)
-  ..style = PaintingStyle.stroke
-  ..strokeWidth = wallThickness;
+    final baseStonePaint = Paint()
+      ..color = const Color(0xFF595858)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = wallThickness;
 
-final highlightPaint = Paint()
-  ..color = const Color(0xFF6E7681)
-  ..strokeWidth = 1.5;
+    final highlightPaint = Paint()
+      ..color = const Color(0xFF6E7681)
+      ..strokeWidth = 1.5;
 
-final shadowPaint = Paint()
-  ..color = const Color(0xFF6E7681)
-  ..strokeWidth = 1.5;
+    final shadowPaint = Paint()
+      ..color = const Color(0xFF6E7681)
+      ..strokeWidth = 1.5;
 
-final innerLinePaint = Paint()
-  ..color = const Color(0xFF484F58)
-  ..style = PaintingStyle.stroke
-  ..strokeWidth = 2.0;
+    final innerLinePaint = Paint()
+      ..color = const Color(0xFF484F58)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
 
-canvas.drawRect(
-  Rect.fromLTWH(
-    -wallThickness / 2,
-    -wallThickness / 2,
-    mapWidth + wallThickness,
-    mapHeight + wallThickness,
-  ),
-  baseStonePaint,
-);
+    canvas.drawRect(
+      Rect.fromLTWH(
+        -wallThickness / 2,
+        -wallThickness / 2,
+        mapWidth + wallThickness,
+        mapHeight + wallThickness,
+      ),
+      baseStonePaint,
+    );
 
-canvas.drawLine(
-  Offset(-wallThickness, -wallThickness),
-  Offset(mapWidth + wallThickness, -wallThickness),
-  highlightPaint,
-);
+    canvas.drawLine(
+      Offset(-wallThickness, -wallThickness),
+      Offset(mapWidth + wallThickness, -wallThickness),
+      highlightPaint,
+    );
 
-canvas.drawLine(
-  Offset(-wallThickness, -wallThickness),
-  Offset(-wallThickness, mapHeight + wallThickness),
-  highlightPaint,
-);
+    canvas.drawLine(
+      Offset(-wallThickness, -wallThickness),
+      Offset(-wallThickness, mapHeight + wallThickness),
+      highlightPaint,
+    );
 
-canvas.drawLine(
-  Offset(-wallThickness, mapHeight + wallThickness),
-  Offset(mapWidth + wallThickness, mapHeight + wallThickness),
-  shadowPaint,
-);
+    canvas.drawLine(
+      Offset(-wallThickness, mapHeight + wallThickness),
+      Offset(mapWidth + wallThickness, mapHeight + wallThickness),
+      shadowPaint,
+    );
 
-canvas.drawLine(
-  Offset(mapWidth + wallThickness, -wallThickness),
-  Offset(mapWidth + wallThickness, mapHeight + wallThickness),
-  shadowPaint,
-);
+    canvas.drawLine(
+      Offset(mapWidth + wallThickness, -wallThickness),
+      Offset(mapWidth + wallThickness, mapHeight + wallThickness),
+      shadowPaint,
+    );
 
-for (double x = 0; x < mapWidth; x += segmentLength) {
-  // Top Wall Seams
-  canvas.drawLine(
-    Offset(x, -wallThickness),
-    Offset(x, 0),
-    highlightPaint,
-  );
+    for (double x = 0; x < mapWidth; x += segmentLength) {
+      // Top Wall Seams
+      canvas.drawLine(Offset(x, -wallThickness), Offset(x, 0), highlightPaint);
 
-  canvas.drawLine(
-    Offset(x, mapHeight),
-    Offset(x, mapHeight + wallThickness),
-    shadowPaint,
-  );
-}
+      canvas.drawLine(
+        Offset(x, mapHeight),
+        Offset(x, mapHeight + wallThickness),
+        shadowPaint,
+      );
+    }
 
-for (double y = 0; y < mapHeight; y += segmentLength) {
-  // Left Wall Seams
-  canvas.drawLine(
-    Offset(-wallThickness, y),
-    Offset(0, y),
-    highlightPaint,
-  );
-  // Right Wall Seams
-  canvas.drawLine(
-    Offset(mapWidth, y),
-    Offset(mapWidth + wallThickness, y),
-    shadowPaint,
-  );
-}
+    for (double y = 0; y < mapHeight; y += segmentLength) {
+      // Left Wall Seams
+      canvas.drawLine(Offset(-wallThickness, y), Offset(0, y), highlightPaint);
+      // Right Wall Seams
+      canvas.drawLine(
+        Offset(mapWidth, y),
+        Offset(mapWidth + wallThickness, y),
+        shadowPaint,
+      );
+    }
 
-// 4. Crisp Inner Line Framing the Arena Field
-canvas.drawRect(
-  Rect.fromLTWH(0, 0, mapWidth, mapHeight),
-  innerLinePaint,
-);
+    // 4. Crisp Inner Line Framing the Arena Field
+    canvas.drawRect(Rect.fromLTWH(0, 0, mapWidth, mapHeight), innerLinePaint);
 
     for (final rock in rockPositions) {
       if (rockImage != null) {
         final Rect rockRect = Rect.fromCenter(
           center: rock,
-          width: rockRadius * 2.4,  // Adjust size multiplier as needed
+          width: rockRadius * 2.4, // Adjust size multiplier as needed
           height: rockRadius * 2.4,
         );
         paintImage(
@@ -3279,54 +3380,57 @@ canvas.drawRect(
       ..sort((a, b) => (b.isBoss ? 1 : 0).compareTo(a.isBoss ? 1 : 0));
 
     for (final mob in sortedLiabilities) {
-  // 1. Select the correct sprite based on enemy hierarchy
-  ui.Image? spriteToDraw;
-  
-  if (mob.isBoss) {
-    spriteToDraw = bossImage;
-  } else if (mob.isEnemyTwo) {
-    spriteToDraw = enemyTwoImage;
-  } else {
-    spriteToDraw = enemyOneImage;
-  }
+      // 1. Select the correct sprite based on enemy hierarchy
+      ui.Image? spriteToDraw;
 
-  // 2. Render Sprite or Fallback Circle
-  if (spriteToDraw != null) {
-    final Rect enemyRect = Rect.fromCircle(
-      center: mob.pos,
-      radius: mob.radius,
-    );
-    paintImage(
-      canvas: canvas,
-      rect: enemyRect,
-      image: spriteToDraw,
-      fit: BoxFit.contain,
-      filterQuality: FilterQuality.none, // Keeps pixel art sharp!
-    );
-  } else {
-    canvas.drawCircle(mob.pos, mob.radius, Paint()..color = mob.color);
-  }
+      if (mob.isBoss) {
+        spriteToDraw = bossImage;
+      } else if (mob.isEnemyTwo) {
+        spriteToDraw = enemyTwoImage;
+      } else {
+        spriteToDraw = enemyOneImage;
+      }
 
-  // 3. Health Bar Rendering
-  double hpPercent = (mob.principalRemaining / mob.maxPrincipal).clamp(0.0, 1.0);
-  final barW = mob.radius * 2.2;
-  final barH = mob.isBoss ? 8.0 : 4.0;
-  final barLeft = mob.pos.dx - (barW / 2);
-  final barTop = mob.pos.dy - mob.radius - (mob.isBoss ? 18 : 10);
+      // 2. Render Sprite or Fallback Circle
+      if (spriteToDraw != null) {
+        final Rect enemyRect = Rect.fromCircle(
+          center: mob.pos,
+          radius: mob.radius,
+        );
+        paintImage(
+          canvas: canvas,
+          rect: enemyRect,
+          image: spriteToDraw,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.none, // Keeps pixel art sharp!
+        );
+      } else {
+        canvas.drawCircle(mob.pos, mob.radius, Paint()..color = mob.color);
+      }
 
-  canvas.drawRect(
-    Rect.fromLTWH(barLeft, barTop, barW, barH),
-    Paint()..color = Colors.black45,
-  );
+      // 3. Health Bar Rendering
+      double hpPercent = (mob.principalRemaining / mob.maxPrincipal).clamp(
+        0.0,
+        1.0,
+      );
+      final barW = mob.radius * 2.2;
+      final barH = mob.isBoss ? 8.0 : 4.0;
+      final barLeft = mob.pos.dx - (barW / 2);
+      final barTop = mob.pos.dy - mob.radius - (mob.isBoss ? 18 : 10);
 
-  canvas.drawRect(
-    Rect.fromLTWH(barLeft, barTop, barW * hpPercent, barH),
-    Paint()
-      ..color = mob.isBoss
-          ? const Color(0xFFFF2F55)
-          : const Color(0xFFE25C5C),
-  );
-  }
+      canvas.drawRect(
+        Rect.fromLTWH(barLeft, barTop, barW, barH),
+        Paint()..color = Colors.black45,
+      );
+
+      canvas.drawRect(
+        Rect.fromLTWH(barLeft, barTop, barW * hpPercent, barH),
+        Paint()
+          ..color = mob.isBoss
+              ? const Color(0xFFFF2F55)
+              : const Color(0xFFE25C5C),
+      );
+    }
     // Render Projectiles (Player Coins vs Boss Threat Spheres)
     final playerCoinPaint = Paint()..color = const Color(0xFFFFD700);
     final playerCoinBorder = Paint()
@@ -3362,65 +3466,66 @@ canvas.drawRect(
     }
 
     for (final chest in chests) {
-  if (chestImage != null) {
-    final Rect chestRect = Rect.fromCenter(
-      center: chest.pos,
-      width: chestRadius * 2.8,
-      height: chestRadius * 2.8,
-    );
-    paintImage(
-      canvas: canvas,
-      rect: chestRect,
-      image: chestImage!,
-      fit: BoxFit.contain,
-      filterQuality: FilterQuality.none, // Keeps pixel art crisp
-    );
-  } else {
-    // Fallback circle while image asset is loading
-    final chestPaint = Paint()..color = const Color(0xFFE1BB72);
-    canvas.drawCircle(chest.pos, chestRadius, chestPaint);
-  }
-}
-
-    if (emergencyFundLevel > 0) {
-  const double billWidth = 84.0;  
-  const double billHeight = 52.0; 
-
-  final double shieldRadius = 55.0 + (emergencyFundLevel * 10.0);
-  final int shieldCount = min(4, 1 + emergencyFundLevel);
-
-  for (int s = 0; s < shieldCount; s++) {
-    final double angleOffset = shieldAngle + (s * (2 * pi / shieldCount));
-    final Offset shieldPos = playerPos +
-        Offset(cos(angleOffset), sin(angleOffset)) * shieldRadius;
-
-    canvas.save();
-    
-    canvas.translate(shieldPos.dx, shieldPos.dy);
-    canvas.rotate(angleOffset + (pi / 2)); 
-
-    final Rect billRect = Rect.fromCenter(
-      center: Offset.zero,
-      width: billWidth,
-      height: billHeight,
-    );
-
-    if (dollarImage != null) {
-      paintImage(
-        canvas: canvas,
-        rect: billRect,
-        image: dollarImage!,
-        fit: BoxFit.contain,
-        filterQuality: FilterQuality.none,
-      );
-    } else {
-      final fallbackPaint = Paint()..color = const Color(0xFF00FF88);
-      canvas.drawRect(billRect, fallbackPaint);
+      if (chestImage != null) {
+        final Rect chestRect = Rect.fromCenter(
+          center: chest.pos,
+          width: chestRadius * 2.8,
+          height: chestRadius * 2.8,
+        );
+        paintImage(
+          canvas: canvas,
+          rect: chestRect,
+          image: chestImage!,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.none, // Keeps pixel art crisp
+        );
+      } else {
+        // Fallback circle while image asset is loading
+        final chestPaint = Paint()..color = const Color(0xFFE1BB72);
+        canvas.drawCircle(chest.pos, chestRadius, chestPaint);
+      }
     }
 
-    canvas.restore();
-  }
-}
+    if (emergencyFundLevel > 0) {
+      const double billWidth = 84.0;
+      const double billHeight = 52.0;
+
+      final double shieldRadius = 55.0 + (emergencyFundLevel * 10.0);
+      final int shieldCount = min(4, 1 + emergencyFundLevel);
+
+      for (int s = 0; s < shieldCount; s++) {
+        final double angleOffset = shieldAngle + (s * (2 * pi / shieldCount));
+        final Offset shieldPos =
+            playerPos +
+            Offset(cos(angleOffset), sin(angleOffset)) * shieldRadius;
+
+        canvas.save();
+
+        canvas.translate(shieldPos.dx, shieldPos.dy);
+        canvas.rotate(angleOffset + (pi / 2));
+
+        final Rect billRect = Rect.fromCenter(
+          center: Offset.zero,
+          width: billWidth,
+          height: billHeight,
+        );
+
+        if (dollarImage != null) {
+          paintImage(
+            canvas: canvas,
+            rect: billRect,
+            image: dollarImage!,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.none,
+          );
+        } else {
+          final fallbackPaint = Paint()..color = const Color(0xFF00FF88);
+          canvas.drawRect(billRect, fallbackPaint);
+        }
+
+        canvas.restore();
+      }
+    }
 
     // Player
     canvas.drawCircle(
