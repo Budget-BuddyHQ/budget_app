@@ -1869,6 +1869,13 @@ void initState() {
             _bankBalance = 0;
             _endGame();
           }
+          double mobDrain = ((35.0 * 2) * dt);
+          
+          mob.principalRemaining -= mobDrain;
+          _spawnExplosion(mob.pos, mob.color);
+          if (mob.principalRemaining <= 0) {
+            _onLiabilityCleared(i, mob);
+          }
         }
       }
 
@@ -2193,7 +2200,7 @@ void initState() {
       BrawlUpgrade(
         name: "Establish Emergency Fund",
         description: _emergencyFundLevel == 0
-            ? "Create revolving cash shield damaging touching debts"
+            ? "Create revolving cash shield damaging touching debts (+1 Fund Level)"
             : "Expand cash shield radius & contact damage (Level ${_emergencyFundLevel + 1})",
         icon: Icons.shield_rounded,
         action: () => _emergencyFundLevel++,
@@ -2204,6 +2211,21 @@ void initState() {
         icon: Icons.directions_run_rounded,
         action: () => _playerSpeed += 40.0,
       ),
+      BrawlUpgrade(
+        name: "Performance Bonus",
+        description: "Increases bank balance (+10% Net Worth, max \$10,000)",
+        icon: Icons.savings,
+        action: () {
+          int bonus = (_bankBalance * 0.1).round();
+          int newBalance = _bankBalance + bonus;
+
+          if (newBalance > 10000) {
+            _bankBalance = 10000;
+          } else {
+            _bankBalance = newBalance;
+          }
+        },
+      )
     ]..shuffle(_rand);
   }
 
