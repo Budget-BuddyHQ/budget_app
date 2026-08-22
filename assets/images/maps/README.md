@@ -1,5 +1,15 @@
 # Adventure map
 
+## `pending_export/`
+Your first map export landed here (`map (1).png` + `loading_screen/map.json` +
+`loading_screen/spritesheet.png`), but `map.json` is **not Tiled JSON** — it's
+a custom `{tileSize, mapWidth, mapHeight, layers}` schema from whatever tool
+made it, missing the `orientation`/`tilesets` fields Bonfire's `TiledAssetReader`
+needs. It won't load as-is. Re-export from Tiled as JSON (see Format below) and
+drop the real `adventure_map.json` directly in this folder, or say the word and
+I'll write a small converter for this schema instead.
+
+
 Drop your exported map here as `adventure_map.json`, plus whatever tileset
 image(s) it references, in this same folder. `AdventureWorldScreen`
 (`lib/screens_minigames_admin_etc/Gameplay/adventure/adventure_world_screen.dart`)
