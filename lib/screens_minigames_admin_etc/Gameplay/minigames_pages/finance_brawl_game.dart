@@ -1508,43 +1508,88 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _loadbrawlTreeSprite();
-    _loadbrawlRockSprite();
-    _loadbrawlDollarSprite();
-    _loadbrawlEnemyOneSprite();
-    _loadbrawlEnemyTwoSprite();
-    _loadbrawlBossSprite();
-    _loadbrawlChestSprite();
+void initState() {
+  super.initState();
+  _loadbrawlTreeSprite();
+  _loadbrawlRockSprite();
+  _loadbrawlDollarSprite();
+  _loadbrawlEnemyOneSprite();
+  _loadbrawlEnemyTwoSprite();
+  _loadbrawlBossSprite();
+  _loadbrawlChestSprite();
 
-    for (int i = 0; i < 20; i++) {
-      Offset pos = Offset(
+  const Offset playerStartPos = Offset(800, 800);
+  const double minTreeRockDistance = 55.0; // _treeRadius (35) + _rockRadius (20)
+  const double minRockRockDistance = 40.0; // _rockRadius (20) * 2
+
+  // Generate Tree Positions
+  for (int i = 0; i < 20; i++) {
+    Offset pos = Offset.zero;
+    bool isValidPosition = false;
+    int attempts = 0;
+
+    // Limits at 100 attempts to prevent an infinite loop
+    while (!isValidPosition && attempts < 100) {
+      attempts++;
+      pos = Offset(
         _rand.nextDouble() * (_mapWidth - 200) + 100,
         _rand.nextDouble() * (_mapHeight - 200) + 100,
       );
-      if ((pos - const Offset(800, 800)).distance > 150) {
-        _treePositions.add(pos);
+
+      // Ensure distance from player safe zone
+      if ((pos - playerStartPos).distance > 150) {
+        isValidPosition = true;
       }
     }
 
-    for (int i = 0; i < 20; i++) {
-      Offset pos = Offset(
-        _rand.nextDouble() * (_mapWidth - 200) + 100,
-        _rand.nextDouble() * (_mapHeight - 200) + 100,
-      );
-      if ((pos - const Offset(800, 800)).distance > 150) {
-        _rockPositions.add(pos);
-      }
+    if (isValidPosition) {
+      _treePositions.add(pos);
     }
-
-    _ticker = createTicker(_updateGameLoop);
-    _ticker.start();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _keyboardFocusNode.requestFocus();
-    });
   }
+
+  // Generate Rock Positions (checking against player, trees, and existing rocks)
+  for (int i = 0; i < 20; i++) {
+    Offset pos = Offset.zero;
+    bool isValidPosition = false;
+    int attempts = 0;
+
+    while (!isValidPosition && attempts < 100) {
+      attempts++;
+      pos = Offset(
+        _rand.nextDouble() * (_mapWidth - 200) + 100,
+        _rand.nextDouble() * (_mapHeight - 200) + 100,
+      );
+
+      // Check safe distance from player starting position
+      if ((pos - playerStartPos).distance <= 150) continue;
+
+      // Check safe distance from all generated trees
+      bool overlapsTree = _treePositions.any(
+        (tree) => (pos - tree).distance < minTreeRockDistance,
+      );
+      if (overlapsTree) continue;
+
+      // Check safe distance from already placed rocks
+      bool overlapsRock = _rockPositions.any(
+        (rock) => (pos - rock).distance < minRockRockDistance,
+      );
+      if (overlapsRock) continue;
+
+      isValidPosition = true;
+    }
+
+    if (isValidPosition) {
+      _rockPositions.add(pos);
+    }
+  }
+
+  _ticker = createTicker(_updateGameLoop);
+  _ticker.start();
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _keyboardFocusNode.requestFocus();
+  });
+}
 
   @override
   void dispose() {
@@ -1823,6 +1868,13 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
           if (_bankBalance <= 0) {
             _bankBalance = 0;
             _endGame();
+          }
+          double mobDrain = ((35.0 * 2) * dt);
+          
+          mob.principalRemaining -= mobDrain;
+          _spawnExplosion(mob.pos, mob.color);
+          if (mob.principalRemaining <= 0) {
+            _onLiabilityCleared(i, mob);
           }
         }
       }
@@ -2148,7 +2200,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       BrawlUpgrade(
         name: "Establish Emergency Fund",
         description: _emergencyFundLevel == 0
-            ? "Create revolving cash shield damaging touching debts"
+            ? "Create revolving cash shield damaging touching debts (+1 Fund Level)"
             : "Expand cash shield radius & contact damage (Level ${_emergencyFundLevel + 1})",
         icon: Icons.shield_rounded,
         action: () => _emergencyFundLevel++,
@@ -2159,6 +2211,21 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
         icon: Icons.directions_run_rounded,
         action: () => _playerSpeed += 40.0,
       ),
+      BrawlUpgrade(
+        name: "Performance Bonus",
+        description: "Increases bank balance (+10% Net Worth, max \$10,000)",
+        icon: Icons.savings,
+        action: () {
+          int bonus = (_bankBalance * 0.1).round();
+          int newBalance = _bankBalance + bonus;
+
+          if (newBalance > 10000) {
+            _bankBalance = 10000;
+          } else {
+            _bankBalance = newBalance;
+          }
+        },
+      )
     ]..shuffle(_rand);
   }
 
