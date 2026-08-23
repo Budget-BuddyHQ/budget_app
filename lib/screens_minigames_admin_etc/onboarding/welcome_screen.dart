@@ -107,7 +107,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               Text(
                                 'BUDGET BUDDY',
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.baloo2(
+                                style: GoogleFonts.pixelifySans(
                                   fontSize: titleSize,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 1.4,

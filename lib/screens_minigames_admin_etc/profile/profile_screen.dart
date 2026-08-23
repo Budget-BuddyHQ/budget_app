@@ -356,7 +356,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 const SizedBox(width: 10),
                                 Text(
                                   'Log Out',
-                                  style: GoogleFonts.baloo2(
+                                  style: GoogleFonts.pixelifySans(
                                     color: Colors.white,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w900,
@@ -496,7 +496,7 @@ class _ProfileHero extends StatelessWidget {
               Text(
                 stats.username,
                 textAlign: stacked ? TextAlign.center : TextAlign.start,
-                style: GoogleFonts.baloo2(
+                style: GoogleFonts.pixelifySans(
                   color: Colors.white,
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
@@ -693,9 +693,10 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: AppTheme.panelStrong.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -717,7 +718,7 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
               Expanded(
                 child: Text(
                   'Badges',
-                  style: GoogleFonts.baloo2(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
@@ -892,9 +893,10 @@ class _ProfileInsightCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: AppTheme.panelStrong.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -1095,9 +1097,10 @@ class _SettingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: AppTheme.panelStrong.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
       ),
       child: ListTile(
         onTap: onTap,
@@ -1137,7 +1140,7 @@ class _AdminCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: AppTheme.panelStrong.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: Colors.amber.withValues(alpha: 0.18)),
       ),
@@ -1178,7 +1181,7 @@ class _ProfileBackdrop extends StatelessWidget {
           repeat: ImageRepeat.repeat,
           filterQuality: FilterQuality.none,
         ),
-        Container(color: const Color(0xFF071711).withValues(alpha: 0.50)),
+        Container(color: AppTheme.deepForest.withValues(alpha: 0.72)),
       ],
     );
   }
@@ -1238,9 +1241,10 @@ class _MoneyHabitsProfileCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: AppTheme.panelStrong.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1251,7 +1255,7 @@ class _MoneyHabitsProfileCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'Money Habits',
-                style: GoogleFonts.baloo2(
+                style: GoogleFonts.pixelifySans(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -1312,7 +1316,7 @@ class _MoneyStatColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(value, style: GoogleFonts.baloo2(color: Colors.white, fontWeight: FontWeight.w700)),
+        Text(value, style: GoogleFonts.pixelifySans(color: Colors.white, fontWeight: FontWeight.w700)),
         Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11)),
       ],
     );
@@ -1361,9 +1365,10 @@ class _FriendsCardState extends State<_FriendsCard> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: AppTheme.panelStrong.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1374,7 +1379,7 @@ class _FriendsCardState extends State<_FriendsCard> {
               const SizedBox(width: 8),
               Text(
                 'Friends',
-                style: GoogleFonts.baloo2(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                style: GoogleFonts.pixelifySans(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
               ),
             ],
           ),

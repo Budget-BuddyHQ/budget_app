@@ -59,7 +59,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     return Scaffold(
       backgroundColor: AppTheme.deepForest,
       appBar: AppBar(
-        title: Text('Leaderboard', style: GoogleFonts.baloo2(fontWeight: FontWeight.w700)),
+        title: Text('Leaderboard', style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700)),
         backgroundColor: AppTheme.deepForest,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -84,7 +84,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               children: [
                 Text(
                   'Top Finance Wizards',
-                  style: GoogleFonts.baloo2(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white,
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
@@ -288,7 +288,7 @@ class _ModeTab extends StatelessWidget {
         alignment: Alignment.center,
         child: Text(
           label,
-          style: GoogleFonts.baloo2(
+          style: GoogleFonts.pixelifySans(
             color: active ? AppTheme.deepForest : Colors.white70,
             fontWeight: FontWeight.w700,
           ),

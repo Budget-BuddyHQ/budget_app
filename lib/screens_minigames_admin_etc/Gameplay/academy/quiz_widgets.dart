@@ -57,7 +57,7 @@ class QuizQuestionCard extends StatelessWidget {
         const SizedBox(height: 20),
         Text(
           question.prompt,
-          style: GoogleFonts.baloo2(
+          style: GoogleFonts.pixelifySans(
             color: const Color(0xFFF7FFFB),
             fontSize: 22,
             fontWeight: FontWeight.w700,
@@ -283,7 +283,7 @@ class QuizResultsCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 '$correct / $total correct',
-                style: GoogleFonts.baloo2(
+                style: GoogleFonts.pixelifySans(
                   color: const Color(0xFFF7FFFB),
                   fontSize: 25,
                   fontWeight: FontWeight.w700,
@@ -307,7 +307,7 @@ class QuizResultsCard extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'WORTH REVISITING',
-            style: GoogleFonts.baloo2(
+            style: GoogleFonts.pixelifySans(
               color: const Color(0xFFFFB084),
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -351,7 +351,7 @@ class _MissedSkillRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GoogleFonts.baloo2(
+            style: GoogleFonts.pixelifySans(
               color: const Color(0xFFF7FFFB),
               fontSize: 17,
               fontWeight: FontWeight.w700,

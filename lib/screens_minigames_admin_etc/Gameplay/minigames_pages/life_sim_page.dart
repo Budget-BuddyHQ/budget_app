@@ -199,7 +199,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
                 ),
                 label: Text(
                   life.dead ? 'Finish' : 'Retire',
-                  style: GoogleFonts.baloo2(fontWeight: FontWeight.w700),
+                  style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
                 ),
               ),
             ],
@@ -944,7 +944,7 @@ class _SkillsSheetState extends State<_SkillsSheet> {
               ),
               Text(
                 'Skills',
-                style: GoogleFonts.baloo2(
+                style: GoogleFonts.pixelifySans(
                   color: Colors.white,
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
@@ -978,7 +978,7 @@ class _SkillsSheetState extends State<_SkillsSheet> {
                 const SizedBox(height: 8),
                 Text(
                   'TRAITS',
-                  style: GoogleFonts.baloo2(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white.withValues(alpha: 0.55),
                     fontSize: 11,
                     letterSpacing: 1.2,
