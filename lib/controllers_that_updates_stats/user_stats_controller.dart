@@ -194,7 +194,7 @@ class UserStatsController extends ChangeNotifier {
           );
         }
 
-        return _finishAuthenticatedFlow(
+        return await _finishAuthenticatedFlow(
           user,
           preferredUsername: username,
           successMessage: 'Account ready. You are signed in.',
@@ -212,7 +212,7 @@ class UserStatsController extends ChangeNotifier {
       }
 
         await client.auth.signOut();
-      return _finishAuthenticatedFlow(
+      return await _finishAuthenticatedFlow(
         user,
         successMessage: 'Welcome back to Budget Buddy.',
       );
