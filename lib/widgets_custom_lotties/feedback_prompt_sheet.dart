@@ -99,10 +99,10 @@ class _FeedbackPromptSheetContent extends StatelessWidget {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Send Feedback',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
+                        style: GoogleFonts.pixelifySans(
+                          fontWeight: FontWeight.w700,
                           fontSize: 15,
                         ),
                       ),

@@ -5,6 +5,7 @@ import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart'
     show LifeOriginInfo;
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// The recap shown when a [LifeSummary] life ends — replaces what used to be
 /// a silent `Navigator.pop()` straight back to Home. Purely presentational;
@@ -101,10 +102,10 @@ class _ArchetypeCard extends StatelessWidget {
           Text(
             archetype.label,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: GoogleFonts.pixelifySans(
               color: Colors.white,
               fontSize: 24,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 10),
@@ -142,10 +143,10 @@ class _LifeRecapCard extends StatelessWidget {
         children: [
           Text(
             '${summary.name} · ${summary.job}',
-            style: const TextStyle(
+            style: GoogleFonts.pixelifySans(
               color: Colors.white,
               fontSize: 16,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 2),
@@ -228,10 +229,10 @@ class _StatPill extends StatelessWidget {
             ),
             TextSpan(
               text: value,
-              style: TextStyle(
+              style: GoogleFonts.pixelifySans(
                 color: color,
                 fontSize: 12,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services_backend_and_other_services/market_data_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 enum ChartMode { line, candle }
 
@@ -378,10 +379,10 @@ class _PriceChartPainter extends CustomPainter {
     final tp = TextPainter(
       text: TextSpan(
         text: text,
-        style: TextStyle(
+        style: GoogleFonts.pixelifySans(
           color: color,
           fontSize: 10,
-          fontWeight: bold ? FontWeight.w900 : FontWeight.w600,
+          fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
         ),
       ),
       textDirection: TextDirection.ltr,

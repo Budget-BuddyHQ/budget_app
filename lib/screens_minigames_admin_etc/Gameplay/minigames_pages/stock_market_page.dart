@@ -562,9 +562,9 @@ class _StockMarketPageState extends State<StockMarketPage>
                 backgroundColor: Colors.transparent,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                title: const Text(
+                title: Text(
                   'Market Board',
-                  style: TextStyle(fontWeight: FontWeight.w900),
+                  style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
                 ),
                 actions: [
                   _LiveBadge(
@@ -585,7 +585,7 @@ class _StockMarketPageState extends State<StockMarketPage>
                   indicatorWeight: 3,
                   labelColor: Colors.white,
                   unselectedLabelColor: Colors.white54,
-                  labelStyle: const TextStyle(fontWeight: FontWeight.w900),
+                  labelStyle: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
                   tabs: const [
                     Tab(text: 'Assets'),
                     Tab(text: 'Trade'),
@@ -920,9 +920,9 @@ class _TrendingPromoCard extends StatelessWidget {
               const Spacer(),
               Text(
                 quote.symbol,
-                style: const TextStyle(
+                style: GoogleFonts.pixelifySans(
                   color: Colors.white,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                   fontSize: 14,
                 ),
               ),
@@ -950,10 +950,10 @@ class _TrendingPromoCard extends StatelessWidget {
                     child: Text(
                       '${quote.changePercent.abs().toStringAsFixed(1)}%',
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: GoogleFonts.pixelifySans(
                         color: changeColor,
                         fontSize: 12,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -1198,9 +1198,9 @@ class _SearchResultRow extends StatelessWidget {
                 children: [
                   Text(
                     match.symbol,
-                    style: const TextStyle(
+                    style: GoogleFonts.pixelifySans(
                       color: Colors.white,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -1225,10 +1225,10 @@ class _SearchResultRow extends StatelessWidget {
                 ),
                 child: Text(
                   '${formatShares(ownedLots)} sh',
-                  style: const TextStyle(
+                  style: GoogleFonts.pixelifySans(
                     color: Color(0xFF58C7FF),
                     fontSize: 11,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -1393,9 +1393,9 @@ class _HoldingRow extends StatelessWidget {
               children: [
                 Text(
                   '${quote.symbol} • ${formatShares(ownedLots)} sh',
-                  style: const TextStyle(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -1428,9 +1428,9 @@ class _HoldingRow extends StatelessWidget {
             children: [
               Text(
                 '${metrics.currentValue.round()}g',
-                style: const TextStyle(
+                style: GoogleFonts.pixelifySans(
                   color: Colors.white,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 3),
@@ -1492,9 +1492,9 @@ class _EmptyHoldings extends StatelessWidget {
               foregroundColor: const Color(0xFF103224),
             ),
             onPressed: onGoToTrade,
-            child: const Text(
+            child: Text(
               'Go to Trade',
-              style: TextStyle(fontWeight: FontWeight.w900),
+              style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -1574,11 +1574,11 @@ class _AllocationBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Allocation',
-            style: TextStyle(
+            style: GoogleFonts.pixelifySans(
               color: Colors.white,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               fontSize: 16,
             ),
           ),
@@ -1606,10 +1606,10 @@ class _AllocationBar extends StatelessWidget {
                       children: [
                         Text(
                           '${segments.length}',
-                          style: const TextStyle(
+                          style: GoogleFonts.pixelifySans(
                             color: Colors.white,
                             fontSize: 22,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                             height: 1,
                           ),
                         ),
@@ -1660,10 +1660,10 @@ class _AllocationBar extends StatelessWidget {
                             ),
                             Text(
                               '${((s.value / total) * 100).toStringAsFixed(0)}%',
-                              style: TextStyle(
+                              style: GoogleFonts.pixelifySans(
                                 color: s.color,
                                 fontSize: 12.5,
-                                fontWeight: FontWeight.w900,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
@@ -1802,9 +1802,9 @@ class _TickerTapeState extends State<_TickerTape> {
                 const SizedBox(width: 6),
                 Text(
                   quote.symbol,
-                  style: const TextStyle(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),
                 ),
@@ -1887,12 +1887,12 @@ class _PortfolioSummary extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Portfolio Summary',
-            style: TextStyle(
+            style: GoogleFonts.pixelifySans(
               color: Colors.white,
               fontSize: 18,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 10),
@@ -2025,10 +2025,10 @@ class _StockCardState extends State<_StockCard> {
                       children: [
                         Text(
                           '${quote.symbol} • ${quote.company}',
-                          style: const TextStyle(
+                          style: GoogleFonts.pixelifySans(
                             color: Colors.white,
                             fontSize: 20,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -2116,9 +2116,9 @@ class _StockCardState extends State<_StockCard> {
                       const SizedBox(height: 2),
                       Text(
                         '${averageCost.toStringAsFixed(1)}g / share',
-                        style: const TextStyle(
+                        style: GoogleFonts.pixelifySans(
                           color: Colors.white,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -2137,9 +2137,9 @@ class _StockCardState extends State<_StockCard> {
                       const SizedBox(height: 2),
                       Text(
                         '$plSign${totalProfitLoss.round()}g ($plSign${profitLossPercent.toStringAsFixed(1)}%)',
-                        style: TextStyle(
+                        style: GoogleFonts.pixelifySans(
                           color: plColor,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
                       ),
@@ -2176,9 +2176,9 @@ class _StockCardState extends State<_StockCard> {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   icon: const Icon(Icons.arrow_upward_rounded),
-                  label: const Text(
+                  label: Text(
                     'Buy Shares',
-                    style: TextStyle(fontWeight: FontWeight.w900),
+                    style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
                   ),
                 ),
               );
@@ -2193,9 +2193,9 @@ class _StockCardState extends State<_StockCard> {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   icon: const Icon(Icons.arrow_downward_rounded),
-                  label: const Text(
+                  label: Text(
                     'Sell Shares',
-                    style: TextStyle(fontWeight: FontWeight.w900),
+                    style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
                   ),
                 ),
               );
@@ -2260,7 +2260,7 @@ class _ValueBadge extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             value,
-            style: TextStyle(color: color, fontWeight: FontWeight.w900),
+            style: GoogleFonts.pixelifySans(color: color, fontWeight: FontWeight.w700),
           ),
           if (sub != null)
             Text(
@@ -2290,10 +2290,10 @@ class _SectionTitle extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: GoogleFonts.pixelifySans(
             color: Colors.white,
             fontSize: 20,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 6),
@@ -2422,10 +2422,10 @@ class _StockSparklineState extends State<_StockSparkline> {
               Text(
                 '${changePercent >= 0 ? '+' : ''}'
                 '${changePercent.toStringAsFixed(2)}%',
-                style: TextStyle(
+                style: GoogleFonts.pixelifySans(
                   color: lineColor,
                   fontSize: 11,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const Spacer(),
@@ -2434,14 +2434,14 @@ class _StockSparklineState extends State<_StockSparkline> {
                 // the latest one — the number people actually want when they
                 // put a finger on a chart.
                 usdLabel(hovered ?? last),
-                style: TextStyle(
+                style: GoogleFonts.pixelifySans(
                   color: hovered == null
                       ? Colors.white.withValues(alpha: 0.7)
                       : Colors.white,
                   fontSize: 11,
                   fontWeight: hovered == null
                       ? FontWeight.w700
-                      : FontWeight.w900,
+                      : FontWeight.w700,
                 ),
               ),
             ],
@@ -2553,11 +2553,11 @@ class _RangeCell extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: GoogleFonts.pixelifySans(
             color: Colors.white.withValues(alpha: 0.40),
             fontSize: 8.5,
             letterSpacing: 0.6,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 1),
@@ -2567,10 +2567,10 @@ class _RangeCell extends StatelessWidget {
           child: Text(
             usdLabel(value),
             maxLines: 1,
-            style: TextStyle(
+            style: GoogleFonts.pixelifySans(
               color: color,
               fontSize: 11,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -2784,9 +2784,9 @@ class _WorkingOrderRow extends StatelessWidget {
                     Text(
                       '${order.symbol} • ${order.isBuy ? 'Buy' : 'Sell'} '
                       '${order.quantity}',
-                      style: TextStyle(
+                      style: GoogleFonts.pixelifySans(
                         color: sideColor,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -2799,12 +2799,12 @@ class _WorkingOrderRow extends StatelessWidget {
                         color: const Color(0xFF58C7FF).withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(999),
                       ),
-                      child: const Text(
+                      child: Text(
                         'WORKING',
-                        style: TextStyle(
+                        style: GoogleFonts.pixelifySans(
                           color: Color(0xFF58C7FF),
                           fontSize: 10,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -2827,9 +2827,9 @@ class _WorkingOrderRow extends StatelessWidget {
               foregroundColor: const Color(0xFFFF8A80),
               padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(fontWeight: FontWeight.w900),
+              style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -2880,9 +2880,9 @@ class _OrderRow extends StatelessWidget {
               children: [
                 Text(
                   order.symbol,
-                  style: const TextStyle(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -2901,7 +2901,7 @@ class _OrderRow extends StatelessWidget {
             children: [
               Text(
                 order.actionLabel,
-                style: TextStyle(color: sideColor, fontWeight: FontWeight.w900),
+                style: GoogleFonts.pixelifySans(color: sideColor, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 2),
               Text(
@@ -2967,10 +2967,10 @@ class _PnlTab extends StatelessWidget {
             children: [
               Text(
                 '${positive ? '+' : ''}${coinLabel(totalEarned)}',
-                style: TextStyle(
+                style: GoogleFonts.pixelifySans(
                   color: color,
                   fontSize: 28,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               Text(
@@ -3159,10 +3159,10 @@ class _LiveBadge extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               'LIVE $label',
-              style: const TextStyle(
+              style: GoogleFonts.pixelifySans(
                 color: Color(0xFF00C287),
                 fontSize: 10,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -3396,20 +3396,20 @@ class _MetricTile extends StatelessWidget {
             children: [
               Text(
                 label.toUpperCase(),
-                style: TextStyle(
+                style: GoogleFonts.pixelifySans(
                   color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 10,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: 0.4,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 value,
-                style: TextStyle(
+                style: GoogleFonts.pixelifySans(
                   color: color,
                   fontSize: 20,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 2),
@@ -3471,10 +3471,10 @@ class _PositionBar extends StatelessWidget {
             ),
             child: Text(
               label,
-              style: TextStyle(
+              style: GoogleFonts.pixelifySans(
                 color: color,
                 fontSize: 10,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -3493,7 +3493,7 @@ class _PositionBar extends StatelessWidget {
           Text(
             '$sign${coinLabel(pl)} ($sign'
             '${entry.metrics.profitLossPercent.toStringAsFixed(1)}%)',
-            style: TextStyle(color: color, fontWeight: FontWeight.w900),
+            style: GoogleFonts.pixelifySans(color: color, fontWeight: FontWeight.w700),
           ),
         ],
       ),

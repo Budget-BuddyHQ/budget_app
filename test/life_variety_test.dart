@@ -127,6 +127,21 @@ void main() {
         );
       }
     });
+
+    test('the childhood years are not starved either', () {
+      // Ages 10-11 had *zero* eligible events at one point — a life would
+      // silently skip straight through them with nothing to decide. Lower
+      // bar than the adult years because childhood is a handful of turns,
+      // not fifty, but it must never be empty.
+      for (final age in [5, 8, 10, 11, 13]) {
+        final count = kLifeEvents.where((e) => e.matches(plain(age))).length;
+        expect(
+          count,
+          greaterThanOrEqualTo(3),
+          reason: 'only $count events are eligible at age $age',
+        );
+      }
+    });
   });
 
   group('career ladders are actually completable', () {

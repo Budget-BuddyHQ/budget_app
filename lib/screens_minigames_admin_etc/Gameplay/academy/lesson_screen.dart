@@ -210,9 +210,9 @@ class _LessonScreenState extends State<LessonScreen> {
               backgroundColor: const Color(0xFFFFB84D),
               foregroundColor: const Color(0xFF3A2400),
             ),
-            child: const Text(
+            child: Text(
               'Read it anyway',
-              style: TextStyle(fontWeight: FontWeight.w900),
+              style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -672,10 +672,10 @@ class _AgeGroupHeader extends StatelessWidget {
               const SizedBox(width: 5),
               Text(
                 stage.label,
-                style: TextStyle(
+                style: GoogleFonts.pixelifySans(
                   color: accent,
                   fontSize: 12,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -776,12 +776,12 @@ class _UnitJumpChip extends StatelessWidget {
                 children: [
                   Text(
                     'Unit ${index + 1}',
-                    style: TextStyle(
+                    style: GoogleFonts.pixelifySans(
                       color: selected
                           ? const Color(0xFF062C21)
                           : const Color(0xFFB9D1C6),
                       fontSize: 11,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -791,12 +791,12 @@ class _UnitJumpChip extends StatelessWidget {
                       unit.title.replaceFirst('Unit ${index + 1}: ', ''),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: GoogleFonts.pixelifySans(
                         color: selected
                             ? const Color(0xFF062C21)
                             : Colors.white,
                         fontSize: 14,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -953,9 +953,9 @@ class _HubHeader extends StatelessWidget {
                           foregroundColor: const Color(0xFF133626),
                         ),
                         icon: const Icon(Icons.play_arrow_rounded),
-                        label: const Text(
+                        label: Text(
                           'Resume Learning',
-                          style: TextStyle(fontWeight: FontWeight.w900),
+                          style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
                         ),
                       ),
                   ];
@@ -1088,9 +1088,9 @@ class _NextLessonFocusCard extends StatelessWidget {
             children: [
               Text(
                 isComplete ? 'Path complete' : 'Continue where you left off',
-                style: const TextStyle(
+                style: GoogleFonts.pixelifySans(
                   fontSize: 20,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 8),
@@ -1135,7 +1135,7 @@ class _NextLessonFocusCard extends StatelessWidget {
             ),
             label: Text(
               isComplete ? 'All caught up' : 'Resume lesson',
-              style: const TextStyle(fontWeight: FontWeight.w900),
+              style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
             ),
           );
 
@@ -1194,7 +1194,7 @@ class _FocusPill extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: TextStyle(color: accent, fontWeight: FontWeight.w900),
+            style: GoogleFonts.pixelifySans(color: accent, fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -1238,10 +1238,10 @@ class _MetricPill extends StatelessWidget {
             value,
             maxLines: compact ? 2 : 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+            style: GoogleFonts.pixelifySans(
               color: Colors.white,
               fontSize: compact ? 14 : 16,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -1528,6 +1528,7 @@ class _MasteryBadge extends StatelessWidget {
       ),
       child: Text(
         label,
+        style: GoogleFonts.pixelifySans(color: color, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -1591,10 +1592,10 @@ class _AgeStageChip extends StatelessWidget {
                   : '${stage.label} · ${stage.blurb}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
+              style: GoogleFonts.pixelifySans(
                 color: accent,
                 fontSize: 11,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -1638,10 +1639,10 @@ class _TooYoungBanner extends StatelessWidget {
               children: [
                 Text(
                   'Written for ${stage.label.toLowerCase()}',
-                  style: const TextStyle(
+                  style: GoogleFonts.pixelifySans(
                     color: accent,
                     fontSize: 13,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -1729,11 +1730,11 @@ class _AcademyAnalyticsCard extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Your learning stats',
-                style: TextStyle(
+                style: GoogleFonts.pixelifySans(
                   color: Color(0xFFF7FFFB),
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                   fontSize: 16,
                 ),
               ),
@@ -1776,10 +1777,10 @@ class _AcademyAnalyticsCard extends StatelessWidget {
             const SizedBox(height: 14),
             Text(
               'Worth reviewing',
-              style: TextStyle(
+              style: GoogleFonts.pixelifySans(
                 color: Colors.white.withValues(alpha: 0.6),
                 fontSize: 11,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
                 letterSpacing: 0.4,
               ),
             ),
@@ -1840,19 +1841,19 @@ class _AnalyticStat extends StatelessWidget {
         children: [
           Text(
             label.toUpperCase(),
-            style: TextStyle(
+            style: GoogleFonts.pixelifySans(
               color: Colors.white.withValues(alpha: 0.6),
               fontSize: 9.5,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               letterSpacing: 0.4,
             ),
           ),
           const SizedBox(height: 3),
           Text(
             value,
-            style: TextStyle(
+            style: GoogleFonts.pixelifySans(
               color: color,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               fontSize: 15,
             ),
           ),

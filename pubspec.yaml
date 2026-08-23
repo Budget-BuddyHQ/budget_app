@@ -67,5 +67,16 @@ flutter:
     - assets/own_skins/turtle_celebrate/
     - assets/self_made_backgrounds/
     - assets/map_assets_coins/PNG_more_map_tiles/
+    # Town NPC frames. These are individual 102x116 PNGs per frame (not
+    # sprite sheets), so every folder has to be listed on its own —
+    # Flutter does not bundle subfolders recursively.
+    - assets/map_assets_coins/tax-guy/idle/
+    - assets/map_assets_coins/tax-guy/walk/
+    - assets/map_assets_coins/customer_more_animations/idle/
+    - assets/map_assets_coins/customer_more_animations/idle-fancy/
+    - assets/map_assets_coins/customer_more_animations/walk/
+    - assets/map_assets_coins/customer_more_animations/walk-fancy/
+    - assets/map_assets_coins/employee_or_background_character_information/idle/
+    - assets/map_assets_coins/employee_or_background_character_information/walk/
     - assets/own_skins/mushroom_goomba/walking_animation/
 

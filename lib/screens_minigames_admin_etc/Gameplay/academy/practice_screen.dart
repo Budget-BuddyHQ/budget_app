@@ -201,7 +201,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
         ),
         child: Text(
           _saving ? 'Saving...' : 'Done',
-          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+          style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700, fontSize: 16),
         ),
       );
     }
@@ -237,7 +237,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
       ),
       child: Text(
         isLast ? 'See Results' : 'Next Question',
-        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+        style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700, fontSize: 16),
       ),
     );
   }

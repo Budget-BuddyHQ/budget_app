@@ -147,11 +147,11 @@ class _StreakBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             '$days',
-            style: TextStyle(
+            style: GoogleFonts.pixelifySans(
               color: active
                   ? const Color(0xFFFF8A5B)
                   : Colors.white.withValues(alpha: 0.5),
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               fontSize: 14,
             ),
           ),
@@ -255,9 +255,9 @@ class _QuestRow extends StatelessWidget {
                   ),
                   child: Text(
                     '+${quest.xpReward}',
-                    style: const TextStyle(
+                    style: GoogleFonts.pixelifySans(
                       color: Color(0xFFFFD45C),
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
                   ),
