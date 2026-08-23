@@ -240,11 +240,15 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
             ],
             cameraConfig: CameraConfig(
               zoom: 1.6,
-              // The player is walled in by the map's collider ring, so this
-              // only decides whether the *camera* also clamps to the map.
-              // Left unclamped on purpose so standing at the wall shows a
-              // sliver of void past it, the way an open-world edge reads.
-              moveOnlyMapArea: false,
+              // Clamped to the map. Walking to the edge now stops the
+              // *camera* at the boundary instead of letting it drift past
+              // and reveal empty black space beyond the cliffs.
+              //
+              // This was previously `false` on the reasoning that a sliver
+              // of void reads as a real world edge — that was wrong for
+              // this game. The border cliffs already block the player, so
+              // the void was pure visual noise with nothing behind it.
+              moveOnlyMapArea: true,
             ),
           ),
           SafeArea(
@@ -651,29 +655,66 @@ class _TownSpotSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: spot.kind.accent.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                  ),
-                  child: Icon(spot.kind.icon, color: spot.kind.accent),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    spot.title,
-                    style: GoogleFonts.pixelifySans(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
+            // A real interior above the dialogue, so walking into a
+            // building reads as *going inside* rather than a menu opening
+            // over the map. Uses the room art already in the repo.
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+              child: SizedBox(
+                height: 96,
+                width: double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.asset(
+                      AppAssets.shopRoomBackground,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.center,
+                      filterQuality: FilterQuality.none,
+                      // The room art is optional decoration — if it ever
+                      // goes missing the sheet still works, just flatter.
+                      errorBuilder: (_, _, _) => ColoredBox(
+                        color: spot.kind.accent.withValues(alpha: 0.15),
+                      ),
                     ),
-                  ),
+                    // Keeps the title legible over busy interior art.
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            AppTheme.panelStrong.withValues(alpha: 0.85),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 12,
+                      bottom: 8,
+                      child: Row(
+                        children: [
+                          Icon(
+                            spot.kind.icon,
+                            color: spot.kind.accent,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            spot.title,
+                            style: GoogleFonts.pixelifySans(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
             const SizedBox(height: 12),
             Text(

@@ -70,6 +70,8 @@ flutter:
     # Town NPC frames. These are individual 102x116 PNGs per frame (not
     # sprite sheets), so every folder has to be listed on its own —
     # Flutter does not bundle subfolders recursively.
+    # Shop/room interiors — the backdrop behind the "you are inside" sheet.
+    - assets/map_assets_coins/building/rooms/
     - assets/map_assets_coins/tax-guy/idle/
     - assets/map_assets_coins/tax-guy/walk/
     - assets/map_assets_coins/customer_more_animations/idle/

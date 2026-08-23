@@ -1025,3 +1025,76 @@ eyeballing the list. The early pack exists because that test caught it.
 Composition is done with const spreads (`_kLifeEventsCore` +
 `kLifeEventsExtra` + `kLifeEventsEarly` → `kLifeEvents`) so the sets stay
 separately readable rather than being merged into one 95-entry literal.
+
+## 19. Menus instead of a big Age button, and the camera reversal
+
+### The camera now clamps — reversing an earlier call
+
+§17 documented `moveOnlyMapArea: false` as deliberate: standing at the wall
+would show a sliver of void, "the way an open-world edge reads." That was
+wrong for this game, and the screenshots made it obvious — the void is a
+large black region with nothing in it, not an atmospheric sliver. It is now
+`true`, so the camera stops at the map boundary.
+
+Worth recording as a reversal rather than a silent edit: the reasoning was
+coherent and still produced a bad result, because it was reasoning about a
+genre convention instead of about this specific 50×50 map with hard cliff
+borders. The player was never able to leave (the collider ring holds); only
+the camera was.
+
+### The Life sim got menus
+
+The core complaint: *"there is not enough options like in the real BitLife
+where the menu leads you to more things like study, career, going out on
+command instead of just normal making it occurrence."* That is precisely
+right, and structural — the sim was **reactive**. Age up, answer whatever
+fired. Five bottom-bar slots can only ever hold five verbs.
+
+Replaced with four category menus plus the Age button:
+
+| Menu | Holds |
+| --- | --- |
+| **School / Career** | Study or take a course, work harder, ask for a raise, quit |
+| **People** | Spend time with / buy a gift for each known relationship |
+| **Do** (Activities) | Go out, gym, library, doctor, practise a skill |
+| **Money** | Invest, net-worth summary |
+
+New on-demand controller actions backing them: `workHarder`,
+`askForRaise`, `quitJob`, `visitDoctor`, `visitLibrary`, `spendTimeWith`,
+`giveGift`, plus a `hasJob` getter that gates the career actions.
+
+Two deliberate teaching details baked into the menu rather than into a
+lesson:
+
+- **`spendTimeWith` is free and gives +8 happiness; `giveGift` costs 50
+  coins and gives +5.** The comparison is right there in the list, and the
+  player can notice it themselves.
+- **The library is the only completely free stat gain.** Also not
+  commented on in-game.
+
+Rows show their cost as a chip, and a disabled row states *why* ("You need
+a job first", "Not enough coins") instead of being inertly greyed out.
+
+### Entering a building looks like entering a building
+
+Town spot sheets now open with the room interior art
+(`building/rooms/room-background-decorated.png`, already in the repo,
+newly registered in `pubspec.yaml`) as a header image with the title over
+a gradient. Small change, but it is the difference between "a menu opened"
+and "I went inside".
+
+### On the BitLife playthroughs
+
+Two full playthrough transcripts were supplied as reference. They are
+mostly murder, torture, assassination and child abandonment — that is
+genuinely what BitLife contains, and it is why the game is rated 17+.
+
+**What was taken from them: the menu architecture.** On-demand actions
+grouped into categories, costs shown up front, options gated by state.
+That is the part that makes BitLife feel deep, and it is exactly what this
+sim was missing.
+
+**What was not taken: the content.** This app's Academy now runs from age
+4-6 upward, so crime-and-violence mechanics are off the table — not as a
+judgement of BitLife, just a different audience. Recorded here so a future
+session does not read "make it like BitLife" as unfinished work.
