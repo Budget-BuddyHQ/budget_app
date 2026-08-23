@@ -4,9 +4,12 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../services_backend_and_other_services/app_sound_service.dart';
+import '../../themes_colors/app_theme.dart';
 
-const _deepCharcoal = Color(0xFF17301F);
-const _deepCharcoalStrong = Color(0xFF0A1D17);
+// Lightened a step alongside AppTheme's forest palette so the nav bar
+// doesn't read darker than the screens it's docked on.
+const _deepCharcoal = Color(0xFF21402C);
+const _deepCharcoalStrong = Color(0xFF122A1E);
 const _activeAccent = Color(0xFFFFD94A);
 const _activeAccentDeep = Color(0xFFB38C10);
 
@@ -55,7 +58,9 @@ class PopNavBar extends StatelessWidget {
     final screenSize = MediaQuery.sizeOf(context);
     final dense = screenSize.width < 360 || screenSize.height < 560;
     final veryTight = screenSize.height < 430;
-    final barHeight = veryTight ? 62.0 : (dense ? 70.0 : 86.0);
+    // Bumped a few px across the board for a friendlier, easier-to-hit tap
+    // target — this bar is used by players well under teen age.
+    final barHeight = veryTight ? 66.0 : (dense ? 74.0 : 90.0);
 
     return SafeArea(
       top: false,
@@ -70,11 +75,15 @@ class PopNavBar extends StatelessWidget {
           height: barHeight,
           decoration: BoxDecoration(
             color: _deepCharcoalStrong,
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
             border: Border.all(color: _deepCharcoal, width: 4),
-            boxShadow: const [
-              BoxShadow(color: Color(0xFF04120C), offset: Offset(0, 6)),
-            ],
+            boxShadow: AppTheme.puffyShadow(
+              _activeAccent,
+              restAlpha: 0.18,
+              blurRadius: 22,
+              spreadRadius: -8,
+              offset: const Offset(0, 8),
+            ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 6),
           child: Row(
@@ -179,14 +188,14 @@ class _PopNavTileState extends State<_PopNavTile>
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
               padding: EdgeInsets.symmetric(
-                horizontal: widget.dense ? 6 : 8,
-                vertical: widget.veryTight ? 4 : (widget.dense ? 6 : 8),
+                horizontal: widget.dense ? 8 : 10,
+                vertical: widget.veryTight ? 6 : (widget.dense ? 8 : 10),
               ),
               decoration: BoxDecoration(
                 color: widget.active
                     ? _activeAccent
                     : Colors.white.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
                 border: Border.all(
                   color: widget.active ? _deepCharcoal : Colors.transparent,
                   width: 3,
@@ -207,7 +216,7 @@ class _PopNavTileState extends State<_PopNavTile>
                   Icon(
                     widget.item.icon,
                     color: widget.active ? _deepCharcoal : Colors.white70,
-                    size: widget.veryTight ? 18 : (widget.dense ? 19 : 22),
+                    size: widget.veryTight ? 20 : (widget.dense ? 21 : 24),
                   ),
                   SizedBox(
                     height: widget.veryTight ? 2 : (widget.dense ? 3 : 4),

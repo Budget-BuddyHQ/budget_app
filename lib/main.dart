@@ -9,6 +9,7 @@ import 'config/dev_preview_flags.dart';
 import 'config/runtime_env.dart';
 import 'controllers_that_updates_stats/app_settings_controller.dart';
 import 'controllers_that_updates_stats/daily_plan_controller.dart';
+import 'controllers_that_updates_stats/money_habit_controller.dart';
 import 'controllers_that_updates_stats/user_stats_controller.dart';
 import 'navigation_tools_and_animation/app_tab_index.dart';
 import 'screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart';
@@ -98,6 +99,14 @@ Future<void> main() async {
               DailyPlanController(context.read<UserStatsController>()),
           update: (_, userStats, previous) =>
               previous ?? DailyPlanController(userStats),
+        ),
+        // Same shape as DailyPlanController: derives everything from
+        // UserStatsController's spendingHabits, no separate persistence.
+        ChangeNotifierProxyProvider<UserStatsController, MoneyHabitController>(
+          create: (context) =>
+              MoneyHabitController(context.read<UserStatsController>()),
+          update: (_, userStats, previous) =>
+              previous ?? MoneyHabitController(userStats),
         ),
       ],
       child: const MyApp(),
@@ -225,7 +234,7 @@ class _DisabledScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF071711),
+      backgroundColor: AppTheme.deepForest,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

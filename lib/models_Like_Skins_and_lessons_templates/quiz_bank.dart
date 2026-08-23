@@ -108,6 +108,14 @@ class QuizSkills {
   static const String startingEarly = 'starting_early';
   static const String feesAndVesting = 'fees_vesting';
 
+  // Unit 10 — Money Is Real (ages 4-6)
+  static const String earlyMoneyBasics = 'early_money_basics';
+  static const String earlySaving = 'early_saving';
+
+  // Unit 11 — Saving and Spending (ages 7-10)
+  static const String allowanceEarning = 'allowance_earning';
+  static const String simpleSavingsPlan = 'simple_savings_plan';
+
   /// Human-readable name for the mastery breakdown in the learning path.
   static String label(String skillId) => switch (skillId) {
     budgetBasics => 'Budgeting basics',
@@ -155,6 +163,10 @@ class QuizSkills {
     rothVsTraditional => 'Roth vs traditional',
     startingEarly => 'Starting early',
     feesAndVesting => 'Fees and vesting',
+    earlyMoneyBasics => 'What money is',
+    earlySaving => 'Saving in a piggy bank',
+    allowanceEarning => 'Earning an allowance',
+    simpleSavingsPlan => 'Making a simple plan',
     _ => skillId,
   };
 }
@@ -1324,6 +1336,10 @@ const Map<String, List<QuizQuestion>> quizBank = <String, List<QuizQuestion>>{
   'test_8': _unit8Test,
   'quiz_9': _unit9Quiz,
   'test_9': _unit9Test,
+  'quiz_10': _unit10Quiz,
+  'test_10': _unit10Test,
+  'quiz_11': _unit11Quiz,
+  'test_11': _unit11Test,
 };
 
 // ---------------------------------------------------------------------------
@@ -1506,6 +1522,8 @@ const Map<String, List<QuizQuestion>> practiceBank =
       'unit_7': _unit7Practice,
       'unit_8': _unit8Practice,
       'unit_9': _unit9Practice,
+      'unit_10': _unit10Practice,
+      'unit_11': _unit11Practice,
     };
 
 List<QuizQuestion> quizFor(String nodeId) =>
@@ -2276,5 +2294,382 @@ const List<QuizQuestion> _unit9Test = <QuizQuestion>[
     explanation:
         'Nothing about the market favours the young. What favours them is the '
         'number of years left for compounding to run.',
+  ),
+];
+
+// ---------------------------------------------------------------------------
+// Unit 10 — Money Is Real (ages 4-6)
+// ---------------------------------------------------------------------------
+
+const List<QuizQuestion> _unit10Practice = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u10p1',
+    skillId: QuizSkills.earlyMoneyBasics,
+    prompt: 'What can you use money for?',
+    options: [
+      'Buying things you need or want',
+      'Making it rain outside',
+      'Turning it into candy by itself',
+      'Cleaning your toys by itself',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Money is what people trade for the things they need or want, like '
+        'food, clothes, or a toy.',
+  ),
+  QuizQuestion(
+    id: 'u10p2',
+    skillId: QuizSkills.earlyMoneyBasics,
+    prompt: 'Where does most money come from?',
+    options: [
+      'People earn it by working, or get it as a gift',
+      'It grows on trees',
+      'Everyone is born with a big pile of it',
+      'It only exists inside video games',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Grown-ups usually earn money by working. Sometimes money is given as '
+        'a gift too, like on a birthday.',
+  ),
+  QuizQuestion(
+    id: 'u10p3',
+    skillId: QuizSkills.earlySaving,
+    prompt: 'What is a piggy bank for?',
+    options: [
+      'Keeping money safe until you want to use it later',
+      'Feeding a real pig',
+      'Throwing coins away',
+      'Making a loud noise',
+    ],
+    correctIndex: 0,
+    explanation:
+        'A piggy bank holds onto your coins for you, so they are still there '
+        'later when you want them.',
+  ),
+];
+
+const List<QuizQuestion> _unit10Quiz = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u10q1',
+    skillId: QuizSkills.earlyMoneyBasics,
+    prompt: 'Why do stores ask for money when you buy something?',
+    options: [
+      'Money is how you trade for the things you want',
+      'Stores like the sound coins make',
+      'It makes the toy work better',
+      'The cashier keeps every toy for themselves',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Buying something means trading your money for it. That is what '
+        'money is for.',
+  ),
+  QuizQuestion(
+    id: 'u10q2',
+    skillId: QuizSkills.earlyMoneyBasics,
+    prompt: 'Which of these do you pay for with money?',
+    options: [
+      'Sunshine',
+      'A hug from a friend',
+      'A new toy at the store',
+      'A rainbow',
+    ],
+    correctIndex: 2,
+    explanation:
+        'A toy at the store costs money. Sunshine, hugs, and rainbows are '
+        'free.',
+  ),
+  QuizQuestion(
+    id: 'u10q3',
+    skillId: QuizSkills.earlySaving,
+    prompt: 'If you save one coin every week, what happens over many weeks?',
+    options: [
+      'Nothing changes',
+      'You end up with more coins than you started with',
+      'Your coins disappear',
+      'The piggy bank eats them',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Every coin you save adds to the ones already there, so your savings '
+        'grow bigger over time.',
+  ),
+  QuizQuestion(
+    id: 'u10q4',
+    skillId: QuizSkills.earlySaving,
+    prompt:
+        'You get two coins and put both in your piggy bank instead of '
+        'spending them. What did you just do?',
+    options: ['Lost your coins', 'Spent your coins', 'Traded your coins', 'Saved your coins'],
+    correctIndex: 3,
+    explanation:
+        'Putting money away instead of spending it right away is called '
+        'saving.',
+  ),
+];
+
+const List<QuizQuestion> _unit10Test = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u10t1',
+    skillId: QuizSkills.earlyMoneyBasics,
+    prompt: 'What is money used for?',
+    options: [
+      'Trading for things you need or want',
+      'Decorating your room',
+      'Making your food taste better',
+      'Nothing — it is just for looking at',
+    ],
+    correctIndex: 0,
+    explanation: 'Money is a tool people trade for things they need or want.',
+  ),
+  QuizQuestion(
+    id: 'u10t2',
+    skillId: QuizSkills.earlySaving,
+    prompt: 'Why might you choose to save a coin instead of spending it right away?',
+    options: [
+      'So it disappears faster',
+      'So you have it later for something you want more',
+      'Coins are not allowed to be spent',
+      'Saving makes the coin bigger',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Saving means waiting, so the money is still there when you decide '
+        'you really want something.',
+  ),
+  QuizQuestion(
+    id: 'u10t3',
+    skillId: QuizSkills.earlyMoneyBasics,
+    prompt: 'A grown-up goes to work. Why?',
+    options: [
+      'To pass the time',
+      'To earn money',
+      'Because toys are boring',
+      'Because the store told them to',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Working is one of the main ways grown-ups earn the money they use '
+        'to buy things.',
+  ),
+  QuizQuestion(
+    id: 'u10t4',
+    skillId: QuizSkills.earlySaving,
+    prompt: 'Where is a good safe place to keep coins you want to save?',
+    options: ['On the floor', 'In a piggy bank', 'Outside in the rain', 'In your mouth'],
+    correctIndex: 1,
+    explanation: 'A piggy bank keeps your coins together and safe until you need them.',
+  ),
+  QuizQuestion(
+    id: 'u10t5',
+    skillId: QuizSkills.earlyMoneyBasics,
+    prompt: 'You want a toy at the store. What do you need to get it?',
+    options: [
+      'Enough money to pay for it',
+      'A loud voice',
+      'A different toy to trade the cashier',
+      'Nothing, toys are free',
+    ],
+    correctIndex: 0,
+    explanation: 'Buying something at a store means paying enough money for it.',
+  ),
+  QuizQuestion(
+    id: 'u10t6',
+    skillId: QuizSkills.earlySaving,
+    prompt: 'You have 3 coins. You spend all 3 on candy. How many coins are left to save?',
+    options: ['3', '2', '1', '0'],
+    correctIndex: 3,
+    explanation: 'Spending all of your coins means none are left to save.',
+  ),
+  QuizQuestion(
+    id: 'u10t7',
+    skillId: QuizSkills.earlyMoneyBasics,
+    prompt: 'Which one of these is something you would buy with money?',
+    options: ['A birthday balloon', 'The moon', 'A cloud', 'A shadow'],
+    correctIndex: 0,
+    explanation:
+        'A balloon is something a store sells, so you would pay money for '
+        'it. The moon, clouds, and shadows are not for sale.',
+  ),
+];
+
+// ---------------------------------------------------------------------------
+// Unit 11 — Saving and Spending (ages 7-10)
+// ---------------------------------------------------------------------------
+
+const List<QuizQuestion> _unit11Practice = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u11p1',
+    skillId: QuizSkills.allowanceEarning,
+    prompt: 'What is an allowance?',
+    options: [
+      'Money you get, often for doing chores or as a regular gift',
+      'A rule that stops you from ever spending money',
+      'A kind of bank account only adults can open',
+      'Money you find on the ground',
+    ],
+    correctIndex: 0,
+    explanation:
+        'An allowance is money a kid gets on a regular basis — sometimes for '
+        'doing chores, sometimes just as a set amount.',
+  ),
+  QuizQuestion(
+    id: 'u11p2',
+    skillId: QuizSkills.wantsVsNeeds,
+    prompt: 'Which of these is a want, not a need?',
+    options: ['A warm coat in winter', 'A new video game', 'Food for dinner', 'A place to sleep'],
+    correctIndex: 1,
+    explanation:
+        'A need is something you cannot really do without. A video game is '
+        'fun, but you can live without it — that makes it a want.',
+  ),
+  QuizQuestion(
+    id: 'u11p3',
+    skillId: QuizSkills.simpleSavingsPlan,
+    prompt: 'You get \$10. What is a simple plan for it?',
+    options: [
+      'Decide how much to save and how much to spend, before spending any',
+      'Spend all of it the same day without thinking',
+      'Give it all away right away',
+      'Hide it and forget where it is',
+    ],
+    correctIndex: 0,
+    explanation:
+        'A simple plan just means deciding ahead of time how much you will '
+        'save and how much you will spend, instead of spending first and '
+        'thinking later.',
+  ),
+];
+
+const List<QuizQuestion> _unit11Quiz = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u11q1',
+    skillId: QuizSkills.allowanceEarning,
+    prompt: 'Doing a chore to earn money is an example of:',
+    options: [
+      'Saving',
+      'Spending',
+      'Earning',
+      'Borrowing',
+    ],
+    correctIndex: 2,
+    explanation: 'Earning means getting money in exchange for doing something, like a chore.',
+  ),
+  QuizQuestion(
+    id: 'u11q2',
+    skillId: QuizSkills.wantsVsNeeds,
+    prompt: 'Your shoes have holes and hurt your feet. New shoes are a:',
+    options: ['Want', 'Need', 'Trick', 'Toy'],
+    correctIndex: 1,
+    explanation: 'Shoes that actually work are a need — you use them every day and cannot go without them.',
+  ),
+  QuizQuestion(
+    id: 'u11q3',
+    skillId: QuizSkills.simpleSavingsPlan,
+    prompt: 'You get \$5 a week. You decide to save \$2 and spend \$3 every week. This is called:',
+    options: ['A trade', 'A plan', 'A loan', 'A gift'],
+    correctIndex: 1,
+    explanation: 'Deciding ahead of time how to split your money between saving and spending is a plan.',
+  ),
+  QuizQuestion(
+    id: 'u11q4',
+    skillId: QuizSkills.banking,
+    prompt: 'Why might a family keep money in a bank instead of just at home?',
+    options: [
+      'Banks pay you to watch your money',
+      'Banks keep money safer than a drawer at home',
+      'Banks turn money into gold',
+      'It is a rule that money must live in a bank',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Banks are built to keep money safe — safer than leaving cash lying '
+        'around the house.',
+  ),
+];
+
+const List<QuizQuestion> _unit11Test = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u11t1',
+    skillId: QuizSkills.allowanceEarning,
+    prompt: 'Which of these is a way to earn money?',
+    options: [
+      'Doing chores for a parent who pays you',
+      'Wishing really hard',
+      'Waiting for money to appear',
+      'Asking a stranger for money',
+    ],
+    correctIndex: 0,
+    explanation: 'Doing a chore for pay is a simple, real way kids earn money.',
+  ),
+  QuizQuestion(
+    id: 'u11t2',
+    skillId: QuizSkills.wantsVsNeeds,
+    prompt: 'Which of these is a need?',
+    options: ['A poster for your wall', 'Dinner tonight', 'A new toy', 'Extra stickers'],
+    correctIndex: 1,
+    explanation: 'Food is something your body needs regularly — that makes it a need, not a want.',
+  ),
+  QuizQuestion(
+    id: 'u11t3',
+    skillId: QuizSkills.simpleSavingsPlan,
+    prompt: 'You want to buy a \$20 toy. You save \$5 a week. About how many weeks until you can buy it?',
+    options: ['1 week', '2 weeks', '4 weeks', '10 weeks'],
+    correctIndex: 2,
+    explanation: 'Saving \$5 a week for 4 weeks adds up to \$20.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u11t4',
+    skillId: QuizSkills.banking,
+    prompt: 'A bank is a place that mainly:',
+    options: [
+      'Sells toys',
+      'Keeps money safe and helps people save it',
+      'Gives away free money to anyone who asks',
+      'Only lets grown-ups inside',
+    ],
+    correctIndex: 1,
+    explanation: 'A bank\'s main job is keeping money safe and helping people save and manage it.',
+  ),
+  QuizQuestion(
+    id: 'u11t5',
+    skillId: QuizSkills.allowanceEarning,
+    prompt: 'You do the dishes every day and get \$1 each time. After 5 days, how much have you earned?',
+    options: ['\$1', '\$3', '\$5', '\$10'],
+    correctIndex: 2,
+    explanation: '\$1 a day for 5 days adds up to \$5.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u11t6',
+    skillId: QuizSkills.wantsVsNeeds,
+    prompt: 'Why is it useful to know the difference between a need and a want?',
+    options: [
+      'So you always buy wants first',
+      'So you can decide what really matters before you spend',
+      'Needs are not allowed to be bought',
+      'It has no real use',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Knowing needs from wants helps you decide what to spend money on '
+        'first when you cannot buy everything.',
+  ),
+  QuizQuestion(
+    id: 'u11t7',
+    skillId: QuizSkills.simpleSavingsPlan,
+    prompt: 'What is the first step in making a simple money plan?',
+    options: [
+      'Spend everything, then see what is left',
+      'Decide how much to save before you spend anything',
+      'Ask a friend to hold your money',
+      'Forget about the money completely',
+    ],
+    correctIndex: 1,
+    explanation:
+        'A plan works best when you decide the saving amount first, before '
+        'any spending happens.',
   ),
 ];

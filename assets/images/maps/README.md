@@ -1,41 +1,59 @@
 # Adventure map
 
-## `pending_export/`
-Your first map export landed here (`map (1).png` + `loading_screen/map.json` +
-`loading_screen/spritesheet.png`), but `map.json` is **not Tiled JSON** — it's
-a custom `{tileSize, mapWidth, mapHeight, layers}` schema from whatever tool
-made it, missing the `orientation`/`tilesets` fields Bonfire's `TiledAssetReader`
-needs. It won't load as-is. Re-export from Tiled as JSON (see Format below) and
-drop the real `adventure_map.json` directly in this folder, or say the word and
-I'll write a small converter for this schema instead.
-
-
-Drop your exported map here as `adventure_map.json`, plus whatever tileset
-image(s) it references, in this same folder. `AdventureWorldScreen`
+The live map lives here as `map.json` + `spritesheet.png` — this is what
+`AdventureWorldScreen`
 (`lib/screens_minigames_admin_etc/Gameplay/adventure/adventure_world_screen.dart`)
-checks for `assets/images/maps/adventure_map.json` at runtime — if it's not
-there yet, the screen shows a "waiting for your map" placeholder instead of
-crashing; the moment the file exists (and the app is rebuilt), it loads for real.
+loads at runtime. If `map.json` is missing, the screen shows a "waiting for
+your map" placeholder instead of crashing.
 
-## Format
+`reference/town_preview.png` is just the assembled top-down render of the
+current map, kept for visual reference — it's not read by the app.
 
-Bonfire reads **Tiled JSON**, not the raw `.tmx` XML file — in Tiled, use
-**File → Export As → JSON**, not "Save As". A `.tmx` dropped here as-is will
-not load.
+## Format: Sprite Fusion (not Tiled)
 
-- Orientation must be **Orthogonal** (Tiled's default) — Bonfire only
-  supports that.
-- Any object layer named for a building/zone (job, school, shop, bank, home,
-  etc.) can be wired up in code to trigger a life-sim event when the player
-  walks into it — tell me the layer/object names you used and I'll wire the
-  triggers.
-- Tile pixel size is read directly from the map file, so a 50x50-**tile**
-  grid works at whatever tile pixel size you used (16px, 32px, etc.) with no
-  code changes.
+The exported map is **Sprite Fusion** JSON, not Tiled JSON — Bonfire (the
+game package this app uses) ships a reader for this format too
+(`WorldMapBySpritefusion` + `SpritefusionAssetReader`), so it Just Works
+without any conversion. The schema:
 
-## After adding the file
+```json
+{
+  "tileSize": 16,
+  "mapWidth": 50,
+  "mapHeight": 50,
+  "layers": [
+    { "name": "floor", "tiles": [{ "id": "12", "x": 3, "y": 4 }, ...] },
+    ...
+  ]
+}
+```
 
-Register any new subfolder here in `pubspec.yaml` if your tileset image
-lives in a nested folder (Flutter does not bundle subfolders recursively —
-see the `assets:` section), then do a full restart (not just hot reload) so
-the asset bundle picks it up.
+- `spritesheet.png` **must** be named exactly that and live in this same
+  folder — the reader hardcodes the filename.
+- Tile `id`s index into the spritesheet left-to-right, top-to-bottom, at
+  `tileSize`-px cells (e.g. an 8-column sheet: `row = id ~/ 8`,
+  `col = id % 8`).
+- Layers stack in listed order; a layer can optionally set `"collider":
+  true` to make its tiles solid.
+
+Bonfire's Tiled reader (`WorldMapByTiled` + `TiledAssetReader`) still works
+too if you ever export from Tiled instead — just drop a Tiled-exported
+`adventure_map.json` (File → Export As → JSON, not Save As; Orthogonal
+orientation only) here and swap the reader in
+`adventure_world_screen.dart` back.
+
+## Building triggers (not wired yet)
+
+Any object/tile layer named for a building/zone (job, school, shop, bank,
+home, etc.) could be wired up in code to trigger a Life Sim event when the
+player walks into it — Sprite Fusion's `objectsBuilder` mechanism supports
+this. The current map's layers (`top_playground`, `playground`,
+`structures`, `walls`, `terrain`, `floor`, etc.) aren't named for specific
+buildings, so nothing is wired yet. Name a layer for a zone and say which
+event it should fire, and it can be added.
+
+## After adding a new file
+
+Register any new subfolder here in `pubspec.yaml` if a tileset image lives
+in a nested folder (Flutter does not bundle subfolders recursively), then
+do a full restart (not just hot reload) so the asset bundle picks it up.

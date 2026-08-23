@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/app_assets.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
+import '../../themes_colors/app_theme.dart';
 import '../../widgets_custom_lotties/custom_button.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
 
@@ -82,7 +83,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF071711),
+      backgroundColor: AppTheme.deepForest,
       body: Stack(
         children: [
           Positioned.fill(

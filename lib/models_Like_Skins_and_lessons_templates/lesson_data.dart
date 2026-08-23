@@ -591,4 +591,133 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
       ),
     ],
   ),
+  // Units 10-11 are a second, independent starting chain for younger
+  // players, placed at the *end* of this list on purpose (not the front):
+  // DailyPlanBuilder._nextLesson walks lessonUnits in list order and quests
+  // the first uncompleted lesson node it finds, so putting these first
+  // would recommend "What Is Money?" to every existing teen/adult player as
+  // their daily quest. Putting them last means the existing curriculum is
+  // exhausted before they ever surface there, while the Academy's unit
+  // strip still shows them *first* regardless — it groups by
+  // ageStage.minAge, not list position. Ages 4-6 and 7-10 aren't
+  // realistically gated behind the teen/adult curriculum either way, so
+  // their first lesson carries no prerequisite of its own rather than
+  // opening off unit_9 — see test/lesson_data_test.dart's "starts its own
+  // root" test, which documents and checks this on purpose.
+  LessonUnit(
+    id: 'unit_10',
+    title: 'Unit 10: Money Is Real',
+    subtitle: 'The very first ideas about money',
+    description:
+        'What money actually is, why things cost money, and the first idea '
+        'behind saving: a piggy bank. Written for the very youngest players — '
+        'best explored together with a grown-up or older sibling.',
+    order: 10,
+    ageStage: AgeStage.earlyChildhood,
+    lessons: <Lesson>[
+      Lesson(
+        id: 'lesson_46',
+        title: 'What Is Money?',
+        unitId: 'unit_10',
+        order: 1,
+        estimatedMinutes: 5,
+      ),
+      Lesson(
+        id: 'lesson_47',
+        title: 'Things Cost Money',
+        unitId: 'unit_10',
+        order: 2,
+        prerequisites: <String>['lesson_46'],
+        estimatedMinutes: 5,
+      ),
+      Lesson(
+        id: 'quiz_10',
+        title: 'Quick Quiz',
+        unitId: 'unit_10',
+        order: 3,
+        type: LessonNodeType.quiz,
+        prerequisites: <String>['lesson_47'],
+        estimatedMinutes: 4,
+      ),
+      Lesson(
+        id: 'lesson_48',
+        title: 'Saving in a Piggy Bank',
+        unitId: 'unit_10',
+        order: 4,
+        prerequisites: <String>['quiz_10'],
+        estimatedMinutes: 5,
+      ),
+      Lesson(
+        id: 'test_10',
+        title: 'Unit Test',
+        unitId: 'unit_10',
+        order: 5,
+        type: LessonNodeType.unitTest,
+        prerequisites: <String>['lesson_48'],
+        estimatedMinutes: 4,
+      ),
+    ],
+  ),
+  LessonUnit(
+    id: 'unit_11',
+    title: 'Unit 11: Saving and Spending',
+    subtitle: 'Your first real choices with money',
+    description:
+        'Earning a little money, telling a need from a want, and making a '
+        'simple plan for what to do with what you have.',
+    order: 11,
+    ageStage: AgeStage.youngKids,
+    lessons: <Lesson>[
+      Lesson(
+        id: 'lesson_49',
+        title: 'Earning an Allowance',
+        unitId: 'unit_11',
+        order: 1,
+        prerequisites: <String>['test_10'],
+        estimatedMinutes: 6,
+      ),
+      Lesson(
+        id: 'lesson_50',
+        title: 'Needs vs Wants',
+        unitId: 'unit_11',
+        order: 2,
+        prerequisites: <String>['lesson_49'],
+        estimatedMinutes: 6,
+      ),
+      Lesson(
+        id: 'quiz_11',
+        title: 'Quick Quiz',
+        unitId: 'unit_11',
+        order: 3,
+        type: LessonNodeType.quiz,
+        prerequisites: <String>['lesson_50'],
+        estimatedMinutes: 4,
+      ),
+      Lesson(
+        id: 'lesson_51',
+        title: 'Making a Simple Plan',
+        unitId: 'unit_11',
+        order: 4,
+        prerequisites: <String>['quiz_11'],
+        estimatedMinutes: 6,
+      ),
+      Lesson(
+        id: 'lesson_52',
+        title: 'Why Banks Keep Money Safe',
+        unitId: 'unit_11',
+        order: 5,
+        prerequisites: <String>['lesson_51'],
+        estimatedMinutes: 6,
+      ),
+      Lesson(
+        id: 'test_11',
+        title: 'Unit Test',
+        unitId: 'unit_11',
+        order: 6,
+        type: LessonNodeType.unitTest,
+        prerequisites: <String>['lesson_52'],
+        estimatedMinutes: 5,
+      ),
+    ],
+  ),
 ];

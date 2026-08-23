@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
+import '../../../themes_colors/app_theme.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -13,6 +15,7 @@ class LeaderboardScreen extends StatefulWidget {
 
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
   late Future<List<LeaderboardEntry>> _leaderboardFuture;
+  bool _showFriends = false;
 
   @override
   void initState() {
@@ -22,10 +25,23 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
   Future<List<LeaderboardEntry>> _loadLeaderboard() {
     final currentUserId = context.read<UserStatsController>().stats.id;
+    if (_showFriends) {
+      return SupabaseService.instance.fetchFriendsLeaderboard(
+        currentUserId: currentUserId,
+      );
+    }
     return SupabaseService.instance.fetchLeaderboard(
       limit: 20,
       currentUserId: currentUserId,
     );
+  }
+
+  void _setMode({required bool friends}) {
+    if (friends == _showFriends) return;
+    setState(() {
+      _showFriends = friends;
+      _leaderboardFuture = _loadLeaderboard();
+    });
   }
 
   Future<void> _refresh() async {
@@ -41,10 +57,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     final currentUser = context.watch<UserStatsController>().stats;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F2E1E),
+      backgroundColor: AppTheme.deepForest,
       appBar: AppBar(
-        title: const Text('Leaderboard'),
-        backgroundColor: const Color(0xFF0F2E1E),
+        title: Text('Leaderboard', style: GoogleFonts.baloo2(fontWeight: FontWeight.w700)),
+        backgroundColor: AppTheme.deepForest,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -66,17 +82,19 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(20),
               children: [
-                const Text(
+                Text(
                   'Top Finance Wizards',
-                  style: TextStyle(
+                  style: GoogleFonts.baloo2(
                     color: Colors.white,
                     fontSize: 22,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  leaders.isEmpty
+                  _showFriends
+                      ? 'Ranked among friends who\'ve added your code (or you\'ve added theirs).'
+                      : leaders.isEmpty
                       ? 'No cloud leaderboard data is available yet, so you are seeing cached progress only.'
                       : 'Rankings now come from saved user stats instead of hardcoded demo names.',
                   style: TextStyle(
@@ -84,7 +102,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     height: 1.45,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
+                _LeaderboardModeToggle(
+                  showFriends: _showFriends,
+                  onChanged: (friends) => _setMode(friends: friends),
+                ),
+                const SizedBox(height: 14),
                 _CurrentUserSummary(
                   username: currentUser.username,
                   literacyPoints: currentUser.literacyPoints,
@@ -93,7 +116,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 ),
                 const SizedBox(height: 16),
                 if (leaders.isEmpty)
-                  const _EmptyLeaderboardState()
+                  _EmptyLeaderboardState(showingFriends: _showFriends)
                 else
                   ...leaders.map(
                     (leader) => Padding(
@@ -211,8 +234,74 @@ class _StatChip extends StatelessWidget {
   }
 }
 
+class _LeaderboardModeToggle extends StatelessWidget {
+  const _LeaderboardModeToggle({
+    required this.showFriends,
+    required this.onChanged,
+  });
+
+  final bool showFriends;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppTheme.panel,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _ModeTab(label: 'Global', active: !showFriends, onTap: () => onChanged(false)),
+          ),
+          Expanded(
+            child: _ModeTab(label: 'Friends', active: showFriends, onTap: () => onChanged(true)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModeTab extends StatelessWidget {
+  const _ModeTab({required this.label, required this.active, required this.onTap});
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: active ? AppTheme.greenPrimary : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: GoogleFonts.baloo2(
+            color: active ? AppTheme.deepForest : Colors.white70,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _EmptyLeaderboardState extends StatelessWidget {
-  const _EmptyLeaderboardState();
+  const _EmptyLeaderboardState({required this.showingFriends});
+
+  final bool showingFriends;
 
   @override
   Widget build(BuildContext context) {
@@ -222,9 +311,11 @@ class _EmptyLeaderboardState extends StatelessWidget {
         color: const Color(0xFF163526).withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: const Text(
-        'Once more players save stats to Supabase, rankings will appear here automatically.',
-        style: TextStyle(
+      child: Text(
+        showingFriends
+            ? 'No friends yet — add one from your Profile using their friend code, and ask them to add yours back.'
+            : 'Once more players save stats to Supabase, rankings will appear here automatically.',
+        style: const TextStyle(
           color: Colors.white,
           height: 1.5,
           fontWeight: FontWeight.w600,

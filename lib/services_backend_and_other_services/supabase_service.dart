@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
+import '../models_Like_Skins_and_lessons_templates/money_habit_models.dart';
 import '../models_Like_Skins_and_lessons_templates/player_profile.dart';
 
 /// Where the emailed password-reset link sends the player back to.
@@ -340,6 +341,86 @@ class UserStats {
         .toList(growable: false);
   }
 
+  // ---------------- Money Habits ----------------
+  // All read/written the same way as everything else above: ad hoc keys
+  // inside `spendingHabits`, no migration. See
+  // docs/MONEY_HABITS_FEATURE.md for the full data-flow reference.
+
+  /// Independent progression counter driving the savings jar's fill
+  /// stage — deliberately separate from [xp] so the jar reacts only to
+  /// money-habit activity, not stock trades or quizzes.
+  int get jarXp => _readInt(spendingHabits['habit_xp']);
+
+  /// Lifetime running totals (money saved, smart choices kept).
+  HabitImpact get habitTotals =>
+      HabitImpact.fromMap(_readMap(spendingHabits['habit_totals']));
+
+  /// Per-month totals, keyed 'YYYY-MM' — powers the profile's
+  /// month-over-month comparison without recomputing from raw history.
+  Map<String, HabitImpact> get habitMonthly {
+    final raw = _readMap(spendingHabits['habit_monthly']);
+    return raw.map(
+      (key, value) => MapEntry(key, HabitImpact.fromMap(_readMap(value))),
+    );
+  }
+
+  /// Catalog habit ids pinned to the Home weekly tracker.
+  List<String> get savedHabitIds {
+    final raw = spendingHabits['saved_habit_ids'];
+    if (raw is! List) return const <String>[];
+    return raw
+        .map((entry) => entry.toString().trim())
+        .where((entry) => entry.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+  }
+
+  /// Per-habit adjustable-parameter value saved alongside a pinned habit
+  /// (e.g. "$5"), keyed by habit id. Falls back to the template's default
+  /// when absent.
+  Map<String, double> get savedHabitParams {
+    final raw = _readMap(spendingHabits['saved_habit_params']);
+    return raw.map((key, value) => MapEntry(key, _readDouble(value)));
+  }
+
+  /// Habit-id list completed per day, trailing 14 days only — feeds the
+  /// weekly tracker grid.
+  Map<String, List<String>> get habitWeeklyLog {
+    final raw = _readMap(spendingHabits['habit_weekly_log']);
+    return raw.map((key, value) {
+      final list = value is List
+          ? value.map((e) => e.toString()).toList(growable: false)
+          : const <String>[];
+      return MapEntry(key, list);
+    });
+  }
+
+  /// Completed-habit count per day, trailing 365 days — a compact,
+  /// longer-retention cousin of [habitWeeklyLog] purely for the profile
+  /// calendar heatmap (density only, no per-habit detail needed there).
+  Map<String, int> get habitActivityCalendar {
+    final raw = _readMap(spendingHabits['habit_activity_calendar']);
+    return raw.map((key, value) => MapEntry(key, _readInt(value)));
+  }
+
+  /// One-off Challenge-task completions (separate from the *recurring*
+  /// saved-habit tracker) — same shape as [completedLessons].
+  List<String> get completedChallengeTasks {
+    final raw = spendingHabits['completed_challenge_tasks'];
+    if (raw is! List) return const <String>[];
+    return raw
+        .map((entry) => entry.toString().trim())
+        .where((entry) => entry.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+  }
+
+  /// ISO date the jar was last fed a completed habit. Mood is always
+  /// derived from this at read time (see [JarMood.forDaysSinceActive]) —
+  /// never stored, so it can't go stale.
+  String? get jarLastActive =>
+      _readString(spendingHabits['jar_last_active']);
+
   String get profileImageUrl {
     final value = spendingHabits['profile_image_url']?.toString().trim();
     if (value == null || value.isEmpty) {
@@ -507,6 +588,14 @@ class SupabaseService {
   static const String userStatsTable = 'user_stats';
   static const String feedbackTable = 'app_feedback';
   static const String leaderboardView = 'leaderboard';
+  static const String friendshipsTable = 'friendships';
+
+  /// Derives a shareable "friend code" from a user id — the first 8
+  /// characters (the first dash-delimited segment of a uuid), uppercased.
+  /// No new column needed; resolving a code back to an id is done by
+  /// matching against the already-broadly-readable [leaderboardView].
+  static String friendCodeFor(String userId) =>
+      userId.substring(0, math.min(8, userId.length)).toUpperCase();
   static const String defaultProfileImageBucket = 'profile_pictures';
   static const Duration _supabaseReadTimeout = Duration(seconds: 6);
   static const Set<String> _ownerAdminEmails = <String>{
@@ -542,6 +631,11 @@ grant select, insert, update on table public.user_stats to authenticated;
 
 alter table public.user_stats enable row level security;
 
+-- Self-declared under-13 accounts (spending_habits.age_band = 'under_13')
+-- never appear on the leaderboard — a privacy-protective default, not a
+-- setting, since none of the profile-picture/username fields the view
+-- exposes should surface a young kid's account publicly. Accounts with no
+-- declared age band (age is optional at signup) still appear.
 create or replace view public.leaderboard as
 select
   id,
@@ -551,7 +645,8 @@ select
   gold,
   spending_habits->>'profile_image_url' as profile_image_url,
   updated_at
-from public.user_stats;
+from public.user_stats
+where coalesce(spending_habits->>'age_band', '') <> 'under_13';
 
 grant select on table public.leaderboard to authenticated;
 
@@ -598,6 +693,57 @@ begin
       to authenticated
       using (id::text = (select auth.uid())::text)
       with check (id::text = (select auth.uid())::text);
+  end if;
+end
+\$\$;
+
+-- Friendships for the eco-impact "Friends" leaderboard. A row is a directed
+-- edge "user_id added friend_id" — adding a code only ever inserts YOUR own
+-- row (RLS below only allows inserting where you're `user_id`), so a
+-- friendship reads as mutual once both sides have added each other's code.
+-- `friend code` needs no new column: it's derived client-side as the first
+-- 8 characters of the user's uuid, uppercased, then resolved back to an id
+-- by matching against the already-broadly-readable `leaderboard` view.
+create table if not exists public.friendships (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  friend_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default timezone('utc', now()),
+  unique (user_id, friend_id)
+);
+
+grant select, insert on table public.friendships to authenticated;
+
+alter table public.friendships enable row level security;
+
+do \$\$
+begin
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'friendships'
+      and policyname = 'Users can read friendships they are part of'
+  ) then
+    create policy "Users can read friendships they are part of"
+      on public.friendships
+      for select
+      to authenticated
+      using (user_id = (select auth.uid()) or friend_id = (select auth.uid()));
+  end if;
+
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'friendships'
+      and policyname = 'Users can only add friends as themselves'
+  ) then
+    create policy "Users can only add friends as themselves"
+      on public.friendships
+      for insert
+      to authenticated
+      with check (user_id = (select auth.uid()));
   end if;
 end
 \$\$;
@@ -1373,6 +1519,140 @@ end
     }
   }
 
+  /// Friendship is a directed edge ("I added them"); this reads *either*
+  /// direction as a friend, so the list fills in once both sides have added
+  /// each other's code. Offline or with no friends yet, returns an empty
+  /// list rather than falling back to cached data — there's no local cache
+  /// of *other* users' stats to fall back to.
+  Future<List<LeaderboardEntry>> fetchFriendsLeaderboard({
+    required String currentUserId,
+  }) async {
+    if (!_isSupabaseConnected) {
+      return const <LeaderboardEntry>[];
+    }
+    try {
+      final client = Supabase.instance.client;
+      final edges = await client
+          .from(friendshipsTable)
+          .select('user_id, friend_id')
+          .or('user_id.eq.$currentUserId,friend_id.eq.$currentUserId')
+          .timeout(_supabaseReadTimeout);
+
+      final friendIds = <String>{};
+      for (final row in edges) {
+        final userId = row['user_id']?.toString();
+        final friendId = row['friend_id']?.toString();
+        if (userId == currentUserId && friendId != null) {
+          friendIds.add(friendId);
+        }
+        if (friendId == currentUserId && userId != null) {
+          friendIds.add(userId);
+        }
+      }
+      if (friendIds.isEmpty) {
+        return const <LeaderboardEntry>[];
+      }
+
+      final response = await client
+          .from(leaderboardView)
+          .select('*')
+          .inFilter('id', friendIds.toList())
+          .order('literacy_points', ascending: false)
+          .order('xp', ascending: false)
+          .order('gold', ascending: false)
+          .timeout(_supabaseReadTimeout);
+
+      return response
+          .whereType<Map>()
+          .map(
+            (entry) =>
+                entry.map((key, value) => MapEntry(key.toString(), value)),
+          )
+          .toList(growable: false)
+          .asMap()
+          .entries
+          .map(
+            (entry) => LeaderboardEntry(
+              id: (entry.value['id'] ?? '').toString(),
+              rank: entry.key + 1,
+              username: (entry.value['username'] ?? 'Finance Wizard')
+                  .toString(),
+              literacyPoints: _readInt(entry.value['literacy_points']),
+              xp: _readInt(entry.value['xp']),
+              gold: _readInt(entry.value['gold']),
+              isCurrentUser: false,
+              profileImageUrl: (entry.value['profile_image_url'] ?? '')
+                  .toString(),
+            ),
+          )
+          .toList(growable: false);
+    } catch (error) {
+      debugPrint('Supabase friends leaderboard failed: $error');
+      return const <LeaderboardEntry>[];
+    }
+  }
+
+  /// Resolves [code] against [leaderboardView] and inserts a directed
+  /// friendship edge from [currentUserId] to whoever matches. Returns a
+  /// short human-readable result to show the user directly.
+  Future<String> addFriendByCode({
+    required String currentUserId,
+    required String code,
+  }) async {
+    final trimmed = code.trim().toUpperCase();
+    if (trimmed.isEmpty) {
+      return 'Enter a friend code first.';
+    }
+    if (!_isSupabaseConnected) {
+      return 'Connect to the internet to add friends.';
+    }
+    try {
+      final client = Supabase.instance.client;
+      final matches = await client
+          .from(leaderboardView)
+          .select('id, username')
+          .ilike('id', '$trimmed%')
+          .limit(5)
+          .timeout(_supabaseReadTimeout);
+
+      final normalized = matches
+          .whereType<Map>()
+          .map(
+            (entry) =>
+                entry.map((key, value) => MapEntry(key.toString(), value)),
+          )
+          .toList(growable: false);
+
+      Map<String, dynamic> match = const <String, dynamic>{};
+      for (final row in normalized) {
+        if (friendCodeFor((row['id'] ?? '').toString()) == trimmed) {
+          match = row;
+          break;
+        }
+      }
+
+      final targetId = (match['id'] ?? '').toString();
+      if (targetId.isEmpty) {
+        return 'No player found with that code.';
+      }
+      if (targetId == currentUserId) {
+        return "That's your own code!";
+      }
+
+      await client
+          .from(friendshipsTable)
+          .upsert(
+            <String, dynamic>{'user_id': currentUserId, 'friend_id': targetId},
+            onConflict: 'user_id,friend_id',
+          );
+
+      return 'Added ${match['username'] ?? 'a new friend'}!';
+    } catch (error) {
+      debugPrint('Supabase add friend failed: $error');
+      return 'Could not add that friend right now.';
+    }
+  }
+
   Future<SharedPreferences> _ensurePreferences() async {
     _preferences ??= await SharedPreferences.getInstance();
     return _preferences!;
@@ -1459,6 +1739,16 @@ end
         )
         .toList(growable: false);
   }
+}
+
+double _readDouble(dynamic value) {
+  if (value is num) {
+    return value.toDouble();
+  }
+  if (value is String) {
+    return double.tryParse(value) ?? 0;
+  }
+  return 0;
 }
 
 int _readInt(dynamic value) {

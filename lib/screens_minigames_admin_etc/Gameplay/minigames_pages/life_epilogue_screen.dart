@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart'
     show LifeOriginInfo;
+import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
 
 /// The recap shown when a [LifeSummary] life ends — replaces what used to be
@@ -19,7 +20,7 @@ class LifeEpilogueScreen extends StatelessWidget {
     final archetype = summary.archetype;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF071711),
+      backgroundColor: AppTheme.deepForest,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
+import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/idle_hover_icon.dart';
 
@@ -37,7 +39,7 @@ class MainGamePage extends StatelessWidget {
       builder: (context, controller, _) {
         final stats = controller.stats;
         return Scaffold(
-          backgroundColor: const Color(0xFF071711),
+          backgroundColor: AppTheme.deepForest,
           bottomNavigationBar: onNavSelected == null
               ? null
               : CustomBottomNav(
@@ -48,20 +50,20 @@ class MainGamePage extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(18, 18, 18, 120),
               children: [
-                const Text(
+                Text(
                   'Play',
-                  style: TextStyle(
+                  style: GoogleFonts.baloo2(
                     color: Colors.white,
                     fontSize: 30,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Level ${stats.level} • ${stats.gold} gold',
-                  style: const TextStyle(
-                    color: Color(0xFFFFD45C),
-                    fontWeight: FontWeight.w800,
+                  style: GoogleFonts.baloo2(
+                    color: const Color(0xFFFFD45C),
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -124,10 +126,10 @@ class _EndingsCollection extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      decoration: AppTheme.getPuffyDecoration(
+        accent: const Color(0xFFFFD45C),
+        fillColor: AppTheme.panelStrong,
+        restAlpha: 0.1,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,21 +152,21 @@ class _EndingsCollection extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Endings',
-                  style: TextStyle(
+                  style: GoogleFonts.baloo2(
                     color: Colors.white,
                     fontSize: 17,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               Text(
                 '$found / ${all.length}',
-                style: const TextStyle(
-                  color: Color(0xFFFFD45C),
-                  fontWeight: FontWeight.w900,
+                style: GoogleFonts.baloo2(
+                  color: const Color(0xFFFFD45C),
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -174,8 +176,8 @@ class _EndingsCollection extends StatelessWidget {
             complete
                 ? 'Every ending found. However you live it, you have seen where it goes.'
                 : 'How your life turns out decides the ending you get. Play differently to find the rest.',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.62),
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.72),
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
               height: 1.35,
@@ -221,9 +223,9 @@ class _EndingsCollection extends StatelessWidget {
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                label: const Text(
+                label: Text(
                   'Live another life',
-                  style: TextStyle(fontWeight: FontWeight.w900),
+                  style: GoogleFonts.baloo2(fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -273,13 +275,13 @@ class _EndingSlot extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+            style: GoogleFonts.baloo2(
               color: found
                   ? Colors.white
                   : Colors.white.withValues(alpha: 0.35),
               fontSize: 10.5,
               height: 1.15,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -301,13 +303,14 @@ class _LifeHeroCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF1C5038), Color(0xFF081B14)],
+            colors: [Color(0xFF2A5F46), Color(0xFF12301F)],
           ),
-          border: Border.all(color: const Color(0xFF85EFAC).withValues(alpha: 0.3)),
+          border: Border.all(color: const Color(0xFF85EFAC).withValues(alpha: 0.32)),
+          boxShadow: AppTheme.puffyShadow(const Color(0xFF85EFAC), restAlpha: 0.2),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,33 +323,33 @@ class _LifeHeroCard extends StatelessWidget {
                     color: const Color(0xFFFFD45C).withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(999),
                   ),
-                  child: const Text(
+                  child: Text(
                     'MAIN GAME',
-                    style: TextStyle(
-                      color: Color(0xFFFFD45C),
+                    style: GoogleFonts.baloo2(
+                      color: const Color(0xFFFFD45C),
                       fontSize: 11,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Play Life',
-              style: TextStyle(
+              style: GoogleFonts.baloo2(
                 color: Colors.white,
                 fontSize: 40,
                 height: 1,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 12),
             Text(
               'Grow up year by year, make real money decisions, and shape your '
               'money, happiness, health, and smarts.',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.78),
+              style: GoogleFonts.quicksand(
+                color: Colors.white.withValues(alpha: 0.82),
                 height: 1.4,
                 fontWeight: FontWeight.w600,
               ),
@@ -360,9 +363,9 @@ class _LifeHeroCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 22),
               ),
               icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text(
+              label: Text(
                 'Start your life',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                style: GoogleFonts.baloo2(fontWeight: FontWeight.w700, fontSize: 15),
               ),
             ),
           ],
@@ -394,10 +397,11 @@ class _ShortcutCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(22),
       child: Container(
         padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+        decoration: AppTheme.getPuffyDecoration(
+          accent: color,
+          fillColor: AppTheme.panelStrong,
+          restAlpha: 0.14,
+          borderRadius: AppTheme.radiusLarge,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,17 +410,17 @@ class _ShortcutCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               label,
-              style: const TextStyle(
+              style: GoogleFonts.baloo2(
                 color: Colors.white,
                 fontSize: 17,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               subtitle,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
+              style: GoogleFonts.quicksand(
+                color: Colors.white.withValues(alpha: 0.65),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
