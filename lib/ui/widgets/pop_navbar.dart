@@ -24,12 +24,13 @@ class PopNavBarItem {
 class PopNavBar extends StatelessWidget {
   /// The app's shared 6-tab set (Home/Adventure/Arcade/Style/Academy/
   /// Profile), so every caller wiring up nav stays in sync.
+  /// Order must match [AppTabIndex] exactly — Home is index 2, the middle
+  /// slot. Five tabs rather than six so each label has room to be read.
   static const appTabs = <PopNavBarItem>[
+    PopNavBarItem(label: 'Life', icon: Icons.explore_rounded),
+    PopNavBarItem(label: 'Learn', icon: Icons.school_rounded),
     PopNavBarItem(label: 'Home', icon: Icons.dashboard_rounded),
-    PopNavBarItem(label: 'Adventure', icon: Icons.explore_rounded),
-    PopNavBarItem(label: 'Arcade', icon: Icons.sports_esports_rounded),
-    PopNavBarItem(label: 'Style', icon: Icons.auto_awesome_rounded),
-    PopNavBarItem(label: 'Academy', icon: Icons.school_rounded),
+    PopNavBarItem(label: 'Daily', icon: Icons.savings_rounded),
     PopNavBarItem(label: 'Profile', icon: Icons.person_rounded),
   ];
 
@@ -221,8 +222,11 @@ class _PopNavTileState extends State<_PopNavTile>
                   SizedBox(
                     height: widget.veryTight ? 2 : (widget.dense ? 3 : 4),
                   ),
+                  // Bumped up from 8/9.2/10.2 — the labels were small
+                  // enough to be decorative rather than readable. Dropping
+                  // from six tabs to five freed the width to do it.
                   SizedBox(
-                    height: widget.veryTight ? 10 : (widget.dense ? 12 : 14),
+                    height: widget.veryTight ? 13 : (widget.dense ? 15 : 17),
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
@@ -230,11 +234,11 @@ class _PopNavTileState extends State<_PopNavTile>
                         style: GoogleFonts.pixelifySans(
                           color: widget.active ? _deepCharcoal : Colors.white70,
                           fontSize: widget.veryTight
-                              ? 8
-                              : (widget.dense ? 9.2 : 10.2),
+                              ? 11
+                              : (widget.dense ? 12.5 : 14),
                           fontWeight: widget.active
                               ? FontWeight.w700
-                              : FontWeight.w500,
+                              : FontWeight.w600,
                         ),
                       ),
                     ),

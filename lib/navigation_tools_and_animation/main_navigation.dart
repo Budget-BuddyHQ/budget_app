@@ -1,8 +1,7 @@
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/academy/learning_path_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/core_bottom_pages/main_game_page.dart';
-import 'package:budget_app/screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.dart';
-import 'package:budget_app/screens_minigames_admin_etc/Gameplay/customize_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/home_screen.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/money_habits/money_habits_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/personal_details_sheet.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -91,27 +90,25 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    // Order is load-bearing: this must match AppTabIndex and
+    // PopNavBar.appTabs position for position, with Home in the middle.
     return IndexedStack(
       index: _currentIndex,
       children: [
-        HomeScreen(
-          activeTabIndex: AppTabIndex.dashboard,
-          onNavSelected: _selectTab,
-        ),
         MainGamePage(
           activeTabIndex: AppTabIndex.adventure,
           onNavSelected: _selectTab,
         ),
-        MinigamesPage(
-          activeTabIndex: AppTabIndex.minigames,
-          onNavSelected: _selectTab,
-        ),
-        CustomizeScreen(
-          activeTabIndex: AppTabIndex.customize,
-          onNavSelected: _selectTab,
-        ),
         LearningPathScreen(
           activeTabIndex: AppTabIndex.academy,
+          onNavSelected: _selectTab,
+        ),
+        HomeScreen(
+          activeTabIndex: AppTabIndex.dashboard,
+          onNavSelected: _selectTab,
+        ),
+        MoneyHabitsScreen(
+          activeTabIndex: AppTabIndex.daily,
           onNavSelected: _selectTab,
         ),
         ProfileScreen(
