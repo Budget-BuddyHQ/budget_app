@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/app_assets.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
+import '../../themes_colors/app_theme.dart';
 import '../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../widgets_custom_lotties/ambient_lottie_card.dart';
@@ -106,7 +107,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
         final unlockedIds = stats.unlockedSkins.toSet();
 
         return Scaffold(
-          backgroundColor: const Color(0xFF071711),
+          backgroundColor: AppTheme.deepForest,
           bottomNavigationBar: widget.onNavSelected == null
               ? null
               : CustomBottomNav(

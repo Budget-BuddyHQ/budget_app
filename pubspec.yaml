@@ -37,10 +37,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  fonts:
-    - family: NormalFont
-      fonts:
-        - asset: assets/fonts/NormalFont.ttf
   assets:
     - assets/images/logo.png
     - assets/images/
@@ -65,7 +61,6 @@ flutter:
     - assets/audio/
     - assets/data/
     - assets/icons/
-    - assets/fonts/
     - assets/imported/pond_loading_animation_source/pond.glb
     - assets/imported/
     - assets/own_skins/

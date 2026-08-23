@@ -48,19 +48,49 @@ void main() {
       expect(lessonUnits.first.lessons.first.prerequisites, isEmpty);
     });
 
-    test('every unit after the first opens off the previous unit', () {
+    // The curriculum is two independent chains, not one: units 10-11 (ages
+    // 4-6 and 7-10) are their own root, deliberately not gated behind
+    // unit_9's adult-track content — a 5-year-old shouldn't need to clear
+    // retirement-account material to reach "what is money". A unit either
+    // opens off the immediately preceding unit, or starts a fresh root of
+    // its own (an empty-prerequisite first lesson) — anything else means a
+    // typo silently orphaned a unit.
+    test('every unit after the first opens off the previous unit, or starts its own root', () {
       for (var i = 1; i < lessonUnits.length; i++) {
         final opener = lessonUnits[i].lessons.first;
         final previousIds = lessonUnits[i - 1].lessons
             .map((lesson) => lesson.id)
             .toSet();
+        final opensOffPrevious = opener.prerequisites.any(previousIds.contains);
+        final isFreshRoot = opener.prerequisites.isEmpty;
         expect(
-          opener.prerequisites.any(previousIds.contains),
+          opensOffPrevious || isFreshRoot,
           isTrue,
           reason:
               '${opener.id} does not depend on anything in '
-              '${lessonUnits[i - 1].id}, so the chain is broken there',
+              '${lessonUnits[i - 1].id} and is not a fresh root either, so '
+              'the chain is broken there',
         );
+      }
+    });
+
+    test('every root chain starts clean (no dangling prerequisite into a unit that does not precede it)', () {
+      // A "fresh root" first lesson must actually have zero prerequisites,
+      // not a prerequisite pointing somewhere other than the previous unit
+      // (which would silently make that unit unreachable).
+      final allIds = lessonUnits
+          .expand((unit) => unit.lessons)
+          .map((lesson) => lesson.id)
+          .toSet();
+      for (final unit in lessonUnits) {
+        final opener = unit.lessons.first;
+        for (final prerequisite in opener.prerequisites) {
+          expect(
+            allIds,
+            contains(prerequisite),
+            reason: '${opener.id} requires "$prerequisite", which does not exist',
+          );
+        }
       }
     });
   });
@@ -79,6 +109,10 @@ void main() {
     });
 
     test('stageForAge lands in the right band', () {
+      expect(stageForAge(4), AgeStage.earlyChildhood);
+      expect(stageForAge(6), AgeStage.earlyChildhood);
+      expect(stageForAge(7), AgeStage.youngKids);
+      expect(stageForAge(10), AgeStage.youngKids);
       expect(stageForAge(11), AgeStage.middleSchool);
       expect(stageForAge(13), AgeStage.middleSchool);
       expect(stageForAge(14), AgeStage.highSchool);
@@ -86,7 +120,7 @@ void main() {
       expect(stageForAge(21), AgeStage.adult);
       expect(stageForAge(40), AgeStage.adult);
       // Below the youngest band, still the youngest band rather than a crash.
-      expect(stageForAge(5), AgeStage.middleSchool);
+      expect(stageForAge(1), AgeStage.earlyChildhood);
     });
 
     test('a unit is "above you" only when its band starts later', () {

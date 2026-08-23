@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
+import '../models_Like_Skins_and_lessons_templates/money_habit_models.dart';
 import '../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import '../services_backend_and_other_services/market_data_service.dart'
     show formatShares;
@@ -420,6 +421,116 @@ class UserStatsController extends ChangeNotifier {
         updatedAt: DateTime.now().toUtc(),
       ),
       savingMessage: 'Saving your daily progress...',
+    );
+  }
+
+  // ---------------- Money Habits ----------------
+  // See docs/MONEY_HABITS_FEATURE.md for the full data-flow reference.
+
+  static const int _habitXpPerCompletion = 8;
+
+  /// Pins a catalog habit to the Home weekly tracker, optionally with a
+  /// saved adjustable-parameter value (e.g. "$5").
+  Future<StatsActionResult> saveHabit(
+    String habitId, {
+    double? paramValue,
+  }) async {
+    final saved = <String>{..._stats.savedHabitIds, habitId}.toList();
+    final params = <String, double>{..._stats.savedHabitParams};
+    if (paramValue != null) {
+      params[habitId] = paramValue;
+    }
+    return _saveStats(
+      _stats.copyWith(
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          'saved_habit_ids': saved,
+          'saved_habit_params': params,
+        },
+        updatedAt: DateTime.now().toUtc(),
+      ),
+      savingMessage: 'Saving your habit...',
+    );
+  }
+
+  /// Unpins a habit from the Home tracker. Past completions already logged
+  /// in the weekly log/calendar are untouched — only future tracking stops.
+  Future<StatsActionResult> unsaveHabit(String habitId) async {
+    final saved = _stats.savedHabitIds
+        .where((id) => id != habitId)
+        .toList(growable: false);
+    final params = <String, double>{..._stats.savedHabitParams}
+      ..remove(habitId);
+    return _saveStats(
+      _stats.copyWith(
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          'saved_habit_ids': saved,
+          'saved_habit_params': params,
+        },
+        updatedAt: DateTime.now().toUtc(),
+      ),
+      savingMessage: 'Updating your habits...',
+    );
+  }
+
+  /// Marks [template] complete for today (from either the Track tab or a
+  /// Challenge). Updates the weekly log, the activity calendar, lifetime/
+  /// monthly totals, the savings jar's habit XP, and its last-active date
+  /// in one save — the same single-round-trip shape as
+  /// [completeLessonProgress]. Pass [challengeTaskId] when this completion
+  /// also finishes a Challenge node.
+  Future<StatsActionResult> completeHabit(
+    HabitTemplate template, {
+    double? units,
+    String? challengeTaskId,
+  }) async {
+    final today = HabitDateKeys.todayKey();
+    final impact = template.impactFor(
+      units ?? template.adjustable?.defaultValue ?? 1,
+    );
+
+    final weeklyLog = <String, List<String>>{..._stats.habitWeeklyLog};
+    final todayHabits = <String>{
+      ...(weeklyLog[today] ?? const <String>[]),
+      template.id,
+    };
+    weeklyLog[today] = todayHabits.toList();
+    final prunedWeekly = HabitDateKeys.pruneToTrailing(weeklyLog, 14);
+
+    final calendar = <String, int>{..._stats.habitActivityCalendar};
+    calendar[today] = (calendar[today] ?? 0) + 1;
+    final prunedCalendar = HabitDateKeys.pruneToTrailing(calendar, 365);
+
+    final totals = _stats.habitTotals + impact;
+    final monthKey = today.substring(0, 7);
+    final monthly = <String, HabitImpact>{..._stats.habitMonthly};
+    monthly[monthKey] = (monthly[monthKey] ?? HabitImpact.zero) + impact;
+
+    final completedChallengeTasks = challengeTaskId == null
+        ? _stats.completedChallengeTasks
+        : <String>{
+            ..._stats.completedChallengeTasks,
+            challengeTaskId,
+          }.toList(growable: false);
+
+    return _saveStats(
+      _stats.copyWith(
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          'habit_xp': _stats.jarXp + _habitXpPerCompletion,
+          'habit_totals': totals.toMap(),
+          'habit_monthly': monthly.map(
+            (key, value) => MapEntry(key, value.toMap()),
+          ),
+          'habit_weekly_log': prunedWeekly,
+          'habit_activity_calendar': prunedCalendar,
+          'completed_challenge_tasks': completedChallengeTasks,
+          'jar_last_active': today,
+        },
+        updatedAt: DateTime.now().toUtc(),
+      ),
+      savingMessage: 'Logging your habit...',
     );
   }
 

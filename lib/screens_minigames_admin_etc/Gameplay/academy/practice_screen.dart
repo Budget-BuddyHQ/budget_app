@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
+import '../../../themes_colors/app_theme.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson.dart';
 import '../../../models_Like_Skins_and_lessons_templates/quiz_bank.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
@@ -94,9 +95,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D2B20),
+      backgroundColor: AppTheme.panel,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D2B20),
+        backgroundColor: AppTheme.panel,
         foregroundColor: Colors.white,
         elevation: 0,
         title: Text(
@@ -115,7 +116,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
           ),
           Positioned.fill(
             child: Container(
-              color: const Color(0xFF0D2B20).withValues(alpha: 0.78),
+              color: AppTheme.panel.withValues(alpha: 0.78),
             ),
           ),
           SafeArea(

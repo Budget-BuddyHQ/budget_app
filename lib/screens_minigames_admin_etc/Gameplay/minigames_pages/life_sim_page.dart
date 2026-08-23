@@ -7,7 +7,9 @@ import '../../../controllers_that_updates_stats/life_sim_controller.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
+import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
+import '../adventure/adventure_world_screen.dart';
 import 'life_character_sheet.dart';
 import 'life_epilogue_screen.dart';
 
@@ -146,7 +148,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
     if (life == null) {
       // Character creation is on top; this is just the backdrop.
       return const Scaffold(
-        backgroundColor: Color(0xFF071711),
+        backgroundColor: AppTheme.deepForest,
         body: Center(
           child: CircularProgressIndicator(color: Color(0xFF43D07E)),
         ),
@@ -159,9 +161,9 @@ class _LifeSimPageState extends State<LifeSimPage> {
         final event = life.currentEvent;
         _scrollFeedToEnd();
         return Scaffold(
-          backgroundColor: const Color(0xFF071711),
+          backgroundColor: AppTheme.deepForest,
           appBar: AppBar(
-            backgroundColor: const Color(0xFF0A1D17),
+            backgroundColor: AppTheme.darkForest,
             foregroundColor: Colors.white,
             elevation: 0,
             titleSpacing: 12,
@@ -174,6 +176,18 @@ class _LifeSimPageState extends State<LifeSimPage> {
               job: life.job,
             ),
             actions: [
+              IconButton(
+                tooltip: 'Explore the town',
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const AdventureWorldScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.explore_rounded),
+              ),
               TextButton.icon(
                 onPressed: () => _finish(life),
                 icon: Icon(
@@ -185,7 +199,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
                 ),
                 label: Text(
                   life.dead ? 'Finish' : 'Retire',
-                  style: const TextStyle(fontWeight: FontWeight.w900),
+                  style: GoogleFonts.baloo2(fontWeight: FontWeight.w700),
                 ),
               ),
             ],

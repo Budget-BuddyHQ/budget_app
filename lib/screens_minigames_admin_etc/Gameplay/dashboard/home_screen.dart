@@ -14,6 +14,7 @@ import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../../models_Like_Skins_and_lessons_templates/daily_quest.dart';
 import '../../../constants/app_assets.dart';
+import '../../../themes_colors/app_theme.dart';
 import 'daily_plan_card.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
@@ -22,6 +23,7 @@ import '../../../widgets_custom_lotties/idle_hover_icon.dart';
 import '../../../widgets_custom_lotties/profile_avatar.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
+import '../money_habits/money_habits_screen.dart';
 import '../minigames_pages/react_challenge_screen.dart';
 import 'leaderboard_screen.dart';
 
@@ -106,9 +108,9 @@ class HomeScreen extends StatelessWidget {
         final turtleSkin = skinFromId(stats.equippedSkin);
 
         return Scaffold(
-          backgroundColor: const Color(0xFF071711),
+          backgroundColor: AppTheme.deepForest,
           appBar: AppBar(
-            backgroundColor: const Color(0xFF071711),
+            backgroundColor: AppTheme.deepForest,
             elevation: 0,
             centerTitle: false,
             titleSpacing: 18,
@@ -124,10 +126,10 @@ class HomeScreen extends StatelessWidget {
                 ),
                 Text(
                   stats.levelTitle,
-                  style: const TextStyle(
-                    color: Color(0xFF85EFAC),
+                  style: GoogleFonts.baloo2(
+                    color: const Color(0xFF85EFAC),
                     fontSize: 12,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
@@ -188,6 +190,14 @@ class HomeScreen extends StatelessWidget {
                           _PlayLifePromo(
                             onPlay: () =>
                                 Navigator.of(context).pushNamed('/life'),
+                          ),
+                          const SizedBox(height: 10),
+                          _MoneyHabitsPromo(
+                            onOpen: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const MoneyHabitsScreen(),
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 10),
                           DailyPlanCard(
@@ -379,6 +389,84 @@ class _PlayLifePromo extends StatelessWidget {
   }
 }
 
+/// Home-screen promo for the Money Habits feature (weekly habit tracker,
+/// habit catalog, challenges, and a fillable savings jar) — same visual
+/// family as [_PlayLifePromo], one tier below it.
+class _MoneyHabitsPromo extends StatelessWidget {
+  const _MoneyHabitsPromo({required this.onOpen});
+
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onOpen,
+      borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: AppTheme.getPuffyDecoration(
+          accent: AppTheme.greenPrimary,
+          fillColor: const Color(0xFF173B2E),
+          restAlpha: 0.18,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppTheme.greenPrimary.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const IdleHoverIcon(
+                idleAmplitude: 3,
+                period: Duration(seconds: 3),
+                child: Icon(
+                  Icons.savings_rounded,
+                  color: AppTheme.greenPrimary,
+                  size: 26,
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Money Habits',
+                    style: GoogleFonts.baloo2(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Skip a purchase, save a little, fill your jar.',
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white.withValues(alpha: 0.78),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.greenPrimary,
+              size: 30,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _DashboardBackdrop extends StatelessWidget {
   const _DashboardBackdrop();
 
@@ -400,7 +488,7 @@ class _DashboardBackdrop extends StatelessWidget {
         // A much heavier dim turns it into a soft wash instead.
         Positioned.fill(
           child: Container(
-            color: const Color(0xFF071711).withValues(alpha: 0.82),
+            color: const Color(0xFF0B2419).withValues(alpha: 0.72),
           ),
         ),
         Positioned(
@@ -456,25 +544,19 @@ class _AdventureLaunchHero extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF15392D), Color(0xFF071711)],
+            colors: [Color(0xFF1F4D38), Color(0xFF0F2A1E)],
           ),
-          borderRadius: BorderRadius.circular(34),
+          borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
           border: Border.all(
-            color: const Color(0xFF85EFAC).withValues(alpha: 0.24),
+            color: const Color(0xFF85EFAC).withValues(alpha: 0.26),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
-              blurRadius: 34,
-              spreadRadius: -8,
-              offset: const Offset(0, 18),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.32),
-              blurRadius: 30,
-              offset: const Offset(0, 20),
-            ),
-          ],
+          boxShadow: AppTheme.puffyShadow(
+            const Color(0xFF85EFAC),
+            restAlpha: 0.24,
+            blurRadius: 36,
+            spreadRadius: -8,
+            offset: const Offset(0, 18),
+          ),
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -483,23 +565,6 @@ class _AdventureLaunchHero extends StatelessWidget {
             final phone = constraints.maxWidth < 430;
             return Stack(
               children: [
-                if (!veryTight)
-                  Positioned(
-                    right: narrow ? 74 : 128,
-                    top: narrow ? 10 : 18,
-                    child: Opacity(
-                      opacity: 0.52,
-                      child: AmbientLottieCard(
-                        motif: AmbientMotif.turtle,
-                        semanticLabel: 'Moving turtle decoration',
-                        width: narrow ? 74 : 126,
-                        height: narrow ? 58 : 96,
-                        padding: const EdgeInsets.all(6),
-                        backgroundColor: Colors.white.withValues(alpha: 0.04),
-                        borderColor: Colors.white.withValues(alpha: 0.08),
-                      ),
-                    ),
-                  ),
                 Align(
                   alignment: Alignment.topRight,
                   child: _HeroAvatar(

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
+import '../../../themes_colors/app_theme.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson.dart';
 import '../../../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import '../../../models_Like_Skins_and_lessons_templates/progression_service.dart';
@@ -179,9 +180,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
     final inQuizResults = quiz.isNotEmpty && _questionIndex >= quiz.length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D2B20),
+      backgroundColor: AppTheme.panel,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D2B20),
+        backgroundColor: AppTheme.panel,
         foregroundColor: Colors.white,
         elevation: 0,
         title: Text(
@@ -200,7 +201,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           ),
           Positioned.fill(
             child: Container(
-              color: const Color(0xFF0D2B20).withValues(alpha: 0.74),
+              color: AppTheme.panel.withValues(alpha: 0.74),
             ),
           ),
           SafeArea(
@@ -866,6 +867,193 @@ const Map<String, LessonPayout> kLessonPayouts = <String, LessonPayout>{
 };
 
 const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
+  // ---------------- Unit 10: Money Is Real (ages 4-6) ----------------
+  'lesson_46': _LessonContent(
+    icon: Icons.paid_rounded,
+    objectives: [
+      'Say what money is used for',
+      'Recognize that coins and bills stand in for value',
+    ],
+    keyTerms: {
+      'Money': 'coins and bills people trade for things they need or want',
+    },
+    takeaway: 'Money is something people trade for things — that\'s its whole job.',
+    sections: [
+      _LessonSection(
+        title: 'Money is for trading',
+        content:
+            'Money is coins and bills. People use it to trade for things '
+            'they need, like food, or things they want, like a toy.',
+      ),
+      _LessonSection(
+        title: 'Where money comes from',
+        content:
+            'Grown-ups usually earn money by working. Sometimes money is a '
+            'gift, like on a birthday.',
+      ),
+    ],
+  ),
+  'lesson_47': _LessonContent(
+    icon: Icons.storefront_rounded,
+    objectives: [
+      'Explain that most things at a store cost money',
+      'Practice the idea of paying for something',
+    ],
+    keyTerms: {
+      'Pay': 'giving money to get something in return',
+    },
+    takeaway: 'Almost everything at a store costs money — that\'s how buying works.',
+    sections: [
+      _LessonSection(
+        title: 'Everything has a price',
+        content:
+            'Toys, snacks, and clothes at a store all cost money. The price '
+            'is how much money you need to pay to take it home.',
+      ),
+      _LessonSection(
+        title: 'Not everything costs money',
+        content:
+            'Some things are free, like sunshine, a hug, or playing outside. '
+            'Money is only for things people are selling.',
+      ),
+    ],
+  ),
+  'lesson_48': _LessonContent(
+    icon: Icons.savings_rounded,
+    objectives: [
+      'Explain what saving means',
+      'Describe how a piggy bank is used',
+    ],
+    keyTerms: {
+      'Saving': 'keeping money instead of spending it right away',
+    },
+    takeaway: 'Saving just means keeping money for later instead of spending it today.',
+    sections: [
+      _LessonSection(
+        title: 'What saving means',
+        content:
+            'Saving is putting money away instead of spending it right now, '
+            'so it is still there later.',
+      ),
+      _LessonSection(
+        title: 'A piggy bank helps',
+        content:
+            'A piggy bank is a safe place to keep coins you are saving. '
+            'Every coin you add makes your savings a little bigger.',
+      ),
+    ],
+  ),
+  // ---------------- Unit 11: Saving and Spending (ages 7-10) ----------------
+  'lesson_49': _LessonContent(
+    icon: Icons.handyman_rounded,
+    objectives: [
+      'Explain what an allowance is',
+      'Name a way kids can earn money',
+    ],
+    keyTerms: {
+      'Allowance': 'money a kid gets regularly, sometimes for doing chores',
+      'Earn': 'get money in exchange for doing something',
+    },
+    takeaway: 'Earning means getting money for doing something — like a chore.',
+    sections: [
+      _LessonSection(
+        title: 'What is an allowance?',
+        content:
+            'An allowance is money a kid gets on a regular basis. Some '
+            'families tie it to chores, others give a set amount just for '
+            'helping out.',
+      ),
+      _LessonSection(
+        title: 'Earning vs. getting a gift',
+        content:
+            'Earning money means doing something to get it, like washing '
+            'dishes. A birthday gift is money too, but it is not earned.',
+      ),
+    ],
+  ),
+  'lesson_50': _LessonContent(
+    icon: Icons.balance_rounded,
+    objectives: [
+      'Tell a need from a want',
+      'Explain why the difference matters',
+    ],
+    keyTerms: {
+      'Need': 'something you really cannot do without',
+      'Want': 'something nice to have, but you could live without it',
+    },
+    takeaway: 'A need is something you can\'t really do without — a want is everything else.',
+    sections: [
+      _LessonSection(
+        title: 'What makes something a need',
+        content:
+            'A need is something your day genuinely does not work without — '
+            'food, a place to sleep, clothes that fit.',
+      ),
+      _LessonSection(
+        title: 'What makes something a want',
+        content:
+            'A want is something fun or nice, but you could still get by '
+            'without it, like a new video game.',
+      ),
+      _LessonSection(
+        title: 'Why it matters',
+        content:
+            'When you cannot buy everything, knowing needs from wants helps '
+            'you decide what matters most first.',
+      ),
+    ],
+  ),
+  'lesson_51': _LessonContent(
+    icon: Icons.checklist_rounded,
+    objectives: [
+      'Describe what a simple money plan looks like',
+      'Practice splitting money between saving and spending',
+    ],
+    keyTerms: {
+      'Plan': 'deciding what to do with your money before you spend any of it',
+    },
+    takeaway: 'A simple plan means deciding how much to save before you spend anything.',
+    sections: [
+      _LessonSection(
+        title: 'Decide first, spend later',
+        content:
+            'A simple money plan just means deciding ahead of time how much '
+            'you will save and how much you will spend — before you spend '
+            'any of it.',
+      ),
+      _LessonSection(
+        title: 'An example plan',
+        content:
+            'If you get \$10, you might decide to save \$4 and spend \$6. '
+            'Any split works, as long as you decide it first.',
+      ),
+    ],
+  ),
+  'lesson_52': _LessonContent(
+    icon: Icons.account_balance_rounded,
+    objectives: [
+      'Explain why banks exist',
+      'Describe what a bank does with money kept there',
+    ],
+    keyTerms: {
+      'Bank': 'a place built to keep people\'s money safe',
+    },
+    takeaway: 'A bank\'s main job is keeping money safer than it would be at home.',
+    sections: [
+      _LessonSection(
+        title: 'Why banks exist',
+        content:
+            'A bank is a place built to keep money safe. It is much safer '
+            'than leaving a big pile of cash lying around the house.',
+      ),
+      _LessonSection(
+        title: 'What a bank does',
+        content:
+            'When you keep money in a bank, it is still yours — the bank '
+            'just holds onto it and keeps track of how much you have.',
+      ),
+    ],
+  ),
   'lesson_1': _LessonContent(
     icon: Icons.account_balance_wallet_rounded,
     workedExample: WorkedExample(_fiftyThirtyTwentyExample),

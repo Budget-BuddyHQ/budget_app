@@ -1,5 +1,5 @@
 import 'package:bonfire/bonfire.dart';
-import 'package:bonfire/map/tiled/reader/tiled_asset_reader.dart';
+import 'package:bonfire/map/spritefusion/reader/spritefusion_asset_reader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:google_fonts/google_fonts.dart';
@@ -8,14 +8,16 @@ import 'package:provider/provider.dart';
 import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
+import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
 
-/// Where the exported Tiled map (JSON, not raw .tmx — see the README next to
-/// it) is expected to live. `TiledAssetReader` is hardcoded to read from
-/// under `assets/images/`, so this can't move without also changing that.
-const String kAdventureMapAsset = 'assets/images/maps/adventure_map.json';
+/// Where the exported map (Sprite Fusion JSON — see the README next to it)
+/// is expected to live. `SpritefusionAssetReader` is hardcoded to read from
+/// under `assets/images/` and expects `spritesheet.png` alongside this file,
+/// so neither can move without also changing that.
+const String kAdventureMapAsset = 'assets/images/maps/map.json';
 
-/// The RPG overworld — walking the equipped villager skin around a Tiled
+/// The RPG overworld — walking the equipped villager skin around the town
 /// map. Until a real map is dropped at [kAdventureMapAsset], this shows a
 /// plain "waiting for the map" screen instead of trying (and failing) to
 /// boot the game canvas.
@@ -52,7 +54,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   Widget build(BuildContext context) {
     if (_mapReady == null) {
       return const Scaffold(
-        backgroundColor: Color(0xFF071711),
+        backgroundColor: AppTheme.deepForest,
         body: Center(
           child: CircularProgressIndicator(color: Color(0xFF85EFAC)),
         ),
@@ -74,9 +76,11 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
         : AppAssets.villagerSheet(null, female: body.isFemale);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF071711),
+      backgroundColor: AppTheme.deepForest,
       body: BonfireWidget(
-        map: WorldMapByTiled(TiledAssetReader(asset: kAdventureMapAsset)),
+        map: WorldMapBySpritefusion(
+          SpritefusionAssetReader(asset: kAdventureMapAsset),
+        ),
         player: _buildPlayer(playerSheet),
         playerControllers: [Joystick(directional: JoystickDirectional())],
         cameraConfig: CameraConfig(zoom: 1.4),
@@ -94,9 +98,11 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
         _loadRowAnimation(sheetAsset, rowIndex, 1, stepTime: 1);
 
     return SimplePlayer(
-      // Placeholder spawn point — once the real map arrives, this should
-      // move to wherever its "spawn" object/tile actually is.
-      position: Vector2(64, 64),
+      // Town-square tile (25,25) — the open, fenced playground area at the
+      // map's centre, clear of every collider-marked structure/wall layer
+      // in all directions. The map has no dedicated "spawn" object of its
+      // own, so this was picked by checking the layer data directly.
+      position: Vector2(400, 400),
       size: Vector2.all(32),
       animation: SimpleDirectionAnimation(
         // enabledFlipX defaults true, which would mirror one direction to
@@ -138,7 +144,7 @@ class _AdventureMapPendingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF071711),
+      backgroundColor: AppTheme.deepForest,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -157,17 +163,18 @@ class _AdventureMapPendingScreen extends StatelessWidget {
                   style: GoogleFonts.baloo2(
                     color: Colors.white,
                     fontSize: 24,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   'The adventure world is wired up and ready — it just '
-                  'needs its map. Drop the exported Tiled JSON at\n'
+                  'needs its map. Drop a Sprite Fusion or Tiled export at\n'
                   '$kAdventureMapAsset\n'
-                  'and it will load automatically.',
+                  '(plus its spritesheet.png alongside it) and it will '
+                  'load automatically.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: GoogleFonts.quicksand(
                     color: Colors.white.withValues(alpha: 0.72),
                     height: 1.4,
                   ),

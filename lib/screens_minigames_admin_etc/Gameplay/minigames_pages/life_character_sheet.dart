@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
+import '../../../themes_colors/app_theme.dart';
 
 /// What character creation hands back to the Life screen.
 @immutable
@@ -68,9 +69,9 @@ class _LifeCharacterSheetState extends State<LifeCharacterSheet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF071711),
+      backgroundColor: AppTheme.deepForest,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF071711),
+        backgroundColor: AppTheme.deepForest,
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(
