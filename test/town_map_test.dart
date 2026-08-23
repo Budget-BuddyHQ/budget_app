@@ -96,6 +96,63 @@ void main() {
             'out of the map: $gaps',
       );
     });
+
+    // The hill: the wide tan band across map rows 34-37 is the town's
+    // southern boundary, and the player is not meant to be able to step
+    // onto it. Rows 34 and 37 were already solid, but row 34 had a
+    // six-tile hole at x=29..34 and rows 35-36 had no collision at all —
+    // so the player could walk in through the gap and wander around
+    // *inside* the hill. Rows 34-36 now live in their own `terrain_hill`
+    // layer with `"collider": true`.
+    //
+    // Asserted by flood-filling from the spawn tile rather than by
+    // checking the band tile-by-tile: what actually matters is that no
+    // reachable path leads into or past it, which a per-tile check would
+    // miss if a future map edit opened a way around the ends.
+    test('the hill band is sealed — nothing south of it is reachable', () {
+      const spawn = (x: 25, y: 25);
+      expect(
+        solid.contains(spawn),
+        isFalse,
+        reason: 'the spawn tile itself became solid',
+      );
+
+      final seen = <({int x, int y})>{spawn};
+      final queue = <({int x, int y})>[spawn];
+      while (queue.isNotEmpty) {
+        final cur = queue.removeLast();
+        for (final step in <({int x, int y})>[
+          (x: cur.x + 1, y: cur.y),
+          (x: cur.x - 1, y: cur.y),
+          (x: cur.x, y: cur.y + 1),
+          (x: cur.x, y: cur.y - 1),
+        ]) {
+          if (step.x < 0 || step.x >= width) continue;
+          if (step.y < 0 || step.y >= height) continue;
+          if (seen.contains(step) || solid.contains(step)) continue;
+          seen.add(step);
+          queue.add(step);
+        }
+      }
+
+      final pastTheHill = seen.where((t) => t.y >= 34).toList();
+      expect(
+        pastTheHill,
+        isEmpty,
+        reason: 'the player can reach ${pastTheHill.length} tile(s) on or '
+            'past the hill band (rows 34+), e.g. '
+            '${pastTheHill.take(5).toList()}',
+      );
+
+      // Sanity check the flood fill actually explored the town, so this
+      // test can't pass simply because the player is walled into a closet.
+      expect(
+        seen.length,
+        greaterThan(600),
+        reason: 'only ${seen.length} tiles are reachable from spawn — the '
+            'map is probably over-blocked, not correctly sealed',
+      );
+    });
   });
 
   group('town spots', () {

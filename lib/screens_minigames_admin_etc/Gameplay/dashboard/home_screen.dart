@@ -193,6 +193,15 @@ class HomeScreen extends StatelessWidget {
                             onCustomize: () =>
                                 onNavSelected?.call(AppTabIndex.customize),
                           ),
+                          const SizedBox(height: 10),
+                          // The trophy icon in the AppBar was the only way
+                          // in and easy to miss — this gives the leaderboard
+                          // its own card with the same visual weight as the
+                          // other feature promos above it.
+                          _LeaderboardPromoCard(
+                            gold: stats.gold,
+                            onOpen: () => _openLeaderboard(context),
+                          ),
                         ],
                       ),
                     );
@@ -328,6 +337,85 @@ class _DailyMoneyHabitCard extends StatelessWidget {
             const Icon(
               Icons.chevron_right_rounded,
               color: AppTheme.greenPrimary,
+              size: 30,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LeaderboardPromoCard extends StatelessWidget {
+  const _LeaderboardPromoCard({required this.gold, required this.onOpen});
+
+  final int gold;
+  final VoidCallback onOpen;
+
+  static const _gold = Color(0xFFFFD45C);
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onOpen,
+      borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: AppTheme.getPuffyDecoration(
+          accent: _gold,
+          fillColor: const Color(0xFF3B301A),
+          restAlpha: 0.18,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: _gold.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.emoji_events_rounded,
+                color: _gold,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Leaderboard',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'You\'ve got $gold gold — see who\'s ahead in Finance '
+                    'Wizards and Most Gold.',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white.withValues(alpha: 0.78),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: _gold,
               size: 30,
             ),
           ],

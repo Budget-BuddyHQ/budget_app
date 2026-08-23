@@ -573,48 +573,69 @@ class _UnitQuickChangerBar extends StatelessWidget {
           color: const Color(0xFF85EFAC).withValues(alpha: 0.22),
         ),
       ),
-      child: Scrollbar(
-        controller: controller,
-        thumbVisibility: true,
-        trackVisibility: true,
-        interactive: true,
-        thickness: 5,
-        radius: const Radius.circular(999),
-        child: SingleChildScrollView(
+      // Themed rather than the default grey Material thumb: this bar sits
+      // on the Academy's dark green panel, where stock grey-on-dark reads
+      // as a rendering artifact. Mint thumb + faint green track matches the
+      // unit chips it scrolls, and thickening it to 6 with a real track
+      // makes it look like a deliberate control you can grab (it is —
+      // `interactive: true`), not a leftover scrollbar.
+      child: ScrollbarTheme(
+        data: ScrollbarThemeData(
+          thumbColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.dragged)
+                ? const Color(0xFF85EFAC)
+                : const Color(0xFF85EFAC).withValues(alpha: 0.72),
+          ),
+          trackColor: WidgetStateProperty.all(
+            const Color(0xFF85EFAC).withValues(alpha: 0.10),
+          ),
+          trackBorderColor: WidgetStateProperty.all(Colors.transparent),
+          crossAxisMargin: 1,
+          minThumbLength: 28,
+        ),
+        child: Scrollbar(
           controller: controller,
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Row(
-            children: [
-              for (var slot = 0; slot < entries.length; slot++) ...[
-                if (slot == 0 ||
-                    entries[slot].unit.ageStage !=
-                        entries[slot - 1].unit.ageStage) ...[
-                  if (slot != 0) const SizedBox(width: 10),
-                  _AgeGroupHeader(
-                    stage: entries[slot].unit.ageStage,
-                    isReaderStage: entries[slot].unit.ageStage == readerStage,
+          thumbVisibility: true,
+          trackVisibility: true,
+          interactive: true,
+          thickness: 6,
+          radius: const Radius.circular(999),
+          child: SingleChildScrollView(
+            controller: controller,
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                for (var slot = 0; slot < entries.length; slot++) ...[
+                  if (slot == 0 ||
+                      entries[slot].unit.ageStage !=
+                          entries[slot - 1].unit.ageStage) ...[
+                    if (slot != 0) const SizedBox(width: 10),
+                    _AgeGroupHeader(
+                      stage: entries[slot].unit.ageStage,
+                      isReaderStage: entries[slot].unit.ageStage == readerStage,
+                      isAboveReader: isAboveReaderStage(
+                        entries[slot].unit.ageStage,
+                        warnAboveStage,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(width: 10),
+                  _UnitJumpChip(
+                    unit: entries[slot].unit,
+                    index: entries[slot].index,
+                    selected: entries[slot].index == activeIndex,
+                    progress: progressFor(entries[slot].unit.id),
+                    mastery: masteryFor(entries[slot].unit.id),
                     isAboveReader: isAboveReaderStage(
                       entries[slot].unit.ageStage,
                       warnAboveStage,
                     ),
+                    onTap: () => onSelected(entries[slot].index),
                   ),
                 ],
-                const SizedBox(width: 10),
-                _UnitJumpChip(
-                  unit: entries[slot].unit,
-                  index: entries[slot].index,
-                  selected: entries[slot].index == activeIndex,
-                  progress: progressFor(entries[slot].unit.id),
-                  mastery: masteryFor(entries[slot].unit.id),
-                  isAboveReader: isAboveReaderStage(
-                    entries[slot].unit.ageStage,
-                    warnAboveStage,
-                  ),
-                  onTap: () => onSelected(entries[slot].index),
-                ),
               ],
-            ],
+            ),
           ),
         ),
       ),

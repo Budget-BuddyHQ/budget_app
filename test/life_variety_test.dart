@@ -164,8 +164,18 @@ void main() {
     });
 
     test('every event in the pool can fire for somebody', () {
+      // 400 rather than 200 seeds. This is a sampling guard, and its
+      // sensitivity scales with pool size: the rarest events here sit at
+      // weight 0.4 behind a skill *and* a fame gate, so every batch of new
+      // content shrinks their share of the draw and eventually one stops
+      // showing up by luck alone. That happened when the money-lesson pack
+      // (kLifeEventsMoney) landed — `sold_out_tour` vanished from this
+      // sweep while the dedicated-musician test above still reached it
+      // every time, which is the tell that the event was fine and the
+      // sample was too small. Widen the sample rather than lower the bar;
+      // the guarantee worth keeping is "nothing is unreachable".
       final seen = <String>{};
-      for (var seed = 0; seed < 200; seed++) {
+      for (var seed = 0; seed < 400; seed++) {
         seen.addAll(_play(seed).fired);
         for (final skill in LifeSkill.values) {
           seen.addAll(_play(seed + 4000, focus: skill).fired);

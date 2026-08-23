@@ -389,5 +389,9 @@ const List<({int x, int y, int value})> kTownCoins = <({
   (x: 20, y: 24, value: 3),
   (x: 30, y: 31, value: 5),
   (x: 8, y: 24, value: 3),
-  (x: 27, y: 36, value: 8),
+  // Was (27, 36) — that tile is now inside the sealed hill band (map rows
+  // 34-37, see docs/ADVENTURE_TOWN.md), so the highest-value coin had
+  // become physically unreachable. Moved to the far south-east corner:
+  // still the longest walk on the map, still north of the hill.
+  (x: 47, y: 32, value: 8),
 ];

@@ -46,6 +46,19 @@ enum AgeBand {
   /// Under-13 accounts get the conservative default: no leaderboard presence.
   bool get isMinorUnder13 => this == AgeBand.under13;
 
+  /// Whether money explainers should use the simplest wording (see
+  /// `FinanceConcept.explainerFor`).
+  ///
+  /// Deliberately **not** derived from [representativeAge]: that returns 12
+  /// for this bucket, which would route every under-13 to the older copy
+  /// and defeat the point. The bucket spans roughly 4-12, so there is no
+  /// single honest age for it — the question worth answering is not "how
+  /// old exactly" but "does this reader need plain wording", and for the
+  /// whole under-13 bucket the answer is yes. A 12-year-old reading the
+  /// simpler version loses very little; an 6-year-old reading the adult
+  /// version loses everything.
+  bool get prefersSimpleWording => this == AgeBand.under13;
+
   /// A single representative number for this bucket, used only where a plain
   /// integer is needed (e.g. mirroring into a numeric database column) — the
   /// app's own logic should keep using the bucket, not this.

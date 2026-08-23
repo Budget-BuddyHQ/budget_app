@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'finance_concepts.dart';
+
 /// Data model for **Life** — the main game: a BitLife-style life simulator.
 /// You are born, age up a year at a time, and your choices move four stats
 /// (Happiness, Health, Smarts, Looks) plus money. Money lessons are woven in
@@ -117,6 +119,7 @@ class LifeChoice {
     this.skill,
     this.skillGain = 0,
     this.addTrait,
+    this.teaches,
   });
 
   final String label;
@@ -143,6 +146,15 @@ class LifeChoice {
 
   /// Some choices reveal a trait rather than requiring one.
   final LifeTrait? addTrait;
+
+  /// The money idea this choice is actually about.
+  ///
+  /// This is the hook that turns a life event from "a number moved" into a
+  /// teaching moment: when set, the screen shows a short, age-appropriate
+  /// explainer after the outcome, and the concept is recorded as one the
+  /// player has met. Optional — plenty of events are pure story and should
+  /// stay that way rather than having a lesson bolted on.
+  final FinanceConcept? teaches;
 }
 
 /// A learnable skill. Skills gate career events and scale their payoff — a
@@ -2827,8 +2839,469 @@ const List<LifeEvent> kLifeEventsEarly = <LifeEvent>[
 /// Every Life event the game draws from: the original pool plus the
 /// fill-the-gaps pack. Composed rather than merged by hand so the two sets
 /// stay separately readable.
+
+/// Events whose whole job is to teach a money idea.
+///
+/// **Why these are a separate list.** The existing pools grew as *story* —
+/// they move stats and give a life texture, and only incidentally touch
+/// money. That left the app in the position the owner called out: lots of
+/// features, plenty to do, but nothing that reliably taught budgeting.
+///
+/// Every choice in this list carries a [LifeChoice.teaches], so whichever
+/// option the player picks, the game names the idea afterwards (see
+/// `LifeSimController.chooseOption` and `_MoneyLessonSheet`). Both branches
+/// teach the same concept — picking the "worse" option is not punished with
+/// silence, it is the more instructive path.
+///
+/// Deliberately spread across ages so a six year old and a nineteen year
+/// old each meet ideas pitched at their life, not just at an adult's.
+const List<LifeEvent> kLifeEventsMoney = <LifeEvent>[
+  // ---- Young children -------------------------------------------------
+  LifeEvent(
+    id: 'm_two_pockets',
+    prompt:
+        'You get pocket money. A grown-up shows you two jars: one for '
+        'spending, one for saving.',
+    icon: Icons.savings_rounded,
+    minAge: 5,
+    maxAge: 10,
+    weight: 1.3,
+    choices: [
+      LifeChoice(
+        label: 'Put some in the saving jar first',
+        outcome:
+            'You split it before you spent any. The saving jar started '
+            'filling up on its own.',
+        money: 8,
+        smarts: 5,
+        happiness: 3,
+        teaches: FinanceConcept.payYourselfFirst,
+      ),
+      LifeChoice(
+        label: 'Keep it all in the spending jar',
+        outcome:
+            'It was all gone by the weekend. The saving jar stayed empty.',
+        money: 3,
+        happiness: 5,
+        teaches: FinanceConcept.payYourselfFirst,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'm_shop_choice',
+    prompt:
+        'At the shop you have enough money for the toy OR the new shoes '
+        'you actually need. Not both.',
+    icon: Icons.shopping_basket_rounded,
+    minAge: 5,
+    maxAge: 11,
+    weight: 1.2,
+    choices: [
+      LifeChoice(
+        label: 'Get the shoes',
+        outcome: 'Not exciting. But your feet stopped hurting.',
+        health: 5,
+        smarts: 4,
+        happiness: -1,
+        teaches: FinanceConcept.needsVsWants,
+      ),
+      LifeChoice(
+        label: 'Get the toy',
+        outcome:
+            'Brilliant for a week. The shoes still needed buying later.',
+        happiness: 8,
+        money: -10,
+        teaches: FinanceConcept.needsVsWants,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'm_wait_a_day',
+    prompt:
+        'You REALLY want something you saw today. You could buy it now, or '
+        'wait until tomorrow to decide.',
+    icon: Icons.flash_on_rounded,
+    minAge: 6,
+    maxAge: 14,
+    weight: 1.2,
+    repeatable: true,
+    choices: [
+      LifeChoice(
+        label: 'Sleep on it',
+        outcome:
+            'By morning you had gone off it. You kept the money and did '
+            'not miss the thing at all.',
+        money: 12,
+        smarts: 5,
+        teaches: FinanceConcept.impulseSpending,
+      ),
+      LifeChoice(
+        label: 'Buy it right now',
+        outcome:
+            'The excitement lasted about an hour. It is somewhere in a '
+            'drawer now.',
+        money: -14,
+        happiness: 4,
+        teaches: FinanceConcept.impulseSpending,
+      ),
+    ],
+  ),
+
+  // ---- Older kids and teens -------------------------------------------
+  LifeEvent(
+    id: 'm_saving_goal',
+    prompt:
+        'You want something big — far more than you have. A friend says '
+        'just ask for it as a present.',
+    icon: Icons.flag_rounded,
+    minAge: 9,
+    maxAge: 16,
+    weight: 1.1,
+    choices: [
+      LifeChoice(
+        label: 'Set a savings target and chip away',
+        outcome:
+            'It took months. Getting there yourself felt different to '
+            'being handed it.',
+        money: 25,
+        smarts: 6,
+        happiness: 6,
+        teaches: FinanceConcept.payYourselfFirst,
+      ),
+      LifeChoice(
+        label: 'Just ask someone to buy it',
+        outcome:
+            'You got it sooner. You also learned nothing about how to get '
+            'the next one.',
+        happiness: 6,
+        teaches: FinanceConcept.payYourselfFirst,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'm_first_payslip',
+    prompt:
+        'Your first payslip. The number at the bottom is smaller than the '
+        'hourly rate you were promised.',
+    icon: Icons.receipt_long_rounded,
+    minAge: 15,
+    maxAge: 24,
+    weight: 1.3,
+    choices: [
+      LifeChoice(
+        label: 'Read the deductions line by line',
+        outcome:
+            'Tax and national insurance. Now you know gross pay and '
+            'take-home pay are different numbers.',
+        smarts: 8,
+        teaches: FinanceConcept.taxes,
+      ),
+      LifeChoice(
+        label: 'Assume it is a mistake and ignore it',
+        outcome:
+            'It was not a mistake. You budgeted off the wrong number for '
+            'months.',
+        money: -20,
+        happiness: -3,
+        teaches: FinanceConcept.taxes,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'm_phone_contract',
+    prompt:
+        'A shop offers the newest phone for "only" a small amount a month, '
+        'over three years.',
+    icon: Icons.credit_card_rounded,
+    minAge: 16,
+    weight: 1.1,
+    choices: [
+      LifeChoice(
+        label: 'Multiply it out first',
+        outcome:
+            'Thirty-six payments came to far more than the phone costs '
+            'outright. You bought last year is model instead.',
+        money: 60,
+        smarts: 7,
+        teaches: FinanceConcept.interestCost,
+      ),
+      LifeChoice(
+        label: 'Sign — it is only a few coins a month',
+        outcome:
+            'The monthly amount was painless. The total was not.',
+        money: -90,
+        happiness: 5,
+        teaches: FinanceConcept.interestCost,
+      ),
+    ],
+  ),
+
+  // ---- Adults ----------------------------------------------------------
+  LifeEvent(
+    id: 'm_first_raise',
+    prompt: 'You got a raise. Your flat, car and habits all still work fine.',
+    icon: Icons.moving_rounded,
+    minAge: 20,
+    requiresJob: true,
+    weight: 1.2,
+    repeatable: true,
+    choices: [
+      LifeChoice(
+        label: 'Keep living on the old amount, save the difference',
+        outcome:
+            'Nothing about your week changed, and your savings jumped. '
+            'That gap is the whole trick.',
+        money: 140,
+        smarts: 6,
+        teaches: FinanceConcept.lifestyleCreep,
+      ),
+      LifeChoice(
+        label: 'Upgrade the flat to match',
+        outcome:
+            'Nicer place, same empty account at month end. The raise '
+            'vanished into rent.',
+        happiness: 7,
+        money: -40,
+        teaches: FinanceConcept.lifestyleCreep,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'm_card_offer',
+    prompt:
+        'A credit card arrives pre-approved. The limit is more than you '
+        'earn in two months.',
+    icon: Icons.speed_rounded,
+    minAge: 18,
+    weight: 1.1,
+    choices: [
+      LifeChoice(
+        label: 'Use it small and clear it in full monthly',
+        outcome:
+            'Paid off every month, so it never cost interest — and it '
+            'quietly built a payment history lenders like.',
+        smarts: 6,
+        money: 20,
+        teaches: FinanceConcept.creditScore,
+      ),
+      LifeChoice(
+        label: 'Treat the limit as money you have',
+        outcome:
+            'The balance stopped going down. Interest made sure of that.',
+        money: -120,
+        happiness: 4,
+        teaches: FinanceConcept.creditScore,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'm_invest_early',
+    prompt:
+        'You have some spare money and forty years until you would need '
+        'it.',
+    icon: Icons.trending_up_rounded,
+    minAge: 18,
+    maxAge: 35,
+    minMoney: 150,
+    weight: 1.2,
+    choices: [
+      LifeChoice(
+        label: 'Invest it and leave it alone',
+        outcome:
+            'You barely thought about it again. Time did the work that no '
+            'amount of effort later could.',
+        money: -120,
+        smarts: 8,
+        teaches: FinanceConcept.compoundGrowth,
+      ),
+      LifeChoice(
+        label: 'Keep it as cash — it feels safer',
+        outcome:
+            'Nothing was lost. Nothing grew either, and prices did not '
+            'stand still.',
+        happiness: 2,
+        teaches: FinanceConcept.inflation,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'm_hot_tip',
+    prompt:
+        'Someone at work swears one company is about to take off, and puts '
+        'everything they have into it.',
+    icon: Icons.scatter_plot_rounded,
+    minAge: 20,
+    minMoney: 200,
+    weight: 1.0,
+    choices: [
+      LifeChoice(
+        label: 'Spread your money across many instead',
+        outcome:
+            'Boring, and it worked. When one holding dropped, the rest '
+            'carried it.',
+        money: 90,
+        smarts: 7,
+        teaches: FinanceConcept.diversification,
+      ),
+      LifeChoice(
+        label: 'Go all in on the tip',
+        outcome:
+            'It did not take off. Everything was in one place, so '
+            'everything went with it.',
+        money: -160,
+        happiness: -6,
+        teaches: FinanceConcept.diversification,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'm_insurance_call',
+    prompt:
+        'Renewal time. You could drop your cover and pocket the premium.',
+    icon: Icons.health_and_safety_rounded,
+    minAge: 22,
+    weight: 1.0,
+    repeatable: true,
+    choices: [
+      LifeChoice(
+        label: 'Keep cover for what you could not replace',
+        outcome:
+            'A small predictable cost, in exchange for not being wiped out '
+            'by a rare one.',
+        money: -35,
+        smarts: 5,
+        teaches: FinanceConcept.insurance,
+      ),
+      LifeChoice(
+        label: 'Cancel it and keep the money',
+        outcome:
+            'Cheaper every month — right up until the month it was not.',
+        money: 35,
+        happiness: 3,
+        teaches: FinanceConcept.insurance,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'm_sunk_course',
+    prompt:
+        'You paid up front for a course you have grown to hate. There are '
+        'months of it left.',
+    icon: Icons.history_toggle_off_rounded,
+    minAge: 18,
+    weight: 1.0,
+    choices: [
+      LifeChoice(
+        label: 'Walk away and use the time better',
+        outcome:
+            'The money was gone either way. At least the months were not.',
+        happiness: 8,
+        smarts: 6,
+        teaches: FinanceConcept.sunkCost,
+      ),
+      LifeChoice(
+        label: 'Finish it because you already paid',
+        outcome:
+            'You saw it through, resenting every session. The fee did not '
+            'come back for being endured.',
+        happiness: -6,
+        smarts: 2,
+        teaches: FinanceConcept.sunkCost,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'm_two_offers',
+    prompt:
+        'Two jobs: one pays more but is across an expensive city, the other '
+        'pays less near cheap rent.',
+    icon: Icons.compare_arrows_rounded,
+    minAge: 20,
+    weight: 1.0,
+    choices: [
+      LifeChoice(
+        label: 'Work out what you would actually keep',
+        outcome:
+            'After rent and travel, the "smaller" salary left more in your '
+            'pocket. You took it.',
+        money: 110,
+        smarts: 8,
+        teaches: FinanceConcept.incomeVsWealth,
+      ),
+      LifeChoice(
+        label: 'Take the bigger number',
+        outcome:
+            'A better salary to say out loud, and less left at the end of '
+            'the month.',
+        money: -30,
+        happiness: 4,
+        teaches: FinanceConcept.incomeVsWealth,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'm_savings_cushion',
+    prompt:
+        'Your hours get cut with no warning. Rent is due in two weeks.',
+    icon: Icons.umbrella_rounded,
+    minAge: 20,
+    requiresJob: true,
+    weight: 1.1,
+    choices: [
+      LifeChoice(
+        label: 'Lean on the fund you built',
+        outcome:
+            'Stressful, not catastrophic. That is exactly what the fund is '
+            'for — it buys you time to fix things calmly.',
+        happiness: -3,
+        smarts: 6,
+        teaches: FinanceConcept.emergencyFund,
+      ),
+      LifeChoice(
+        label: 'Put rent on credit and hope',
+        outcome:
+            'Rent got paid. So did the interest, for a long time after.',
+        money: -70,
+        happiness: -8,
+        teaches: FinanceConcept.emergencyFund,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'm_price_creep',
+    prompt:
+        'The weekly shop costs noticeably more than it did a few years ago '
+        'for the same basket.',
+    icon: Icons.local_grocery_store_rounded,
+    minAge: 25,
+    weight: 0.9,
+    repeatable: true,
+    choices: [
+      LifeChoice(
+        label: 'Ask for a pay review to match',
+        outcome:
+            'Awkward conversation, better outcome. Standing still while '
+            'prices move is a slow pay cut.',
+        money: 80,
+        smarts: 6,
+        teaches: FinanceConcept.inflation,
+      ),
+      LifeChoice(
+        label: 'Absorb it quietly',
+        outcome:
+            'Same salary, smaller shop. The gap widened every year you did '
+            'not mention it.',
+        money: -45,
+        happiness: -3,
+        teaches: FinanceConcept.inflation,
+      ),
+    ],
+  ),
+];
+
 const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ..._kLifeEventsCore,
   ...kLifeEventsExtra,
   ...kLifeEventsEarly,
+  ...kLifeEventsMoney,
 ];
