@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' show User;
 import '../../config/dev_preview_flags.dart';
 import '../../constants/app_assets.dart';
 import '../../controllers_that_updates_stats/app_settings_controller.dart';
+import '../../controllers_that_updates_stats/money_habit_controller.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../models_Like_Skins_and_lessons_templates/life_ending.dart';
@@ -18,9 +19,11 @@ import '../../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import '../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../services_backend_and_other_services/supabase_service.dart';
+import '../../themes_colors/app_theme.dart';
 import '../../widgets_custom_lotties/cloud_sync_banner.dart';
 import '../../widgets_custom_lotties/achievement_celebration.dart';
 import '../../widgets_custom_lotties/custom_bottom_nav.dart';
+import '../../widgets_custom_lotties/habit_progress_grids.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
 import '../../widgets_custom_lotties/idle_hover_icon.dart';
 import '../admin/admin_screen.dart';
@@ -198,7 +201,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 : remoteAvatarUrl;
 
             return Scaffold(
-              backgroundColor: const Color(0xFF071711),
+              backgroundColor: AppTheme.deepForest,
               bottomNavigationBar: widget.onNavSelected == null
                   ? null
                   : CustomBottomNav(
@@ -229,6 +232,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _ProfileInsightCard(stats: stats),
                         const SizedBox(height: 12),
                         _BadgeShowcase(stats: stats),
+                        const SizedBox(height: 12),
+                        const _MoneyHabitsProfileCard(),
+                        const SizedBox(height: 12),
+                        const _FriendsCard(),
                         const SizedBox(height: 12),
                         _SettingsCard(
                           title: 'Notifications',
@@ -1209,6 +1216,241 @@ class _AvatarImage extends StatelessWidget {
       fit: BoxFit.cover,
       alignment: Alignment.center,
       errorBuilder: (_, _, _) => _placeholder,
+    );
+  }
+}
+
+/// Lifetime + month-over-month money-habit totals, plus the trailing-12-week
+/// activity heatmap. Reads entirely off [MoneyHabitController], which is
+/// itself derived from [UserStatsController]'s stats, so this rebuilds
+/// automatically whenever a habit is logged anywhere in the app.
+class _MoneyHabitsProfileCard extends StatelessWidget {
+  const _MoneyHabitsProfileCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final habits = context.watch<MoneyHabitController>();
+    final comparison = habits.monthComparison;
+    final delta = comparison.lastMonth == null
+        ? null
+        : comparison.thisMonth.moneySavedUsd - comparison.lastMonth!.moneySavedUsd;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.savings_rounded, color: Color(0xFF85EFAC), size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Money Habits',
+                style: GoogleFonts.baloo2(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              if (delta != null)
+                Text(
+                  delta >= 0
+                      ? '\$${delta.toStringAsFixed(0)} more saved than last month'
+                      : '\$${delta.abs().toStringAsFixed(0)} less saved than last month',
+                  style: TextStyle(
+                    color: delta >= 0 ? const Color(0xFF85EFAC) : const Color(0xFFFF8474),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _MoneyStatColumn(
+                  label: 'Money saved',
+                  value: '\$${habits.lifetimeTotals.moneySavedUsd.toStringAsFixed(0)}',
+                ),
+              ),
+              Expanded(
+                child: _MoneyStatColumn(
+                  label: 'Smart choices',
+                  value: habits.lifetimeTotals.choicesKept.toStringAsFixed(0),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Last 12 weeks',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          HabitActivityHeatmap(activityCalendar: habits.activityCalendar),
+        ],
+      ),
+    );
+  }
+}
+
+class _MoneyStatColumn extends StatelessWidget {
+  const _MoneyStatColumn({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(value, style: GoogleFonts.baloo2(color: Colors.white, fontWeight: FontWeight.w700)),
+        Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11)),
+      ],
+    );
+  }
+}
+
+/// Friend code display + "add a friend" field + friends list. A friendship
+/// is a directed edge (see `SupabaseService.addFriendByCode`), so it reads
+/// as mutual once both sides have added each other's code — the empty
+/// state explains this rather than promising one-tap mutual adding.
+class _FriendsCard extends StatefulWidget {
+  const _FriendsCard();
+
+  @override
+  State<_FriendsCard> createState() => _FriendsCardState();
+}
+
+class _FriendsCardState extends State<_FriendsCard> {
+  final _codeController = TextEditingController();
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _addFriend(String currentUserId) async {
+    if (_submitting || _codeController.text.trim().isEmpty) return;
+    setState(() => _submitting = true);
+    final result = await SupabaseService.instance.addFriendByCode(
+      currentUserId: currentUserId,
+      code: _codeController.text,
+    );
+    if (!mounted) return;
+    setState(() => _submitting = false);
+    _codeController.clear();
+    GameToast.show(context, message: result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUserId = context.watch<UserStatsController>().stats.id;
+    final friendCode = SupabaseService.friendCodeFor(currentUserId);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.group_rounded, color: Color(0xFF85EFAC), size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Friends',
+                style: GoogleFonts.baloo2(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Text(
+                'Your code: ',
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+              ),
+              GestureDetector(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: friendCode));
+                  GameToast.show(context, message: 'Copied $friendCode');
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    friendCode,
+                    style: const TextStyle(
+                      color: Color(0xFF85EFAC),
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(Icons.copy_rounded, color: Colors.white38, size: 14),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _codeController,
+                  textCapitalization: TextCapitalization.characters,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Enter a friend code',
+                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.06),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onSubmitted: (_) => _addFriend(currentUserId),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF4BD2A3),
+                  foregroundColor: const Color(0xFF062017),
+                ),
+                onPressed: _submitting ? null : () => _addFriend(currentUserId),
+                child: _submitting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF062017)),
+                      )
+                    : const Text('Add'),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

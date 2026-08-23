@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 
-/// Lifts and glows its child on pointer hover (desktop/web); a no-op on
-/// touch, which never fires hover events. Used on tappable cards so they
-/// read as alive rather than flat, without the continuous idle bob
-/// [IdleHoverIcon] uses — a whole grid of things bobbing at once reads as
-/// noisy, where this only reacts to an actual pointer.
+import '../themes_colors/app_theme.dart';
+
+/// Glows its child with a soft, colour-tinted "puffy" shadow at rest, and
+/// lifts + intensifies that glow on pointer hover (desktop/web only — touch
+/// never fires hover events, so the resting glow is what makes cards read
+/// as raised rather than flat on mobile). Deliberately reacts only to an
+/// actual pointer rather than a continuous idle bob — a whole grid of
+/// things bobbing at once (see [IdleHoverIcon]) reads as noisy.
 class HoverLift extends StatefulWidget {
   const HoverLift({
     super.key,
     required this.accent,
     required this.child,
-    this.borderRadius = 24,
+    this.borderRadius = AppTheme.radiusXLarge,
     this.lift = 4,
   });
 
@@ -42,15 +45,14 @@ class _HoverLiftState extends State<HoverLift> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(widget.borderRadius),
           boxShadow: _hovering
-              ? [
-                  BoxShadow(
-                    color: widget.accent.withValues(alpha: 0.30),
-                    blurRadius: 24,
-                    spreadRadius: -4,
-                    offset: const Offset(0, 10),
-                  ),
-                ]
-              : const [],
+              ? AppTheme.puffyShadow(
+                  widget.accent,
+                  restAlpha: 0.34,
+                  blurRadius: 30,
+                  spreadRadius: -3,
+                  offset: const Offset(0, 14),
+                )
+              : AppTheme.puffyShadow(widget.accent),
         ),
         child: widget.child,
       ),

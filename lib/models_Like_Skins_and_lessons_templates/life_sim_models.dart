@@ -292,13 +292,13 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
       ),
       LifeChoice(
         label: '"More!"',
-        outcome: 'Demanding from day one.',
+        outcome: 'You already know how to ask for what you want.',
         happiness: 4,
         smarts: 3,
       ),
       LifeChoice(
         label: '"Why?"',
-        outcome: 'Your parents are already exhausted. Curious mind, though.',
+        outcome: 'You ask a lot of questions — a very curious mind!',
         smarts: 7,
         happiness: 2,
       ),

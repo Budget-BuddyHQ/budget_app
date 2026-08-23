@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../services_backend_and_other_services/supabase_service.dart';
+import '../../themes_colors/app_theme.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -173,14 +174,14 @@ class _AdminScreenState extends State<AdminScreen> {
       builder: (context, accessSnapshot) {
         if (accessSnapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            backgroundColor: Color(0xFF0A211A),
+            backgroundColor: AppTheme.deepForest,
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
         if (accessSnapshot.data != true) {
           return Scaffold(
-            backgroundColor: const Color(0xFF0A211A),
+            backgroundColor: AppTheme.deepForest,
             body: Center(
               child: Text(
                 'Access denied',
@@ -191,7 +192,7 @@ class _AdminScreenState extends State<AdminScreen> {
         }
 
         return Scaffold(
-          backgroundColor: const Color(0xFF0A211A),
+          backgroundColor: AppTheme.deepForest,
           appBar: AppBar(
             title: Text(showDeleted ? 'Deleted Users' : 'Admin Panel'),
             backgroundColor: Colors.black,

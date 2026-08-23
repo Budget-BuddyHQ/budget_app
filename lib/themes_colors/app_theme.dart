@@ -3,8 +3,12 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Colors
-  static const Color deepForest = Color(0xFF061510);
-  static const Color darkForest = Color(0xFF0E231C);
+  // Bumped lighter/warmer than the original near-black values (twice now,
+  // per direct feedback the first pass still read too dark) so the app
+  // reads as a lit night scene rather than a cave — still a dark forest
+  // theme, not a light-mode swap.
+  static const Color deepForest = Color(0xFF0F2E20);
+  static const Color darkForest = Color(0xFF1B4633);
   static const Color limeAccent = Color(0xFFB7F7D7);
   static const Color greenPrimary = Color(0xFF4BD2A3);
   static const Color lightGreen = Color(0xFFEAFBF4);
@@ -12,8 +16,8 @@ class AppTheme {
   static const Color successGreen = Color(0xFF2C9C73);
   static const Color warningOrange = Color(0xFFF2C66D);
   static const Color errorRed = Color(0xFFFF8474);
-  static const Color panel = Color(0xFF143026);
-  static const Color panelStrong = Color(0xFF1A3A2E);
+  static const Color panel = Color(0xFF264F3D);
+  static const Color panelStrong = Color(0xFF335D48);
   static const Color textPrimary = Color(0xFFF7FFFB);
   static const Color textMuted = Color(0xFFB9D1C6);
 
@@ -25,11 +29,11 @@ class AppTheme {
   static const double spacingXLarge = 24.0;
   static const double spacingXXLarge = 32.0;
 
-  // Border radius
-  static const double radiusSmall = 8.0;
-  static const double radiusMedium = 14.0;
-  static const double radiusLarge = 20.0;
-  static const double radiusXLarge = 28.0;
+  // Border radius — bumped rounder for the "puffy"/bubbled-up look.
+  static const double radiusSmall = 10.0;
+  static const double radiusMedium = 18.0;
+  static const double radiusLarge = 24.0;
+  static const double radiusXLarge = 32.0;
 
   // Font sizes
   static const double fontSizeSmall = 12.0;
@@ -63,6 +67,27 @@ class AppTheme {
       offset: const Offset(0, 8),
     ),
   ];
+
+  /// A soft, colour-tinted "puffy" glow — used instead of flat black shadows
+  /// to make cards/buttons read as raised and bubbled-up rather than flat.
+  /// Always visible at [restAlpha] (so touch devices, which never hover,
+  /// still see it) and can be intensified for a hover/press state.
+  static List<BoxShadow> puffyShadow(
+    Color accent, {
+    double restAlpha = 0.22,
+    double blurRadius = 28,
+    double spreadRadius = -6,
+    Offset offset = const Offset(0, 12),
+  }) {
+    return [
+      BoxShadow(
+        color: accent.withValues(alpha: restAlpha),
+        blurRadius: blurRadius,
+        spreadRadius: spreadRadius,
+        offset: offset,
+      ),
+    ];
+  }
 
   // Gradients
   static const LinearGradient gradientForest = LinearGradient(
@@ -269,6 +294,27 @@ class AppTheme {
         color: borderColor.withValues(alpha: borderOpacity),
         width: borderWidth,
       ),
+    );
+  }
+
+  /// The app's shared "puffy" card look: a rounded fill with a soft
+  /// colour-tinted glow and a faint highlight border, instead of a flat
+  /// panel with a hard black shadow.
+  static BoxDecoration getPuffyDecoration({
+    required Color accent,
+    Color? fillColor,
+    double borderRadius = radiusXLarge,
+    double borderOpacity = 0.16,
+    double restAlpha = 0.22,
+  }) {
+    return BoxDecoration(
+      color: fillColor ?? panelStrong,
+      borderRadius: BorderRadius.circular(borderRadius),
+      border: Border.all(
+        color: accent.withValues(alpha: borderOpacity),
+        width: 1.5,
+      ),
+      boxShadow: puffyShadow(accent, restAlpha: restAlpha),
     );
   }
 }

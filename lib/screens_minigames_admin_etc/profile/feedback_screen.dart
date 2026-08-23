@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/app_assets.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
+import '../../themes_colors/app_theme.dart';
 import '../../services_backend_and_other_services/supabase_service.dart';
 import '../../widgets_custom_lotties/ambient_lottie_card.dart';
 import '../../widgets_custom_lotties/custom_button.dart';
@@ -95,7 +96,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF071711),
+      backgroundColor: AppTheme.deepForest,
       body: Stack(
         children: [
           Positioned.fill(
