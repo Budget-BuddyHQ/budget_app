@@ -105,6 +105,14 @@ class AppAssets {
   static const double npcFrameHeight = 116;
   static const double npcAspectRatio = npcFrameWidth / npcFrameHeight;
 
+  /// Interior backdrop (500x175) shown behind a town spot's decision sheet,
+  /// so entering a building reads as *going inside* rather than opening a
+  /// menu over the map.
+  static const String shopRoomBackground =
+      'assets/map_assets_coins/building/rooms/room-background-decorated.png';
+  static const String plainRoomBackground =
+      'assets/map_assets_coins/building/rooms/room-background.png';
+
   static const String _taxerRoot = 'assets/map_assets_coins/tax-guy';
   static const String _customerRoot =
       'assets/map_assets_coins/customer_more_animations';

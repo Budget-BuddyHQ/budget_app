@@ -129,6 +129,32 @@ class _LifeSimPageState extends State<LifeSimPage> {
     life.invest(100);
   }
 
+  /// Opens one of the four category menus.
+  ///
+  /// This is the structural difference between "a button that does a thing"
+  /// and a life sim: a menu can hold six actions with costs and conditions
+  /// where a bottom-bar slot can only hold one. Actions are built fresh on
+  /// open so their enabled/disabled state reflects the character *now*.
+  Future<void> _openMenu(LifeSimController life, _LifeMenu menu) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) => _LifeMenuSheet(
+        menu: menu,
+        life: life,
+        onSkills: () {
+          Navigator.of(sheetContext).pop();
+          _openSkills(life);
+        },
+        onInvest: () {
+          Navigator.of(sheetContext).pop();
+          _invest(life);
+        },
+      ),
+    );
+  }
+
   /// Skill practice. Until this existed, `LifeSimController.practise` had no
   /// UI at all — the whole skill/career ladder was unreachable by the player
   /// even though the events gating on it were already in the pool.
@@ -226,11 +252,11 @@ class _LifeSimPageState extends State<LifeSimPage> {
                 happiness: life.happiness,
                 blocked: event != null || life.finished,
                 stage: life.stage,
-                onStudy: life.study,
-                onInvest: () => _invest(life),
-                onFun: life.haveFun,
-                onExercise: life.exercise,
-                onSkills: () => _openSkills(life),
+                onCareer: () => _openMenu(life, _LifeMenu.career),
+                onRelationships: () =>
+                    _openMenu(life, _LifeMenu.relationships),
+                onActivities: () => _openMenu(life, _LifeMenu.activities),
+                onAssets: () => _openMenu(life, _LifeMenu.assets),
                 onAge: life.ageUp,
               ),
             ],
@@ -671,27 +697,28 @@ class _BottomMenu extends StatelessWidget {
     required this.happiness,
     required this.blocked,
     required this.stage,
-    required this.onStudy,
-    required this.onInvest,
-    required this.onFun,
-    required this.onExercise,
-    required this.onSkills,
+    required this.onCareer,
+    required this.onRelationships,
+    required this.onActivities,
+    required this.onAssets,
     required this.onAge,
   });
 
   final int happiness;
   final bool blocked;
 
-  /// The menu changes with life stage — a toddler has no use for an
-  /// investment button, and an adult shouldn't still be tapping "School".
-  /// Previously all four actions showed at every age, which is a large part
-  /// of why every year felt identical.
+  /// Kept for stage-specific labelling — a child's left slot reads "School"
+  /// rather than "Career", though both open the same menu.
   final LifeStage stage;
-  final VoidCallback onStudy;
-  final VoidCallback onInvest;
-  final VoidCallback onFun;
-  final VoidCallback onExercise;
-  final VoidCallback onSkills;
+
+  /// Each of these opens a *menu*, not a single action. That's the whole
+  /// change: five bottom-bar slots could only ever hold five things, so the
+  /// sim was mostly "press Age and react". Four categories holding four to
+  /// six actions each is what makes a turn a decision.
+  final VoidCallback onCareer;
+  final VoidCallback onRelationships;
+  final VoidCallback onActivities;
+  final VoidCallback onAssets;
   final VoidCallback onAge;
 
   @override
@@ -746,52 +773,34 @@ class _BottomMenu extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // Left slot: school while young, money once independent.
-                  if (stage == LifeStage.baby ||
-                      stage == LifeStage.child ||
-                      stage == LifeStage.teen)
-                    _MenuButton(
-                      label: 'School',
-                      icon: Icons.menu_book_rounded,
-                      color: const Color(0xFF58C7FF),
-                      onTap: blocked ? null : onStudy,
-                    )
-                  else
-                    _MenuButton(
-                      label: 'Assets',
-                      icon: Icons.trending_up_rounded,
-                      color: const Color(0xFF85EFAC),
-                      onTap: blocked ? null : onInvest,
-                    ),
-                  // Skills open up once a character is old enough to
-                  // meaningfully practise — this is the entry point to the
-                  // whole music/sports/business career ladder.
-                  if (stage != LifeStage.baby)
-                    _MenuButton(
-                      label: 'Skills',
-                      icon: Icons.auto_awesome_rounded,
-                      color: const Color(0xFFB388FF),
-                      onTap: blocked ? null : onSkills,
-                    )
-                  else
-                    _MenuButton(
-                      label: 'Study',
-                      icon: Icons.menu_book_rounded,
-                      color: const Color(0xFF58C7FF),
-                      onTap: blocked ? null : onStudy,
-                    ),
-                  _AgeButton(onTap: blocked ? null : onAge),
                   _MenuButton(
-                    label: 'Fun',
-                    icon: Icons.celebration_rounded,
-                    color: const Color(0xFFFFD45C),
-                    onTap: blocked ? null : onFun,
+                    label: stage == LifeStage.baby ||
+                            stage == LifeStage.child ||
+                            stage == LifeStage.teen
+                        ? 'School'
+                        : 'Career',
+                    icon: Icons.work_rounded,
+                    color: const Color(0xFF58C7FF),
+                    onTap: blocked ? null : onCareer,
                   ),
                   _MenuButton(
-                    label: 'Gym',
-                    icon: Icons.fitness_center_rounded,
-                    color: const Color(0xFFFF8A80),
-                    onTap: blocked ? null : onExercise,
+                    label: 'People',
+                    icon: Icons.favorite_rounded,
+                    color: const Color(0xFFFF8FB1),
+                    onTap: blocked ? null : onRelationships,
+                  ),
+                  _AgeButton(onTap: blocked ? null : onAge),
+                  _MenuButton(
+                    label: 'Do',
+                    icon: Icons.self_improvement_rounded,
+                    color: const Color(0xFFB388FF),
+                    onTap: blocked ? null : onActivities,
+                  ),
+                  _MenuButton(
+                    label: 'Money',
+                    icon: Icons.trending_up_rounded,
+                    color: const Color(0xFF85EFAC),
+                    onTap: blocked ? null : onAssets,
                   ),
                 ],
               ),
@@ -1113,6 +1122,333 @@ class _SkillRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The four BitLife-style menu categories.
+enum _LifeMenu {
+  career('Career', Icons.work_rounded, Color(0xFF58C7FF)),
+  relationships('People', Icons.favorite_rounded, Color(0xFFFF8FB1)),
+  activities('Activities', Icons.self_improvement_rounded, Color(0xFFB388FF)),
+  assets('Money', Icons.trending_up_rounded, Color(0xFF85EFAC));
+
+  const _LifeMenu(this.label, this.icon, this.accent);
+  final String label;
+  final IconData icon;
+  final Color accent;
+}
+
+/// One row inside a menu: what it does, what it costs, and whether it can
+/// be tapped right now.
+class _LifeAction {
+  const _LifeAction({
+    required this.label,
+    required this.detail,
+    required this.icon,
+    required this.onTap,
+    this.cost,
+    this.disabledReason,
+  });
+
+  final String label;
+  final String detail;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  /// Coin cost shown as a chip. Null for free actions — and several of the
+  /// best actions here are free on purpose.
+  final int? cost;
+
+  /// When set, the row is greyed out and explains *why* rather than just
+  /// being dead.
+  final String? disabledReason;
+
+  bool get enabled => disabledReason == null;
+}
+
+/// A category menu. Closes itself after any action so the player sees the
+/// result land in the life feed behind it.
+class _LifeMenuSheet extends StatelessWidget {
+  const _LifeMenuSheet({
+    required this.menu,
+    required this.life,
+    required this.onSkills,
+    required this.onInvest,
+  });
+
+  final _LifeMenu menu;
+  final LifeSimController life;
+  final VoidCallback onSkills;
+  final VoidCallback onInvest;
+
+  List<_LifeAction> _actions(BuildContext context) {
+    void run(void Function() action) {
+      action();
+      Navigator.of(context).pop();
+    }
+
+    final young = life.isDependent;
+
+    switch (menu) {
+      case _LifeMenu.career:
+        return [
+          _LifeAction(
+            label: young ? 'Hit the books' : 'Take a course',
+            detail: young
+                ? 'Study after school. +6 Smarts.'
+                : 'Pay to learn something new. +6 Smarts.',
+            icon: Icons.menu_book_rounded,
+            cost: young ? null : 30,
+            onTap: () => run(life.study),
+          ),
+          _LifeAction(
+            label: 'Work harder',
+            detail: 'Extra hours for a shot at a raise. Costs happiness.',
+            icon: Icons.trending_up_rounded,
+            onTap: () => run(life.workHarder),
+            disabledReason: life.hasJob ? null : 'You need a job first',
+          ),
+          _LifeAction(
+            label: 'Ask for a raise',
+            detail: 'Asking is free. Being told no is not fun.',
+            icon: Icons.record_voice_over_rounded,
+            onTap: () => run(life.askForRaise),
+            disabledReason: life.hasJob ? null : 'You need a job first',
+          ),
+          _LifeAction(
+            label: 'Quit your job',
+            detail: 'Freedom now, no paycheck next year.',
+            icon: Icons.logout_rounded,
+            onTap: () => run(life.quitJob),
+            disabledReason: life.hasJob ? null : 'You have no job to quit',
+          ),
+        ];
+
+      case _LifeMenu.relationships:
+        final people = life.relationships;
+        if (people.isEmpty) {
+          return const [];
+        }
+        return [
+          for (final person in people) ...[
+            _LifeAction(
+              label: 'Spend time with $person',
+              detail: 'Costs nothing. +8 Happiness.',
+              icon: Icons.emoji_people_rounded,
+              onTap: () => run(() => life.spendTimeWith(person)),
+            ),
+            _LifeAction(
+              label: 'Buy $person a gift',
+              detail: 'Costs coins, and gives less happiness than time does.',
+              icon: Icons.card_giftcard_rounded,
+              cost: 50,
+              onTap: () => run(() => life.giveGift(person)),
+              disabledReason:
+                  life.money >= 50 ? null : 'Not enough coins',
+            ),
+          ],
+        ];
+
+      case _LifeMenu.activities:
+        return [
+          _LifeAction(
+            label: 'Go out',
+            detail: 'A night out. +10 Happiness.',
+            icon: Icons.celebration_rounded,
+            cost: young ? null : 40,
+            onTap: () => run(life.haveFun),
+            disabledReason: young || life.money >= 40
+                ? null
+                : 'Not enough coins',
+          ),
+          _LifeAction(
+            label: 'Go to the gym',
+            detail: 'Free. +8 Health, +3 Looks.',
+            icon: Icons.fitness_center_rounded,
+            onTap: () => run(life.exercise),
+          ),
+          _LifeAction(
+            label: 'Visit the library',
+            detail: 'Free. +4 Smarts.',
+            icon: Icons.local_library_rounded,
+            onTap: () => run(life.visitLibrary),
+          ),
+          _LifeAction(
+            label: 'See a doctor',
+            detail: 'A check-up. +12 Health.',
+            icon: Icons.medical_services_rounded,
+            cost: young ? null : 60,
+            onTap: () => run(life.visitDoctor),
+            disabledReason: young || life.money >= 60
+                ? null
+                : 'Not enough coins',
+          ),
+          _LifeAction(
+            label: 'Practise a skill',
+            detail: 'Music, sport, business — the career ladders.',
+            icon: Icons.auto_awesome_rounded,
+            onTap: onSkills,
+            disabledReason: life.stage == LifeStage.baby
+                ? 'You are too young'
+                : null,
+          ),
+        ];
+
+      case _LifeMenu.assets:
+        return [
+          _LifeAction(
+            label: 'Invest 100 coins',
+            detail: 'Moves cash into investments. Compounds every year.',
+            icon: Icons.savings_rounded,
+            cost: 100,
+            onTap: onInvest,
+            disabledReason:
+                life.money >= 100 ? null : 'You need 100 coins',
+          ),
+          _LifeAction(
+            label: 'Net worth',
+            detail:
+                'Cash ${life.money} + invested ${life.investments} = '
+                '${life.netWorth}.',
+            icon: Icons.account_balance_wallet_rounded,
+            onTap: () => Navigator.of(context).pop(),
+          ),
+        ];
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final actions = _actions(context);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+      decoration: const BoxDecoration(
+        color: AppTheme.panelStrong,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXLarge),
+        ),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(menu.icon, color: menu.accent, size: 24),
+                const SizedBox(width: 10),
+                Text(
+                  menu.label,
+                  style: GoogleFonts.pixelifySans(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            if (actions.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                child: Text(
+                  'Nobody yet. People turn up as you live — keep aging up.',
+                  style: GoogleFonts.quicksand(
+                    color: AppTheme.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              )
+            else
+              for (final action in actions) ...[
+                _LifeActionRow(action: action, accent: menu.accent),
+                const SizedBox(height: 8),
+              ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LifeActionRow extends StatelessWidget {
+  const _LifeActionRow({required this.action, required this.accent});
+
+  final _LifeAction action;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: action.enabled ? 1 : 0.45,
+      child: InkWell(
+        onTap: action.enabled ? action.onTap : null,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppTheme.panel,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+            border: Border.all(color: accent.withValues(alpha: 0.30)),
+          ),
+          child: Row(
+            children: [
+              Icon(action.icon, color: accent, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      action.label,
+                      style: GoogleFonts.pixelifySans(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      action.disabledReason ?? action.detail,
+                      style: GoogleFonts.quicksand(
+                        color: action.enabled
+                            ? AppTheme.textMuted
+                            : const Color(0xFFFF8474),
+                        fontSize: 12,
+                        height: 1.3,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (action.cost != null) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD45C).withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '-${action.cost}',
+                    style: GoogleFonts.pixelifySans(
+                      color: const Color(0xFFFFD45C),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

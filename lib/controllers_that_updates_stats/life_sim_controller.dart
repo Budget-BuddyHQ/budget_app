@@ -379,6 +379,131 @@ class LifeSimController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ---------------------------------------------------------------------
+  // On-demand actions
+  //
+  // The sim used to be almost entirely reactive: age up, answer whatever
+  // event fired. These are the things a player can choose to *do* on a
+  // given turn, which is what makes the menus worth opening — the same
+  // reason BitLife has Occupation/Relationships/Activities menus rather
+  // than only a big "age" button.
+  // ---------------------------------------------------------------------
+
+  /// Put in extra effort at work. Costs happiness now for a shot at a
+  /// raise — the trade being taught is that effort is spent, not free.
+  void workHarder() {
+    if (finished) return;
+    if (!hasJob) {
+      _setLog('You need a job first.');
+      notifyListeners();
+      return;
+    }
+    _happiness = _clamp(_happiness - 5);
+    _health = _clamp(_health - 2);
+    // Smarter characters convert effort into money more reliably.
+    final succeeded = _random.nextInt(100) < 35 + (_smarts ~/ 4);
+    if (succeeded) {
+      final bump = 200 + _random.nextInt(400);
+      _salary += bump;
+      _setLog('Put in the extra hours — your salary went up by $bump.');
+    } else {
+      _setLog('Put in the extra hours. Nobody noticed. It happens.');
+    }
+    notifyListeners();
+  }
+
+  /// Ask outright. Higher chance than [workHarder] pays off, but a failed
+  /// ask costs more happiness — asking has a real downside.
+  void askForRaise() {
+    if (finished) return;
+    if (!hasJob) {
+      _setLog('You need a job before you can ask for a raise.');
+      notifyListeners();
+      return;
+    }
+    final succeeded = _random.nextInt(100) < 30 + (_smarts ~/ 5);
+    if (succeeded) {
+      final bump = 400 + _random.nextInt(600);
+      _salary += bump;
+      _happiness = _clamp(_happiness + 6);
+      _setLog('You asked, and got it: salary up $bump. Asking is free.');
+    } else {
+      _happiness = _clamp(_happiness - 8);
+      _setLog('They said no. Worth asking — it only cost you a bad day.');
+    }
+    notifyListeners();
+  }
+
+  /// Walk away from a job. Salary goes to zero immediately.
+  void quitJob() {
+    if (finished || !hasJob) return;
+    _job = 'Unemployed';
+    _salary = 0;
+    _happiness = _clamp(_happiness + 4);
+    _setLog('You quit. Freedom now, no paycheck next year.');
+    notifyListeners();
+  }
+
+  /// A check-up. Costs money, buys health back — the cheapest healthcare
+  /// is the kind you get before you need it.
+  void visitDoctor() {
+    if (finished) return;
+    const cost = 60;
+    if (!isDependent && _money < cost) {
+      _setLog('Not enough coins for a check-up.');
+      notifyListeners();
+      return;
+    }
+    if (!isDependent) {
+      _money -= cost;
+    }
+    _health = _clamp(_health + 12);
+    _setLog(
+      isDependent
+          ? 'A parent took you for a check-up: +12 Health.'
+          : 'Check-up done: +12 Health, -$cost coins.',
+    );
+    notifyListeners();
+  }
+
+  /// Free smarts. Deliberately free — the library being the one action
+  /// that costs nothing is itself a small lesson.
+  void visitLibrary() {
+    if (finished) return;
+    _smarts = _clamp(_smarts + 4);
+    _setLog('Spent an afternoon at the library: +4 Smarts. Cost: nothing.');
+    notifyListeners();
+  }
+
+  /// Time with someone you know. Free, and the happiest thing in the game
+  /// per coin spent — which is the point.
+  void spendTimeWith(String person) {
+    if (finished) return;
+    _happiness = _clamp(_happiness + 8);
+    _setLog('Spent the day with $person: +8 Happiness. Cost: nothing.');
+    notifyListeners();
+  }
+
+  /// A gift. Costs real money and gives less happiness than [spendTimeWith]
+  /// — an intentional comparison the player can notice on their own.
+  void giveGift(String person) {
+    if (finished) return;
+    const cost = 50;
+    if (_money < cost) {
+      _setLog('Not enough coins for a gift.');
+      notifyListeners();
+      return;
+    }
+    _money -= cost;
+    _happiness = _clamp(_happiness + 5);
+    _setLog('Bought $person a gift: +5 Happiness, -$cost coins.');
+    notifyListeners();
+  }
+
+  /// True once the character actually holds a paying job.
+  bool get hasJob =>
+      _salary > 0 && _job != 'Newborn' && _job != 'Unemployed';
+
   /// Move cash into investments, which compound each year.
   void invest(int amount) {
     if (finished || amount <= 0 || _money < amount) {
