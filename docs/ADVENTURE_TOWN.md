@@ -62,12 +62,14 @@ compiling — a louder failure than an assertion.
 
 ## 2. Camera and map edges
 
-`CameraConfig.moveOnlyMapArea` is explicitly `false`. The player is walled
-in by the collider ring, so this only controls whether the **camera** also
-clamps itself to the map rectangle. Left unclamped on purpose so standing at
-the wall shows a sliver of void past it — the way an open-world map's edge
-usually reads — rather than the camera stopping dead a tile early to keep
-the frame always full of map art.
+`CameraConfig.moveOnlyMapArea` is `true`: the camera stops at the map
+boundary, so walking to a cliff never reveals empty black space beyond it.
+
+This was **reversed** from `false`. The original reasoning — that a sliver
+of void reads as a real world edge — was about a genre convention rather
+than this map, where "a sliver" is in practice a large black region with
+nothing in it. The player could never leave (the collider ring holds); only
+the camera could, and it should not.
 
 The perimeter is verified sealed by test, not by eye: `town_map_test.dart`
 walks every `x=0`, `x=49`, `y=0`, `y=49` tile and fails listing any gaps.
