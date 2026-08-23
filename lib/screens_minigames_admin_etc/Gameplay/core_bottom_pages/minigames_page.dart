@@ -20,7 +20,7 @@ import 'arcade_catalog.dart';
 class MinigamesPage extends StatelessWidget {
   const MinigamesPage({
     super.key,
-    this.activeTabIndex = AppTabIndex.minigames,
+    this.activeTabIndex = AppTabIndex.dashboard,
     this.onNavSelected,
   });
 
