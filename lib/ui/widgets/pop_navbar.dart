@@ -22,16 +22,19 @@ class PopNavBarItem {
 
 /// Always-bottom-docked navigation bar with a spring-animated active tab.
 class PopNavBar extends StatelessWidget {
-  /// The app's shared 6-tab set (Home/Adventure/Arcade/Style/Academy/
-  /// Profile), so every caller wiring up nav stays in sync.
-  /// Order must match [AppTabIndex] exactly — Home is index 2, the middle
-  /// slot. Five tabs rather than six so each label has room to be read.
+  /// The app's shared 5-tab bottom set, so every caller wiring up nav stays
+  /// in sync. Order must match [AppTabIndex] exactly — Home is index 2, the
+  /// middle slot, and is rendered as a circular badge (see [_PopNavTile])
+  /// rather than the rounded pill every other tab gets. Learn and Profile
+  /// are reached from the top strip instead (see `_TopIconBar` in
+  /// `main_navigation.dart`) — not listed here, so the bar never tries to
+  /// highlight them.
   static const appTabs = <PopNavBarItem>[
     PopNavBarItem(label: 'Life', icon: Icons.explore_rounded),
-    PopNavBarItem(label: 'Learn', icon: Icons.school_rounded),
+    PopNavBarItem(label: 'Arcade', icon: Icons.sports_esports_rounded),
     PopNavBarItem(label: 'Home', icon: Icons.dashboard_rounded),
     PopNavBarItem(label: 'Daily', icon: Icons.savings_rounded),
-    PopNavBarItem(label: 'Profile', icon: Icons.person_rounded),
+    PopNavBarItem(label: 'Style', icon: Icons.auto_awesome_rounded),
   ];
 
   const PopNavBar({
@@ -57,11 +60,16 @@ class PopNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.sizeOf(context);
-    final dense = screenSize.width < 360 || screenSize.height < 560;
+    // Widened from 360 — seven tabs need the denser sizing on more phones
+    // than the old five-tab bar did.
+    final dense = screenSize.width < 420 || screenSize.height < 560;
     final veryTight = screenSize.height < 430;
     // Bumped a few px across the board for a friendlier, easier-to-hit tap
-    // target — this bar is used by players well under teen age.
-    final barHeight = veryTight ? 66.0 : (dense ? 74.0 : 90.0);
+    // target — this bar is used by players well under teen age. Padded
+    // further per tier on top of that so the label's own +3px bump (see
+    // the label SizedBox below) and Home's larger circular badge both have
+    // real slack instead of an exact pixel-for-pixel fit.
+    final barHeight = veryTight ? 80.0 : (dense ? 90.0 : 106.0);
 
     return SafeArea(
       top: false,
@@ -86,7 +94,7 @@ class PopNavBar extends StatelessWidget {
               offset: const Offset(0, 8),
             ),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Row(
             children: [
               for (var i = 0; i < items.length; i++)
@@ -94,6 +102,9 @@ class PopNavBar extends StatelessWidget {
                   child: _PopNavTile(
                     item: items[i],
                     active: i == activeIndex,
+                    // Home occupies the middle slot of the 7-tab set — see
+                    // AppTabIndex.dashboard and the appTabs list above.
+                    isCenter: i == items.length ~/ 2,
                     dense: dense,
                     veryTight: veryTight,
                     onTap: () => _handleTap(context, i),
@@ -112,6 +123,7 @@ class _PopNavTile extends StatefulWidget {
   const _PopNavTile({
     required this.item,
     required this.active,
+    required this.isCenter,
     required this.dense,
     required this.veryTight,
     required this.onTap,
@@ -119,6 +131,10 @@ class _PopNavTile extends StatefulWidget {
 
   final PopNavBarItem item;
   final bool active;
+  // Home's slot: a circular icon badge instead of the rounded pill every
+  // other tab gets, so the bar reads as anchored around it — see
+  // AppTabIndex's doc comment and PopNavBar.appTabs above.
+  final bool isCenter;
   final bool dense;
   final bool veryTight;
   final VoidCallback onTap;
@@ -167,6 +183,14 @@ class _PopNavTileState extends State<_PopNavTile>
 
   @override
   Widget build(BuildContext context) {
+    final iconSize = widget.veryTight ? 20.0 : (widget.dense ? 21.0 : 24.0);
+    final labelHeight = widget.veryTight ? 13.0 : (widget.dense ? 15.0 : 17.0);
+    final labelFontSize = widget.veryTight ? 11.0 : (widget.dense ? 12.5 : 14.0);
+    // Home's badge is bigger than the other tabs' plain icons — it's the
+    // one thing on the bar that isn't a rounded pill, so it needs its own
+    // presence to read as deliberate rather than a rendering glitch.
+    final badgeSize = widget.veryTight ? 36.0 : (widget.dense ? 40.0 : 46.0);
+
     return Semantics(
       button: true,
       selected: widget.active,
@@ -186,66 +210,135 @@ class _PopNavTileState extends State<_PopNavTile>
                 child: Transform.scale(scale: scale, child: child),
               );
             },
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
-              padding: EdgeInsets.symmetric(
-                horizontal: widget.dense ? 8 : 10,
-                vertical: widget.veryTight ? 6 : (widget.dense ? 8 : 10),
-              ),
-              decoration: BoxDecoration(
-                color: widget.active
-                    ? _activeAccent
-                    : Colors.white.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                border: Border.all(
-                  color: widget.active ? _deepCharcoal : Colors.transparent,
-                  width: 3,
-                ),
-                boxShadow: widget.active
-                    ? const [
-                        BoxShadow(
-                          color: _activeAccentDeep,
-                          offset: Offset(0, 4),
+            child: widget.isCenter
+                ? Container(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 2,
+                      vertical: 4,
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      vertical: widget.veryTight ? 4 : (widget.dense ? 8 : 10),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: badgeSize,
+                          height: badgeSize,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: widget.active
+                                ? _activeAccent
+                                : _deepCharcoal,
+                            border: Border.all(
+                              color: widget.active
+                                  ? _deepCharcoal
+                                  : _activeAccent.withValues(alpha: 0.55),
+                              width: widget.active ? 3 : 2,
+                            ),
+                            boxShadow: widget.active
+                                ? const [
+                                    BoxShadow(
+                                      color: _activeAccentDeep,
+                                      offset: Offset(0, 4),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Icon(
+                            widget.item.icon,
+                            color: widget.active
+                                ? _deepCharcoal
+                                : Colors.white,
+                            size: badgeSize * 0.5,
+                          ),
                         ),
-                      ]
-                    : null,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    widget.item.icon,
-                    color: widget.active ? _deepCharcoal : Colors.white70,
-                    size: widget.veryTight ? 20 : (widget.dense ? 21 : 24),
-                  ),
-                  SizedBox(
-                    height: widget.veryTight ? 2 : (widget.dense ? 3 : 4),
-                  ),
-                  // Bumped up from 8/9.2/10.2 — the labels were small
-                  // enough to be decorative rather than readable. Dropping
-                  // from six tabs to five freed the width to do it.
-                  SizedBox(
-                    height: widget.veryTight ? 13 : (widget.dense ? 15 : 17),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        widget.item.label,
-                        style: GoogleFonts.pixelifySans(
-                          color: widget.active ? _deepCharcoal : Colors.white70,
-                          fontSize: widget.veryTight
-                              ? 11
-                              : (widget.dense ? 12.5 : 14),
-                          fontWeight: widget.active
-                              ? FontWeight.w700
-                              : FontWeight.w600,
+                        SizedBox(
+                          height: widget.veryTight ? 2 : (widget.dense ? 3 : 4),
                         ),
+                        SizedBox(
+                          height: labelHeight,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              widget.item.label,
+                              style: GoogleFonts.pixelifySans(
+                                color: widget.active
+                                    ? _activeAccent
+                                    : Colors.white70,
+                                fontSize: labelFontSize,
+                                fontWeight: widget.active
+                                    ? FontWeight.w700
+                                    : FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : Container(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 2,
+                      vertical: 4,
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: widget.dense ? 6 : 8,
+                      vertical: widget.veryTight ? 6 : (widget.dense ? 8 : 10),
+                    ),
+                    decoration: BoxDecoration(
+                      color: widget.active
+                          ? _activeAccent
+                          : Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                      border: Border.all(
+                        color: widget.active ? _deepCharcoal : Colors.transparent,
+                        width: 3,
                       ),
+                      boxShadow: widget.active
+                          ? const [
+                              BoxShadow(
+                                color: _activeAccentDeep,
+                                offset: Offset(0, 4),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          widget.item.icon,
+                          color: widget.active ? _deepCharcoal : Colors.white70,
+                          size: iconSize,
+                        ),
+                        SizedBox(
+                          height: widget.veryTight ? 2 : (widget.dense ? 3 : 4),
+                        ),
+                        SizedBox(
+                          height: labelHeight,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              widget.item.label,
+                              style: GoogleFonts.pixelifySans(
+                                color: widget.active
+                                    ? _deepCharcoal
+                                    : Colors.white70,
+                                fontSize: labelFontSize,
+                                fontWeight: widget.active
+                                    ? FontWeight.w700
+                                    : FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
           ),
         ),
       ),

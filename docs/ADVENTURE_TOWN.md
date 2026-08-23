@@ -200,6 +200,79 @@ size: Vector2(34 * AppAssets.villagerAspectRatio, 34)
 If a new character type is added, do the same — a square `Vector2.all(n)` is
 almost always wrong for these sheets.
 
+### 9b. Walk speed and frame rate are one setting
+
+Sizing was only half of why the walk looked wrong. Bonfire's
+`Movement.speedDefault` is **80 units/sec** and was never overridden, while
+the animation ran at `stepTime: 0.12`. Eight frames is two footfalls, so:
+
+| | speed | stepTime | tiles per footfall |
+|---|---|---|---|
+| before | 80 | 0.12 | **2.40** |
+| now (`kTownWalkSpeed` / `kTownWalkStepTime`) | 60 | 0.07 | **1.05** |
+
+The character is 34 units tall on a 16-unit grid — about 2.1 tiles. At 2.4
+tiles per footfall each foot travelled further than the whole character's
+height per step, which is textbook foot-sliding. **If you change one of
+these two numbers, recompute the other**; they are a single tuning decision
+wearing two names.
+
+### 9c. The accordion legs — a known, unfixed limitation
+
+The art itself has no body bob. Measured on `villager_female_classic.png`,
+row 0:
+
+```
+frame   f0   f1   f2   f3   f4   f5   f6   f7
+feetY  137  147  152  147  137  147  152  147
+headY    2    2    2    2    2    2    2    2
+```
+
+The torso is pixel-identical across all eight frames; only one leg moves,
+and it extends *below* the standing foot line. So in motion the head stays
+nailed in place while the legs stretch by 15px — the character reads as an
+accordion rather than a walker.
+
+**This cannot be fixed by repacking the existing sheets.** A script to clamp
+the foot dip and shift frames back up (converting leg-stretch into body-bob,
+which is what a real walk cycle is) was written, run, and reverted: the cell
+has only **2px of headroom above the head and 0px below the feet**, so
+lifting the extended frames clipped up to 6px off the top of the hat.
+
+Fixing it properly means re-celling every sheet taller — say 104×160, giving
+8px of headroom — then normalising inside the roomier cell. That changes
+`villagerAspectRatio`, which ripples into every avatar frame and skin
+preview in the app, so it is a deliberate separate piece of work rather than
+something to slip in. Recorded here so the next session doesn't re-derive
+the same dead end. Full numbers in `docs/CHALLENGES.md` §2.
+
+### 9d. The hill is sealed (map rows 34–37)
+
+The wide tan band across the map's southern edge is the town boundary. It
+lives in the `terrain` layer, which is `collider: false` because that same
+layer also holds walkable dirt paths — so for a while the player could stand
+inside it:
+
+```
+34 #############################TTTTTT#############T#   <- 6-tile hole
+35 ##TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT#   <- no collision
+36 ##TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT#   <- no collision
+37 ##################################################
+```
+
+(`#` = has collision, `T` = terrain tile with none.)
+
+Rows 34–36 now live in a **separate `terrain_hill` layer** with
+`"collider": true`, inserted adjacent to `terrain` in the layer list so draw
+order is unchanged. Nothing gameplay-relevant sits south of it — all six
+spots and all six NPCs are north — and the one coin that was inside the band
+at (27, 36) moved to (47, 32).
+
+**If you re-export the map from Sprite Fusion, this split is lost.** The
+export writes one `terrain` layer with `collider: false`. Re-apply it, and
+re-run `flutter test test/town_map_test.dart` — the flood-fill test will
+fail loudly if the hill is open again.
+
 ## 10. Getting in: the town belongs to a life
 
 The town is **not** a standalone mode. Home's hero button starts a Life run

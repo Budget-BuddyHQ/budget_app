@@ -305,7 +305,12 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     // 8 columns x 4 rows (south/north/west/east), 104x152 per cell, north
     // has only 7 real frames. See app_assets.dart for the source of truth.
     Future<SpriteAnimation> row(int rowIndex, int frameCount) =>
-        _loadRowAnimation(sheetAsset, rowIndex, frameCount);
+        _loadRowAnimation(
+          sheetAsset,
+          rowIndex,
+          frameCount,
+          stepTime: kTownWalkStepTime,
+        );
     Future<SpriteAnimation> frame(int rowIndex) =>
         _loadRowAnimation(sheetAsset, rowIndex, 1, stepTime: 1);
 
@@ -320,10 +325,12 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
       // cycle look wrong. Height-first, width derived from the real cell
       // ratio, keeps the character in proportion.
       size: Vector2(34 * AppAssets.villagerAspectRatio, 34),
+      speed: kTownWalkSpeed,
       animation: SimpleDirectionAnimation(
         // enabledFlipX defaults true, which would mirror one direction to
         // fake the other — the sheet already has real, distinct west/east
-        // art, so that's turned off to avoid double-flipping it.
+        // art (verified pixel-wise: row 3 is an exact mirror of row 2), so
+        // that's turned off to avoid double-flipping it.
         enabledFlipX: false,
         idleDown: frame(0),
         runDown: row(0, 8),
@@ -1020,6 +1027,25 @@ Future<SpriteAnimation> _npcIdleAnimation(TownNpcLook look) async {
   // Slow on purpose — an idle loop that reads as breathing, not fidgeting.
   return SpriteAnimation.spriteList(sprites, stepTime: 0.28);
 }
+
+/// Walk speed and frame rate, tuned **together** so the feet don't slide.
+///
+/// These are one setting, not two. A walk cycle is 8 frames = 2 footfalls,
+/// so the distance covered in `8 * stepTime` seconds is the character's
+/// stride for two steps. Get that wrong and the character moonwalks —
+/// which is exactly what was happening:
+///
+/// | | speed | stepTime | tiles per footfall |
+/// |---|---|---|---|
+/// | before | 80 (bonfire's `Movement.speedDefault`, never overridden) | 0.12 | **2.40** |
+/// | now | 60 | 0.07 | **1.05** |
+///
+/// The character is 34 units tall on a 16-unit tile grid — about 2.1 tiles.
+/// A person's stride is roughly half their height, so ~1 tile per footfall
+/// is right; 2.4 tiles meant each foot travelled more than the whole
+/// character's height per step and visibly skated across the ground.
+const double kTownWalkSpeed = 60;
+const double kTownWalkStepTime = 0.07;
 
 final _villagerSheetImages = Images(prefix: '');
 

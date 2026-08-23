@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../constants/app_assets.dart';
 import '../../../services_backend_and_other_services/market_data_service.dart';
@@ -99,6 +100,7 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
   final TextEditingController _quantityController = TextEditingController(
     text: '1',
   );
+  final ScrollController _rangeScrollController = ScrollController();
 
   List<Candle> _candles = const <Candle>[];
   bool _loadingChart = false;
@@ -106,6 +108,14 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
   String? _detailsError;
   TwelveDataQuoteDetails? _details;
   bool _detailsExpanded = false;
+
+  bool _companyExpanded = false;
+  bool _companyTabIsNews = false;
+  bool _companyLoading = false;
+  CompanyProfile? _companyProfile;
+  List<CompanyNewsItem> _companyNews = const <CompanyNewsItem>[];
+  bool _companyLoadStarted = false;
+
   bool _hideShortingWarning = false;
   static const String _shortingWarningKey = 'budget_buddy_shorting_warning_hidden';
 
@@ -124,6 +134,7 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
   void dispose() {
     _priceController.dispose();
     _quantityController.dispose();
+    _rangeScrollController.dispose();
     super.dispose();
   }
 
@@ -180,6 +191,38 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
         _details = details;
       }
     });
+  }
+
+  /// Loaded lazily on first expand rather than in `initState` alongside the
+  /// chart/quote details — profile and news are secondary reading, not
+  /// something every visit to the order ticket needs, so most visits never
+  /// spend the extra Finnhub calls on them at all.
+  Future<void> _loadCompanyInfo() async {
+    if (_companyLoadStarted) {
+      return;
+    }
+    _companyLoadStarted = true;
+    setState(() => _companyLoading = true);
+
+    final service = context.read<MarketDataService>();
+    final results = await Future.wait([
+      service.fetchCompanyProfile(widget.symbol),
+      service.fetchCompanyNews(widget.symbol),
+    ]);
+    if (!mounted) return;
+
+    setState(() {
+      _companyLoading = false;
+      _companyProfile = results[0] as CompanyProfile?;
+      _companyNews = results[1] as List<CompanyNewsItem>;
+    });
+  }
+
+  void _toggleCompanyExpanded() {
+    setState(() => _companyExpanded = !_companyExpanded);
+    if (_companyExpanded) {
+      _loadCompanyInfo();
+    }
   }
 
   /// Fractional: a coin is a slice of a share, so 0.5 of a share is valid.
@@ -572,6 +615,7 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                   },
                   onModeChanged: (mode) => setState(() => _chartMode = mode),
                   rangesEnabled: context.read<MarketDataService>().hasCandleKey,
+                  rangeScrollController: _rangeScrollController,
                 ),
                 const SizedBox(height: 18),
                 _QuoteRow(
@@ -616,6 +660,52 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                     details: _details,
                     loading: _detailsLoading,
                     error: _detailsError,
+                  ),
+                ],
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: _toggleCompanyExpanded,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _companyExpanded
+                                ? 'Hide company background & news'
+                                : 'Company background & news',
+                            style: GoogleFonts.pixelifySans(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          _companyExpanded
+                              ? Icons.keyboard_arrow_up_rounded
+                              : Icons.keyboard_arrow_down_rounded,
+                          color: Colors.white70,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (_companyExpanded) ...[
+                  const SizedBox(height: 12),
+                  _CompanyProfileAndNewsSection(
+                    symbol: widget.symbol,
+                    accent: widget.accent,
+                    loading: _companyLoading,
+                    profile: _companyProfile,
+                    news: _companyNews,
+                    showNews: _companyTabIsNews,
+                    onTabChanged: (showNews) =>
+                        setState(() => _companyTabIsNews = showNews),
                   ),
                 ],
                 const SizedBox(height: 18),
@@ -770,6 +860,7 @@ class _ChartSection extends StatelessWidget {
     required this.onRangeChanged,
     required this.onModeChanged,
     required this.rangesEnabled,
+    required this.rangeScrollController,
   });
 
   final List<Candle> candles;
@@ -778,6 +869,7 @@ class _ChartSection extends StatelessWidget {
   final ChartRange range;
   final ChartMode mode;
   final Color accent;
+  final ScrollController rangeScrollController;
   final ValueChanged<ChartRange> onRangeChanged;
   final ValueChanged<ChartMode> onModeChanged;
 
@@ -806,6 +898,20 @@ class _ChartSection extends StatelessWidget {
     ];
   }
 
+  static const Color _up = Color(0xFF4BD2A3);
+  static const Color _down = Color(0xFFFF6B6B);
+
+  /// Green when the visible range is up, red when it's down — computed from
+  /// the candles actually on screen so the color tracks whichever range
+  /// button is selected, not a fixed per-symbol color.
+  Color get _lineColor {
+    final bars = _effectiveCandles;
+    if (bars.length < 2) {
+      return accent;
+    }
+    return bars.last.close >= bars.first.close ? _up : _down;
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasRealCandles = candles.isNotEmpty;
@@ -822,28 +928,46 @@ class _ChartSection extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      for (final option in ChartRange.values) ...[
-                        _RangeChip(
-                          label: option.label,
-                          selected: option == range,
-                          // Without a Twelve Data key `fetchCandles` returns
-                          // an empty list for *every* range, so all five
-                          // buttons produced the identical quote-derived
-                          // shape and looked broken. Disabling them says so
-                          // honestly — the alternative would be inventing
-                          // price history, which this app must never do.
-                          enabled: rangesEnabled,
-                          onTap: rangesEnabled
-                              ? () => onRangeChanged(option)
-                              : null,
-                        ),
-                        const SizedBox(width: 6),
+                // Explicit controller shared with the SingleChildScrollView
+                // below — a Scrollbar with no controller binds to the
+                // ambient PrimaryScrollController instead, which the page's
+                // own vertical ListView already claims, so the thumb would
+                // silently track the wrong (vertical) scroll position. Same
+                // bug, hit the other way (a hard crash instead of silently
+                // wrong), in money_habits_screen.dart's TabBar — that one
+                // has no way to supply its own controller, this one does.
+                child: Scrollbar(
+                  controller: rangeScrollController,
+                  thumbVisibility: true,
+                  trackVisibility: true,
+                  thickness: 4,
+                  radius: const Radius.circular(4),
+                  child: SingleChildScrollView(
+                    controller: rangeScrollController,
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      children: [
+                        for (final option in ChartRange.values) ...[
+                          _RangeChip(
+                            label: option.label,
+                            selected: option == range,
+                            // Without a Twelve Data key `fetchCandles`
+                            // returns an empty list for *every* range, so
+                            // all five buttons produced the identical
+                            // quote-derived shape and looked broken.
+                            // Disabling them says so honestly — the
+                            // alternative would be inventing price
+                            // history, which this app must never do.
+                            enabled: rangesEnabled,
+                            onTap: rangesEnabled
+                                ? () => onRangeChanged(option)
+                                : null,
+                          ),
+                          const SizedBox(width: 6),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -864,7 +988,7 @@ class _ChartSection extends StatelessWidget {
                 : InteractivePriceChart(
                     candles: _effectiveCandles,
                     mode: mode,
-                    accent: accent,
+                    accent: _lineColor,
                   ),
           ),
           if (!loading && hasRealCandles) ...[
@@ -1305,6 +1429,331 @@ class _CompanyDetailsSection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Company background + recent headlines, behind their own Profile/News
+/// toggle inside the collapsible section — data comes from
+/// [MarketDataService.fetchCompanyProfile]/[MarketDataService.fetchCompanyNews],
+/// both Finnhub free-tier endpoints proxied and cached the same way quotes
+/// already are (see `supabase/functions/market/index.ts`).
+class _CompanyProfileAndNewsSection extends StatelessWidget {
+  const _CompanyProfileAndNewsSection({
+    required this.symbol,
+    required this.accent,
+    required this.loading,
+    required this.profile,
+    required this.news,
+    required this.showNews,
+    required this.onTabChanged,
+  });
+
+  final String symbol;
+  final Color accent;
+  final bool loading;
+  final CompanyProfile? profile;
+  final List<CompanyNewsItem> news;
+  final bool showNews;
+  final ValueChanged<bool> onTabChanged;
+
+  static Future<void> _openUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasScheme) {
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _CompanyTabButton(
+                    label: 'Profile',
+                    active: !showNews,
+                    accent: accent,
+                    onTap: () => onTabChanged(false),
+                  ),
+                ),
+                Expanded(
+                  child: _CompanyTabButton(
+                    label: 'News',
+                    active: showNews,
+                    accent: accent,
+                    onTap: () => onTabChanged(true),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (loading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFF58C7FF),
+                ),
+              ),
+            )
+          else if (!showNews)
+            _CompanyProfileBody(profile: profile, accent: accent)
+          else
+            _CompanyNewsBody(news: news, accent: accent, onOpen: _openUrl),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompanyTabButton extends StatelessWidget {
+  const _CompanyTabButton({
+    required this.label,
+    required this.active,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: active ? accent : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: GoogleFonts.pixelifySans(
+            color: active ? const Color(0xFF08251A) : Colors.white70,
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompanyProfileBody extends StatelessWidget {
+  const _CompanyProfileBody({required this.profile, required this.accent});
+
+  final CompanyProfile? profile;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final info = profile;
+    if (info == null) {
+      return const Text(
+        'Company background is not available for this stock right now.',
+        style: TextStyle(color: Colors.white70),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            if (info.logoUrl.isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(
+                  info.logoUrl,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const SizedBox(width: 40, height: 40),
+                ),
+              ),
+            if (info.logoUrl.isNotEmpty) const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    info.name,
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  if (info.industry.isNotEmpty)
+                    Text(
+                      info.industry,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 12,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          children: [
+            if (info.exchange.isNotEmpty)
+              _DetailRow(label: 'Exchange', value: info.exchange),
+            if (info.country.isNotEmpty)
+              _DetailRow(label: 'Country', value: info.country),
+            if (info.marketCapitalization > 0)
+              _DetailRow(label: 'Market Cap', value: info.marketCapLabel),
+            if (info.ipoDate.isNotEmpty)
+              _DetailRow(label: 'IPO', value: info.ipoDate),
+          ],
+        ),
+        if (info.website.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          InkWell(
+            onTap: () => _CompanyProfileAndNewsSection._openUrl(info.website),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.open_in_new_rounded, color: accent, size: 15),
+                const SizedBox(width: 6),
+                Text(
+                  'Company website',
+                  style: TextStyle(
+                    color: accent,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _CompanyNewsBody extends StatelessWidget {
+  const _CompanyNewsBody({
+    required this.news,
+    required this.accent,
+    required this.onOpen,
+  });
+
+  final List<CompanyNewsItem> news;
+  final Color accent;
+  final ValueChanged<String> onOpen;
+
+  String _relativeTime(DateTime at) {
+    final diff = DateTime.now().toUtc().difference(at.toUtc());
+    if (diff.inDays >= 1) return '${diff.inDays}d ago';
+    if (diff.inHours >= 1) return '${diff.inHours}h ago';
+    if (diff.inMinutes >= 1) return '${diff.inMinutes}m ago';
+    return 'just now';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (news.isEmpty) {
+      return const Text(
+        'No recent news for this stock.',
+        style: TextStyle(color: Colors.white70),
+      );
+    }
+
+    return Column(
+      children: [
+        for (final item in news)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: InkWell(
+              onTap: () => onOpen(item.url),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.03),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (item.imageUrl.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(
+                          item.imageUrl,
+                          width: 56,
+                          height: 56,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) =>
+                              const SizedBox(width: 56, height: 56),
+                        ),
+                      ),
+                    if (item.imageUrl.isNotEmpty) const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.headline,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              height: 1.3,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${item.source} • ${_relativeTime(item.publishedAt)}',
+                            style: TextStyle(
+                              color: accent.withValues(alpha: 0.85),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

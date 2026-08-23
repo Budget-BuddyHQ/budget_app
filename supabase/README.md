@@ -26,6 +26,17 @@ player who asks for the same symbol inside the TTL.
 | `quote` | 30s | The board polls every 30s anyway |
 | `candles` | 5 min | Intraday bars barely move within that |
 | `search` | 1 hour | Ticker lists are effectively static |
+| `profile` | 1 hour | Company background barely ever changes |
+| `news` | 15 min | New articles land through the day, but not every minute |
+
+`profile` and `news` back the order ticket's Company background & news
+section (`MarketDataService.fetchCompanyProfile`/`fetchCompanyNews`) —
+Finnhub's free-tier `/stock/profile2` and `/company-news`, same
+`FINNHUB_API_KEY` as quotes/search, no separate key needed. Like every
+other op here, this is what lets it handle a large concurrent user count
+on a free key: a thousand players opening AAPL's profile in the same hour
+cost one upstream Finnhub call, not a thousand — the cache is what scales
+it, not just hiding the key.
 
 The cache is per warm instance, not shared across them. That is deliberate —
 it needs no extra infrastructure, and even a handful of instances each holding

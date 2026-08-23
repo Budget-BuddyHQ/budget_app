@@ -10,6 +10,7 @@ import '../../../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import '../../../models_Like_Skins_and_lessons_templates/progression_service.dart';
 import '../../../models_Like_Skins_and_lessons_templates/quiz_bank.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
+import '../../../widgets_custom_lotties/confetti_burst.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import 'quiz_widgets.dart';
 
@@ -144,10 +145,16 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   }
 
   void _nextQuestion() {
+    final justFinished = _questionIndex + 1 >= _quiz.length;
     setState(() {
       _questionIndex++;
       _selectedOption = null;
     });
+    // 5/7 or better (~70%+), same bar a player would call "a good run" —
+    // fires once, right as the results card appears, not on every rebuild.
+    if (justFinished && _quiz.isNotEmpty && _correctCount / _quiz.length >= 0.7) {
+      ConfettiBurst.show(context);
+    }
   }
 
   _LessonContent _getLessonContent() {

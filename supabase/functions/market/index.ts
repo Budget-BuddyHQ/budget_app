@@ -40,12 +40,16 @@ interface CacheEntry {
 // fewer upstream calls than one-per-user.
 const cache = new Map<string, CacheEntry>();
 
-// Quotes go stale fast; candles and search results do not.
+// Quotes go stale fast; candles and search results do not. Company profile
+// is effectively static (an hour is generous, not stingy); news is capped
+// at 15 minutes since new articles do land through the day.
 const TTL_MS = {
   quote: 30_000,
   candles: 5 * 60_000,
   search: 60 * 60_000,
   twelveQuote: 60_000,
+  profile: 60 * 60_000,
+  news: 15 * 60_000,
 } as const;
 
 function cached(key: string): string | null {
@@ -188,6 +192,42 @@ Deno.serve(async (req) => {
           {},
           `twelve_quote:${symbol}`,
           TTL_MS.twelveQuote,
+        );
+      }
+
+      case 'profile': {
+        if (!FINNHUB_KEY) {
+          return json({ error: 'FINNHUB_API_KEY is not set' }, 503);
+        }
+        const symbol = cleanSymbol(url.searchParams.get('symbol'));
+        if (!symbol) return json({ error: 'bad symbol' }, 400);
+        return await passthrough(
+          `https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}`,
+          { 'X-Finnhub-Token': FINNHUB_KEY },
+          `profile:${symbol}`,
+          TTL_MS.profile,
+        );
+      }
+
+      case 'news': {
+        if (!FINNHUB_KEY) {
+          return json({ error: 'FINNHUB_API_KEY is not set' }, 503);
+        }
+        const symbol = cleanSymbol(url.searchParams.get('symbol'));
+        if (!symbol) return json({ error: 'bad symbol' }, 400);
+        // YYYY-MM-DD only — same shape Finnhub expects, rejected otherwise
+        // rather than passed through unvalidated to an upstream URL.
+        const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+        const from = url.searchParams.get('from') ?? '';
+        const to = url.searchParams.get('to') ?? '';
+        if (!dateRe.test(from) || !dateRe.test(to)) {
+          return json({ error: 'bad date range' }, 400);
+        }
+        return await passthrough(
+          `https://finnhub.io/api/v1/company-news?symbol=${symbol}&from=${from}&to=${to}`,
+          { 'X-Finnhub-Token': FINNHUB_KEY },
+          `news:${symbol}:${from}:${to}`,
+          TTL_MS.news,
         );
       }
 

@@ -1455,6 +1455,11 @@ end
   Future<List<LeaderboardEntry>> fetchLeaderboard({
     int limit = 20,
     String? currentUserId,
+    // A separate server-ordered query rather than re-sorting the
+    // literacy-ranked page client-side: the top 20 by literacy points can
+    // easily exclude someone who is actually top-20 by gold, so re-sorting
+    // the wrong page in Dart would just hide them.
+    bool byGold = false,
   }) async {
     await _ensurePreferences();
     final normalizedLimit = limit.clamp(1, 50);
@@ -1463,16 +1468,23 @@ end
       return _buildCachedLeaderboard(
         limit: normalizedLimit,
         currentUserId: currentUserId,
+        byGold: byGold,
       );
     }
 
     try {
-      final response = await Supabase.instance.client
+      final unordered = Supabase.instance.client
           .from(leaderboardView)
-          .select('*')
-          .order('literacy_points', ascending: false)
-          .order('xp', ascending: false)
-          .order('gold', ascending: false)
+          .select('*');
+      final response = await (byGold
+              ? unordered
+                    .order('gold', ascending: false)
+                    .order('literacy_points', ascending: false)
+                    .order('xp', ascending: false)
+              : unordered
+                    .order('literacy_points', ascending: false)
+                    .order('xp', ascending: false)
+                    .order('gold', ascending: false))
           .limit(normalizedLimit)
           .timeout(_supabaseReadTimeout);
 
@@ -1480,6 +1492,7 @@ end
         return _buildCachedLeaderboard(
           limit: normalizedLimit,
           currentUserId: currentUserId,
+          byGold: byGold,
         );
       }
 
@@ -1526,6 +1539,7 @@ end
   /// of *other* users' stats to fall back to.
   Future<List<LeaderboardEntry>> fetchFriendsLeaderboard({
     required String currentUserId,
+    bool byGold = false,
   }) async {
     if (!_isSupabaseConnected) {
       return const <LeaderboardEntry>[];
@@ -1553,13 +1567,19 @@ end
         return const <LeaderboardEntry>[];
       }
 
-      final response = await client
+      final unordered = client
           .from(leaderboardView)
           .select('*')
-          .inFilter('id', friendIds.toList())
-          .order('literacy_points', ascending: false)
-          .order('xp', ascending: false)
-          .order('gold', ascending: false)
+          .inFilter('id', friendIds.toList());
+      final response = await (byGold
+              ? unordered
+                    .order('gold', ascending: false)
+                    .order('literacy_points', ascending: false)
+                    .order('xp', ascending: false)
+              : unordered
+                    .order('literacy_points', ascending: false)
+                    .order('xp', ascending: false)
+                    .order('gold', ascending: false))
           .timeout(_supabaseReadTimeout);
 
       return response
@@ -1679,6 +1699,7 @@ end
   List<LeaderboardEntry> _buildCachedLeaderboard({
     required int limit,
     String? currentUserId,
+    bool byGold = false,
   }) {
     final entries = _memoryCache.values
         .map(
@@ -1710,6 +1731,13 @@ end
     }
 
     entries.sort((a, b) {
+      if (byGold) {
+        final goldCompare = b.gold.compareTo(a.gold);
+        if (goldCompare != 0) {
+          return goldCompare;
+        }
+        return b.literacyPoints.compareTo(a.literacyPoints);
+      }
       final literacyCompare = b.literacyPoints.compareTo(a.literacyPoints);
       if (literacyCompare != 0) {
         return literacyCompare;
