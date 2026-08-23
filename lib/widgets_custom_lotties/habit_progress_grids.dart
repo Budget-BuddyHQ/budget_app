@@ -44,7 +44,7 @@ class HabitWeeklyTrackerGrid extends StatelessWidget {
                   child: Center(
                     child: Text(
                       _weekdayLabels[DateTime.parse(days[i]).weekday - 1],
-                      style: GoogleFonts.baloo2(
+                      style: GoogleFonts.pixelifySans(
                         color: days[i] == today
                             ? AppTheme.greenPrimary
                             : AppTheme.textMuted,

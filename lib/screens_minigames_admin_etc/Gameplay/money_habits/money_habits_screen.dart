@@ -48,7 +48,7 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
         backgroundColor: AppTheme.deepForest,
         foregroundColor: Colors.white,
         elevation: 0,
-        title: Text('Money Habits', style: GoogleFonts.baloo2(fontWeight: FontWeight.w700)),
+        title: Text('Money Habits', style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700)),
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
@@ -57,7 +57,7 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
           indicatorWeight: 3,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white54,
-          labelStyle: GoogleFonts.baloo2(fontWeight: FontWeight.w700),
+          labelStyle: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
           tabs: const [
             Tab(text: 'Track'),
             Tab(text: 'Activity'),
@@ -99,7 +99,7 @@ class _TrackTab extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           'This week',
-          style: GoogleFonts.baloo2(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+          style: GoogleFonts.pixelifySans(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         HabitWeeklyTrackerGrid(
@@ -116,7 +116,7 @@ class _TrackTab extends StatelessWidget {
         if (habits.savedHabits.isNotEmpty) ...[
           Text(
             'Saved habits',
-            style: GoogleFonts.baloo2(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+            style: GoogleFonts.pixelifySans(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           for (final habit in habits.savedHabits)
@@ -180,7 +180,7 @@ class _StatTile extends StatelessWidget {
       decoration: AppTheme.getPuffyDecoration(accent: accent, restAlpha: 0.16),
       child: Column(
         children: [
-          Text(value, style: GoogleFonts.baloo2(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+          Text(value, style: GoogleFonts.pixelifySans(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text(label, textAlign: TextAlign.center, style: GoogleFonts.quicksand(color: AppTheme.textMuted, fontSize: 11)),
         ],
@@ -316,13 +316,58 @@ class _CategoryChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.baloo2(
+          style: GoogleFonts.pixelifySans(
             color: selected ? AppTheme.deepForest : Colors.white70,
             fontWeight: FontWeight.w700,
             fontSize: 13,
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A circular real-photo thumbnail for a habit, matching the reference
+/// app's course-icon look — falls back to a plain icon tile when the habit
+/// has no [HabitTemplate.photoUrl] yet (most of the catalog, still) or when
+/// the network image fails to load, so a bad/offline URL degrades instead
+/// of breaking the card.
+class _HabitPhoto extends StatelessWidget {
+  const _HabitPhoto({required this.habit, required this.size});
+
+  final HabitTemplate habit;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final photoUrl = habit.photoUrl;
+    if (photoUrl == null) {
+      return _iconFallback();
+    }
+    return ClipOval(
+      child: Image.network(
+        photoUrl,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          return _iconFallback();
+        },
+        errorBuilder: (context, error, stack) => _iconFallback(),
+      ),
+    );
+  }
+
+  Widget _iconFallback() {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: habit.category.accent.withValues(alpha: 0.18),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(habit.icon, color: habit.category.accent, size: size * 0.5),
     );
   }
 }
@@ -344,21 +389,13 @@ class _ActivityCard extends StatelessWidget {
         decoration: AppTheme.getPuffyDecoration(accent: habit.category.accent, restAlpha: 0.14),
         child: Row(
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: habit.category.accent.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-              ),
-              child: Icon(habit.icon, color: habit.category.accent, size: 22),
-            ),
+            _HabitPhoto(habit: habit, size: 48),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(habit.title, style: GoogleFonts.baloo2(color: Colors.white, fontWeight: FontWeight.w700)),
+                  Text(habit.title, style: GoogleFonts.pixelifySans(color: Colors.white, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 3),
                   Text(habit.blurb, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.quicksand(color: AppTheme.textMuted, fontSize: 12)),
                 ],
@@ -411,10 +448,10 @@ class _HabitDetailSheetState extends State<_HabitDetailSheet> {
         children: [
           Row(
             children: [
-              Icon(habit.icon, color: habit.category.accent, size: 28),
-              const SizedBox(width: 10),
+              _HabitPhoto(habit: habit, size: 56),
+              const SizedBox(width: 12),
               Expanded(
-                child: Text(habit.title, style: GoogleFonts.baloo2(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+                child: Text(habit.title, style: GoogleFonts.pixelifySans(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
               ),
             ],
           ),
@@ -422,7 +459,7 @@ class _HabitDetailSheetState extends State<_HabitDetailSheet> {
           Text(habit.blurb, style: GoogleFonts.quicksand(color: AppTheme.textMuted, height: 1.4)),
           const SizedBox(height: 18),
           if (adjustable != null) ...[
-            Text(adjustable.label, style: GoogleFonts.baloo2(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w700)),
+            Text(adjustable.label, style: GoogleFonts.pixelifySans(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -436,7 +473,7 @@ class _HabitDetailSheetState extends State<_HabitDetailSheet> {
                         ? '\$${_units.toStringAsFixed(_units % 1 == 0 ? 0 : 1)}'
                         : '${_units.toStringAsFixed(_units % 1 == 0 ? 0 : 1)} ${adjustable.unit}',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.baloo2(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.pixelifySans(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
                   ),
                 ),
                 _StepperButton(
@@ -532,7 +569,7 @@ class _MiniStat extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(value, style: GoogleFonts.baloo2(color: AppTheme.greenPrimary, fontWeight: FontWeight.w700)),
+          Text(value, style: GoogleFonts.pixelifySans(color: AppTheme.greenPrimary, fontWeight: FontWeight.w700)),
           Text(label, style: GoogleFonts.quicksand(color: AppTheme.textMuted, fontSize: 11)),
         ],
       ),
@@ -570,7 +607,7 @@ class _ChallengesTab extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(challenge.title, style: GoogleFonts.baloo2(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+                        Text(challenge.title, style: GoogleFonts.pixelifySans(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
                         Text(challenge.subtitle, style: GoogleFonts.quicksand(color: AppTheme.textMuted, fontSize: 12)),
                       ],
                     ),
@@ -632,14 +669,14 @@ class _JarTab extends StatelessWidget {
         Center(child: SavingsJarWidget(stage: stage, mood: mood, size: 220)),
         const SizedBox(height: 12),
         Center(
-          child: Text(stage.label, style: GoogleFonts.baloo2(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
+          child: Text(stage.label, style: GoogleFonts.pixelifySans(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
         ),
         Center(
           child: Container(
             margin: const EdgeInsets.only(top: 6),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(color: mood.color.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(999)),
-            child: Text(mood.label, style: GoogleFonts.baloo2(color: mood.color, fontWeight: FontWeight.w700, fontSize: 12)),
+            child: Text(mood.label, style: GoogleFonts.pixelifySans(color: mood.color, fontWeight: FontWeight.w700, fontSize: 12)),
           ),
         ),
         const SizedBox(height: 20),

@@ -58,7 +58,7 @@ class DailyPlanCard extends StatelessWidget {
                       children: [
                         Text(
                           "Today's Plan",
-                          style: GoogleFonts.baloo2(
+                          style: GoogleFonts.pixelifySans(
                             color: Colors.white,
                             fontSize: compact ? 20 : 23,
                             fontWeight: FontWeight.w900,

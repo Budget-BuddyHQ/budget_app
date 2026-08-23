@@ -102,7 +102,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
         elevation: 0,
         title: Text(
           'Practice',
-          style: GoogleFonts.baloo2(fontWeight: FontWeight.w700),
+          style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
         ),
       ),
       body: Stack(

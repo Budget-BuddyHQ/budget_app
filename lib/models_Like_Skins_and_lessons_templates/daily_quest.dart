@@ -3,16 +3,19 @@ import 'package:flutter/material.dart';
 import '../widgets_custom_lotties/ambient_lottie_card.dart' show AmbientMotif;
 import 'lesson.dart';
 import 'lesson_data.dart';
+import 'money_habit_models.dart';
 import 'quiz_bank.dart';
 
 /// The single surface a quest sends the player to.
 ///
-/// This is the whole point of the daily plan: instead of four co-equal menus
-/// (Academy / Arcade / Adventure / a stray Daily button) competing for
-/// attention, each day hands the player an ordered list of 3 concrete actions,
-/// each pointing at exactly one place. The modes become steps in one funnel
-/// rather than four separate destinations.
-enum QuestSurface { academyLesson, academyPractice, arcade, adventure }
+/// This is the whole point of the daily plan: instead of five co-equal menus
+/// (Academy / Arcade / Adventure / Money Habits / a stray Daily button)
+/// competing for attention, each day hands the player an ordered list of
+/// concrete actions, each pointing at exactly one place. The modes become
+/// steps in one funnel rather than separate destinations — Money Habits in
+/// particular used to be its own big standalone promo card on Home; it lives
+/// here now instead, so Home doesn't grow a new card per feature.
+enum QuestSurface { academyLesson, academyPractice, arcade, adventure, moneyHabit }
 
 @immutable
 class DailyQuest {
@@ -26,6 +29,7 @@ class DailyQuest {
     required this.xpReward,
     this.unitId,
     this.arcadeGameId,
+    this.habitId,
     this.skillLabel,
     this.spriteMotif,
   });
@@ -48,6 +52,9 @@ class DailyQuest {
 
   /// For arcade quests: which game to launch.
   final String? arcadeGameId;
+
+  /// For money-habit quests: which saved habit to log, if any is picked yet.
+  final String? habitId;
 
   /// Human-readable skill this quest targets, if any (for the "why this" line).
   final String? skillLabel;
@@ -125,6 +132,8 @@ class DailyPlanBuilder {
     required Set<String> completedLessons,
     required int Function(String gameId) arcadePlays,
     required List<String> activeArcadeGameIds,
+    List<String> savedHabitIds = const <String>[],
+    Set<String> habitsDoneToday = const <String>{},
   }) {
     final quests = <DailyQuest>[];
 
@@ -184,6 +193,16 @@ class DailyPlanBuilder {
           spriteMotif: _arcadeSpriteMotifs[game],
         ),
       );
+    }
+
+    // 4. Money habit slot — Money Habits' entire Home presence lives here
+    //    now rather than in its own promo card. Nudges toward logging a
+    //    saved-but-not-yet-done-today habit, or toward picking a first one
+    //    if none is saved yet — either way this is the only Home-level
+    //    surface the feature gets.
+    final habitQuest = _moneyHabitQuest(savedHabitIds, habitsDoneToday);
+    if (habitQuest != null) {
+      quests.add(habitQuest);
     }
 
     // Guarantee a non-empty plan even for a brand-new account with nothing
@@ -259,6 +278,40 @@ class DailyPlanBuilder {
       }
     }
     return null;
+  }
+
+  DailyQuest? _moneyHabitQuest(
+    List<String> savedHabitIds,
+    Set<String> doneToday,
+  ) {
+    if (savedHabitIds.isEmpty) {
+      return const DailyQuest(
+        id: 'money_habit_pick',
+        title: 'Pick a money habit',
+        detail: 'Save one from Money Habits to start your streak',
+        surface: QuestSurface.moneyHabit,
+        icon: Icons.savings_rounded,
+        accent: Color(0xFF4BD2A3),
+        xpReward: 8,
+      );
+    }
+    final pending = savedHabitIds.where((id) => !doneToday.contains(id));
+    if (pending.isEmpty) {
+      // Every saved habit is already logged today — no slot needed.
+      return null;
+    }
+    final habitId = pending.first;
+    final title = habitById(habitId)?.title ?? 'your saved habit';
+    return DailyQuest(
+      id: 'money_habit_$habitId',
+      title: 'Save today: $title',
+      detail: 'Log it in Money Habits',
+      surface: QuestSurface.moneyHabit,
+      icon: Icons.savings_rounded,
+      accent: const Color(0xFF4BD2A3),
+      xpReward: 8,
+      habitId: habitId,
+    );
   }
 
   String? _leastPlayedGame(List<String> gameIds, int Function(String) plays) {

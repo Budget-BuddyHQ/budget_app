@@ -345,7 +345,7 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
               backgroundColor: AppTheme.panelStrong,
               title: Text(
                 'Exit battle?',
-                style: GoogleFonts.baloo2(color: Colors.white, fontWeight: FontWeight.w700),
+                style: GoogleFonts.pixelifySans(color: Colors.white, fontWeight: FontWeight.w700),
               ),
               content: const Text(
                 'Leaving now will close the active Budget Battle session.',
@@ -400,7 +400,7 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
         child: Scaffold(
           backgroundColor: AppTheme.deepForest,
           appBar: AppBar(
-            title: Text('React Challenge', style: GoogleFonts.baloo2(fontWeight: FontWeight.w700)),
+            title: Text('React Challenge', style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700)),
             backgroundColor: AppTheme.darkForest,
             foregroundColor: Colors.white,
           ),
@@ -685,7 +685,7 @@ class _NativeBudgetBattleChallengeState
     return Scaffold(
       backgroundColor: AppTheme.deepForest,
       appBar: AppBar(
-        title: Text('React Challenge', style: GoogleFonts.baloo2(fontWeight: FontWeight.w700)),
+        title: Text('React Challenge', style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700)),
         backgroundColor: AppTheme.darkForest,
         foregroundColor: Colors.white,
       ),
@@ -726,7 +726,7 @@ class _NativeBudgetBattleChallengeState
           const SizedBox(height: 16),
           Text(
             'Loading daily challenge',
-            style: GoogleFonts.baloo2(
+            style: GoogleFonts.pixelifySans(
               color: Colors.white,
               fontWeight: FontWeight.w700,
               fontSize: 18,
@@ -759,7 +759,7 @@ class _NativeBudgetBattleChallengeState
               Expanded(
                 child: Text(
                   'Question ${_questionIndex + 1} of ${_questions.length}',
-                  style: GoogleFonts.baloo2(
+                  style: GoogleFonts.pixelifySans(
                     color: const Color(0xFF85EFAC),
                     fontWeight: FontWeight.w700,
                   ),
@@ -767,7 +767,7 @@ class _NativeBudgetBattleChallengeState
               ),
               Text(
                 'Score $_correctAnswers',
-                style: GoogleFonts.baloo2(
+                style: GoogleFonts.pixelifySans(
                   color: Colors.white70,
                   fontWeight: FontWeight.w700,
                 ),
@@ -789,7 +789,7 @@ class _NativeBudgetBattleChallengeState
           const SizedBox(height: 24),
           Text(
             question.prompt,
-            style: GoogleFonts.baloo2(
+            style: GoogleFonts.pixelifySans(
               color: Colors.white,
               fontSize: 24,
               fontWeight: FontWeight.w700,
@@ -877,7 +877,7 @@ class _NativeBudgetBattleChallengeState
           const SizedBox(height: 14),
           Text(
             title,
-            style: GoogleFonts.baloo2(
+            style: GoogleFonts.pixelifySans(
               color: Colors.white,
               fontSize: 28,
               fontWeight: FontWeight.w700,
