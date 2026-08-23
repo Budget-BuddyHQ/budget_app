@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import '../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
 import '../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 
 /// The rules engine for **Life**, the main game.
@@ -15,13 +16,21 @@ class LifeSimController extends ChangeNotifier {
     Random? random,
     int initialAge = 0,
     int startMoney = 0,
+    // Start already employed. Sits alongside `initialAge`/`startMoney` as
+    // another "begin partway through a life" hook — used by tests to reach
+    // the budgeting path (which needs income) without simulating twenty
+    // years first, and available to any future "quick start" mode.
+    String? startJob,
+    int startSalary = 0,
     this.name = 'Alex Morgan',
     this.gender = Gender.nonBinary,
     this.origin = LifeOrigin.workingClass,
   }) : _random = random ?? Random(),
        startAge = initialAge,
        _age = initialAge,
-       _money = startMoney {
+       _money = startMoney,
+       _job = startJob ?? 'Newborn',
+       _salary = startSalary {
     _happiness = origin.startingHappiness;
     _smarts = origin.startingSmarts;
     _looks = 40 + _random.nextInt(35);
@@ -51,14 +60,189 @@ class LifeSimController extends ChangeNotifier {
   int _health = 85;
   int _smarts = 45;
   int _looks = 50;
-  String _job = 'Newborn';
-  int _salary = 0;
+  String _job;
+  int _salary;
   bool _retired = false;
   bool _dead = false;
   int _fame = 0;
 
   final Map<LifeSkill, int> _skills = <LifeSkill, int>{};
   final Set<LifeTrait> _traits = <LifeTrait>{};
+
+  // ---- Budgeting -------------------------------------------------------
+  //
+  // The app was full of money *outcomes* but had nowhere the player
+  // actually practised budgeting — the core skill it claims to teach. This
+  // is that: each year with income, the player splits take-home pay across
+  // needs / wants / savings, and the split has real consequences below in
+  // [_applyBudget]. Defaults are the textbook 50/30/20 so an untouched
+  // budget is sensible rather than punishing.
+  int _needsPct = 50;
+  int _wantsPct = 30;
+  int _savingsPct = 20;
+  bool _budgetSet = false;
+
+  /// Savings the budget has actually banked, kept separate from [_money] so
+  /// the player can see the fund they built rather than one blended number.
+  /// This is what an emergency event draws down first.
+  int _emergencyFund = 0;
+
+  /// Owed money, from covering a shock with no fund. Accrues interest each
+  /// year — the borrowing-costs-extra lesson, made mechanical.
+  int _debt = 0;
+
+  /// Concepts this life has surfaced, in order first met.
+  final List<FinanceConcept> _conceptsMet = <FinanceConcept>[];
+
+  /// A lesson waiting to be shown by the UI, consumed via [takeLesson].
+  FinanceConcept? _pendingLesson;
+
+  int get needsPct => _needsPct;
+  int get wantsPct => _wantsPct;
+  int get savingsPct => _savingsPct;
+  bool get budgetSet => _budgetSet;
+  int get emergencyFund => _emergencyFund;
+  int get debt => _debt;
+  List<FinanceConcept> get conceptsMet => List.unmodifiable(_conceptsMet);
+
+  /// True once the character earns — budgeting is meaningless before that,
+  /// so the UI only offers it from here.
+  bool get canBudget => !isDependent && _salary > 0 && !finished;
+
+  /// Months of essential spending the fund covers. The standard yardstick
+  /// for "is my emergency fund big enough" is 3-6 months, so expressing it
+  /// this way teaches the measure, not just the balance.
+  double get emergencyMonths {
+    final monthlyNeeds = (_salary * _needsPct / 100) / 12;
+    if (monthlyNeeds <= 0) return 0;
+    return _emergencyFund / monthlyNeeds;
+  }
+
+  /// Sets the split. Rejects anything that doesn't total 100 — the point of
+  /// the exercise is that a budget has to add up.
+  bool setBudget({required int needs, required int wants, required int savings}) {
+    if (needs < 0 || wants < 0 || savings < 0) return false;
+    if (needs + wants + savings != 100) return false;
+    _needsPct = needs;
+    _wantsPct = wants;
+    _savingsPct = savings;
+    _budgetSet = true;
+    _teach(FinanceConcept.budgetRule);
+    _setLog(
+      'Budget set: $needs% needs, $wants% wants, $savings% savings.',
+    );
+    notifyListeners();
+    return true;
+  }
+
+  /// Records a concept as met and queues it for the UI to explain.
+  /// Re-meeting a concept still surfaces the reminder but doesn't duplicate
+  /// the list entry.
+  void _teach(FinanceConcept concept) {
+    if (!_conceptsMet.contains(concept)) {
+      _conceptsMet.add(concept);
+    }
+    _pendingLesson = concept;
+  }
+
+  /// Hands the queued lesson to the UI exactly once.
+  FinanceConcept? takeLesson() {
+    final lesson = _pendingLesson;
+    _pendingLesson = null;
+    return lesson;
+  }
+
+  /// Applies one year of the budget: funds needs, spends wants, banks
+  /// savings, then charges interest on any debt.
+  ///
+  /// The consequences are the teaching. Underfunding needs costs health and
+  /// happiness (you cannot cut rent and food without it hurting); starving
+  /// wants costs happiness too (an unlivable budget gets abandoned in real
+  /// life, which is why 100% austerity is not the "right answer" here);
+  /// savings build the fund that makes the next shock survivable.
+  void _applyBudget() {
+    final income = _salary;
+    if (income <= 0) return;
+
+    final needsBudget = (income * _needsPct / 100).round();
+    final wantsBudget = (income * _wantsPct / 100).round();
+    final savingsBudget = (income * _savingsPct / 100).round();
+    final actualNeeds = _livingCost();
+
+    _money += income;
+    _money -= needsBudget + wantsBudget;
+
+    if (needsBudget < actualNeeds) {
+      // Needs are not optional; the shortfall comes out of you.
+      final shortfall = actualNeeds - needsBudget;
+      _money -= shortfall;
+      _health = _clamp(_health - 4);
+      _happiness = _clamp(_happiness - 6);
+      _setLog(
+        'Your needs budget did not cover the essentials — you went short by '
+        '$shortfall this year.',
+      );
+      _teach(FinanceConcept.needsVsWants);
+    }
+
+    if (_wantsPct <= 5) {
+      // A budget with no room to live in is one you abandon.
+      _happiness = _clamp(_happiness - 4);
+    }
+
+    _emergencyFund += savingsBudget;
+    _money -= savingsBudget;
+    if (_money < 0) {
+      _money = 0;
+    }
+
+    if (_debt > 0) {
+      // 18% a year, roughly a credit card. Deliberately visible in the feed
+      // so the cost of carrying it is felt, not hidden.
+      final interest = (_debt * 0.18).round();
+      _debt += interest;
+      final payment = (_money * 0.3).round();
+      final paid = payment.clamp(0, _debt);
+      _money -= paid;
+      _debt -= paid;
+      _setLog(
+        'Debt cost you $interest in interest this year. '
+        '${_debt > 0 ? 'Still owing $_debt.' : 'Finally paid off.'}',
+      );
+      _teach(FinanceConcept.interestCost);
+    }
+  }
+
+  /// An unavoidable expense. Draws the emergency fund first, then cash, then
+  /// borrows — which is precisely the ladder a real household walks down,
+  /// and the moment the fund either proves its worth or is conspicuously
+  /// missing.
+  void applyShock(int amount, String reason) {
+    var remaining = amount;
+    final fromFund = remaining.clamp(0, _emergencyFund);
+    _emergencyFund -= fromFund;
+    remaining -= fromFund;
+
+    final fromCash = remaining.clamp(0, _money);
+    _money -= fromCash;
+    remaining -= fromCash;
+
+    if (remaining > 0) {
+      _debt += remaining;
+      _happiness = _clamp(_happiness - 8);
+      _setLog(
+        '$reason cost $amount. With nothing saved you had to borrow '
+        '$remaining of it.',
+      );
+      _teach(FinanceConcept.emergencyFund);
+    } else {
+      _setLog(
+        '$reason cost $amount — covered from savings without borrowing.',
+      );
+      _teach(FinanceConcept.emergencyFund);
+    }
+    notifyListeners();
+  }
 
   final List<String> _relationships = <String>[];
 
@@ -113,7 +297,12 @@ class LifeSimController extends ChangeNotifier {
   int get yearsLived => _age - startAge;
 
   LifeStage get stage => LifeStageInfo.forAge(_age);
-  int get netWorth => _money + _investments;
+
+  /// Everything you own minus everything you owe — the "earning vs keeping"
+  /// distinction made literal. The emergency fund counts (it is yours);
+  /// debt subtracts, so a high salary financed by borrowing does not read
+  /// as wealth.
+  int get netWorth => _money + _investments + _emergencyFund - _debt;
 
   /// Under 18 the family covers everything, so the money layer stays dormant
   /// while childhood events play out.
@@ -137,12 +326,17 @@ class LifeSimController extends ChangeNotifier {
     _age++;
 
     if (!isDependent) {
-      _money += _salary;
-      _money -= _livingCost();
-      if (_money < 0) {
-        // No debt spiral — the shortfall costs happiness instead.
-        _happiness = _clamp(_happiness - 8);
-        _money = 0;
+      if (_salary > 0) {
+        // Earning years run through the budget, so the split the player
+        // chose is what actually governs the year.
+        _applyBudget();
+      } else {
+        _money -= _livingCost();
+        if (_money < 0) {
+          // No debt spiral — the shortfall costs happiness instead.
+          _happiness = _clamp(_happiness - 8);
+          _money = 0;
+        }
       }
       // Investments compound ~7% a year.
       _investments = (_investments * 1.07).round();
@@ -154,6 +348,8 @@ class LifeSimController extends ChangeNotifier {
       return;
     }
 
+    _maybeFinancialShock();
+
     // Milestones give the feed texture on years with no event.
     final milestone = _milestoneFor(_age);
     _currentEvent = _drawEvent();
@@ -163,6 +359,31 @@ class LifeSimController extends ChangeNotifier {
               '${_currentEvent == null ? ' A quiet year.' : ''}',
     );
     notifyListeners();
+  }
+
+  /// Real life bills you at the worst time. Roughly a 1-in-7 chance each
+  /// earning year of an unavoidable expense.
+  ///
+  /// This exists to give the emergency fund something to be *for*. Without
+  /// it, saving is an abstract number that only ever goes up, and the
+  /// player never finds out why anyone bothers. With it, the same shock is
+  /// a shrug for a player who budgeted savings and a debt spiral for one
+  /// who did not — the lesson lands as an experience rather than a tip.
+  static const List<({String reason, int min, int max})> _shocks = [
+    (reason: 'Your car broke down', min: 300, max: 900),
+    (reason: 'A trip to the dentist', min: 150, max: 500),
+    (reason: 'The boiler gave out', min: 400, max: 1100),
+    (reason: 'Your phone was stolen', min: 200, max: 600),
+    (reason: 'An unexpected vet bill', min: 180, max: 700),
+    (reason: 'A leak damaged the floor', min: 350, max: 1000),
+  ];
+
+  void _maybeFinancialShock() {
+    if (isDependent || _salary <= 0 || finished) return;
+    if (_random.nextInt(7) != 0) return;
+    final shock = _shocks[_random.nextInt(_shocks.length)];
+    final amount = shock.min + _random.nextInt(shock.max - shock.min + 1);
+    applyShock(amount, shock.reason);
   }
 
   /// Health decline with age, and the chance the life ends.
@@ -313,6 +534,13 @@ class LifeSimController extends ChangeNotifier {
       _relationships.add(person);
     }
     _setLog(choice.outcome);
+    // The teaching moment: if this choice was about a money idea, name it
+    // now — right after the consequence lands, while the player still has
+    // the decision in mind.
+    final lesson = choice.teaches;
+    if (lesson != null) {
+      _teach(lesson);
+    }
     _currentEvent = null;
     notifyListeners();
   }

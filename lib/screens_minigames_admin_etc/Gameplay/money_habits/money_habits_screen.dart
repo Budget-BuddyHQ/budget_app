@@ -73,25 +73,49 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
         // a dead control.
         automaticallyImplyLeading: !asTab,
         title: Text('Money Habits', style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700)),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabAlignment: TabAlignment.start,
-          indicatorColor: AppTheme.greenPrimary,
-          indicatorWeight: 3,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white54,
-          labelStyle: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
-          // Icon + word rather than a bare word: "Track" and "Activity"
-          // are close enough in meaning that the labels alone did not tell
-          // a first-time user which one listed habits and which one logged
-          // them.
-          tabs: const [
-            Tab(icon: Icon(Icons.check_circle_outline_rounded, size: 18), text: 'My Week'),
-            Tab(icon: Icon(Icons.search_rounded, size: 18), text: 'Find Habits'),
-            Tab(icon: Icon(Icons.flag_rounded, size: 18), text: 'Challenges'),
-            Tab(icon: Icon(Icons.savings_rounded, size: 18), text: 'My Jar'),
-          ],
+        bottom: PreferredSize(
+          // isScrollable already lets the tabs scroll off-screen on a narrow
+          // phone, but with no visible thumb there was no hint that "My Jar"
+          // was reachable by swiping — a Scrollbar makes the overflow
+          // discoverable instead of silently there.
+          preferredSize: const Size.fromHeight(kTextTabBarHeight),
+          // Deliberately NOT thumbVisibility: true here. TabBar does not
+          // expose its internal horizontal ScrollController, so a
+          // thumbVisibility Scrollbar (which requires a real controller
+          // with exactly one attached ScrollPosition) has nothing correct
+          // to bind to — it either throws outright, or silently falls back
+          // to the page's *vertical* PrimaryScrollController, which is
+          // shared with every other tab's own scroll view inside the same
+          // IndexedStack and has several positions attached at once. Both
+          // were tried and both broke `flutter test` immediately. Default
+          // (non-thumbVisibility) mode needs no controller at all — it
+          // tracks TabBar's scroll notifications directly and shows a
+          // fading thumb while a drag is in progress, which is still a
+          // real discoverability cue that "My Jar" scrolls into view.
+          child: Scrollbar(
+            thickness: 3,
+            radius: const Radius.circular(4),
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              indicatorColor: AppTheme.greenPrimary,
+              indicatorWeight: 3,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white54,
+              labelStyle: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+              // Icon + word rather than a bare word: "Track" and "Activity"
+              // are close enough in meaning that the labels alone did not
+              // tell a first-time user which one listed habits and which
+              // one logged them.
+              tabs: const [
+                Tab(icon: Icon(Icons.check_circle_outline_rounded, size: 18), text: 'My Week'),
+                Tab(icon: Icon(Icons.search_rounded, size: 18), text: 'Find Habits'),
+                Tab(icon: Icon(Icons.flag_rounded, size: 18), text: 'Challenges'),
+                Tab(icon: Icon(Icons.savings_rounded, size: 18), text: 'My Jar'),
+              ],
+            ),
+          ),
         ),
       ),
       body: SafeArea(
@@ -220,12 +244,16 @@ class _HowItWorksCard extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                'How this works',
-                style: GoogleFonts.pixelifySans(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
+              Flexible(
+                child: Text(
+                  'How this works',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.pixelifySans(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -268,12 +296,16 @@ class _HowItWorksCard extends StatelessWidget {
                             color: AppTheme.greenPrimary,
                           ),
                           const SizedBox(width: 6),
-                          Text(
-                            step.title,
-                            style: GoogleFonts.pixelifySans(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
+                          Flexible(
+                            child: Text(
+                              step.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.pixelifySans(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ],
@@ -397,6 +429,19 @@ class _ActivityTab extends StatefulWidget {
 class _ActivityTabState extends State<_ActivityTab> {
   HabitCategory? _filter;
 
+  // Explicit controller, shared with the Scrollbar below. A Scrollbar with
+  // no controller binds to the ambient PrimaryScrollController — which the
+  // tab's own vertical ListView already claims — so the thumb would track
+  // the wrong axis (and crashes outright with thumbVisibility, since every
+  // offstage tab in the IndexedStack has a position attached to it too).
+  final ScrollController _filterScroll = ScrollController();
+
+  @override
+  void dispose() {
+    _filterScroll.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final habits = context.watch<MoneyHabitController>();
@@ -405,22 +450,33 @@ class _ActivityTabState extends State<_ActivityTab> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _CategoryChip(label: 'All', selected: _filter == null, onTap: () => setState(() => _filter = null)),
-                for (final category in HabitCategory.values) ...[
-                  const SizedBox(width: 8),
-                  _CategoryChip(
-                    label: category.label,
-                    selected: _filter == category,
-                    accent: category.accent,
-                    onTap: () => setState(() => _filter = category),
-                  ),
+          // Bottom padding trimmed 8 -> 2 to pay for the scrollbar's own
+          // 8px lane, so adding it costs no extra vertical space and the
+          // top of this tab stays as open as it was.
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 2),
+          child: Scrollbar(
+            controller: _filterScroll,
+            thumbVisibility: true,
+            thickness: 3,
+            radius: const Radius.circular(3),
+            child: SingleChildScrollView(
+              controller: _filterScroll,
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  _CategoryChip(label: 'All', selected: _filter == null, onTap: () => setState(() => _filter = null)),
+                  for (final category in HabitCategory.values) ...[
+                    const SizedBox(width: 8),
+                    _CategoryChip(
+                      label: category.label,
+                      selected: _filter == category,
+                      accent: category.accent,
+                      onTap: () => setState(() => _filter = category),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),

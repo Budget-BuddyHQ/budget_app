@@ -1098,3 +1098,580 @@ sim was missing.
 4-6 upward, so crime-and-violence mechanics are off the table — not as a
 judgement of BitLife, just a different audience. Recorded here so a future
 session does not read "make it like BitLife" as unfinished work.
+
+## 20. Bottom nav restructure, phone API keys, and a default-tab bug
+
+### Home moved to the middle
+
+`PopNavBar.appTabs` (`lib/ui/widgets/pop_navbar.dart`) is now five slots —
+**Life, Learn, Home, Daily, Profile** — with Home in the centre slot and
+Arcade/Style dropped from the bar entirely. `AppTabIndex`
+(`lib/navigation_tools_and_animation/app_tab_index.dart`) mirrors that
+exactly:
+
+```dart
+static const int adventure = 0; // Life
+static const int academy = 1;   // Learn
+static const int dashboard = 2; // Home
+static const int daily = 3;     // Daily (Money Habits)
+static const int profile = 4;
+static const int count = 5;
+```
+
+`MainNavigation`'s `IndexedStack` (`main_navigation.dart`) must list its
+five children in that same order — position, not just index, has to match
+`PopNavBar.appTabs` or a tap lands on the wrong screen.
+
+**Arcade and Style are now pushed routes, not tabs.** `MinigamesPage` and
+`CustomizeScreen` still render fine standalone (their `onNavSelected`
+becomes optional; `null` means "show your own AppBar back button instead
+of a bottom nav"). Every call site that used to switch tabs now does
+`Navigator.of(context).pushNamed('/minigames')` /
+`pushNamed('/customize')` — see `main_game_page.dart`'s Arcade shortcut
+card and `home_screen.dart`'s `onOpenArcade`/`onCustomize` callbacks.
+
+**Daily replaces the old daily-board tab** and is `MoneyHabitsScreen`
+(§16), now built to double as a tab: it takes an optional
+`activeTabIndex`/`onNavSelected` pair the same way every other tab screen
+does, and shows `CustomBottomNav` only when `onNavSelected` is non-null.
+
+**Label text was bumped** (8/9.2/10.2 → 11/12.5/14 across the
+veryTight/dense/normal breakpoints) because the old size read as
+decorative rather than readable — dropping from six tabs to five freed the
+width for it. This didn't fit in the old bar height as-is: the label's
++3px pushed the tile 3px past `barHeight`, causing an "overflowed by 3.0
+pixels on the bottom" on every screen using the bottom nav. `barHeight`
+was bumped alongside it (66/74/90 → 70/78/94) to make room.
+
+### A default-tab-index bug this restructure introduced
+
+`DashboardShell` used to default `initialIndex` to a literal `0`. Before
+this restructure, tab `0` happened to be Home, so nobody noticed the magic
+number. After the restructure, `AppTabIndex.adventure` is `0` — so a bare
+`const DashboardShell()` silently started the player on the **Adventure**
+(Bonfire game world) tab instead of Home. That default is used in five
+places: the `/game` route, and all three branches of `_AppBootstrapGate`
+in `main.dart` — meaning every fresh sign-in would have dropped straight
+into the game world.
+
+Fixed by defaulting to the named constant instead of a bare literal:
+
+```dart
+const DashboardShell({super.key, this.initialIndex = AppTabIndex.dashboard});
+```
+
+This also explains why `test/market_resize_test.dart`'s
+`DashboardShell()`-based resize test hung for a full 10-minute timeout
+during this fix: it was booting straight into the Bonfire `GameWidget` and
+driving it through a dozen resize steps, which is a much heavier path than
+the Home screen it was meant to be exercising. **Lesson for next time a
+tab constant changes value: grep for every bare numeric literal or
+un-named default that assumes today's index order** — `initialIndex = 0`
+reads perfectly reasonable until the meaning of `0` moves under it.
+
+### Two responsive-test fallouts from the restructure
+
+`test/responsive_layout_test.dart` had a `'Dashboard shell tabs'` group
+hardcoded to the old tab names (`Adventure, Arcade, Style, Academy,
+Profile`) — updated to match `PopNavBar.appTabs` exactly
+(`Life, Learn, Home, Daily, Profile`).
+
+Separately, `_ObjectiveIconButton` on Home (the quick-action row: World /
+Daily / Arcade / Academy / Style) hides its label below 70px of available
+width per button — with five buttons now in that row instead of four, the
+smallest phone-width test (340×480) pushes every button under that
+threshold, so the label text disappears and `find.text('Academy')` no
+longer finds it. Fixed the test to find the button by its `Tooltip`
+instead (the tooltip message is always set, icon-only or not), and to
+`ensureVisible()` it first since the row sits below the fold in Home's
+`SingleChildScrollView` at that height.
+
+### Phone API keys: `--dart-define-from-file`
+
+The actual bug behind "I can't log in or use Market Board on my phone":
+`readRuntimeEnv()` (`lib/config/runtime_env_io.dart`) checked
+`Platform.environment` and a local `supabase.env.json` file, in that
+order — but on Android/iOS, `Platform.environment` is empty and
+`File('supabase.env.json')` resolves against a working directory that
+isn't the project folder. Both sources silently returned `null` on a real
+device, even though a code comment claimed release builds relied on
+`--dart-define`. Nothing ever actually read one.
+
+Fixed with `lib/config/runtime_env_defines.dart`, which wraps every key in
+a literal `String.fromEnvironment(...)` call (a `--dart-define` value only
+exists at compile time as a constant — it cannot be looked up by a runtime
+string key) and normalizes the empty-string default to `null`. This is now
+checked *before* the JSON-file fallback (`--dart-define` should win over a
+stale checked-out file), and is the **only** source on web (there is no
+filesystem or `Platform.environment` there either — see
+`runtime_env_stub.dart`).
+
+**To build with your keys baked in, use `supabase.env.json`'s existing
+format directly:**
+
+```bash
+flutter build apk --dart-define-from-file=supabase.env.json
+```
+
+This works with the same JSON shape already documented in
+`supabase.env.json.example` (`SUPABASE_URL`, `SUPABASE_ANON_KEY`,
+`FINNHUB_API_KEY`, `TWELVE_DATA_API_KEY`) — no separate `--dart-define`
+flags needed per key. `flutter run --dart-define-from-file=supabase.env.json`
+works the same way for a device/emulator debug run. Without this flag, a
+phone build has no Supabase/market keys at all and runs in local-only mode
+(no login, no live quotes) — which is exactly the symptom reported.
+
+### Follow-up: Arcade and Style came back as tabs, Home got a circular badge
+
+Same session, immediate follow-up request: bring Arcade and Style back as
+bottom tabs (seven slots total) and give Home a distinct circular look.
+
+`AppTabIndex` is now 7 wide: `adventure(0), academy(1), minigames(2),
+dashboard(3), daily(4), customize(5), profile(6)` — Home stays exactly in
+the middle (`length ~/ 2`). `PopNavBar.appTabs` mirrors it: Life, Learn,
+Arcade, Home, Daily, Style, Profile. `MainNavigation`'s `IndexedStack` grew
+two more children (`MinigamesPage`, `CustomizeScreen`) in the matching
+slots. The `/minigames` and `/customize` routes went back to wrapping
+`DashboardShell(initialIndex: ...)` instead of pushing the bare screen —
+consistent with `/dashboard`, `/daily`, `/lessons` — and Home's
+Arcade/Style quick-action buttons and the Adventure hub's Arcade shortcut
+went back to `onNavSelected?.call(AppTabIndex.minigames/.customize)`
+instead of `Navigator.pushNamed`.
+
+**The circular Home badge:** `PopNavBar` computes `isCenter = i ==
+items.length ~/ 2` per tab and threads it into `_PopNavTile`. Every other
+tab keeps the original rounded-pill background; the center tile instead
+gets no background of its own and renders its icon inside a fixed-diameter
+`BoxShape.circle` container (36/40/46px across the veryTight/dense/normal
+breakpoints) — filled with the active accent when selected, a dark
+neutral fill with a thin accent-tinted ring when not, so it still reads
+as "the special one" even at rest. The label sits below it exactly like
+every other tab, just recolored to always sit on the bar's dark
+background (white/white70) instead of switching to dark text on an
+accent pill, since there is no pill under it.
+
+Packing two more tabs into the same bar meant the `dense` breakpoint
+widened from `width < 360` to `width < 420` — seven tabs need the
+smaller sizing on more phones than five did — and tile margins/padding
+were trimmed a couple of px to keep everything fitting; the label's
+`FittedBox` scale-down already absorbs the rest.
+
+**First pass at the badge overflowed by exactly the wrong amount.** The
+badge (40px at the `dense` tier) is a lot taller than the plain icon it
+replaces (21px), and the first version only clawed back that difference
+from `barHeight` and the tile's own padding — the arithmetic landed on an
+exact pixel-for-pixel fit (content height == `barHeight`, zero slack).
+`flutter test` caught it immediately as "overflowed by 8.0 pixels on the
+bottom" on every `DashboardShell`-based test, since `DashboardShell()`
+defaults to the Home tab and Home's tile is the one with the badge.
+Real-world text/icon metrics don't hit a hand-calculated number exactly,
+so an exact fit is never actually safe. Fixed by giving `barHeight`
+genuine headroom (70/78/94 → 80/90/106 across the three breakpoints)
+instead of trying to compute the tightest value that theoretically works.
+
+### A pre-existing overflow the restructure's tests surfaced
+
+Unrelated to navigation, but caught by the same test pass: `_HowItWorksCard`
+on the Daily tab (§16) had two `Row`s (the "How this works" header, and
+each step's title row) with a bare `Text` instead of a `Flexible`-wrapped
+one, so at 320px width ("small phone portrait", the narrowest tested size)
+the text overflowed the row by a few pixels. Both wrapped in `Flexible`
+with `maxLines: 1` / `TextOverflow.ellipsis`.
+
+## 21. Market chart fixes, company profile/news, decrowding the nav again, confetti, and a leaderboard redesign
+
+One large follow-up request, covering the Market Board, both bottom-nav
+scrollbars, a rewards moment (confetti), and the leaderboard.
+
+### The chart's missing "ball" and gold line color
+
+`PriceChart`'s only per-point marker was `_paintCrosshair` (§13/earlier),
+drawn *only* while `hoverIndex` is set. `InteractivePriceChart` — what the
+order ticket's full chart actually uses — never sets `hoverIndex` at all
+(it only handles pinch/pan, not hover), so on that screen there was
+genuinely no marker on the line, ever. Fixed in `price_chart.dart`'s
+`_paintLine`: a static filled dot + soft halo at the line's last point,
+same idea as `MiniSparkline`'s `livePulse` dot but non-animated (this
+chart is redrawn every gesture frame during pinch/pan; a running
+`AnimationController` on top of that felt like the wrong trade).
+
+**Line color** was the caller's fixed per-symbol `accent`, i.e. gold
+regardless of whether the stock was up or down. Two other `PriceChart`
+call sites in `stock_market_page.dart` already compute a rising/falling
+color and pass it in as `accent` — `PriceChart` itself was never meant to
+own that decision. `order_ticket_page.dart`'s `_ChartSection` now has a
+`_lineColor` getter (`bars.last.close >= bars.first.close ? _up : _down`,
+computed off whichever candles are currently on screen — so the color
+tracks the selected range button, not a fixed day-change figure) and
+passes that instead of `accent` to `InteractivePriceChart`.
+
+### Company profile & news — API choice and why it scales
+
+New tab inside the order ticket's existing "Show additional details"
+pattern: a collapsible "Company background & news" section with its own
+Profile/News toggle (`_CompanyProfileAndNewsSection`), lazy-loaded only
+once expanded so a normal trade never spends the extra calls.
+
+**API: Finnhub, reusing the existing `FINNHUB_API_KEY`.** Its free tier
+already includes `/stock/profile2` (company background) and
+`/company-news` (recent headlines) — no new key, no new vendor to manage.
+Both new methods on `MarketDataService` — `fetchCompanyProfile` /
+`fetchCompanyNews` — go through the exact same proxy-first,
+direct-key-fallback path as quotes/search/candles (§9d), so the
+"free API that can handle ~1000 users/minute" requirement is met the same
+way it already is for quotes: the Supabase edge function
+(`supabase/functions/market/index.ts`) caches responses per-instance —
+profile for 1 hour (it barely changes), news for 15 minutes — so a
+thousand players reading AAPL's profile cost one upstream Finnhub call,
+not a thousand. The client adds its own second layer on top (profile
+cached indefinitely per session; news cached 15 minutes per symbol) so
+even a signed-out/no-Supabase dev build doesn't hammer a direct key.
+
+**Deploy caveat, same class as the pending leaderboard SQL noted earlier
+in this doc**: the `profile` and `news` cases were added to
+`supabase/functions/market/index.ts` in this repo, but an edge function
+change only takes effect after running
+
+```bash
+supabase functions deploy market
+```
+
+Until that's run, `fetchCompanyProfile`/`fetchCompanyNews` will 400
+("unknown op") through the proxy — the UI degrades to its "not available"
+empty state rather than crashing, same as every other market fetch
+failure in this app, but the feature is genuinely not live until deployed.
+
+### The bottom bar got crowded again, so Learn and Profile moved to the top
+
+Seven tabs (Life/Learn/Arcade/Home/Daily/Style/Profile, §20) was one
+request too far — "moving the setting and profile tab to the top and
+academy to learn on the top would be the best idea." `AppTabIndex` keeps
+all seven positions (`adventure(0), minigames(1), dashboard(2), daily(3),
+customize(4), academy(5), profile(6)` — Home still exactly centered among
+the *bottom five*), but `PopNavBar.appTabs` now lists only five: Life,
+Arcade, Home, Daily, Style. Academy and Profile still get real
+`IndexedStack` slots in `MainNavigation` — switching to them works exactly
+like any other tab — they are just not among `PopNavBar`'s five, so the
+bottom bar never tries to highlight either of them.
+
+A new `_TopIconBar` in `main_navigation.dart` sits above the
+`IndexedStack` (the two are siblings in a `Column`, `IndexedStack` wrapped
+in `Expanded`) with two pill buttons, Learn and Profile, styled to match
+the bottom bar's active/inactive treatment (`_activeAccent` fill when
+that tab is current). It is visible on every tab, not just Home, so
+Learn/Profile are reachable the same way from anywhere.
+
+### Confetti
+
+New `lib/widgets_custom_lotties/confetti_burst.dart` —
+`ConfettiBurst.show(context)`, same static-overlay shape as `GameToast`
+and `AchievementCelebration` (an `OverlayEntry` on the root overlay,
+auto-removes itself). Hand-rolled `CustomPainter` (rectangles + rounded
+rects falling with a sine-wave wobble and rotation, no package), not
+reusing `AchievementCelebration`'s spark painter — that one is a modal
+`Dialog` for the deliberate, tap-to-view badge moment; this is meant to
+layer over whatever's already on screen without interrupting it.
+
+Wired to two events:
+- **A quiz/unit test scored ≥70%** (`lesson_detail_screen.dart`,
+  `_nextQuestion` — the same "5/7 or better" bar the request named,
+  ⁠`_correctCount / _quiz.length >= 0.7`). Fires once, exactly as the
+  results card appears, not on every rebuild while viewing it.
+- **A new personal-best arcade score** (`minigames_page.dart`, both
+  `_openFinanceBrawl` and `_openReactChallenge`) — reads
+  `stats.bestArcadeScore(gameId)` *before* calling the existing
+  `recordArcadeRun`, compares the new score against it, and only
+  celebrates when there was a previous best to beat (a first-ever run
+  isn't "new," it's just a first run).
+
+### Leaderboard: Most Gold, a hall-of-fame podium, and a real Home entry point
+
+`SupabaseService.fetchLeaderboard`/`fetchFriendsLeaderboard` both take a
+new `byGold` flag that swaps the Postgres `.order()` sequence to lead with
+`gold` — a **separate server-ordered query**, not a client-side re-sort of
+the literacy-ranked page, because the top-20-by-literacy page can easily
+exclude someone who actually is top-20 by gold; re-sorting the wrong page
+would just hide them. `LeaderboardScreen` gained a second toggle (`_byGold`
+alongside the existing `_showFriends`) — `_MetricToggle`, "Finance
+Wizards" vs "Most Gold" — orthogonal to the Global/Friends toggle, so all
+four combinations work.
+
+**Podium**: the top 3 of whichever ranking is active render as
+`_HallOfFamePodium` (1st centered and tallest, 2nd left, 3rd right, medal
+colors gold/silver/bronze, a crown on 1st) above the regular list, which
+now starts at rank 4. Handles fewer than 3 entries by rendering an empty
+placeholder stand rather than reflowing the layout.
+
+**More apparent**: the only previous entry point was a small trophy
+`IconButton` in Home's `AppBar`. Home now also has a `_LeaderboardPromoCard`
+(same visual family as the Adventure/Money-Habits promo cards already on
+Home) showing the player's own gold total and a CTA into the leaderboard.
+
+### A Scrollbar bug hit twice, in two different ways
+
+Both new scrollbars (`money_habits_screen.dart`'s `TabBar`,
+`order_ticket_page.dart`'s range-chip row) needed two attempts.
+
+**First attempt** — plain `Scrollbar(thumbVisibility: true, ...)` with no
+explicit `controller` on both. This crashed `flutter test` immediately on
+every `DashboardShell`-based test: `MainNavigation`'s `IndexedStack` keeps
+all seven tab screens mounted at once (not just the visible one), and
+several of them have their *own* vertical scroll view with no explicit
+controller — which all default to attaching themselves to the single
+ambient `PrimaryScrollController` for the route. A `thumbVisibility`
+`Scrollbar` with no controller of its own falls back to that same ambient
+controller — which by then already has several `ScrollPosition`s attached
+from the other tabs — and `thumbVisibility: true` asserts there must be
+exactly one. Error: *"The PrimaryScrollController is attached to more than
+one ScrollPosition."*
+
+**Second attempt** — wrapped both in `PrimaryScrollController.none(child:
+...)` to shadow the ambient controller and force notification-based
+tracking instead. This fixed the crash but broke a *different* assertion
+immediately: `thumbVisibility: true` requires a real, non-null
+`ScrollController` to bind to — with the ambient one hidden and no
+explicit one supplied, there was nothing left for it to use. Error: *"A
+ScrollController is required when Scrollbar.thumbVisibility is true."*
+
+**What actually fixed it, and why it differs per widget:**
+- `order_ticket_page.dart`'s scrollable is a plain `SingleChildScrollView`
+  the code already builds — it can take an explicit `ScrollController`
+  directly. Added `_rangeScrollController` as a real field on
+  `_OrderTicketPageState` (created once, disposed in `dispose()`, same
+  pattern as `_priceController`/`_quantityController`), passed to *both*
+  the `Scrollbar` and the `SingleChildScrollView`. `thumbVisibility: true`
+  works correctly now that there's exactly one real controller with
+  exactly one attachment.
+- `money_habits_screen.dart`'s scrollable is `TabBar`'s **internal**
+  horizontal scroll view when `isScrollable: true` — Flutter's `TabBar`
+  does not expose that internal `ScrollController` through any public
+  parameter, so there is no way to hand it an explicit controller at all.
+  Dropped `thumbVisibility`/`trackVisibility` entirely and left `Scrollbar`
+  in its default mode, which needs no controller — it tracks scroll
+  notifications bubbling from any descendant and shows a fading thumb
+  while a drag is in progress. Less permanently visible than a
+  `thumbVisibility` thumb, but a real, correct discoverability cue instead
+  of a crash.
+
+**Lesson for next time a Scrollbar goes over an existing scrollable inside
+an `IndexedStack`-based nav shell:** `thumbVisibility: true` needs an
+explicit `ScrollController` attached to the *specific* scroll view it's
+meant to track — never rely on the ambient `PrimaryScrollController` for
+it once more than one tab's own scroll view could be alive at once, and
+check first whether the target widget (`TabBar`, `TabBarView`, etc.) even
+exposes the controller you'd need before reaching for `thumbVisibility`.
+
+## 22. Teaching the thing the app is named after
+
+The request behind this whole round: *"right now we are just incorporating
+many different features but I don't think it's teaching people to learn
+budgeting or finance but instead they are just playing the game."*
+
+That is a fair read of what the app had become, and it is the most
+important note anyone has given this project. See `docs/CHALLENGES.md` §1
+for the design reasoning; this section is the wiring.
+
+### `FinanceConcept` — the ideas, in one place
+
+`lib/models_Like_Skins_and_lessons_templates/finance_concepts.dart` holds
+sixteen money ideas (needs vs wants, opportunity cost, pay yourself first,
+50/30/20, emergency fund, compound growth, the cost of borrowing, credit
+score, inflation, diversification, income vs wealth, insurance, taxes,
+impulse buying, sunk cost, lifestyle creep).
+
+Each carries **two reading levels**:
+
+- `kidExplainer` — roughly ages 4-10. One concrete sentence, no
+  percentages, framed on pocket money and snacks.
+- `explainer` — 11 and up. The real term, a real number, something
+  actionable.
+
+`explainerFor(simple: …)` picks between them. The flag comes from
+`AgeBand.prefersSimpleWording` — the **player's** self-declared band, not
+the in-game character's age. A nine-year-old running a forty-year-old
+character still needs the nine-year-old wording.
+
+`AgeBand.prefersSimpleWording` deliberately does **not** reuse the existing
+`representativeAge`, which returns `12` for the under-13 bucket and would
+therefore route every child to the adult copy. That bucket spans about 4-12,
+so there is no honest single age for it; the useful question is "does this
+reader need plain wording", and for the whole bucket the answer is yes.
+
+### The teaching moment
+
+`LifeChoice.teaches` is an optional `FinanceConcept`. When a choice with one
+is taken, `LifeSimController.chooseOption` calls `_teach()`, which records
+it in `conceptsMet` and queues it. The UI drains the queue via
+`takeLesson()` — exactly once, so a lesson can't re-show on every rebuild —
+and shows `_MoneyLessonSheet`.
+
+Timing is the point: the sheet appears **after** the outcome text, not
+instead of it. The player sees what happened, then gets told what it was
+called. `_drainLesson` is called after choosing, after ageing (which can
+fire a shock) and after budgeting.
+
+Plenty of events stay pure story with no `teaches` — bolting a lesson onto
+every beat would make all of them feel like homework.
+
+### `kLifeEventsMoney` — fifteen events that always teach
+
+A separate list in `life_sim_models.dart`, composed into `kLifeEvents`
+alongside the core/extra/early packs. Every choice in it sets `teaches`,
+and **both branches of an event teach the same concept** — picking the
+worse option is the more instructive path and must not be met with silence.
+Both properties are enforced by `test/budget_teaching_test.dart`.
+
+Spread deliberately across ages: three events pitched at ages 5-11 (two
+jars, needs vs wants at the shop, sleeping on an impulse buy), three at
+teens (savings goals, the first payslip, a phone contract's total cost),
+and nine adult ones (raises, credit cards, investing early, hot tips,
+insurance, sunk cost, two job offers, an income shock, price creep).
+
+### The budgeting exercise
+
+`_BudgetSheet` in `life_sim_page.dart`, reached from the Money menu (top
+item, above investing — it is the skill the app exists to teach).
+
+The player splits take-home pay across needs / wants / savings with 5%
+steppers. Design decisions that carry the teaching:
+
+- **It must total exactly 100.** Save stays disabled otherwise. That
+  constraint *is* the lesson — a budget is a fixed pie, so raising one
+  slice visibly cuts another, and the player feels the trade-off with their
+  thumb rather than reading about it.
+- **There is no single right answer.** 50/30/20 is a labelled reference on
+  each row and a "Use 50/30/20" shortcut, not a win condition. The feedback
+  line names the trade-off ("Needs are eating 65% — that is the number to
+  attack") instead of grading.
+- **Austerity is punished too.** `_applyBudget` docks happiness when wants
+  ≤ 5%, because a budget with no room to live in is one that gets abandoned
+  in week two. Setting savings to 100% is not the winning move.
+- **Percentages stay attached to money.** Each row shows what its slice is
+  worth in coins, so the numbers never float free of the salary.
+
+### Consequences, which is what makes it stick
+
+`LifeSimController` gained a real money model:
+
+| Field | What it does |
+|---|---|
+| `_needsPct` / `_wantsPct` / `_savingsPct` | the split, defaulting to 50/30/20 |
+| `_emergencyFund` | what the savings slice banks, kept separate from cash |
+| `_debt` | accrues **18% a year**, with 30% of cash going to repayment |
+| `emergencyMonths` | fund ÷ monthly needs — teaches the 3-6 month yardstick |
+
+`_applyBudget` runs each earning year: funds needs, spends wants, banks
+savings, then charges interest. Underfunding needs costs health and
+happiness *and* still takes the money — you cannot decide rent is cheaper
+than it is.
+
+`_maybeFinancialShock` fires roughly one earning year in seven: a car,
+boiler, dentist or vet bill. `applyShock` walks the same ladder a real
+household does — **emergency fund first, then cash, then borrow** — so the
+identical event is a shrug for a player who saved and the start of a debt
+spiral for one who did not. Without this, saving is a number that only ever
+goes up and the player never learns why anyone bothers.
+
+`netWorth` now reads `cash + investments + fund − debt`, so a high salary
+financed by borrowing does not read as wealth. That is the income-vs-wealth
+lesson made structural rather than stated.
+
+### Where the player sees it accumulate
+
+The Money menu gained "Money ideas you have met", opening `_ConceptsSheet`
+— a running list with a `met / total` counter, so the learning visibly
+builds instead of each lesson vanishing after its sheet is dismissed.
+
+### `startJob` / `startSalary`
+
+`LifeSimController` gained these constructor parameters alongside the
+existing `initialAge` / `startMoney`. Budgeting needs income, and the only
+route to a salary was a random life event — so testing the budget path
+otherwise meant simulating twenty years and hoping. Added as real API
+rather than a test backdoor, since a "quick start" mode would want exactly
+this.
+
+---
+
+## 23. Same round: the hill, the walk, the app bar, and two more scrollbars
+
+### The hill is sealed
+
+`assets/images/maps/map.json` gained a `terrain_hill` layer: the rows 34-36
+tiles moved out of `terrain` (which is `collider: false` because it also
+holds walkable dirt paths) into their own layer with `"collider": true`,
+inserted adjacent to `terrain` so draw order is unchanged.
+
+Row 34 had a six-tile hole at x=29..34 and rows 35-36 had no collision at
+all, so the player could walk in through the gap and stand inside the
+hill — see `docs/CHALLENGES.md` §3 for the collision-grid dump.
+
+Knock-on: the highest-value coin sat at (27, 36), now inside a wall, and
+moved to (47, 32) — still the longest walk on the map, still north of the
+hill.
+
+The regression test flood-fills from spawn rather than checking the band
+tile-by-tile, because a per-tile check would still pass if a later map edit
+opened a route *around* the ends. It also asserts >600 tiles stay reachable,
+so it cannot pass by walling the player into a closet.
+
+### Walk timing
+
+`kTownWalkSpeed` (60) and `kTownWalkStepTime` (0.07) in
+`adventure_world_screen.dart`, replacing bonfire's default 80 and a
+`stepTime` of 0.12. These are **one setting, not two**: 8 frames is 2
+footfalls, so `speed × 8 × stepTime` is the two-step stride. It was 2.4
+tiles per footfall on a 2.1-tile-tall character — the feet visibly skated.
+Now 1.05.
+
+`TownPlayer` forwards `speed` to `SimplePlayer` so the caller can tune it.
+
+**Still partial, honestly.** The art itself has the torso frozen across all
+8 frames with one leg extending below the standing foot line, so the legs
+accordion by 15px while the head stays pinned. That cannot be fixed by
+repacking — the cell has 2px of headroom above the head and 0 below the
+feet, so lifting the extended frames clips the hat. Fixing it properly means
+re-celling every sheet taller and re-normalising, which changes
+`villagerAspectRatio` and ripples into every avatar and preview in the app.
+Full measurements in `docs/CHALLENGES.md` §2.
+
+### The app bar
+
+`_TopIconBar` in `main_navigation.dart` is now **Learn — Budget Buddy —
+Profile**. Putting the wordmark between the two pills turns what was two
+floating buttons into a real, symmetrical app bar: it reads as chrome, gives
+the brand a permanent home on every tab, and balances the two pills instead
+of leaving a dead gap.
+
+It has a solid fill, an accent hairline underneath, and a soft glow on the
+active pill matching the bottom bar's treatment. Below ~380px wide it
+tightens padding and drops the label font to 11 — but **never hides the
+labels**. An unlabelled icon is the opposite of "more apparent", and the
+tab-switching tests find these by text.
+
+### Two more scrollbars
+
+- **Money Habits "Find Habits" category row** — got a real
+  `ScrollController` shared with its `Scrollbar`. Its bottom padding was
+  trimmed 8 → 2 to pay for the scrollbar's own 8px lane, so adding it costs
+  no extra vertical space (the request was explicitly "don't make it too
+  dense with the top one").
+- **The Academy unit strip** already had a correctly-wired scrollbar; it was
+  just the default grey Material thumb on a dark green panel, which reads as
+  a rendering artifact. Now themed via `ScrollbarTheme` — mint thumb, faint
+  green track, thickness 6, `interactive: true` — so it looks like a control
+  you can grab, because it is one.
+
+See `docs/CHALLENGES.md` §4 for the two-crash detour these took.
+
+### Randomise the whole character
+
+`_randomiseAll` in `life_character_sheet.dart` — a "Surprise me" button that
+rolls name, gender and origin. The dice beside the name field only ever did
+the name.
+
+Origin is **weighted 35/35/22/8**, not uniform. A uniform roll makes
+"Wealthy" a 1-in-4 start, which quietly teaches that being born rich is the
+normal case; weighting it means most lives begin without a cushion, which is
+both closer to reality and the version of this game that has anything to
+teach about money.

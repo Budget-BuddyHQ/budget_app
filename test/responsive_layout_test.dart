@@ -280,7 +280,16 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.text('Academy').last);
+      // At this width the quick-action row drops each button's label (see
+      // _ObjectiveIconButton's iconOnly threshold), so the tooltip is the
+      // only reliable way to find the Academy button — the icon alone
+      // isn't unique across the row. The row also sits below the fold at
+      // this height, inside Home's SingleChildScrollView, so it must be
+      // scrolled into view before tapping.
+      final academyButton = find.byTooltip('Academy').last;
+      await tester.ensureVisible(academyButton);
+      await tester.pump();
+      await tester.tap(academyButton);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
@@ -334,7 +343,19 @@ void main() {
   });
 
   group('Dashboard shell tabs', () {
-    const tabs = <String>['Adventure', 'Arcade', 'Style', 'Academy', 'Profile'];
+    // Life/Arcade/Home/Daily/Style are PopNavBar's bottom five (Home in the
+    // middle); Learn/Profile are the top strip's two icons instead — same
+    // `find.text(tab).last` + tap works for either, since both render a
+    // Text widget with this exact label.
+    const tabs = <String>[
+      'Life',
+      'Learn',
+      'Arcade',
+      'Home',
+      'Daily',
+      'Style',
+      'Profile',
+    ];
 
     for (final viewport in _viewports.entries) {
       for (final tab in tabs) {

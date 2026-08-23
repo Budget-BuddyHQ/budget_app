@@ -9,6 +9,7 @@ import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../themes_colors/app_theme.dart';
+import '../../../widgets_custom_lotties/confetti_burst.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/hover_lift.dart';
@@ -20,7 +21,7 @@ import 'arcade_catalog.dart';
 class MinigamesPage extends StatelessWidget {
   const MinigamesPage({
     super.key,
-    this.activeTabIndex = AppTabIndex.dashboard,
+    this.activeTabIndex = AppTabIndex.minigames,
     this.onNavSelected,
   });
 
@@ -58,6 +59,7 @@ class MinigamesPage extends StatelessWidget {
       return;
     }
 
+    final previousBest = stats.bestArcadeScore('react_challenge');
     await controller.recordArcadeRun(
       gameId: 'react_challenge',
       score: result.goldEarned,
@@ -66,9 +68,17 @@ class MinigamesPage extends StatelessWidget {
       return;
     }
 
+    final isNewHighScore =
+        previousBest != null && result.goldEarned > previousBest;
+    if (isNewHighScore) {
+      ConfettiBurst.show(context);
+    }
+
     GameToast.show(
       context,
-      title: result.status == 'victory'
+      title: isNewHighScore
+          ? 'New high score!'
+          : result.status == 'victory'
           ? 'Arcade streak extended'
           : 'Run saved',
       message:
@@ -94,6 +104,8 @@ class MinigamesPage extends StatelessWidget {
       return;
     }
 
+    final controllerStats = controller.stats;
+    final previousBest = controllerStats.bestArcadeScore('finance_brawl');
     await controller.recordArcadeRun(
       gameId: 'finance_brawl',
       score: result.xpEarned,
@@ -102,9 +114,15 @@ class MinigamesPage extends StatelessWidget {
       return;
     }
 
+    final isNewHighScore =
+        previousBest != null && result.xpEarned > previousBest;
+    if (isNewHighScore) {
+      ConfettiBurst.show(context);
+    }
+
     GameToast.show(
       context,
-      title: 'Horde cleared',
+      title: isNewHighScore ? 'New high score!' : 'Horde cleared',
       message:
           '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
       icon: Icons.gavel_rounded,

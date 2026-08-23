@@ -121,6 +121,71 @@ class TwelveDataQuoteDetails {
   }
 }
 
+/// Company background from Finnhub's `/stock/profile2` — the "who is this
+/// company" info shown on a stock's About section.
+@immutable
+class CompanyProfile {
+  const CompanyProfile({
+    required this.symbol,
+    required this.name,
+    required this.industry,
+    required this.description,
+    required this.logoUrl,
+    required this.website,
+    required this.exchange,
+    required this.country,
+    required this.marketCapitalization,
+    required this.ipoDate,
+  });
+
+  final String symbol;
+  final String name;
+  final String industry;
+  // Finnhub's free profile2 endpoint does not actually include a long-form
+  // description; kept for forward compatibility if that ever changes, and
+  // callers should treat an empty string as "not available" rather than
+  // treating its absence as an error.
+  final String description;
+  final String logoUrl;
+  final String website;
+  final String exchange;
+  final String country;
+  /// In millions of dollars, Finnhub's unit.
+  final double marketCapitalization;
+  final String ipoDate;
+
+  String get marketCapLabel {
+    if (marketCapitalization <= 0) {
+      return '—';
+    }
+    final billions = marketCapitalization / 1000;
+    if (billions >= 1) {
+      return '\$${billions.toStringAsFixed(billions >= 100 ? 0 : 1)}B';
+    }
+    return '\$${marketCapitalization.toStringAsFixed(0)}M';
+  }
+}
+
+/// One Finnhub `/company-news` article.
+@immutable
+class CompanyNewsItem {
+  const CompanyNewsItem({
+    required this.headline,
+    required this.summary,
+    required this.source,
+    required this.url,
+    required this.imageUrl,
+    required this.publishedAt,
+  });
+
+  final String headline;
+  final String summary;
+  final String source;
+  final String url;
+  final String imageUrl;
+  final DateTime publishedAt;
+}
+
 /// One OHLC bar. [Candle] is what both the line chart and the candlestick
 /// chart draw from — a line just uses [close].
 @immutable
@@ -852,6 +917,174 @@ class MarketDataService extends ChangeNotifier {
     } catch (error) {
       debugPrint('Candle fetch failed: $error');
       return const <Candle>[];
+    }
+  }
+
+  final Map<String, CompanyProfile> _profiles = <String, CompanyProfile>{};
+
+  /// Static company background — logo, industry, description, market cap.
+  /// Finnhub's free-tier `/stock/profile2`, same key as quotes/search.
+  /// Cached indefinitely per session: a company's profile does not change
+  /// minute to minute, so there is no reason to ever re-fetch it twice for
+  /// the same symbol in one run.
+  Future<CompanyProfile?> fetchCompanyProfile(String symbol) async {
+    final cached = _profiles[symbol];
+    if (cached != null) {
+      return cached;
+    }
+
+    final key = _apiKey;
+    if (key == null && !usesProxy) {
+      return null;
+    }
+
+    final proxied = _proxyUri({'op': 'profile', 'symbol': symbol});
+    final directUri = Uri.https(_host, '/api/v1/stock/profile2', {
+      'symbol': symbol,
+    });
+    final uri = proxied ?? directUri;
+    final headers = proxied != null
+        ? _proxyHeaders
+        : {'X-Finnhub-Token': key ?? ''};
+
+    try {
+      final response = await _getWithProxyFallback(
+        uri,
+        headers,
+        fallbackUri: proxied == null ? null : directUri,
+        fallbackHeaders: proxied == null ? null : {'X-Finnhub-Token': key ?? ''},
+      ).timeout(_timeout);
+      if (response.statusCode != 200) {
+        return null;
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map || decoded.isEmpty) {
+        return null;
+      }
+
+      final name = (decoded['name'] ?? '').toString();
+      if (name.isEmpty) {
+        // Finnhub returns `{}` for an unknown/unsupported symbol rather
+        // than a 404 — same shape as the quote endpoint's all-zero payload.
+        return null;
+      }
+
+      final profile = CompanyProfile(
+        symbol: symbol,
+        name: name,
+        industry: (decoded['finnhubIndustry'] ?? '').toString(),
+        description: (decoded['description'] ?? '').toString(),
+        logoUrl: (decoded['logo'] ?? '').toString(),
+        website: (decoded['weburl'] ?? '').toString(),
+        exchange: (decoded['exchange'] ?? '').toString(),
+        country: (decoded['country'] ?? '').toString(),
+        marketCapitalization: _readDouble(decoded['marketCapitalization']),
+        ipoDate: (decoded['ipo'] ?? '').toString(),
+      );
+      _profiles[symbol] = profile;
+      return profile;
+    } catch (error) {
+      debugPrint('Company profile fetch failed: $error');
+      return null;
+    }
+  }
+
+  final Map<String, ({DateTime fetchedAt, List<CompanyNewsItem> items})>
+  _newsCache = {};
+  static const Duration _newsCacheTtl = Duration(minutes: 15);
+
+  /// Recent headlines for [symbol]. Finnhub's free-tier `/company-news`,
+  /// same key as quotes/search. Cached 15 minutes per symbol — news doesn't
+  /// need the 20s quote-refresh cadence, and this is the single biggest
+  /// lever against burning through a shared proxy cache budget with a lot
+  /// of players opening the same popular tickers.
+  Future<List<CompanyNewsItem>> fetchCompanyNews(String symbol) async {
+    final cached = _newsCache[symbol];
+    if (cached != null &&
+        DateTime.now().difference(cached.fetchedAt) < _newsCacheTtl) {
+      return cached.items;
+    }
+
+    final key = _apiKey;
+    if (key == null && !usesProxy) {
+      return const <CompanyNewsItem>[];
+    }
+
+    final now = DateTime.now();
+    final from = now.subtract(const Duration(days: 14));
+    String iso(DateTime d) =>
+        '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+    final proxied = _proxyUri({
+      'op': 'news',
+      'symbol': symbol,
+      'from': iso(from),
+      'to': iso(now),
+    });
+    final directUri = Uri.https(_host, '/api/v1/company-news', {
+      'symbol': symbol,
+      'from': iso(from),
+      'to': iso(now),
+    });
+    final uri = proxied ?? directUri;
+    final headers = proxied != null
+        ? _proxyHeaders
+        : {'X-Finnhub-Token': key ?? ''};
+
+    try {
+      final response = await _getWithProxyFallback(
+        uri,
+        headers,
+        fallbackUri: proxied == null ? null : directUri,
+        fallbackHeaders: proxied == null ? null : {'X-Finnhub-Token': key ?? ''},
+      ).timeout(_timeout);
+      if (response.statusCode != 200) {
+        return const <CompanyNewsItem>[];
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! List) {
+        return const <CompanyNewsItem>[];
+      }
+
+      final items = <CompanyNewsItem>[];
+      for (final entry in decoded) {
+        if (entry is! Map) {
+          continue;
+        }
+        final headline = (entry['headline'] ?? '').toString();
+        final url = (entry['url'] ?? '').toString();
+        if (headline.isEmpty || url.isEmpty) {
+          continue;
+        }
+        final epochSeconds = entry['datetime'];
+        final publishedAt = epochSeconds is num
+            ? DateTime.fromMillisecondsSinceEpoch(
+                (epochSeconds * 1000).round(),
+                isUtc: true,
+              )
+            : now;
+        items.add(
+          CompanyNewsItem(
+            headline: headline,
+            summary: (entry['summary'] ?? '').toString(),
+            source: (entry['source'] ?? '').toString(),
+            url: url,
+            imageUrl: (entry['image'] ?? '').toString(),
+            publishedAt: publishedAt,
+          ),
+        );
+      }
+      // Newest first, capped — the free tier's window can return dozens of
+      // wire-service reprints of the same story.
+      items.sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
+      final capped = items.take(12).toList(growable: false);
+      _newsCache[symbol] = (fetchedAt: DateTime.now(), items: capped);
+      return capped;
+    } catch (error) {
+      debugPrint('Company news fetch failed: $error');
+      return const <CompanyNewsItem>[];
     }
   }
 

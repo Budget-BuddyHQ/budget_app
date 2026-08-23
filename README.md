@@ -1,8 +1,36 @@
 # Budget Buddy
 
-A Flutter app that teaches teenagers financial literacy through play.
+A Flutter app that teaches financial literacy through play, for ages 4 to
+21+.
 
-The app has three pillars:
+## How it teaches (not just what it contains)
+
+The honest failure mode for an app like this is to become a pile of fun
+features that quietly teach nothing — you can enjoy a stock-trading screen
+for an hour and learn only where the Buy button is. Three mechanisms exist
+specifically to stop that, and they are the part worth reviewing first:
+
+1. **Ideas are named at the moment of the decision.**
+   `finance_concepts.dart` holds 16 money ideas, each written at two reading
+   levels (roughly 4–10, and 11+, picked from the player's own age band —
+   not the in-game character's). `LifeChoice.teaches` attaches one to a
+   choice, and the explainer appears *after* the consequence lands.
+   **Both branches of a money event teach the same idea** — picking the
+   worse option is the more instructive path, so it is never met with
+   silence.
+2. **The player does the budgeting, not reads about it.** The 50/30/20
+   sheet in Life makes you allocate a fixed 100% across needs / wants /
+   savings, and won't save until it totals exactly 100. That constraint is
+   the lesson: every increase is visibly a cut somewhere else.
+3. **Saving is given something to be for.** Roughly one earning year in
+   seven throws an unavoidable bill, which draws down the emergency fund,
+   then cash, then borrows at 18%. The same event is a shrug for a player
+   who budgeted savings and a debt spiral for one who didn't.
+
+`docs/CHALLENGES.md` §1 has the full reasoning, including what we tried
+first that didn't work.
+
+The app has these pillars:
 
 | Pillar | What it is | Where |
 | --- | --- | --- |
@@ -45,8 +73,10 @@ exact trap is why the fonts looked inconsistent for three rounds; see
 | Live market data | `lib/services_backend_and_other_services/market_data_service.dart` |
 | Shared user state | `lib/controllers_that_updates_stats/user_stats_controller.dart` |
 | Life game rules | `lib/controllers_that_updates_stats/life_sim_controller.dart` |
+| **What the app actually teaches, and how** | `lib/models_Like_Skins_and_lessons_templates/finance_concepts.dart` |
 | Config / API keys | `tool/README.md` |
 | How auth → username → gameplay data → "analytics" fit together | `docs/ARCHITECTURE.md` |
+| **The hard problems and what we learned** | `docs/CHALLENGES.md` |
 | Adventure Town: collision, interactables, camera, map quirks | `docs/ADVENTURE_TOWN.md` |
 | Money Habits: data flow, jar animation, event timing | `docs/MONEY_HABITS_FEATURE.md` |
 | Where art/audio goes and how it's wired | `ASSET_WORKFLOW.md` |
@@ -206,7 +236,101 @@ denied" instead of a crash).
 *Files:* `supabase_service.dart`, `profile_screen.dart`, `feedback_screen.dart`,
 `admin_screen.dart`
 
+**A visible Scrollbar crashed the whole nav shell, twice, in two different ways**
+Adding `Scrollbar(thumbVisibility: true, ...)` with no explicit `controller`
+around Money Habits' `TabBar` and the order ticket's range-chip row (to make
+narrow-width scrolling more discoverable, per request) crashed every
+`DashboardShell`-based test: `MainNavigation`'s `IndexedStack` keeps all
+seven tab screens mounted at once, several of which have their own vertical
+scroll view with no explicit controller — all defaulting to the same ambient
+`PrimaryScrollController` for the route. A `thumbVisibility` Scrollbar with
+no controller of its own falls back to that same ambient controller, which
+already had several `ScrollPosition`s attached from the other tabs, and
+`thumbVisibility: true` requires exactly one. *("The PrimaryScrollController
+is attached to more than one ScrollPosition.")*
+The first fix attempt — `PrimaryScrollController.none(child: Scrollbar(...))`
+to shadow the ambient controller — traded that crash for a different one:
+`thumbVisibility: true` *requires* a real controller to bind to, and with the
+ambient one hidden there was nothing left. *("A ScrollController is required
+when Scrollbar.thumbVisibility is true.")*
+*Fix (two different, because the two widgets differ):* the order ticket's
+scrollable is a plain `SingleChildScrollView` the code already builds, so it
+got a real, explicit `ScrollController` (`_rangeScrollController`, disposed
+like every other controller on that page) shared by both the `Scrollbar` and
+the scroll view. Money Habits' scrollable is `TabBar`'s **internal** scroll
+view when `isScrollable: true` — Flutter's `TabBar` does not expose that
+controller through any public parameter, so there is no explicit controller
+to give it at all. Dropped `thumbVisibility`/`trackVisibility` there and left
+`Scrollbar` in its default (notification-based, fades in while dragging)
+mode instead, which needs no controller.
+*Lesson:* `thumbVisibility: true` needs an explicit `ScrollController`
+attached to the *specific* scroll view it should track — never rely on the
+ambient `PrimaryScrollController` once more than one tab's own scroll view
+can be alive at once (any `IndexedStack`-based nav shell), and check first
+whether the target widget even exposes a controller before reaching for
+`thumbVisibility`.
+*Files:* `order_ticket_page.dart`, `money_habits_screen.dart`
+
+### Gameplay
+
+**The player could walk around *inside* the hill**
+The town map's southern boundary — the wide tan band across map rows 34–37 —
+lives in the `terrain` layer, which is `collider: false` because that same
+layer also holds walkable dirt paths. Rows 34 and 37 were already solid, but
+row 34 had a **six-tile hole at x=29..34** and rows 35–36 had no collision
+at all, so the player could step in through the gap and wander around inside
+the band.
+*Fix:* moved the rows 34–36 tiles into a new `terrain_hill` layer with
+`"collider": true`, inserted adjacent to `terrain` so draw order is
+unchanged. The highest-value coin was at (27, 36) — now inside a wall — and
+moved to (47, 32).
+*Guard:* the regression test flood-fills from the spawn tile rather than
+checking the band tile-by-tile, because a per-tile check would still pass if
+a later map edit opened a route *around* the ends. It also asserts >600
+tiles stay reachable, so it can't pass by walling the player into a closet.
+*Files:* `assets/images/maps/map.json`, `town_spot_models.dart`,
+`test/town_map_test.dart`
+
+**The walking animation looked "goofy" — the feet were sliding 2.4x**
+Bonfire's `Movement.speedDefault` (80 units/sec) was never overridden while
+the walk ran at `stepTime: 0.12`. Eight frames is two footfalls, so that is
+**2.4 tiles of ground per footfall on a 2.1-tile-tall character** — each
+foot travelling further than the character's whole height per step, i.e.
+textbook moonwalking.
+*Fix:* `kTownWalkSpeed` (60) and `kTownWalkStepTime` (0.07) → 1.05 tiles per
+footfall. These are one setting, not two, and are documented as such.
+*Still partial, and the docs say so:* the art has the torso frozen across
+all 8 frames with one leg extending *below* the standing foot line, so the
+legs accordion 15px while the head stays pinned. Not fixable by repacking —
+the cell has 2px of headroom above the head and 0 below the feet, so lifting
+the extended frames clips the hat (tried, measured, reverted). See
+`docs/CHALLENGES.md` §2.
+*Files:* `adventure_world_screen.dart`, `town_components.dart`
+
 ### Layout
+
+**Bottom-nav restructure silently sent fresh sign-ins into the game world instead of Home**
+The bottom nav was rebuilt to 5 tabs with Home centred (Life/Learn/Home/Daily/
+Profile), which reassigned `AppTabIndex` — `adventure` became `0`, the slot
+`dashboard` (Home) used to occupy. `DashboardShell`'s `initialIndex` defaulted
+to a bare literal `0`, so every bare `DashboardShell()` — the `/game` route
+and all three sign-in branches in `main.dart` — silently landed on the
+Adventure/Bonfire tab instead of Home. Also caused a resize test that used
+`DashboardShell()` to hang for a full 10-minute timeout, since it was booting
+into the heavier Bonfire `GameWidget` instead of Home.
+*Fix:* `DashboardShell`'s default is now the named `AppTabIndex.dashboard`
+constant, not a bare `0`.
+*Lesson:* when an index/enum constant's values change, grep for every
+default parameter or bare literal elsewhere that assumed the old values.
+*Files:* `dashboard_shell.dart`, `pop_navbar.dart`, `app_tab_index.dart`,
+`main_navigation.dart`, `main.dart`
+
+**Bigger bottom-nav label text overflowed its own bar**
+The nav labels were bumped a few px for readability, but the bar's fixed
+height wasn't bumped with them — every screen using the bottom nav threw
+"overflowed by 3.0 pixels on the bottom."
+*Fix:* `barHeight` raised alongside the label size.
+*Files:* `pop_navbar.dart`
 
 **Phone UI got cramped and key visuals disappeared**
 The dashboard and Academy had separate compact-mode decisions: the bottom nav

@@ -22,7 +22,7 @@ import '../../widgets_custom_lotties/vivid_backdrop.dart';
 class CustomizeScreen extends StatefulWidget {
   const CustomizeScreen({
     super.key,
-    this.activeTabIndex = AppTabIndex.dashboard,
+    this.activeTabIndex = AppTabIndex.customize,
     this.onNavSelected,
   });
 
