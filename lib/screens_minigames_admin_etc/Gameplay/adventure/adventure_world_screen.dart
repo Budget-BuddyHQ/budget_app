@@ -1,7 +1,7 @@
 import 'package:bonfire/bonfire.dart';
 import 'package:bonfire/map/spritefusion/reader/spritefusion_asset_reader.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show DeviceOrientation, rootBundle;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -10,6 +10,7 @@ import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
+import '../../../widgets_custom_lotties/orientation_scope.dart';
 
 /// Where the exported map (Sprite Fusion JSON — see the README next to it)
 /// is expected to live. `SpritefusionAssetReader` is hardcoded to read from
@@ -52,6 +53,22 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Locked landscape for the whole screen (loading/pending included, not
+    // just once the canvas mounts, so there's no rotation jump mid-screen) —
+    // an open-world map reads far better wide than tall, the way Roblox and
+    // most overworld games default to landscape on a phone/tablet. Restores
+    // the app's normal both-orientations behaviour on the way out via
+    // [OrientationScope]'s own dispose hook.
+    return OrientationScope(
+      orientations: const [
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ],
+      child: _buildContent(context),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     if (_mapReady == null) {
       return const Scaffold(
         backgroundColor: AppTheme.deepForest,
@@ -77,13 +94,38 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.deepForest,
-      body: BonfireWidget(
-        map: WorldMapBySpritefusion(
-          SpritefusionAssetReader(asset: kAdventureMapAsset),
-        ),
-        player: _buildPlayer(playerSheet),
-        playerControllers: [Joystick(directional: JoystickDirectional())],
-        cameraConfig: CameraConfig(zoom: 1.4),
+      body: Stack(
+        children: [
+          BonfireWidget(
+            map: WorldMapBySpritefusion(
+              SpritefusionAssetReader(asset: kAdventureMapAsset),
+            ),
+            player: _buildPlayer(playerSheet),
+            playerControllers: [Joystick(directional: JoystickDirectional())],
+            cameraConfig: CameraConfig(
+              zoom: 1.4,
+              // Explicitly false (Bonfire's own default) rather than left
+              // implicit: the map is fully walled by a collider ring (see
+              // map.json's border tiles), so the player physically can't
+              // reach open space beyond it — this just controls whether the
+              // *camera* would additionally clamp itself to the map bounds.
+              // Left unclamped on purpose so standing at the wall shows a
+              // sliver of empty void beyond it, the way an open-world map's
+              // edge usually reads, rather than the camera stopping dead a
+              // tile early to keep the view always full of map art.
+              moveOnlyMapArea: false,
+            ),
+          ),
+          Positioned(
+            top: 12,
+            left: 12,
+            child: SafeArea(
+              child: _AdventureBackButton(
+                onTap: () => Navigator.of(context).maybePop(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -117,6 +159,35 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
         runLeft: row(2, 8),
         idleRight: frame(3),
         runRight: row(3, 8),
+      ),
+    );
+  }
+}
+
+/// The game canvas is a full-bleed [BonfireWidget] with no `AppBar` of its
+/// own, so there was no way out of the map short of the OS back gesture —
+/// this floats a real, always-visible exit above the canvas.
+class _AdventureBackButton extends StatelessWidget {
+  const _AdventureBackButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.45),
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: const Padding(
+          padding: EdgeInsets.all(10),
+          child: Icon(
+            Icons.arrow_back_rounded,
+            color: Colors.white,
+            size: 24,
+          ),
+        ),
       ),
     );
   }
@@ -160,7 +231,7 @@ class _AdventureMapPendingScreen extends StatelessWidget {
                 const SizedBox(height: 18),
                 Text(
                   'Map on the way',
-                  style: GoogleFonts.baloo2(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white,
                     fontSize: 24,
                     fontWeight: FontWeight.w700,

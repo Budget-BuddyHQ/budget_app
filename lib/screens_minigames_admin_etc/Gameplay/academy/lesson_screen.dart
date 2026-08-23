@@ -174,7 +174,7 @@ class _LessonScreenState extends State<LessonScreen> {
             Expanded(
               child: Text(
                 'Written for ${unit.ageStage.label.toLowerCase()}',
-                style: GoogleFonts.baloo2(
+                style: GoogleFonts.pixelifySans(
                   color: const Color(0xFFFFB84D),
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
@@ -883,7 +883,7 @@ class _HubHeader extends StatelessWidget {
             children: [
               Text(
                 'Academy',
-                style: GoogleFonts.baloo2(
+                style: GoogleFonts.pixelifySans(
                   color: const Color(0xFFB8F5D1),
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -893,7 +893,7 @@ class _HubHeader extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'Units and mastery',
-                style: GoogleFonts.baloo2(
+                style: GoogleFonts.pixelifySans(
                   color: Colors.white,
                   fontSize: compact ? 23 : 30,
                   fontWeight: FontWeight.w700,
@@ -1418,7 +1418,7 @@ class _UnitCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           unit.title,
-                          style: GoogleFonts.baloo2(
+                          style: GoogleFonts.pixelifySans(
                             color: const Color(0xFFF7FFFB),
                             fontSize: compact ? 24 : 28,
                             fontWeight: FontWeight.w700,
@@ -1508,7 +1508,7 @@ class _UnitCard extends StatelessWidget {
                 ),
                 label: Text(
                   'Practice this unit',
-                  style: GoogleFonts.baloo2(fontWeight: FontWeight.w800),
+                  style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w800),
                 ),
               ),
             ),

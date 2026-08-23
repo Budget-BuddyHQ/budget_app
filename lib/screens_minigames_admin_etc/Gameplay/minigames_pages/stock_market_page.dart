@@ -834,7 +834,7 @@ class _TrendingPromoStrip extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               'TRENDING NOW',
-              style: GoogleFonts.baloo2(
+              style: GoogleFonts.pixelifySans(
                 color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 12,
                 letterSpacing: 1.1,

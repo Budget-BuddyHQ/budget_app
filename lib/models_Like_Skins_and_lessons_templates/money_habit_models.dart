@@ -98,6 +98,7 @@ class HabitTemplate {
     required this.impactPerUnit,
     this.adjustable,
     this.icon = Icons.savings_rounded,
+    this.photoUrl,
   });
 
   final String id;
@@ -107,6 +108,12 @@ class HabitTemplate {
   final HabitImpact impactPerUnit;
   final HabitAdjustableParam? adjustable;
   final IconData icon;
+
+  /// A real photo for the Activity card/detail sheet, when one's been
+  /// sourced — not every catalog entry has one yet. Falls back to [icon]
+  /// when null or when the network image fails to load (see
+  /// `_HabitPhoto` in `money_habits_screen.dart`).
+  final String? photoUrl;
 
   bool get isAdjustable => adjustable != null;
 
@@ -145,6 +152,7 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
       defaultValue: 1,
     ),
     icon: Icons.coffee_rounded,
+    photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/3/3a/Coffee_cup_seen_from_above.jpg',
   ),
   HabitTemplate(
     id: 'no_impulse_buy',
@@ -153,6 +161,7 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
     blurb: 'Something you almost bought without thinking — and didn\'t.',
     impactPerUnit: HabitImpact(moneySavedUsd: 20, choicesKept: 1),
     icon: Icons.remove_shopping_cart_rounded,
+    photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/83/Shopping_cart.jpg',
   ),
   HabitTemplate(
     id: 'cancel_unused_sub',
@@ -194,6 +203,7 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
       defaultValue: 2,
     ),
     icon: Icons.savings_rounded,
+    photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/b2/Coins.jpg',
   ),
   HabitTemplate(
     id: 'round_up_savings',
@@ -218,6 +228,7 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
       defaultValue: 20,
     ),
     icon: Icons.sell_rounded,
+    photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/2/28/Pile_of_Cash.jpg',
   ),
   HabitTemplate(
     id: 'pack_lunch',
@@ -226,6 +237,7 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
     blurb: 'Buying lunch out every day is one of the fastest ways a budget quietly breaks.',
     impactPerUnit: HabitImpact(moneySavedUsd: 10, choicesKept: 1),
     icon: Icons.lunch_dining_rounded,
+    photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/f/f8/Asda_-_lunch_boxes.jpg',
   ),
   HabitTemplate(
     id: 'set_aside_allowance',
@@ -242,6 +254,7 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
       defaultValue: 5,
     ),
     icon: Icons.account_balance_wallet_rounded,
+    photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Putting_money_into_a_piggybank.jpg',
   ),
   // ---------------- Smart Habits ----------------
   HabitTemplate(

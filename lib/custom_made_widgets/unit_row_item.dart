@@ -261,7 +261,7 @@ class _UnitLessonBlock extends StatelessWidget {
                       lesson.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.baloo2(
+                      style: GoogleFonts.pixelifySans(
                         color: const Color(0xFFF7FFFB),
                         fontSize: compact ? 15 : 16,
                         fontWeight: FontWeight.w700,
@@ -295,7 +295,7 @@ class _UnitLessonBlock extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           statusLabel,
-                          style: GoogleFonts.baloo2(
+                          style: GoogleFonts.pixelifySans(
                             color: palette.border,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,

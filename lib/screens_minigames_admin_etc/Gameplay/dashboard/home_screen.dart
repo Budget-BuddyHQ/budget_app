@@ -9,13 +9,11 @@ import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../adventure/adventure_world_screen.dart';
 import '../../../config/dev_preview_flags.dart';
 import '../../../controllers_that_updates_stats/app_settings_controller.dart';
-import '../../../controllers_that_updates_stats/daily_plan_controller.dart';
+import '../../../controllers_that_updates_stats/money_habit_controller.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
-import '../../../models_Like_Skins_and_lessons_templates/daily_quest.dart';
 import '../../../constants/app_assets.dart';
 import '../../../themes_colors/app_theme.dart';
-import 'daily_plan_card.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
 import '../../../widgets_custom_lotties/feedback_prompt_sheet.dart';
@@ -80,26 +78,6 @@ class HomeScreen extends StatelessWidget {
     ).push(MaterialPageRoute(builder: (_) => const LeaderboardScreen()));
   }
 
-  /// Sends the player to the quest's target surface. The completion for
-  /// learning quests is credited when the underlying lesson/game reports
-  /// progress, but for now tapping also marks the quest done so the checklist
-  /// always advances — the modes route through the existing tab switcher.
-  void _openQuest(BuildContext context, DailyQuest quest) {
-    // Optimistically credit the daily plan; the actual lesson/game still
-    // awards its own XP through its own flow.
-    context.read<DailyPlanController>().completeQuest(quest.id);
-
-    switch (quest.surface) {
-      case QuestSurface.academyLesson:
-      case QuestSurface.academyPractice:
-        onNavSelected?.call(AppTabIndex.academy);
-      case QuestSurface.arcade:
-        onNavSelected?.call(AppTabIndex.minigames);
-      case QuestSurface.adventure:
-        onNavSelected?.call(AppTabIndex.adventure);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<UserStatsController>(
@@ -126,7 +104,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 Text(
                   stats.levelTitle,
-                  style: GoogleFonts.baloo2(
+                  style: GoogleFonts.pixelifySans(
                     color: const Color(0xFF85EFAC),
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -192,17 +170,12 @@ class HomeScreen extends StatelessWidget {
                                 Navigator.of(context).pushNamed('/life'),
                           ),
                           const SizedBox(height: 10),
-                          _MoneyHabitsPromo(
+                          _DailyMoneyHabitCard(
                             onOpen: () => Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => const MoneyHabitsScreen(),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 10),
-                          DailyPlanCard(
-                            compact: compactHeight,
-                            onOpenQuest: (quest) => _openQuest(context, quest),
                           ),
                           const SizedBox(height: 10),
                           _CurrentObjectiveCard(
@@ -389,16 +362,41 @@ class _PlayLifePromo extends StatelessWidget {
   }
 }
 
-/// Home-screen promo for the Money Habits feature (weekly habit tracker,
-/// habit catalog, challenges, and a fillable savings jar) — same visual
-/// family as [_PlayLifePromo], one tier below it.
-class _MoneyHabitsPromo extends StatelessWidget {
-  const _MoneyHabitsPromo({required this.onOpen});
+/// Home's one daily-engagement card. This used to be a generic "Today's
+/// Plan" board picking a lesson/practice/arcade slot, with Money Habits
+/// folded in as a fourth row — per direct feedback, the board came out
+/// entirely and Money Habits took its place as *the* daily task on its own,
+/// rather than two competing systems.
+class _DailyMoneyHabitCard extends StatelessWidget {
+  const _DailyMoneyHabitCard({required this.onOpen});
 
   final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
+    final habits = context.watch<MoneyHabitController>();
+    final saved = habits.savedHabits;
+    final pending = saved
+        .where((habit) => !habits.isSavedToday(habit.id))
+        .toList(growable: false);
+
+    final String title;
+    final String subtitle;
+    final IconData icon;
+    if (saved.isEmpty) {
+      title = 'Pick a money habit';
+      subtitle = 'Choose one to start today\'s streak.';
+      icon = Icons.savings_rounded;
+    } else if (pending.isNotEmpty) {
+      title = 'Today: ${pending.first.title}';
+      subtitle = 'Log it to keep today\'s streak going.';
+      icon = pending.first.icon;
+    } else {
+      title = 'All habits logged today';
+      subtitle = 'Nice — every saved habit is done. Back tomorrow.';
+      icon = Icons.check_circle_rounded;
+    }
+
     return InkWell(
       onTap: onOpen,
       borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
@@ -418,15 +416,7 @@ class _MoneyHabitsPromo extends StatelessWidget {
                 color: AppTheme.greenPrimary.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const IdleHoverIcon(
-                idleAmplitude: 3,
-                period: Duration(seconds: 3),
-                child: Icon(
-                  Icons.savings_rounded,
-                  color: AppTheme.greenPrimary,
-                  size: 26,
-                ),
-              ),
+              child: Icon(icon, color: AppTheme.greenPrimary, size: 26),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -434,16 +424,18 @@ class _MoneyHabitsPromo extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Money Habits',
-                    style: GoogleFonts.baloo2(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.pixelifySans(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Skip a purchase, save a little, fill your jar.',
+                    subtitle,
                     style: GoogleFonts.quicksand(
                       color: Colors.white.withValues(alpha: 0.78),
                       fontSize: 12.5,

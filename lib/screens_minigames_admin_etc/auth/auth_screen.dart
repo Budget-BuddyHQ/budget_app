@@ -829,7 +829,7 @@ class _AuthHero extends StatelessWidget {
               Text(
                 'BUDGET BUDDY',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.baloo2(
+                style: GoogleFonts.pixelifySans(
                   color: Colors.white,
                   fontSize: 28,
                   fontWeight: FontWeight.w900,

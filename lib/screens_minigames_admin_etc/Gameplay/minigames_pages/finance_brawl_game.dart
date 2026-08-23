@@ -2626,7 +2626,7 @@ void initState() {
                   const SizedBox(height: 16),
                   Text(
                     q.question,
-                    style: GoogleFonts.baloo2(
+                    style: GoogleFonts.pixelifySans(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.w900,

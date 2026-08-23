@@ -169,7 +169,7 @@ class MinigamesPage extends StatelessWidget {
                               const SizedBox(height: 22),
                               Text(
                                 'ALL GAMES',
-                                style: GoogleFonts.baloo2(
+                                style: GoogleFonts.pixelifySans(
                                   color: Colors.white.withValues(alpha: 0.55),
                                   fontSize: 12,
                                   letterSpacing: 1.2,
@@ -259,7 +259,7 @@ class _ArcadeHeader extends StatelessWidget {
             children: [
               Text(
                 'Arcade',
-                style: GoogleFonts.baloo2(
+                style: GoogleFonts.pixelifySans(
                   color: Colors.white,
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
@@ -307,7 +307,7 @@ class _GoldPill extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             '$gold',
-            style: GoogleFonts.baloo2(
+            style: GoogleFonts.pixelifySans(
               color: const Color(0xFFFFD45C),
               fontWeight: FontWeight.w700,
             ),
@@ -359,7 +359,7 @@ class _FeaturedCard extends StatelessWidget {
                         children: [
                           Text(
                             plays == 0 ? 'TRY NEXT' : 'PICK UP AGAIN',
-                            style: GoogleFonts.baloo2(
+                            style: GoogleFonts.pixelifySans(
                               color: game.accent,
                               fontSize: 11,
                               letterSpacing: 1.2,
@@ -370,7 +370,7 @@ class _FeaturedCard extends StatelessWidget {
                             game.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.baloo2(
+                            style: GoogleFonts.pixelifySans(
                               color: Colors.white,
                               fontSize: 26,
                               height: 1.1,
@@ -456,7 +456,7 @@ class _GameCard extends StatelessWidget {
                         game.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.baloo2(
+                        style: GoogleFonts.pixelifySans(
                           color: Colors.white,
                           fontSize: 18,
                           height: 1.05,

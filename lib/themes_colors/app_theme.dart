@@ -123,7 +123,7 @@ class AppTheme {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.baloo2(
+        titleTextStyle: GoogleFonts.pixelifySans(
           color: textPrimary,
           fontSize: fontSizeXLarge,
           fontWeight: FontWeight.bold,
@@ -132,22 +132,22 @@ class AppTheme {
         iconTheme: const IconThemeData(color: textPrimary),
       ),
       textTheme:
-          GoogleFonts.baloo2TextTheme(
+          GoogleFonts.pixelifySansTextTheme(
             ThemeData(brightness: Brightness.dark).textTheme,
           ).copyWith(
-            displayLarge: GoogleFonts.baloo2(
+            displayLarge: GoogleFonts.pixelifySans(
               color: textPrimary,
               fontSize: fontSizeXXLarge,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.0,
             ),
-            displayMedium: GoogleFonts.baloo2(
+            displayMedium: GoogleFonts.pixelifySans(
               color: textPrimary,
               fontSize: fontSizeXLarge,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
             ),
-            headlineSmall: GoogleFonts.baloo2(
+            headlineSmall: GoogleFonts.pixelifySans(
               color: textPrimary,
               fontSize: fontSizeLarge,
               fontWeight: FontWeight.w600,

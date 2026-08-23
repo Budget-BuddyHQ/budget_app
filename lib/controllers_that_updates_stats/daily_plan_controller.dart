@@ -49,6 +49,8 @@ class DailyPlanController extends ChangeNotifier {
       completedLessons: stats.completedLessons.toSet(),
       arcadePlays: stats.arcadePlays,
       activeArcadeGameIds: arcadeCatalog.map((g) => g.id).toList(),
+      savedHabitIds: stats.savedHabitIds,
+      habitsDoneToday: (stats.habitWeeklyLog[today] ?? const <String>[]).toSet(),
     );
 
     _plan = plan;

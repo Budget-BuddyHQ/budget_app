@@ -187,7 +187,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         elevation: 0,
         title: Text(
           widget.lesson.title,
-          style: GoogleFonts.baloo2(fontWeight: FontWeight.w700),
+          style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
         ),
       ),
       body: Stack(
@@ -246,7 +246,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                               children: [
                                 Text(
                                   section.title,
-                                  style: GoogleFonts.baloo2(
+                                  style: GoogleFonts.pixelifySans(
                                     color: const Color(0xFFF7FFFB),
                                     fontSize: 23,
                                     fontWeight: FontWeight.w700,
@@ -434,7 +434,7 @@ class _LessonOverviewCard extends StatelessWidget {
             children: [
               Text(
                 lessonTitle,
-                style: GoogleFonts.baloo2(
+                style: GoogleFonts.pixelifySans(
                   color: const Color(0xFFF7FFFB),
                   fontSize: 27,
                   fontWeight: FontWeight.w700,
@@ -492,7 +492,7 @@ class _ObjectivesCard extends StatelessWidget {
         children: [
           Text(
             'WHAT YOU\'LL LEARN',
-            style: GoogleFonts.baloo2(
+            style: GoogleFonts.pixelifySans(
               color: const Color(0xFFB8F5D1),
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -554,7 +554,7 @@ class _WorkedExampleCard extends StatelessWidget {
             children: [
               Text(
                 'WORKED EXAMPLE',
-                style: GoogleFonts.baloo2(
+                style: GoogleFonts.pixelifySans(
                   color: const Color(0xFF9BD9FF),
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -610,7 +610,7 @@ class _KeyTermsCard extends StatelessWidget {
         children: [
           Text(
             'KEY TERMS',
-            style: GoogleFonts.baloo2(
+            style: GoogleFonts.pixelifySans(
               color: const Color(0xFFFFD45C),
               fontSize: 12,
               fontWeight: FontWeight.w700,

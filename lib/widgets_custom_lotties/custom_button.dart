@@ -143,7 +143,7 @@ class _CustomButtonState extends State<CustomButton>
                               widget.label,
                               textAlign: TextAlign.center,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.baloo2(
+                              style: GoogleFonts.pixelifySans(
                                 color: widget.style.textColor,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
