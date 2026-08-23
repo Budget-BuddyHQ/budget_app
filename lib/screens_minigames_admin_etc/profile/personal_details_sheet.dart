@@ -225,10 +225,10 @@ class _PersonalDetailsSheetState extends State<PersonalDetailsSheet> {
                                     ),
                                   ),
                                 )
-                              : const Text(
+                              : Text(
                                   'Save',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w900,
+                                  style: GoogleFonts.pixelifySans(
+                                    fontWeight: FontWeight.w700,
                                     fontSize: 16,
                                   ),
                                 ),

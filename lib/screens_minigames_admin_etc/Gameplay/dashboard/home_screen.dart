@@ -6,7 +6,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
-import '../adventure/adventure_world_screen.dart';
 import '../../../config/dev_preview_flags.dart';
 import '../../../controllers_that_updates_stats/app_settings_controller.dart';
 import '../../../controllers_that_updates_stats/money_habit_controller.dart';
@@ -64,11 +63,14 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  /// The town is part of a life, not a separate mode — so this starts a
+  /// Life run rather than dropping straight onto the map. Once you're in a
+  /// life, the Life screen's "Explore the town" action opens the world.
+  /// That keeps one rule: you walk the town *as* the character you're
+  /// currently living, which is the whole point of pairing them.
   Future<void> _openAdventureWorld(BuildContext context) async {
     HapticFeedback.mediumImpact();
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const AdventureWorldScreen()));
+    await Navigator.of(context).pushNamed('/life');
   }
 
   Future<void> _openLeaderboard(BuildContext context) async {
@@ -164,11 +166,11 @@ class HomeScreen extends StatelessWidget {
                                   _openAdventureWorld(context),
                             ),
                           ),
-                          const SizedBox(height: 10),
-                          _PlayLifePromo(
-                            onPlay: () =>
-                                Navigator.of(context).pushNamed('/life'),
-                          ),
+                          // The hero already starts a life (and the town is
+                          // reached from inside one), so a separate "Play
+                          // Life" card underneath was a second button doing
+                          // the same job — removed so Home has one obvious
+                          // primary action instead of two competing ones.
                           const SizedBox(height: 10),
                           _DailyMoneyHabitCard(
                             onOpen: () => Navigator.of(context).push(
@@ -243,130 +245,6 @@ class _FeedbackPromptTriggerState extends State<_FeedbackPromptTrigger> {
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
-/// Home-screen promo for the main game (Life), so it's front-and-centre rather
-/// than buried like a minigame.
-class _PlayLifePromo extends StatelessWidget {
-  const _PlayLifePromo({required this.onPlay});
-
-  final VoidCallback onPlay;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPlay,
-      borderRadius: BorderRadius.circular(24),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1C5038), Color(0xFF0C2A1E)],
-          ),
-          border: Border.all(
-            color: const Color(0xFF85EFAC).withValues(alpha: 0.4),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const IdleHoverIcon(
-                // A heartbeat pulse instead of a bob — fits the icon itself
-                // rather than just reusing the same motion everywhere.
-                idleAmplitude: 0,
-                pulseAmplitude: 0.14,
-                period: Duration(milliseconds: 1400),
-                child: Icon(
-                  Icons.favorite_rounded,
-                  color: Color(0xFF85EFAC),
-                  size: 26,
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      const Text(
-                        'Play Life',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFFFFD45C,
-                          ).withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: const Text(
-                          'MAIN GAME',
-                          style: TextStyle(
-                            color: Color(0xFFFFD45C),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Grow up, make money decisions, explore the town.',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.78),
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            const IdleHoverIcon(
-              phaseShift: 0.5,
-              idleAmplitude: 0,
-              continuousSpin: true,
-              period: Duration(seconds: 8),
-              child: Icon(
-                Icons.play_circle_fill_rounded,
-                color: Color(0xFF85EFAC),
-                size: 34,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Home's one daily-engagement card. This used to be a generic "Today's
-/// Plan" board picking a lesson/practice/arcade slot, with Money Habits
-/// folded in as a fourth row — per direct feedback, the board came out
-/// entirely and Money Habits took its place as *the* daily task on its own,
-/// rather than two competing systems.
 class _DailyMoneyHabitCard extends StatelessWidget {
   const _DailyMoneyHabitCard({required this.onOpen});
 
@@ -597,33 +475,38 @@ class _AdventureLaunchHero extends StatelessWidget {
                             'Level ${stats.level}  |  ${stats.gold} Gold',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: GoogleFonts.pixelifySans(
                               color: Color(0xFF85EFAC),
                               fontSize: 11,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
                         SizedBox(height: veryTight ? 6 : 10),
                         Text(
-                          'Adventure Soon',
+                          // Was "Adventure Soon" — stale copy from before
+                          // the town map actually existed. It's real now,
+                          // with places to walk into, so the card says so.
+                          'Explore the Town',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: GoogleFonts.pixelifySans(
                             color: Colors.white,
                             fontSize: veryTight ? 25 : (phone ? 30 : 34),
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                             height: 1,
                           ),
                         ),
                         if (!veryTight) ...[
                           const SizedBox(height: 8),
                           Text(
-                            'Scout the emerald route and clear your next RPG encounter.',
+                            'Start a life, then walk the town — the store, '
+                            'the bank and the job board are all real money '
+                            'decisions.',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.76),
+                            style: GoogleFonts.quicksand(
+                              color: Colors.white.withValues(alpha: 0.80),
                               height: 1.32,
                               fontWeight: FontWeight.w700,
                             ),
@@ -631,7 +514,7 @@ class _AdventureLaunchHero extends StatelessWidget {
                         ],
                         SizedBox(height: veryTight ? 10 : 16),
                         _ActionButton(
-                          label: 'Enter World',
+                          label: 'Start a Life',
                           accent: const Color(0xFF85EFAC),
                           icon: Icons.explore_rounded,
                           compact: phone || veryTight,
@@ -731,14 +614,14 @@ class _CurrentObjectiveCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Current Objective',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: GoogleFonts.pixelifySans(
                             color: Colors.white,
                             fontSize: 19,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         Text(
@@ -932,9 +815,9 @@ class _ObjectiveIconButton extends StatelessWidget {
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: GoogleFonts.pixelifySans(
                           color: Colors.white,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                           fontSize: 12,
                         ),
                       ),
@@ -1110,9 +993,9 @@ class _ActionButtonState extends State<_ActionButton>
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               softWrap: false,
-                              style: const TextStyle(
+                              style: GoogleFonts.pixelifySans(
                                 color: Color(0xFF062C21),
-                                fontWeight: FontWeight.w900,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),

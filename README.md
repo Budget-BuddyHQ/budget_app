@@ -8,22 +8,29 @@ The app has three pillars:
 | --- | --- | --- |
 | **Life** (main game) | A BitLife-style life simulator. You are born, age up one year at a time, and your choices move Happiness, Health, Smarts, Looks and money. Ends on one of 7 distinct **ending archetypes** (`life_ending.dart`) resolved from your final stats, shown on a dedicated epilogue recap screen instead of the old silent pop-back. | `lib/screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart` |
 | **Market Board** | A Webull-style stock trading board using **real live market data**, priced in in-game coins. Opens on a "Trending Now" strip of real company logos (Wikimedia Commons — `assets/images/stock_logos/`, ~88KB total across 6 tickers) over the always-on ticker tape. | `lib/screens_minigames_admin_etc/Gameplay/minigames_pages/stock_market_page.dart` |
-| **Academy** | Khan-Academy-style units of lessons, quizzes and unit tests — 9 units, each with its own accent colour. Units badge "Recommended for you" against the player's self-described age band — a signal only, never a lock; every unit still unlocks purely by finishing the previous one's test. **Unit 5 includes Taxes and Withholding**, and **Unit 6 (Stocks and Trading) pays out real gold and tradeable shares** via `kLessonPayouts`. | `lib/screens_minigames_admin_etc/Gameplay/academy/` |
+| **Academy** | Khan-Academy-style units of lessons, quizzes and unit tests — 11 units spanning **ages 4–6 through 21+**, each with its own accent colour. Units badge "Recommended for you" against the player's self-described age band — a signal only, never a lock; every unit still unlocks purely by finishing the previous one's test. **Unit 6 (Stocks and Trading) pays out real gold and tradeable shares**; units 2/3/4 carry a **sourced** question bank citing FICO, SEC/investor.gov and CFPB inline. | `lib/screens_minigames_admin_etc/Gameplay/academy/` |
+| **Adventure Town** | A walkable 50×50 RPG overworld (`bonfire`) where 6 buildings are each a money decision, plus coin pickups and a "visit every place" objective. Decisions use the same data shape as Life's, so both halves teach with one grammar. Landscape-locked on mobile. | `lib/screens_minigames_admin_etc/Gameplay/adventure/` — see `docs/ADVENTURE_TOWN.md` |
+| **Money Habits** | The daily task: a budgeting-habit tracker (skip eating out, save spare change, wait 24h before a big purchase) with challenges and a savings jar that fills as habits stick. This replaced the old generic "Today's Plan" board on Home. | `lib/screens_minigames_admin_etc/Gameplay/money_habits/` — see `docs/MONEY_HABITS_FEATURE.md` |
 
 Supporting features: auth (login / sign-up / welcome), profile, skins &
-customization, daily quests, leaderboard, arcade mini-games, in-app feedback
+customization, leaderboard (global + friends via friend code), arcade
+mini-games, in-app feedback
 (`lib/screens_minigames_admin_etc/profile/feedback_screen.dart`, toggleable via
-`kFeedbackEnabled` in `lib/config/dev_preview_flags.dart`), an admin page, and
-an in-progress **Adventure** RPG overworld built on the `bonfire` engine
-(`lib/screens_minigames_admin_etc/Gameplay/adventure/adventure_world_screen.dart`).
-It's fully wired (player, joystick, camera) but has no map yet — see
-`assets/images/maps/README.md` for exactly where to drop one; until then it
-shows a "map on the way" placeholder instead of a blank/broken screen.
+`kFeedbackEnabled` in `lib/config/dev_preview_flags.dart`), and an admin page.
 
-**Sound effects are off by default.** The bundled SFX (`AppSoundService`,
-`assets/audio/`) read as harsh rather than subtle, so `enabled` now defaults
-to `false` — the toggle in Profile still works for anyone who wants them on
-in the meantime. See `docs/ARCHITECTURE.md` for details.
+**Sound is currently silent on purpose.** `assets/audio/` was emptied to make
+room for a new set; `AppSoundService` is unaffected — sound is off by default
+and every `play()` already falls back to a system click on a missing asset.
+Drop new `.wav`s into `assets/audio/` matching the existing `AppSoundEffect`
+names and they play automatically. See `ASSET_WORKFLOW.md`.
+
+**Typography:** headings use `GoogleFonts.pixelifySans` (the "Budget Buddy"
+wordmark font); body prose stays `GoogleFonts.quicksand` because pixel fonts
+are hard to read in long paragraphs. Note that a bare `TextStyle(...)`
+inherits the theme's Quicksand `bodyMedium` — so a new *heading* must set
+`pixelifySans` explicitly or it will silently render in the body font. That
+exact trap is why the fonts looked inconsistent for three rounds; see
+`docs/ARCHITECTURE.md` §17.
 
 ---
 
@@ -40,6 +47,9 @@ in the meantime. See `docs/ARCHITECTURE.md` for details.
 | Life game rules | `lib/controllers_that_updates_stats/life_sim_controller.dart` |
 | Config / API keys | `tool/README.md` |
 | How auth → username → gameplay data → "analytics" fit together | `docs/ARCHITECTURE.md` |
+| Adventure Town: collision, interactables, camera, map quirks | `docs/ADVENTURE_TOWN.md` |
+| Money Habits: data flow, jar animation, event timing | `docs/MONEY_HABITS_FEATURE.md` |
+| Where art/audio goes and how it's wired | `ASSET_WORKFLOW.md` |
 
 Run it:
 

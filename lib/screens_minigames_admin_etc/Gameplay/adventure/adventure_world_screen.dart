@@ -8,9 +8,12 @@ import 'package:provider/provider.dart';
 import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
+import '../../../models_Like_Skins_and_lessons_templates/town_spot_models.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
+import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/orientation_scope.dart';
+import 'town_components.dart';
 
 /// Where the exported map (Sprite Fusion JSON — see the README next to it)
 /// is expected to live. `SpritefusionAssetReader` is hardcoded to read from
@@ -18,10 +21,11 @@ import '../../../widgets_custom_lotties/orientation_scope.dart';
 /// so neither can move without also changing that.
 const String kAdventureMapAsset = 'assets/images/maps/map.json';
 
-/// The RPG overworld — walking the equipped villager skin around the town
-/// map. Until a real map is dropped at [kAdventureMapAsset], this shows a
-/// plain "waiting for the map" screen instead of trying (and failing) to
-/// boot the game canvas.
+/// The RPG overworld — walk the equipped villager skin around town, bump
+/// into places, and make a money decision at each one. The decisions are
+/// the same shape as the Life sim's (a prompt, a few choices, stat deltas),
+/// which is what makes this "BitLife plus more" rather than a separate
+/// game: Life asks in a feed, the town asks in a world.
 class AdventureWorldScreen extends StatefulWidget {
   const AdventureWorldScreen({super.key});
 
@@ -32,6 +36,13 @@ class AdventureWorldScreen extends StatefulWidget {
 class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   // null = still checking, true = map found, false = not there yet.
   bool? _mapReady;
+
+  final Set<String> _visited = <String>{};
+  int _coinsFound = 0;
+  TownSpot? _nearby;
+  TownNpc? _nearbyNpc;
+  final Map<String, int> _npcLineIndex = <String, int>{};
+  bool _sheetOpen = false;
 
   @override
   void initState() {
@@ -49,6 +60,108 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     if (mounted) {
       setState(() => _mapReady = found);
     }
+  }
+
+  void _onEnterSpot(TownSpot spot) {
+    if (!mounted) return;
+    setState(() => _nearby = spot);
+  }
+
+  void _onExitSpot(TownSpot spot) {
+    if (!mounted) return;
+    // Guarded on identity so leaving spot A doesn't clear the prompt for
+    // spot B when two sensors overlap on adjacent tiles.
+    if (_nearby?.id == spot.id) {
+      setState(() => _nearby = null);
+    }
+  }
+
+  void _onEnterNpc(TownNpc npc) {
+    if (!mounted) return;
+    setState(() => _nearbyNpc = npc);
+  }
+
+  void _onExitNpc(TownNpc npc) {
+    if (!mounted) return;
+    if (_nearbyNpc?.id == npc.id) {
+      setState(() => _nearbyNpc = null);
+    }
+  }
+
+  Future<void> _talkTo(TownNpc npc) async {
+    if (_sheetOpen) return;
+    _sheetOpen = true;
+    // Cycle the line so a second conversation isn't a copy of the first.
+    final seen = _npcLineIndex[npc.id] ?? 0;
+    final line = npc.lines[seen % npc.lines.length];
+    _npcLineIndex[npc.id] = seen + 1;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _NpcDialogueSheet(npc: npc, line: line),
+    );
+    _sheetOpen = false;
+  }
+
+  Future<void> _collectCoin(int value) async {
+    if (!mounted) return;
+    setState(() => _coinsFound += value);
+    await context.read<UserStatsController>().applyChallengePayload(
+      <String, dynamic>{'gold_earned': value},
+    );
+    if (!mounted) return;
+    GameToast.show(
+      context,
+      message: '+$value gold',
+      icon: Icons.paid_rounded,
+      accent: const Color(0xFFFFD45C),
+    );
+  }
+
+  Future<void> _openSpot(TownSpot spot) async {
+    if (_sheetOpen) return;
+    _sheetOpen = true;
+
+    final choice = await showModalBottomSheet<TownChoice>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _TownSpotSheet(spot: spot),
+    );
+
+    _sheetOpen = false;
+    if (!mounted || choice == null) {
+      return;
+    }
+
+    final controller = context.read<UserStatsController>();
+    // Gold can go negative on a spending choice; clamp so a purchase can
+    // never push the balance below zero (the sheet already shows the cost,
+    // so this only bites a player who is genuinely broke).
+    final currentGold = controller.stats.gold;
+    final goldDelta = choice.gold < 0 && currentGold + choice.gold < 0
+        ? -currentGold
+        : choice.gold;
+
+    setState(() => _visited.add(spot.id));
+
+    await controller.applyChallengePayload(<String, dynamic>{
+      'gold_earned': goldDelta,
+      'xp_earned': choice.xp,
+      'literacy_points_earned': choice.literacy,
+    });
+
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => _OutcomeDialog(
+        spot: spot,
+        choice: choice,
+        goldApplied: goldDelta,
+        allVisited: _visited.length >= kTownSpots.length,
+      ),
+    );
   }
 
   @override
@@ -102,27 +215,80 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
             ),
             player: _buildPlayer(playerSheet),
             playerControllers: [Joystick(directional: JoystickDirectional())],
+            components: [
+              for (final spot in kTownSpots)
+                TownSpotComponent(
+                  spot: spot,
+                  onEnter: _onEnterSpot,
+                  onExit: _onExitSpot,
+                  isVisited: _visited.contains,
+                ),
+              for (final npc in kTownNpcs)
+                TownNpcComponent(
+                  npc: npc,
+                  idle: _npcIdleAnimation(npc.look),
+                  onEnter: _onEnterNpc,
+                  onExit: _onExitNpc,
+                ),
+              for (final coin in kTownCoins)
+                TownCoinComponent(
+                  value: coin.value,
+                  tileX: coin.x,
+                  tileY: coin.y,
+                  onCollect: _collectCoin,
+                ),
+            ],
             cameraConfig: CameraConfig(
-              zoom: 1.4,
-              // Explicitly false (Bonfire's own default) rather than left
-              // implicit: the map is fully walled by a collider ring (see
-              // map.json's border tiles), so the player physically can't
-              // reach open space beyond it — this just controls whether the
-              // *camera* would additionally clamp itself to the map bounds.
+              zoom: 1.6,
+              // The player is walled in by the map's collider ring, so this
+              // only decides whether the *camera* also clamps to the map.
               // Left unclamped on purpose so standing at the wall shows a
-              // sliver of empty void beyond it, the way an open-world map's
-              // edge usually reads, rather than the camera stopping dead a
-              // tile early to keep the view always full of map art.
+              // sliver of void past it, the way an open-world edge reads.
               moveOnlyMapArea: false,
             ),
           ),
-          Positioned(
-            top: 12,
-            left: 12,
-            child: SafeArea(
-              child: _AdventureBackButton(
-                onTap: () => Navigator.of(context).maybePop(),
-              ),
+          SafeArea(
+            child: Stack(
+              children: [
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: _AdventureBackButton(
+                    onTap: () => Navigator.of(context).maybePop(),
+                  ),
+                ),
+                Positioned(
+                  top: 12,
+                  left: 66,
+                  right: 12,
+                  child: _ObjectiveBar(
+                    visitedCount: _visited.length,
+                    totalCount: kTownSpots.length,
+                    coinsFound: _coinsFound,
+                  ),
+                ),
+                if (_nearby != null)
+                  Positioned(
+                    right: 16,
+                    bottom: 24,
+                    child: _InteractButton(
+                      spot: _nearby!,
+                      visited: _visited.contains(_nearby!.id),
+                      onTap: () => _openSpot(_nearby!),
+                    ),
+                  )
+                // A place and a person can overlap; the place wins, since
+                // it's the one that carries the objective.
+                else if (_nearbyNpc != null)
+                  Positioned(
+                    right: 16,
+                    bottom: 24,
+                    child: _TalkButton(
+                      npc: _nearbyNpc!,
+                      onTap: () => _talkTo(_nearbyNpc!),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
@@ -130,7 +296,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     );
   }
 
-  SimplePlayer _buildPlayer(String sheetAsset) {
+  TownPlayer _buildPlayer(String sheetAsset) {
     // Row layout matches AppAssets' villager sheet convention exactly:
     // 8 columns x 4 rows (south/north/west/east), 104x152 per cell, north
     // has only 7 real frames. See app_assets.dart for the source of truth.
@@ -139,13 +305,17 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     Future<SpriteAnimation> frame(int rowIndex) =>
         _loadRowAnimation(sheetAsset, rowIndex, 1, stepTime: 1);
 
-    return SimplePlayer(
+    return TownPlayer(
       // Town-square tile (25,25) — the open, fenced playground area at the
       // map's centre, clear of every collider-marked structure/wall layer
       // in all directions. The map has no dedicated "spawn" object of its
       // own, so this was picked by checking the layer data directly.
       position: Vector2(400, 400),
-      size: Vector2.all(32),
+      // Was `Vector2.all(32)` — a square. The sprite cell is 104x152, so
+      // squeezing it into a square squashed every skin and made the walk
+      // cycle look wrong. Height-first, width derived from the real cell
+      // ratio, keeps the character in proportion.
+      size: Vector2(34 * AppAssets.villagerAspectRatio, 34),
       animation: SimpleDirectionAnimation(
         // enabledFlipX defaults true, which would mirror one direction to
         // fake the other — the sheet already has real, distinct west/east
@@ -164,6 +334,602 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   }
 }
 
+/// Top-of-screen progress, so the map has a stated goal instead of being a
+/// walking simulator — "visit every place" is the objective the whole
+/// screen is built around.
+class _ObjectiveBar extends StatelessWidget {
+  const _ObjectiveBar({
+    required this.visitedCount,
+    required this.totalCount,
+    required this.coinsFound,
+  });
+
+  final int visitedCount;
+  final int totalCount;
+  final int coinsFound;
+
+  @override
+  Widget build(BuildContext context) {
+    final done = visitedCount >= totalCount;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(
+          color: (done ? AppTheme.greenPrimary : Colors.white).withValues(
+            alpha: 0.25,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            done ? Icons.emoji_events_rounded : Icons.flag_rounded,
+            color: done ? const Color(0xFFFFD45C) : AppTheme.greenPrimary,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  done ? 'Town explored!' : 'Explore the town',
+                  style: GoogleFonts.pixelifySans(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: totalCount == 0 ? 0 : visitedCount / totalCount,
+                    minHeight: 5,
+                    backgroundColor: Colors.white24,
+                    valueColor: AlwaysStoppedAnimation(
+                      done ? const Color(0xFFFFD45C) : AppTheme.greenPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '$visitedCount/$totalCount',
+            style: GoogleFonts.pixelifySans(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (coinsFound > 0) ...[
+            const SizedBox(width: 12),
+            const Icon(Icons.paid_rounded, color: Color(0xFFFFD45C), size: 16),
+            const SizedBox(width: 4),
+            Text(
+              '$coinsFound',
+              style: GoogleFonts.pixelifySans(
+                color: const Color(0xFFFFD45C),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The "walk up to something and press A" affordance. Sits bottom-right so
+/// it never overlaps the bottom-left joystick.
+class _InteractButton extends StatelessWidget {
+  const _InteractButton({
+    required this.spot,
+    required this.visited,
+    required this.onTap,
+  });
+
+  final TownSpot spot;
+  final bool visited;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.62),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+            border: Border.all(color: spot.kind.accent, width: 2),
+            boxShadow: AppTheme.puffyShadow(spot.kind.accent, restAlpha: 0.35),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(spot.kind.icon, color: spot.kind.accent, size: 22),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    spot.title,
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    visited ? 'Visit again' : 'Tap to enter',
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Talk" affordance for an NPC. Visually quieter than [_InteractButton]
+/// because talking is optional colour, not the objective.
+class _TalkButton extends StatelessWidget {
+  const _TalkButton({required this.npc, required this.onTap});
+
+  final TownNpc npc;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.62),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+            border: Border.all(color: const Color(0xFFFFD45C), width: 2),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.chat_bubble_rounded,
+                color: Color(0xFFFFD45C),
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    npc.name,
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    'Tap to talk',
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// NPC speech. One line, one button — deliberately not a decision, so
+/// talking never feels like homework.
+class _NpcDialogueSheet extends StatelessWidget {
+  const _NpcDialogueSheet({required this.npc, required this.line});
+
+  final TownNpc npc;
+  final String line;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+      decoration: const BoxDecoration(
+        color: AppTheme.panelStrong,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXLarge),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD45C).withValues(alpha: 0.18),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.person_rounded,
+                  color: Color(0xFFFFD45C),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                npc.name,
+                style: GoogleFonts.pixelifySans(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            '"$line"',
+            style: GoogleFonts.quicksand(
+              color: Colors.white,
+              height: 1.5,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.greenPrimary,
+                foregroundColor: AppTheme.deepForest,
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Thanks',
+                style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The decision sheet — same shape as a Life sim event card (prompt on top,
+/// a stack of choices underneath), so the two halves of the game teach with
+/// one consistent grammar.
+class _TownSpotSheet extends StatelessWidget {
+  const _TownSpotSheet({required this.spot});
+
+  final TownSpot spot;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+      decoration: const BoxDecoration(
+        color: AppTheme.panelStrong,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXLarge),
+        ),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: spot.kind.accent.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                  ),
+                  child: Icon(spot.kind.icon, color: spot.kind.accent),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    spot.title,
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              spot.prompt,
+              style: GoogleFonts.quicksand(
+                color: Colors.white70,
+                height: 1.45,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 18),
+            for (final choice in spot.choices) ...[
+              _ChoiceButton(
+                choice: choice,
+                accent: spot.kind.accent,
+                onTap: () => Navigator.of(context).pop(choice),
+              ),
+              const SizedBox(height: 10),
+            ],
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(foregroundColor: Colors.white54),
+              child: Text(
+                'Leave',
+                style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChoiceButton extends StatelessWidget {
+  const _ChoiceButton({
+    required this.choice,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final TownChoice choice;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppTheme.panel,
+          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+          border: Border.all(color: accent.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                choice.label,
+                style: GoogleFonts.quicksand(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            if (choice.gold != 0) _DeltaChip(choice: choice),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DeltaChip extends StatelessWidget {
+  const _DeltaChip({required this.choice});
+
+  final TownChoice choice;
+
+  @override
+  Widget build(BuildContext context) {
+    final positive = choice.gold > 0;
+    final color = positive ? AppTheme.greenPrimary : AppTheme.errorRed;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '${positive ? '+' : ''}${choice.gold}',
+        style: GoogleFonts.pixelifySans(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+/// The "here's what that actually meant" beat after a choice — the part
+/// that makes a decision a lesson instead of just a stat change.
+class _OutcomeDialog extends StatelessWidget {
+  const _OutcomeDialog({
+    required this.spot,
+    required this.choice,
+    required this.goldApplied,
+    required this.allVisited,
+  });
+
+  final TownSpot spot;
+  final TownChoice choice;
+  final int goldApplied;
+  final bool allVisited;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppTheme.panelStrong,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
+        side: BorderSide(color: spot.kind.accent.withValues(alpha: 0.4)),
+      ),
+      title: Row(
+        children: [
+          Icon(spot.kind.icon, color: spot.kind.accent, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              choice.label,
+              style: GoogleFonts.pixelifySans(
+                color: Colors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            choice.outcome,
+            style: GoogleFonts.quicksand(
+              color: Colors.white70,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (goldApplied != 0)
+                _RewardPill(
+                  label: '${goldApplied > 0 ? '+' : ''}$goldApplied gold',
+                  color: goldApplied > 0
+                      ? AppTheme.greenPrimary
+                      : AppTheme.errorRed,
+                ),
+              if (choice.xp > 0)
+                _RewardPill(
+                  label: '+${choice.xp} XP',
+                  color: const Color(0xFF69C6FF),
+                ),
+              if (choice.literacy > 0)
+                _RewardPill(
+                  label: '+${choice.literacy} LP',
+                  color: const Color(0xFFB388FF),
+                ),
+            ],
+          ),
+          if (allVisited) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD45C).withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.emoji_events_rounded,
+                    color: Color(0xFFFFD45C),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'You visited every place in town!',
+                      style: GoogleFonts.pixelifySans(
+                        color: const Color(0xFFFFD45C),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: AppTheme.greenPrimary,
+            foregroundColor: AppTheme.deepForest,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(
+            'Got it',
+            style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RewardPill extends StatelessWidget {
+  const _RewardPill({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.pixelifySans(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
 /// The game canvas is a full-bleed [BonfireWidget] with no `AppBar` of its
 /// own, so there was no way out of the map short of the OS back gesture —
 /// this floats a real, always-visible exit above the canvas.
@@ -175,7 +941,7 @@ class _AdventureBackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withValues(alpha: 0.45),
+      color: Colors.black.withValues(alpha: 0.55),
       shape: const CircleBorder(),
       child: InkWell(
         onTap: onTap,
@@ -191,6 +957,27 @@ class _AdventureBackButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Builds a looping idle animation from a folder of individual frame PNGs.
+///
+/// The NPC art is one file per frame rather than a sprite sheet, so this
+/// loads each frame as its own sprite instead of slicing a grid the way
+/// [_loadRowAnimation] does for the villager sheets.
+Future<SpriteAnimation> _npcIdleAnimation(TownNpcLook look) async {
+  final paths = switch (look) {
+    TownNpcLook.taxer => AppAssets.taxerIdleFrames,
+    TownNpcLook.customer => AppAssets.customerIdleFrames,
+    TownNpcLook.fancy => AppAssets.fancyIdleFrames,
+    TownNpcLook.worker => AppAssets.workerIdleFrames,
+  };
+  final sprites = <Sprite>[];
+  for (final path in paths) {
+    final image = await _villagerSheetImages.load(path);
+    sprites.add(Sprite(image));
+  }
+  // Slow on purpose — an idle loop that reads as breathing, not fidgeting.
+  return SpriteAnimation.spriteList(sprites, stepTime: 0.28);
 }
 
 final _villagerSheetImages = Images(prefix: '');

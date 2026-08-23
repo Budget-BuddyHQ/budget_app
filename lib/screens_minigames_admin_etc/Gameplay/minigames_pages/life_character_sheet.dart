@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import '../../../themes_colors/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// What character creation hands back to the Life screen.
 @immutable
@@ -74,9 +75,9 @@ class _LifeCharacterSheetState extends State<LifeCharacterSheet> {
         backgroundColor: AppTheme.deepForest,
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'New Life',
-          style: TextStyle(fontWeight: FontWeight.w900),
+          style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
         ),
       ),
       body: SafeArea(
@@ -84,12 +85,12 @@ class _LifeCharacterSheetState extends State<LifeCharacterSheet> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(18, 10, 18, 28),
           children: [
-            const Text(
+            Text(
               'Who are you?',
-              style: TextStyle(
+              style: GoogleFonts.pixelifySans(
                 color: Colors.white,
                 fontSize: 26,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 6),
@@ -167,9 +168,9 @@ class _LifeCharacterSheetState extends State<LifeCharacterSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 17),
               ),
               icon: const Icon(Icons.child_care_rounded),
-              label: const Text(
+              label: Text(
                 'Begin life',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700, fontSize: 16),
               ),
             ),
           ],
@@ -188,10 +189,10 @@ class _Label extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text.toUpperCase(),
-      style: TextStyle(
+      style: GoogleFonts.pixelifySans(
         color: Colors.white.withValues(alpha: 0.55),
         fontSize: 11,
-        fontWeight: FontWeight.w900,
+        fontWeight: FontWeight.w700,
         letterSpacing: 0.6,
       ),
     );
@@ -300,9 +301,9 @@ class _OriginTile extends StatelessWidget {
                 children: [
                   Text(
                     origin.label,
-                    style: const TextStyle(
+                    style: GoogleFonts.pixelifySans(
                       color: Colors.white,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 2),

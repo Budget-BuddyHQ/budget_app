@@ -26,6 +26,7 @@ import '../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../widgets_custom_lotties/habit_progress_grids.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
 import '../../widgets_custom_lotties/idle_hover_icon.dart';
+import '../../widgets_custom_lotties/vivid_backdrop.dart';
 import '../admin/admin_screen.dart';
 import '../auth/auth_screen.dart';
 import 'feedback_screen.dart';
@@ -693,7 +694,7 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.panelStrong.withValues(alpha: 0.92),
+        color: AppTheme.panelStrong.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
         boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
@@ -727,17 +728,21 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
               ),
               Text(
                 '$earned / ${badges.length}',
-                style: const TextStyle(
-                  color: Color(0xFFFFD45C),
-                  fontWeight: FontWeight.w900,
+                style: GoogleFonts.pixelifySans(
+                  color: const Color(0xFFFFD45C),
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           LayoutBuilder(
             builder: (context, constraints) {
-              final columns = (constraints.maxWidth / 84).floor().clamp(3, 8);
+              // Tightened per direct feedback that the badge grid was too
+              // gappy: a smaller target width fits more per row, and the
+              // spacing/height came down with it so the set reads as one
+              // trophy case rather than scattered tiles.
+              final columns = (constraints.maxWidth / 72).floor().clamp(3, 8);
               final compact = constraints.maxWidth < 380;
               return GridView.builder(
                 shrinkWrap: true,
@@ -745,9 +750,9 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
                 itemCount: badges.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: columns,
-                  crossAxisSpacing: compact ? 8 : 10,
-                  mainAxisSpacing: compact ? 8 : 10,
-                  mainAxisExtent: compact ? 86 : 90,
+                  crossAxisSpacing: compact ? 5 : 6,
+                  mainAxisSpacing: compact ? 5 : 6,
+                  mainAxisExtent: compact ? 78 : 82,
                 ),
                 itemBuilder: (context, index) {
                   final badge = badges[index];
@@ -893,7 +898,7 @@ class _ProfileInsightCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.panelStrong.withValues(alpha: 0.92),
+        color: AppTheme.panelStrong.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
         boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
@@ -990,11 +995,11 @@ class _BadgePreview extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Badge Showcase',
-                  style: TextStyle(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     fontSize: 16,
                   ),
                 ),
@@ -1055,10 +1060,10 @@ class _InsightMetric extends StatelessWidget {
               children: [
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white,
                     fontSize: 24,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1097,7 +1102,7 @@ class _SettingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.panelStrong.withValues(alpha: 0.92),
+        color: AppTheme.panelStrong.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
         boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
@@ -1140,7 +1145,7 @@ class _AdminCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.panelStrong.withValues(alpha: 0.92),
+        color: AppTheme.panelStrong.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: Colors.amber.withValues(alpha: 0.18)),
       ),
@@ -1173,16 +1178,16 @@ class _ProfileBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Image.asset(
-          AppAssets.profileTileBackground,
-          repeat: ImageRepeat.repeat,
-          filterQuality: FilterQuality.none,
-        ),
-        Container(color: AppTheme.deepForest.withValues(alpha: 0.72)),
-      ],
+    // Boosted rather than dimmed — see [VividBackdrop]. The cards on top
+    // are translucent now, so the tile art reads through them instead of
+    // the screen being one flat dark slab.
+    return const VividBackdrop(
+      image: AppAssets.profileTileBackground,
+      repeat: ImageRepeat.repeat,
+      saturation: 1.4,
+      brightness: 0.03,
+      scrimOpacity: 0.42,
+      vignetteOpacity: 0.5,
     );
   }
 }
@@ -1241,7 +1246,7 @@ class _MoneyHabitsProfileCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.panelStrong.withValues(alpha: 0.92),
+        color: AppTheme.panelStrong.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
         boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
@@ -1365,7 +1370,7 @@ class _FriendsCardState extends State<_FriendsCard> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.panelStrong.withValues(alpha: 0.92),
+        color: AppTheme.panelStrong.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
         boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
@@ -1403,9 +1408,9 @@ class _FriendsCardState extends State<_FriendsCard> {
                   ),
                   child: Text(
                     friendCode,
-                    style: const TextStyle(
+                    style: GoogleFonts.pixelifySans(
                       color: Color(0xFF85EFAC),
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                       letterSpacing: 1.2,
                     ),
                   ),

@@ -108,6 +108,12 @@ class QuizSkills {
   static const String startingEarly = 'starting_early';
   static const String feesAndVesting = 'fees_vesting';
 
+  // Sourced set — see the `_*SourcedPractice` banks at the bottom of this
+  // file for the citations each question was written from.
+  static const String creditScore = 'credit_score';
+  static const String interestRates = 'interest_rates';
+  static const String minimumPayments = 'minimum_payments';
+
   // Unit 10 — Money Is Real (ages 4-6)
   static const String earlyMoneyBasics = 'early_money_basics';
   static const String earlySaving = 'early_saving';
@@ -163,6 +169,9 @@ class QuizSkills {
     rothVsTraditional => 'Roth vs traditional',
     startingEarly => 'Starting early',
     feesAndVesting => 'Fees and vesting',
+    creditScore => 'Credit scores',
+    interestRates => 'Interest rates (APR/APY)',
+    minimumPayments => 'Minimum payments',
     earlyMoneyBasics => 'What money is',
     earlySaving => 'Saving in a piggy bank',
     allowanceEarning => 'Earning an allowance',
@@ -1514,9 +1523,11 @@ const List<QuizQuestion> _unit6Test = <QuizQuestion>[
 const Map<String, List<QuizQuestion>> practiceBank =
     <String, List<QuizQuestion>>{
       'unit_1': _unit1Practice,
-      'unit_2': _unit2Practice,
-      'unit_3': _unit3Practice,
-      'unit_4': _unit4Practice,
+      // Sourced questions are spread in rather than replacing the originals,
+      // so the hand-written set stays and the researched set adds depth.
+      'unit_2': <QuizQuestion>[..._unit2Practice, ..._creditSourcedPractice],
+      'unit_3': <QuizQuestion>[..._unit3Practice, ..._savingSourcedPractice],
+      'unit_4': <QuizQuestion>[..._unit4Practice, ..._investingSourcedPractice],
       'unit_5': _unit5Practice,
       'unit_6': _unit6Practice,
       'unit_7': _unit7Practice,
@@ -2671,5 +2682,261 @@ const List<QuizQuestion> _unit11Test = <QuizQuestion>[
     explanation:
         'A plan works best when you decide the saving amount first, before '
         'any spending happens.',
+  ),
+];
+
+// ---------------------------------------------------------------------------
+// Sourced practice sets
+//
+// Everything below was written from a named, checkable source rather than
+// from memory, because this is the part of the app that actually claims to
+// teach. Where a number appears in a question (35%, 72, "a month of
+// income"), the source for that number is cited on the question itself.
+//
+//   [FICO]  myfico.com/credit-education/whats-in-your-credit-score
+//           — the five FICO categories and their weightings.
+//   [SEC]   investor.gov — compound interest definition, and the Rule of 72
+//           (72 / rate = years to double; most accurate around 6-10%).
+//   [CFPB]  consumerfinance.gov — youth financial education, and the 2022
+//           "Emergency Savings and Financial Security" report.
+//
+// If any of these numbers change at the source, change them here too — a
+// stale "35%" is worse than no number at all.
+// ---------------------------------------------------------------------------
+
+const List<QuizQuestion> _creditSourcedPractice = <QuizQuestion>[
+  QuizQuestion(
+    id: 'src_credit_1',
+    skillId: QuizSkills.creditScore,
+    prompt: 'Which single factor counts for the most in a FICO credit score?',
+    options: [
+      'How many different cards you own',
+      'Whether you pay on time',
+      'How long you have banked at one place',
+      'Your yearly income',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Payment history is 35% of a FICO score — the biggest single slice. '
+        'Income is not part of the score at all. [FICO]',
+    misconception:
+        'Lots of people assume income drives the score. It does not — the '
+        'score only measures how you handle borrowed money.',
+  ),
+  QuizQuestion(
+    id: 'src_credit_2',
+    skillId: QuizSkills.creditScore,
+    prompt:
+        'After payment history (35%), which factor is weighted heaviest in a '
+        'FICO score?',
+    options: [
+      'Amounts owed, at 30%',
+      'Credit mix, at 10%',
+      'New credit, at 10%',
+      'Length of history, at 15%',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Amounts owed is 30%. The rest: length of history 15%, new credit '
+        '10%, credit mix 10%. [FICO]',
+  ),
+  QuizQuestion(
+    id: 'src_credit_3',
+    skillId: QuizSkills.interestRates,
+    prompt:
+        'You are comparing credit card offers. Which number tells you what '
+        'borrowing on the card will cost?',
+    options: ['APY', 'The credit limit', 'APR', 'The rewards rate'],
+    correctIndex: 2,
+    explanation:
+        'APR is the yearly cost of borrowing, and it folds in fees as well as '
+        'the interest rate. APY is the other direction — what money earns.',
+    misconception:
+        'APR and APY look like the same letters shuffled and get swapped all '
+        'the time. Borrowing = APR. Earning = APY.',
+  ),
+  QuizQuestion(
+    id: 'src_credit_4',
+    skillId: QuizSkills.interestRates,
+    prompt: 'A savings account advertises an APY. What does that tell you?',
+    options: [
+      'What the bank charges you to keep the account',
+      'The maximum you are allowed to deposit',
+      'A penalty for withdrawing early',
+      'What your money earns in a year, including compounding',
+    ],
+    correctIndex: 3,
+    explanation:
+        'APY is what you earn over a year and already accounts for '
+        'compounding — which is why it is the fair number for comparing '
+        'accounts against each other.',
+  ),
+  QuizQuestion(
+    id: 'src_credit_5',
+    skillId: QuizSkills.minimumPayments,
+    prompt:
+        'You owe money on a card and pay only the minimum each month. What '
+        'mostly happens?',
+    options: [
+      'The balance clears in a few months either way',
+      'Much of each payment goes to interest, so the debt lingers',
+      'Interest stops being charged once you start paying',
+      'The card issuer lowers your APR as a reward',
+    ],
+    correctIndex: 1,
+    explanation:
+        'The higher the APR, the more of each minimum payment is eaten by '
+        'interest instead of the balance, which stretches the debt out. '
+        'Paying even slightly above the minimum shortens it sharply.',
+    misconception:
+        '"I pay it every month" feels like progress. Paying only the minimum '
+        'can be close to standing still.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+];
+
+const List<QuizQuestion> _savingSourcedPractice = <QuizQuestion>[
+  QuizQuestion(
+    id: 'src_save_1',
+    skillId: QuizSkills.emergencyFund,
+    prompt: 'What is an emergency fund actually for?',
+    options: [
+      'Unplanned costs, like a car repair or a missed paycheck',
+      'A holiday you have been planning',
+      'Buying shares when prices drop',
+      'Paying your normal monthly bills',
+    ],
+    correctIndex: 0,
+    explanation:
+        'It exists for the unexpected. CFPB research frames it as the buffer '
+        'that stops a surprise cost turning into debt. [CFPB]',
+    misconception:
+        'A fund you dip into for planned spending is a savings goal, not an '
+        'emergency fund — and it will not be there in a real emergency.',
+  ),
+  QuizQuestion(
+    id: 'src_save_2',
+    skillId: QuizSkills.emergencyFund,
+    prompt:
+        'Guidance on emergency funds usually starts with saving roughly how '
+        'much?',
+    options: [
+      'Ten years of income',
+      'Whatever happens to be left at year end',
+      'At least about a month of income, then build toward a few months',
+      'Exactly one hundred dollars, for everyone',
+    ],
+    correctIndex: 2,
+    explanation:
+        'CFPB research points at least a month of income as a meaningful '
+        'first target, with common guidance building toward three to six '
+        'months. That first month changes the most. [CFPB]',
+  ),
+  QuizQuestion(
+    id: 'src_save_3',
+    skillId: QuizSkills.savingsAccounts,
+    prompt:
+        'Why keep an emergency fund in a savings account rather than invested '
+        'in shares?',
+    options: [
+      'Savings accounts always earn more',
+      'You need it available, not down 20% the week you need it',
+      'Shares cannot be sold once bought',
+      'Banks refuse to hold emergency money',
+    ],
+    correctIndex: 1,
+    explanation:
+        'An emergency fund is judged on being there, not on growth. '
+        'Investments can be down exactly when the emergency lands.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+];
+
+const List<QuizQuestion> _investingSourcedPractice = <QuizQuestion>[
+  QuizQuestion(
+    id: 'src_invest_1',
+    skillId: QuizSkills.compounding,
+    prompt: 'What makes interest "compound"?',
+    options: [
+      'It is paid out in cash every month',
+      'The rate rises every year automatically',
+      'It is charged to you twice',
+      'You earn interest on your interest, not just your original money',
+    ],
+    correctIndex: 3,
+    explanation:
+        'Investor.gov defines compound interest as interest paid on the '
+        'principal and on accumulated interest. That second half is the '
+        'whole engine. [SEC]',
+  ),
+  QuizQuestion(
+    id: 'src_invest_2',
+    skillId: QuizSkills.compounding,
+    prompt: 'The Rule of 72 is a shortcut for estimating what?',
+    options: [
+      'How long money takes to double',
+      'How much tax you owe',
+      'How many shares to buy',
+      'The fee a broker charges',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Divide 72 by the yearly rate of return for a rough number of years '
+        'to double. It is most accurate for rates around 6-10%. [SEC]',
+  ),
+  QuizQuestion(
+    id: 'src_invest_3',
+    skillId: QuizSkills.compounding,
+    prompt:
+        'Using the Rule of 72, about how long does money take to double at a '
+        'steady 6% a year?',
+    options: [
+      'About 3 years',
+      'About 12 years',
+      'About 24 years',
+      'About 40 years',
+    ],
+    correctIndex: 1,
+    explanation: '72 divided by 6 is 12, so roughly 12 years. [SEC]',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'src_invest_4',
+    skillId: QuizSkills.compounding,
+    prompt:
+        'Two people invest the same amount at the same rate. One starts at '
+        '22, the other at 40. Why does the younger one usually end up with '
+        'much more?',
+    options: [
+      'Younger investors are charged lower fees',
+      'Markets pay a bonus to people under 30',
+      'Their money has far more years to compound',
+      'They are allowed to invest more per year',
+    ],
+    correctIndex: 2,
+    explanation:
+        'Nothing about the market favours the young — time does. More years '
+        'means more compounding cycles on the same money. [SEC]',
+  ),
+  QuizQuestion(
+    id: 'src_invest_5',
+    skillId: QuizSkills.risk,
+    prompt:
+        'What does spreading money across many investments mainly protect you '
+        'from?',
+    options: [
+      'Any possibility of losing money',
+      'Paying any tax',
+      'Ever having to think about money again',
+      'One single company or sector sinking you',
+    ],
+    correctIndex: 3,
+    explanation:
+        'Diversification limits how much damage any one holding can do. It '
+        'does not remove risk — nothing does — it stops one bad pick being '
+        'fatal.',
+    misconception:
+        '"Diversified" gets read as "safe". It means spread out, not '
+        'protected from loss.',
   ),
 ];

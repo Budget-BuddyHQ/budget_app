@@ -354,7 +354,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                   : _isSaving
                   ? 'Saving Progress...'
                   : 'Complete Lesson',
-              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+              style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700, fontSize: 16),
             ),
           ],
         ),
@@ -389,7 +389,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       ),
       child: Text(
         isLastQuestion ? 'See Results' : 'Next Question',
-        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+        style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700, fontSize: 16),
       ),
     );
   }
