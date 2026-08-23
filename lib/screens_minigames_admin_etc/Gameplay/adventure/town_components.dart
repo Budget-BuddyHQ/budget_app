@@ -23,6 +23,10 @@ class TownPlayer extends SimplePlayer with BlockMovementCollision {
     required super.position,
     required super.size,
     required SimpleDirectionAnimation super.animation,
+    // Forwarded so the caller can tune walk speed against the animation's
+    // frame rate — the two have to move together or the feet slide. See
+    // `kTownWalkSpeed` in adventure_world_screen.dart for the stride maths.
+    super.speed,
   });
 
   @override

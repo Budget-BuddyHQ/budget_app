@@ -13,8 +13,6 @@ import 'controllers_that_updates_stats/money_habit_controller.dart';
 import 'controllers_that_updates_stats/user_stats_controller.dart';
 import 'navigation_tools_and_animation/app_tab_index.dart';
 import 'screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart';
-import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.dart';
-import 'screens_minigames_admin_etc/Gameplay/customize_screen.dart';
 import 'screens_minigames_admin_etc/Gameplay/dashboard/dashboard_shell.dart';
 import 'screens_minigames_admin_etc/Gameplay/dashboard/leaderboard_screen.dart';
 import 'screens_minigames_admin_etc/auth/auth_screen.dart';
@@ -135,16 +133,17 @@ class MyApp extends StatelessWidget {
             const DashboardShell(initialIndex: AppTabIndex.dashboard),
         '/game_hub': (context) =>
             const DashboardShell(initialIndex: AppTabIndex.adventure),
-        // Arcade and Style are no longer bottom tabs (the bar is five slots
-        // with Home centred), so these push the screens directly. Each one
-        // keeps its own AppBar back button when `onNavSelected` is null,
-        // so there is still a way out.
-        '/customize': (context) => const CustomizeScreen(),
+        // Arcade and Style are tabs again (7-slot bar, Home centred), so
+        // these route through DashboardShell like every other tab route
+        // below rather than pushing the bare screen.
+        '/customize': (context) =>
+            const DashboardShell(initialIndex: AppTabIndex.customize),
         '/lessons': (context) =>
             const DashboardShell(initialIndex: AppTabIndex.academy),
         '/main-gameplay': (context) =>
             const DashboardShell(initialIndex: AppTabIndex.adventure),
-        '/minigames': (context) => const MinigamesPage(),
+        '/minigames': (context) =>
+            const DashboardShell(initialIndex: AppTabIndex.minigames),
         '/daily': (context) =>
             const DashboardShell(initialIndex: AppTabIndex.daily),
         // /life is intentionally full-screen: it's a game with its own exit,

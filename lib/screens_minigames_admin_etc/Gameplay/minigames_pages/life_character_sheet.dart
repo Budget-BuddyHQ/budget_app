@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import '../../../themes_colors/app_theme.dart';
@@ -49,6 +50,40 @@ class _LifeCharacterSheetState extends State<LifeCharacterSheet> {
   String _randomName() =>
       '${_firstNames[_random.nextInt(_firstNames.length)]} '
       '${_lastNames[_random.nextInt(_lastNames.length)]}';
+
+  /// Rolls every field at once.
+  ///
+  /// Origin is **not** uniform. A uniform roll would make "Wealthy" a 1-in-4
+  /// start, which quietly teaches that being born rich is the normal case.
+  /// Weighted 35/35/22/8 so most lives begin without a cushion — which is
+  /// both closer to reality and the version of this game that has anything
+  /// to teach about money.
+  void _randomiseAll() {
+    HapticFeedback.selectionClick();
+    const originWeights = <LifeOrigin, int>{
+      LifeOrigin.struggling: 35,
+      LifeOrigin.workingClass: 35,
+      LifeOrigin.comfortable: 22,
+      LifeOrigin.wealthy: 8,
+    };
+    var roll = _random.nextInt(
+      originWeights.values.reduce((a, b) => a + b),
+    );
+    var picked = LifeOrigin.workingClass;
+    for (final entry in originWeights.entries) {
+      roll -= entry.value;
+      if (roll < 0) {
+        picked = entry.key;
+        break;
+      }
+    }
+
+    setState(() {
+      _nameController.text = _randomName();
+      _gender = Gender.values[_random.nextInt(Gender.values.length)];
+      _origin = picked;
+    });
+  }
 
   @override
   void dispose() {
@@ -160,6 +195,32 @@ class _LifeCharacterSheetState extends State<LifeCharacterSheet> {
               const SizedBox(height: 10),
             ],
             const SizedBox(height: 14),
+            // "Surprise me" — rolls the whole character, not just the name
+            // (the dice beside the name field only ever did that one field).
+            // Two reasons this earns its place: it makes replaying fast,
+            // and a randomly assigned family is the honest version of the
+            // lesson the origin picker is really about — nobody chooses
+            // what they are born into.
+            OutlinedButton.icon(
+              onPressed: _randomiseAll,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFFFD45C),
+                side: BorderSide(
+                  color: const Color(0xFFFFD45C).withValues(alpha: 0.55),
+                  width: 2,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              icon: const Icon(Icons.casino_rounded),
+              label: Text(
+                'Surprise me',
+                style: GoogleFonts.pixelifySans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
             FilledButton.icon(
               onPressed: _start,
               style: FilledButton.styleFrom(

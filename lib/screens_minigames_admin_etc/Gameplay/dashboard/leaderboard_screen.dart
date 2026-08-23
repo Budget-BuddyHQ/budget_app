@@ -16,6 +16,7 @@ class LeaderboardScreen extends StatefulWidget {
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
   late Future<List<LeaderboardEntry>> _leaderboardFuture;
   bool _showFriends = false;
+  bool _byGold = false;
 
   @override
   void initState() {
@@ -28,11 +29,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     if (_showFriends) {
       return SupabaseService.instance.fetchFriendsLeaderboard(
         currentUserId: currentUserId,
+        byGold: _byGold,
       );
     }
     return SupabaseService.instance.fetchLeaderboard(
       limit: 20,
       currentUserId: currentUserId,
+      byGold: _byGold,
     );
   }
 
@@ -40,6 +43,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     if (friends == _showFriends) return;
     setState(() {
       _showFriends = friends;
+      _leaderboardFuture = _loadLeaderboard();
+    });
+  }
+
+  void _setMetric({required bool byGold}) {
+    if (byGold == _byGold) return;
+    setState(() {
+      _byGold = byGold;
       _leaderboardFuture = _loadLeaderboard();
     });
   }
@@ -77,13 +88,15 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             }
 
             final leaders = snapshot.data ?? const <LeaderboardEntry>[];
+            final podium = leaders.take(3).toList(growable: false);
+            final rest = leaders.skip(3).toList(growable: false);
 
             return ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(20),
               children: [
                 Text(
-                  'Top Finance Wizards',
+                  _byGold ? 'Richest Players' : 'Top Finance Wizards',
                   style: GoogleFonts.pixelifySans(
                     color: Colors.white,
                     fontSize: 22,
@@ -96,6 +109,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       ? 'Ranked among friends who\'ve added your code (or you\'ve added theirs).'
                       : leaders.isEmpty
                       ? 'No cloud leaderboard data is available yet, so you are seeing cached progress only.'
+                      : _byGold
+                      ? 'Ranked by gold — every trade, quest, and case pays off here.'
                       : 'Rankings now come from saved user stats instead of hardcoded demo names.',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.72),
@@ -107,6 +122,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   showFriends: _showFriends,
                   onChanged: (friends) => _setMode(friends: friends),
                 ),
+                const SizedBox(height: 10),
+                _MetricToggle(
+                  byGold: _byGold,
+                  onChanged: (byGold) => _setMetric(byGold: byGold),
+                ),
                 const SizedBox(height: 14),
                 _CurrentUserSummary(
                   username: currentUser.username,
@@ -114,19 +134,27 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   xp: currentUser.xp,
                   gold: currentUser.gold,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 if (leaders.isEmpty)
                   _EmptyLeaderboardState(showingFriends: _showFriends)
-                else
-                  ...leaders.map(
+                else ...[
+                  _HallOfFamePodium(
+                    top3: podium,
+                    byGold: _byGold,
+                    currentUserProfileImageUrl: currentUser.profileImageUrl,
+                  ),
+                  const SizedBox(height: 22),
+                  ...rest.map(
                     (leader) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: _LeaderboardRow(
                         leader: leader,
+                        byGold: _byGold,
                         currentUserProfileImageUrl: currentUser.profileImageUrl,
                       ),
                     ),
                   ),
+                ],
               ],
             );
           },
@@ -298,6 +326,43 @@ class _ModeTab extends StatelessWidget {
   }
 }
 
+class _MetricToggle extends StatelessWidget {
+  const _MetricToggle({required this.byGold, required this.onChanged});
+
+  final bool byGold;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppTheme.panel,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _ModeTab(
+              label: 'Finance Wizards',
+              active: !byGold,
+              onTap: () => onChanged(false),
+            ),
+          ),
+          Expanded(
+            child: _ModeTab(
+              label: 'Most Gold',
+              active: byGold,
+              onTap: () => onChanged(true),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _EmptyLeaderboardState extends StatelessWidget {
   const _EmptyLeaderboardState({required this.showingFriends});
 
@@ -325,13 +390,234 @@ class _EmptyLeaderboardState extends StatelessWidget {
   }
 }
 
+/// Top-3 podium: 1st centered and tallest, 2nd on the left, 3rd on the
+/// right — the classic hall-of-fame layout, so the leaderboard reads as a
+/// stage rather than just the top of a list with bigger font.
+class _HallOfFamePodium extends StatelessWidget {
+  const _HallOfFamePodium({
+    required this.top3,
+    required this.byGold,
+    required this.currentUserProfileImageUrl,
+  });
+
+  final List<LeaderboardEntry> top3;
+  final bool byGold;
+  final String currentUserProfileImageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    if (top3.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final first = top3.isNotEmpty ? top3[0] : null;
+    final second = top3.length > 1 ? top3[1] : null;
+    final third = top3.length > 2 ? top3[2] : null;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(
+          child: _PodiumPlace(
+            entry: second,
+            rank: 2,
+            standHeight: 64,
+            medalColor: const Color(0xFFC0C0C0),
+            avatarSize: 52,
+            byGold: byGold,
+            currentUserProfileImageUrl: currentUserProfileImageUrl,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _PodiumPlace(
+            entry: first,
+            rank: 1,
+            standHeight: 96,
+            medalColor: const Color(0xFFF4D06F),
+            avatarSize: 66,
+            crowned: true,
+            byGold: byGold,
+            currentUserProfileImageUrl: currentUserProfileImageUrl,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _PodiumPlace(
+            entry: third,
+            rank: 3,
+            standHeight: 48,
+            medalColor: const Color(0xFFCD7F32),
+            avatarSize: 46,
+            byGold: byGold,
+            currentUserProfileImageUrl: currentUserProfileImageUrl,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PodiumPlace extends StatelessWidget {
+  const _PodiumPlace({
+    required this.entry,
+    required this.rank,
+    required this.standHeight,
+    required this.medalColor,
+    required this.avatarSize,
+    required this.byGold,
+    required this.currentUserProfileImageUrl,
+    this.crowned = false,
+  });
+
+  final LeaderboardEntry? entry;
+  final int rank;
+  final double standHeight;
+  final Color medalColor;
+  final double avatarSize;
+  final bool byGold;
+  final bool crowned;
+  final String currentUserProfileImageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final leader = entry;
+
+    Widget avatar() {
+      final placeholder = Container(
+        width: avatarSize,
+        height: avatarSize,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0xFF1E4D3D),
+          border: Border.all(color: medalColor, width: 3),
+        ),
+        child: leader == null
+            ? null
+            : Center(
+                child: Text(
+                  leader.username.isNotEmpty
+                      ? leader.username[0].toUpperCase()
+                      : '?',
+                  style: GoogleFonts.pixelifySans(
+                    color: medalColor,
+                    fontWeight: FontWeight.w700,
+                    fontSize: avatarSize * 0.36,
+                  ),
+                ),
+              ),
+      );
+      if (leader == null) {
+        return placeholder;
+      }
+      final url = leader.profileImageUrl.isNotEmpty
+          ? leader.profileImageUrl
+          : (leader.isCurrentUser ? currentUserProfileImageUrl : '');
+      if (url.isEmpty) {
+        return placeholder;
+      }
+      return ClipOval(
+        child: Image.network(
+          url,
+          width: avatarSize,
+          height: avatarSize,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => placeholder,
+        ),
+      );
+    }
+
+    final value = leader == null
+        ? '—'
+        : (byGold ? '${leader.gold}g' : leader.scoreLabel);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (crowned)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 4),
+            child: Icon(Icons.emoji_events_rounded, color: Color(0xFFF4D06F), size: 26),
+          ),
+        Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            avatar(),
+            Positioned(
+              bottom: -6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: medalColor,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: const Color(0xFF0E2A1F), width: 2),
+                ),
+                child: Text(
+                  '#$rank',
+                  style: GoogleFonts.pixelifySans(
+                    color: const Color(0xFF0E2A1F),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          leader?.username ?? '—',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: leader?.isCurrentUser ?? false
+                ? const Color(0xFFF4D06F)
+                : Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: GoogleFonts.pixelifySans(
+            color: medalColor,
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(height: 10),
+        // The stand itself — height is what actually sells "podium" versus
+        // just three cards in a row.
+        Container(
+          height: standHeight,
+          decoration: BoxDecoration(
+            color: medalColor.withValues(alpha: 0.16),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(12),
+            ),
+            border: Border(
+              top: BorderSide(color: medalColor.withValues(alpha: 0.55), width: 2),
+              left: BorderSide(color: medalColor.withValues(alpha: 0.25), width: 1),
+              right: BorderSide(color: medalColor.withValues(alpha: 0.25), width: 1),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _LeaderboardRow extends StatelessWidget {
   const _LeaderboardRow({
     required this.leader,
+    required this.byGold,
     required this.currentUserProfileImageUrl,
   });
 
   final LeaderboardEntry leader;
+  final bool byGold;
   final String currentUserProfileImageUrl;
 
   Widget _initialAvatar() {
@@ -440,7 +726,9 @@ class _LeaderboardRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${leader.xp} XP • ${leader.gold} gold',
+                  byGold
+                      ? '${leader.literacyPoints} LP • ${leader.xp} XP'
+                      : '${leader.xp} XP • ${leader.gold} gold',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.58),
                     fontSize: 12,
@@ -451,7 +739,7 @@ class _LeaderboardRow extends StatelessWidget {
             ),
           ),
           Text(
-            leader.scoreLabel,
+            byGold ? '${leader.gold}g' : leader.scoreLabel,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.8),
               fontWeight: FontWeight.bold,

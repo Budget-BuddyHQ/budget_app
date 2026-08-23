@@ -323,6 +323,21 @@ class _PriceChartPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round,
     );
+
+    // A static marker on the latest point — without this the line just
+    // stops, with nothing telling you that end is "now" versus the axis
+    // simply being cut off. Same idea as MiniSparkline's live-pulse dot.
+    final last = points.last;
+    canvas.drawCircle(last, 7, Paint()..color = accent.withValues(alpha: 0.22));
+    canvas.drawCircle(last, 3.4, Paint()..color = accent);
+    canvas.drawCircle(
+      last,
+      3.4,
+      Paint()
+        ..color = const Color(0xFF08251A)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
   }
 
   void _paintCandles(

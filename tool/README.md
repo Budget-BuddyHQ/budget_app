@@ -48,3 +48,25 @@ take priority over the JSON file (useful for CI).
 **Teammates need no keys to run the app.** Everything degrades gracefully:
 missing Supabase → local-only mode; missing Finnhub → live panel hidden. Clone,
 `flutter pub get`, `flutter run`.
+
+### Building for a phone (or the web) with your keys baked in
+
+`supabase.env.json` only works on desktop `flutter run` — a filesystem read.
+**Android, iOS, and web builds cannot read it at all** (no `Platform.environment`,
+no filesystem access on web; both silently return nothing on device, which is
+why login/Market Board don't work on a phone build that skips this step).
+Those platforms only ever see keys baked in at *compile time* via
+`--dart-define`. Bake in the same `supabase.env.json` you already have,
+in one shot, with `--dart-define-from-file`:
+
+```
+flutter build apk --dart-define-from-file=supabase.env.json
+flutter run --dart-define-from-file=supabase.env.json   # debug run on a device/emulator
+flutter build web --dart-define-from-file=supabase.env.json
+```
+
+No per-key `--dart-define=KEY=value` flags needed — the JSON file's keys
+(`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `FINNHUB_API_KEY`, `TWELVE_DATA_API_KEY`)
+are read straight out of it. See `lib/config/runtime_env_defines.dart` for how
+each key is wired into a real `String.fromEnvironment` constant, and
+`docs/ARCHITECTURE.md` §20 for the full root-cause writeup.

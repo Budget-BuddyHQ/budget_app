@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/life_sim_controller.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
+import '../../../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import '../../../themes_colors/app_theme.dart';
@@ -151,9 +152,60 @@ class _LifeSimPageState extends State<LifeSimPage> {
           Navigator.of(sheetContext).pop();
           _invest(life);
         },
+        onBudget: () => _openBudget(life),
+        onConcepts: () => _openConcepts(life),
       ),
     );
   }
+
+  /// The budgeting exercise — the app's core skill, made playable.
+  Future<void> _openBudget(LifeSimController life) async {
+    HapticFeedback.lightImpact();
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _BudgetSheet(life: life),
+    );
+    if (mounted) _drainLesson(life);
+  }
+
+  /// The running list of money ideas this life has surfaced.
+  Future<void> _openConcepts(LifeSimController life) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _ConceptsSheet(
+        concepts: life.conceptsMet,
+        simpleWording: _simpleWording,
+      ),
+    );
+  }
+
+  /// Shows any lesson the controller queued, then clears it.
+  ///
+  /// Called after every interaction that can teach (a choice, a budget, a
+  /// shock) rather than watching for changes, so the explainer always lands
+  /// *after* the player has seen the outcome — not on top of it.
+  void _drainLesson(LifeSimController life) {
+    final lesson = life.takeLesson();
+    if (lesson == null || !mounted) return;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _MoneyLessonSheet(
+        concept: lesson,
+        simpleWording: _simpleWording,
+      ),
+    );
+  }
+
+  /// Reading level for money explainers, from the **player's** self-declared
+  /// age band — not the character's in-game age.
+  bool get _simpleWording =>
+      context.read<UserStatsController>().stats.ageBand.prefersSimpleWording;
 
   /// Skill practice. Until this existed, `LifeSimController.practise` had no
   /// UI at all — the whole skill/career ladder was unreachable by the player
@@ -245,7 +297,12 @@ class _LifeSimPageState extends State<LifeSimPage> {
                   isDependent: life.isDependent,
                   dead: life.dead,
                   event: event,
-                  onChoose: life.chooseOption,
+                  // Choose, then surface the money idea behind that choice
+                  // (if it had one) once the outcome is on screen.
+                  onChoose: (index) {
+                    life.chooseOption(index);
+                    _drainLesson(life);
+                  },
                 ),
               ),
               _BottomMenu(
@@ -257,7 +314,11 @@ class _LifeSimPageState extends State<LifeSimPage> {
                     _openMenu(life, _LifeMenu.relationships),
                 onActivities: () => _openMenu(life, _LifeMenu.activities),
                 onAssets: () => _openMenu(life, _LifeMenu.assets),
-                onAge: life.ageUp,
+                // Ageing can fire an expense shock, which teaches too.
+                onAge: () {
+                  life.ageUp();
+                  _drainLesson(life);
+                },
               ),
             ],
           ),
@@ -1176,12 +1237,16 @@ class _LifeMenuSheet extends StatelessWidget {
     required this.life,
     required this.onSkills,
     required this.onInvest,
+    required this.onBudget,
+    required this.onConcepts,
   });
 
   final _LifeMenu menu;
   final LifeSimController life;
   final VoidCallback onSkills;
   final VoidCallback onInvest;
+  final VoidCallback onBudget;
+  final VoidCallback onConcepts;
 
   List<_LifeAction> _actions(BuildContext context) {
     void run(void Function() action) {
@@ -1298,6 +1363,26 @@ class _LifeMenuSheet extends StatelessWidget {
 
       case _LifeMenu.assets:
         return [
+          // Top of the Money menu on purpose: budgeting is the skill this
+          // app exists to teach, so it should be the first thing in here,
+          // above investing.
+          _LifeAction(
+            label: life.budgetSet ? 'Adjust your budget' : 'Set your budget',
+            detail: life.canBudget
+                ? '${life.needsPct}% needs · ${life.wantsPct}% wants · '
+                      '${life.savingsPct}% savings. '
+                      'Emergency fund: ${life.emergencyFund} '
+                      '(${life.emergencyMonths.toStringAsFixed(1)} months).'
+                : 'Split your pay across needs, wants and savings.',
+            icon: Icons.pie_chart_rounded,
+            onTap: () {
+              Navigator.of(context).pop();
+              onBudget();
+            },
+            disabledReason: life.canBudget
+                ? null
+                : 'You need a paying job first',
+          ),
           _LifeAction(
             label: 'Invest 100 coins',
             detail: 'Moves cash into investments. Compounds every year.',
@@ -1310,10 +1395,25 @@ class _LifeMenuSheet extends StatelessWidget {
           _LifeAction(
             label: 'Net worth',
             detail:
-                'Cash ${life.money} + invested ${life.investments} = '
+                'Cash ${life.money} + invested ${life.investments} + fund '
+                '${life.emergencyFund}'
+                '${life.debt > 0 ? ' − debt ${life.debt}' : ''} = '
                 '${life.netWorth}.',
             icon: Icons.account_balance_wallet_rounded,
             onTap: () => Navigator.of(context).pop(),
+          ),
+          _LifeAction(
+            label: 'Money ideas you have met',
+            detail: life.conceptsMet.isEmpty
+                ? 'Play on — ideas show up as your choices raise them.'
+                : '${life.conceptsMet.length} so far: '
+                      '${life.conceptsMet.take(3).map((c) => c.label).join(', ')}'
+                      '${life.conceptsMet.length > 3 ? '…' : ''}',
+            icon: Icons.school_rounded,
+            onTap: () {
+              Navigator.of(context).pop();
+              onConcepts();
+            },
           ),
         ];
     }
@@ -1449,6 +1549,727 @@ class _LifeActionRow extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// **The budgeting exercise.** The player splits their take-home pay across
+/// needs, wants and savings, and has to make it total exactly 100%.
+///
+/// This is the piece the app was missing. Everything else in Budget Buddy
+/// showed the *results* of money decisions; nothing made the player actually
+/// do the allocation that budgeting consists of. Deliberate design choices:
+///
+/// * **It must add up to 100.** The Save button stays disabled until it
+///   does. That constraint *is* the lesson — a budget is a fixed pie, so
+///   every increase somewhere is a cut somewhere else, and you feel that
+///   trade-off with your thumb.
+/// * **There is no single right answer.** 50/30/20 is shown as a reference
+///   line, not a win condition, and the feedback names the trade-off rather
+///   than grading. Starving "wants" to 0 is punished by the sim (see
+///   `LifeSimController._applyBudget`) precisely because an unlivable
+///   budget is one you abandon in week two.
+/// * **The consequences arrive later**, through the year-end apply and the
+///   random expense shock — so the player connects the split they chose to
+///   what happened to them, which is what makes it stick.
+class _BudgetSheet extends StatefulWidget {
+  const _BudgetSheet({required this.life});
+
+  final LifeSimController life;
+
+  @override
+  State<_BudgetSheet> createState() => _BudgetSheetState();
+}
+
+class _BudgetSheetState extends State<_BudgetSheet> {
+  late int _needs = widget.life.needsPct;
+  late int _wants = widget.life.wantsPct;
+  late int _savings = widget.life.savingsPct;
+
+  int get _total => _needs + _wants + _savings;
+  bool get _balanced => _total == 100;
+
+  /// What each slice is worth in coins, so the percentages stay attached to
+  /// real money instead of floating as abstract numbers.
+  int _coins(int pct) => (widget.life.salary * pct / 100).round();
+
+  /// Names the trade-off the current split makes. Intentionally never says
+  /// "correct" — it describes consequences and lets the player decide.
+  ({String text, Color colour, IconData icon}) get _feedback {
+    if (!_balanced) {
+      final diff = 100 - _total;
+      return (
+        text: diff > 0
+            ? 'You have $diff% left to allocate.'
+            : 'You are ${-diff}% over — a budget has to add up to 100%.',
+        colour: const Color(0xFFFF8FB1),
+        icon: Icons.error_outline_rounded,
+      );
+    }
+    if (_savings == 0) {
+      return (
+        text: 'Nothing saved. Any surprise expense becomes debt.',
+        colour: const Color(0xFFFF8FB1),
+        icon: Icons.warning_amber_rounded,
+      );
+    }
+    if (_wants <= 5) {
+      return (
+        text:
+            'Almost no room for fun. Strict budgets like this are the ones '
+            'people quit.',
+        colour: const Color(0xFFFFD45C),
+        icon: Icons.sentiment_dissatisfied_rounded,
+      );
+    }
+    if (_savings >= 20 && _needs <= 55) {
+      return (
+        text:
+            'Solid. Saving $_savings% builds a fund that can absorb a bad '
+            'month.',
+        colour: const Color(0xFF4BD2A3),
+        icon: Icons.check_circle_rounded,
+      );
+    }
+    if (_needs > 60) {
+      return (
+        text:
+            'Needs are eating $_needs%. That is the number to attack — '
+            'cheaper rent or more income, not smaller treats.',
+        colour: const Color(0xFFFFD45C),
+        icon: Icons.info_outline_rounded,
+      );
+    }
+    return (
+      text:
+          'Workable. Saving $_savings% is a start — push it up when your pay '
+          'does.',
+      colour: const Color(0xFF69C6FF),
+      icon: Icons.info_outline_rounded,
+    );
+  }
+
+  void _save() {
+    final ok = widget.life.setBudget(
+      needs: _needs,
+      wants: _wants,
+      savings: _savings,
+    );
+    if (ok) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fb = _feedback;
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        18,
+        16,
+        18,
+        24 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      decoration: const BoxDecoration(
+        color: AppTheme.panelStrong,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXLarge),
+        ),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.pie_chart_rounded,
+                  color: Color(0xFF85EFAC),
+                  size: 24,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Your budget',
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Text(
+                  '$_total%',
+                  style: GoogleFonts.pixelifySans(
+                    color: _balanced
+                        ? const Color(0xFF4BD2A3)
+                        : const Color(0xFFFF8FB1),
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'You take home ${widget.life.salary} coins a year. Decide where '
+              'it goes.',
+              style: GoogleFonts.quicksand(
+                color: Colors.white.withValues(alpha: 0.72),
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _BudgetBar(needs: _needs, wants: _wants, savings: _savings),
+            const SizedBox(height: 18),
+            _BudgetRow(
+              label: 'Needs',
+              hint: 'Rent, food, transport, bills',
+              value: _needs,
+              coins: _coins(_needs),
+              colour: const Color(0xFF69C6FF),
+              guide: 50,
+              onChanged: (v) => setState(() => _needs = v),
+            ),
+            _BudgetRow(
+              label: 'Wants',
+              hint: 'Eating out, games, going places',
+              value: _wants,
+              coins: _coins(_wants),
+              colour: const Color(0xFFFFD45C),
+              guide: 30,
+              onChanged: (v) => setState(() => _wants = v),
+            ),
+            _BudgetRow(
+              label: 'Savings',
+              hint: 'Emergency fund and your future',
+              value: _savings,
+              coins: _coins(_savings),
+              colour: const Color(0xFF4BD2A3),
+              guide: 20,
+              onChanged: (v) => setState(() => _savings = v),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: fb.colour.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: fb.colour.withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(fb.icon, color: fb.colour, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      fb.text,
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12.5,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => setState(() {
+                      _needs = 50;
+                      _wants = 30;
+                      _savings = 20;
+                    }),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.25),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                    ),
+                    child: Text(
+                      'Use 50/30/20',
+                      style: GoogleFonts.pixelifySans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _balanced ? _save : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF43D07E),
+                      foregroundColor: const Color(0xFF06251A),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: Text(
+                      'Save budget',
+                      style: GoogleFonts.pixelifySans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A single stacked bar of the three slices, so the split is legible before
+/// reading a single number.
+class _BudgetBar extends StatelessWidget {
+  const _BudgetBar({
+    required this.needs,
+    required this.wants,
+    required this.savings,
+  });
+
+  final int needs;
+  final int wants;
+  final int savings;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = needs + wants + savings;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: SizedBox(
+        height: 16,
+        child: Row(
+          children: [
+            if (needs > 0)
+              Expanded(
+                flex: needs,
+                child: Container(color: const Color(0xFF69C6FF)),
+              ),
+            if (wants > 0)
+              Expanded(
+                flex: wants,
+                child: Container(color: const Color(0xFFFFD45C)),
+              ),
+            if (savings > 0)
+              Expanded(
+                flex: savings,
+                child: Container(color: const Color(0xFF4BD2A3)),
+              ),
+            // Any unallocated remainder shows as a gap, so "you have 15%
+            // left" is visible as well as stated.
+            if (total < 100)
+              Expanded(
+                flex: 100 - total,
+                child: Container(color: Colors.white.withValues(alpha: 0.10)),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One adjustable slice. Stepper buttons rather than a Slider: 5% steps hit
+/// round numbers every time, which keeps the arithmetic in the player's head
+/// doable — the whole point of the exercise.
+class _BudgetRow extends StatelessWidget {
+  const _BudgetRow({
+    required this.label,
+    required this.hint,
+    required this.value,
+    required this.coins,
+    required this.colour,
+    required this.guide,
+    required this.onChanged,
+  });
+
+  final String label;
+  final String hint;
+  final int value;
+  final int coins;
+  final Color colour;
+  final int guide;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 38,
+            decoration: BoxDecoration(
+              color: colour,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      label,
+                      style: GoogleFonts.pixelifySans(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'guide $guide%',
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  '$hint · $coins coins',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _StepButton(
+            icon: Icons.remove_rounded,
+            onTap: value <= 0 ? null : () => onChanged(value - 5),
+          ),
+          SizedBox(
+            width: 44,
+            child: Text(
+              '$value%',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.pixelifySans(
+                color: colour,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          _StepButton(
+            icon: Icons.add_rounded,
+            onTap: value >= 100 ? null : () => onChanged(value + 5),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepButton extends StatelessWidget {
+  const _StepButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    return InkWell(
+      onTap: enabled
+          ? () {
+              HapticFeedback.selectionClick();
+              onTap!();
+            }
+          : null,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        width: 32,
+        height: 32,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withValues(alpha: enabled ? 0.10 : 0.03),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: enabled ? 0.20 : 0.06),
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 17,
+          color: Colors.white.withValues(alpha: enabled ? 0.85 : 0.25),
+        ),
+      ),
+    );
+  }
+}
+
+/// The teaching moment itself: shown right after a decision lands, naming
+/// the idea the player just bumped into.
+class _MoneyLessonSheet extends StatelessWidget {
+  const _MoneyLessonSheet({
+    required this.concept,
+    required this.simpleWording,
+  });
+
+  final FinanceConcept concept;
+  final bool simpleWording;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 26),
+      decoration: const BoxDecoration(
+        color: AppTheme.panelStrong,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXLarge),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: concept.accent.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: concept.accent.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Icon(concept.icon, color: concept.accent, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Money idea',
+                      style: GoogleFonts.quicksand(
+                        color: concept.accent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                    Text(
+                      concept.label,
+                      style: GoogleFonts.pixelifySans(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            concept.explainerFor(simple: simpleWording),
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.88),
+              fontSize: 14,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.lightbulb_rounded,
+                  color: Color(0xFFFFD45C),
+                  size: 17,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    concept.tryThis,
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontSize: 12.5,
+                      height: 1.4,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: FilledButton.styleFrom(
+                backgroundColor: concept.accent,
+                foregroundColor: const Color(0xFF06251A),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: Text(
+                'Got it',
+                style: GoogleFonts.pixelifySans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Every money idea this life has surfaced — a running record so the player
+/// can see the learning accumulate rather than each lesson vanishing.
+class _ConceptsSheet extends StatelessWidget {
+  const _ConceptsSheet({required this.concepts, required this.simpleWording});
+
+  final List<FinanceConcept> concepts;
+  final bool simpleWording;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+      ),
+      decoration: const BoxDecoration(
+        color: AppTheme.panelStrong,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXLarge),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.school_rounded,
+                color: Color(0xFF85EFAC),
+                size: 22,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Money ideas you have met',
+                  style: GoogleFonts.pixelifySans(
+                    color: Colors.white,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                '${concepts.length}/${FinanceConcept.values.length}',
+                style: GoogleFonts.pixelifySans(
+                  color: const Color(0xFF85EFAC),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (concepts.isEmpty)
+            Text(
+              'None yet. Keep playing — money ideas show up when your choices '
+              'run into them.',
+              style: GoogleFonts.quicksand(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+              ),
+            )
+          else
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: concepts.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final concept = concepts[index];
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: concept.accent.withValues(alpha: 0.28),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(concept.icon, color: concept.accent, size: 19),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                concept.label,
+                                style: GoogleFonts.pixelifySans(
+                                  color: Colors.white,
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                concept.explainerFor(simple: simpleWording),
+                                style: GoogleFonts.quicksand(
+                                  color: Colors.white.withValues(alpha: 0.75),
+                                  fontSize: 12,
+                                  height: 1.4,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
       ),
     );
   }
