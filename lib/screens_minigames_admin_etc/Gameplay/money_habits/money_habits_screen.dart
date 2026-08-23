@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 import '../../../controllers_that_updates_stats/money_habit_controller.dart';
 import '../../../custom_made_widgets/habit_challenge_row_item.dart';
 import '../../../models_Like_Skins_and_lessons_templates/money_habit_models.dart';
+import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../themes_colors/app_theme.dart';
+import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/habit_progress_grids.dart';
 import '../../../widgets_custom_lotties/savings_jar_widget.dart';
@@ -18,7 +20,18 @@ import '../../../widgets_custom_lotties/savings_jar_widget.dart';
 /// P&L/Analytics tabs — see docs/MONEY_HABITS_FEATURE.md §4 for the full
 /// navigation map.
 class MoneyHabitsScreen extends StatefulWidget {
-  const MoneyHabitsScreen({super.key});
+  const MoneyHabitsScreen({
+    super.key,
+    this.activeTabIndex,
+    this.onNavSelected,
+  });
+
+  /// Set when this is hosted as the "Daily" bottom tab. Left null when it's
+  /// pushed as a route (from Home's daily card), in which case it keeps its
+  /// back arrow and shows no bottom nav — the same widget serving both
+  /// entry points without a second copy.
+  final int? activeTabIndex;
+  final ValueChanged<int>? onNavSelected;
 
   @override
   State<MoneyHabitsScreen> createState() => _MoneyHabitsScreenState();
@@ -42,12 +55,23 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final asTab = widget.onNavSelected != null;
+
     return Scaffold(
       backgroundColor: AppTheme.deepForest,
+      bottomNavigationBar: asTab
+          ? CustomBottomNav(
+              activeIndex: widget.activeTabIndex ?? AppTabIndex.daily,
+              onSelected: widget.onNavSelected!,
+            )
+          : null,
       appBar: AppBar(
         backgroundColor: AppTheme.deepForest,
         foregroundColor: Colors.white,
         elevation: 0,
+        // As a tab there is nothing to go back *to*, so the arrow would be
+        // a dead control.
+        automaticallyImplyLeading: !asTab,
         title: Text('Money Habits', style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700)),
         bottom: TabBar(
           controller: _tabController,

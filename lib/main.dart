@@ -13,6 +13,8 @@ import 'controllers_that_updates_stats/money_habit_controller.dart';
 import 'controllers_that_updates_stats/user_stats_controller.dart';
 import 'navigation_tools_and_animation/app_tab_index.dart';
 import 'screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart';
+import 'screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.dart';
+import 'screens_minigames_admin_etc/Gameplay/customize_screen.dart';
 import 'screens_minigames_admin_etc/Gameplay/dashboard/dashboard_shell.dart';
 import 'screens_minigames_admin_etc/Gameplay/dashboard/leaderboard_screen.dart';
 import 'screens_minigames_admin_etc/auth/auth_screen.dart';
@@ -133,20 +135,18 @@ class MyApp extends StatelessWidget {
             const DashboardShell(initialIndex: AppTabIndex.dashboard),
         '/game_hub': (context) =>
             const DashboardShell(initialIndex: AppTabIndex.adventure),
-        '/customize': (context) =>
-            const DashboardShell(initialIndex: AppTabIndex.customize),
+        // Arcade and Style are no longer bottom tabs (the bar is five slots
+        // with Home centred), so these push the screens directly. Each one
+        // keeps its own AppBar back button when `onNavSelected` is null,
+        // so there is still a way out.
+        '/customize': (context) => const CustomizeScreen(),
         '/lessons': (context) =>
             const DashboardShell(initialIndex: AppTabIndex.academy),
-        // These two used to build MainGamePage/MinigamesPage directly, with
-        // no `onNavSelected` — which renders them with no bottom nav, so
-        // anything routing here by name would strand the player on a
-        // tab screen they can't navigate out of. Routing through
-        // DashboardShell (like /dashboard and /customize already do) keeps
-        // the nav bar attached.
         '/main-gameplay': (context) =>
             const DashboardShell(initialIndex: AppTabIndex.adventure),
-        '/minigames': (context) =>
-            const DashboardShell(initialIndex: AppTabIndex.minigames),
+        '/minigames': (context) => const MinigamesPage(),
+        '/daily': (context) =>
+            const DashboardShell(initialIndex: AppTabIndex.daily),
         // /life is intentionally full-screen: it's a game with its own exit,
         // not a tab.
         '/life': (context) => const LifeSimPage(),

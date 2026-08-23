@@ -1,13 +1,28 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'runtime_env_defines.dart';
+
 Map<String, dynamic>? _cachedJsonEnv;
 
+/// Looks a key up across all three sources, most-specific first.
+///
+/// Order matters: `--dart-define` beats the local JSON file so a key baked
+/// into a build always wins over a stale `supabase.env.json` sitting in a
+/// checkout. The JSON file stays last as a developer convenience for
+/// `flutter run` on desktop.
 String? readRuntimeEnv(String key) {
   final envValue = Platform.environment[key];
   final normalizedEnv = _normalize(envValue);
   if (normalizedEnv != null) {
     return normalizedEnv;
+  }
+
+  // The only source that survives into an installed app — see
+  // runtime_env_defines.dart for why the other two do not.
+  final defineValue = dartDefineFor(key);
+  if (defineValue != null) {
+    return defineValue;
   }
 
   final jsonValue = _jsonEnv[key];
