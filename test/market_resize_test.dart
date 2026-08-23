@@ -1,5 +1,6 @@
 import 'package:budget_app/controllers_that_updates_stats/daily_plan_controller.dart';
 import 'package:budget_app/controllers_that_updates_stats/app_settings_controller.dart';
+import 'package:budget_app/controllers_that_updates_stats/money_habit_controller.dart';
 import 'package:budget_app/controllers_that_updates_stats/user_stats_controller.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/dashboard_shell.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/stock_market_page.dart';
@@ -55,6 +56,12 @@ Widget _wrap(Widget child) {
             DailyPlanController(context.read<UserStatsController>()),
         update: (_, userStats, previous) =>
             previous ?? DailyPlanController(userStats),
+      ),
+      ChangeNotifierProxyProvider<UserStatsController, MoneyHabitController>(
+        create: (context) =>
+            MoneyHabitController(context.read<UserStatsController>()),
+        update: (_, userStats, previous) =>
+            previous ?? MoneyHabitController(userStats),
       ),
     ],
     child: MaterialApp(theme: AppTheme.getLightTheme(), home: child),

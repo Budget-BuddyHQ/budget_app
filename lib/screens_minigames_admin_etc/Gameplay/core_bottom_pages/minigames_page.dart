@@ -8,6 +8,7 @@ import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
+import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/hover_lift.dart';
@@ -118,7 +119,7 @@ class MinigamesPage extends StatelessWidget {
         final stats = controller.stats;
 
         return Scaffold(
-          backgroundColor: const Color(0xFF071711),
+          backgroundColor: AppTheme.deepForest,
           bottomNavigationBar: onNavSelected == null
               ? null
               : CustomBottomNav(
@@ -306,9 +307,9 @@ class _GoldPill extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             '$gold',
-            style: const TextStyle(
-              color: Color(0xFFFFD45C),
-              fontWeight: FontWeight.w900,
+            style: GoogleFonts.baloo2(
+              color: const Color(0xFFFFD45C),
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -344,7 +345,7 @@ class _FeaturedCard extends StatelessWidget {
           onTap: onPlay,
           child: Container(
             padding: const EdgeInsets.all(20),
-            decoration: _cardDecoration(game.accent, radius: 28),
+            decoration: _cardDecoration(game.accent, radius: AppTheme.radiusXLarge),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -442,7 +443,7 @@ class _GameCard extends StatelessWidget {
           onTap: onPlay,
           child: Container(
             padding: const EdgeInsets.all(14),
-            decoration: _cardDecoration(game.accent, radius: 24),
+            decoration: _cardDecoration(game.accent, radius: AppTheme.radiusLarge),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -600,19 +601,13 @@ BoxDecoration _cardDecoration(Color accent, {required double radius}) {
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [
-        const Color(0xFF173B2E),
-        Color.lerp(const Color(0xFF10281F), accent, 0.12)!,
+        AppTheme.panelStrong,
+        Color.lerp(AppTheme.panel, accent, 0.14)!,
       ],
     ),
     borderRadius: BorderRadius.circular(radius),
-    border: Border.all(color: accent.withValues(alpha: 0.28)),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.22),
-        blurRadius: 18,
-        offset: const Offset(0, 10),
-      ),
-    ],
+    border: Border.all(color: accent.withValues(alpha: 0.30)),
+    boxShadow: AppTheme.puffyShadow(accent, restAlpha: 0.20),
   );
 }
 

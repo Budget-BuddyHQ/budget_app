@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../models_Like_Skins_and_lessons_templates/lesson.dart';
+import '../themes_colors/app_theme.dart';
 
 class UnitRowItem extends StatelessWidget {
   const UnitRowItem({
@@ -175,7 +177,7 @@ class _UnitLessonBlock extends StatelessWidget {
       label: 'Lesson ${index + 1}: ${lesson.title}. $statusLabel.',
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
         child: Container(
           constraints: const BoxConstraints(minHeight: 78),
           padding: EdgeInsets.symmetric(
@@ -190,22 +192,16 @@ class _UnitLessonBlock extends StatelessWidget {
                 // Carries the parent unit's accent so a whole unit reads as
                 // one colour family instead of every row being the same green.
                 Color.lerp(
-                  const Color(0xFF1D4A3A),
+                  AppTheme.panelStrong,
                   unitAccentFor(unitIndex),
-                  0.12,
+                  0.14,
                 )!,
-                const Color(0xFF153A2E),
+                AppTheme.panel,
               ],
             ),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
             border: Border.all(color: palette.border.withValues(alpha: 0.32)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x22000000),
-                blurRadius: 16,
-                offset: Offset(0, 8),
-              ),
-            ],
+            boxShadow: AppTheme.puffyShadow(palette.border, restAlpha: 0.20),
           ),
           child: Row(
             children: [
@@ -214,7 +210,7 @@ class _UnitLessonBlock extends StatelessWidget {
                 height: compact ? 48 : 56,
                 clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
                   border: Border.all(color: palette.border, width: 2),
                   boxShadow: [
                     BoxShadow(
@@ -265,10 +261,10 @@ class _UnitLessonBlock extends StatelessWidget {
                       lesson.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: GoogleFonts.baloo2(
                         color: const Color(0xFFF7FFFB),
                         fontSize: compact ? 15 : 16,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                         height: 1.12,
                       ),
                     ),
@@ -299,10 +295,10 @@ class _UnitLessonBlock extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           statusLabel,
-                          style: TextStyle(
+                          style: GoogleFonts.baloo2(
                             color: palette.border,
                             fontSize: 12,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],

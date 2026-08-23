@@ -1,0 +1,677 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+
+import '../../../controllers_that_updates_stats/money_habit_controller.dart';
+import '../../../custom_made_widgets/habit_challenge_row_item.dart';
+import '../../../models_Like_Skins_and_lessons_templates/money_habit_models.dart';
+import '../../../themes_colors/app_theme.dart';
+import '../../../widgets_custom_lotties/game_toast.dart';
+import '../../../widgets_custom_lotties/habit_progress_grids.dart';
+import '../../../widgets_custom_lotties/savings_jar_widget.dart';
+
+/// Entry point for Money Habits: a daily budgeting-habit tracker (skip
+/// eating out, save spare change, wait before a big purchase) with a
+/// savings jar that fills up as habits stick. A pushed, non-tab screen (own
+/// `Scaffold`, no `CustomBottomNav`) with its own internal `TabBar`, the
+/// same shape the Market Board already uses for its Assets/Trade/Orders/
+/// P&L/Analytics tabs — see docs/MONEY_HABITS_FEATURE.md §4 for the full
+/// navigation map.
+class MoneyHabitsScreen extends StatefulWidget {
+  const MoneyHabitsScreen({super.key});
+
+  @override
+  State<MoneyHabitsScreen> createState() => _MoneyHabitsScreenState();
+}
+
+class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.deepForest,
+      appBar: AppBar(
+        backgroundColor: AppTheme.deepForest,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Text('Money Habits', style: GoogleFonts.baloo2(fontWeight: FontWeight.w700)),
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          indicatorColor: AppTheme.greenPrimary,
+          indicatorWeight: 3,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white54,
+          labelStyle: GoogleFonts.baloo2(fontWeight: FontWeight.w700),
+          tabs: const [
+            Tab(text: 'Track'),
+            Tab(text: 'Activity'),
+            Tab(text: 'Challenges'),
+            Tab(text: 'Jar'),
+          ],
+        ),
+      ),
+      body: SafeArea(
+        top: false,
+        child: TabBarView(
+          controller: _tabController,
+          children: const [
+            _TrackTab(),
+            _ActivityTab(),
+            _ChallengesTab(),
+            _JarTab(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==================== Track ====================
+
+class _TrackTab extends StatelessWidget {
+  const _TrackTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final habits = context.watch<MoneyHabitController>();
+    final totals = habits.lifetimeTotals;
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _MoneyStatsRow(totals: totals),
+        const SizedBox(height: 16),
+        Text(
+          'This week',
+          style: GoogleFonts.baloo2(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        HabitWeeklyTrackerGrid(
+          habits: habits.savedHabits,
+          weeklyLog: habits.weeklyLog,
+          onCompleteToday: (template) async {
+            await habits.completeTrackedHabit(template);
+            if (context.mounted) {
+              GameToast.show(context, message: 'Logged: ${template.title}');
+            }
+          },
+        ),
+        const SizedBox(height: 16),
+        if (habits.savedHabits.isNotEmpty) ...[
+          Text(
+            'Saved habits',
+            style: GoogleFonts.baloo2(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          for (final habit in habits.savedHabits)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _SavedHabitRow(
+                habit: habit,
+                onRemove: () => habits.unsaveHabit(habit.id),
+              ),
+            ),
+        ] else
+          Text(
+            'Browse Activity to pin a habit here and start your weekly streak.',
+            style: GoogleFonts.quicksand(color: AppTheme.textMuted),
+          ),
+      ],
+    );
+  }
+}
+
+class _MoneyStatsRow extends StatelessWidget {
+  const _MoneyStatsRow({required this.totals});
+
+  final HabitImpact totals;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _StatTile(
+            label: 'Money saved',
+            value: '\$${totals.moneySavedUsd.toStringAsFixed(0)}',
+            accent: const Color(0xFF4BD2A3),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _StatTile(
+            label: 'Smart choices',
+            value: totals.choicesKept.toStringAsFixed(0),
+            accent: const Color(0xFF69C6FF),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  const _StatTile({required this.label, required this.value, required this.accent});
+
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+      decoration: AppTheme.getPuffyDecoration(accent: accent, restAlpha: 0.16),
+      child: Column(
+        children: [
+          Text(value, style: GoogleFonts.baloo2(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Text(label, textAlign: TextAlign.center, style: GoogleFonts.quicksand(color: AppTheme.textMuted, fontSize: 11)),
+        ],
+      ),
+    );
+  }
+}
+
+class _SavedHabitRow extends StatelessWidget {
+  const _SavedHabitRow({required this.habit, required this.onRemove});
+
+  final HabitTemplate habit;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.panel,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+      ),
+      child: Row(
+        children: [
+          Icon(habit.icon, color: habit.category.accent, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(habit.title, style: GoogleFonts.quicksand(color: Colors.white, fontWeight: FontWeight.w600)),
+          ),
+          IconButton(
+            tooltip: 'Remove from tracker',
+            onPressed: onRemove,
+            icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 18),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==================== Activity ====================
+
+class _ActivityTab extends StatefulWidget {
+  const _ActivityTab();
+
+  @override
+  State<_ActivityTab> createState() => _ActivityTabState();
+}
+
+class _ActivityTabState extends State<_ActivityTab> {
+  HabitCategory? _filter;
+
+  @override
+  Widget build(BuildContext context) {
+    final habits = context.watch<MoneyHabitController>();
+    final list = habitCatalog.where((t) => _filter == null || t.category == _filter).toList();
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _CategoryChip(label: 'All', selected: _filter == null, onTap: () => setState(() => _filter = null)),
+                for (final category in HabitCategory.values) ...[
+                  const SizedBox(width: 8),
+                  _CategoryChip(
+                    label: category.label,
+                    selected: _filter == category,
+                    accent: category.accent,
+                    onTap: () => setState(() => _filter = category),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+            itemCount: list.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final habit = list[index];
+              return _ActivityCard(
+                habit: habit,
+                saved: habits.savedHabits.any((h) => h.id == habit.id),
+                onTap: () => _openHabitSheet(context, habit, habits),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openHabitSheet(
+    BuildContext context,
+    HabitTemplate habit,
+    MoneyHabitController habits,
+  ) {
+    return showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) => _HabitDetailSheet(habit: habit, habits: habits),
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({required this.label, required this.selected, required this.onTap, this.accent});
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final Color? accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = accent ?? AppTheme.greenPrimary;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected ? color : AppTheme.panel,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: selected ? 1 : 0.4)),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.baloo2(
+            color: selected ? AppTheme.deepForest : Colors.white70,
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActivityCard extends StatelessWidget {
+  const _ActivityCard({required this.habit, required this.saved, required this.onTap});
+
+  final HabitTemplate habit;
+  final bool saved;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: AppTheme.getPuffyDecoration(accent: habit.category.accent, restAlpha: 0.14),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: habit.category.accent.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+              ),
+              child: Icon(habit.icon, color: habit.category.accent, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(habit.title, style: GoogleFonts.baloo2(color: Colors.white, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 3),
+                  Text(habit.blurb, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.quicksand(color: AppTheme.textMuted, fontSize: 12)),
+                ],
+              ),
+            ),
+            if (saved) Icon(Icons.bookmark_rounded, color: habit.category.accent, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HabitDetailSheet extends StatefulWidget {
+  const _HabitDetailSheet({required this.habit, required this.habits});
+
+  final HabitTemplate habit;
+  final MoneyHabitController habits;
+
+  @override
+  State<_HabitDetailSheet> createState() => _HabitDetailSheetState();
+}
+
+class _HabitDetailSheetState extends State<_HabitDetailSheet> {
+  late double _units;
+
+  @override
+  void initState() {
+    super.initState();
+    _units = widget.habits.savedHabitParams[widget.habit.id] ??
+        widget.habit.adjustable?.defaultValue ??
+        1;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final habit = widget.habit;
+    final adjustable = habit.adjustable;
+    final impact = habit.impactFor(_units);
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
+      decoration: const BoxDecoration(
+        color: AppTheme.panelStrong,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.radiusXLarge)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(habit.icon, color: habit.category.accent, size: 28),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(habit.title, style: GoogleFonts.baloo2(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(habit.blurb, style: GoogleFonts.quicksand(color: AppTheme.textMuted, height: 1.4)),
+          const SizedBox(height: 18),
+          if (adjustable != null) ...[
+            Text(adjustable.label, style: GoogleFonts.baloo2(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _StepperButton(
+                  icon: Icons.remove_rounded,
+                  onTap: () => setState(() => _units = (_units - adjustable.step).clamp(adjustable.min, adjustable.max)),
+                ),
+                Expanded(
+                  child: Text(
+                    adjustable.unit == 'dollars'
+                        ? '\$${_units.toStringAsFixed(_units % 1 == 0 ? 0 : 1)}'
+                        : '${_units.toStringAsFixed(_units % 1 == 0 ? 0 : 1)} ${adjustable.unit}',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.baloo2(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                _StepperButton(
+                  icon: Icons.add_rounded,
+                  onTap: () => setState(() => _units = (_units + adjustable.step).clamp(adjustable.min, adjustable.max)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+          ],
+          _ImpactPreviewRow(impact: impact),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await widget.habits.saveHabit(habit, paramValue: adjustable != null ? _units : null);
+                    if (context.mounted) Navigator.of(context).pop();
+                  },
+                  icon: const Icon(Icons.bookmark_add_rounded),
+                  label: const Text('Save to Home'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(backgroundColor: AppTheme.greenPrimary, foregroundColor: AppTheme.deepForest),
+                  onPressed: () async {
+                    await widget.habits.completeTrackedHabit(habit);
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                      GameToast.show(context, message: 'Logged: ${habit.title}');
+                    }
+                  },
+                  icon: const Icon(Icons.check_rounded),
+                  label: const Text('Complete now'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepperButton extends StatelessWidget {
+  const _StepperButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(color: AppTheme.panel, shape: BoxShape.circle),
+        child: Icon(icon, color: Colors.white),
+      ),
+    );
+  }
+}
+
+class _ImpactPreviewRow extends StatelessWidget {
+  const _ImpactPreviewRow({required this.impact});
+
+  final HabitImpact impact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _MiniStat(label: 'Money saved', value: '\$${impact.moneySavedUsd.toStringAsFixed(2)}'),
+        _MiniStat(label: 'Smart choices', value: impact.choicesKept.toStringAsFixed(0)),
+      ],
+    );
+  }
+}
+
+class _MiniStat extends StatelessWidget {
+  const _MiniStat({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(value, style: GoogleFonts.baloo2(color: AppTheme.greenPrimary, fontWeight: FontWeight.w700)),
+          Text(label, style: GoogleFonts.quicksand(color: AppTheme.textMuted, fontSize: 11)),
+        ],
+      ),
+    );
+  }
+}
+
+// ==================== Challenges ====================
+
+class _ChallengesTab extends StatelessWidget {
+  const _ChallengesTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final habits = context.watch<MoneyHabitController>();
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: habitChallenges.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        final challenge = habitChallenges[index];
+        final progress = habits.challengeProgress(challenge);
+        return Container(
+          padding: const EdgeInsets.all(18),
+          decoration: AppTheme.getPuffyDecoration(accent: challenge.category.accent, restAlpha: 0.18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(challenge.category.icon, color: challenge.category.accent, size: 26),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(challenge.title, style: GoogleFonts.baloo2(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+                        Text(challenge.subtitle, style: GoogleFonts.quicksand(color: AppTheme.textMuted, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(challenge.description, style: GoogleFonts.quicksand(color: Colors.white70, height: 1.4)),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 8,
+                  backgroundColor: Colors.white12,
+                  valueColor: AlwaysStoppedAnimation(challenge.category.accent),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text('${(progress * 100).round()}% complete', style: GoogleFonts.quicksand(color: AppTheme.textMuted, fontSize: 12)),
+              const SizedBox(height: 14),
+              HabitChallengeRowItem(
+                tasks: challenge.tasks,
+                statusFor: (task) {
+                  if (habits.completedChallengeTasks.contains(task.id)) return HabitRowStatus.completed;
+                  if (habits.isChallengeTaskAvailable(task)) return HabitRowStatus.available;
+                  return HabitRowStatus.locked;
+                },
+                onTaskTap: (task) async {
+                  await habits.completeChallengeTask(task);
+                  if (context.mounted) {
+                    final title = task.template?.title ?? task.id;
+                    GameToast.show(context, message: 'Challenge habit complete: $title');
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ==================== Jar ====================
+
+class _JarTab extends StatelessWidget {
+  const _JarTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final habits = context.watch<MoneyHabitController>();
+    final stage = habits.jarStage;
+    final mood = habits.jarMood;
+
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Center(child: SavingsJarWidget(stage: stage, mood: mood, size: 220)),
+        const SizedBox(height: 12),
+        Center(
+          child: Text(stage.label, style: GoogleFonts.baloo2(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
+        ),
+        Center(
+          child: Container(
+            margin: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(color: mood.color.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(999)),
+            child: Text(mood.label, style: GoogleFonts.baloo2(color: mood.color, fontWeight: FontWeight.w700, fontSize: 12)),
+          ),
+        ),
+        const SizedBox(height: 20),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: stage.progressToNext(habits.jarXp),
+            minHeight: 10,
+            backgroundColor: Colors.white12,
+            valueColor: const AlwaysStoppedAnimation(AppTheme.greenPrimary),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          stage.next == null
+              ? 'Jar\'s full — ${habits.jarXp} habit points earned.'
+              : '${habits.jarXp} / ${stage.next!.xpThreshold} habit points to ${stage.next!.label}',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.quicksand(color: AppTheme.textMuted),
+        ),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: AppTheme.panel, borderRadius: BorderRadius.circular(AppTheme.radiusLarge)),
+          child: Text(
+            mood == JarMood.slipping
+                ? 'You haven\'t logged a habit in a while — log one on Track or Activity to get back on track.'
+                : 'Complete habits on Track or Activity to earn habit points and fill your jar.',
+            style: GoogleFonts.quicksand(color: Colors.white70, height: 1.4),
+          ),
+        ),
+      ],
+    );
+  }
+}

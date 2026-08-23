@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../constants/app_assets.dart';
+import '../themes_colors/app_theme.dart';
 
 /// Decorative motifs used for the ambient accent panels around the app.
 ///
@@ -88,8 +89,9 @@ class _AmbientLottieCardState extends State<AmbientLottieCard>
         padding: widget.padding,
         decoration: BoxDecoration(
           color: widget.backgroundColor,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
           border: Border.all(color: widget.borderColor),
+          boxShadow: AppTheme.puffyShadow(accent, restAlpha: 0.14),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),

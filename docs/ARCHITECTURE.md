@@ -586,3 +586,271 @@ already been congratulated — it never decides what's earned, so it cannot
 accidentally grant a badge. `_BadgeShowcase` re-checks on both `initState`
 and `didUpdateWidget`, since stats can change while Profile is on screen
 (finishing a life, unlocking a skin).
+
+## 14. 2026-08-22 pass: asset reorg, redesign tokens, the town map, a
+privacy fix
+
+Five things landed in one session, acting on direct product/design direction
+rather than a bug report — noted here since none of it fits the "what broke"
+frame of the root README.
+
+**Asset reorg.** Two loose asset dumps sitting directly under `assets/`
+(`newly imported for normal map/`, `main Map/`) got sorted: third-party packs
+into `assets/imported/` (`Pixel Art Top Down - Basic v1.2.3/`,
+`SlideRowAssets/`, plus a `Loose Tilesets/` catch-all for two standalone
+PNGs), and the user's own map export promoted into `assets/images/maps/`
+(see below). The dead `NormalFont` (declared in `pubspec.yaml`, zero
+references in `lib/`) was removed along with its now-empty
+`assets/fonts/` directory.
+
+**Redesign tokens.** `AppTheme` (`lib/themes_colors/app_theme.dart`) was,
+until now, essentially dead — used once in `main.dart` to build a `ThemeData`
+that no screen actually read from (`Theme.of(context).textTheme` had zero
+call sites). Every screen hardcoded its own colors/shadows instead. Rather
+than a repo-wide rewrite, `AppTheme` became the source of truth for *new*
+values and got threaded through the handful of genuinely shared widgets that
+fan out across most of the app: `HoverLift`, `CustomButton`, `PopNavBar`,
+`AmbientLottieCard`, `UnitRowItem`. Two additions worth knowing about:
+- The core palette (`deepForest`/`darkForest`/`panel`/`panelStrong`) moved a
+  step lighter/warmer, and radii got rounder (`radiusLarge` 20→24,
+  `radiusXLarge` 28→32) — a lit night scene, not a cave.
+- `AppTheme.puffyShadow()` / `getPuffyDecoration()` are new: a soft,
+  colour-tinted glow shadow, visible **at rest** (not just on hover) so
+  touch devices — which never fire hover events — still see cards read as
+  raised rather than flat. `HoverLift` in particular used to be invisible on
+  mobile for exactly this reason.
+- Home, Arcade (`minigames_page.dart`), Academy (`lesson_screen.dart`), and
+  Profile scaffolds/cards were updated to the new tokens as representative
+  passes matching what was actually screenshotted; most of the ~40 other
+  screen-local card classes and ~300 raw (fontless) `TextStyle` call sites
+  found in the audit are **not yet touched** — same treatment, just not done
+  yet. The floating turtle decoration in Home's `_AdventureLaunchHero` was
+  removed outright (was `AmbientLottieCard(motif: AmbientMotif.turtle)` at
+  low opacity, per direct request).
+
+**The town map.** The user's exported `map.json` + `spritesheet.png` turned
+out to be **Sprite Fusion** format, not Tiled — `{tileSize, mapWidth,
+mapHeight, layers: [{name, collider, tiles: [{id, x, y}]}]}`. `bonfire:
+3.17.0` (already a dependency) ships a reader for this format,
+`WorldMapBySpritefusion` + `SpritefusionAssetReader`
+(`bonfire/map/spritefusion/...`), whose numeric-id → spritesheet-rect math
+matched the file exactly (8-column sheet, confirmed by reading the PNG
+header directly). `adventure_world_screen.dart` now uses that reader instead
+of `WorldMapByTiled`/`TiledAssetReader`, pointed at the promoted
+`assets/images/maps/map.json`.
+
+Two things needed fixing in the exported data itself, not just the loader:
+- **Every layer had `"collider": false`** — the exporter's default, meaning
+  nothing in the map blocked movement. `walls`, `Wall Texturing`,
+  `structures`, `structures mre`, `more Structures`, and `Structure Ground`
+  were flipped to `true` directly in `map.json` (a judgment call from the
+  layer names themselves — decorative ground layers like `floor`/`terrain`/
+  `playground` stayed walkable). If new layers get exported later, re-check
+  which ones should collide.
+- **The placeholder spawn (`Vector2(64, 64)`) had no relation to this map.**
+  Picked tile (25, 25) instead — the map's centre, an open fenced
+  playground area with a fully clear 3×3 neighbourhood once colliders were
+  applied — by scanning the layer data programmatically, not by eyeballing
+  the preview image.
+
+A small nav link was added: Life Sim (`life_sim_page.dart`) now has an
+"Explore the town" app-bar action pushing `AdventureWorldScreen`, closing
+the gap the screen's own doc comment had flagged ("a map to explore comes
+later"). The exported map's layer names (`top_playground`, `structures`,
+`walls`, `terrain`, etc.) aren't named for specific buildings, so there's no
+building → Life-Sim-event trigger wiring yet — Sprite Fusion's
+`objectsBuilder` mechanism supports it whenever a layer gets named for a
+zone (job/school/shop/etc.) and someone specifies which event it should
+fire.
+
+**A privacy fix — and one that still needs a manual step.** Cross-checking
+§9c directly (rather than trusting first-pass research, which had one wrong
+claim — there was no existing "under-13 skips the leaderboard" gating
+anywhere, contrary to what a first pass assumed) turned up a real gap: the
+`leaderboard` Supabase view had no age filtering at all — any self-declared
+`under_13` account's username/gold/XP was as publicly rankable as anyone
+else's. The view definition in `SupabaseService.schemaSql` now adds `where
+coalesce(spending_habits->>'age_band', '') <> 'under_13'`. **This is a code
+change to the documented SQL only — it has not been applied to the live
+Supabase project.** Re-run the updated `create or replace view
+public.leaderboard as ...` statement in the Supabase SQL editor for it to
+take effect; until then the live view is unfiltered.
+
+Other things the audit surfaced but left alone, since they're either
+working-as-intended tradeoffs or a product/policy call rather than a bug:
+the `pending_feedback_queue` SharedPreferences cache holds a user's email +
+feedback text in plaintext until it syncs (normal `shared_preferences`
+behaviour, but worth knowing for an offline device); the `profile_pictures`
+storage bucket is public-read by design; the `profiles` table (role, email,
+disabled flag) has no tracked migration file, same as noted for `user_stats`
+elsewhere in this doc.
+
+**Content tone.** A couple of `kLifeEvents` outcome lines
+(`life_sim_models.dart`, the `first_words` event) leaned on idioms/hyperbole
+("Demanding from day one", "already exhausted") that a literal-minded young
+reader might not parse as intended — reworded to be more literal while
+keeping the playful tone. This was a light, representative pass, not a full
+sweep of the event pool; Academy lesson prose (`lesson_detail_screen.dart`)
+was deliberately **not** touched — it's Curriculum Department-owned content
+per the org's structure, not something to rewrite unilaterally from the App
+Development side.
+
+## 15. Eco Impact — a Climer-inspired feature set
+
+The user watched a demo of **Climer**, a Congressional App Challenge-winning
+app gamifying carbon-footprint reduction (weekly habit tracker, adjustable
+task catalog, structured "paths," a growing/moody pet, impact stats with a
+calendar heatmap, friend-code leaderboard), and asked for the same
+mechanics inside Budget Buddy. Full systems reference (data flow, animation
+triggers, event timing, navigation map) lives in a new, separate doc —
+`docs/CLIMER_FEATURE.md` — since the user specifically asked for something
+closer to a wiring reference than this file's narrative-log format. What
+follows here is the *why*, kept brief on purpose.
+
+**Reused rather than rebuilt:** `UserStatsController`'s `spendingHabits`
+jsonb + `_saveStats` pattern (new `eco_*` keys, same as every other
+feature — no migration), the Market Board's internal-`TabController`
+pattern for a pushed screen with its own sub-navigation (`EcoImpactScreen`'s
+Track/Activity/Paths/Pet tabs), the Academy's prerequisite-chain shape for
+`EcoPath`/`EcoPathTask` (copied, not literally reused — `Lesson` carries
+Academy-specific baggage), and `IdleHoverIcon` for the pet's idle bob
+(no new `AnimationController` needed).
+
+**Built new, because nothing existed to extend:** any multi-day task
+history (`DailyPlanController` only ever holds *today's* completion set —
+not extensible to a weekly grid), any pet growth/mood concept, any
+calendar/heatmap widget (hand-rolled, since no such package is a
+dependency — consistent with this project's hand-rolled-chart convention),
+and — the biggest gap — any friend concept at all. The pet itself has no
+dedicated sprite art (none exists, none was generated this session); it's
+built from existing Material icons sized up per growth stage, plus a small
+hand-painted face, the same "procedural life from existing primitives"
+approach `AmbientLottieCard` already uses for its turtle decoration.
+
+**Friendships are a directed edge, not a mutual handshake.** Adding a
+friend by code only ever inserts *your own* row (RLS enforces this), so a
+friendship reads as mutual once both sides have added each other — no
+request/accept flow exists. This is a deliberate MVP simplification,
+documented in `CLIMER_FEATURE.md` §5 rather than silently shipped as if it
+were true mutual adding.
+
+**Another pending manual SQL step**, same shape as §14's leaderboard fix:
+the new `public.friendships` table + its RLS policies were added to
+`SupabaseService.schemaSql` but have **not** been created on the live
+Supabase project — "Add a friend" will fail gracefully until someone runs
+that block in the Supabase SQL editor. Tracked in the `pending-supabase-sql`
+memory alongside the earlier leaderboard filter.
+
+A representative test file, `test/eco_impact_test.dart`, covers the pure
+logic (pet stage/mood thresholds, date-key math, catalog/path referential
+integrity) the same way `test/daily_plan_test.dart` and
+`test/lesson_data_test.dart` cover theirs — not the controller itself, which
+(like `DailyPlanController`) needs a live/mocked Supabase to instantiate.
+
+**This entire section describes a prototype that got reworked the same
+day — see §16.** The file is `test/money_habit_test.dart` now, and every
+`Eco*`/`eco_*` name above (`EcoImpactController`, `EcoPetWidget`,
+`eco_impact_models.dart`, the `eco_*` jsonb keys) no longer exists in the
+codebase. Kept here rather than deleted so the reasoning that led to the
+rework is still visible.
+
+## 16. Same-day follow-up: Money Habits, audio removed, more redesign, a bigger curriculum
+
+Direct user feedback landed right after §15 shipped, in one message with
+several distinct asks. What happened, in the order it was decided:
+
+**Supabase/friends: false alarm, restored.** "Remove all the saved to
+supabase things" was initially read as "remove the new friends/leaderboard
+additions" and executed — then the user clarified that wasn't the intent
+("that's not what I meant... restore the code"), so every friends-related
+change from §15 (the `friendships` table SQL, `SupabaseService.friendCodeFor`/
+`fetchFriendsLeaderboard`/`addFriendByCode`, the Global/Friends leaderboard
+toggle, Profile's `_FriendsCard`) was put back exactly as it was. Lesson:
+when a broad-sounding instruction follows immediately after a summary that
+named a specific pending item, the specific item is the more likely
+referent — worth confirming before a destructive-sounding edit lands,
+not just after.
+
+**Audio removed, on purpose, temporarily.** All files in `assets/audio/`
+were deleted — the user is assembling a new audio set to drop in later and
+wanted the old set cleared first. `AppSoundService` was already built to
+survive this: sound is **off by default** (`enabled = false`), and even
+when a user turns it on, every `player.play()` call is wrapped in try/catch
+with a `SystemSound` fallback (click/alert) — so a missing asset file was
+already a designed-for case, not a new failure mode. The service itself and
+the `assets/audio/` pubspec registration were left in place for when new
+files land.
+
+**Eco Impact → Money Habits.** The literal carbon-tracking feature from
+§15 was reworked into a budgeting-habit tracker per direct feedback ("make
+it different... not too similar" to the Climer demo it was modeled on) —
+same weekly-tracker/catalog/challenge/companion mechanics, entirely
+different subject matter: skip-eating-out and save-spare-change habits
+instead of CO2/waste/water, dollars-saved instead of kilograms, a savings
+jar (empty → coin jar → full wallet → piggy bank pro) instead of a growing
+plant. This was a full rename, not a re-skin: every `Eco*` type, file, and
+jsonb key became `Money*`/`Habit*`/`Jar*` (`EcoImpactController` →
+`MoneyHabitController`, `eco_impact_models.dart` →
+`money_habit_models.dart`, `eco_xp` → `habit_xp`, etc.) — see
+`docs/MONEY_HABITS_FEATURE.md` for the full current reference; §15 above is
+left as-is as the historical record of the prototype, not updated in place.
+The friends/leaderboard system was **decoupled** from the habit controller
+in the same pass — `ProfileScreen`'s `_FriendsCard` now calls
+`SupabaseService` directly instead of routing through
+`MoneyHabitController`, so retheming one can't ripple into the other again.
+
+**A real bug caught by the test suite, twice.** Two rounds of "run the
+tests" surfaced real regressions, not flaky infrastructure:
+- Adding `MoneyHabitController` to the provider tree (`main.dart`) without
+  adding it to the two widget-test harnesses
+  (`test/responsive_layout_test.dart`, `test/market_resize_test.dart`) threw
+  `ProviderNotFoundException` deep inside pumped widgets — visible as 14
+  failures and, separately, a 10-minute hang in `market_resize_test.dart`
+  (an uncaught exception mid-gesture-sequence, not a slow test). Fixed by
+  adding the same `ChangeNotifierProxyProvider` wiring `main.dart` already
+  had to both harnesses.
+- Inserting the two new curriculum units (see below) at the *front* of
+  `lessonUnits` broke `DailyPlanBuilder._nextLesson`, which walks the list
+  in order and quests the first uncompleted lesson node — every existing
+  teen/adult account would have been assigned "What Is Money?" as their
+  daily quest. Fixed by moving both new units to the *end* of the list
+  instead; the Academy's unit strip still displays them first regardless,
+  since it groups by `ageStage.minAge`, not list position.
+
+**Redesign follow-through**: the forest palette (`AppTheme.deepForest`/
+`darkForest`/`panel`/`panelStrong`) was lightened a second time, and ~15
+more screens that still had literal `Color(0xFF0717...)`-style hex
+duplicates (rather than referencing `AppTheme`) were migrated onto the
+token — so the second lightening pass actually reaches them. Baloo 2 was
+extended to two screens that had zero `GoogleFonts` usage at all: the Play
+tab (`main_game_page.dart` — the "Play Life" hero card, endings collection,
+shortcut cards) and the React Challenge minigame
+(`react_challenge_screen.dart` — question/results cards, both AppBars, the
+exit-confirm dialog).
+
+**Curriculum: ages 4-6 and 7-10 added.** Two new `AgeStage` values
+(`earlyChildhood`, minAge 4; `youngKids`, minAge 7) were added below the
+existing `middleSchool` floor, plus two new units — `unit_10` ("Money Is
+Real": what money is, that things cost money, saving in a piggy bank) and
+`unit_11` ("Saving and Spending": earning an allowance, needs vs wants, a
+simple save/spend plan, why banks exist). Each ships full lesson content
+(`_lessonLibrary` entries) and a full quiz/practice/test question bank
+(`quiz_bank.dart`), same shape as every existing unit — required by
+`quiz_bank_test.dart`'s coverage checks, which fail loudly on a unit or
+assessment node with no questions.
+
+These two units are a **second, independent root chain**, not gated behind
+the existing teen/adult curriculum (unit_1 → ... → unit_9) — a 5-year-old
+realistically shouldn't need to clear a 401(k) unit first. This is a
+genuine, documented exception to the single-chain assumption
+`test/lesson_data_test.dart` used to enforce; that test was rewritten (not
+weakened) to check "opens off the previous unit, **or** starts a fresh root
+with an empty-prerequisite first lesson" — anything else still fails the
+test, so a real typo still gets caught.
+
+A structural note on the reading-level tradeoff, discussed rather than
+quietly worked around: this app is currently text-only (no audio, per
+above), so a genuinely non-reading 4-6-year-old can't self-serve these
+lessons — the unit description says so directly ("best explored together
+with a grown-up or older sibling") rather than pretending the format fits
+the audience perfectly.

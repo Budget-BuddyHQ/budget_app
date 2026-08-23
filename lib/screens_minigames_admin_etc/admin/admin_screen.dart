@@ -1,5 +1,6 @@
 import 'package:google_fonts/google_fonts.dart';
 import '../../services_backend_and_other_services/supabase_service.dart';
+import '../../themes_colors/app_theme.dart';
   // Null when Supabase was never initialized (no keys configured) — the
   // rest of this screen checks for that via _canAccessAdminPanel() rather
   // than crashing on a bare Supabase.instance access.
@@ -37,9 +38,11 @@ import '../../services_backend_and_other_services/supabase_service.dart';
     }
     final user = client.auth.currentUser;
     final currentUser = supabase?.auth.currentUser;
+            backgroundColor: AppTheme.deepForest,
           return Scaffold(
-            backgroundColor: const Color(0xFF0A211A),
+            backgroundColor: AppTheme.deepForest,
                 style: GoogleFonts.quicksand(color: Colors.white),
+          backgroundColor: AppTheme.deepForest,
               IconButton(icon: const Icon(Icons.refresh), onPressed: _refresh),
                 return Center(
                     style: GoogleFonts.quicksand(color: Colors.white),

@@ -10,6 +10,7 @@ import '../../../models_Like_Skins_and_lessons_templates/progression_service.dar
 import '../../../models_Like_Skins_and_lessons_templates/quiz_bank.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
+import '../../../themes_colors/app_theme.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart'
     show UserStats;
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
@@ -155,7 +156,7 @@ class _LessonScreenState extends State<LessonScreen> {
     final answer = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF0F2C22),
+        backgroundColor: AppTheme.panel,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
           side: const BorderSide(color: Color(0x55FFB84D)),
@@ -291,7 +292,7 @@ class _LessonScreenState extends State<LessonScreen> {
     final warnAboveStage = _statsController.stats.ageBand.maxPlausibleStage;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF10352A),
+      backgroundColor: AppTheme.deepForest,
       bottomNavigationBar: widget.onNavSelected == null
           ? null
           : CustomBottomNav(
@@ -878,28 +879,28 @@ class _HubHeader extends StatelessWidget {
           final copy = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Academy',
-                style: TextStyle(
-                  color: Color(0xFFB8F5D1),
+                style: GoogleFonts.baloo2(
+                  color: const Color(0xFFB8F5D1),
                   fontSize: 12,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Units and mastery',
-                style: TextStyle(
+                style: GoogleFonts.baloo2(
                   color: Colors.white,
                   fontSize: compact ? 23 : 30,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               SizedBox(height: compact ? 8 : 10),
               Text(
                 'Pick up the next lesson, clear quizzes, and keep mastery moving.',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   color: Colors.white.withValues(alpha: 0.82),
                   height: compact ? 1.32 : 1.45,
                 ),
@@ -1405,10 +1406,10 @@ class _UnitCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           unit.title,
-                          style: TextStyle(
+                          style: GoogleFonts.baloo2(
                             color: const Color(0xFFF7FFFB),
                             fontSize: compact ? 24 : 28,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),

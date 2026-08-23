@@ -47,12 +47,22 @@ class Lesson {
 
 /// Roughly who a unit is written for. Units are ordered by this so the Academy
 /// reads as a path that grows with the learner rather than a flat list — a
-/// 13-year-old starts at pocket money, an 18-year-old at credit and taxes.
-enum AgeStage { middleSchool, highSchool, graduating, adult }
+/// 5-year-old starts at "what is money", a 13-year-old at pocket money, an
+/// 18-year-old at credit and taxes.
+enum AgeStage {
+  earlyChildhood,
+  youngKids,
+  middleSchool,
+  highSchool,
+  graduating,
+  adult,
+}
 
 extension AgeStageInfo on AgeStage {
   /// Short label shown on the unit header.
   String get label => switch (this) {
+    AgeStage.earlyChildhood => 'Ages 4–6',
+    AgeStage.youngKids => 'Ages 7–10',
     AgeStage.middleSchool => 'Ages 11–13',
     AgeStage.highSchool => 'Ages 14–17',
     AgeStage.graduating => 'Ages 18–20',
@@ -60,6 +70,8 @@ extension AgeStageInfo on AgeStage {
   };
 
   String get blurb => switch (this) {
+    AgeStage.earlyChildhood => 'What money is and where it goes',
+    AgeStage.youngKids => 'Earning, saving, and your first choices',
     AgeStage.middleSchool => 'Pocket money and first choices',
     AgeStage.highSchool => 'Earning, saving and first accounts',
     AgeStage.graduating => 'Credit, rent and independence',
@@ -69,6 +81,8 @@ extension AgeStageInfo on AgeStage {
   /// Lowest age this stage is aimed at — used to sort and to pick the stage
   /// that matches the player's own age band.
   int get minAge => switch (this) {
+    AgeStage.earlyChildhood => 4,
+    AgeStage.youngKids => 7,
     AgeStage.middleSchool => 11,
     AgeStage.highSchool => 14,
     AgeStage.graduating => 18,

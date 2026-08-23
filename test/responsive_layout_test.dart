@@ -1,5 +1,6 @@
 import 'package:budget_app/controllers_that_updates_stats/app_settings_controller.dart';
 import 'package:budget_app/controllers_that_updates_stats/daily_plan_controller.dart';
+import 'package:budget_app/controllers_that_updates_stats/money_habit_controller.dart';
 import 'package:budget_app/controllers_that_updates_stats/user_stats_controller.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/lesson.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/lesson_data.dart';
@@ -94,6 +95,12 @@ Widget _wrap(Widget child) {
             DailyPlanController(context.read<UserStatsController>()),
         update: (_, userStats, previous) =>
             previous ?? DailyPlanController(userStats),
+      ),
+      ChangeNotifierProxyProvider<UserStatsController, MoneyHabitController>(
+        create: (context) =>
+            MoneyHabitController(context.read<UserStatsController>()),
+        update: (_, userStats, previous) =>
+            previous ?? MoneyHabitController(userStats),
       ),
     ],
     child: MaterialApp(theme: AppTheme.getLightTheme(), home: child),
@@ -227,15 +234,9 @@ void main() {
       await tester.pumpWidget(_wrap(const DashboardShell()));
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is AmbientLottieCard &&
-              widget.semanticLabel == 'Moving turtle decoration',
-        ),
-        findsOneWidget,
-      );
-
+      // The hero card's floating turtle decoration was removed by design
+      // (2026-08-22 redesign pass — see docs/ARCHITECTURE.md §14); this test
+      // now checks a decoration that's still there instead.
       await tester.tap(find.text('Academy').last);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
@@ -255,7 +256,7 @@ void main() {
     expect(errors.map((e) => e.exception.toString()), isEmpty);
   });
 
-  testWidgets('compact dashboard keeps the turtle and shop visuals', (
+  testWidgets('compact dashboard keeps the arcade and academy visuals', (
     tester,
   ) async {
     final errors = <FlutterErrorDetails>[];

@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -13,6 +14,7 @@ import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
 import '../../../services_backend_and_other_services/local_web_game_server.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
+import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/orientation_scope.dart';
 
@@ -340,10 +342,10 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
           context: context,
           builder: (dialogContext) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF214C3D),
-              title: const Text(
+              backgroundColor: AppTheme.panelStrong,
+              title: Text(
                 'Exit battle?',
-                style: TextStyle(color: Colors.white),
+                style: GoogleFonts.baloo2(color: Colors.white, fontWeight: FontWeight.w700),
               ),
               content: const Text(
                 'Leaving now will close the active Budget Battle session.',
@@ -396,10 +398,10 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
       child: PopScope(
 
         child: Scaffold(
-          backgroundColor: const Color(0xFF07150F),
+          backgroundColor: AppTheme.deepForest,
           appBar: AppBar(
-            title: const Text('React Challenge'),
-            backgroundColor: const Color(0xFF1A4D3D),
+            title: Text('React Challenge', style: GoogleFonts.baloo2(fontWeight: FontWeight.w700)),
+            backgroundColor: AppTheme.darkForest,
             foregroundColor: Colors.white,
           ),
           body: Stack(
@@ -681,10 +683,10 @@ class _NativeBudgetBattleChallengeState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF103225),
+      backgroundColor: AppTheme.deepForest,
       appBar: AppBar(
-        title: const Text('React Challenge'),
-        backgroundColor: const Color(0xFF1A4D3D),
+        title: Text('React Challenge', style: GoogleFonts.baloo2(fontWeight: FontWeight.w700)),
+        backgroundColor: AppTheme.darkForest,
         foregroundColor: Colors.white,
       ),
       body: SafeArea(
@@ -712,21 +714,21 @@ class _NativeBudgetBattleChallengeState
     return Container(
       key: const ValueKey<String>('loading_questions'),
       padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: const Color(0xFF254E3F),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF3B6B59)),
+      decoration: AppTheme.getPuffyDecoration(
+        accent: const Color(0xFF85EFAC),
+        fillColor: AppTheme.panelStrong,
+        restAlpha: 0.14,
       ),
-      child: const Column(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CircularProgressIndicator(color: Color(0xFF85EFAC)),
-          SizedBox(height: 16),
+          const CircularProgressIndicator(color: Color(0xFF85EFAC)),
+          const SizedBox(height: 16),
           Text(
             'Loading daily challenge',
-            style: TextStyle(
+            style: GoogleFonts.baloo2(
               color: Colors.white,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
               fontSize: 18,
             ),
           ),
@@ -743,10 +745,10 @@ class _NativeBudgetBattleChallengeState
     return Container(
       key: ValueKey<int>(_questionIndex),
       padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: const Color(0xFF254E3F),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF3B6B59)),
+      decoration: AppTheme.getPuffyDecoration(
+        accent: const Color(0xFF85EFAC),
+        fillColor: AppTheme.panelStrong,
+        restAlpha: 0.14,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -757,15 +759,15 @@ class _NativeBudgetBattleChallengeState
               Expanded(
                 child: Text(
                   'Question ${_questionIndex + 1} of ${_questions.length}',
-                  style: const TextStyle(
-                    color: Color(0xFF85EFAC),
+                  style: GoogleFonts.baloo2(
+                    color: const Color(0xFF85EFAC),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               Text(
                 'Score $_correctAnswers',
-                style: const TextStyle(
+                style: GoogleFonts.baloo2(
                   color: Colors.white70,
                   fontWeight: FontWeight.w700,
                 ),
@@ -787,10 +789,10 @@ class _NativeBudgetBattleChallengeState
           const SizedBox(height: 24),
           Text(
             question.prompt,
-            style: const TextStyle(
+            style: GoogleFonts.baloo2(
               color: Colors.white,
               fontSize: 24,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
               height: 1.18,
             ),
           ),
@@ -858,10 +860,10 @@ class _NativeBudgetBattleChallengeState
     return Container(
       key: const ValueKey<String>('results'),
       padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: const Color(0xFF254E3F),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF3B6B59)),
+      decoration: AppTheme.getPuffyDecoration(
+        accent: const Color(0xFF85EFAC),
+        fillColor: AppTheme.panelStrong,
+        restAlpha: 0.16,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -875,10 +877,10 @@ class _NativeBudgetBattleChallengeState
           const SizedBox(height: 14),
           Text(
             title,
-            style: const TextStyle(
+            style: GoogleFonts.baloo2(
               color: Colors.white,
               fontSize: 28,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 8),
