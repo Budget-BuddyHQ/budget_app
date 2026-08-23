@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../constants/app_assets.dart';
 import '../../../services_backend_and_other_services/market_data_service.dart';
 import '../../../widgets_custom_lotties/price_chart.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// What kind of order the player is placing.
 ///
@@ -315,9 +316,9 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(22),
               ),
-              titleTextStyle: const TextStyle(
+              titleTextStyle: GoogleFonts.pixelifySans(
                 color: Colors.white,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
                 fontSize: 18,
               ),
               contentTextStyle: const TextStyle(
@@ -420,9 +421,9 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                     ),
                   ),
                   onPressed: () => Navigator.of(dialogContext).pop(true),
-                  child: const Text(
+                  child: Text(
                     'I understand',
-                    style: TextStyle(fontWeight: FontWeight.w900),
+                    style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -532,8 +533,8 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                     children: [
                       Text(
                         widget.symbol,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900,
+                        style: GoogleFonts.pixelifySans(
+                          fontWeight: FontWeight.w700,
                           fontSize: 17,
                         ),
                       ),
@@ -593,9 +594,9 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                         Expanded(
                           child: Text(
                             _detailsExpanded ? 'Hide company details' : 'Show additional company details',
-                            style: TextStyle(
+                            style: GoogleFonts.pixelifySans(
                               color: Colors.white.withValues(alpha: 0.9),
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -743,8 +744,8 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                             TradeAction.short => 'Short ${widget.symbol}',
                             TradeAction.cover => 'Cover ${widget.symbol}',
                           },
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
+                    style: GoogleFonts.pixelifySans(
+                      fontWeight: FontWeight.w700,
                       fontSize: 16,
                     ),
                   ),
@@ -956,12 +957,12 @@ class _QuickAmountRow extends StatelessWidget {
                   ),
                   child: Text(
                     options[i].$1,
-                    style: TextStyle(
+                    style: GoogleFonts.pixelifySans(
                       color: enabled
                           ? accent
                           : Colors.white.withValues(alpha: 0.3),
                       fontSize: 12.5,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -1171,7 +1172,7 @@ class _QuoteChip extends StatelessWidget {
           const SizedBox(height: 3),
           Text(
             value,
-            style: TextStyle(color: color, fontWeight: FontWeight.w900),
+            style: GoogleFonts.pixelifySans(color: color, fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -1203,9 +1204,9 @@ class _DetailRow extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             value,
-            style: const TextStyle(
+            style: GoogleFonts.pixelifySans(
               color: Colors.white,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -1438,9 +1439,9 @@ class _SideHalf extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: TextStyle(
+          style: GoogleFonts.pixelifySans(
             color: selected ? Colors.white : Colors.white54,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -1531,9 +1532,9 @@ class _StepperField extends StatelessWidget {
               inputFormatters: allowDecimal
                   ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
                   : [FilteringTextInputFormatter.digitsOnly],
-              style: const TextStyle(
+              style: GoogleFonts.pixelifySans(
                 color: Colors.white,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
               decoration: InputDecoration(
                 isDense: true,
@@ -1666,9 +1667,9 @@ class _EstimateLine extends StatelessWidget {
         ),
         Text(
           value,
-          style: TextStyle(
+          style: GoogleFonts.pixelifySans(
             color: emphasise ? const Color(0xFFE1BB72) : Colors.white,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
             fontSize: emphasise ? 18 : 14,
           ),
         ),

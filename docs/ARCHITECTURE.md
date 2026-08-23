@@ -854,3 +854,174 @@ above), so a genuinely non-reading 4-6-year-old can't self-serve these
 lessons — the unit description says so directly ("best explored together
 with a grown-up or older sibling") rather than pretending the format fits
 the audience perfectly.
+
+## 17. The town becomes a game, and a collision bug worth remembering
+
+### The bug I got wrong twice
+
+Two sessions running, the Adventure map was reported as "colliders are not
+implemented" while I had claimed the opposite. The claim was based on
+checking the **map data** — every structural layer in `map.json` does carry
+`"collider": true`, and Bonfire really was building `RectangleHitbox`es from
+them. What I never checked was the other half of a collision: the player.
+
+Bonfire 3.17's `SimplePlayer` mixes in `Movement, Attackable, Vision,
+PlayerControllerListener, MovementByJoystick` — and **not**
+`BlockMovementCollision` — and ships with no hitbox. Only `PlatformPlayer`
+and `PlatformEnemy` get the mixin in this version. So the world was full of
+hitboxes and the player had nothing to collide with, and walked out of the
+map into black void exactly as reported.
+
+The lesson generalises past this bug: *verifying one side of a two-sided
+system and reporting it as verified is the same as not verifying it.* The
+fix (`TownPlayer with BlockMovementCollision` + a feet-shaped hitbox) is in
+`docs/ADVENTURE_TOWN.md` §1, and `test/town_map_test.dart` now pins it
+through the type system so it cannot silently regress.
+
+### The town became an actual game
+
+Prompted by wanting something in the shape of an exploration RPG — walk
+around, bump into things, get an outcome — the map went from a walking
+simulator to a loop:
+
+- **6 interactable places** (store, bank, school, job board, home, notice
+  board), each a money decision whose data shape deliberately mirrors the
+  Life sim's `LifeChoice`, so both halves of the app teach with one grammar.
+- **8 coin pickups** on verified-walkable tiles.
+- **An objective bar** ("visit every place"), a proximity prompt, a decision
+  sheet, and an outcome dialog that explains *why* the choice went the way
+  it did — the beat that turns a stat change into a lesson.
+- Rewards route through the existing `applyChallengePayload` sink, so no
+  second economy.
+
+Full reference: `docs/ADVENTURE_TOWN.md`. One deliberate non-fix documented
+there: map row `y=37` is solid across its whole width, sealing off the
+bottom fifth of the map. That's the user's exported art and "delete some
+walls" is a design call, so it's flagged rather than silently edited.
+
+### Home lost its second daily system
+
+"Today's Plan" (the lesson/practice/arcade quest board) came off Home
+entirely, and Money Habits took its place as *the* daily task — one card
+that shows today's pending habit, or prompts you to pick a first one, or
+says you're done. `DailyPlanBuilder`/`DailyPlanController` were **kept**,
+not deleted: they're real, tested code, and removing a working system on a
+guess is worse than leaving it unreferenced from Home.
+
+### Typography, finally at the root
+
+Three separate rounds of "the font is still bad" traced to one cause I kept
+treating as a call-site problem: `AppTheme`'s `bodyMedium` is Quicksand, and
+a bare `TextStyle(...)` **merges onto the ambient `DefaultTextStyle`**. So
+every heading written as a plain `TextStyle(fontSize: 20, fontWeight: w900)`
+silently rendered in the rounded body font, sitting right next to headings
+that had been explicitly set to the pixel font — which is what read as
+"inconsistent" on screen.
+
+Fixed by sweeping every `TextStyle` block containing `FontWeight.w900` (the
+app's de-facto heading weight) to `GoogleFonts.pixelifySans` across 19
+files. That required dropping `const` from those styles, which then broke
+`const` on the enclosing widgets — 30 `invalid_constant` errors, fixed by a
+script that walks up to the enclosing constructor and strips its `const`,
+plus two grandparent cases (`const Expanded(child: Text(...))`) done by
+hand. Body prose stays Quicksand on purpose: pixel fonts are hard to read
+in long paragraphs, and lesson content is long paragraphs.
+
+### Backgrounds: boosted, not dimmed
+
+Screens were painting detailed pixel art and then burying it under a
+~0.6-alpha near-black wash — the cheapest way to keep text readable and the
+fastest way to flatten art into one dark slab. `VividBackdrop`
+(`widgets_custom_lotties/vivid_backdrop.dart`) does it the other way round:
+a real saturation + brightness **colour matrix** (the maths behind an image
+editor's vibrance slider), then a much lighter scrim and an edge-weighted
+vignette whose `stops` keep the middle ~55% completely clear. Applied to
+Style and Profile; Market Board and the Life sim keep their dark treatment
+because dense numeric UI genuinely reads better on flat dark.
+
+Profile also got its cards changed from `white @ 5%` (effectively invisible
+over a busy tile background, which is what read as "so much white space")
+to a translucent solid panel, and its badge grid tightened from 84px/10px
+spacing to 72px/6px.
+
+### Curriculum: sourced, not invented
+
+New practice questions were written from named, checkable sources and cite
+them inline, because this is the part of the app that claims to teach:
+
+- **[FICO]** myfico.com — payment history 35%, amounts owed 30%, length
+  15%, new credit 10%, credit mix 10%.
+- **[SEC]** investor.gov — compound interest is interest on principal *and*
+  accumulated interest; Rule of 72 (72 ÷ rate ≈ years to double, most
+  accurate 6-10%).
+- **[CFPB]** consumerfinance.gov — emergency savings guidance (at least
+  about a month of income as a first target).
+
+They're spread into units 2/3/4's existing practice banks rather than
+replacing anything. `quiz_bank_test.dart`'s answer-key-balance guard (no
+option position above 40%) still passes with them added.
+
+## 18. Making it feel like a game, not a set of screens
+
+### A second proportions bug, same family as the collider one
+
+The walk cycle looked wrong for every skin, and the cause was the same
+*shape* of mistake as §17's collision bug: a value that looked reasonable in
+isolation and was never checked against the thing it had to match. The
+villager sprite cell is 104×152; the player was sized `Vector2.all(32)`, a
+square. Every character was squashed.
+
+Fixed by naming the ratio once (`AppAssets.villagerAspectRatio`,
+`npcAspectRatio`) and sizing height-first everywhere. Documented in
+`docs/ADVENTURE_TOWN.md` §9 so the next character type does not repeat it.
+
+### The town got people
+
+Six NPCs — Tax Collector, Shopper, Careful Spender, Shift Worker, Student,
+Neighbour — using the **real sprite sets already sitting unused in the
+repo** (`tax-guy/`, `customer_more_animations/`,
+`employee_or_background_character_information/`). Those were one-PNG-per-frame
+rather than sheets, so they load as sprite lists and each folder had to be
+registered in `pubspec.yaml` individually.
+
+NPCs deliberately carry no stat changes — just cycling lines of advice.
+Places make you decide; people just talk. Mixing both into "every
+interaction is a decision" would have made walking around feel like a
+worksheet.
+
+### The town now belongs to a life
+
+Per direct instruction, you can no longer drop onto the map as a standalone
+mode: Home's hero starts a Life run, and the town opens from inside it. That
+also removed a redundancy — Home had a hero *and* a "Play Life" card both
+routing to `/life`, which is two primary actions competing. One now.
+
+### Money Habits was unusable without explanation
+
+Direct feedback: *"I have no idea where I'm clicking and what this thing
+does."* Fair — a first-time user landed on four one-word tabs ("Track",
+"Activity" — near-synonyms) and an empty grid.
+
+- Tabs renamed and given icons: **My Week / Find Habits / Challenges / My
+  Jar**.
+- A three-step "How this works" diagram (pick → log → fill the jar) shows
+  **only until the first habit is saved**, then gets out of the way.
+- Empty states now name the tab to go to instead of describing the feature
+  abstractly.
+
+### Life sim: 75 → 95 events
+
+The pool clustered at 14-28. Ages **10-11 had literally zero eligible
+events** — a life skipped silently through them. Added a fill-the-gaps pack
+(late 20s through 60s: moving in, car repairs, raise-vs-time-off, scam
+calls, market drops, retirement-fee reviews) and an early-childhood pack
+(ages 4-8).
+
+`life_variety_test` gained a childhood-starvation guard mirroring the
+existing adult one — and it **immediately failed at age 5 with only two
+eligible events**, which is exactly why it was worth writing rather than
+eyeballing the list. The early pack exists because that test caught it.
+
+Composition is done with const spreads (`_kLifeEventsCore` +
+`kLifeEventsExtra` + `kLifeEventsEarly` → `kLifeEvents`) so the sets stay
+separately readable rather than being merged into one 95-entry literal.

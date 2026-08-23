@@ -92,7 +92,8 @@ class HabitWeeklyTrackerGrid extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
               child: Text(
-                'Save a habit from Activity to start tracking it here.',
+                'No habits yet. Open the "Find Habits" tab and save one — '
+                'it will show up here with a circle to tap each day.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.quicksand(color: AppTheme.textMuted),
               ),

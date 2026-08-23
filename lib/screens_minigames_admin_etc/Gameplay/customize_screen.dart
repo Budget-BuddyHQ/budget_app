@@ -4,6 +4,7 @@ import 'package:budget_app/services_backend_and_other_services/supabase_service.
     show UserStats;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_assets.dart';
@@ -16,6 +17,7 @@ import '../../widgets_custom_lotties/avatar_sprite.dart';
 import '../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
 import '../../widgets_custom_lotties/hover_lift.dart';
+import '../../widgets_custom_lotties/vivid_backdrop.dart';
 
 class CustomizeScreen extends StatefulWidget {
   const CustomizeScreen({
@@ -220,20 +222,20 @@ class _CharacterPreviewCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Customize',
-            style: TextStyle(
-              color: Color(0xFF85EFAC),
-              fontWeight: FontWeight.w900,
+            style: GoogleFonts.pixelifySans(
+              color: const Color(0xFF85EFAC),
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Your turtle mascot',
-            style: TextStyle(
+            style: GoogleFonts.pixelifySans(
               color: Colors.white,
               fontSize: 26,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 16),
@@ -267,17 +269,17 @@ class _CharacterPreviewCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   equippedSkin.name,
-                  style: const TextStyle(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white,
                     fontSize: 22,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${equippedSkin.rarityLabel} skin • ${stats.gold} gold ready',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.72),
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white.withValues(alpha: 0.80),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -404,27 +406,32 @@ class _StorePanel extends StatelessWidget {
               width: stacked ? double.infinity : 120,
               height: 58,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                // Was a flat lime→mint ramp where both stops were nearly
+                // the same lightness, so it read as one washy slab. This
+                // runs bright mint → deep emerald on the diagonal, which
+                // gives the button an actual lit edge and a shaded base.
                 gradient: const LinearGradient(
-                  colors: [
-                    Color.fromARGB(255, 125, 255, 92),
-                    Color(0xFF85EFAC),
-                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF9BF3CE), Color(0xFF2E9E76)],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF85EFAC).withValues(alpha: 0.22),
-                    blurRadius: 18,
-                    spreadRadius: 1,
-                  ),
-                ],
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.35),
+                  width: 1.5,
+                ),
+                boxShadow: AppTheme.puffyShadow(
+                  AppTheme.greenPrimary,
+                  restAlpha: 0.38,
+                ),
               ),
               child: Center(
                 child: Text(
                   isOpeningCase ? 'Rolling...' : 'Open Case',
-                  style: const TextStyle(
-                    color: Color(0xFF062C21),
-                    fontWeight: FontWeight.w900,
+                  style: GoogleFonts.pixelifySans(
+                    color: const Color(0xFF06251A),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -450,9 +457,9 @@ class _StorePanel extends StatelessWidget {
               child: Center(
                 child: Text(
                   showOdds ? 'Hide Odds' : 'View Odds',
-                  style: const TextStyle(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -462,28 +469,29 @@ class _StorePanel extends StatelessWidget {
           final details = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Emerald Case',
-                style: TextStyle(
+                style: GoogleFonts.pixelifySans(
                   color: Colors.white,
                   fontSize: 20,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 'Spend 180 gold for a Common, Rare, Epic, Legendary or Mythic turtle skin.',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.72),
+                style: GoogleFonts.quicksand(
+                  color: Colors.white.withValues(alpha: 0.80),
                   height: 1.4,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Wallet: $gold gold',
-                style: const TextStyle(
-                  color: Color(0xFFFFD45C),
-                  fontWeight: FontWeight.w800,
+                style: GoogleFonts.pixelifySans(
+                  color: const Color(0xFFFFD45C),
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -545,12 +553,12 @@ class _CaseOddsPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Case odds',
-            style: TextStyle(
+            style: GoogleFonts.pixelifySans(
               color: Colors.white,
               fontSize: 16,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 10),
@@ -588,7 +596,7 @@ class _CaseOddsPanel extends StatelessWidget {
                   ),
                   Text(
                     odds.oddsLabel,
-                    style: TextStyle(color: color, fontWeight: FontWeight.w900),
+                    style: GoogleFonts.pixelifySans(color: color, fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
@@ -641,10 +649,10 @@ class _RarityDot extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
+        style: GoogleFonts.pixelifySans(
           color: accent,
           fontSize: 10,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -684,13 +692,13 @@ class _SkinCollection extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
                 'Collection',
-                style: TextStyle(
+                style: GoogleFonts.pixelifySans(
                   color: Colors.white,
                   fontSize: 20,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -705,10 +713,10 @@ class _SkinCollection extends StatelessWidget {
               ),
               child: Text(
                 '$owned / $total',
-                style: const TextStyle(
+                style: GoogleFonts.pixelifySans(
                   color: Color(0xFF85EFAC),
                   fontSize: 12,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -729,11 +737,11 @@ class _SkinCollection extends StatelessWidget {
             const SizedBox(height: 20),
             Text(
               family.label.toUpperCase(),
-              style: TextStyle(
+              style: GoogleFonts.pixelifySans(
                 color: Colors.white.withValues(alpha: 0.55),
                 fontSize: 12,
                 letterSpacing: 1.2,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 10),
@@ -1042,10 +1050,10 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
                           _revealed
                               ? 'Case Opened!'
                               : 'Rolling Emerald Case...',
-                          style: TextStyle(
+                          style: GoogleFonts.pixelifySans(
                             color: Colors.white,
                             fontSize: compact ? 18 : 22,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         SizedBox(height: compact ? 12 : 18),
@@ -1183,10 +1191,10 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
                         SizedBox(height: compact ? 8 : 12),
                         Text(
                           preview.name,
-                          style: TextStyle(
+                          style: GoogleFonts.pixelifySans(
                             color: preview.accent,
                             fontSize: compact ? 17 : 20,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -1232,12 +1240,12 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
                                         ),
                                       ),
                                     ),
-                                    child: const Center(
+                                    child: Center(
                                       child: Text(
                                         'Skip',
-                                        style: TextStyle(
+                                        style: GoogleFonts.pixelifySans(
                                           color: Colors.white70,
-                                          fontWeight: FontWeight.w900,
+                                          fontWeight: FontWeight.w700,
                                         ),
                                       ),
                                     ),
@@ -1262,11 +1270,11 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
                                   child: Center(
                                     child: Text(
                                       _revealed ? 'Awesome' : 'Rolling...',
-                                      style: TextStyle(
+                                      style: GoogleFonts.pixelifySans(
                                         color: _revealed
                                             ? const Color(0xFF062C21)
                                             : Colors.white60,
-                                        fontWeight: FontWeight.w900,
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
                                   ),
@@ -1413,33 +1421,20 @@ class _CustomizeBackdrop extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // The detailed village map, same as the starting screen — the flat
-        // repeating meadow tile behind a 0.82 wash left this screen reading
-        // as one solid block of green with no depth to it.
+        // The village map art, pushed rather than dimmed. This used to sit
+        // under a 0.62 near-black wash which flattened the whole screen to
+        // one block of dark green; [VividBackdrop] boosts saturation and
+        // lifts brightness with a colour matrix, then only darkens the
+        // outer edges for text contrast — so the art reads as a lit place
+        // and the character in front of it pops off it.
         Positioned.fill(
-          child: Image.asset(
-            AppAssets.villageMapBackground,
-            fit: BoxFit.cover,
-            filterQuality: FilterQuality.none,
-          ),
-        ),
-        Positioned.fill(
-          child: Container(
-            color: const Color(0xFF0C2418).withValues(alpha: 0.62),
-          ),
-        ),
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: const Alignment(0.3, -0.5),
-                radius: 0.95,
-                colors: [
-                  const Color(0xFF78E08F).withValues(alpha: 0.20),
-                  Colors.transparent,
-                ],
-              ),
-            ),
+          child: VividBackdrop(
+            image: AppAssets.villageMapBackground,
+            saturation: 1.55,
+            brightness: 0.06,
+            scrimOpacity: 0.22,
+            vignetteOpacity: 0.6,
+            glowColor: const Color(0xFF78E08F),
           ),
         ),
         Positioned(

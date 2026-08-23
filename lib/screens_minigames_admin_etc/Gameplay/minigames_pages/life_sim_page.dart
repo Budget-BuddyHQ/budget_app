@@ -277,8 +277,8 @@ class _HeaderBar extends StatelessWidget {
                 name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w900,
+                style: GoogleFonts.pixelifySans(
+                  fontWeight: FontWeight.w700,
                   fontSize: 15,
                 ),
               ),
@@ -302,9 +302,9 @@ class _HeaderBar extends StatelessWidget {
           children: [
             Text(
               '$money',
-              style: const TextStyle(
+              style: GoogleFonts.pixelifySans(
                 color: Color(0xFFE1BB72),
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
                 fontSize: 16,
               ),
             ),
@@ -443,11 +443,11 @@ class _LifeFeed extends StatelessWidget {
                   size: 30,
                 ),
                 const SizedBox(height: 10),
-                const Text(
+                Text(
                   'Your life has ended',
-                  style: TextStyle(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     fontSize: 16,
                   ),
                 ),
@@ -542,10 +542,10 @@ class _Pill extends StatelessWidget {
             ),
             TextSpan(
               text: value,
-              style: TextStyle(
+              style: GoogleFonts.pixelifySans(
                 color: color,
                 fontSize: 12,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -566,9 +566,9 @@ class _AgeHeader extends StatelessWidget {
       padding: const EdgeInsets.only(top: 14, bottom: 6),
       child: Text(
         'Age: $age years',
-        style: const TextStyle(
+        style: GoogleFonts.pixelifySans(
           color: Color(0xFF85EFAC),
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w700,
           fontSize: 15,
         ),
       ),
@@ -618,11 +618,11 @@ class _EventCard extends StatelessWidget {
             children: [
               Icon(event.icon, color: const Color(0xFF58C7FF), size: 20),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'What do you do?',
-                style: TextStyle(
+                style: GoogleFonts.pixelifySans(
                   color: Color(0xFF58C7FF),
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -844,10 +844,10 @@ class _AgeButton extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           'Age',
-          style: TextStyle(
+          style: GoogleFonts.pixelifySans(
             color: Colors.white.withValues(alpha: 0.8),
             fontSize: 11,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ],
@@ -1069,9 +1069,9 @@ class _SkillRow extends StatelessWidget {
               children: [
                 Text(
                   skill.label,
-                  style: const TextStyle(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     fontSize: 14,
                   ),
                 ),
@@ -1091,9 +1091,9 @@ class _SkillRow extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             '$level',
-            style: const TextStyle(
+            style: GoogleFonts.pixelifySans(
               color: accent,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               fontSize: 15,
             ),
           ),
@@ -1107,9 +1107,9 @@ class _SkillRow extends StatelessWidget {
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: const Text(
+            child: Text(
               'Practise',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
+              style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700, fontSize: 12),
             ),
           ),
         ],
