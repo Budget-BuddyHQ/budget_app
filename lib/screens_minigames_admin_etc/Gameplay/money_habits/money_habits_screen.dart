@@ -58,11 +58,15 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white54,
           labelStyle: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+          // Icon + word rather than a bare word: "Track" and "Activity"
+          // are close enough in meaning that the labels alone did not tell
+          // a first-time user which one listed habits and which one logged
+          // them.
           tabs: const [
-            Tab(text: 'Track'),
-            Tab(text: 'Activity'),
-            Tab(text: 'Challenges'),
-            Tab(text: 'Jar'),
+            Tab(icon: Icon(Icons.check_circle_outline_rounded, size: 18), text: 'My Week'),
+            Tab(icon: Icon(Icons.search_rounded, size: 18), text: 'Find Habits'),
+            Tab(icon: Icon(Icons.flag_rounded, size: 18), text: 'Challenges'),
+            Tab(icon: Icon(Icons.savings_rounded, size: 18), text: 'My Jar'),
           ],
         ),
       ),
@@ -95,6 +99,13 @@ class _TrackTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Shown only until the first habit is pinned. New users landed on
+        // an empty grid with no idea what the tabs did or where to start —
+        // this spells the loop out once, then gets out of the way.
+        if (habits.savedHabits.isEmpty) ...[
+          const _HowItWorksCard(),
+          const SizedBox(height: 16),
+        ],
         _MoneyStatsRow(totals: totals),
         const SizedBox(height: 16),
         Text(
@@ -129,10 +140,139 @@ class _TrackTab extends StatelessWidget {
             ),
         ] else
           Text(
-            'Browse Activity to pin a habit here and start your weekly streak.',
+            'Tap "Find Habits" above to pick your first one.',
             style: GoogleFonts.quicksand(color: AppTheme.textMuted),
           ),
       ],
+    );
+  }
+}
+
+/// A three-step diagram of the loop: pick → log → fill the jar. Plain
+/// numbered steps with icons, because the previous version gave a first-time
+/// user four unlabelled tabs and an empty grid and expected them to infer
+/// the game from that.
+class _HowItWorksCard extends StatelessWidget {
+  const _HowItWorksCard();
+
+  @override
+  Widget build(BuildContext context) {
+    const steps = <({int n, IconData icon, String title, String body})>[
+      (
+        n: 1,
+        icon: Icons.search_rounded,
+        title: 'Pick a habit',
+        body: 'Open Activity and save one you could actually do.',
+      ),
+      (
+        n: 2,
+        icon: Icons.check_circle_rounded,
+        title: 'Log it each day',
+        body: 'Tap today\'s circle on Track when you do it.',
+      ),
+      (
+        n: 3,
+        icon: Icons.savings_rounded,
+        title: 'Fill your jar',
+        body: 'Every log adds points. The jar grows as they add up.',
+      ),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: AppTheme.getPuffyDecoration(
+        accent: AppTheme.greenPrimary,
+        fillColor: AppTheme.panelStrong,
+        restAlpha: 0.16,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.lightbulb_rounded,
+                color: AppTheme.greenPrimary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'How this works',
+                style: GoogleFonts.pixelifySans(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          for (final step in steps) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppTheme.greenPrimary.withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppTheme.greenPrimary.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Text(
+                    '${step.n}',
+                    style: GoogleFonts.pixelifySans(
+                      color: AppTheme.greenPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            step.icon,
+                            size: 15,
+                            color: AppTheme.greenPrimary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            step.title,
+                            style: GoogleFonts.pixelifySans(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        step.body,
+                        style: GoogleFonts.quicksand(
+                          color: AppTheme.textMuted,
+                          fontSize: 12,
+                          height: 1.35,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (step.n != steps.length) const SizedBox(height: 12),
+          ],
+        ],
+      ),
     );
   }
 }

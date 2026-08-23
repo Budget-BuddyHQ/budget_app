@@ -277,7 +277,10 @@ class LifeEvent {
 
 /// The event pool — childhood, school, friends, health and love alongside the
 /// money lessons, so it plays like a life rather than a finance quiz.
-const List<LifeEvent> kLifeEvents = <LifeEvent>[
+/// The original hand-written pool. Kept under its own name so the
+/// fill-the-gaps pack below can be added without rewriting this list —
+/// [kLifeEvents] is the composed set everything actually reads.
+const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   // ---------------- Childhood ----------------
   LifeEvent(
     id: 'first_words',
@@ -2261,4 +2264,571 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
       ),
     ],
   ),
+];
+
+// ---------------------------------------------------------------------------
+// Fill-the-gaps event pack
+//
+// The original pool clustered around 14-28 and left real holes: ages 10-11
+// had nothing at all, and 29-64 was thin enough that a long life replayed
+// the same handful of beats. These widen the middle and late game, and lean
+// on non-money life texture (friends, family, health, housing) as well as
+// the money spine — a life that is only budgeting decisions stops reading
+// as a life.
+// ---------------------------------------------------------------------------
+const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
+  // ---------------- The 10-11 hole ----------------
+  LifeEvent(
+    id: 'x_lemonade_stand',
+    prompt:
+        'You and a friend want to run a lemonade stand. Cups and lemons cost '
+        'money up front.',
+    icon: Icons.local_drink_rounded,
+    minAge: 9,
+    maxAge: 12,
+    choices: [
+      LifeChoice(
+        label: 'Work out the costs first',
+        outcome:
+            'You counted what supplies cost before setting a price. That is '
+            'the whole idea behind profit.',
+        money: 15,
+        smarts: 6,
+        happiness: 4,
+      ),
+      LifeChoice(
+        label: 'Just start selling',
+        outcome:
+            'You sold a lot and still ended up down. Selling is not the same '
+            'as earning.',
+        money: -5,
+        smarts: 3,
+        happiness: 3,
+      ),
+      LifeChoice(
+        label: 'Give the lemonade away',
+        outcome: 'No money, plenty of friends.',
+        happiness: 7,
+        addRelationship: 'Neighbourhood friend',
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'x_first_allowance_choice',
+    prompt:
+        'You get your first regular allowance. There is a toy you want that '
+        'costs three weeks of it.',
+    icon: Icons.savings_rounded,
+    minAge: 9,
+    maxAge: 13,
+    choices: [
+      LifeChoice(
+        label: 'Save for three weeks',
+        outcome:
+            'You waited and bought it outright. Waiting is a skill, and you '
+            'just used it.',
+        smarts: 6,
+        happiness: 6,
+      ),
+      LifeChoice(
+        label: 'Spend it weekly on small stuff',
+        outcome:
+            'Gone every week, and the toy never happened. Small spending is '
+            'still spending.',
+        happiness: 3,
+        money: -6,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'x_school_club',
+    prompt: 'A club at school is recruiting. It meets twice a week.',
+    icon: Icons.groups_rounded,
+    minAge: 10,
+    maxAge: 15,
+    choices: [
+      LifeChoice(
+        label: 'Join it',
+        outcome: 'You found people who like the same things you do.',
+        happiness: 8,
+        smarts: 4,
+        addRelationship: 'Club friend',
+      ),
+      LifeChoice(
+        label: 'Skip it and keep your time',
+        outcome: 'Quieter weeks. Not a wrong answer.',
+        happiness: 2,
+      ),
+    ],
+  ),
+
+  // ---------------- Late 20s / 30s ----------------
+  LifeEvent(
+    id: 'x_moving_in',
+    prompt:
+        'Someone you have been seeing suggests moving in together. It would '
+        'halve your rent.',
+    icon: Icons.favorite_rounded,
+    minAge: 24,
+    maxAge: 40,
+    weight: 0.9,
+    choices: [
+      LifeChoice(
+        label: 'Move in together',
+        outcome:
+            'Rent split, life shared. Splitting fixed costs is one of the '
+            'biggest money moves there is.',
+        money: 2400,
+        happiness: 10,
+        addRelationship: 'Partner',
+      ),
+      LifeChoice(
+        label: 'Not yet',
+        outcome: 'You kept your own place and your own pace.',
+        happiness: 2,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'x_car_dies',
+    prompt: 'Your car makes a noise it has never made before. The repair is '
+        'about \$1,200.',
+    icon: Icons.car_repair_rounded,
+    minAge: 20,
+    maxAge: 65,
+    weight: 1.1,
+    repeatable: true,
+    choices: [
+      LifeChoice(
+        label: 'Pay from savings',
+        outcome:
+            'This is exactly what an emergency fund is for. Boring right up '
+            'until the week it saves you.',
+        money: -1200,
+        happiness: -2,
+        smarts: 4,
+      ),
+      LifeChoice(
+        label: 'Put it on a credit card',
+        outcome:
+            'Fixed today, more expensive later — interest turns \$1,200 into '
+            'more than \$1,200.',
+        money: -1500,
+        happiness: -5,
+      ),
+      LifeChoice(
+        label: 'Ignore it and hope',
+        outcome:
+            'It got worse. Deferred maintenance is usually a loan at a bad '
+            'rate.',
+        money: -2200,
+        happiness: -8,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'x_raise_offer',
+    prompt: 'Your manager offers a raise — or the same money plus every '
+        'Friday off.',
+    icon: Icons.more_time_rounded,
+    minAge: 24,
+    maxAge: 60,
+    requiresJob: true,
+    choices: [
+      LifeChoice(
+        label: 'Take the raise',
+        outcome: 'More money, same hours.',
+        money: 4000,
+        happiness: 4,
+      ),
+      LifeChoice(
+        label: 'Take the Fridays',
+        outcome:
+            'You bought time with money you never saw. That is a real trade, '
+            'not a lost one.',
+        happiness: 14,
+        health: 6,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'x_side_project',
+    prompt: 'You have an idea for something you could sell on the side.',
+    icon: Icons.lightbulb_rounded,
+    minAge: 18,
+    maxAge: 55,
+    weight: 0.9,
+    choices: [
+      LifeChoice(
+        label: 'Spend evenings building it',
+        outcome:
+            'Slow, tiring, and it made real money. Second income streams '
+            'usually start ugly.',
+        money: 1800,
+        happiness: -3,
+        smarts: 8,
+      ),
+      LifeChoice(
+        label: 'Keep it as a hobby',
+        outcome: 'No pressure, no income. Also fine.',
+        happiness: 6,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'x_friend_loan',
+    prompt: 'A close friend asks to borrow \$500. They are good for it — '
+        'probably.',
+    icon: Icons.handshake_rounded,
+    minAge: 18,
+    maxAge: 70,
+    weight: 0.8,
+    choices: [
+      LifeChoice(
+        label: 'Lend it',
+        outcome:
+            'They paid back most of it, eventually. Money between friends is '
+            'rarely just money.',
+        money: -150,
+        happiness: -2,
+      ),
+      LifeChoice(
+        label: 'Give them \$100 instead, no repayment',
+        outcome:
+            'Smaller help, no debt hanging between you. Often the version '
+            'that keeps the friendship.',
+        money: -100,
+        happiness: 5,
+        smarts: 5,
+      ),
+      LifeChoice(
+        label: 'Say no, kindly',
+        outcome: 'Awkward for a week. Your budget stayed intact.',
+        happiness: -3,
+        smarts: 3,
+      ),
+    ],
+  ),
+
+  // ---------------- 40s / 50s ----------------
+  LifeEvent(
+    id: 'x_health_checkup',
+    prompt: 'You have been putting off a check-up for two years.',
+    icon: Icons.medical_services_rounded,
+    minAge: 35,
+    maxAge: 70,
+    weight: 1.1,
+    repeatable: true,
+    choices: [
+      LifeChoice(
+        label: 'Go and get it done',
+        outcome:
+            'Caught something small before it became something expensive. '
+            'Prevention is the cheapest healthcare there is.',
+        money: -120,
+        health: 12,
+        smarts: 3,
+      ),
+      LifeChoice(
+        label: 'Put it off again',
+        outcome: 'Nothing happened. This time.',
+        health: -6,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'x_kid_money_talk',
+    prompt:
+        'A younger relative asks you how money actually works. They are '
+        'genuinely asking.',
+    icon: Icons.family_restroom_rounded,
+    minAge: 28,
+    maxAge: 75,
+    weight: 0.9,
+    choices: [
+      LifeChoice(
+        label: 'Sit down and explain it properly',
+        outcome:
+            'You taught someone what took you years to learn. That compounds '
+            'too.',
+        happiness: 12,
+        smarts: 6,
+        addRelationship: 'Someone who looks up to you',
+      ),
+      LifeChoice(
+        label: '"Just save more"',
+        outcome: 'Technically true. Completely useless as advice.',
+        happiness: 2,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'x_retirement_review',
+    prompt:
+        'A letter arrives about your retirement account. You have not looked '
+        'at it in years.',
+    icon: Icons.account_balance_rounded,
+    minAge: 40,
+    maxAge: 70,
+    choices: [
+      LifeChoice(
+        label: 'Actually read it and check the fees',
+        outcome:
+            'You found a fee quietly eating returns and moved the money. '
+            'Fees are small numbers doing large damage.',
+        money: 3000,
+        smarts: 10,
+      ),
+      LifeChoice(
+        label: 'File it unopened',
+        outcome: 'It kept doing whatever it was doing.',
+        happiness: 1,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'x_downsize',
+    prompt: 'The house is bigger than you need now. Selling would free up a '
+        'lot of money.',
+    icon: Icons.home_work_rounded,
+    minAge: 50,
+    maxAge: 80,
+    weight: 0.8,
+    choices: [
+      LifeChoice(
+        label: 'Downsize',
+        outcome:
+            'Smaller place, smaller bills, more freedom. Housing is most '
+            'people\'s biggest line item.',
+        money: 40000,
+        happiness: 6,
+      ),
+      LifeChoice(
+        label: 'Stay put',
+        outcome: 'It is home. Some things are not a spreadsheet.',
+        happiness: 8,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'x_scam_call',
+    prompt:
+        'Someone calls claiming to be your bank. They need your details to '
+        '"secure your account", urgently.',
+    icon: Icons.phone_in_talk_rounded,
+    minAge: 16,
+    maxAge: 90,
+    weight: 1.2,
+    repeatable: true,
+    choices: [
+      LifeChoice(
+        label: 'Hang up and call the bank yourself',
+        outcome:
+            'Correct. Urgency is the oldest tool in the scam kit — a real '
+            'bank never needs your password.',
+        smarts: 12,
+        happiness: 3,
+      ),
+      LifeChoice(
+        label: 'Give them the details',
+        outcome:
+            'It was a scam. The money took weeks to claw back, and some of '
+            'it never came.',
+        money: -900,
+        happiness: -12,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'x_subscription_audit',
+    prompt: 'Your bank statement shows six subscriptions. You recognise four.',
+    icon: Icons.receipt_long_rounded,
+    minAge: 18,
+    maxAge: 80,
+    weight: 1.1,
+    repeatable: true,
+    choices: [
+      LifeChoice(
+        label: 'Cancel the two you forgot',
+        outcome:
+            'Found money. Forgotten subscriptions are the quietest leak in '
+            'most budgets.',
+        money: 240,
+        smarts: 6,
+      ),
+      LifeChoice(
+        label: 'Leave them, it is only a few dollars',
+        outcome:
+            '"Only a few dollars" times twelve months times two is not a few '
+            'dollars.',
+        money: -240,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'x_mentor',
+    prompt: 'Someone senior at work offers to mentor you.',
+    icon: Icons.school_rounded,
+    minAge: 20,
+    maxAge: 55,
+    requiresJob: true,
+    weight: 0.9,
+    choices: [
+      LifeChoice(
+        label: 'Say yes',
+        outcome:
+            'They shortcut years of trial and error for you.',
+        smarts: 12,
+        happiness: 6,
+        addRelationship: 'Mentor',
+      ),
+      LifeChoice(
+        label: 'Decline politely',
+        outcome: 'You figured it out the long way.',
+        smarts: 4,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'x_market_drop',
+    prompt:
+        'The market drops hard. Your investments are down 25% on paper and '
+        'the news is loud about it.',
+    icon: Icons.trending_down_rounded,
+    minAge: 22,
+    maxAge: 80,
+    weight: 0.9,
+    repeatable: true,
+    choices: [
+      LifeChoice(
+        label: 'Do nothing and wait',
+        outcome:
+            'It recovered. A paper loss only becomes a real one when you '
+            'sell into the panic.',
+        money: 2500,
+        smarts: 10,
+      ),
+      LifeChoice(
+        label: 'Sell everything',
+        outcome:
+            'You locked the loss in, then watched it climb back without you.',
+        money: -3000,
+        happiness: -8,
+      ),
+      LifeChoice(
+        label: 'Buy more while it is cheap',
+        outcome:
+            'Nerve-wracking, and it worked out. It does not always — that is '
+            'what risk means.',
+        money: 4000,
+        happiness: 4,
+      ),
+    ],
+  ),
+];
+
+/// Ages 4-8 specifically. The first pass at filling gaps started at 9 and
+/// left the youngest years thin enough that `life_variety_test`'s childhood
+/// guard failed at age 5 with only two eligible events.
+const List<LifeEvent> kLifeEventsEarly = <LifeEvent>[
+  LifeEvent(
+    id: 'x_lost_tooth',
+    prompt: 'You lost a tooth. There is a coin under your pillow.',
+    icon: Icons.savings_rounded,
+    minAge: 4,
+    maxAge: 9,
+    choices: [
+      LifeChoice(
+        label: 'Put it in your piggy bank',
+        outcome: 'Saved. That is the first time you chose later over now.',
+        money: 5,
+        smarts: 4,
+        happiness: 4,
+      ),
+      LifeChoice(
+        label: 'Spend it on sweets today',
+        outcome: 'Gone in an afternoon, and it was a good afternoon.',
+        happiness: 7,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'x_share_toy',
+    prompt: 'Another kid wants a turn with your favourite toy.',
+    icon: Icons.child_friendly_rounded,
+    minAge: 4,
+    maxAge: 8,
+    choices: [
+      LifeChoice(
+        label: 'Share it',
+        outcome: 'They shared theirs back. You both got two toys.',
+        happiness: 7,
+        addRelationship: 'Playground friend',
+      ),
+      LifeChoice(
+        label: 'Keep it to yourself',
+        outcome: 'Still your toy. Quieter playtime.',
+        happiness: 1,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'x_helping_chore',
+    prompt: 'A grown-up asks if you want to help carry the shopping.',
+    icon: Icons.shopping_basket_rounded,
+    minAge: 4,
+    maxAge: 10,
+    choices: [
+      LifeChoice(
+        label: 'Help out',
+        outcome:
+            'You noticed food costs money at the till. Small thing, big idea.',
+        happiness: 5,
+        smarts: 5,
+      ),
+      LifeChoice(
+        label: 'Keep playing',
+        outcome: 'Fair enough. You are five.',
+        happiness: 3,
+      ),
+    ],
+  ),
+  LifeEvent(
+    id: 'x_birthday_money',
+    prompt: 'A relative gives you birthday money.',
+    icon: Icons.cake_rounded,
+    minAge: 4,
+    maxAge: 12,
+    choices: [
+      LifeChoice(
+        label: 'Save half, spend half',
+        outcome:
+            'Splitting it was the whole lesson: you got something now *and* '
+            'something later.',
+        money: 10,
+        smarts: 7,
+        happiness: 6,
+      ),
+      LifeChoice(
+        label: 'Spend all of it',
+        outcome: 'A very good day, and an empty pocket.',
+        happiness: 9,
+      ),
+      LifeChoice(
+        label: 'Save all of it',
+        outcome: 'Nothing today, more than anyone else by next month.',
+        money: 20,
+        smarts: 5,
+      ),
+    ],
+  ),
+];
+
+/// Every Life event the game draws from: the original pool plus the
+/// fill-the-gaps pack. Composed rather than merged by hand so the two sets
+/// stay separately readable.
+const List<LifeEvent> kLifeEvents = <LifeEvent>[
+  ..._kLifeEventsCore,
+  ...kLifeEventsExtra,
+  ...kLifeEventsEarly,
 ];

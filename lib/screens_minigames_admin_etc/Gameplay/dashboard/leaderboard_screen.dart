@@ -170,10 +170,10 @@ class _CurrentUserSummary extends StatelessWidget {
             children: [
               Text(
                 username,
-                style: const TextStyle(
+                style: GoogleFonts.pixelifySans(
                   color: Colors.white,
                   fontSize: 18,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 4),
@@ -223,9 +223,9 @@ class _StatChip extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
+            style: GoogleFonts.pixelifySans(
               color: Colors.white,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -341,9 +341,9 @@ class _LeaderboardRow extends StatelessWidget {
     return Center(
       child: Text(
         initial,
-        style: const TextStyle(
+        style: GoogleFonts.pixelifySans(
           color: Color(0xFF85EFAC),
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w700,
           fontSize: 16,
         ),
       ),

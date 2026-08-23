@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers_that_updates_stats/user_stats_controller.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Warns when progress is saving to the device but not reaching Supabase.
 ///
@@ -45,12 +46,12 @@ class CloudSyncBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Not syncing to the cloud',
-                  style: TextStyle(
+                  style: GoogleFonts.pixelifySans(
                     color: accent,
                     fontSize: 13,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -77,9 +78,9 @@ class CloudSyncBanner extends StatelessWidget {
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: const Text(
+            child: Text(
               'Retry',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
+              style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700, fontSize: 12),
             ),
           ),
         ],

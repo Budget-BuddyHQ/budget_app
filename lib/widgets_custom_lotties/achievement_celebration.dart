@@ -184,11 +184,11 @@ class _AchievementDialogState extends State<_AchievementDialog>
                 const SizedBox(height: 14),
                 Text(
                   'Achievement unlocked',
-                  style: TextStyle(
+                  style: GoogleFonts.pixelifySans(
                     color: widget.accent,
                     fontSize: 11.5,
                     letterSpacing: 1.4,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -222,10 +222,10 @@ class _AchievementDialogState extends State<_AchievementDialog>
                       foregroundColor: const Color(0xFF06251A),
                       padding: const EdgeInsets.symmetric(vertical: 15),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Nice!',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
+                      style: GoogleFonts.pixelifySans(
+                        fontWeight: FontWeight.w700,
                         fontSize: 16,
                       ),
                     ),

@@ -89,6 +89,41 @@ class AppAssets {
   static const int villagerSheetColumns = 8;
   static const int villagerSheetRows = 4;
 
+  /// The sprite cell's width:height ratio (104/152 ≈ 0.684).
+  ///
+  /// Drawing a villager into a **square** box squashes them — which is
+  /// exactly what the Adventure map was doing (`Vector2.all(32)`) and why
+  /// every skin's walk cycle looked wrong. Multiply the on-screen height by
+  /// this to get the matching width.
+  static const double villagerAspectRatio =
+      villagerCellWidth / villagerCellHeight;
+
+  // ---- Town NPC frames (individual PNGs, 102x116 each) ----
+  // Not sprite sheets — one file per frame — so these are built as
+  // numbered path lists rather than sliced out of a grid.
+  static const double npcFrameWidth = 102;
+  static const double npcFrameHeight = 116;
+  static const double npcAspectRatio = npcFrameWidth / npcFrameHeight;
+
+  static const String _taxerRoot = 'assets/map_assets_coins/tax-guy';
+  static const String _customerRoot =
+      'assets/map_assets_coins/customer_more_animations';
+  static const String _workerRoot =
+      'assets/map_assets_coins/employee_or_background_character_information';
+
+  /// Builds `[root/prefix-1.png, ... root/prefix-N.png]`.
+  static List<String> _frames(String dir, String prefix, int count) =>
+      List<String>.generate(count, (i) => '$dir/$prefix-${i + 1}.png');
+
+  static List<String> get taxerIdleFrames =>
+      _frames('$_taxerRoot/idle', 'Taxer_idle', 4);
+  static List<String> get customerIdleFrames =>
+      _frames('$_customerRoot/idle', 'Customer_idle', 4);
+  static List<String> get fancyIdleFrames =>
+      _frames('$_customerRoot/idle-fancy', 'Fancy_idle', 4);
+  static List<String> get workerIdleFrames =>
+      _frames('$_workerRoot/idle', 'Worker_idle', 3);
+
   static const List<String> humanVariantIds = <String>[
     'emerald_scout',
     'gold_banker',

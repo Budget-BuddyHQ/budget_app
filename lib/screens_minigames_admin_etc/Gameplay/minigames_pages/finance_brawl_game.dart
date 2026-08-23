@@ -3635,9 +3635,9 @@ class _BrawlPainter extends CustomPainter {
           text: equippedSkinId.isNotEmpty
               ? equippedSkinId.characters.first.toUpperCase()
               : '\$',
-          style: const TextStyle(
+          style: GoogleFonts.pixelifySans(
             color: Color(0xFF85EFAC),
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
             fontSize: 18,
           ),
         ),
