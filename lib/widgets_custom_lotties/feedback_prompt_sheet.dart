@@ -56,7 +56,7 @@ class _FeedbackPromptSheetContent extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 'Got a sec?',
-                style: GoogleFonts.baloo2(
+                style: GoogleFonts.pixelifySans(
                   color: Colors.white,
                   fontSize: 22,
                   fontWeight: FontWeight.w900,

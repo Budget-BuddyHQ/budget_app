@@ -126,7 +126,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                       child: Text(
                         'Send Feedback',
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.baloo2(
+                        style: GoogleFonts.pixelifySans(
                           color: Colors.white,
                           fontSize: 22,
                           fontWeight: FontWeight.w900,

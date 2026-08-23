@@ -120,7 +120,7 @@ class _HabitTaskBlock extends StatelessWidget {
                     children: [
                       Text(
                         template?.title ?? task.id,
-                        style: GoogleFonts.baloo2(
+                        style: GoogleFonts.pixelifySans(
                           color: AppTheme.textPrimary,
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -155,7 +155,7 @@ class _HabitTaskBlock extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         palette.label,
-                        style: GoogleFonts.baloo2(
+                        style: GoogleFonts.pixelifySans(
                           color: palette.border,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,

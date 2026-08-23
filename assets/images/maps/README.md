@@ -42,6 +42,20 @@ too if you ever export from Tiled instead — just drop a Tiled-exported
 orientation only) here and swap the reader in
 `adventure_world_screen.dart` back.
 
+## Collision
+
+`walls`, `Wall Texturing`, `structures`, `structures mre`, `more
+Structures`, and `Structure Ground` are the layers marked `"collider":
+true` — every other layer (`floor`, `terrain`, `playground`,
+`top_playground`, `inside`) is walkable. **The outer ring (x=0, x=49, y=0,
+y=49 — the rock border) is fully solid with zero gaps**, verified directly
+against the tile data (not just visually): the player cannot reach open
+space beyond the map edge. `CameraConfig.moveOnlyMapArea` in
+`adventure_world_screen.dart` is deliberately left `false`, so standing at
+the wall still shows a sliver of empty void past it rather than the camera
+clamping a tile early — the collider (not the camera) is what stops the
+player, same as any open-world map.
+
 ## Building triggers (not wired yet)
 
 Any object/tile layer named for a building/zone (job, school, shop, bank,

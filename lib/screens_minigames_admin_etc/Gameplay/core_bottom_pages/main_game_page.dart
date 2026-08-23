@@ -52,7 +52,7 @@ class MainGamePage extends StatelessWidget {
               children: [
                 Text(
                   'Play',
-                  style: GoogleFonts.baloo2(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white,
                     fontSize: 30,
                     fontWeight: FontWeight.w700,
@@ -61,7 +61,7 @@ class MainGamePage extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'Level ${stats.level} • ${stats.gold} gold',
-                  style: GoogleFonts.baloo2(
+                  style: GoogleFonts.pixelifySans(
                     color: const Color(0xFFFFD45C),
                     fontWeight: FontWeight.w700,
                   ),
@@ -155,7 +155,7 @@ class _EndingsCollection extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Endings',
-                  style: GoogleFonts.baloo2(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white,
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
@@ -164,7 +164,7 @@ class _EndingsCollection extends StatelessWidget {
               ),
               Text(
                 '$found / ${all.length}',
-                style: GoogleFonts.baloo2(
+                style: GoogleFonts.pixelifySans(
                   color: const Color(0xFFFFD45C),
                   fontWeight: FontWeight.w700,
                 ),
@@ -225,7 +225,7 @@ class _EndingsCollection extends StatelessWidget {
                 ),
                 label: Text(
                   'Live another life',
-                  style: GoogleFonts.baloo2(fontWeight: FontWeight.w700),
+                  style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -275,7 +275,7 @@ class _EndingSlot extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.baloo2(
+            style: GoogleFonts.pixelifySans(
               color: found
                   ? Colors.white
                   : Colors.white.withValues(alpha: 0.35),
@@ -325,7 +325,7 @@ class _LifeHeroCard extends StatelessWidget {
                   ),
                   child: Text(
                     'MAIN GAME',
-                    style: GoogleFonts.baloo2(
+                    style: GoogleFonts.pixelifySans(
                       color: const Color(0xFFFFD45C),
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -337,7 +337,7 @@ class _LifeHeroCard extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'Play Life',
-              style: GoogleFonts.baloo2(
+              style: GoogleFonts.pixelifySans(
                 color: Colors.white,
                 fontSize: 40,
                 height: 1,
@@ -365,7 +365,7 @@ class _LifeHeroCard extends StatelessWidget {
               icon: const Icon(Icons.play_arrow_rounded),
               label: Text(
                 'Start your life',
-                style: GoogleFonts.baloo2(fontWeight: FontWeight.w700, fontSize: 15),
+                style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700, fontSize: 15),
               ),
             ),
           ],
@@ -410,7 +410,7 @@ class _ShortcutCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               label,
-              style: GoogleFonts.baloo2(
+              style: GoogleFonts.pixelifySans(
                 color: Colors.white,
                 fontSize: 17,
                 fontWeight: FontWeight.w700,

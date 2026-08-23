@@ -117,7 +117,7 @@ class _PersonalDetailsSheetState extends State<PersonalDetailsSheet> {
                       children: [
                         Text(
                           widget.isFirstRun ? 'Welcome aboard' : 'About you',
-                          style: GoogleFonts.baloo2(
+                          style: GoogleFonts.pixelifySans(
                             color: Colors.white,
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
@@ -255,7 +255,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: GoogleFonts.baloo2(
+      style: GoogleFonts.pixelifySans(
         color: const Color(0xFFB8F5D1),
         fontSize: 12,
         fontWeight: FontWeight.w700,

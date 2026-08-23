@@ -117,7 +117,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
                       Text(
                         'Set a new password',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.baloo2(
+                        style: GoogleFonts.pixelifySans(
                           color: Colors.white,
                           fontSize: 26,
                           fontWeight: FontWeight.w900,

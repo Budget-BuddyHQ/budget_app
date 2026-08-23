@@ -195,7 +195,7 @@ class _AchievementDialogState extends State<_AchievementDialog>
                 Text(
                   widget.title,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.baloo2(
+                  style: GoogleFonts.pixelifySans(
                     color: Colors.white,
                     fontSize: 25,
                     fontWeight: FontWeight.w900,
