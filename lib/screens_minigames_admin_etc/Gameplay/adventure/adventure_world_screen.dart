@@ -37,16 +37,31 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   // null = still checking, true = map found, false = not there yet.
   bool? _mapReady;
 
+  // Seeded from saved progress in initState — both used to start empty
+  // every time this screen opened, so leaving the town (even just to check
+  // Profile) reset "visit every place" to zero and, worse, let the same
+  // coins be collected for real gold over and over. See
+  // `UserStats.townVisitedSpotIds`/`townCollectedCoinIds`.
   final Set<String> _visited = <String>{};
+  final Set<String> _collectedCoinIds = <String>{};
   int _coinsFound = 0;
   TownSpot? _nearby;
   TownNpc? _nearbyNpc;
   final Map<String, int> _npcLineIndex = <String, int>{};
   bool _sheetOpen = false;
 
+  static String _coinId(({int x, int y, int value}) coin) =>
+      '${coin.x}_${coin.y}';
+
   @override
   void initState() {
     super.initState();
+    final stats = context.read<UserStatsController>().stats;
+    _visited.addAll(stats.townVisitedSpotIds);
+    _collectedCoinIds.addAll(stats.townCollectedCoinIds);
+    _coinsFound = kTownCoins
+        .where((coin) => _collectedCoinIds.contains(_coinId(coin)))
+        .fold(0, (sum, coin) => sum + coin.value);
     _checkForMap();
   }
 
@@ -104,11 +119,25 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     _sheetOpen = false;
   }
 
-  Future<void> _collectCoin(int value) async {
-    if (!mounted) return;
-    setState(() => _coinsFound += value);
+  Future<void> _collectCoin(String coinId, int value) async {
+    if (!mounted || _collectedCoinIds.contains(coinId)) {
+      // Belt and braces: the component itself is only ever built for
+      // not-yet-collected coins (see the `kTownCoins` loop below), but
+      // guarding here too means this method is safe to call regardless of
+      // how it's reached.
+      return;
+    }
+    setState(() {
+      _coinsFound += value;
+      _collectedCoinIds.add(coinId);
+    });
     await context.read<UserStatsController>().applyChallengePayload(
-      <String, dynamic>{'gold_earned': value},
+      <String, dynamic>{
+        'gold_earned': value,
+        'spending_habits': <String, dynamic>{
+          'town_collected_coins': _collectedCoinIds.toList(),
+        },
+      },
     );
     if (!mounted) return;
     GameToast.show(
@@ -150,6 +179,9 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
       'gold_earned': goldDelta,
       'xp_earned': choice.xp,
       'literacy_points_earned': choice.literacy,
+      'spending_habits': <String, dynamic>{
+        'town_visited_spots': _visited.toList(),
+      },
     });
 
     if (!mounted) return;
@@ -230,13 +262,17 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
                   onEnter: _onEnterNpc,
                   onExit: _onExitNpc,
                 ),
+              // Already-collected coins are simply never spawned, rather
+              // than spawned-then-hidden — the cleanest way to guarantee a
+              // collected coin can never pay out gold again on this visit.
               for (final coin in kTownCoins)
-                TownCoinComponent(
-                  value: coin.value,
-                  tileX: coin.x,
-                  tileY: coin.y,
-                  onCollect: _collectCoin,
-                ),
+                if (!_collectedCoinIds.contains(_coinId(coin)))
+                  TownCoinComponent(
+                    value: coin.value,
+                    tileX: coin.x,
+                    tileY: coin.y,
+                    onCollect: (value) => _collectCoin(_coinId(coin), value),
+                  ),
             ],
             cameraConfig: CameraConfig(
               zoom: 1.6,

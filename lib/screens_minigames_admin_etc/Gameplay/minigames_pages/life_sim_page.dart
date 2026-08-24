@@ -9,6 +9,7 @@ import '../../../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import '../../../themes_colors/app_theme.dart';
+import '../../../widgets_custom_lotties/confetti_burst.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../adventure/adventure_world_screen.dart';
 import 'life_character_sheet.dart';
@@ -189,12 +190,29 @@ class _LifeSimPageState extends State<LifeSimPage> {
   /// shock) rather than watching for changes, so the explainer always lands
   /// *after* the player has seen the outcome — not on top of it.
   void _drainLesson(LifeSimController life) {
+    // Read before takeLesson() clears the pending concept — both describe
+    // the same lesson.
+    final isNewConcept = life.pendingLessonIsNew;
     final lesson = life.takeLesson();
     if (lesson == null || !mounted) return;
+    if (isNewConcept) {
+      // A congrats moment for meeting a money idea for the *first* time —
+      // not on every repeat, and not when the concept behind it is bad
+      // news (a repeat interest-cost lesson from carrying debt should not
+      // look like a celebration).
+      ConfettiBurst.show(context);
+    }
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      // Deliberately not dismissible by tapping the scrim or swiping down.
+      // Every other sheet in this file is a menu the player can back out
+      // of freely; this one is the actual teaching moment, and a swipe-off
+      // habit would make it as skippable as a toast. "Got it" is the only
+      // way out, so reading it is unavoidable rather than optional.
+      isDismissible: false,
+      enableDrag: false,
       builder: (_) => _MoneyLessonSheet(
         concept: lesson,
         simpleWording: _simpleWording,
@@ -2033,7 +2051,13 @@ class _MoneyLessonSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // `isDismissible`/`enableDrag: false` on the sheet only block the scrim
+    // tap and the swipe gesture — an Android hardware/gesture back would
+    // still pop the route underneath both of those. PopScope closes that
+    // last gap, so "Got it" really is the only way out.
+    return PopScope(
+      canPop: false,
+      child: Container(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 26),
       decoration: const BoxDecoration(
         color: AppTheme.panelStrong,
@@ -2148,6 +2172,7 @@ class _MoneyLessonSheet extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

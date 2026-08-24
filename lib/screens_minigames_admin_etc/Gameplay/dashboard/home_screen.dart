@@ -19,9 +19,7 @@ import '../../../widgets_custom_lotties/feedback_prompt_sheet.dart';
 import '../../../widgets_custom_lotties/idle_hover_icon.dart';
 import '../../../widgets_custom_lotties/profile_avatar.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
-import '../../../widgets_custom_lotties/game_toast.dart';
 import '../money_habits/money_habits_screen.dart';
-import '../minigames_pages/react_challenge_screen.dart';
 import 'leaderboard_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -33,35 +31,6 @@ class HomeScreen extends StatelessWidget {
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
-
-  Future<void> _launchDailyChallenge(BuildContext context) async {
-    final stats = context.read<UserStatsController>().stats;
-    final result = await Navigator.of(context).push<ReactGameCloseResult>(
-      MaterialPageRoute(
-        builder: (_) => ReactGameScreen(
-          gameId: 'daily_budget_battle',
-          difficulty: 'normal',
-          playerLevel: stats.level,
-          userId: stats.id,
-        ),
-      ),
-    );
-
-    if (!context.mounted || result == null) {
-      return;
-    }
-
-    GameToast.show(
-      context,
-      title: result.status == 'victory'
-          ? 'Daily Challenge Cleared'
-          : 'Challenge Complete',
-      message:
-          '+${result.goldEarned} gold | +${result.xpEarned} XP | ${result.syncState.message}',
-      icon: Icons.workspace_premium_rounded,
-      accent: const Color(0xFFFFD45C),
-    );
-  }
 
   /// The town is part of a life, not a separate mode — so this starts a
   /// Life run rather than dropping straight onto the map. Once you're in a
@@ -89,48 +58,16 @@ class HomeScreen extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: AppTheme.deepForest,
-          appBar: AppBar(
-            backgroundColor: AppTheme.deepForest,
-            elevation: 0,
-            centerTitle: false,
-            titleSpacing: 18,
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Budget Buddy',
-                  style: GoogleFonts.pixelifySans(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  stats.levelTitle,
-                  style: GoogleFonts.pixelifySans(
-                    color: const Color(0xFF85EFAC),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: IconButton.filledTonal(
-                  tooltip: 'Leaderboard',
-                  style: IconButton.styleFrom(
-                    backgroundColor: const Color(
-                      0xFF85EFAC,
-                    ).withValues(alpha: 0.12),
-                    foregroundColor: const Color(0xFFFFD45C),
-                  ),
-                  onPressed: () => _openLeaderboard(context),
-                  icon: const Icon(Icons.emoji_events_rounded),
-                ),
-              ),
-            ],
-          ),
+          // No AppBar here on purpose. MainNavigation's `_TopIconBar` (the
+          // Learn — Budget Buddy — Profile strip) already sits above every
+          // tab, so this used to duplicate the wordmark; "Level N | Gold"
+          // duplicated the hero card's own chip a few pixels below; and the
+          // leaderboard trophy button duplicated the dedicated
+          // `_LeaderboardPromoCard` further down. Stacking a second ~80px
+          // toolbar on top of the global one under all that duplication was
+          // the actual "too much white space at the top" — removing it
+          // loses no information, since everything it showed already
+          // exists in the body.
           bottomNavigationBar: onNavSelected == null
               ? null
               : CustomBottomNav(
@@ -183,7 +120,14 @@ class HomeScreen extends StatelessWidget {
                           _CurrentObjectiveCard(
                             stats: stats,
                             compact: compactHeight,
-                            onPlayNow: () => _launchDailyChallenge(context),
+                            // Was a same-named button that opened the
+                            // React Challenge game directly, bypassing the
+                            // actual Daily tab entirely — two different
+                            // "Daily"s. Now it just goes to the tab; the
+                            // game lives there instead (see
+                            // money_habits_screen.dart's _DailyChallengeCard).
+                            onPlayNow: () =>
+                                onNavSelected?.call(AppTabIndex.daily),
                             onOpenAdventure: () =>
                                 onNavSelected?.call(AppTabIndex.adventure),
                             onOpenArcade: () =>
@@ -310,14 +254,22 @@ class _DailyMoneyHabitCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.pixelifySans(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                  // FittedBox: "Pick a money habit" truncated to "Pick a
+                  // money ha…" at a real ~310px pane width (confirmed
+                  // against a screenshot — narrower than any tested
+                  // viewport). Scaling the whole line down keeps it a
+                  // complete phrase instead of a fragment.
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      style: GoogleFonts.pixelifySans(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -571,18 +523,31 @@ class _AdventureLaunchHero extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: veryTight ? 6 : 10),
-                        Text(
-                          // Was "Adventure Soon" — stale copy from before
-                          // the town map actually existed. It's real now,
-                          // with places to walk into, so the card says so.
-                          'Explore the Town',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.pixelifySans(
-                            color: Colors.white,
-                            fontSize: veryTight ? 25 : (phone ? 30 : 34),
-                            fontWeight: FontWeight.w700,
-                            height: 1,
+                        // FittedBox rather than trusting the font sizes
+                        // below to already fit: at a genuinely narrow pane
+                        // (~310px, confirmed against a real screenshot —
+                        // narrower than any viewport this app's tests
+                        // cover, which start at 320px) "Explore the Town"
+                        // at 30px pixelifySans didn't fit the card's own
+                        // title column and silently truncated to
+                        // "Explore th…". FittedBox scales the whole line
+                        // down as one unit so it's always the full phrase,
+                        // just smaller, never a fragment.
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            // Was "Adventure Soon" — stale copy from before
+                            // the town map actually existed. It's real now,
+                            // with places to walk into, so the card says so.
+                            'Explore the Town',
+                            maxLines: 1,
+                            style: GoogleFonts.pixelifySans(
+                              color: Colors.white,
+                              fontSize: veryTight ? 25 : (phone ? 30 : 34),
+                              fontWeight: FontWeight.w700,
+                              height: 1,
+                            ),
                           ),
                         ),
                         if (!veryTight) ...[
@@ -702,14 +667,22 @@ class _CurrentObjectiveCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Current Objective',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.pixelifySans(
-                            color: Colors.white,
-                            fontSize: 19,
-                            fontWeight: FontWeight.w700,
+                        // FittedBox: this row also carries a decorative
+                        // AmbientLottieCard, which eats even more of the
+                        // title's width than the money-habit card above —
+                        // "Current Objective" truncated to "Curren…" at a
+                        // real ~310px pane width.
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Current Objective',
+                            maxLines: 1,
+                            style: GoogleFonts.pixelifySans(
+                              color: Colors.white,
+                              fontSize: 19,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                         Text(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../themes_colors/app_theme.dart';
@@ -33,7 +34,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       );
     }
     return SupabaseService.instance.fetchLeaderboard(
-      limit: 20,
+      limit: 100,
       currentUserId: currentUserId,
       byGold: _byGold,
     );
@@ -66,6 +67,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   Widget build(BuildContext context) {
     final currentUser = context.watch<UserStatsController>().stats;
+    final accent = _byGold ? const Color(0xFFF4D06F) : AppTheme.greenPrimary;
 
     return Scaffold(
       backgroundColor: AppTheme.deepForest,
@@ -75,89 +77,278 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: RefreshIndicator(
-        color: const Color(0xFF2F9E68),
-        onRefresh: _refresh,
-        child: FutureBuilder<List<LeaderboardEntry>>(
-          future: _leaderboardFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(color: Color(0xFF85EFAC)),
-              );
-            }
+      // A flat solid background was a big part of why this screen read as
+      // "bad" next to the rest of the app — everywhere else uses a soft
+      // gradient + glow ("puffy") look; this was the one screen still
+      // using plain fills.
+      body: DecoratedBox(
+        decoration: const BoxDecoration(gradient: AppTheme.gradientForest),
+        child: RefreshIndicator(
+          color: const Color(0xFF2F9E68),
+          onRefresh: _refresh,
+          child: FutureBuilder<List<LeaderboardEntry>>(
+            future: _leaderboardFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF85EFAC)),
+                );
+              }
 
-            final leaders = snapshot.data ?? const <LeaderboardEntry>[];
-            final podium = leaders.take(3).toList(growable: false);
-            final rest = leaders.skip(3).toList(growable: false);
+              final leaders = snapshot.data ?? const <LeaderboardEntry>[];
+              final podium = leaders.take(3).toList(growable: false);
+              final rest = leaders.skip(3).toList(growable: false);
 
-            return ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(20),
-              children: [
-                Text(
-                  _byGold ? 'Richest Players' : 'Top Finance Wizards',
-                  style: GoogleFonts.pixelifySans(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _showFriends
-                      ? 'Ranked among friends who\'ve added your code (or you\'ve added theirs).'
-                      : leaders.isEmpty
-                      ? 'No cloud leaderboard data is available yet, so you are seeing cached progress only.'
-                      : _byGold
-                      ? 'Ranked by gold — every trade, quest, and case pays off here.'
-                      : 'Rankings now come from saved user stats instead of hardcoded demo names.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.72),
-                    height: 1.45,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                _LeaderboardModeToggle(
-                  showFriends: _showFriends,
-                  onChanged: (friends) => _setMode(friends: friends),
-                ),
-                const SizedBox(height: 10),
-                _MetricToggle(
-                  byGold: _byGold,
-                  onChanged: (byGold) => _setMetric(byGold: byGold),
-                ),
-                const SizedBox(height: 14),
-                _CurrentUserSummary(
-                  username: currentUser.username,
-                  literacyPoints: currentUser.literacyPoints,
-                  xp: currentUser.xp,
-                  gold: currentUser.gold,
-                ),
-                const SizedBox(height: 20),
-                if (leaders.isEmpty)
-                  _EmptyLeaderboardState(showingFriends: _showFriends)
-                else ...[
-                  _HallOfFamePodium(
-                    top3: podium,
-                    byGold: _byGold,
-                    currentUserProfileImageUrl: currentUser.profileImageUrl,
-                  ),
-                  const SizedBox(height: 22),
-                  ...rest.map(
-                    (leader) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _LeaderboardRow(
-                        leader: leader,
-                        byGold: _byGold,
-                        currentUserProfileImageUrl: currentUser.profileImageUrl,
-                      ),
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
+                children: [
+                  Text(
+                    _byGold ? 'Richest Players' : 'Top Finance Wizards',
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _showFriends
+                        ? 'Ranked among friends who\'ve added your code (or you\'ve added theirs).'
+                        : leaders.isEmpty
+                        ? 'No cloud leaderboard data is available yet, so you are seeing cached progress only.'
+                        : _byGold
+                        ? 'Ranked by gold — every trade, quest, and case pays off here.'
+                        : 'Rankings come from saved user stats, not hardcoded demo names.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.72),
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Both toggles used to be two nearly-identical stacked
+                  // pill bars — visually repetitive with nothing telling
+                  // them apart. One panel, two labelled rows, reads as a
+                  // single "filters" control instead of two coincidentally
+                  // similar widgets.
+                  _FilterPanel(
+                    showFriends: _showFriends,
+                    onFriendsChanged: (friends) => _setMode(friends: friends),
+                    byGold: _byGold,
+                    onMetricChanged: (byGold) => _setMetric(byGold: byGold),
+                  ),
+                  const SizedBox(height: 14),
+                  _CurrentUserSummary(
+                    username: currentUser.username,
+                    literacyPoints: currentUser.literacyPoints,
+                    xp: currentUser.xp,
+                    gold: currentUser.gold,
+                    accent: accent,
+                  ),
+                  const SizedBox(height: 22),
+                  if (leaders.isEmpty)
+                    _EmptyLeaderboardState(showingFriends: _showFriends)
+                  else ...[
+                    _HallOfFameStage(
+                      top3: podium,
+                      byGold: _byGold,
+                      currentUserProfileImageUrl: currentUser.profileImageUrl,
+                    ),
+                    const SizedBox(height: 22),
+                    if (rest.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10, left: 4),
+                        child: Text(
+                          'Everyone else',
+                          style: GoogleFonts.pixelifySans(
+                            color: Colors.white.withValues(alpha: 0.55),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ),
+                    ...rest.map(
+                      (leader) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _LeaderboardRow(
+                          leader: leader,
+                          byGold: _byGold,
+                          currentUserProfileImageUrl: currentUser.profileImageUrl,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
-            );
-          },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One combined panel for both toggles, each row explicitly labelled
+/// ("Show" / "Rank by") so the two controls read as related settings on one
+/// card instead of two separate, near-identical pill bars.
+class _FilterPanel extends StatelessWidget {
+  const _FilterPanel({
+    required this.showFriends,
+    required this.onFriendsChanged,
+    required this.byGold,
+    required this.onMetricChanged,
+  });
+
+  final bool showFriends;
+  final ValueChanged<bool> onFriendsChanged;
+  final bool byGold;
+  final ValueChanged<bool> onMetricChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: AppTheme.getPuffyDecoration(
+        accent: AppTheme.greenPrimary,
+        restAlpha: 0.14,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _FilterLabel('SHOW'),
+          const SizedBox(height: 6),
+          _SegmentedRow(
+            leftLabel: 'Global',
+            rightLabel: 'Friends',
+            activeIsRight: showFriends,
+            onChanged: onFriendsChanged,
+          ),
+          const SizedBox(height: 14),
+          _FilterLabel('RANK BY'),
+          const SizedBox(height: 6),
+          _SegmentedRow(
+            leftLabel: 'Finance Wizards',
+            rightLabel: 'Most Gold',
+            activeIsRight: byGold,
+            onChanged: onMetricChanged,
+            rightAccent: const Color(0xFFF4D06F),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterLabel extends StatelessWidget {
+  const _FilterLabel(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: GoogleFonts.quicksand(
+        color: Colors.white.withValues(alpha: 0.5),
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.8,
+      ),
+    );
+  }
+}
+
+class _SegmentedRow extends StatelessWidget {
+  const _SegmentedRow({
+    required this.leftLabel,
+    required this.rightLabel,
+    required this.activeIsRight,
+    required this.onChanged,
+    this.rightAccent,
+  });
+
+  final String leftLabel;
+  final String rightLabel;
+  final bool activeIsRight;
+  final ValueChanged<bool> onChanged;
+  final Color? rightAccent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _SegmentTab(
+              label: leftLabel,
+              active: !activeIsRight,
+              accent: AppTheme.greenPrimary,
+              onTap: () => onChanged(false),
+            ),
+          ),
+          Expanded(
+            child: _SegmentTab(
+              label: rightLabel,
+              active: activeIsRight,
+              accent: rightAccent ?? AppTheme.greenPrimary,
+              onTap: () => onChanged(true),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SegmentTab extends StatelessWidget {
+  const _SegmentTab({
+    required this.label,
+    required this.active,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: active ? accent : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.4),
+                    blurRadius: 10,
+                    spreadRadius: -2,
+                  ),
+                ]
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.pixelifySans(
+            color: active ? AppTheme.deepForest : Colors.white70,
+            fontWeight: FontWeight.w700,
+            fontSize: 12.5,
+          ),
         ),
       ),
     );
@@ -170,53 +361,63 @@ class _CurrentUserSummary extends StatelessWidget {
     required this.literacyPoints,
     required this.xp,
     required this.gold,
+    required this.accent,
   });
 
   final String username;
   final int literacyPoints;
   final int xp;
   final int gold;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF163526),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF85EFAC).withValues(alpha: 0.35),
-        ),
-      ),
-      child: Wrap(
-        spacing: 14,
-        runSpacing: 14,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      padding: const EdgeInsets.all(16),
+      decoration: AppTheme.getPuffyDecoration(accent: accent, restAlpha: 0.18),
+      child: Row(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                username,
-                style: GoogleFonts.pixelifySans(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Your saved progress',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.68),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+          Container(
+            width: 46,
+            height: 46,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.18),
+              shape: BoxShape.circle,
+              border: Border.all(color: accent.withValues(alpha: 0.5)),
+            ),
+            child: Icon(Icons.person_rounded, color: accent, size: 24),
           ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  username,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.pixelifySans(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  'Your saved progress',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
           _StatChip(label: 'LP', value: '$literacyPoints'),
-          _StatChip(label: 'XP', value: '$xp'),
-          _StatChip(label: 'Gold', value: '$gold'),
+          const SizedBox(width: 8),
+          _StatChip(label: 'Gold', value: '$gold', isGold: true),
         ],
       ),
     );
@@ -224,18 +425,24 @@ class _CurrentUserSummary extends StatelessWidget {
 }
 
 class _StatChip extends StatelessWidget {
-  const _StatChip({required this.label, required this.value});
+  const _StatChip({required this.label, required this.value, this.isGold = false});
 
   final String label;
   final String value;
 
+  /// Pixel-art coin icon instead of the bare number — this is the one stat
+  /// on the whole leaderboard that's actually a currency, so it earns the
+  /// same coin glyph used everywhere gold is shown (Home's hero card,
+  /// Finance Brawl's HUD).
+  final bool isGold;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,119 +450,28 @@ class _StatChip extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.64),
-              fontSize: 11,
+              color: Colors.white.withValues(alpha: 0.55),
+              fontSize: 10,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: GoogleFonts.pixelifySans(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LeaderboardModeToggle extends StatelessWidget {
-  const _LeaderboardModeToggle({
-    required this.showFriends,
-    required this.onChanged,
-  });
-
-  final bool showFriends;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppTheme.panel,
-        borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _ModeTab(label: 'Global', active: !showFriends, onTap: () => onChanged(false)),
-          ),
-          Expanded(
-            child: _ModeTab(label: 'Friends', active: showFriends, onTap: () => onChanged(true)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ModeTab extends StatelessWidget {
-  const _ModeTab({required this.label, required this.active, required this.onTap});
-
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: active ? AppTheme.greenPrimary : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: GoogleFonts.pixelifySans(
-            color: active ? AppTheme.deepForest : Colors.white70,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MetricToggle extends StatelessWidget {
-  const _MetricToggle({required this.byGold, required this.onChanged});
-
-  final bool byGold;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppTheme.panel,
-        borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _ModeTab(
-              label: 'Finance Wizards',
-              active: !byGold,
-              onTap: () => onChanged(false),
-            ),
-          ),
-          Expanded(
-            child: _ModeTab(
-              label: 'Most Gold',
-              active: byGold,
-              onTap: () => onChanged(true),
-            ),
+          const SizedBox(height: 2),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isGold) ...[
+                Image.asset(AppAssets.uiIconCoin, width: 13, height: 13),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                value,
+                style: GoogleFonts.pixelifySans(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -372,9 +488,9 @@ class _EmptyLeaderboardState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: const Color(0xFF163526).withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(20),
+      decoration: AppTheme.getPuffyDecoration(
+        accent: AppTheme.greenPrimary,
+        restAlpha: 0.1,
       ),
       child: Text(
         showingFriends
@@ -390,11 +506,10 @@ class _EmptyLeaderboardState extends StatelessWidget {
   }
 }
 
-/// Top-3 podium: 1st centered and tallest, 2nd on the left, 3rd on the
-/// right — the classic hall-of-fame layout, so the leaderboard reads as a
-/// stage rather than just the top of a list with bigger font.
-class _HallOfFamePodium extends StatelessWidget {
-  const _HallOfFamePodium({
+/// The top-3 stage: a single elevated panel holding the podium, instead of
+/// three columns floating loose on the page background.
+class _HallOfFameStage extends StatelessWidget {
+  const _HallOfFameStage({
     required this.top3,
     required this.byGold,
     required this.currentUserProfileImageUrl,
@@ -413,46 +528,68 @@ class _HallOfFamePodium extends StatelessWidget {
     final second = top3.length > 1 ? top3[1] : null;
     final third = top3.length > 2 ? top3[2] : null;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: _PodiumPlace(
-            entry: second,
-            rank: 2,
-            standHeight: 64,
-            medalColor: const Color(0xFFC0C0C0),
-            avatarSize: 52,
-            byGold: byGold,
-            currentUserProfileImageUrl: currentUserProfileImageUrl,
-          ),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFFF4D06F).withValues(alpha: 0.14),
+            AppTheme.panelStrong,
+          ],
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _PodiumPlace(
-            entry: first,
-            rank: 1,
-            standHeight: 96,
-            medalColor: const Color(0xFFF4D06F),
-            avatarSize: 66,
-            crowned: true,
-            byGold: byGold,
-            currentUserProfileImageUrl: currentUserProfileImageUrl,
-          ),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
+        border: Border.all(
+          color: const Color(0xFFF4D06F).withValues(alpha: 0.22),
+          width: 1.5,
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _PodiumPlace(
-            entry: third,
-            rank: 3,
-            standHeight: 48,
-            medalColor: const Color(0xFFCD7F32),
-            avatarSize: 46,
-            byGold: byGold,
-            currentUserProfileImageUrl: currentUserProfileImageUrl,
-          ),
+        boxShadow: AppTheme.puffyShadow(
+          const Color(0xFFF4D06F),
+          restAlpha: 0.16,
         ),
-      ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: _PodiumPlace(
+              entry: second,
+              rank: 2,
+              standHeight: 64,
+              medalColor: const Color(0xFFC0C0C0),
+              avatarSize: 52,
+              byGold: byGold,
+              currentUserProfileImageUrl: currentUserProfileImageUrl,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: _PodiumPlace(
+              entry: first,
+              rank: 1,
+              standHeight: 96,
+              medalColor: const Color(0xFFF4D06F),
+              avatarSize: 66,
+              crowned: true,
+              byGold: byGold,
+              currentUserProfileImageUrl: currentUserProfileImageUrl,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: _PodiumPlace(
+              entry: third,
+              rank: 3,
+              standHeight: 48,
+              medalColor: const Color(0xFFCD7F32),
+              avatarSize: 46,
+              byGold: byGold,
+              currentUserProfileImageUrl: currentUserProfileImageUrl,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -542,7 +679,19 @@ class _PodiumPlace extends StatelessWidget {
           clipBehavior: Clip.none,
           alignment: Alignment.center,
           children: [
-            avatar(),
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: medalColor.withValues(alpha: 0.45),
+                    blurRadius: 16,
+                    spreadRadius: -2,
+                  ),
+                ],
+              ),
+              child: avatar(),
+            ),
             Positioned(
               bottom: -6,
               child: Container(
@@ -588,20 +737,36 @@ class _PodiumPlace extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        // The stand itself — height is what actually sells "podium" versus
-        // just three cards in a row.
+        // The stand itself — a flat translucent rectangle read as a
+        // placeholder, not a podium. A gradient (lighter at the top edge,
+        // like a lit surface) plus the glow below sells "3D block" instead
+        // of "colored box".
         Container(
           height: standHeight,
           decoration: BoxDecoration(
-            color: medalColor.withValues(alpha: 0.16),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                medalColor.withValues(alpha: 0.42),
+                medalColor.withValues(alpha: 0.12),
+              ],
+            ),
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(12),
             ),
             border: Border(
-              top: BorderSide(color: medalColor.withValues(alpha: 0.55), width: 2),
-              left: BorderSide(color: medalColor.withValues(alpha: 0.25), width: 1),
-              right: BorderSide(color: medalColor.withValues(alpha: 0.25), width: 1),
+              top: BorderSide(color: medalColor.withValues(alpha: 0.8), width: 2),
+              left: BorderSide(color: medalColor.withValues(alpha: 0.3), width: 1),
+              right: BorderSide(color: medalColor.withValues(alpha: 0.3), width: 1),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: medalColor.withValues(alpha: 0.25),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
         ),
       ],
@@ -628,7 +793,7 @@ class _LeaderboardRow extends StatelessWidget {
       child: Text(
         initial,
         style: GoogleFonts.pixelifySans(
-          color: Color(0xFF85EFAC),
+          color: const Color(0xFF85EFAC),
           fontWeight: FontWeight.w700,
           fontSize: 16,
         ),
@@ -638,85 +803,73 @@ class _LeaderboardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final medalColor = _medalColor(leader.rank);
-    final highlightBorder = leader.isCurrentUser
+    final rowAccent = leader.isCurrentUser
         ? const Color(0xFFF4D06F)
-        : Colors.transparent;
+        : AppTheme.greenPrimary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF163526).withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: highlightBorder, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: AppTheme.getPuffyDecoration(
+        accent: rowAccent,
+        borderRadius: 18,
+        restAlpha: leader.isCurrentUser ? 0.22 : 0.08,
+        borderOpacity: leader.isCurrentUser ? 0.45 : 0.12,
       ),
       child: Row(
         children: [
-          Text(
-            '#${leader.rank}',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontWeight: FontWeight.bold,
+          SizedBox(
+            width: 26,
+            child: Text(
+              '#${leader.rank}',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-          const SizedBox(width: 14),
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF1E4D3D),
-                ),
-                child: ClipOval(
-                  child: Builder(
-                    builder: (context) {
-                      // Every row shows its own avatar from the leaderboard
-                      // view; the signed-in user falls back to their local
-                      // profile image, everyone else to an initial.
-                      final url = leader.profileImageUrl.isNotEmpty
-                          ? leader.profileImageUrl
-                          : (leader.isCurrentUser
-                                ? currentUserProfileImageUrl
-                                : '');
-                      if (url.isNotEmpty) {
-                        return Image.network(
-                          url,
-                          fit: BoxFit.cover,
-                          width: 40,
-                          height: 40,
-                          errorBuilder: (_, _, _) => _initialAvatar(),
-                        );
-                      }
-                      return _initialAvatar();
-                    },
-                  ),
-                ),
+          const SizedBox(width: 10),
+          Container(
+            width: 38,
+            height: 38,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFF1E4D3D),
+            ),
+            child: ClipOval(
+              child: Builder(
+                builder: (context) {
+                  // Every row shows its own avatar from the leaderboard
+                  // view; the signed-in user falls back to their local
+                  // profile image, everyone else to an initial.
+                  final url = leader.profileImageUrl.isNotEmpty
+                      ? leader.profileImageUrl
+                      : (leader.isCurrentUser
+                            ? currentUserProfileImageUrl
+                            : '');
+                  if (url.isNotEmpty) {
+                    return Image.network(
+                      url,
+                      fit: BoxFit.cover,
+                      width: 38,
+                      height: 38,
+                      errorBuilder: (_, _, _) => _initialAvatar(),
+                    );
+                  }
+                  return _initialAvatar();
+                },
               ),
-              if (medalColor != null)
-                Positioned(
-                  right: -6,
-                  top: -6,
-                  child: Icon(Icons.emoji_events, color: medalColor, size: 20),
-                ),
-            ],
+            ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   leader.username,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: leader.isCurrentUser
                         ? const Color(0xFFF4D06F)
@@ -729,8 +882,10 @@ class _LeaderboardRow extends StatelessWidget {
                   byGold
                       ? '${leader.literacyPoints} LP • ${leader.xp} XP'
                       : '${leader.xp} XP • ${leader.gold} gold',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.58),
+                    color: Colors.white.withValues(alpha: 0.55),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -741,19 +896,12 @@ class _LeaderboardRow extends StatelessWidget {
           Text(
             byGold ? '${leader.gold}g' : leader.scoreLabel,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: rowAccent,
               fontWeight: FontWeight.bold,
             ),
           ),
         ],
       ),
     );
-  }
-
-  Color? _medalColor(int rank) {
-    if (rank == 1) return const Color(0xFFF4D06F);
-    if (rank == 2) return const Color(0xFFC0C0C0);
-    if (rank == 3) return const Color(0xFFCD7F32);
-    return null;
   }
 }
