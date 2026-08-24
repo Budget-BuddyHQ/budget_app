@@ -156,33 +156,44 @@ class _TrackTab extends StatelessWidget {
   /// game itself lives here instead, at the top of the screen its name
   /// points to.
   Future<void> _launchDailyChallenge(BuildContext context) async {
-    final stats = context.read<UserStatsController>().stats;
-    final result = await Navigator.of(context).push<ReactGameCloseResult>(
-      MaterialPageRoute(
-        builder: (_) => ReactGameScreen(
-          gameId: 'daily_budget_battle',
-          difficulty: 'normal',
-          playerLevel: stats.level,
-          userId: stats.id,
-        ),
+  final userStatsController = context.read<UserStatsController>();
+  final stats = userStatsController.stats;
+  final isCompleted = userStatsController.isTodayChallengeCompleted;
+
+  debugPrint('--- DEBUG CHECK ---');
+  debugPrint('Completed List: ${stats.completedChallengeTasks}');
+
+  // PRINT 2: Check what boolean value is being passed down
+  debugPrint('Is Completed Flag: $isCompleted');
+  debugPrint('-------------------');
+
+  final result = await Navigator.of(context).push<ReactGameCloseResult>(
+    MaterialPageRoute(
+      builder: (_) => ReactChallengeScreen(
+        gameId: 'daily_budget_battle',
+        difficulty: 'normal',
+        playerLevel: stats.level,
+        userId: stats.id,
+        isCompleted: isCompleted, // Passes completion status to the screen
       ),
-    );
+    ),
+  );
 
-    if (!context.mounted || result == null) {
-      return;
-    }
-
-    GameToast.show(
-      context,
-      title: result.status == 'victory'
-          ? 'Daily Challenge Cleared'
-          : 'Challenge Complete',
-      message:
-          '+${result.goldEarned} gold | +${result.xpEarned} XP | ${result.syncState.message}',
-      icon: Icons.workspace_premium_rounded,
-      accent: const Color(0xFFFFD45C),
-    );
+  if (!context.mounted || result == null) {
+    return;
   }
+
+  GameToast.show(
+    context,
+    title: result.status == 'victory'
+        ? 'Daily Challenge Cleared'
+        : 'Challenge Complete',
+    message:
+        '+${result.goldEarned} gold | +${result.xpEarned} XP | ${result.syncState.message}',
+    icon: Icons.workspace_premium_rounded,
+    accent: const Color(0xFFFFD45C),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -192,8 +203,12 @@ class _TrackTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _DailyChallengeCard(onPlay: () => _launchDailyChallenge(context)),
-        const SizedBox(height: 16),
+        _DailyChallengeCard(
+          isCompleted: false,
+          onPlay: () => _launchDailyChallenge(context),
+          onPlayAgain: () => _launchDailyChallenge(context),
+          onViewResults: () => _launchDailyChallenge(context),
+        ),
         // Shown only until the first habit is pinned. New users landed on
         // an empty grid with no idea what the tabs did or where to start —
         // this spells the loop out once, then gets out of the way.
@@ -251,12 +266,129 @@ class _TrackTab extends StatelessWidget {
 /// tab its name actually refers to instead of a same-named button on Home
 /// that used to skip past this screen entirely.
 class _DailyChallengeCard extends StatelessWidget {
-  const _DailyChallengeCard({required this.onPlay});
+  const _DailyChallengeCard({
+    required this.onPlay,
+    this.isCompleted = true,
+    this.onPlayAgain,
+    this.onViewResults,
+  });
 
   final VoidCallback onPlay;
+  final bool isCompleted;
+  final VoidCallback? onPlayAgain;
+  final VoidCallback? onViewResults;
 
   @override
   Widget build(BuildContext context) {
+    if (isCompleted) {
+      return Container(
+        padding: const EdgeInsets.all(18),
+        decoration: AppTheme.getPuffyDecoration(
+          accent: const Color(0xFF4CAF50),
+          fillColor: const Color(0xFF1E3320),
+          restAlpha: 0.18,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50).withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Color(0xFF4CAF50),
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Challenge Completed!",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.pixelifySans(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Great job! You've claimed your gold and XP for today.",
+                        style: GoogleFonts.quicksand(
+                          color: Colors.white.withValues(alpha: 0.78),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                if (onViewResults != null)
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: onViewResults,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Color(0xFF4CAF50)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'View Results',
+                        style: GoogleFonts.quicksand(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (onViewResults != null && onPlayAgain != null)
+                  const SizedBox(width: 10),
+                if (onPlayAgain != null)
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: onPlayAgain,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4CAF50),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Play Again',
+                        style: GoogleFonts.quicksand(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
     return InkWell(
       onTap: onPlay,
       borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
@@ -299,7 +431,7 @@ class _DailyChallengeCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'A quick budgeting reflex round — gold and XP either way.',
+                    'Test your budgeting reflexes — gold and XP either way.',
                     style: GoogleFonts.quicksand(
                       color: Colors.white.withValues(alpha: 0.78),
                       fontSize: 12.5,

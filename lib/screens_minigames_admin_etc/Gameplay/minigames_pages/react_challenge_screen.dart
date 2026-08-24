@@ -41,12 +41,14 @@ class ReactChallengeScreen extends StatefulWidget {
     required this.difficulty,
     required this.playerLevel,
     required this.userId,
+    this.isCompleted = false,
   });
 
   final String gameId;
   final String difficulty;
   final int playerLevel;
   final String userId;
+  final bool isCompleted;
 
   @override
   State<ReactChallengeScreen> createState() => _ReactChallengeScreenState();
@@ -387,6 +389,7 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
             }
           },
           child: _NativeBudgetBattleChallenge(
+            isCompleted: widget.isCompleted,
             onComplete: (payload) => _handlePayload(payload),
           ),
         ),
@@ -459,9 +462,13 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
 }
 
 class _NativeBudgetBattleChallenge extends StatefulWidget {
-  const _NativeBudgetBattleChallenge({required this.onComplete});
+  const _NativeBudgetBattleChallenge({
+    required this.onComplete,
+    this.isCompleted = false,
+  });
 
   final Future<void> Function(Map<String, dynamic>) onComplete;
+  final bool isCompleted;
 
   @override
   State<_NativeBudgetBattleChallenge> createState() =>
@@ -542,11 +549,18 @@ class _NativeBudgetBattleChallengeState
   bool _isLoadingQuestions = true;
   bool _isSubmitting = false;
 
+  final Map<int, int> _userAnswers = {};
+
   _ChallengeQuestion get _currentQuestion => _questions[_questionIndex];
 
   @override
   void initState() {
     super.initState();
+    _roundComplete = false;
+
+    if (widget.isCompleted) {
+    _roundComplete = true;
+  }
     _questions = _dailyQuestionSet(_fallbackQuestions);
     unawaited(_loadQuestionBank());
   }
@@ -590,6 +604,14 @@ class _NativeBudgetBattleChallengeState
         _isLoadingQuestions = false;
       });
     }
+    if (mounted) {
+    setState(() {
+      _userAnswers.clear();
+      _correctAnswers = 0;
+      _questionIndex = 0;
+      _roundComplete = false;
+    });
+  }
   }
 
   List<_ChallengeQuestion> _dailyQuestionSet(
@@ -611,23 +633,24 @@ class _NativeBudgetBattleChallengeState
   }
 
   void _chooseAnswer(int index) {
-    if (_selectedIndex != null || _roundComplete) {
-      return;
-    }
-
-    final isCorrect = index == _currentQuestion.correctIndex;
-    HapticFeedback.lightImpact();
-    AppSoundService.play(
-      isCorrect ? AppSoundEffect.success : AppSoundEffect.error,
-    );
-
-    setState(() {
-      _selectedIndex = index;
-      if (isCorrect) {
-        _correctAnswers += 1;
-      }
-    });
+  if (_selectedIndex != null || _roundComplete) {
+    return;
   }
+
+  final isCorrect = index == _currentQuestion.correctIndex;
+  HapticFeedback.lightImpact();
+  AppSoundService.play(
+    isCorrect ? AppSoundEffect.success : AppSoundEffect.error,
+  );
+
+  setState(() {
+    _selectedIndex = index;
+    _userAnswers[_questionIndex] = index; // Stores user selection
+    if (isCorrect) {
+      _correctAnswers += 1;
+    }
+  });
+}
 
   void _advance() {
     if (_selectedIndex == null) {
@@ -647,69 +670,88 @@ class _NativeBudgetBattleChallengeState
     });
   }
 
+  void _resetQuiz() {
+  setState(() {
+    _roundComplete = false;
+    _questionIndex = 0;
+    _correctAnswers = 0;
+    _userAnswers.clear(); // Resets the map cleanly so no questions show as answered
+  });
+}
+
   Future<void> _bankRewards() async {
-    if (_isSubmitting) {
-      return;
-    }
-
-    final passed = _correctAnswers >= 3;
-    final gold = 45 + (_correctAnswers * 18);
-    final xp = 35 + (_correctAnswers * 14);
-    final literacyPoints = 12 + (_correctAnswers * 6);
-
-    setState(() {
-      _isSubmitting = true;
-    });
-
-    await widget.onComplete(<String, dynamic>{
-      'status': passed ? 'victory' : 'defeat',
-      'gold': gold,
-      'xp': xp,
-      'literacy_points': literacyPoints,
-      'title': 'React Challenge Reward',
-      'description':
-          'Answered $_correctAnswers of ${_questions.length} daily Budget Battle prompts correctly.',
-    });
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isSubmitting = false;
-    });
+  if (_isSubmitting) {
+    return;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.deepForest,
-      appBar: AppBar(
-        title: Text('React Challenge', style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700)),
-        backgroundColor: AppTheme.darkForest,
-        foregroundColor: Colors.white,
-      ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 620),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 220),
-                child: _isLoadingQuestions
-                    ? _buildLoadingQuestions()
-                    : _roundComplete
-                    ? _buildResults()
-                    : _buildQuestion(),
-              ),
+  final passed = _correctAnswers >= 3;
+  final gold = 45 + (_correctAnswers * 18);
+  final xp = 35 + (_correctAnswers * 14);
+  final literacyPoints = 12 + (_correctAnswers * 6);
+
+  setState(() {
+    _isSubmitting = true;
+  });
+
+  final now = DateTime.now();
+  final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  final stats = context.read<UserStatsController>().stats;
+
+  // Append the unique challenge ID to user stats:
+  final updatedTasks = List<String>.from(stats.completedChallengeTasks)
+    ..add('daily_budget_battle')
+    ..add('daily_budget_battle_$today');
+
+  await widget.onComplete(<String, dynamic>{
+    'status': passed ? 'victory' : 'defeat',
+    'gold': gold,
+    'xp': xp,
+    'literacy_points': literacyPoints,
+    'title': 'React Challenge Reward',
+    'description':
+        'Answered $_correctAnswers of ${_questions.length} daily Budget Battle prompts correctly.',
+    'spending_habits': {
+      'completed_challenge_tasks': updatedTasks,
+    },
+  });
+
+  if (!mounted) {
+    return;
+  }
+
+  setState(() {
+    _isSubmitting = false;
+  });
+}
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: AppTheme.deepForest,
+    appBar: AppBar(
+      title: Text('React Challenge', style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700)),
+      backgroundColor: AppTheme.darkForest,
+      foregroundColor: Colors.white,
+    ),
+    body: SafeArea(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 620),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              child: _roundComplete
+                  ? _buildResults()
+                  : _isLoadingQuestions
+                      ? _buildLoadingQuestions()
+                      : _buildQuestion(),
             ),
           ),
         ),
       ),
-    );
-  }
-
+    ),
+  );
+}
   Widget _buildLoadingQuestions() {
     return Container(
       key: const ValueKey<String>('loading_questions'),
@@ -850,45 +892,149 @@ class _NativeBudgetBattleChallengeState
     );
   }
 
-  Widget _buildResults() {
-    final passed = _correctAnswers >= 3;
-    final title = passed ? 'Victory!' : 'Run Complete';
-    final message = passed
-        ? 'You made smart spending calls under pressure.'
-        : 'You finished the run and earned practice rewards.';
+  Widget _buildQuestionReviewCard(int index) {
+  final question = _questions[index];
+  final userIndex = _userAnswers[index];
+  final isCorrect = userIndex == question.correctIndex;
+  final userAnswerText = userIndex != null ? question.choices[userIndex] : 'No Answer';
+  final correctAnswerText = question.choices[question.correctIndex];
 
-    return Container(
-      key: const ValueKey<String>('results'),
-      padding: const EdgeInsets.all(22),
-      decoration: AppTheme.getPuffyDecoration(
-        accent: const Color(0xFF85EFAC),
-        fillColor: AppTheme.panelStrong,
-        restAlpha: 0.16,
+  return Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: isCorrect
+          ? const Color(0xFF4CAF50).withValues(alpha: 0.12)
+          : const Color(0xFFE57373).withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: isCorrect ? const Color(0xFF4CAF50) : const Color(0xFFE57373),
+        width: 1,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            passed ? Icons.workspace_premium_rounded : Icons.flag_rounded,
-            color: const Color(0xFF85EFAC),
-            size: 42,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded,
+              color: isCorrect ? const Color(0xFF4CAF50) : const Color(0xFFE57373),
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Q${index + 1}: ${question.prompt}',
+                style: GoogleFonts.pixelifySans(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Your Answer: $userAnswerText',
+          style: TextStyle(
+            color: isCorrect ? Colors.white70 : const Color(0xFFEF9A9A),
+            fontSize: 12.5,
           ),
-          const SizedBox(height: 14),
+        ),
+        if (!isCorrect) ...[
+          const SizedBox(height: 2),
           Text(
-            title,
-            style: GoogleFonts.pixelifySans(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
+            'Correct Answer: $correctAnswerText',
+            style: const TextStyle(
+              color: Color(0xFFA5D6A7),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            '$message You answered $_correctAnswers of ${_questions.length} correctly.',
-            style: const TextStyle(color: Colors.white70, height: 1.4),
+        ],
+      ],
+    ),
+  );
+}
+  
+  Widget _buildResults() {
+  final passed = _correctAnswers >= 3;
+  final title = passed ? 'Victory!' : 'Run Complete';
+  final message = passed
+      ? 'You made smart spending calls under pressure.'
+      : 'You finished the run and earned practice rewards.';
+
+  return Container(
+    key: const ValueKey<String>('results'),
+    padding: const EdgeInsets.all(22),
+    decoration: AppTheme.getPuffyDecoration(
+      accent: const Color(0xFF85EFAC),
+      fillColor: AppTheme.panelStrong,
+      restAlpha: 0.16,
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          passed ? Icons.workspace_premium_rounded : Icons.flag_rounded,
+          color: const Color(0xFF85EFAC),
+          size: 42,
+        ),
+        const SizedBox(height: 14),
+        Text(
+          title,
+          style: GoogleFonts.pixelifySans(
+            color: Colors.white,
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
           ),
-          const SizedBox(height: 22),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '$message You answered $_correctAnswers of ${_questions.length} correctly.',
+          style: const TextStyle(color: Colors.white70, height: 1.4),
+        ),
+        const SizedBox(height: 18),
+        const Divider(color: Colors.white12),
+        const SizedBox(height: 10),
+
+        // Iterates through questions to render the breakdown cards
+        for (var i = 0; i < _questions.length; i++) ...[
+          _buildQuestionReviewCard(i),
+          if (i != _questions.length - 1) const SizedBox(height: 10),
+        ],
+
+        const SizedBox(height: 22),
+
+        // Show "Try Again" if already completed today; show "Bank Rewards" for first-time runs
+        if (widget.isCompleted) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _resetQuiz,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF85EFAC),
+                foregroundColor: const Color(0xFF103225),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Text('Try Again (Practice Mode)'),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(foregroundColor: Colors.white70),
+              child: const Text('Close'),
+            ),
+          ),
+        ] else ...[
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -916,9 +1062,10 @@ class _NativeBudgetBattleChallengeState
             ),
           ),
         ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
 }
 
 class _ChallengeChoiceButton extends StatelessWidget {
