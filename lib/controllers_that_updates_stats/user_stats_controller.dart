@@ -1392,6 +1392,15 @@ class UserStatsController extends ChangeNotifier {
     return _saveStats(nextStats, savingMessage: 'Saving lesson progress...');
   }
 
+  /// Checks if the daily budget battle challenge has already been completed today.
+  /// Checks if any challenge task has been completed.
+bool get isTodayChallengeCompleted {
+  final completed = _stats.completedChallengeTasks;
+  final today = HabitDateKeys.todayKey();
+  
+  return completed.contains('daily_budget_battle') ||
+      completed.contains('daily_budget_battle_$today');
+}
   /// Records an arcade run so the hub can show a personal best and play count.
   ///
   /// Rewards are granted by the games themselves through
