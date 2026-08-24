@@ -2428,6 +2428,17 @@ void initState() {
                     ),
                   ),
 
+                // The wave/net-worth HUD and the gold/exit controls used to
+                // be two independently `Positioned` widgets — one centred
+                // across almost the full screen width, the other pinned to
+                // the right edge with no awareness of the first one's
+                // width. On a narrow phone the HUD's right panel extended
+                // under the floating gold badge and exit button instead of
+                // making room for them, so "Don't Let it Hit Zero!" got
+                // clipped behind the coin icon. One Row sharing one width
+                // budget — the HUD panels flex, the controls stay
+                // fixed-size — so there is exactly one place they can
+                // divide the space, not two independently-guessed ones.
                 Positioned(
                   top: MediaQuery.of(context).padding.top + 12,
                   left: 0,
@@ -2435,21 +2446,20 @@ void initState() {
                   child: Align(
                     alignment: Alignment.topCenter,
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: 650,
-                      ), // Adjust width as desired
+                      constraints: const BoxConstraints(maxWidth: 650),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: _buildHud(context),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: _buildHud(context)),
+                            const SizedBox(width: 10),
+                            _buildRightControls(context),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-
-                Positioned(
-                  top: MediaQuery.of(context).padding.top + 12,
-                  right: 16,
-                  child: _buildRightControls(context),
                 ),
 
                 if (_isQuizOpen) _buildQuizOverlay(),
@@ -2503,7 +2513,7 @@ void initState() {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.toll_rounded, color: _brawlGold, size: 20),
+          Image.asset(AppAssets.uiIconCoin, width: 20, height: 20),
           const SizedBox(width: 7),
           Text(
             '$_goldAccumulated',

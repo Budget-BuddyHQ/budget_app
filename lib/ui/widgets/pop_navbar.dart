@@ -25,7 +25,7 @@ class PopNavBar extends StatelessWidget {
   /// The app's shared 5-tab bottom set, so every caller wiring up nav stays
   /// in sync. Order must match [AppTabIndex] exactly — Home is index 2, the
   /// middle slot, and is rendered as a circular badge (see [_PopNavTile])
-  /// rather than the rounded pill every other tab gets. Learn and Profile
+  /// rather than the rounded pill every other tab gets. Daily and Profile
   /// are reached from the top strip instead (see `_TopIconBar` in
   /// `main_navigation.dart`) — not listed here, so the bar never tries to
   /// highlight them.
@@ -33,7 +33,7 @@ class PopNavBar extends StatelessWidget {
     PopNavBarItem(label: 'Life', icon: Icons.explore_rounded),
     PopNavBarItem(label: 'Arcade', icon: Icons.sports_esports_rounded),
     PopNavBarItem(label: 'Home', icon: Icons.dashboard_rounded),
-    PopNavBarItem(label: 'Daily', icon: Icons.savings_rounded),
+    PopNavBarItem(label: 'Learn', icon: Icons.school_rounded),
     PopNavBarItem(label: 'Style', icon: Icons.auto_awesome_rounded),
   ];
 

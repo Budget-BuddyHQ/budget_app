@@ -5,6 +5,18 @@ class AppAssets {
   static const String coolTurtle = 'assets/images/cool_turtle.png';
   static const String pixelMainTurtle = 'assets/own_skins/pixelMainTurtle.png';
 
+  // Small pixel-art icon kit — a hand-drawn coin/heart/star/bag matching
+  // the app's own palette, sitting unused in assets/images/ui/ while every
+  // currency/stat icon elsewhere in the app used a generic Material glyph
+  // instead. Swap in wherever a Material icon is standing in for one of
+  // these specific things (gold, health, a rating/level, an inventory
+  // slot) — not a blanket icon replacement, just the places these four
+  // concepts already show up as bare Material icons.
+  static const String uiIconCoin = 'assets/images/ui/icon_coin.png';
+  static const String uiIconHeart = 'assets/images/ui/icon_heart.png';
+  static const String uiIconStar = 'assets/images/ui/icon_star.png';
+  static const String uiIconBag = 'assets/images/ui/icon_bag.png';
+
   /// 8-frame celebration sprite sheet — 3 columns × 3 rows of 640x640 cells,
   /// with the bottom-right cell empty. Frames build from smile → sparkle
   /// burst. Wired into `AchievementCelebration`.
@@ -74,6 +86,12 @@ class AppAssets {
   //   -> tool/make_female_bases.ps1     (edit hair silhouette for the female body)
   //   -> tool/make_human_variants.ps1   (palette-swap into colour variants)
   //   -> tool/pack_skin_sheets.ps1      (pack into the sheets below)
+  //   -> tool/normalize_walk_baseline.py (re-cell taller + clamp the walk
+  //                                        dip — run this LAST, after any
+  //                                        re-pack, or the goofy accordion
+  //                                        walk comes back; see its own
+  //                                        docstring and
+  //                                        docs/ADVENTURE_TOWN.md §9c)
   //
   // Only the sheets ship. The intermediate per-frame PNGs are build artifacts
   // and are gitignored.
@@ -85,11 +103,16 @@ class AppAssets {
   static const String villagerSheetRoot = 'assets/self_made_skins';
 
   static const double villagerCellWidth = 104;
-  static const double villagerCellHeight = 152;
+  // Was 152 — grown by 10px of top padding so the walk-cycle normalizer
+  // (tool/normalize_walk_baseline.py) had headroom to lift extended-leg
+  // frames without clipping the hat. See that script's docstring and
+  // docs/CHALLENGES.md §2 for the full account of why this needed to
+  // change (not just clamp the dip in place) and what was tried first.
+  static const double villagerCellHeight = 162;
   static const int villagerSheetColumns = 8;
   static const int villagerSheetRows = 4;
 
-  /// The sprite cell's width:height ratio (104/152 ≈ 0.684).
+  /// The sprite cell's width:height ratio (104/162 ≈ 0.642).
   ///
   /// Drawing a villager into a **square** box squashes them — which is
   /// exactly what the Adventure map was doing (`Vector2.all(32)`) and why
