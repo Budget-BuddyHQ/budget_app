@@ -343,8 +343,8 @@ void main() {
   });
 
   group('Dashboard shell tabs', () {
-    // Life/Arcade/Home/Daily/Style are PopNavBar's bottom five (Home in the
-    // middle); Learn/Profile are the top strip's two icons instead — same
+    // Life/Arcade/Home/Learn/Style are PopNavBar's bottom five (Home in the
+    // middle); Daily/Profile are the top strip's two icons instead — same
     // `find.text(tab).last` + tap works for either, since both render a
     // Text widget with this exact label.
     const tabs = <String>[

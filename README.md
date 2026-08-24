@@ -273,6 +273,46 @@ whether the target widget even exposes a controller before reaching for
 
 ### Gameplay
 
+**Adventure Town progress didn't save, and coins could be farmed for infinite gold**
+`_visited` and `_coinsFound` were plain `State` fields on
+`AdventureWorldScreen`, never read from or written to `UserStatsController`.
+Leaving the screen — even to check Profile — reset "visit every place" to
+zero, and every coin reappeared and could be re-collected for real gold
+(`_collectCoin` already called `applyChallengePayload({'gold_earned':
+value})` with nothing stopping it firing twice for the same coin).
+*Fix:* `UserStats.townVisitedSpotIds`/`townCollectedCoinIds` (same
+ad-hoc-jsonb pattern as every other saved list in this app) persist both;
+the coin-spawning loop now skips any already-collected coin id entirely
+rather than spawning and hiding it.
+*Files:* `supabase_service.dart`, `adventure_world_screen.dart`
+
+**The walking animation's "accordion legs" — actually fixed this time**
+A previous fix (stride length vs. animation frame rate) was real but
+partial — the torso stayed frozen across all 8 walk frames while one leg
+extended below the standing-foot line by up to 15px. A first attempt to
+clamp that dip in place clipped the hat (the cell had only 2px of headroom)
+and was reverted.
+*Fix:* `tool/normalize_walk_baseline.py` now re-cells every sheet 10px
+taller **first** (a pure recentre — cannot clip anything) and *then* clamps
+the dip within the new, roomier cell, with an assertion that refuses to run
+if the safety margin isn't real. `AppAssets.villagerCellHeight` moved
+152→162; every render site already used the named constant, not a literal,
+so nothing else needed to change.
+*Files:* `tool/normalize_walk_baseline.py` (new), `app_assets.dart`,
+`assets/self_made_skins/*.png` (all 22)
+
+**Three real text-truncation bugs, found from an actual screenshot**
+"Explore the Town", "Pick a money habit", and "Current Objective" all
+truncated to fragments ("Explore th…", etc.) at a genuine ~310px pane
+width — narrower than any viewport this app's test suite covers (smallest
+tested is 320px). Each was a fixed-size `Text(maxLines: 1, overflow:
+ellipsis)` that didn't fit the real available width at that size.
+*Fix:* wrapped each in `FittedBox(fit: BoxFit.scaleDown)`, the same pattern
+already used successfully elsewhere (`PopNavBar` labels, the leaderboard
+wordmark) — scales the whole line down as one unit instead of truncating a
+fragment.
+*Files:* `home_screen.dart`
+
 **The player could walk around *inside* the hill**
 The town map's southern boundary — the wide tan band across map rows 34–37 —
 lives in the `terrain` layer, which is `collider: false` because that same
@@ -306,6 +346,18 @@ the cell has 2px of headroom above the head and 0 below the feet, so lifting
 the extended frames clips the hat (tried, measured, reverted). See
 `docs/CHALLENGES.md` §2.
 *Files:* `adventure_world_screen.dart`, `town_components.dart`
+
+**Finance Brawl's HUD didn't wrap on phone — the exit button covered the balance panel**
+The wave/net-worth HUD and the gold/exit controls were two *independently*
+`Positioned` widgets: one centred across almost the full screen width, the
+other pinned to the right edge with no awareness of the first one's width.
+On a phone-width screen the HUD's right-hand panel extended under the
+floating gold badge and exit button instead of making room for them, so
+"Don't Let it Hit Zero!" rendered clipped behind the coin icon.
+*Fix:* merged both into one `Row` sharing one width budget — the HUD panels
+`Expanded` to flex, the controls stay fixed-size next to them. One place to
+divide the space instead of two independently-guessed ones.
+*Files:* `finance_brawl_game.dart`
 
 ### Layout
 

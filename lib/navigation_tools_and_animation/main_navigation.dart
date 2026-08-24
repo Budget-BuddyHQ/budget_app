@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/app_assets.dart';
 import '../controllers_that_updates_stats/user_stats_controller.dart';
 import '../services_backend_and_other_services/app_sound_service.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
@@ -101,7 +102,7 @@ class _MainNavigationState extends State<MainNavigation> {
         Expanded(
           // Order is load-bearing: this must match AppTabIndex and
           // PopNavBar.appTabs position for position for the bottom five.
-          // Academy/Profile still get real IndexedStack slots (so tapping
+          // Daily/Profile still get real IndexedStack slots (so tapping
           // the top icons works exactly like any other tab switch) — they
           // just are not among PopNavBar's five, so the bottom bar never
           // tries to highlight them.
@@ -120,16 +121,16 @@ class _MainNavigationState extends State<MainNavigation> {
                 activeTabIndex: AppTabIndex.dashboard,
                 onNavSelected: _selectTab,
               ),
-              MoneyHabitsScreen(
-                activeTabIndex: AppTabIndex.daily,
+              LearningPathScreen(
+                activeTabIndex: AppTabIndex.academy,
                 onNavSelected: _selectTab,
               ),
               CustomizeScreen(
                 activeTabIndex: AppTabIndex.customize,
                 onNavSelected: _selectTab,
               ),
-              LearningPathScreen(
-                activeTabIndex: AppTabIndex.academy,
+              MoneyHabitsScreen(
+                activeTabIndex: AppTabIndex.daily,
                 onNavSelected: _selectTab,
               ),
               ProfileScreen(
@@ -144,14 +145,25 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 }
 
-/// The app bar: **Learn — Budget Buddy — Profile**.
+/// The app bar: **Daily — 🐢 Budget Buddy — 🏆 Profile**.
 ///
-/// Learn and Profile moved off the bottom bar (seven tabs down there read as
-/// crowded, and these two are visited far less often than the five that
-/// stayed). Putting the wordmark between them turns what was two floating
-/// buttons into a real, symmetrical app bar — it reads as app chrome, gives
-/// the brand a permanent home on every screen, and visually balances the two
-/// pills against each other instead of leaving a dead gap in the middle.
+/// Daily and Profile moved off the bottom bar (seven tabs down there read as
+/// crowded). Learn was here first and swapped places with Daily by request —
+/// this file and `AppTabIndex`'s doc comment are the only two places that
+/// need to change if it swaps again; every other file references the named
+/// constants, never a literal tab.
+///
+/// First version of this bar was flat-filled and text-only, and read as
+/// "generic row of buttons" rather than as the app's own identity — hence
+/// "I'm not getting that top nav bar feeling". Three changes here are
+/// specifically about that: the turtle mascot (`AppAssets.logo`, sitting
+/// completely unused before this) sits next to the wordmark instead of
+/// leaving it as bare text; the fill is a gradient instead of one flat
+/// colour, matching the puffy-card look used everywhere else in the app;
+/// and the leaderboard — previously reachable only from a small button
+/// buried in Home's now-removed AppBar — gets its own permanent trophy
+/// pill here, next to Profile, so it's visible from every tab instead of
+/// only from Home.
 ///
 /// It sits above the `IndexedStack` rather than inside any screen's own
 /// `AppBar`, so it is identical on all seven tabs.
@@ -161,7 +173,8 @@ class _TopIconBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onSelected;
 
-  static const _barFill = Color(0xFF102A1D);
+  static const _barTop = Color(0xFF15382A);
+  static const _barBottom = Color(0xFF0C2018);
   static const _activeAccent = Color(0xFFFFD94A);
 
   @override
@@ -169,49 +182,82 @@ class _TopIconBar extends StatelessWidget {
     final narrow = MediaQuery.sizeOf(context).width < 380;
 
     return Material(
-      color: _barFill,
+      color: _barBottom,
       child: SafeArea(
         bottom: false,
         child: Container(
-          // A hairline under the bar separates it from whatever screen is
-          // showing without needing a heavy shadow.
           decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [_barTop, _barBottom],
+            ),
+            // A hairline under the bar separates it from whatever screen is
+            // showing without needing a heavy shadow.
             border: Border(
               bottom: BorderSide(
-                color: _activeAccent.withValues(alpha: 0.18),
+                color: _activeAccent.withValues(alpha: 0.22),
                 width: 2,
               ),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.22),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          padding: const EdgeInsets.fromLTRB(12, 7, 12, 8),
+          padding: const EdgeInsets.fromLTRB(10, 7, 10, 8),
           child: Row(
             children: [
               _TopIconButton(
-                label: 'Learn',
-                icon: Icons.school_rounded,
-                active: currentIndex == AppTabIndex.academy,
+                label: 'Daily',
+                icon: Icons.savings_rounded,
+                active: currentIndex == AppTabIndex.daily,
                 compact: narrow,
-                onTap: () => onSelected(AppTabIndex.academy),
+                onTap: () => onSelected(AppTabIndex.daily),
               ),
               // Expanded on both sides keeps the wordmark optically centred
-              // no matter how wide the two pills end up.
+              // no matter how wide the two side groups end up.
               Expanded(
                 child: Center(
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Text(
-                      'Budget Buddy',
-                      maxLines: 1,
-                      style: GoogleFonts.pixelifySans(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.3,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(7),
+                          child: Image.asset(
+                            AppAssets.logo,
+                            width: 22,
+                            height: 22,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const SizedBox(
+                              width: 22,
+                              height: 22,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 7),
+                        Text(
+                          'Budget Buddy',
+                          maxLines: 1,
+                          style: GoogleFonts.pixelifySans(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
+              _LeaderboardIconButton(compact: narrow),
+              SizedBox(width: narrow ? 6 : 8),
               _TopIconButton(
                 label: 'Profile',
                 icon: Icons.person_rounded,
@@ -220,6 +266,51 @@ class _TopIconBar extends StatelessWidget {
                 onTap: () => onSelected(AppTabIndex.profile),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A permanent way into the leaderboard from every tab — not a tab switch
+/// (the leaderboard isn't one of the seven `IndexedStack` screens), a real
+/// push, same as Home's promo card already did.
+class _LeaderboardIconButton extends StatelessWidget {
+  const _LeaderboardIconButton({required this.compact});
+
+  final bool compact;
+
+  static const _gold = Color(0xFFFFD45C);
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Leaderboard',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            AppSoundService.play(AppSoundEffect.navigation);
+            Navigator.of(context).pushNamed('/leaderboard');
+          },
+          borderRadius: BorderRadius.circular(999),
+          child: Container(
+            width: compact ? 30 : 34,
+            height: compact ? 30 : 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _gold.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+              border: Border.all(color: _gold.withValues(alpha: 0.4), width: 1.5),
+            ),
+            child: Icon(
+              Icons.emoji_events_rounded,
+              color: _gold,
+              size: compact ? 17 : 19,
+            ),
           ),
         ),
       ),

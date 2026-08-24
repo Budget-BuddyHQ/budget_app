@@ -1675,3 +1675,210 @@ Origin is **weighted 35/35/22/8**, not uniform. A uniform roll makes
 normal case; weighting it means most lives begin without a cushion, which is
 both closer to reality and the version of this game that has anything to
 teach about money.
+
+## 24. Phone-only fixes from real screenshots
+
+The Browser preview pane was dead again this session (see the entry in
+`docs/CHALLENGES.md` §9 / the `browser-pane-verification-limits` memory) —
+everything in this section was found from real phone screenshots the user
+sent, not from anything Claude could see directly.
+
+### Learn ↔ Daily swapped again
+
+`AppTabIndex` values reassigned: `academy=3` (back on the bottom bar),
+`daily=5` (top strip). This is the second swap of this pair — the doc
+comments on `AppTabIndex` and `_TopIconBar` both say so explicitly and name
+the two files (`pop_navbar.dart`, `main_navigation.dart`) that need to
+change if it swaps again. Every other file references the named constants,
+never a literal tab index, so the swap really is contained to those three
+files.
+
+### Finance Brawl's HUD didn't share a width budget
+
+The wave/net-worth HUD and the gold/exit controls were two *independently*
+`Positioned` widgets in the game's `Stack` — one centred across nearly the
+full screen width via `Align` + `ConstrainedBox(maxWidth: 650)`, the other
+pinned to the right edge with `right: 16`. Neither knew the other existed.
+On a phone-width screen the HUD's right-hand panel (net worth / "Don't Let
+it Hit Zero!") extended *under* the floating gold badge and exit button
+instead of stopping short of them.
+
+Fixed by merging both into one `Row` inside a single `Positioned`: the HUD
+`Expanded` to take the flexible remainder, the gold/exit controls stay
+fixed-size next to it. `_HudStatPanel` already had `maxLines: 1` +
+ellipsis on every line, so once it actually received a bounded width
+instead of silently overlapping something, the existing text-safety code
+did the rest.
+
+### Home's AppBar was pure duplication
+
+Once the global `_TopIconBar` (§23) existed, Home's own `AppBar` — title
+"Budget Buddy" / "Level N", trophy leaderboard button — showed nothing that
+wasn't already somewhere else on the same screen: the wordmark is in the
+global strip, "Level N | Gold" is a chip inside the hero card a few pixels
+below, and the leaderboard has its own `_LeaderboardPromoCard`. Removing
+the whole `AppBar` (not shrinking it — removing it) cost zero information
+and was the actual mechanism behind "too much white space at the top on
+phone".
+
+### Leaderboard visual pass
+
+Flat solid-color `Container`s throughout, on a flat solid `AppTheme.
+deepForest` scaffold — while every other screen in the app uses `AppTheme.
+getPuffyDecoration` and a gradient backdrop. Specific changes:
+
+- Page background → `AppTheme.gradientForest` instead of a flat fill.
+- The Global/Friends and Finance-Wizards/Most-Gold toggles were two
+  visually near-identical pill bars stacked with nothing showing they were
+  different kinds of setting. Merged into one `_FilterPanel` with an
+  explicit `SHOW` / `RANK BY` label above each row.
+- The podium's "stands" were flat translucent rectangles — now a
+  top-lit gradient (lighter at the top edge) plus a colour-matched glow, so
+  they read as 3D blocks rather than colored boxes. The whole podium now
+  sits inside one elevated gold-tinted stage panel instead of floating
+  loose on the page background.
+- Regular rows switched from a flat fill + hard black shadow to
+  `getPuffyDecoration`, accent-colored gold for the signed-in player.
+
+### The money-lesson sheet is now genuinely un-skippable
+
+`isDismissible: false` + `enableDrag: false` on the `showModalBottomSheet`
+call blocks the scrim tap and the swipe-to-dismiss gesture — but not an
+Android hardware or gesture *back*, which still pops the route underneath
+both of those. Wrapped the sheet's content in `PopScope(canPop: false)` to
+close that last gap. "Got it" is now the only way out, on every input
+method.
+
+### Confetti, gated to first-time concepts
+
+`ConfettiBurst.show(context)` originally fired on every lesson shown,
+including ones triggered by bad news — a repeat `interestCost` lesson from
+carrying debt looked like a celebration of going deeper into debt.
+`LifeSimController._teach()` now tracks whether the concept was new via a
+`pendingLessonIsNew` flag (read *before* `takeLesson()` clears it, since
+both describe the same pending lesson); confetti only fires when it is —
+"you unlocked a new idea" is true the first time and just noise on a
+repeat.
+
+## 25. Town progress persistence, a real sprite fix, and a Browser-pane breakthrough
+
+### Adventure Town progress didn't save — and one coin exploit
+
+`AdventureWorldScreen`'s `_visited` (spot ids) and `_coinsFound` were plain
+`State` fields, never read from or written to `UserStatsController`. Every
+time the screen was left — even just to check Profile — "visit every
+place" silently reset to zero, and every coin on the map came back and
+could be collected again for real gold (`_collectCoin` already called
+`applyChallengePayload({'gold_earned': value})`; nothing stopped it firing
+twice for the same coin).
+
+Fixed by threading both through the existing ad-hoc `spending_habits` jsonb
+pattern, no schema change needed:
+
+- `UserStats.townVisitedSpotIds` / `townCollectedCoinIds` — new getters,
+  same shape as `savedHabitIds`/`completedLessons`.
+- `AdventureWorldScreen.initState` seeds `_visited` and a new
+  `_collectedCoinIds` from those on open.
+- `_openSpot` and `_collectCoin` both pass the updated set through the
+  `spending_habits` key of the same `applyChallengePayload` call they
+  already made — no extra network round trip.
+- The coin-spawning loop now skips any `kTownCoins` entry already in
+  `_collectedCoinIds` entirely, rather than spawning-then-hiding it — the
+  cleanest way to guarantee an already-collected coin can never pay out
+  gold again.
+
+`kTownCoins` has no id of its own, so coins are keyed by `"x_y"` tile
+position (`_coinId`).
+
+### The walking animation — the accordion actually fixed this time
+
+Previous session's fix (stride/frame-rate) was real but partial — see
+`docs/CHALLENGES.md` §2, which documented a first attempt at fixing the
+"legs accordion" that clipped the hat and was reverted. This session
+finished it properly: `tool/normalize_walk_baseline.py` now **re-cells
+every sheet 10px taller first** (a pure recentre, cannot clip anything by
+construction), *then* clamps the dip within the new, roomier cell. The
+module docstring walks through the exact arithmetic and includes an
+assertion that refuses to run if the safety margin isn't real.
+
+`AppAssets.villagerCellHeight` moved from 152 to 162 (aspect ratio
+104/162 ≈ 0.642, was 104/152 ≈ 0.684); every render site already read the
+named constant rather than a literal 152, so nothing else needed to
+change. Verified after: `flutter test test/assets_test.dart
+test/avatar_sprite_test.dart` (grid-size + aspect-ratio regression
+guards) and a direct bounding-box measurement confirming zero clipping
+across all 22 sheets and a real body-bob (head Y now varies 5-12px
+instead of being frozen at 2px).
+
+### Learn ↔ Daily swapped again; React Challenge relocated into Daily
+
+Second swap of this pair (`AppTabIndex.academy=3` back on the bottom bar,
+`daily=5` on the top strip) — see `pop_navbar.dart`/`main_navigation.dart`
+doc comments, which now explicitly name themselves as the two files to
+touch if it swaps a third time.
+
+Separately: Home had **two different things both called "Daily"** — a
+bottom-bar/top-strip destination (the Money Habits screen) and a
+same-named quick-action button that launched the React Challenge minigame
+*directly*, bypassing that screen entirely. Consolidated: the minigame
+(`ReactGameScreen`, `gameId: 'daily_budget_battle'`) moved into Money
+Habits' own "My Week" tab as a new `_DailyChallengeCard` at the top; Home's
+quick-action "Daily" button now just switches to the tab, same as every
+other quick-action button already does.
+
+### The top nav bar got a real identity
+
+`_TopIconBar` was flat-filled and text-only — "I'm not getting that top
+nav bar feeling". Three changes:
+- `AppAssets.logo` (the turtle mascot, `assets/images/logo.png` — sitting
+  completely unused before this) now sits next to the wordmark.
+- Flat fill → a top-to-bottom gradient, matching the puffy-card look used
+  everywhere else in the app.
+- A permanent leaderboard trophy button, next to Profile — previously the
+  leaderboard's only entry point besides Home's promo card was a small
+  button in Home's own (now-removed) `AppBar`, so it wasn't reachable from
+  any other tab.
+
+New `AppAssets` constants for the small pixel-art icon kit at
+`assets/images/ui/` (coin/heart/star/bag — also previously unused): swapped
+in for the Material "coin" stand-ins at the highest-visibility spots
+(Finance Brawl's gold HUD, the leaderboard's Gold stat chip) rather than a
+blanket icon replacement across the whole app.
+
+### Leaderboard: top 100, not top 20
+
+`fetchLeaderboard`'s default `limit` and the server-side clamp both moved
+from 20/50 to 100. Client-side re-sorting still isn't how `byGold` works —
+see §21 — this is purely a bigger page size.
+
+### A Browser-pane breakthrough, and its limits
+
+For the first time this session (after two prior sessions where it never
+worked at all — see `docs/CHALLENGES.md` §9 and the
+`browser-pane-verification-limits` memory), `computer` screenshots
+**worked**. This let three real layout bugs be found and fixed directly
+from pixel evidence rather than guessed at:
+
+- Home hero card: "Explore the Town" truncated to "Explore th…"
+- Home money-habit promo: "Pick a money habit" truncated to "Pick a money
+  ha…"
+- Home objective card: "Current Objective" truncated to "Curren…"
+
+All three happened at a **~310px pane width — narrower than any viewport
+this app's test suite covers** (the smallest tested breakpoint is 320px).
+Each title was a plain `Text(maxLines: 1, overflow: ellipsis)` at a fixed
+font size that didn't fit the real available width; fixed by wrapping each
+in `FittedBox(fit: BoxFit.scaleDown)`, the same pattern already used
+successfully elsewhere in this app (`PopNavBar` labels, the leaderboard
+wordmark) — the whole line scales down as one unit instead of truncating
+into a fragment.
+
+**What still didn't work**: interactive `computer` clicks. Every
+coordinate-based click timed out; dispatching raw `PointerEvent`s via
+`javascript_tool` did register (confirmed via visible state changes — the
+new "Surprise me" button correctly rolled name/gender/origin together
+multiple times) but landed on inconsistent targets relative to what the
+screenshot showed, with no discoverable fixed offset. Screenshots and
+`javascript_exec` state inspection are reliable this session; coordinate-
+based interaction is not. Recorded in the `browser-pane-verification-
+limits` memory for the next session.

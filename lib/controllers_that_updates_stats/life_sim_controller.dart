@@ -97,6 +97,13 @@ class LifeSimController extends ChangeNotifier {
   /// A lesson waiting to be shown by the UI, consumed via [takeLesson].
   FinanceConcept? _pendingLesson;
 
+  /// Whether [_pendingLesson] was met for the first time. The UI uses this
+  /// to decide whether the moment is a celebration — confetti reads as
+  /// "you unlocked a new idea", which is true the first time and just noisy
+  /// on a repeat, and is actively the wrong tone when the concept behind it
+  /// is bad news (e.g. `interestCost` from carrying debt).
+  bool _pendingLessonIsNew = false;
+
   int get needsPct => _needsPct;
   int get wantsPct => _wantsPct;
   int get savingsPct => _savingsPct;
@@ -139,10 +146,12 @@ class LifeSimController extends ChangeNotifier {
   /// Re-meeting a concept still surfaces the reminder but doesn't duplicate
   /// the list entry.
   void _teach(FinanceConcept concept) {
-    if (!_conceptsMet.contains(concept)) {
+    final isNew = !_conceptsMet.contains(concept);
+    if (isNew) {
       _conceptsMet.add(concept);
     }
     _pendingLesson = concept;
+    _pendingLessonIsNew = isNew;
   }
 
   /// Hands the queued lesson to the UI exactly once.
@@ -151,6 +160,12 @@ class LifeSimController extends ChangeNotifier {
     _pendingLesson = null;
     return lesson;
   }
+
+  /// Whether the lesson [takeLesson] is about to return (or just returned)
+  /// is being met for the first time this life. Read this *before*
+  /// `takeLesson()` clears the concept, since it describes the same pending
+  /// lesson rather than tracking its own state.
+  bool get pendingLessonIsNew => _pendingLessonIsNew;
 
   /// Applies one year of the budget: funds needs, spends wants, banks
   /// savings, then charges interest on any debt.
