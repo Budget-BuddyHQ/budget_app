@@ -43,6 +43,44 @@ void main() {
       }
       expect(habitById('not_a_real_habit'), isNull);
     });
+
+    test('custom habits round-trip through storage maps', () {
+      final habit = customHabitFromMap(const <String, dynamic>{
+        'id': 'custom_habit_1',
+        'title': 'Bike instead of rideshare',
+        'blurb': 'Use the bike for one short trip.',
+        'money_saved_usd': 8.5,
+      });
+
+      expect(habit.id, 'custom_habit_1');
+      expect(habit.title, 'Bike instead of rideshare');
+      expect(habit.impactFor(1).moneySavedUsd, 8.5);
+      expect(habit.impactFor(1).choicesKept, 1);
+      expect(customHabitToMap(habit), <String, dynamic>{
+        'id': 'custom_habit_1',
+        'title': 'Bike instead of rideshare',
+        'blurb': 'Use the bike for one short trip.',
+        'money_saved_usd': 8.5,
+      });
+    });
+
+    test('habitTemplateById can resolve custom habits', () {
+      final custom = customHabitFromMap(const <String, dynamic>{
+        'id': 'custom_habit_resolve',
+        'title': 'Use leftovers',
+        'blurb': 'Turn leftovers into dinner.',
+        'money_saved_usd': 12,
+      });
+
+      expect(
+        habitTemplateById(
+          'custom_habit_resolve',
+          customHabits: <HabitTemplate>[custom],
+        ),
+        custom,
+      );
+      expect(habitTemplateById(habitCatalog.first.id), habitCatalog.first);
+    });
   });
 
   group('habit challenges', () {
