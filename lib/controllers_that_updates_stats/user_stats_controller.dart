@@ -482,6 +482,53 @@ class UserStatsController extends ChangeNotifier {
     );
   }
 
+  /// Creates a user-authored habit and pins it to the weekly tracker.
+  Future<StatsActionResult> createCustomHabit({
+    required String title,
+    required String blurb,
+    required double moneySavedUsd,
+  }) async {
+    final trimmedTitle = title.trim();
+    final trimmedBlurb = blurb.trim();
+    if (trimmedTitle.isEmpty || trimmedBlurb.isEmpty || moneySavedUsd <= 0) {
+      return const StatsActionResult(
+        success: false,
+        message: 'Add a title, description, and savings amount first.',
+        syncState: SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'Missing custom habit details.',
+        ),
+      );
+    }
+
+    final id = '$customHabitIdPrefix${DateTime.now().microsecondsSinceEpoch}';
+    final customHabits = <HabitTemplate>[
+      ..._stats.customHabitTemplates,
+      customHabitFromMap(<String, dynamic>{
+        'id': id,
+        'title': trimmedTitle,
+        'blurb': trimmedBlurb,
+        'money_saved_usd': moneySavedUsd,
+      }),
+    ];
+    final saved = <String>{..._stats.savedHabitIds, id}.toList();
+
+    return _saveStats(
+      _stats.copyWith(
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          'custom_habits': customHabits
+              .map(customHabitToMap)
+              .toList(growable: false),
+          'saved_habit_ids': saved,
+        },
+        updatedAt: DateTime.now().toUtc(),
+      ),
+      savingMessage: 'Creating your habit...',
+    );
+  }
+
   /// Unpins a habit from the Home tracker. Past completions already logged
   /// in the weekly log/calendar are untouched — only future tracking stops.
   Future<StatsActionResult> unsaveHabit(String habitId) async {

@@ -375,6 +375,21 @@ class UserStats {
         .toList(growable: false);
   }
 
+  /// User-authored habit templates. Kept in the same JSON blob as the rest
+  /// of Money Habits so custom habits sync/cache with normal progress.
+  List<HabitTemplate> get customHabitTemplates {
+    final raw = spendingHabits['custom_habits'];
+    if (raw is! List) return const <HabitTemplate>[];
+    return raw
+        .whereType<Map>()
+        .map((entry) => customHabitFromMap(entry.cast<String, dynamic>()))
+        .where((habit) => habit.id.startsWith(customHabitIdPrefix))
+        .toList(growable: false);
+  }
+
+  HabitTemplate? habitTemplateForId(String habitId) =>
+      habitTemplateById(habitId, customHabits: customHabitTemplates);
+
   /// Per-habit adjustable-parameter value saved alongside a pinned habit
   /// (e.g. "$5"), keyed by habit id. Falls back to the template's default
   /// when absent.
