@@ -26,8 +26,13 @@ class MoneyHabitController extends ChangeNotifier {
 
   // ---------------- Derived from UserStats (always in sync) ----------------
 
+  List<HabitTemplate> get customHabits => _stats.stats.customHabitTemplates;
+
+  List<HabitTemplate> get allAvailableHabits =>
+      <HabitTemplate>[...habitCatalog, ...customHabits];
+
   List<HabitTemplate> get savedHabits => _stats.stats.savedHabitIds
-      .map(habitById)
+      .map((id) => habitTemplateById(id, customHabits: customHabits))
       .whereType<HabitTemplate>()
       .toList(growable: false);
 
@@ -79,17 +84,27 @@ class MoneyHabitController extends ChangeNotifier {
   Future<void> saveHabit(HabitTemplate template, {double? paramValue}) =>
       _stats.saveHabit(template.id, paramValue: paramValue);
 
+  Future<void> createCustomHabit({
+    required String title,
+    required String blurb,
+    required double moneySavedUsd,
+  }) =>
+      _stats.createCustomHabit(
+        title: title,
+        blurb: blurb,
+        moneySavedUsd: moneySavedUsd,
+      );
+
   Future<void> unsaveHabit(String habitId) => _stats.unsaveHabit(habitId);
 
   Future<void> completeTrackedHabit(HabitTemplate template) =>
       _stats.completeHabit(template, units: paramValueFor(template));
 
-  Future<void> completeChallengeTask(ChallengeTask challengeTask, {double? units}) {
+  Future<void> completeChallengeTask(ChallengeTask challengeTask, {double? units}) async {
     final template = challengeTask.template;
-    if (template == null) {
-      return Future<void>.value();
-    }
-    return _stats.completeHabit(
+    if (template == null) return;
+    
+    await _stats.completeHabit(
       template,
       units: units,
       challengeTaskId: challengeTask.id,
