@@ -63,6 +63,12 @@ double _readDouble(dynamic value) {
   return double.tryParse('$value') ?? 0;
 }
 
+String? _readString(dynamic value) {
+  final stringValue = value?.toString().trim();
+  if (stringValue == null || stringValue.isEmpty) return null;
+  return stringValue;
+}
+
 /// Describes a numeric knob a habit can be adjusted by before saving/
 /// completing it (e.g. "how many dollars"). Habits without one are a flat,
 /// one-tap completion.
@@ -118,6 +124,48 @@ class HabitTemplate {
   bool get isAdjustable => adjustable != null;
 
   HabitImpact impactFor(double units) => impactPerUnit.scale(units);
+}
+
+const String customHabitIdPrefix = 'custom_habit_';
+
+HabitTemplate customHabitFromMap(Map<String, dynamic> map) {
+  final id = _readString(map['id']) ?? '${customHabitIdPrefix}restored';
+  final title = _readString(map['title']) ?? 'Custom habit';
+  final blurb = _readString(map['blurb']) ??
+      _readString(map['description']) ??
+      'A money habit you created.';
+  final moneySaved = _readDouble(map['money_saved_usd']);
+
+  return HabitTemplate(
+    id: id,
+    title: title,
+    category: HabitCategory.saveMore,
+    blurb: blurb,
+    impactPerUnit: HabitImpact(
+      moneySavedUsd: moneySaved,
+      choicesKept: 1,
+    ),
+    icon: Icons.edit_note_rounded,
+  );
+}
+
+Map<String, dynamic> customHabitToMap(HabitTemplate habit) {
+  return <String, dynamic>{
+    'id': habit.id,
+    'title': habit.title,
+    'blurb': habit.blurb,
+    'money_saved_usd': habit.impactPerUnit.moneySavedUsd,
+  };
+}
+
+HabitTemplate? habitTemplateById(
+  String id, {
+  Iterable<HabitTemplate> customHabits = const <HabitTemplate>[],
+}) {
+  for (final habit in customHabits) {
+    if (habit.id == id) return habit;
+  }
+  return habitById(id);
 }
 
 HabitTemplate? habitById(String id) {

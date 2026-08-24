@@ -68,13 +68,21 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
             )
           : null,
       appBar: AppBar(
+        toolbarHeight: 70,
         backgroundColor: AppTheme.deepForest,
         foregroundColor: Colors.white,
         elevation: 0,
         // As a tab there is nothing to go back *to*, so the arrow would be
         // a dead control.
         automaticallyImplyLeading: !asTab,
-        title: Text('Money Habits', style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700)),
+        title: Padding(
+            padding: const EdgeInsets.only(top: 12.0), 
+            child: Text(
+              'Money Habits',
+              style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700), // Moved here
+            ),
+          ),
+        //title: Text('Money Habits', style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700)),
         bottom: PreferredSize(
           // isScrollable already lets the tabs scroll off-screen on a narrow
           // phone, but with no visible thumb there was no hint that "My Jar"
@@ -112,7 +120,7 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
               // one logged them.
               tabs: const [
                 Tab(icon: Icon(Icons.check_circle_outline_rounded, size: 18), text: 'My Week'),
-                Tab(icon: Icon(Icons.search_rounded, size: 18), text: 'Find Habits'),
+                Tab(icon: Icon(Icons.search_rounded, size: 18), text: 'Find/Create Habits'),
                 Tab(icon: Icon(Icons.flag_rounded, size: 18), text: 'Challenges'),
                 Tab(icon: Icon(Icons.savings_rounded, size: 18), text: 'My Jar'),
               ],
@@ -227,7 +235,7 @@ class _TrackTab extends StatelessWidget {
             ),
         ] else
           Text(
-            'Tap "Find Habits" above to pick your first one.',
+            'Tap "Find/Create Habits" above to pick your first one.',
             style: GoogleFonts.quicksand(color: AppTheme.textMuted),
           ),
       ],
@@ -325,19 +333,19 @@ class _HowItWorksCard extends StatelessWidget {
         n: 1,
         icon: Icons.search_rounded,
         title: 'Pick a habit',
-        body: 'Open Activity and save one you could actually do.',
+        body: 'Open "Find/Create Habits" and choose some meaningful, attainable habits.',
       ),
       (
         n: 2,
         icon: Icons.check_circle_rounded,
         title: 'Log it each day',
-        body: 'Tap today\'s circle on Track when you do it.',
+        body: 'Tap today\'s circle under "This week". Each day builds consistency!',
       ),
       (
         n: 3,
         icon: Icons.savings_rounded,
         title: 'Fill your jar',
-        body: 'Every log adds points. The jar grows as they add up.',
+        body: 'Every completion adds points. The jar grows as they add up.',
       ),
     ];
 
@@ -543,6 +551,11 @@ class _ActivityTab extends StatefulWidget {
 
 class _ActivityTabState extends State<_ActivityTab> {
   HabitCategory? _filter;
+  bool _showCustomCreator = false;
+  final GlobalKey<FormState> _customFormKey = GlobalKey<FormState>();
+  final TextEditingController _customTitleController = TextEditingController();
+  final TextEditingController _customBlurbController = TextEditingController();
+  final TextEditingController _customAmountController = TextEditingController();
 
   // Explicit controller, shared with the Scrollbar below. A Scrollbar with
   // no controller binds to the ambient PrimaryScrollController — which the
@@ -554,13 +567,20 @@ class _ActivityTabState extends State<_ActivityTab> {
   @override
   void dispose() {
     _filterScroll.dispose();
+    _customTitleController.dispose();
+    _customBlurbController.dispose();
+    _customAmountController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final habits = context.watch<MoneyHabitController>();
-    final list = habitCatalog.where((t) => _filter == null || t.category == _filter).toList();
+    final list = _showCustomCreator
+        ? habits.customHabits
+        : habits.allAvailableHabits
+            .where((t) => _filter == null || t.category == _filter)
+            .toList();
 
     return Column(
       children: [
@@ -580,34 +600,79 @@ class _ActivityTabState extends State<_ActivityTab> {
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 children: [
-                  _CategoryChip(label: 'All', selected: _filter == null, onTap: () => setState(() => _filter = null)),
+                  _CategoryChip(
+                    label: 'All',
+                    selected: !_showCustomCreator && _filter == null,
+                    onTap: () => setState(() {
+                      _showCustomCreator = false;
+                      _filter = null;
+                    }),
+                  ),
                   for (final category in HabitCategory.values) ...[
                     const SizedBox(width: 8),
                     _CategoryChip(
                       label: category.label,
-                      selected: _filter == category,
+                      selected: !_showCustomCreator && _filter == category,
                       accent: category.accent,
-                      onTap: () => setState(() => _filter = category),
+                      onTap: () => setState(() {
+                        _showCustomCreator = false;
+                        _filter = category;
+                      }),
                     ),
                   ],
+                  const SizedBox(width: 8),
+                  _CategoryChip(
+                    label: 'Create your own',
+                    selected: _showCustomCreator,
+                    accent: AppTheme.greenPrimary,
+                    onTap: () => setState(() {
+                      _showCustomCreator = true;
+                      _filter = null;
+                    }),
+                  ),
                 ],
               ),
             ),
           ),
         ),
         Expanded(
-          child: ListView.separated(
+          child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-            itemCount: list.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              final habit = list[index];
-              return _ActivityCard(
-                habit: habit,
-                saved: habits.savedHabits.any((h) => h.id == habit.id),
-                onTap: () => _openHabitSheet(context, habit, habits),
-              );
-            },
+            children: [
+              if (_showCustomCreator) ...[
+                _CreateHabitCard(
+                  formKey: _customFormKey,
+                  titleController: _customTitleController,
+                  blurbController: _customBlurbController,
+                  amountController: _customAmountController,
+                  onCreate: () => _createCustomHabit(context, habits),
+                ),
+                const SizedBox(height: 12),
+                if (list.isEmpty)
+                  Text(
+                    'Your custom habits will show up here after you create them.',
+                    style: GoogleFonts.quicksand(color: AppTheme.textMuted),
+                  )
+                else
+                  Text(
+                    'Your habits',
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                const SizedBox(height: 8),
+              ],
+              for (final habit in list) ...[
+                _ActivityCard(
+                  habit: habit,
+                  saved: habits.savedHabits.any((h) => h.id == habit.id),
+                  onTap: () => _openHabitSheet(context, habit, habits),
+                ),
+                const SizedBox(height: 10),
+              ],
+            ],
           ),
         ),
       ],
@@ -624,6 +689,185 @@ class _ActivityTabState extends State<_ActivityTab> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (sheetContext) => _HabitDetailSheet(habit: habit, habits: habits),
+    );
+  }
+
+  Future<void> _createCustomHabit(
+    BuildContext context,
+    MoneyHabitController habits,
+  ) async {
+    if (!(_customFormKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    final amount = double.parse(
+      _customAmountController.text.replaceAll(RegExp(r'[\$,]'), '').trim(),
+    );
+    await habits.createCustomHabit(
+      title: _customTitleController.text,
+      blurb: _customBlurbController.text,
+      moneySavedUsd: amount,
+    );
+
+    _customTitleController.clear();
+    _customBlurbController.clear();
+    _customAmountController.clear();
+    if (context.mounted) {
+      GameToast.show(context, message: 'Custom habit created and saved');
+    }
+  }
+}
+
+class _CreateHabitCard extends StatelessWidget {
+  const _CreateHabitCard({
+    required this.formKey,
+    required this.titleController,
+    required this.blurbController,
+    required this.amountController,
+    required this.onCreate,
+  });
+
+  final GlobalKey<FormState> formKey;
+  final TextEditingController titleController;
+  final TextEditingController blurbController;
+  final TextEditingController amountController;
+  final VoidCallback onCreate;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: AppTheme.getPuffyDecoration(
+        accent: AppTheme.greenPrimary,
+        fillColor: AppTheme.panelStrong,
+        restAlpha: 0.16,
+      ),
+      child: Form(
+        key: formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.edit_note_rounded, color: AppTheme.greenPrimary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Create your own',
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Can\'t find a habit for your unique financial situation? Create your own!',
+               style: GoogleFonts.pixelifySans(
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+            ),
+            ),
+            
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: titleController,
+              textInputAction: TextInputAction.next,
+              maxLength: 40,
+              style: GoogleFonts.pixelifySans(color: Colors.white),
+              decoration: _customInputDecoration('Title'),
+              validator: (value) {
+                if ((value ?? '').trim().isEmpty) {
+                  return 'Add a title.';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: blurbController,
+              textInputAction: TextInputAction.next,
+              minLines: 2,
+              maxLines: 3,
+              maxLength: 120,
+              style: GoogleFonts.pixelifySans(color: Colors.white),
+              decoration: _customInputDecoration('Description'),
+              validator: (value) {
+                if ((value ?? '').trim().isEmpty) {
+                  return 'Add a description.';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: amountController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              textInputAction: TextInputAction.done,
+              style: GoogleFonts.pixelifySans(color: Colors.white),
+              decoration: _customInputDecoration('Money saved')
+                  .copyWith(prefixText: '\$ '),
+              validator: (value) {
+                final amount = double.tryParse(
+                  (value ?? '').replaceAll(RegExp(r'[\$,]'), '').trim(),
+                );
+                if (amount == null || amount <= 0) {
+                  return 'Enter a savings amount.';
+                }
+                if (amount > 10000) {
+                  return 'Use a smaller daily amount.';
+                }
+                return null;
+              },
+              onFieldSubmitted: (_) => onCreate(),
+            ),
+            const SizedBox(height: 14),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.greenPrimary,
+                  foregroundColor: AppTheme.deepForest,
+                ),
+                onPressed: onCreate,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Create habit'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _customInputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: GoogleFonts.quicksand(color: AppTheme.textMuted),
+      counterStyle: GoogleFonts.quicksand(color: Colors.white38, fontSize: 10),
+      filled: true,
+      fillColor: AppTheme.panel,
+      errorStyle: GoogleFonts.quicksand(color: const Color(0xFFFFA39A)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        borderSide: const BorderSide(color: AppTheme.greenPrimary),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        borderSide: const BorderSide(color: Color(0xFFFF8474)),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        borderSide: const BorderSide(color: Color(0xFFFF8474)),
+      ),
     );
   }
 }
@@ -950,7 +1194,7 @@ class _ChallengesTab extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 10),
-              Text(challenge.description, style: GoogleFonts.quicksand(color: Colors.white70, height: 1.4)),
+              Text(challenge.description, style: GoogleFonts.pixelifySans(color: Colors.white70, height: 1.4)),
               const SizedBox(height: 12),
               ClipRRect(
                 borderRadius: BorderRadius.circular(999),
