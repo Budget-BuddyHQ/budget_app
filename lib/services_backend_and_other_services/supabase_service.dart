@@ -421,6 +421,35 @@ class UserStats {
   String? get jarLastActive =>
       _readString(spendingHabits['jar_last_active']);
 
+  /// Adventure Town spot ids the player has already visited. Previously
+  /// tracked only in `AdventureWorldScreen`'s own `State`, so leaving the
+  /// screen — even just to check Profile — reset "visit every place" back
+  /// to zero every time.
+  List<String> get townVisitedSpotIds {
+    final raw = spendingHabits['town_visited_spots'];
+    if (raw is! List) return const <String>[];
+    return raw
+        .map((entry) => entry.toString().trim())
+        .where((entry) => entry.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+  }
+
+  /// Town coin pickups already collected, by `"x_y"` tile id (`kTownCoins`
+  /// has no id of its own). Same gap as [townVisitedSpotIds] — worse,
+  /// because each unpersisted coin paid out real gold via
+  /// `applyChallengePayload`, so leaving and re-entering the town let a
+  /// player collect the same coins for infinite gold.
+  List<String> get townCollectedCoinIds {
+    final raw = spendingHabits['town_collected_coins'];
+    if (raw is! List) return const <String>[];
+    return raw
+        .map((entry) => entry.toString().trim())
+        .where((entry) => entry.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+  }
+
   String get profileImageUrl {
     final value = spendingHabits['profile_image_url']?.toString().trim();
     if (value == null || value.isEmpty) {
@@ -1380,16 +1409,16 @@ end
   String _cacheKey(String userId) => 'budget_buddy_user_stats_$userId';
 
   Future<List<LeaderboardEntry>> fetchLeaderboard({
-    int limit = 20,
+    int limit = 100,
     String? currentUserId,
     // A separate server-ordered query rather than re-sorting the
-    // literacy-ranked page client-side: the top 20 by literacy points can
-    // easily exclude someone who is actually top-20 by gold, so re-sorting
+    // literacy-ranked page client-side: the top 100 by literacy points can
+    // easily exclude someone who is actually top-100 by gold, so re-sorting
     // the wrong page in Dart would just hide them.
     bool byGold = false,
   }) async {
     await _ensurePreferences();
-    final normalizedLimit = limit.clamp(1, 50);
+    final normalizedLimit = limit.clamp(1, 100);
 
     if (!_isSupabaseConnected) {
       return _buildCachedLeaderboard(
