@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'finance_concepts.dart';
+import 'life_event_chains.dart';
 
 /// Data model for **Life** — the main game: a BitLife-style life simulator.
 /// You are born, age up a year at a time, and your choices move four stats
@@ -13,10 +14,58 @@ import 'finance_concepts.dart';
 /// One line in the life feed, tagged with the age it happened at.
 @immutable
 class LifeLogEntry {
-  const LifeLogEntry({required this.age, required this.text});
+  const LifeLogEntry({required this.age, required this.text, this.kind});
 
   final int age;
   final String text;
+
+  /// What sort of thing happened, so the feed can show it rather than
+  /// print another indistinguishable paragraph.
+  ///
+  /// Null for lines that do not fit a category; the feed falls back to a
+  /// plain bullet rather than guessing, because a *wrong* icon on a money
+  /// line is worse than no icon at all.
+  final LifeLogKind? kind;
+}
+
+/// Feed-line categories.
+///
+/// Deliberately coarse. The tempting alternative was to guess the category
+/// by scanning the log text for words like "paid" or "school", but the same
+/// sentence can mention a job, a cost and a friend, and the scan would pick
+/// whichever keyword happened to come first. Tagging at the point the line
+/// is written is the only version that is actually right.
+enum LifeLogKind {
+  /// Earned, spent, saved, invested, borrowed.
+  money('\u{1F4B5}', Color(0xFF85EFAC)),
+
+  /// A bill or setback that had to be paid for from somewhere.
+  shock('\u{26A1}', Color(0xFFFF8FB1)),
+
+  /// Hired, promoted, raised, quit, retired.
+  career('\u{1F4BC}', Color(0xFF58C7FF)),
+
+  /// School, studying, skills, the library.
+  learning('\u{1F4DA}', Color(0xFFB388FF)),
+
+  /// Doctor, illness, exercise, recovery.
+  health('\u{2764}', Color(0xFFFF8474)),
+
+  /// Friends, family, partners, gifts.
+  people('\u{1F49E}', Color(0xFFFF8FB1)),
+
+  /// Fun, holidays, hobbies, volunteering.
+  life('\u{2728}', Color(0xFFE9C46A)),
+
+  /// Birth, ageing up, the ending.
+  milestone('\u{1F382}', Color(0xFF4BD2A3));
+
+  const LifeLogKind(this.emoji, this.accent);
+
+  /// Rendered on the platform default font — the pixel font has no emoji
+  /// glyphs and would drop these to tofu boxes.
+  final String emoji;
+  final Color accent;
 }
 
 enum Gender { male, female, nonBinary }
@@ -120,6 +169,8 @@ class LifeChoice {
     this.skillGain = 0,
     this.addTrait,
     this.teaches,
+    this.setsFlag,
+    this.clearsFlag,
   });
 
   final String label;
@@ -155,6 +206,16 @@ class LifeChoice {
   /// player has met. Optional — plenty of events are pure story and should
   /// stay that way rather than having a lesson bolted on.
   final FinanceConcept? teaches;
+
+  /// Remembers this choice so a later event can be about it. See [LifeFlag].
+  final LifeFlag? setsFlag;
+
+  /// Forgets one — the dog dies, the card is paid off, the car is sold.
+  ///
+  /// Separate from [setsFlag] rather than being a nullable toggle, because
+  /// most chain endings do both at once: clear `hasCreditCard` *and* set
+  /// `cardPaidOff`, so the ending can itself be referenced later.
+  final LifeFlag? clearsFlag;
 }
 
 /// A learnable skill. Skills gate career events and scale their payoff — a
@@ -187,6 +248,110 @@ enum LifeTrait {
   final IconData icon;
 }
 
+/// Something that happened to this character which a *later* event can ask
+/// about.
+///
+/// **Why this exists.** Every event in the pool used to be standalone: it
+/// fired, it moved some numbers, and nothing downstream could ever know it
+/// had happened. That is the structural reason the game felt repetitive
+/// even with a hundred events in it — a hundred unrelated beats in a random
+/// order still reads as a shuffled deck, because none of them are *about*
+/// the last one. Two runs differed in which cards came up, never in what
+/// the run was about.
+///
+/// A flag is the memory that makes a chain possible: adopting a dog at nine
+/// is what unlocks the vet bill at fifteen, and the vet bill only makes
+/// sense — and only teaches anything about an emergency fund — because you
+/// chose the dog. The finance chains are the point. Taking a credit card at
+/// twenty-two is a small decision; it is the minimum-payment trap three
+/// years later that makes it a lesson, and that beat cannot exist without a
+/// way to remember the card.
+///
+/// An enum rather than free strings, so a typo in a chain is a compile
+/// error instead of a beat that silently never fires — which would be
+/// invisible, since a missing event looks exactly like an unlucky roll.
+enum LifeFlag {
+  // ---- Pet ----
+  hasPet,
+  petGone,
+
+  // ---- Money ----
+  hasCreditCard,
+  cardDebtSpiral,
+  cardPaidOff,
+  hasStudentLoan,
+  loanRepaid,
+  investsIndex,
+  soldInCrash,
+  heldThroughCrash,
+
+  // ---- Work ----
+  hasSideHustle,
+  hustleGrew,
+  soldTheBusiness,
+
+  // ---- Home and vehicle ----
+  hasCar,
+  carGone,
+  rentsWithFriend,
+  ownsHome,
+
+  // ---- Life ----
+  gotDegree,
+  movedAbroad,
+  hasChild,
+}
+
+extension LifeFlagInfo on LifeFlag {
+  /// A short label for the "what is going on in your life" strip, or null
+  /// for flags that are bookkeeping rather than something the player would
+  /// recognise as a thing they have.
+  ///
+  /// Only about half of these are worth showing. `heldThroughCrash` records
+  /// a decision so a later beat can pay it off; it is not an *item*, and
+  /// putting "Held through crash" in a row of chips next to "Dog" and "Car"
+  /// would read as a stat rather than as part of your life. The rule is:
+  /// show it if the player would say "I have one".
+  String? get chipLabel => switch (this) {
+    LifeFlag.hasPet => 'Dog',
+    LifeFlag.hasCreditCard => 'Credit card',
+    LifeFlag.cardDebtSpiral => 'Card debt',
+    LifeFlag.hasStudentLoan => 'Student loan',
+    LifeFlag.investsIndex => 'Index fund',
+    LifeFlag.hasSideHustle => 'Side hustle',
+    LifeFlag.hustleGrew => 'Business',
+    LifeFlag.hasCar => 'Car',
+    LifeFlag.rentsWithFriend => 'Flatshare',
+    LifeFlag.ownsHome => 'Home',
+    LifeFlag.gotDegree => 'Degree',
+    LifeFlag.hasChild => 'Child',
+    _ => null,
+  };
+
+  /// Rendered on the platform default font — the pixel font has no emoji.
+  String get chipEmoji => switch (this) {
+    LifeFlag.hasPet => '\u{1F415}',
+    LifeFlag.hasCreditCard => '\u{1F4B3}',
+    LifeFlag.cardDebtSpiral => '\u{1F6A8}',
+    LifeFlag.hasStudentLoan => '\u{1F393}',
+    LifeFlag.investsIndex => '\u{1F4C8}',
+    LifeFlag.hasSideHustle => '\u{1F528}',
+    LifeFlag.hustleGrew => '\u{1F3EA}',
+    LifeFlag.hasCar => '\u{1F697}',
+    LifeFlag.rentsWithFriend => '\u{1F3E0}',
+    LifeFlag.ownsHome => '\u{1F3E1}',
+    LifeFlag.gotDegree => '\u{1F4DC}',
+    LifeFlag.hasChild => '\u{1F476}',
+    _ => '\u{2728}',
+  };
+
+  /// Whether this is something going *wrong* — shown in a warning colour,
+  /// because "you have card debt" is not the same kind of fact as "you have
+  /// a dog" and should not look like one.
+  bool get isTrouble =>
+      this == LifeFlag.cardDebtSpiral || this == LifeFlag.hasStudentLoan;
+}
+
 /// A snapshot of the character, passed to [LifeEvent.matches] so an event can
 /// state its own requirements instead of the controller hard-coding them.
 @immutable
@@ -201,6 +366,7 @@ class LifeContext {
     required this.skills,
     required this.traits,
     required this.hasJob,
+    this.flags = const <LifeFlag>{},
   });
 
   final int age;
@@ -212,6 +378,9 @@ class LifeContext {
   final Map<LifeSkill, int> skills;
   final Set<LifeTrait> traits;
   final bool hasJob;
+
+  /// What has already happened to this character that a chain can hang off.
+  final Set<LifeFlag> flags;
 
   int skill(LifeSkill s) => skills[s] ?? 0;
 }
@@ -234,6 +403,8 @@ class LifeEvent {
     this.minMoney = 0,
     this.requiresJob = false,
     this.repeatable = false,
+    this.requiresFlag,
+    this.forbidsFlag,
   });
 
   final String id;
@@ -254,6 +425,14 @@ class LifeEvent {
   final int minFame;
   final int minMoney;
   final bool requiresJob;
+
+  /// Only draw this once [requiresFlag] has been set — the link that turns
+  /// a pile of standalone beats into a story. See [LifeFlag].
+  final LifeFlag? requiresFlag;
+
+  /// Never draw it once [forbidsFlag] has been set. Used to close a chain
+  /// off: the vet-bill beat must not fire after the dog is gone.
+  final LifeFlag? forbidsFlag;
 
   /// Whether this beat can happen more than once in a single life.
   ///
@@ -283,6 +462,8 @@ class LifeEvent {
     if (c.fame < minFame) return false;
     if (c.money < minMoney) return false;
     if (requiresJob && !c.hasJob) return false;
+    if (requiresFlag != null && !c.flags.contains(requiresFlag)) return false;
+    if (forbidsFlag != null && c.flags.contains(forbidsFlag)) return false;
     return true;
   }
 }
@@ -3290,4 +3471,5 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ...kLifeEventsExtra,
   ...kLifeEventsEarly,
   ...kLifeEventsMoney,
+  ...kLifeEventsChains,
 ];

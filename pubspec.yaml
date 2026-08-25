@@ -80,5 +80,11 @@ flutter:
     - assets/map_assets_coins/customer_more_animations/walk-fancy/
     - assets/map_assets_coins/employee_or_background_character_information/idle/
     - assets/map_assets_coins/employee_or_background_character_information/walk/
+    # The market stall and its shopkeeper — idle loop plus a one-shot
+    # "sell" animation played when a purchase is made in the Corner Store.
+    - assets/map_assets_coins/shop/0/idle/
+    - assets/map_assets_coins/shop/0/sell/
+    - assets/map_assets_coins/shop/1/idle/
+    - assets/map_assets_coins/shop/1/sell/
     - assets/own_skins/mushroom_goomba/walking_animation/
 
