@@ -164,8 +164,7 @@ class _ConfettiPainter extends CustomPainter {
       final y = -20 + local * p.fallSpeed * (size.height + 40);
       final x =
           p.startXFrac * size.width +
-          math.sin(local * p.wobbleFreq * math.pi * 2 + p.phase) *
-              p.wobbleAmp;
+          math.sin(local * p.wobbleFreq * math.pi * 2 + p.phase) * p.wobbleAmp;
       final rotation = local * p.rotSpeed * math.pi * 2;
 
       canvas.save();

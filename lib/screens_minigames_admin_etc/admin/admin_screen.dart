@@ -30,7 +30,10 @@ import '../../themes_colors/app_theme.dart';
     // Only ever called from a button that's already past the
     // _canAccessAdminPanel gate, which requires supabase to be non-null.
     await supabase!.from('profiles').update({'role': newRole}).eq('id', userId);
-    await supabase!.from('profiles').update({'disabled': true}).eq('id', userId);
+    await supabase!
+        .from('profiles')
+        .update({'disabled': true})
+        .eq('id', userId);
     await supabase!
     final client = supabase;
     if (client == null) {

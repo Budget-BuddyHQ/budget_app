@@ -142,11 +142,16 @@ class _HabitTaskBlock extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: palette.border.withValues(alpha: 0.22),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: palette.border.withValues(alpha: 0.55)),
+                    border: Border.all(
+                      color: palette.border.withValues(alpha: 0.55),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,

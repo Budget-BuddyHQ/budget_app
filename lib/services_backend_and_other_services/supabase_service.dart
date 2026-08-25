@@ -433,8 +433,7 @@ class UserStats {
   /// ISO date the jar was last fed a completed habit. Mood is always
   /// derived from this at read time (see [JarMood.forDaysSinceActive]) —
   /// never stored, so it can't go stale.
-  String? get jarLastActive =>
-      _readString(spendingHabits['jar_last_active']);
+  String? get jarLastActive => _readString(spendingHabits['jar_last_active']);
 
   /// Adventure Town spot ids the player has already visited. Previously
   /// tracked only in `AdventureWorldScreen`'s own `State`, so leaving the
@@ -1232,7 +1231,8 @@ end
 
             final incoming = UserStats.fromMap(rows.first);
             final current = _memoryCache[userId];
-            if (current != null && incoming.updatedAt.isBefore(current.updatedAt)) {
+            if (current != null &&
+                incoming.updatedAt.isBefore(current.updatedAt)) {
               return current;
             }
             _memoryCache[userId] = incoming;
@@ -1247,7 +1247,8 @@ end
 
   Future<SyncState> saveUserStats(UserStats stats) async {
     await _ensurePreferences();
-    final current = _memoryCache[stats.id] ?? await _readCachedUserStats(stats.id);
+    final current =
+        _memoryCache[stats.id] ?? await _readCachedUserStats(stats.id);
     if (current != null && stats.updatedAt.isBefore(current.updatedAt)) {
       _localController.add(current);
       return const SyncState(
@@ -1447,17 +1448,18 @@ end
       final unordered = Supabase.instance.client
           .from(leaderboardView)
           .select('*');
-      final response = await (byGold
-              ? unordered
-                    .order('gold', ascending: false)
-                    .order('literacy_points', ascending: false)
-                    .order('xp', ascending: false)
-              : unordered
-                    .order('literacy_points', ascending: false)
-                    .order('xp', ascending: false)
-                    .order('gold', ascending: false))
-          .limit(normalizedLimit)
-          .timeout(_supabaseReadTimeout);
+      final response =
+          await (byGold
+                  ? unordered
+                        .order('gold', ascending: false)
+                        .order('literacy_points', ascending: false)
+                        .order('xp', ascending: false)
+                  : unordered
+                        .order('literacy_points', ascending: false)
+                        .order('xp', ascending: false)
+                        .order('gold', ascending: false))
+              .limit(normalizedLimit)
+              .timeout(_supabaseReadTimeout);
 
       if (response.isEmpty) {
         return _buildCachedLeaderboard(
@@ -1542,16 +1544,17 @@ end
           .from(leaderboardView)
           .select('*')
           .inFilter('id', friendIds.toList());
-      final response = await (byGold
-              ? unordered
-                    .order('gold', ascending: false)
-                    .order('literacy_points', ascending: false)
-                    .order('xp', ascending: false)
-              : unordered
-                    .order('literacy_points', ascending: false)
-                    .order('xp', ascending: false)
-                    .order('gold', ascending: false))
-          .timeout(_supabaseReadTimeout);
+      final response =
+          await (byGold
+                  ? unordered
+                        .order('gold', ascending: false)
+                        .order('literacy_points', ascending: false)
+                        .order('xp', ascending: false)
+                  : unordered
+                        .order('literacy_points', ascending: false)
+                        .order('xp', ascending: false)
+                        .order('gold', ascending: false))
+              .timeout(_supabaseReadTimeout);
 
       return response
           .whereType<Map>()
@@ -1597,12 +1600,34 @@ end
     if (!_isSupabaseConnected) {
       return 'Connect to the internet to add friends.';
     }
+    // A friend code is the first 8 hex characters of the user's uuid, so
+    // resolving one is a uuid *prefix* match. This used to be written as
+    // `.ilike('id', '$trimmed%')`, which always failed against the live
+    // database:
+    //
+    //     operator does not exist: uuid ~~* unknown
+    //
+    // `id` is a `uuid` column, and Postgres has no ILIKE operator for uuid
+    // — so every single lookup threw, got swallowed by the catch below, and
+    // surfaced as "Could not add that friend right now." The friends
+    // feature had never worked, and the error message gave no hint why.
+    //
+    // uuid *does* have btree comparison operators, so a half-open range
+    // expresses the same prefix match, works server-side, and stays
+    // indexed. Using the all-`f` upper bound rather than incrementing the
+    // prefix avoids an overflow edge case on the code `FFFFFFFF`.
+    final prefix = trimmed.toLowerCase();
+    if (prefix.length != 8 || !RegExp(r'^[0-9a-f]{8}$').hasMatch(prefix)) {
+      return 'That code does not look right — codes are 8 characters.';
+    }
+
     try {
       final client = Supabase.instance.client;
       final matches = await client
           .from(leaderboardView)
           .select('id, username')
-          .ilike('id', '$trimmed%')
+          .gte('id', '$prefix-0000-0000-0000-000000000000')
+          .lte('id', '$prefix-ffff-ffff-ffff-ffffffffffff')
           .limit(5)
           .timeout(_supabaseReadTimeout);
 
@@ -1630,14 +1655,32 @@ end
         return "That's your own code!";
       }
 
-      await client
-          .from(friendshipsTable)
-          .upsert(
-            <String, dynamic>{'user_id': currentUserId, 'friend_id': targetId},
-            onConflict: 'user_id,friend_id',
-          );
+      await client.from(friendshipsTable).upsert(<String, dynamic>{
+        'user_id': currentUserId,
+        'friend_id': targetId,
+      }, onConflict: 'user_id,friend_id');
 
       return 'Added ${match['username'] ?? 'a new friend'}!';
+    } on PostgrestException catch (error) {
+      // Distinguished from a generic catch on purpose. A blanket
+      // "Could not add that friend right now." is exactly what hid the
+      // uuid/ILIKE bug above for as long as it did — the request was
+      // failing every time with a precise, actionable Postgres error and
+      // nobody could see it. Now the real code/message goes to the log,
+      // and the two failures a player can actually do something about get
+      // their own wording.
+      debugPrint(
+        'Supabase add friend failed [${error.code}]: ${error.message} '
+        '${error.details ?? ''} ${error.hint ?? ''}',
+      );
+      if (error.code == '23503') {
+        // FK violation: that uuid isn't a real auth user.
+        return 'No player found with that code.';
+      }
+      if (error.code == '42P01') {
+        return 'Friends are not set up on the server yet.';
+      }
+      return 'Could not add that friend right now (${error.code ?? 'error'}).';
     } catch (error) {
       debugPrint('Supabase add friend failed: $error');
       return 'Could not add that friend right now.';

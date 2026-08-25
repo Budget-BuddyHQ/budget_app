@@ -115,9 +115,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
             ),
           ),
           Positioned.fill(
-            child: Container(
-              color: AppTheme.panel.withValues(alpha: 0.78),
-            ),
+            child: Container(color: AppTheme.panel.withValues(alpha: 0.78)),
           ),
           SafeArea(
             child: _questions.isEmpty
@@ -201,7 +199,10 @@ class _PracticeScreenState extends State<PracticeScreen> {
         ),
         child: Text(
           _saving ? 'Saving...' : 'Done',
-          style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700, fontSize: 16),
+          style: GoogleFonts.pixelifySans(
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+          ),
         ),
       );
     }
@@ -237,7 +238,10 @@ class _PracticeScreenState extends State<PracticeScreen> {
       ),
       child: Text(
         isLast ? 'See Results' : 'Next Question',
-        style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700, fontSize: 16),
+        style: GoogleFonts.pixelifySans(
+          fontWeight: FontWeight.w700,
+          fontSize: 16,
+        ),
       ),
     );
   }

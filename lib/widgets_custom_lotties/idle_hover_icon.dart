@@ -94,9 +94,7 @@ class _IdleHoverIconState extends State<IdleHoverIcon>
             final phase = (_controller.value + widget.phaseShift) % 1.0;
             final wave = math.sin(phase * 2 * math.pi);
             final bob = reduceMotion ? 0.0 : wave * widget.idleAmplitude;
-            final wobble = reduceMotion
-                ? 0.0
-                : wave * widget.rotationAmplitude;
+            final wobble = reduceMotion ? 0.0 : wave * widget.rotationAmplitude;
             final spin = reduceMotion || !widget.continuousSpin
                 ? 0.0
                 : phase * 2 * math.pi;

@@ -291,7 +291,11 @@ class _UnitLessonBlock extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(_statusIcon(status), color: palette.border, size: 13),
+                        Icon(
+                          _statusIcon(status),
+                          color: palette.border,
+                          size: 13,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           statusLabel,

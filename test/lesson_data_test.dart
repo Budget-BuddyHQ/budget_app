@@ -95,6 +95,86 @@ void main() {
     });
   });
 
+  group('chronological ordering', () {
+    // The curriculum list used to be in an order nobody could read: the
+    // ages 4-6 and 7-10 units sat at the *end*, because
+    // `DailyPlanBuilder._nextLesson` walked list order and would otherwise
+    // have quested "What Is Money?" to every adult. List position was
+    // secretly encoding difficulty. `_nextLesson` is age-aware now, so
+    // list order is free to mean what it looks like it means — and this
+    // test is what stops it drifting back.
+    test('units run youngest to oldest', () {
+      final stages = lessonUnits.map((u) => u.ageStage.minAge).toList();
+      for (var i = 1; i < stages.length; i++) {
+        expect(
+          stages[i],
+          greaterThanOrEqualTo(stages[i - 1]),
+          reason:
+              'unit ${lessonUnits[i].id} (${lessonUnits[i].ageStage.name}, '
+              'min age ${stages[i]}) comes after '
+              '${lessonUnits[i - 1].id} (${lessonUnits[i - 1].ageStage.name}, '
+              'min age ${stages[i - 1]}) — the list is not in age order',
+        );
+      }
+    });
+
+    test('the youngest unit is first, so a 4-year-old starts at the start', () {
+      expect(lessonUnits.first.ageStage, AgeStage.earlyChildhood);
+    });
+
+    test('displayed unit numbers match list position', () {
+      // Titles carry a number ("Unit 3: Budgeting") that a reader will
+      // absolutely check against the order they are shown in. IDs stay
+      // fixed for saved progress, so the two can disagree — this makes
+      // sure they don't.
+      for (var i = 0; i < lessonUnits.length; i++) {
+        expect(
+          lessonUnits[i].title,
+          startsWith('Unit ${i + 1}:'),
+          reason:
+              '${lessonUnits[i].id} is at position ${i + 1} but titled '
+              '"${lessonUnits[i].title}"',
+        );
+        expect(
+          lessonUnits[i].order,
+          i + 1,
+          reason: '${lessonUnits[i].id} has order ${lessonUnits[i].order} '
+              'at position ${i + 1}',
+        );
+      }
+    });
+
+    test('unit ids are NOT renumbered — saved progress depends on them', () {
+      // Renaming an id silently orphans every player's `completed_lessons`.
+      // unit_10 being titled "Unit 1" is deliberate, not a mistake.
+      expect(
+        lessonUnits.map((u) => u.id).toSet(),
+        {
+          'unit_1', 'unit_2', 'unit_3', 'unit_4', 'unit_5', 'unit_6',
+          'unit_7', 'unit_8', 'unit_9', 'unit_10', 'unit_11',
+        },
+        reason: 'a unit id changed — saved lesson progress would be lost',
+      );
+    });
+
+    test('it is one continuous chain, in list order', () {
+      // Each unit opens off the previous unit's last node, so finishing the
+      // curriculum in order is possible without hunting for a second root.
+      for (var i = 1; i < lessonUnits.length; i++) {
+        final firstLesson = lessonUnits[i].lessons.first;
+        final previousLast = lessonUnits[i - 1].lessons.last;
+        expect(
+          firstLesson.prerequisites,
+          contains(previousLast.id),
+          reason:
+              '${lessonUnits[i].id} does not open off '
+              '${lessonUnits[i - 1].id} (expected ${previousLast.id}, got '
+              '${firstLesson.prerequisites})',
+        );
+      }
+    });
+  });
+
   group('age staging', () {
     test('every age stage has at least one unit written for it', () {
       // The Academy groups its unit strip by stage; an empty stage would show

@@ -8,7 +8,6 @@ enum ArcadeLength {
   medium('5–10 min'),
   none('As much time as you need ☺️');
 
-
   const ArcadeLength(this.label);
 
   final String label;

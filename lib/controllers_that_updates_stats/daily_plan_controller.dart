@@ -50,7 +50,14 @@ class DailyPlanController extends ChangeNotifier {
       arcadePlays: stats.arcadePlays,
       activeArcadeGameIds: arcadeCatalog.map((g) => g.id).toList(),
       savedHabitIds: stats.savedHabitIds,
-      habitsDoneToday: (stats.habitWeeklyLog[today] ?? const <String>[]).toSet(),
+      habitsDoneToday: (stats.habitWeeklyLog[today] ?? const <String>[])
+          .toSet(),
+      // Keeps the learning quest age-appropriate now that the curriculum
+      // list is in chronological order — without this an adult's daily
+      // quest would be "What Is Money?" (ages 4-6), which is now genuinely
+      // the first uncompleted lesson in the list. Null when the player
+      // never shared an age, which falls back to plain list order.
+      readerStage: stats.ageBand.recommendedStage,
     );
 
     _plan = plan;

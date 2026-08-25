@@ -152,7 +152,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
     });
     // 5/7 or better (~70%+), same bar a player would call "a good run" —
     // fires once, right as the results card appears, not on every rebuild.
-    if (justFinished && _quiz.isNotEmpty && _correctCount / _quiz.length >= 0.7) {
+    if (justFinished &&
+        _quiz.isNotEmpty &&
+        _correctCount / _quiz.length >= 0.7) {
       ConfettiBurst.show(context);
     }
   }
@@ -207,9 +209,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
             ),
           ),
           Positioned.fill(
-            child: Container(
-              color: AppTheme.panel.withValues(alpha: 0.74),
-            ),
+            child: Container(color: AppTheme.panel.withValues(alpha: 0.74)),
           ),
           SafeArea(
             child: Column(
@@ -361,7 +361,10 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                   : _isSaving
                   ? 'Saving Progress...'
                   : 'Complete Lesson',
-              style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700, fontSize: 16),
+              style: GoogleFonts.pixelifySans(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
             ),
           ],
         ),
@@ -396,7 +399,10 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       ),
       child: Text(
         isLastQuestion ? 'See Results' : 'Next Question',
-        style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700, fontSize: 16),
+        style: GoogleFonts.pixelifySans(
+          fontWeight: FontWeight.w700,
+          fontSize: 16,
+        ),
       ),
     );
   }
@@ -884,7 +890,8 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     keyTerms: {
       'Money': 'coins and bills people trade for things they need or want',
     },
-    takeaway: 'Money is something people trade for things — that\'s its whole job.',
+    takeaway:
+        'Money is something people trade for things — that\'s its whole job.',
     sections: [
       _LessonSection(
         title: 'Money is for trading',
@@ -906,10 +913,9 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Explain that most things at a store cost money',
       'Practice the idea of paying for something',
     ],
-    keyTerms: {
-      'Pay': 'giving money to get something in return',
-    },
-    takeaway: 'Almost everything at a store costs money — that\'s how buying works.',
+    keyTerms: {'Pay': 'giving money to get something in return'},
+    takeaway:
+        'Almost everything at a store costs money — that\'s how buying works.',
     sections: [
       _LessonSection(
         title: 'Everything has a price',
@@ -931,10 +937,9 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Explain what saving means',
       'Describe how a piggy bank is used',
     ],
-    keyTerms: {
-      'Saving': 'keeping money instead of spending it right away',
-    },
-    takeaway: 'Saving just means keeping money for later instead of spending it today.',
+    keyTerms: {'Saving': 'keeping money instead of spending it right away'},
+    takeaway:
+        'Saving just means keeping money for later instead of spending it today.',
     sections: [
       _LessonSection(
         title: 'What saving means',
@@ -988,7 +993,8 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Need': 'something you really cannot do without',
       'Want': 'something nice to have, but you could live without it',
     },
-    takeaway: 'A need is something you can\'t really do without — a want is everything else.',
+    takeaway:
+        'A need is something you can\'t really do without — a want is everything else.',
     sections: [
       _LessonSection(
         title: 'What makes something a need',
@@ -1019,7 +1025,8 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     keyTerms: {
       'Plan': 'deciding what to do with your money before you spend any of it',
     },
-    takeaway: 'A simple plan means deciding how much to save before you spend anything.',
+    takeaway:
+        'A simple plan means deciding how much to save before you spend anything.',
     sections: [
       _LessonSection(
         title: 'Decide first, spend later',
@@ -1042,10 +1049,9 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Explain why banks exist',
       'Describe what a bank does with money kept there',
     ],
-    keyTerms: {
-      'Bank': 'a place built to keep people\'s money safe',
-    },
-    takeaway: 'A bank\'s main job is keeping money safer than it would be at home.',
+    keyTerms: {'Bank': 'a place built to keep people\'s money safe'},
+    takeaway:
+        'A bank\'s main job is keeping money safer than it would be at home.',
     sections: [
       _LessonSection(
         title: 'Why banks exist',

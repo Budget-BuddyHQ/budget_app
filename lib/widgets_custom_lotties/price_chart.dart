@@ -93,26 +93,88 @@ class _InteractivePriceChartState extends State<InteractivePriceChart> {
     }
   }
 
+  static const double _minZoom = 1;
+  static const double _maxZoom = 8;
+
+  void _setZoom(double next) {
+    setState(() => _zoom = next.clamp(_minZoom, _maxZoom));
+  }
+
   @override
   Widget build(BuildContext context) {
     final total = widget.candles.length;
-    return GestureDetector(
-      onScaleStart: (_) => _zoomAtStart = _zoom,
-      onScaleUpdate: (details) {
-        setState(() {
-          _zoom = (_zoomAtStart * details.scale).clamp(1.0, 8.0);
-          final width = context.size?.width ?? 1;
-          // Drag right → pan back in time.
-          _centerFrac =
-              (_centerFrac - details.focalPointDelta.dx / (width * _zoom))
-                  .clamp(0.0, 1.0);
-        });
-      },
-      child: PriceChart(
-        candles: _visibleCandles(total),
-        mode: widget.mode,
-        accent: widget.accent,
-      ),
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: GestureDetector(
+            // Opaque so the chart actually receives the pointer rather than
+            // letting it fall through to the page behind.
+            behavior: HitTestBehavior.opaque,
+            onScaleStart: (_) => _zoomAtStart = _zoom,
+            onScaleUpdate: (details) {
+              setState(() {
+                _zoom = (_zoomAtStart * details.scale).clamp(
+                  _minZoom,
+                  _maxZoom,
+                );
+                final width = context.size?.width ?? 1;
+                // Drag right → pan back in time.
+                _centerFrac =
+                    (_centerFrac -
+                            details.focalPointDelta.dx / (width * _zoom))
+                        .clamp(0.0, 1.0);
+              });
+            },
+            child: PriceChart(
+              candles: _visibleCandles(total),
+              mode: widget.mode,
+              accent: widget.accent,
+            ),
+          ),
+        ),
+        // Explicit controls, not just pinch.
+        //
+        // This chart lives inside the order ticket's vertical ListView, and
+        // a scale recogniser competes with that ListView's drag recogniser
+        // in the gesture arena — the ListView usually wins, which is why
+        // "pinch to zoom, drag to pan" did nothing on a phone however
+        // correct the maths was. Buttons cannot be stolen by a parent
+        // scrollable, so zoom works regardless of who wins the arena. They
+        // are also simply more discoverable than an undocumented gesture.
+        // Left, not right: the right 52px is the price-label gutter, so
+        // buttons over there would sit on top of the numbers.
+        Positioned(
+          left: 4,
+          top: 4,
+          child: Column(
+            children: [
+              _ZoomButton(
+                icon: Icons.add_rounded,
+                accent: widget.accent,
+                onTap: _zoom >= _maxZoom ? null : () => _setZoom(_zoom * 1.6),
+              ),
+              const SizedBox(height: 6),
+              _ZoomButton(
+                icon: Icons.remove_rounded,
+                accent: widget.accent,
+                onTap: _zoom <= _minZoom ? null : () => _setZoom(_zoom / 1.6),
+              ),
+              if (_zoom > _minZoom) ...[
+                const SizedBox(height: 6),
+                _ZoomButton(
+                  icon: Icons.fit_screen_rounded,
+                  accent: widget.accent,
+                  onTap: () => setState(() {
+                    _zoom = _minZoom;
+                    _centerFrac = 1;
+                  }),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -417,5 +479,48 @@ class _PriceChartPainter extends CustomPainter {
         oldDelegate.accent != accent ||
         oldDelegate.showAxis != showAxis ||
         oldDelegate.hoverIndex != hoverIndex;
+  }
+}
+
+/// A small square control on the chart. Deliberately a real tappable button
+/// rather than a gesture hint — see [_InteractivePriceChartState.build].
+class _ZoomButton extends StatelessWidget {
+  const _ZoomButton({
+    required this.icon,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color accent;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    return Material(
+      color: const Color(0xFF0B1F17).withValues(alpha: enabled ? 0.78 : 0.45),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: 28,
+          height: 28,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: accent.withValues(alpha: enabled ? 0.5 : 0.18),
+            ),
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: enabled ? accent : accent.withValues(alpha: 0.3),
+          ),
+        ),
+      ),
+    );
   }
 }

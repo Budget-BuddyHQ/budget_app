@@ -820,7 +820,8 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     choices: [
       LifeChoice(
         label: 'Lend it',
-        outcome: 'They promised to pay you back. Friendships and money mix badly.',
+        outcome:
+            'They promised to pay you back. Friendships and money mix badly.',
         money: -300,
         happiness: 5,
       ),
@@ -1559,8 +1560,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Keep renting and invest instead',
-        outcome:
-            'No garden, but the deposit stays invested and liquid.',
+        outcome: 'No garden, but the deposit stays invested and liquid.',
         happiness: -2,
         smarts: 8,
       ),
@@ -1609,8 +1609,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     choices: [
       LifeChoice(
         label: 'Start a savings account for them',
-        outcome:
-            'Small monthly amounts, eighteen years of compounding ahead.',
+        outcome: 'Small monthly amounts, eighteen years of compounding ahead.',
         money: -300,
         happiness: 18,
         smarts: 10,
@@ -1636,8 +1635,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     choices: [
       LifeChoice(
         label: 'Live off the emergency fund and search properly',
-        outcome:
-            'Three stressful months, then a better job than the old one.',
+        outcome: 'Three stressful months, then a better job than the old one.',
         money: -400,
         setSalary: 480,
         smarts: 12,
@@ -1729,8 +1727,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Keep the cash invested',
-        outcome:
-            'The maths favours you if returns beat the interest rate. If.',
+        outcome: 'The maths favours you if returns beat the interest rate. If.',
         smarts: 10,
         happiness: -2,
       ),
@@ -1768,8 +1765,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   ),
   LifeEvent(
     id: 'career_change',
-    prompt:
-        'You are good at your job and no longer interested in it.',
+    prompt: 'You are good at your job and no longer interested in it.',
     icon: Icons.swap_horiz_rounded,
     minAge: 33,
     maxAge: 55,
@@ -1871,8 +1867,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Change something structural instead',
-        outcome:
-            'Fewer hours, less money, more of your own life. It stuck.',
+        outcome: 'Fewer hours, less money, more of your own life. It stuck.',
         money: -300,
         happiness: 18,
         health: 8,
@@ -1897,8 +1892,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Lend it, written down',
-        outcome:
-            'Awkward to put on paper, much less awkward five years later.',
+        outcome: 'Awkward to put on paper, much less awkward five years later.',
         money: -1200,
         happiness: 8,
         smarts: 14,
@@ -1977,8 +1971,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Do as they ask',
-        outcome:
-            'It was not your bank. Some of it came back, slowly.',
+        outcome: 'It was not your bank. Some of it came back, slowly.',
         money: -1400,
         happiness: -18,
         smarts: 8,
@@ -2169,8 +2162,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   ),
   LifeEvent(
     id: 'friend_business_pitch',
-    prompt:
-        'An old friend pitches you an investment that "cannot lose".',
+    prompt: 'An old friend pitches you an investment that "cannot lose".',
     icon: Icons.campaign_rounded,
     minAge: 28,
     minMoney: 500,
@@ -2403,7 +2395,8 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
   ),
   LifeEvent(
     id: 'x_car_dies',
-    prompt: 'Your car makes a noise it has never made before. The repair is '
+    prompt:
+        'Your car makes a noise it has never made before. The repair is '
         'about \$1,200.',
     icon: Icons.car_repair_rounded,
     minAge: 20,
@@ -2440,7 +2433,8 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
   ),
   LifeEvent(
     id: 'x_raise_offer',
-    prompt: 'Your manager offers a raise — or the same money plus every '
+    prompt:
+        'Your manager offers a raise — or the same money plus every '
         'Friday off.',
     icon: Icons.more_time_rounded,
     minAge: 24,
@@ -2489,7 +2483,8 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
   ),
   LifeEvent(
     id: 'x_friend_loan',
-    prompt: 'A close friend asks to borrow \$500. They are good for it — '
+    prompt:
+        'A close friend asks to borrow \$500. They are good for it — '
         'probably.',
     icon: Icons.handshake_rounded,
     minAge: 18,
@@ -2600,7 +2595,8 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
   ),
   LifeEvent(
     id: 'x_downsize',
-    prompt: 'The house is bigger than you need now. Selling would free up a '
+    prompt:
+        'The house is bigger than you need now. Selling would free up a '
         'lot of money.',
     icon: Icons.home_work_rounded,
     minAge: 50,
@@ -2688,8 +2684,7 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
     choices: [
       LifeChoice(
         label: 'Say yes',
-        outcome:
-            'They shortcut years of trial and error for you.',
+        outcome: 'They shortcut years of trial and error for you.',
         smarts: 12,
         happiness: 6,
         addRelationship: 'Mentor',
@@ -2879,8 +2874,7 @@ const List<LifeEvent> kLifeEventsMoney = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Keep it all in the spending jar',
-        outcome:
-            'It was all gone by the weekend. The saving jar stayed empty.',
+        outcome: 'It was all gone by the weekend. The saving jar stayed empty.',
         money: 3,
         happiness: 5,
         teaches: FinanceConcept.payYourselfFirst,
@@ -2907,8 +2901,7 @@ const List<LifeEvent> kLifeEventsMoney = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Get the toy',
-        outcome:
-            'Brilliant for a week. The shoes still needed buying later.',
+        outcome: 'Brilliant for a week. The shoes still needed buying later.',
         happiness: 8,
         money: -10,
         teaches: FinanceConcept.needsVsWants,
@@ -3027,8 +3020,7 @@ const List<LifeEvent> kLifeEventsMoney = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Sign — it is only a few coins a month',
-        outcome:
-            'The monthly amount was painless. The total was not.',
+        outcome: 'The monthly amount was painless. The total was not.',
         money: -90,
         happiness: 5,
         teaches: FinanceConcept.interestCost,
@@ -3086,8 +3078,7 @@ const List<LifeEvent> kLifeEventsMoney = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Treat the limit as money you have',
-        outcome:
-            'The balance stopped going down. Interest made sure of that.',
+        outcome: 'The balance stopped going down. Interest made sure of that.',
         money: -120,
         happiness: 4,
         teaches: FinanceConcept.creditScore,
@@ -3156,8 +3147,7 @@ const List<LifeEvent> kLifeEventsMoney = <LifeEvent>[
   ),
   LifeEvent(
     id: 'm_insurance_call',
-    prompt:
-        'Renewal time. You could drop your cover and pocket the premium.',
+    prompt: 'Renewal time. You could drop your cover and pocket the premium.',
     icon: Icons.health_and_safety_rounded,
     minAge: 22,
     weight: 1.0,
@@ -3174,8 +3164,7 @@ const List<LifeEvent> kLifeEventsMoney = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Cancel it and keep the money',
-        outcome:
-            'Cheaper every month — right up until the month it was not.',
+        outcome: 'Cheaper every month — right up until the month it was not.',
         money: 35,
         happiness: 3,
         teaches: FinanceConcept.insurance,
@@ -3193,8 +3182,7 @@ const List<LifeEvent> kLifeEventsMoney = <LifeEvent>[
     choices: [
       LifeChoice(
         label: 'Walk away and use the time better',
-        outcome:
-            'The money was gone either way. At least the months were not.',
+        outcome: 'The money was gone either way. At least the months were not.',
         happiness: 8,
         smarts: 6,
         teaches: FinanceConcept.sunkCost,
@@ -3241,8 +3229,7 @@ const List<LifeEvent> kLifeEventsMoney = <LifeEvent>[
   ),
   LifeEvent(
     id: 'm_savings_cushion',
-    prompt:
-        'Your hours get cut with no warning. Rent is due in two weeks.',
+    prompt: 'Your hours get cut with no warning. Rent is due in two weeks.',
     icon: Icons.umbrella_rounded,
     minAge: 20,
     requiresJob: true,
@@ -3259,8 +3246,7 @@ const List<LifeEvent> kLifeEventsMoney = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Put rent on credit and hope',
-        outcome:
-            'Rent got paid. So did the interest, for a long time after.',
+        outcome: 'Rent got paid. So did the interest, for a long time after.',
         money: -70,
         happiness: -8,
         teaches: FinanceConcept.emergencyFund,
