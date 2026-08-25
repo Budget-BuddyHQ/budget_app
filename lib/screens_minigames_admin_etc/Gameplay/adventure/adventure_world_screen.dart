@@ -14,6 +14,7 @@ import '../../../widgets_custom_lotties/custom_button.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/orientation_scope.dart';
 import 'town_components.dart';
+import 'town_interior_screen.dart';
 
 /// Where the exported map (Sprite Fusion JSON — see the README next to it)
 /// is expected to live. `SpritefusionAssetReader` is hardcoded to read from
@@ -152,11 +153,13 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     if (_sheetOpen) return;
     _sheetOpen = true;
 
-    final choice = await showModalBottomSheet<TownChoice>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => _TownSpotSheet(spot: spot),
+    // A pushed screen, not a sheet. Entering a building is meant to read as
+    // going somewhere — see [TownInteriorScreen] for what a 96px strip of
+    // room art on top of a modal was doing instead.
+    final choice = await Navigator.of(context).push<TownChoice>(
+      MaterialPageRoute<TownChoice>(
+        builder: (_) => TownInteriorScreen(spot: spot),
+      ),
     );
 
     _sheetOpen = false;
@@ -700,194 +703,6 @@ class _NpcDialogueSheet extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// The decision sheet — same shape as a Life sim event card (prompt on top,
-/// a stack of choices underneath), so the two halves of the game teach with
-/// one consistent grammar.
-class _TownSpotSheet extends StatelessWidget {
-  const _TownSpotSheet({required this.spot});
-
-  final TownSpot spot;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-      decoration: const BoxDecoration(
-        color: AppTheme.panelStrong,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppTheme.radiusXLarge),
-        ),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // A real interior above the dialogue, so walking into a
-            // building reads as *going inside* rather than a menu opening
-            // over the map. Uses the room art already in the repo.
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-              child: SizedBox(
-                height: 96,
-                width: double.infinity,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.asset(
-                      AppAssets.shopRoomBackground,
-                      fit: BoxFit.cover,
-                      alignment: Alignment.center,
-                      filterQuality: FilterQuality.none,
-                      // The room art is optional decoration — if it ever
-                      // goes missing the sheet still works, just flatter.
-                      errorBuilder: (_, _, _) => ColoredBox(
-                        color: spot.kind.accent.withValues(alpha: 0.15),
-                      ),
-                    ),
-                    // Keeps the title legible over busy interior art.
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            AppTheme.panelStrong.withValues(alpha: 0.85),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 12,
-                      bottom: 8,
-                      child: Row(
-                        children: [
-                          Icon(
-                            spot.kind.icon,
-                            color: spot.kind.accent,
-                            size: 22,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            spot.title,
-                            style: GoogleFonts.pixelifySans(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              spot.prompt,
-              style: GoogleFonts.quicksand(
-                color: Colors.white70,
-                height: 1.45,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 18),
-            for (final choice in spot.choices) ...[
-              _ChoiceButton(
-                choice: choice,
-                accent: spot.kind.accent,
-                onTap: () => Navigator.of(context).pop(choice),
-              ),
-              const SizedBox(height: 10),
-            ],
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: TextButton.styleFrom(foregroundColor: Colors.white54),
-              child: Text(
-                'Leave',
-                style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ChoiceButton extends StatelessWidget {
-  const _ChoiceButton({
-    required this.choice,
-    required this.accent,
-    required this.onTap,
-  });
-
-  final TownChoice choice;
-  final Color accent;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppTheme.panel,
-          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-          border: Border.all(color: accent.withValues(alpha: 0.35)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                choice.label,
-                style: GoogleFonts.quicksand(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-            if (choice.gold != 0) _DeltaChip(choice: choice),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DeltaChip extends StatelessWidget {
-  const _DeltaChip({required this.choice});
-
-  final TownChoice choice;
-
-  @override
-  Widget build(BuildContext context) {
-    final positive = choice.gold > 0;
-    final color = positive ? AppTheme.greenPrimary : AppTheme.errorRed;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        '${positive ? '+' : ''}${choice.gold}',
-        style: GoogleFonts.pixelifySans(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
       ),
     );
   }

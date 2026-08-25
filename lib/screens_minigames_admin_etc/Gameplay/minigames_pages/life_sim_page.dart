@@ -17,6 +17,7 @@ import 'life_character_sheet.dart';
 import 'life_epilogue_screen.dart';
 import '../../../constants/app_assets.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
+import '../../../widgets_custom_lotties/life_money_panel.dart';
 import '../../../widgets_custom_lotties/pixel_panel.dart';
 
 /// **Life** — the main game, in the BitLife format: a scrolling life feed up
@@ -26,7 +27,19 @@ import '../../../widgets_custom_lotties/pixel_panel.dart';
 /// Owns its own [LifeSimController], so state resets each visit and never
 /// touches the player's saved gold until they retire.
 class LifeSimPage extends StatefulWidget {
-  const LifeSimPage({super.key});
+  const LifeSimPage({super.key, this.debugInitialLife});
+
+  /// Skips character creation and plays this life instead.
+  ///
+  /// A test seam, and one that was worth adding: because the page pushes
+  /// the character sheet in a post-frame callback, a layout sweep that
+  /// pumped `LifeSimPage` was only ever measuring the *creation* screen.
+  /// The feed — the money panel, the stat meters, the event card, the
+  /// chain chips, every part that actually reflows — had no viewport
+  /// coverage at all while appearing to have eight viewports' worth.
+  ///
+  /// Null in the app. Nothing reads it outside `initState`.
+  final LifeSimController? debugInitialLife;
 
   @override
   State<LifeSimPage> createState() => _LifeSimPageState();
@@ -40,6 +53,11 @@ class _LifeSimPageState extends State<LifeSimPage> {
   @override
   void initState() {
     super.initState();
+    final injected = widget.debugInitialLife;
+    if (injected != null) {
+      _life = injected;
+      return;
+    }
     // Character creation first, exactly like starting a new BitLife.
     WidgetsBinding.instance.addPostFrameCallback((_) => _createCharacter());
   }
@@ -284,119 +302,124 @@ class _LifeSimPageState extends State<LifeSimPage> {
             }
           },
           child: Scaffold(
-          backgroundColor: AppTheme.deepForest,
-          appBar: AppBar(
-            backgroundColor: AppTheme.darkForest,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            titleSpacing: 12,
-            title: _HeaderBar(
-              name: life.name,
-              gender: life.gender,
-              age: life.age,
-              stage: life.stage,
-              money: life.money,
-              job: life.job,
-            ),
-            actions: [
-              // Not an always-on button any more: whether you can leave the
-              // house depends on age, health, how strict your family is and
-              // what the weather is doing (see `outing_rules.dart`). When
-              // it's blocked the button stays visible and *says why* rather
-              // than disappearing — being told "not until you're 14" is
-              // part of the game, not an error.
-              Builder(
-                builder: (context) {
-                  final permission = life.outingPermission;
-                  return IconButton(
-                    tooltip: permission.allowed
-                        ? 'Explore the town'
-                        : permission.message,
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
-                      if (!permission.allowed) {
-                        GameToast.show(
-                          context,
-                          title: 'You cannot go out',
-                          message: permission.message,
-                          icon: permission.reason?.icon ?? Icons.block_rounded,
-                          accent: const Color(0xFFFF8FB1),
+            backgroundColor: AppTheme.deepForest,
+            appBar: AppBar(
+              backgroundColor: AppTheme.darkForest,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              titleSpacing: 12,
+              title: _HeaderBar(
+                name: life.name,
+                gender: life.gender,
+                age: life.age,
+                stage: life.stage,
+                money: life.money,
+                job: life.job,
+              ),
+              actions: [
+                // Not an always-on button any more: whether you can leave the
+                // house depends on age, health, how strict your family is and
+                // what the weather is doing (see `outing_rules.dart`). When
+                // it's blocked the button stays visible and *says why* rather
+                // than disappearing — being told "not until you're 14" is
+                // part of the game, not an error.
+                Builder(
+                  builder: (context) {
+                    final permission = life.outingPermission;
+                    return IconButton(
+                      tooltip: permission.allowed
+                          ? 'Explore the town'
+                          : permission.message,
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        if (!permission.allowed) {
+                          GameToast.show(
+                            context,
+                            title: 'You cannot go out',
+                            message: permission.message,
+                            icon:
+                                permission.reason?.icon ?? Icons.block_rounded,
+                            accent: const Color(0xFFFF8FB1),
+                          );
+                          return;
+                        }
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const AdventureWorldScreen(),
+                          ),
                         );
-                        return;
-                      }
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const AdventureWorldScreen(),
-                        ),
-                      );
-                    },
-                    icon: Icon(
-                      permission.allowed
-                          ? Icons.explore_rounded
-                          : Icons.lock_rounded,
-                      color: permission.allowed ? null : Colors.white38,
+                      },
+                      icon: Icon(
+                        permission.allowed
+                            ? Icons.explore_rounded
+                            : Icons.lock_rounded,
+                        color: permission.allowed ? null : Colors.white38,
+                      ),
+                    );
+                  },
+                ),
+                TextButton.icon(
+                  onPressed: () => _finish(life),
+                  icon: Icon(
+                    life.dead ? Icons.done_rounded : Icons.flag_rounded,
+                    size: 18,
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFE1BB72),
+                  ),
+                  label: Text(
+                    life.dead ? 'Finish' : 'Retire',
+                    style: GoogleFonts.pixelifySans(
+                      fontWeight: FontWeight.w700,
                     ),
-                  );
-                },
-              ),
-              TextButton.icon(
-                onPressed: () => _finish(life),
-                icon: Icon(
-                  life.dead ? Icons.done_rounded : Icons.flag_rounded,
-                  size: 18,
+                  ),
                 ),
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFFE1BB72),
+              ],
+            ),
+            body: Column(
+              children: [
+                Expanded(
+                  child: _LifeFeed(
+                    controller: _feedController,
+                    history: life.history,
+                    smarts: life.smarts,
+                    health: life.health,
+                    looks: life.looks,
+                    relationships: life.relationships,
+                    dead: life.dead,
+                    event: event,
+                    // Choose, then surface the money idea behind that choice
+                    // (if it had one) once the outcome is on screen.
+                    weather: life.weather,
+                    strictness: life.strictness,
+                    outing: life.outingPermission,
+                    life: life,
+                    onOpenBudget: () => _openBudget(life),
+                    onOpenMoney: () => _openMenu(life, _LifeMenu.assets),
+                    onOpenConcepts: () => _openConcepts(life),
+                    onChoose: (index) {
+                      life.chooseOption(index);
+                      _drainLesson(life);
+                    },
+                  ),
                 ),
-                label: Text(
-                  life.dead ? 'Finish' : 'Retire',
-                  style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
-                ),
-              ),
-            ],
-          ),
-          body: Column(
-            children: [
-              Expanded(
-                child: _LifeFeed(
-                  controller: _feedController,
-                  history: life.history,
-                  netWorth: life.netWorth,
-                  investments: life.investments,
-                  smarts: life.smarts,
-                  health: life.health,
-                  looks: life.looks,
-                  relationships: life.relationships,
-                  isDependent: life.isDependent,
-                  dead: life.dead,
-                  event: event,
-                  // Choose, then surface the money idea behind that choice
-                  // (if it had one) once the outcome is on screen.
-                  weather: life.weather,
-                  strictness: life.strictness,
-                  outing: life.outingPermission,
-                  onChoose: (index) {
-                    life.chooseOption(index);
+                _BottomMenu(
+                  happiness: life.happiness,
+                  blocked: event != null || life.finished,
+                  stage: life.stage,
+                  onCareer: () => _openMenu(life, _LifeMenu.career),
+                  onRelationships: () =>
+                      _openMenu(life, _LifeMenu.relationships),
+                  onActivities: () => _openMenu(life, _LifeMenu.activities),
+                  onAssets: () => _openMenu(life, _LifeMenu.assets),
+                  // Ageing can fire an expense shock, which teaches too.
+                  onAge: () {
+                    life.ageUp();
                     _drainLesson(life);
                   },
                 ),
-              ),
-              _BottomMenu(
-                happiness: life.happiness,
-                blocked: event != null || life.finished,
-                stage: life.stage,
-                onCareer: () => _openMenu(life, _LifeMenu.career),
-                onRelationships: () => _openMenu(life, _LifeMenu.relationships),
-                onActivities: () => _openMenu(life, _LifeMenu.activities),
-                onAssets: () => _openMenu(life, _LifeMenu.assets),
-                // Ageing can fire an expense shock, which teaches too.
-                onAge: () {
-                  life.ageUp();
-                  _drainLesson(life);
-                },
-              ),
-            ],
-          ),
+              ],
+            ),
           ),
         );
       },
@@ -511,14 +534,29 @@ class _HeaderBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // This sits in an `AppBar.title`, which hands it whatever is left after
+    // the back button and the two action buttons — on a 320px phone that is
+    // narrow enough that the avatar plus the balance alone overran it by
+    // 1.1px, with the name squeezed to nothing in between. The avatar is
+    // decoration (a gender icon); the name and the balance are content, so
+    // the avatar is what gives way.
+    return LayoutBuilder(
+      builder: (context, constraints) =>
+          _row(showAvatar: constraints.maxWidth >= 210),
+    );
+  }
+
+  Widget _row({required bool showAvatar}) {
     return Row(
       children: [
-        CircleAvatar(
-          radius: 18,
-          backgroundColor: const Color(0xFF173B2E),
-          child: Icon(gender.icon, color: const Color(0xFF85EFAC), size: 20),
-        ),
-        const SizedBox(width: 10),
+        if (showAvatar) ...[
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: const Color(0xFF173B2E),
+            child: Icon(gender.icon, color: const Color(0xFF85EFAC), size: 20),
+          ),
+          const SizedBox(width: 10),
+        ],
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -553,12 +591,21 @@ class _HeaderBar extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '$money',
-              style: GoogleFonts.pixelifySans(
-                color: Color(0xFFE1BB72),
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
+            // Constrained rather than free: a six-figure balance late in a
+            // long life is wide enough in the pixel font to push this row
+            // past the screen on a 320px phone, and the balance is the one
+            // thing in the header that must stay readable.
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 96),
+              child: FittedLabel(
+                '$money',
+                alignment: Alignment.centerRight,
+                textAlign: TextAlign.right,
+                style: GoogleFonts.pixelifySans(
+                  color: const Color(0xFFE1BB72),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
               ),
             ),
             Text(
@@ -579,30 +626,28 @@ class _LifeFeed extends StatelessWidget {
   const _LifeFeed({
     required this.controller,
     required this.history,
-    required this.netWorth,
-    required this.investments,
     required this.smarts,
     required this.health,
     required this.looks,
     required this.relationships,
-    required this.isDependent,
     required this.dead,
     required this.event,
     required this.onChoose,
     required this.weather,
     required this.strictness,
     required this.outing,
+    required this.life,
+    required this.onOpenBudget,
+    required this.onOpenMoney,
+    required this.onOpenConcepts,
   });
 
   final ScrollController controller;
   final List<LifeLogEntry> history;
-  final int netWorth;
-  final int investments;
   final int smarts;
   final int health;
   final int looks;
   final List<String> relationships;
-  final bool isDependent;
   final bool dead;
   final LifeEvent? event;
   final ValueChanged<int> onChoose;
@@ -612,6 +657,14 @@ class _LifeFeed extends StatelessWidget {
   final Weather weather;
   final HouseholdStrictness strictness;
   final OutingPermission outing;
+
+  /// The whole run, for the money panel. Passed as one object rather than
+  /// as another six scalars — the panel reads eight fields and would
+  /// otherwise double this constructor.
+  final LifeSimController life;
+  final VoidCallback onOpenBudget;
+  final VoidCallback onOpenMoney;
+  final VoidCallback onOpenConcepts;
 
   @override
   Widget build(BuildContext context) {
@@ -625,14 +678,18 @@ class _LifeFeed extends StatelessWidget {
           outing: outing,
         ),
         const SizedBox(height: 12),
-        _MiniStatsRow(
-          netWorth: netWorth,
-          investments: investments,
-          smarts: smarts,
-          health: health,
-          looks: looks,
-          isDependent: isDependent,
+        // Directly under the year card, above the feed. Money is the
+        // subject of this game, so it sits where the eye lands first
+        // rather than behind a menu — see [LifeMoneyPanel].
+        LifeMoneyPanel(
+          life: life,
+          onOpenBudget: onOpenBudget,
+          onOpenMoney: onOpenMoney,
+          onOpenConcepts: onOpenConcepts,
         ),
+        const SizedBox(height: 12),
+        _MiniStatsRow(smarts: smarts, health: health, looks: looks),
+        _YourLifeStrip(flags: life.flags),
         if (relationships.isNotEmpty) ...[
           const SizedBox(height: 10),
           Wrap(
@@ -688,7 +745,7 @@ class _LifeFeed extends StatelessWidget {
           for (var i = 0; i < history.length; i++) ...[
             if (i == 0 || history[i].age != history[i - 1].age)
               _AgeHeader(age: history[i].age),
-            _FeedLine(text: history[i].text),
+            _FeedLine(text: history[i].text, kind: history[i].kind),
           ],
         if (event != null) ...[
           const SizedBox(height: 14),
@@ -737,95 +794,202 @@ class _LifeFeed extends StatelessWidget {
   }
 }
 
-class _MiniStatsRow extends StatelessWidget {
-  const _MiniStatsRow({
-    required this.netWorth,
-    required this.investments,
-    required this.smarts,
-    required this.health,
-    required this.looks,
-    required this.isDependent,
-  });
+/// What you currently *have* — the dog, the car, the card, the debt.
+///
+/// This is the chain system made visible. Storylines were added so a run
+/// would stop reading as a shuffled deck of unrelated beats, but a chain the
+/// player cannot see is indistinguishable from coincidence: the vet bill
+/// six years after adopting the dog only lands as a consequence if you were
+/// aware, in between, that you had a dog. So the flags that represent
+/// something you would say you *own* get a chip; the ones that are pure
+/// bookkeeping do not. See `LifeFlag.chipLabel`.
+///
+/// Renders nothing at all when the list is empty, which is most of
+/// childhood — an empty labelled box would be worse than no box.
+class _YourLifeStrip extends StatelessWidget {
+  const _YourLifeStrip({required this.flags});
 
-  final int netWorth;
-  final int investments;
-  final int smarts;
-  final int health;
-  final int looks;
-  final bool isDependent;
+  final Set<LifeFlag> flags;
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: [
-        _Pill(
-          label: 'Smarts',
-          value: '$smarts',
-          color: const Color(0xFF69C6FF),
-        ),
-        _Pill(
-          label: 'Health',
-          value: '$health',
-          color: const Color(0xFFFF8A80),
-        ),
-        _Pill(label: 'Looks', value: '$looks', color: const Color(0xFFFF8FB1)),
-        // Money only starts mattering once the family stops paying the bills.
-        if (!isDependent) ...[
-          _Pill(
-            label: 'Net worth',
-            value: '$netWorth',
-            color: const Color(0xFF85EFAC),
-          ),
-          if (investments > 0)
-            _Pill(
-              label: 'Invested',
-              value: '$investments',
-              color: const Color(0xFF58C7FF),
+    final shown = flags.where((f) => f.chipLabel != null).toList();
+    if (shown.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Wrap(
+        spacing: 7,
+        runSpacing: 7,
+        children: [
+          for (final flag in shown)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color:
+                    (flag.isTrouble
+                            ? const Color(0xFFFF8FB1)
+                            : const Color(0xFF85EFAC))
+                        .withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color:
+                      (flag.isTrouble
+                              ? const Color(0xFFFF8FB1)
+                              : const Color(0xFF85EFAC))
+                          .withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  LifeEmoji(flag.chipEmoji, size: 11),
+                  const SizedBox(width: 5),
+                  Text(
+                    flag.chipLabel!,
+                    style: GoogleFonts.quicksand(
+                      color: flag.isTrouble
+                          ? const Color(0xFFFF8FB1)
+                          : const Color(0xFF85EFAC),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
             ),
         ],
-      ],
+      ),
     );
   }
 }
 
-class _Pill extends StatelessWidget {
-  const _Pill({required this.label, required this.value, required this.color});
+/// The three character stats, as meters rather than as numbers in pills.
+///
+/// Net worth and investments used to sit in this row too. They moved into
+/// [LifeMoneyPanel], which shows the same figures broken out by *where the
+/// money is* — repeating them here would have made money look like one more
+/// stat out of five instead of the subject of the game.
+class _MiniStatsRow extends StatelessWidget {
+  const _MiniStatsRow({
+    required this.smarts,
+    required this.health,
+    required this.looks,
+  });
 
+  final int smarts;
+  final int health;
+  final int looks;
+
+  @override
+  Widget build(BuildContext context) {
+    const stats = <(String, String, Color)>[
+      ('\u{1F9E0}', 'Smarts', Color(0xFF69C6FF)),
+      ('\u{2764}', 'Health', Color(0xFFFF8A80)),
+      ('\u{1F31F}', 'Looks', Color(0xFFFF8FB1)),
+    ];
+    final values = <int>[smarts, health, looks];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Three across whenever they fit, stacked full-width below that —
+        // measured rather than guessed from a phone breakpoint, for the
+        // same reason [LifeMoneyPanel] measures its own tiles.
+        final width = constraints.maxWidth >= 300
+            ? (constraints.maxWidth - 2 * 8) / 3
+            : constraints.maxWidth;
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (var i = 0; i < stats.length; i++)
+              SizedBox(
+                width: width,
+                child: _StatMeter(
+                  emoji: stats[i].$1,
+                  label: stats[i].$2,
+                  color: stats[i].$3,
+                  value: values[i],
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// One stat as an emoji, a name, a number, and a filled bar.
+///
+/// The bar is what makes it a stat rather than a fact. "46" means nothing
+/// on its own; a bar not quite half full is legible to a four-year-old,
+/// which is the youngest end of this app's audience.
+class _StatMeter extends StatelessWidget {
+  const _StatMeter({
+    required this.emoji,
+    required this.label,
+    required this.color,
+    required this.value,
+  });
+
+  final String emoji;
   final String label;
-  final String value;
   final Color color;
+  final int value;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
-      child: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: '$label ',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              LifeEmoji(emoji, size: 12),
+              const SizedBox(width: 5),
+              Flexible(
+                child: FittedLabel(
+                  label,
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
-            ),
-            TextSpan(
-              text: value,
-              style: GoogleFonts.pixelifySans(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+              const SizedBox(width: 5),
+              Text(
+                '$value',
+                style: GoogleFonts.pixelifySans(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              // The controller clamps stats to 0..100, so this cannot
+              // exceed 1 today — clamping again means a future stat with a
+              // different ceiling degrades to a full bar instead of
+              // asserting.
+              value: (value / 100).clamp(0.0, 1.0),
+              minHeight: 5,
+              backgroundColor: Colors.white.withValues(alpha: 0.12),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -836,47 +1000,163 @@ class _AgeHeader extends StatelessWidget {
 
   final int age;
 
+  /// The life stage as a face, so scrolling back through a long run reads
+  /// as chapters rather than as one continuous list of numbers.
+  static String emojiForAge(int age) => switch (LifeStageInfo.forAge(age)) {
+    LifeStage.baby => '\u{1F476}',
+    LifeStage.child => '\u{1F9D2}',
+    LifeStage.teen => '\u{1F9D1}',
+    LifeStage.youngAdult => '\u{1F393}',
+    LifeStage.adult => '\u{1F9D1}\u{200D}\u{1F4BC}',
+    LifeStage.senior => '\u{1F9D3}',
+  };
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 14, bottom: 6),
-      child: Text(
-        'Age: $age years',
-        style: GoogleFonts.pixelifySans(
-          color: Color(0xFF85EFAC),
-          fontWeight: FontWeight.w700,
-          fontSize: 15,
-        ),
+      padding: const EdgeInsets.only(top: 14, bottom: 8),
+      child: Row(
+        children: [
+          LifeEmoji(emojiForAge(age), size: 15),
+          const SizedBox(width: 7),
+          Text(
+            'Age $age',
+            style: GoogleFonts.pixelifySans(
+              color: const Color(0xFF85EFAC),
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+            ),
+          ),
+          const SizedBox(width: 10),
+          // A rule across the rest of the row, so each year is visibly a
+          // section break instead of just another slightly greener line.
+          Expanded(
+            child: Container(
+              height: 1,
+              color: const Color(0xFF85EFAC).withValues(alpha: 0.18),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            LifeStageInfo.forAge(age).label,
+            style: GoogleFonts.quicksand(
+              color: const Color(0xFF85EFAC).withValues(alpha: 0.6),
+              fontWeight: FontWeight.w800,
+              fontSize: 10.5,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
+/// One line of the life story, with a coloured emoji marker for what kind
+/// of thing it was.
+///
+/// The feed used to be an undifferentiated column of sentences — a doctor's
+/// visit, a pay rise and a surprise bill all looked identical, so scanning
+/// back through a life told you nothing without reading every word. The
+/// marker is tagged at the point the line is written (see [LifeLogKind]),
+/// so it is always right rather than keyword-guessed.
 class _FeedLine extends StatelessWidget {
-  const _FeedLine({required this.text});
+  const _FeedLine({required this.text, this.kind});
 
   final String text;
+  final LifeLogKind? kind;
 
   @override
   Widget build(BuildContext context) {
+    final marker = kind;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.86),
-          height: 1.4,
-        ),
+      padding: const EdgeInsets.only(bottom: 7),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: (marker?.accent ?? Colors.white).withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: marker == null
+                // No tag rather than a wrong one. A plain dot reads as
+                // "just something that happened", which is accurate.
+                ? Container(
+                    width: 5,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.4),
+                      shape: BoxShape.circle,
+                    ),
+                  )
+                : LifeEmoji(marker.emoji, size: 12),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.86),
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
+/// The decision of the year — the single most-looked-at surface in the game.
+///
+/// Two things were added here beyond styling. A **chain badge**, so a beat
+/// that follows from an earlier choice says so ("Because of the dog") —
+/// without it the continuity the chain system creates is invisible and the
+/// vet bill reads as a random misfortune rather than as a consequence. And a
+/// **money tag on any option whose price is already in its own label**, so
+/// comparing two priced options is a glance rather than a read. Options
+/// whose cost is *not* stated in the label stay untagged: the surprise is
+/// often the lesson, and putting a number on it would give the answer away.
 class _EventCard extends StatelessWidget {
   const _EventCard({required this.event, required this.onChoose});
 
   final LifeEvent event;
   final ValueChanged<int> onChoose;
+
+  /// A short "this follows from…" line for a chain beat.
+  static String? _becauseOf(LifeFlag? flag) => switch (flag) {
+    null => null,
+    LifeFlag.hasPet => 'Because of the dog',
+    LifeFlag.hasCar => 'Because of the car',
+    LifeFlag.hasCreditCard || LifeFlag.cardDebtSpiral => 'Because of the card',
+    LifeFlag.hasStudentLoan => 'Because of the loan',
+    LifeFlag.investsIndex ||
+    LifeFlag.heldThroughCrash ||
+    LifeFlag.soldInCrash => 'Because of the fund',
+    LifeFlag.hasSideHustle || LifeFlag.hustleGrew => 'Because of the business',
+    LifeFlag.rentsWithFriend => 'Because of the flatshare',
+    _ => 'Following on',
+  };
+
+  /// Whether this option's own label already names its price.
+  ///
+  /// Matching on the label rather than on `choice.money != 0` is deliberate:
+  /// showing a tag on every option that moves money would turn every event
+  /// into a priced menu and remove the consequence from most of the game.
+  static bool _priceIsAlreadyStated(LifeChoice choice) {
+    final label = choice.label.toLowerCase();
+    return RegExp(r'\d').hasMatch(label) &&
+        (label.contains('coin') ||
+            label.contains('pay') ||
+            label.contains('buy') ||
+            label.contains('put'));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -896,13 +1176,43 @@ class _EventCard extends StatelessWidget {
             children: [
               Icon(event.icon, color: const Color(0xFF58C7FF), size: 20),
               const SizedBox(width: 8),
-              Text(
-                'What do you do?',
-                style: GoogleFonts.pixelifySans(
-                  color: Color(0xFF58C7FF),
-                  fontWeight: FontWeight.w700,
+              Expanded(
+                child: FittedLabel(
+                  'What do you do?',
+                  style: GoogleFonts.pixelifySans(
+                    color: const Color(0xFF58C7FF),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
+              if (_becauseOf(event.requiresFlag) case final because?) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFB388FF).withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const LifeEmoji('\u{1F517}', size: 10),
+                      const SizedBox(width: 5),
+                      Text(
+                        because,
+                        style: GoogleFonts.quicksand(
+                          color: const Color(0xFFB388FF),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 10),
@@ -930,9 +1240,30 @@ class _EventCard extends StatelessWidget {
                     vertical: 13,
                   ),
                 ),
-                child: Text(
-                  event.choices[i].label,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        event.choices[i].label,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    if (_priceIsAlreadyStated(event.choices[i]) &&
+                        event.choices[i].money != 0) ...[
+                      const SizedBox(width: 10),
+                      Text(
+                        '${event.choices[i].money > 0 ? '+' : ''}'
+                        '${event.choices[i].money}',
+                        style: GoogleFonts.pixelifySans(
+                          color: event.choices[i].money < 0
+                              ? const Color(0xFFFF8FB1)
+                              : const Color(0xFF85EFAC),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
@@ -973,6 +1304,14 @@ class _BottomMenu extends StatelessWidget {
   final VoidCallback onAssets;
   final VoidCallback onAge;
 
+  static String _moodEmoji(int happiness) => switch (happiness) {
+    >= 80 => '\u{1F604}',
+    >= 60 => '\u{1F642}',
+    >= 40 => '\u{1F610}',
+    >= 20 => '\u{1F641}',
+    _ => '\u{1F62B}',
+  };
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -989,11 +1328,10 @@ class _BottomMenu extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.sentiment_very_satisfied_rounded,
-                    color: Color(0xFFFFD45C),
-                    size: 18,
-                  ),
+                  // A face that actually changes. The static "very
+                  // satisfied" icon sat next to a 12% bar and said the
+                  // opposite of the number beside it.
+                  LifeEmoji(_moodEmoji(happiness), size: 17),
                   const SizedBox(width: 8),
                   Expanded(
                     child: ClipRRect(
@@ -1133,27 +1471,36 @@ class _MenuButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: enabled ? color : Colors.white24, size: 24),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: enabled
-                    ? Colors.white.withValues(alpha: 0.85)
-                    : Colors.white30,
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
+    // Expanded, so the four menu slots share whatever is left beside the
+    // fixed Age button instead of each demanding their intrinsic width.
+    // Five rigid children with `spaceEvenly` overflowed the bar by 3.4px at
+    // 320 wide — `spaceEvenly` distributes *leftover* space and does
+    // nothing at all when there is none.
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: enabled ? color : Colors.white24, size: 24),
+              const SizedBox(height: 4),
+              FittedLabel(
+                label,
+                alignment: Alignment.center,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: enabled
+                      ? Colors.white.withValues(alpha: 0.85)
+                      : Colors.white30,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1454,6 +1801,23 @@ class _LifeMenuSheet extends StatelessWidget {
     switch (menu) {
       case _LifeMenu.career:
         return [
+          // First in the list on purpose. Without a job there is no salary,
+          // and without a salary the budget, the emergency fund and the
+          // paycheck line — the whole point of the game — never switch on.
+          _LifeAction(
+            label: 'Look for work',
+            detail: life.hasJob
+                ? 'You already have a job. Quit first to change track.'
+                : 'Apply for an entry-level job. Smarts widens what is open '
+                      'to you.',
+            icon: Icons.badge_rounded,
+            onTap: () => run(life.findJob),
+            disabledReason: life.canJobHunt
+                ? null
+                : life.hasJob
+                ? 'You already have a job'
+                : 'Too young to work',
+          ),
           _LifeAction(
             label: young ? 'Hit the books' : 'Take a course',
             detail: young
@@ -2567,10 +2931,11 @@ class _ThisYearPanel extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color: (outing.allowed
-                      ? const Color(0xFF4BD2A3)
-                      : const Color(0xFFFF8FB1))
-                  .withValues(alpha: 0.12),
+              color:
+                  (outing.allowed
+                          ? const Color(0xFF4BD2A3)
+                          : const Color(0xFFFF8FB1))
+                      .withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
