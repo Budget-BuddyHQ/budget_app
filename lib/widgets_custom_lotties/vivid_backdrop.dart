@@ -61,10 +61,26 @@ class VividBackdrop extends StatelessWidget {
     final invSatG = (1 - s) * lumG;
     final invSatB = (1 - s) * lumB;
     return <double>[
-      invSatR + s, invSatG, invSatB, 0, b,
-      invSatR, invSatG + s, invSatB, 0, b,
-      invSatR, invSatG, invSatB + s, 0, b,
-      0, 0, 0, 1, 0,
+      invSatR + s,
+      invSatG,
+      invSatB,
+      0,
+      b,
+      invSatR,
+      invSatG + s,
+      invSatB,
+      0,
+      b,
+      invSatR,
+      invSatG,
+      invSatB + s,
+      0,
+      b,
+      0,
+      0,
+      0,
+      1,
+      0,
     ];
   }
 

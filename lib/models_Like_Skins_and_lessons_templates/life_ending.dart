@@ -10,16 +10,8 @@ import 'life_sim_models.dart';
 /// lonely life is not a "win"; a broke but happy one is not a "loss").
 enum LifeEndingArchetype {
   goneTooSoon('Gone Too Soon', Icons.bolt_rounded, Color(0xFFB388FF)),
-  cautionaryTale(
-    'Cautionary Tale',
-    Icons.warning_rounded,
-    Color(0xFFFF8A80),
-  ),
-  richButLonely(
-    'Rich but Lonely',
-    Icons.savings_rounded,
-    Color(0xFFFFD45C),
-  ),
+  cautionaryTale('Cautionary Tale', Icons.warning_rounded, Color(0xFFFF8A80)),
+  richButLonely('Rich but Lonely', Icons.savings_rounded, Color(0xFFFFD45C)),
   brokeButHappy(
     'Broke but Happy',
     Icons.sentiment_very_satisfied_rounded,

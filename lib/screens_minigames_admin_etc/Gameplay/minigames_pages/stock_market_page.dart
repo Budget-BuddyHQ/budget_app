@@ -15,6 +15,7 @@ import '../../../widgets_custom_lotties/hover_lift.dart';
 import '../../../widgets_custom_lotties/mini_sparkline.dart';
 import '../../../widgets_custom_lotties/price_chart.dart';
 import 'order_ticket_page.dart';
+import '../../../widgets_custom_lotties/fitted_label.dart';
 
 /// Real, tradeable stock: a [LiveQuote] plus the display/trade dressing
 /// (icon, accent, thesis, bid-ask spread) that Finnhub doesn't provide.
@@ -328,29 +329,29 @@ class _StockMarketPageState extends State<StockMarketPage>
 
     final result = switch (request.action) {
       TradeAction.buy => await controller.buyStockLot(
-          symbol: quote.symbol,
-          goldCost: totalValue,
-          companyName: quote.company,
-          quantity: request.quantity,
-        ),
+        symbol: quote.symbol,
+        goldCost: totalValue,
+        companyName: quote.company,
+        quantity: request.quantity,
+      ),
       TradeAction.sell => await controller.sellStockLot(
-          symbol: quote.symbol,
-          goldReturn: totalValue,
-          companyName: quote.company,
-          quantity: request.quantity,
-        ),
+        symbol: quote.symbol,
+        goldReturn: totalValue,
+        companyName: quote.company,
+        quantity: request.quantity,
+      ),
       TradeAction.short => await controller.shortStockLot(
-          symbol: quote.symbol,
-          goldCredit: totalValue,
-          companyName: quote.company,
-          quantity: request.quantity,
-        ),
+        symbol: quote.symbol,
+        goldCredit: totalValue,
+        companyName: quote.company,
+        quantity: request.quantity,
+      ),
       TradeAction.cover => await controller.coverShortLot(
-          symbol: quote.symbol,
-          goldCost: totalValue,
-          companyName: quote.company,
-          quantity: request.quantity,
-        ),
+        symbol: quote.symbol,
+        goldCost: totalValue,
+        companyName: quote.company,
+        quantity: request.quantity,
+      ),
     };
 
     if (!context.mounted) return;
@@ -362,10 +363,14 @@ class _StockMarketPageState extends State<StockMarketPage>
       TradeAction.cover => 'Cover order filled',
     };
     final actionMessage = switch (request.action) {
-      TradeAction.buy => 'Bought ${formatShares(request.quantity)} share${request.quantity == 1 ? '' : 's'} of ${quote.symbol} for ${totalValue}g.',
-      TradeAction.sell => 'Sold ${formatShares(request.quantity)} share${request.quantity == 1 ? '' : 's'} of ${quote.symbol} for ${totalValue}g.',
-      TradeAction.short => 'Shorted ${formatShares(request.quantity)} share${request.quantity == 1 ? '' : 's'} of ${quote.symbol} for ${totalValue}g. Borrow cost is charged daily.',
-      TradeAction.cover => 'Covered ${formatShares(request.quantity)} share${request.quantity == 1 ? '' : 's'} of ${quote.symbol} for ${totalValue}g.',
+      TradeAction.buy =>
+        'Bought ${formatShares(request.quantity)} share${request.quantity == 1 ? '' : 's'} of ${quote.symbol} for ${totalValue}g.',
+      TradeAction.sell =>
+        'Sold ${formatShares(request.quantity)} share${request.quantity == 1 ? '' : 's'} of ${quote.symbol} for ${totalValue}g.',
+      TradeAction.short =>
+        'Shorted ${formatShares(request.quantity)} share${request.quantity == 1 ? '' : 's'} of ${quote.symbol} for ${totalValue}g. Borrow cost is charged daily.',
+      TradeAction.cover =>
+        'Covered ${formatShares(request.quantity)} share${request.quantity == 1 ? '' : 's'} of ${quote.symbol} for ${totalValue}g.',
     };
 
     GameToast.show(
@@ -585,7 +590,9 @@ class _StockMarketPageState extends State<StockMarketPage>
                   indicatorWeight: 3,
                   labelColor: Colors.white,
                   unselectedLabelColor: Colors.white54,
-                  labelStyle: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+                  labelStyle: GoogleFonts.pixelifySans(
+                    fontWeight: FontWeight.w700,
+                  ),
                   tabs: const [
                     Tab(text: 'Assets'),
                     Tab(text: 'Trade'),
@@ -1647,10 +1654,8 @@ class _AllocationBar extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text(
+                              child: FittedLabel(
                                 s.label,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12.5,
@@ -2178,7 +2183,9 @@ class _StockCardState extends State<_StockCard> {
                   icon: const Icon(Icons.arrow_upward_rounded),
                   label: Text(
                     'Buy Shares',
-                    style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+                    style: GoogleFonts.pixelifySans(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               );
@@ -2195,7 +2202,9 @@ class _StockCardState extends State<_StockCard> {
                   icon: const Icon(Icons.arrow_downward_rounded),
                   label: Text(
                     'Sell Shares',
-                    style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+                    style: GoogleFonts.pixelifySans(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               );
@@ -2219,7 +2228,6 @@ class _StockCardState extends State<_StockCard> {
       ),
     );
   }
-
 }
 
 class _ValueBadge extends StatelessWidget {
@@ -2260,7 +2268,10 @@ class _ValueBadge extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             value,
-            style: GoogleFonts.pixelifySans(color: color, fontWeight: FontWeight.w700),
+            style: GoogleFonts.pixelifySans(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           if (sub != null)
             Text(
@@ -2511,17 +2522,27 @@ class _DayRangeStrip extends StatelessWidget {
     final low = live != null
         ? coinsForUsd(live.low).toDouble()
         : series.reduce(math.min).toDouble();
-    final open = live != null ? coinsForUsd(live.open).toDouble() : series.first;
+    final open = live != null
+        ? coinsForUsd(live.open).toDouble()
+        : series.first;
     final prev = live != null
         ? coinsForUsd(live.previousClose).toDouble()
         : series.first;
 
     return Row(
       children: [
-        Expanded(child: _RangeCell(label: 'HIGH', value: high, tone: 1)),
-        Expanded(child: _RangeCell(label: 'LOW', value: low, tone: -1)),
-        Expanded(child: _RangeCell(label: 'OPEN', value: open, tone: 0)),
-        Expanded(child: _RangeCell(label: 'PREV', value: prev, tone: 0)),
+        Expanded(
+          child: _RangeCell(label: 'HIGH', value: high, tone: 1),
+        ),
+        Expanded(
+          child: _RangeCell(label: 'LOW', value: low, tone: -1),
+        ),
+        Expanded(
+          child: _RangeCell(label: 'OPEN', value: open, tone: 0),
+        ),
+        Expanded(
+          child: _RangeCell(label: 'PREV', value: prev, tone: 0),
+        ),
       ],
     );
   }
@@ -2600,15 +2621,17 @@ class _StockOrder {
   final DateTime createdAt;
 
   String get actionLabel => switch ((isBuy, isShort, isCover)) {
-        (true, false, false) => 'Buy',
-        (false, false, false) => 'Sell',
-        (false, true, false) => 'Sell Short',
-        (false, false, true) => 'Cover Short',
-        _ => 'Trade',
-      };
+    (true, false, false) => 'Buy',
+    (false, false, false) => 'Sell',
+    (false, true, false) => 'Sell Short',
+    (false, false, true) => 'Cover Short',
+    _ => 'Trade',
+  };
 }
 
-final RegExp _stockOrderPattern = RegExp(r'^(Bought|Sold|Shorted|Covered) ([A-Z]{1,5})$');
+final RegExp _stockOrderPattern = RegExp(
+  r'^(Bought|Sold|Shorted|Covered) ([A-Z]{1,5})$',
+);
 
 ({String symbol, bool isBuy, bool isShort, bool isCover})? parseStockOrderTitle(
   String title,
@@ -2849,10 +2872,10 @@ class _OrderRow extends StatelessWidget {
     final sideColor = order.isShort
         ? const Color(0xFFFFD166)
         : order.isCover
-            ? const Color(0xFF8BC6FF)
-            : order.isBuy
-                ? const Color(0xFF85EFAC)
-                : const Color(0xFFFF8A80);
+        ? const Color(0xFF8BC6FF)
+        : order.isBuy
+        ? const Color(0xFF85EFAC)
+        : const Color(0xFFFF8A80);
     final date = order.createdAt.toLocal();
     final dateLabel =
         '${date.month}/${date.day}/${date.year} '
@@ -2901,7 +2924,10 @@ class _OrderRow extends StatelessWidget {
             children: [
               Text(
                 order.actionLabel,
-                style: GoogleFonts.pixelifySans(color: sideColor, fontWeight: FontWeight.w700),
+                style: GoogleFonts.pixelifySans(
+                  color: sideColor,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
@@ -3493,7 +3519,10 @@ class _PositionBar extends StatelessWidget {
           Text(
             '$sign${coinLabel(pl)} ($sign'
             '${entry.metrics.profitLossPercent.toStringAsFixed(1)}%)',
-            style: GoogleFonts.pixelifySans(color: color, fontWeight: FontWeight.w700),
+            style: GoogleFonts.pixelifySans(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),

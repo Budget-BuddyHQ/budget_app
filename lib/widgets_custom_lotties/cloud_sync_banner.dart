@@ -80,7 +80,10 @@ class CloudSyncBanner extends StatelessWidget {
             ),
             child: Text(
               'Retry',
-              style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700, fontSize: 12),
+              style: GoogleFonts.pixelifySans(
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
             ),
           ),
         ],

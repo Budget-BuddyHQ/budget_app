@@ -8,12 +8,16 @@ import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
+import '../../../models_Like_Skins_and_lessons_templates/outing_rules.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/confetti_burst.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../adventure/adventure_world_screen.dart';
 import 'life_character_sheet.dart';
 import 'life_epilogue_screen.dart';
+import '../../../constants/app_assets.dart';
+import '../../../widgets_custom_lotties/fitted_label.dart';
+import '../../../widgets_custom_lotties/pixel_panel.dart';
 
 /// **Life** — the main game, in the BitLife format: a scrolling life feed up
 /// top, a fixed bottom menu, and a big central Age button that advances time
@@ -50,6 +54,16 @@ class _LifeSimPageState extends State<LifeSimPage> {
       Navigator.of(context).pop();
       return;
     }
+    // A new life gets a fresh world. Town progress (visited spots, picked-up
+    // coins) is stored per-player rather than per-run, so without this a
+    // second life would start with every building already ticked off and
+    // every coin gone — the town would be a finished checklist for every
+    // character after the first.
+    if (mounted) {
+      await context.read<UserStatsController>().resetTownProgress();
+    }
+    if (!mounted) return;
+
     setState(() {
       _life = LifeSimController(
         name: character.name,
@@ -213,10 +227,8 @@ class _LifeSimPageState extends State<LifeSimPage> {
       // way out, so reading it is unavoidable rather than optional.
       isDismissible: false,
       enableDrag: false,
-      builder: (_) => _MoneyLessonSheet(
-        concept: lesson,
-        simpleWording: _simpleWording,
-      ),
+      builder: (_) =>
+          _MoneyLessonSheet(concept: lesson, simpleWording: _simpleWording),
     );
   }
 
@@ -256,7 +268,22 @@ class _LifeSimPageState extends State<LifeSimPage> {
       builder: (context, _) {
         final event = life.currentEvent;
         _scrollFeedToEnd();
-        return Scaffold(
+        return PopScope(
+          // A life is *not* saved anywhere — LifeSimController is
+          // in-memory only, by design (see its class doc). Backing out
+          // therefore destroys the run silently, which is a genuinely
+          // expensive accident after twenty simulated years. canPop: false
+          // routes both the AppBar arrow and the Android system back
+          // gesture through the same confirmation.
+          canPop: false,
+          onPopInvokedWithResult: (didPop, _) async {
+            if (didPop) return;
+            final leave = await _confirmQuit(life);
+            if (leave && context.mounted) {
+              Navigator.of(context).pop();
+            }
+          },
+          child: Scaffold(
           backgroundColor: AppTheme.deepForest,
           appBar: AppBar(
             backgroundColor: AppTheme.darkForest,
@@ -272,17 +299,45 @@ class _LifeSimPageState extends State<LifeSimPage> {
               job: life.job,
             ),
             actions: [
-              IconButton(
-                tooltip: 'Explore the town',
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const AdventureWorldScreen(),
+              // Not an always-on button any more: whether you can leave the
+              // house depends on age, health, how strict your family is and
+              // what the weather is doing (see `outing_rules.dart`). When
+              // it's blocked the button stays visible and *says why* rather
+              // than disappearing — being told "not until you're 14" is
+              // part of the game, not an error.
+              Builder(
+                builder: (context) {
+                  final permission = life.outingPermission;
+                  return IconButton(
+                    tooltip: permission.allowed
+                        ? 'Explore the town'
+                        : permission.message,
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      if (!permission.allowed) {
+                        GameToast.show(
+                          context,
+                          title: 'You cannot go out',
+                          message: permission.message,
+                          icon: permission.reason?.icon ?? Icons.block_rounded,
+                          accent: const Color(0xFFFF8FB1),
+                        );
+                        return;
+                      }
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const AdventureWorldScreen(),
+                        ),
+                      );
+                    },
+                    icon: Icon(
+                      permission.allowed
+                          ? Icons.explore_rounded
+                          : Icons.lock_rounded,
+                      color: permission.allowed ? null : Colors.white38,
                     ),
                   );
                 },
-                icon: const Icon(Icons.explore_rounded),
               ),
               TextButton.icon(
                 onPressed: () => _finish(life),
@@ -317,6 +372,9 @@ class _LifeSimPageState extends State<LifeSimPage> {
                   event: event,
                   // Choose, then surface the money idea behind that choice
                   // (if it had one) once the outcome is on screen.
+                  weather: life.weather,
+                  strictness: life.strictness,
+                  outing: life.outingPermission,
                   onChoose: (index) {
                     life.chooseOption(index);
                     _drainLesson(life);
@@ -328,8 +386,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
                 blocked: event != null || life.finished,
                 stage: life.stage,
                 onCareer: () => _openMenu(life, _LifeMenu.career),
-                onRelationships: () =>
-                    _openMenu(life, _LifeMenu.relationships),
+                onRelationships: () => _openMenu(life, _LifeMenu.relationships),
                 onActivities: () => _openMenu(life, _LifeMenu.activities),
                 onAssets: () => _openMenu(life, _LifeMenu.assets),
                 // Ageing can fire an expense shock, which teaches too.
@@ -340,9 +397,71 @@ class _LifeSimPageState extends State<LifeSimPage> {
               ),
             ],
           ),
+          ),
         );
       },
     );
+  }
+
+  /// "Are you sure?" before abandoning a run.
+  ///
+  /// Worth interrupting for precisely because the alternative is silent and
+  /// total: a life lives in memory only, so leaving the screen ends it with
+  /// no way back. The dialog says that in as many words rather than a bare
+  /// "Discard?", and offers Retire as the way to *keep* something — retiring
+  /// pays out gold and XP, quitting pays nothing.
+  Future<bool> _confirmQuit(LifeSimController life) async {
+    if (life.finished) return true;
+
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.panelStrong,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        ),
+        title: Text(
+          'Quit this life?',
+          style: GoogleFonts.pixelifySans(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: Text(
+          '${life.name} is ${life.age}. This run is not saved — quitting '
+          'now loses it, and you keep no gold or XP from it.\n\n'
+          'Retire instead to cash out what you have earned.',
+          style: GoogleFonts.quicksand(
+            color: Colors.white.withValues(alpha: 0.85),
+            height: 1.4,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              'Keep playing',
+              style: GoogleFonts.pixelifySans(
+                color: const Color(0xFF85EFAC),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              'Quit anyway',
+              style: GoogleFonts.pixelifySans(
+                color: const Color(0xFFFF8FB1),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    return leave ?? false;
   }
 }
 
@@ -363,6 +482,33 @@ class _HeaderBar extends StatelessWidget {
   final int money;
   final String job;
 
+  /// Drops the job segment while it is only restating the life stage.
+  ///
+  /// Before there is a real career the "job" is a placeholder that means
+  /// the same thing as the stage — a Baby's job is "Newborn", a Child's is
+  /// "Student". Printing both made the line too long for the header and it
+  /// truncated, spending the space on the least informative word.
+  static String _subtitleFor({
+    required int age,
+    required LifeStage stage,
+    required String job,
+  }) {
+    const placeholders = <String>{
+      'newborn',
+      'baby',
+      'child',
+      'student',
+      'unemployed',
+      'none',
+      '',
+    };
+    final trimmed = job.trim();
+    if (placeholders.contains(trimmed.toLowerCase())) {
+      return 'Age $age · ${stage.label}';
+    }
+    return 'Age $age · ${stage.label} · $trimmed';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -378,19 +524,21 @@ class _HeaderBar extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
+              FittedLabel(
                 name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.pixelifySans(
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
                 ),
               ),
-              Text(
-                'Age $age · ${stage.label} · $job',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              // "Age 0 · Baby · Newborn" was three segments where two said
+              // the same thing — the job of a Baby is always "Newborn", so
+              // the line was padded out with a redundant word and then
+              // truncated to "Age 0 · Baby · Newb…" for the privilege.
+              // Drop the job while it merely restates the life stage; once
+              // there is a real one ("Barista"), it earns its place.
+              FittedLabel(
+                _subtitleFor(age: age, stage: stage, job: job),
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -441,6 +589,9 @@ class _LifeFeed extends StatelessWidget {
     required this.dead,
     required this.event,
     required this.onChoose,
+    required this.weather,
+    required this.strictness,
+    required this.outing,
   });
 
   final ScrollController controller;
@@ -456,12 +607,24 @@ class _LifeFeed extends StatelessWidget {
   final LifeEvent? event;
   final ValueChanged<int> onChoose;
 
+  /// This year's conditions, surfaced so the outing rules are visible
+  /// rather than only showing up as a locked button.
+  final Weather weather;
+  final HouseholdStrictness strictness;
+  final OutingPermission outing;
+
   @override
   Widget build(BuildContext context) {
     return ListView(
       controller: controller,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       children: [
+        _ThisYearPanel(
+          weather: weather,
+          strictness: strictness,
+          outing: outing,
+        ),
+        const SizedBox(height: 12),
         _MiniStatsRow(
           netWorth: netWorth,
           investments: investments,
@@ -597,8 +760,16 @@ class _MiniStatsRow extends StatelessWidget {
       spacing: 10,
       runSpacing: 10,
       children: [
-        _Pill(label: 'Smarts', value: '$smarts', color: const Color(0xFF69C6FF)),
-        _Pill(label: 'Health', value: '$health', color: const Color(0xFFFF8A80)),
+        _Pill(
+          label: 'Smarts',
+          value: '$smarts',
+          color: const Color(0xFF69C6FF),
+        ),
+        _Pill(
+          label: 'Health',
+          value: '$health',
+          color: const Color(0xFFFF8A80),
+        ),
         _Pill(label: 'Looks', value: '$looks', color: const Color(0xFFFF8FB1)),
         // Money only starts mattering once the family stops paying the bills.
         if (!isDependent) ...[
@@ -714,7 +885,9 @@ class _EventCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF58C7FF).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF58C7FF).withValues(alpha: 0.35)),
+        border: Border.all(
+          color: const Color(0xFF58C7FF).withValues(alpha: 0.35),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -853,7 +1026,8 @@ class _BottomMenu extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _MenuButton(
-                    label: stage == LifeStage.baby ||
+                    label:
+                        stage == LifeStage.baby ||
                             stage == LifeStage.child ||
                             stage == LifeStage.teen
                         ? 'School'
@@ -1197,7 +1371,10 @@ class _SkillRow extends StatelessWidget {
             ),
             child: Text(
               'Practise',
-              style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700, fontSize: 12),
+              style: GoogleFonts.pixelifySans(
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
             ),
           ),
         ],
@@ -1328,8 +1505,7 @@ class _LifeMenuSheet extends StatelessWidget {
               icon: Icons.card_giftcard_rounded,
               cost: 50,
               onTap: () => run(() => life.giveGift(person)),
-              disabledReason:
-                  life.money >= 50 ? null : 'Not enough coins',
+              disabledReason: life.money >= 50 ? null : 'Not enough coins',
             ),
           ],
         ];
@@ -1367,6 +1543,30 @@ class _LifeMenuSheet extends StatelessWidget {
             disabledReason: young || life.money >= 60
                 ? null
                 : 'Not enough coins',
+          ),
+          _LifeAction(
+            label: 'Work a side job',
+            detail: 'Earn 40-100 coins. Costs Happiness and Health.',
+            icon: Icons.work_history_rounded,
+            onTap: () => run(life.workSideJob),
+            disabledReason: life.age >= 14 ? null : 'You are too young to work',
+          ),
+          _LifeAction(
+            label: 'Volunteer',
+            detail: 'No pay at all. +9 Happiness, +2 Smarts.',
+            icon: Icons.volunteer_activism_rounded,
+            onTap: () => run(life.volunteer),
+            disabledReason: life.age >= 10 ? null : 'You are too young',
+          ),
+          _LifeAction(
+            label: 'Gamble 100 coins',
+            detail: 'A 42% chance to double it. The odds are against you.',
+            icon: Icons.casino_rounded,
+            cost: 100,
+            onTap: () => run(life.takeARisk),
+            disabledReason: life.age < 18
+                ? 'You must be 18'
+                : (life.money >= 100 ? null : 'Not enough coins'),
           ),
           _LifeAction(
             label: 'Practise a skill',
@@ -1407,8 +1607,7 @@ class _LifeMenuSheet extends StatelessWidget {
             icon: Icons.savings_rounded,
             cost: 100,
             onTap: onInvest,
-            disabledReason:
-                life.money >= 100 ? null : 'You need 100 coins',
+            disabledReason: life.money >= 100 ? null : 'You need 100 coins',
           ),
           _LifeAction(
             label: 'Net worth',
@@ -1961,10 +2160,8 @@ class _BudgetRow extends StatelessWidget {
                     ),
                   ],
                 ),
-                Text(
+                FittedLabel(
                   '$hint · $coins coins',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.quicksand(
                     color: Colors.white.withValues(alpha: 0.6),
                     fontSize: 11.5,
@@ -2041,10 +2238,7 @@ class _StepButton extends StatelessWidget {
 /// The teaching moment itself: shown right after a decision lands, naming
 /// the idea the player just bumped into.
 class _MoneyLessonSheet extends StatelessWidget {
-  const _MoneyLessonSheet({
-    required this.concept,
-    required this.simpleWording,
-  });
+  const _MoneyLessonSheet({required this.concept, required this.simpleWording});
 
   final FinanceConcept concept;
   final bool simpleWording;
@@ -2058,121 +2252,121 @@ class _MoneyLessonSheet extends StatelessWidget {
     return PopScope(
       canPop: false,
       child: Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 26),
-      decoration: const BoxDecoration(
-        color: AppTheme.panelStrong,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppTheme.radiusXLarge),
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 26),
+        decoration: const BoxDecoration(
+          color: AppTheme.panelStrong,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppTheme.radiusXLarge),
+          ),
         ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: concept.accent.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: concept.accent.withValues(alpha: 0.4),
-                  ),
-                ),
-                child: Icon(concept.icon, color: concept.accent, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Money idea',
-                      style: GoogleFonts.quicksand(
-                        color: concept.accent,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                    Text(
-                      concept.label,
-                      style: GoogleFonts.pixelifySans(
-                        color: Colors.white,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            concept.explainerFor(simple: simpleWording),
-            style: GoogleFonts.quicksand(
-              color: Colors.white.withValues(alpha: 0.88),
-              fontSize: 14,
-              height: 1.45,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                const Icon(
-                  Icons.lightbulb_rounded,
-                  color: Color(0xFFFFD45C),
-                  size: 17,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    concept.tryThis,
-                    style: GoogleFonts.quicksand(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontSize: 12.5,
-                      height: 1.4,
-                      fontWeight: FontWeight.w600,
+                Container(
+                  width: 42,
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: concept.accent.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: concept.accent.withValues(alpha: 0.4),
                     ),
+                  ),
+                  child: Icon(concept.icon, color: concept.accent, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Money idea',
+                        style: GoogleFonts.quicksand(
+                          color: concept.accent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                      Text(
+                        concept.label,
+                        style: GoogleFonts.pixelifySans(
+                          color: Colors.white,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: FilledButton.styleFrom(
-                backgroundColor: concept.accent,
-                foregroundColor: const Color(0xFF06251A),
-                padding: const EdgeInsets.symmetric(vertical: 14),
+            const SizedBox(height: 14),
+            Text(
+              concept.explainerFor(simple: simpleWording),
+              style: GoogleFonts.quicksand(
+                color: Colors.white.withValues(alpha: 0.88),
+                fontSize: 14,
+                height: 1.45,
+                fontWeight: FontWeight.w600,
               ),
-              child: Text(
-                'Got it',
-                style: GoogleFonts.pixelifySans(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.lightbulb_rounded,
+                    color: Color(0xFFFFD45C),
+                    size: 17,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      concept.tryThis,
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 12.5,
+                        height: 1.4,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: FilledButton.styleFrom(
+                  backgroundColor: concept.accent,
+                  foregroundColor: const Color(0xFF06251A),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: Text(
+                  'Got it',
+                  style: GoogleFonts.pixelifySans(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -2294,6 +2488,177 @@ class _ConceptsSheet extends StatelessWidget {
                 },
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// This year at a glance: the weather, the household you were born into,
+/// and whether you are allowed out.
+///
+/// Two jobs. It fills what was a large blank area under the stats on a
+/// young character (the feed has one line in it at age 0), and it makes the
+/// outing rules *visible* — before this the only evidence of weather or
+/// household strictness was a padlock on a button, so the mechanic
+/// existed without ever being explained.
+///
+/// Drawn with [PixelPanel] rather than a `BoxDecoration`, so it uses the
+/// hand-made pixel kit the project already ships.
+class _ThisYearPanel extends StatelessWidget {
+  const _ThisYearPanel({
+    required this.weather,
+    required this.strictness,
+    required this.outing,
+  });
+
+  final Weather weather;
+  final HouseholdStrictness strictness;
+  final OutingPermission outing;
+
+  @override
+  Widget build(BuildContext context) {
+    return PixelPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const PixelIcon(AppAssets.uiIconStar, size: 14),
+              const SizedBox(width: 7),
+              Text(
+                'This year',
+                style: GoogleFonts.pixelifySans(
+                  color: const Color(0xFFE9C46A),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _YearFact(
+                  icon: weather.icon,
+                  accent: weather.accent,
+                  label: 'Weather',
+                  value: weather.label,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _YearFact(
+                  icon: Icons.family_restroom_rounded,
+                  accent: const Color(0xFF85EFAC),
+                  label: 'Family',
+                  value: strictness.label,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // The consequence line. Says what you can do and, when you
+          // cannot, exactly what would have to change — being told "not
+          // until you are 14" is content, not an error.
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: (outing.allowed
+                      ? const Color(0xFF4BD2A3)
+                      : const Color(0xFFFF8FB1))
+                  .withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  outing.allowed
+                      ? Icons.directions_walk_rounded
+                      : (outing.reason?.icon ?? Icons.lock_rounded),
+                  size: 15,
+                  color: outing.allowed
+                      ? const Color(0xFF4BD2A3)
+                      : const Color(0xFFFF8FB1),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    outing.allowed
+                        ? 'You can head into town whenever you like.'
+                        : outing.message,
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white.withValues(alpha: 0.86),
+                      fontSize: 11.5,
+                      height: 1.3,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _YearFact extends StatelessWidget {
+  const _YearFact({
+    required this.icon,
+    required this.accent,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final Color accent;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: accent.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: accent),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                FittedLabel(
+                  value,
+                  style: GoogleFonts.pixelifySans(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

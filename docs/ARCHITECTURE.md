@@ -1882,3 +1882,430 @@ screenshot showed, with no discoverable fixed offset. Screenshots and
 `javascript_exec` state inspection are reliable this session; coordinate-
 based interaction is not. Recorded in the `browser-pane-verification-
 limits` memory for the next session.
+
+## 26. Undoing a bad collision fix, the friends bug, and going outside
+
+### The "hill" was a road — undoing §23
+
+§23 sealed map rows 34-36 as a hill. That was wrong, and the map render
+proves it: tiles 91/92 (and 289/290 in the `structures mre` layer) are
+**flat tan road surface**, identical in colour to every other path in the
+town. Sealing them walled off **357 walkable tiles**, including the entire
+southern strip — which is exactly the "roads in south are blocked off"
+report.
+
+Two separate mistakes had compounded:
+
+1. **Mine (§23):** assuming a wide horizontal band must be a boundary. It
+   was a road with fences *beside* it, not a cliff.
+2. **The original export:** rows 34 and 37 were tiles `289`/`290` — plain
+   road surface — sitting inside `structures mre`, a layer marked
+   `collider: true` because most of its contents (barrels, bushes, posts)
+   genuinely are obstacles. 91 road tiles were solid purely by layer
+   association. That is why row 37 was a complete wall before anything I
+   did.
+
+**The real hill** is the stepped cliff-face art on the west side — tile ids
+`106/107/109/110`, green top with a brown face, running diagonally around
+y≈17-21. Those were fully walkable. They now live in a `terrain_cliff`
+layer with `collider: true`.
+
+Result: solid tiles 931 → 761, walkable 1569 → **1739, all reachable**.
+
+**How the tiles were identified**: rendering the actual tileset cells with
+their ids next to them, and compositing the whole map with the collision
+grid overlaid in red. Both are ~15 lines of Pillow. Reading the collision
+data as numbers had already produced one wrong conclusion; *looking* at it
+settled it in one pass. Worth doing first next time, not third.
+
+### The test that asserted the bug
+
+`town_map_test.dart` had a test literally named "the hill band is sealed —
+nothing south of it is reachable", which passed happily while 357 tiles
+were stranded. A test can only be as right as its premise.
+
+Replaced with the invariant that does not need rewriting when level design
+changes: **every walkable tile is reachable from spawn**. That catches
+over-blocking (a road wrongly made solid) *and* under-blocking, without
+encoding any specific band. Plus a narrower "the west cliff face is solid"
+test for the thing that genuinely should block.
+
+New `town NPCs` group covers placement: on a walkable tile, reachable from
+spawn, no two on the same tile, everyone has dialogue — and **no sprite
+clips into scenery**, which found the Student standing where a solid tile
+sat two rows above them. The villager sheet is ~2 tiles tall and drawn
+upward from the feet, so anything solid at `y-1` or `y-2` shows through the
+character's head. Moved (17,17) → (17,21).
+
+### Friends: `operator does not exist: uuid ~~* unknown`
+
+The friends feature had never worked, and the reason was one line.
+
+A friend code is the first 8 hex characters of a user's uuid, so resolving
+one is a prefix match. It was written as:
+
+```dart
+.ilike('id', '$trimmed%')
+```
+
+`leaderboard.id` is a **uuid** column. Postgres has no `ILIKE` operator for
+uuid, so every single lookup threw `42883`, got swallowed by a blanket
+`catch`, and surfaced as "Could not add that friend right now."
+
+Confirmed directly against the live project (read-only, anon key):
+
+```
+/rest/v1/leaderboard?id=ilike.16D8FCDE%
+  404  operator does not exist: uuid ~~* unknown
+```
+
+uuid *does* have btree comparison operators, so a half-open range says the
+same thing, works server-side, and stays indexed:
+
+```dart
+.gte('id', '$prefix-0000-0000-0000-000000000000')
+.lte('id', '$prefix-ffff-ffff-ffff-ffffffffffff')
+```
+
+Verified against the same live data: correct match for a real code, empty
+result (not an error) for one that matches nobody. The all-`f` upper bound
+rather than incrementing the prefix avoids an overflow edge case on the
+code `FFFFFFFF`.
+
+**The blanket catch was the deeper bug.** A precise, actionable Postgres
+error existed on every attempt and nobody could see it. `PostgrestException`
+is now caught separately, logs `code`/`message`/`details`/`hint`, and maps
+the two failures a player can act on (`23503` no such user, `42P01` table
+missing) to their own wording.
+
+Also confirmed live: the `friendships` table **does exist** — so the
+long-standing "pending SQL" note was half stale. What is genuinely still
+missing is the `market` edge function (`/functions/v1/market?op=health`
+returns `NOT_FOUND`), and `profile_image_url` on the `leaderboard` view.
+
+### Going outside is now a situation, not a button
+
+`lib/models_Like_Skins_and_lessons_templates/outing_rules.dart`.
+
+"Explore the town" was always enabled — a newborn could walk to the bank.
+Three factors now decide, chosen so they differ in *kind*:
+
+| Factor | Changes | Purpose |
+|---|---|---|
+| Age | grows out of it | the floor: nobody under 6 goes out alone |
+| `HouseholdStrictness` | rolled once at birth | makes two runs differ |
+| `Weather` | re-rolled every year | makes one run differ over time |
+
+Strictness sets a free-roam age of 10/12/14; from 16 nobody's rules apply.
+So at age 11 the same character is free in a relaxed household and grounded
+in a strict one — which is the point of having the factor at all.
+
+Weather is weighted (clear 50, rain 24, snow 10, storm 8, heatwave 8) and
+**only a storm blocks**. Gating on rain would close the town roughly a
+quarter of all years, which is tedious rather than realistic.
+
+Checks resolve age → health → household → sky, so the message always names
+the thing that would have to change *first*: a toddler in a storm is told
+they are too young, not that it is raining.
+
+When blocked the button stays visible, turns into a padlock, and says why.
+Being told "not until you're 14" is content, not an error state.
+
+### A latent RNG bug this introduced, and caught
+
+`strictness` was first written as:
+
+```dart
+late final HouseholdStrictness strictness = HouseholdStrictness
+    .values[_random.nextInt(HouseholdStrictness.values.length)];
+```
+
+A `late final` with a random initialiser consumes its number the first time
+anything **reads** it. So the entire downstream sequence — every event
+draw, every expense shock — depended on whether the UI happened to check
+`outingPermission` on a given frame. Same seed, different life.
+
+Moved to a plain field assigned in the constructor body.
+`outing_rules_test.dart` guards it directly: two controllers with the same
+seed, one of which reads `outingPermission` early, must still age
+identically for 20 years.
+
+### A test that was really testing the RNG
+
+Adding the yearly weather roll shifted the random sequence by one draw,
+which made `budget_teaching_test`'s "ageing a year banks the savings slice"
+fail — a shock now fired in year one and legitimately emptied the fund.
+
+The assertion was the problem, not the code. "The fund is above N after one
+year" is only true if no shock happens, so it was quietly asserting a
+property of the seed. Replaced with a comparison between **two
+identically-seeded lives** — same shocks in the same years, only the budget
+differs — which is the actual claim: saving 20% leaves you better off than
+saving nothing.
+
+### Smaller fixes in the same pass
+
+- **A live crash.** The Money Habits category-filter `Scrollbar` used
+  `thumbVisibility: true` inside a `TabBarView`, which builds the adjacent
+  tab *offstage*. On the frame it is built but not laid out the controller
+  has no attached `ScrollPosition`, and a persistent thumb has nothing to
+  measure — `Scrollbar's ScrollController has no ScrollPosition attached`,
+  thrown on every open of the Daily tab. Dropped to default (fading) mode,
+  same reasoning as the `TabBar` one in §21.
+- **Finance Brawl's upgrade picker** forced three cards into a `Row` at any
+  width, so on a phone each got ~150px and words broke mid-syllable
+  ("Perfor / mance Bonus"). Below 520px they stack into a column and each
+  card turns on its side (icon beside text) so the description gets a
+  readable line length.
+- **A new life resets the town.** Visited spots and collected coins persist
+  per *player* (§25), which is right within one life but meant a second
+  character inherited a fully-explored town.
+  `UserStatsController.resetTownProgress()` clears both on character
+  creation; gold already earned is untouched.
+- **Money Habits' double header.** A 70px toolbar plus a 12px title inset,
+  stacked under `MainNavigation`'s global top bar, was a second header's
+  worth of dead space.
+- **Three more Activities.** The menu was five rows, three of them free stat
+  bumps. Added a side job (real money, costs happiness and health), a
+  volunteer option (no money, best happiness-per-coin in the game), and a
+  gamble (42% to double — deliberately worse than even, and it teaches
+  opportunity cost whichever way it lands).
+- **The turtle logo** was removed from the top bar by request: at 22px it
+  read as clutter next to an already-strong pixel wordmark.
+
+### Daily quests are age-aware, unblocking a chronological curriculum
+
+`DailyPlanBuilder._nextLesson` walked `lessonUnits` in raw list order and
+quested the first uncompleted node, which made list position secretly mean
+"difficulty order". That is why the youngest units (ages 4-6, 7-10) were
+pinned to the *end* of the curriculum list — purely so adults would not be
+told to study "What Is Money?" — while the Academy's own strip displayed
+them first, because it sorts by age. List order and reading order
+disagreed, and the list could never be put in the order a human expects.
+
+`_nextLesson` now takes the reader's `AgeStage` and skips units below it on
+the first pass, falling back to any uncompleted lesson so the slot never
+silently disappears. That decouples the two, which is the prerequisite for
+reordering the curriculum chronologically (still to do — see below).
+
+## 27. The curriculum in age order, an ellipsis sweep, and a sprite verdict
+
+### A wider window showed *less* text than a narrow one
+
+Reported as "when it's high resolution, there is no text and when there is
+low res then there is text". Real, and the cause is a single threshold.
+
+Home's hero card hid its whole subtitle behind `if (!veryTight)`, where
+`veryTight` is `constraints.maxHeight < 196`. The hero's own height is
+`(availableHeight * 0.38).clamp(225, 300)` minus padding — which on a phone
+lands within a couple of pixels of 196. So a hair more or less available
+height made an entire paragraph appear or vanish, and since the two
+screenshots differed slightly in chrome, the wider one happened to land on
+the hiding side.
+
+**Content should not blink in and out on a 2px threshold.** The subtitle is
+now always shown, with copy shortened so it fits two lines unaided at any
+supported width. It also stopped repeating "Start a life", which the button
+directly beneath it already says.
+
+### 46 ellipsis sites → 22, via a shared widget
+
+`TextOverflow.ellipsis` is a reasonable default for *user data* of unknown
+length. It is the wrong answer for UI chrome the app wrote itself, where the
+string is known, short and load-bearing: "Curren…" has failed at the one
+job it exists to do.
+
+New `FittedLabel` (`lib/widgets_custom_lotties/fitted_label.dart`) measures
+the text with a `TextPainter` and scales the whole line down to fit rather
+than truncating. On the sizes this app runs at that is a point or two of
+font size, which reads as intentional where the truncation read as a bug.
+
+Two deliberate escape hatches:
+
+- **Unbounded width** (inside a scrolling `Row`) → plain `Text`, since there
+  is nothing to fit *to* and `FittedBox` would have no meaningful scale.
+- **`minScale` (0.62)** → falls back to ellipsis. A 60-character company
+  name scaled to fit really would become unreadable; there, truncating is
+  the lesser evil.
+
+25 call sites converted by script. The 22 that remain are exactly the ones
+that should: usernames, `widget.company`, `item.headline`, `match.company`
+— all remote or user-supplied — plus `FittedLabel`'s own fallback.
+
+### The curriculum is now in chronological order
+
+`lessonUnits` runs youngest to oldest: ages 4-6 → 7-10 → 11-13 → 14-17 →
+18-20 → 21+, as one continuous prerequisite chain from Unit 1 to Unit 11.
+
+This was blocked until §26 made `_nextLesson` age-aware, because list
+position was secretly encoding difficulty (see that section). With the
+coupling gone the list is free to mean what it looks like it means.
+
+**IDs did not move.** `unit_10` is now titled "Unit 1: Money Is Real" and
+sits first. Progress is stored per lesson/unit id (`completed_lessons`), so
+renumbering a *title* is safe while renaming an id silently orphans every
+player's history. Four tests lock this down:
+
+| Test | Guards |
+|---|---|
+| units run youngest to oldest | the ordering itself |
+| the youngest unit is first | a 4-year-old starts at the start |
+| displayed unit numbers match list position | title "Unit 3:" is actually third |
+| unit ids are NOT renumbered | saved progress survives |
+| it is one continuous chain | each unit opens off the previous unit's test |
+
+`DailyPlanController` now passes `stats.ageBand.recommendedStage` into the
+builder, and `daily_plan_test.dart` gained five tests — the load-bearing one
+being **"an adult is never sent to the ages 4-6 unit"**, which is precisely
+what would break if anyone removed `readerStage` again.
+
+One existing test had to change: "leads with the next uncompleted lesson"
+hardcoded `lesson_1 done → lesson_2 next`, which quietly depended on
+`unit_1` being first in the list. It now derives both ids from
+`lessonUnits.first`, so it tests the behaviour rather than a snapshot of the
+data.
+
+### You now start at your own front door
+
+`kTownSpawnTile` = (13, 31), just outside `spot_home` at (13, 30), replacing
+the old town-square spawn at (25, 25). You leave home to go into town and
+come back to it; starting in the middle of the square made the map read as
+a level select rather than somewhere you live.
+
+The spawn tile gets the same checks every NPC gets — walkable, reachable,
+and two clear rows overhead so the sprite does not clip the house — plus one
+of its own asserting it is within two tiles of the house.
+
+The exit is now a labelled **"Go home"** pill rather than a bare back arrow,
+which described the navigation stack rather than anything happening in the
+game. That change also broke the HUD layout: the objective bar sat at a
+hardcoded `left: 66`, sized around a circular icon-only button, so the wider
+pill overlapped it. Both are now a `Row`, which lays out relative to
+whatever the button's label turns out to be.
+
+### The side-walk sprite: measured, and a verdict
+
+Reported twice more as still bad. Rather than a fourth blind attempt, the
+west row was measured three ways:
+
+```
+head band   f0..f7 left edge:   7  12  12  12   7   2   2   2   (right edge always 102)
+torso band  f0..f7 left edge:   7  12  12  12   7   2   2   2   (right edge always  90)
+feet Y:                       147 155 155 155 147 155 155 155
+legs f1 vs f5:  mirrored (opposite leg)   f2 vs f6: mirrored   f0 vs f4: identical
+```
+
+Every one of those is **correct**:
+
+- Right edges are pinned, so the body does not slide horizontally; the
+  leftward growth is the forward arm swinging out.
+- The two halves of the cycle are *mirrors* of each other, i.e. the
+  character genuinely alternates legs rather than hopping on one.
+- `f0 == f4` is right — both are the neutral contact pose.
+- Feet sit on one line with an 8px dip on stepping frames (§25's
+  normalizer), so there is a real body bob.
+
+**The structure is sound. What reads as stiff is the art itself**: across
+all eight frames the torso and head are pixel-identical, so only the legs
+and one arm ever move. There are also only five distinct poses in the eight
+frames (`0,1,2,1,0,5,6,5`), which is why it looks like it holds.
+
+Fixing that means genuinely redrawing the character — adding torso rotation
+and head bob per frame. That is art direction, not a transform, and the one
+time pixel surgery was attempted here (§25's first clipping attempt) it made
+things worse and had to be reverted. Recording the measurements so the next
+attempt starts from data rather than re-deriving them, and so nobody
+"fixes" a cycle that is already structurally correct.
+
+## 28. The last ellipsis, a quit guard, chart zoom that works, and candle caching
+
+### The last two "…" were a layout problem, not a text problem
+
+After §27's sweep, two places still truncated: Finance Brawl's HUD
+("Debts …", "Don't …") and the Life header ("Age 0 · Baby · Newb…").
+
+Both were already converted to `FittedLabel` — what was happening is
+`FittedLabel` doing its job. Its `minScale` guard refuses to shrink below
+62% and falls back to truncating, on the reasoning that unreadably small
+text is worse than a cut-off word. So the ellipsis was a *symptom*: these
+containers were too small for their contents at any legible size.
+
+Measured, the HUD panel had **~54px of text column**: two panels share a
+row with a gold chip and an exit button, leaving ~119px each, and a 32px
+icon plus padding eats ~65px of that. "Debts Paid 4/6" cannot render in
+54px, and no amount of text-fitting changes that.
+
+Fixed the layout instead. `_HudStatPanel` is now responsive: under 150px it
+drops the flavour line and shrinks the icon; under 112px it drops the icon
+entirely. What survives is the label and the number — the part you read
+mid-fight. The flavour ("Don't Let it Hit Zero!") is the first thing to go
+because it is the least useful thing on screen during a wave.
+
+The Life header was simpler: `'Age $age · ${stage.label} · $job'` rendered
+"Age 0 · Baby · Newborn", where the job *always* restates the stage before
+a real career exists. `_subtitleFor` drops the job segment while it is a
+placeholder ("Newborn", "Student", "Unemployed"), so the line reads
+"Age 0 · Baby" and fits. Once there is a real job ("Barista") it earns its
+place back.
+
+**The general lesson**: when text-fitting falls back to truncation, the
+container is the bug. Shrinking the font is a workaround; giving the string
+a sane amount of space, or making it shorter, is the fix.
+
+### Quitting a life now asks first
+
+`LifeSimController` is in-memory only by design — nothing about a run is
+persisted. So backing out of the Life screen silently destroyed it, which
+after twenty simulated years is an expensive accident with no undo.
+
+A `PopScope(canPop: false)` now routes both the AppBar arrow and the
+Android system back gesture through one confirmation. The wording does two
+things a bare "Discard?" would not: it says the run is not saved and that
+quitting forfeits its gold and XP, and it points at **Retire** as the way
+to keep something — retiring cashes out, quitting pays nothing. A finished
+life skips the dialog entirely; there is nothing left to lose.
+
+### Chart zoom: the gesture was losing an arena fight
+
+"The user still cannot zoom in" on the buy screen. The pinch maths was
+correct; it never got the chance to run.
+
+`InteractivePriceChart` sits inside the order ticket's vertical `ListView`.
+A `ScaleGestureRecognizer` and the ListView's drag recogniser both enter the
+gesture arena, and the ListView generally wins — so "pinch to zoom, drag to
+pan" did nothing on a phone, which is exactly what was reported.
+
+Rather than fight the arena, the chart now has **explicit +/− and
+reset-to-fit buttons**. A button cannot be stolen by a parent scrollable, so
+zoom works regardless of who wins, and it is far more discoverable than an
+undocumented gesture. The pinch handler stays (it works fine outside a
+scrollable) and gained `HitTestBehavior.opaque`.
+
+The buttons sit on the **left**: the right 52px is the price-label gutter,
+so controls there would cover the numbers. The hint text was updated too —
+it had been advertising a gesture that did not work.
+
+### Switching timeframes was a network round trip every time
+
+`fetchCandles` had no cache. Every tap of 1D/5D/1M/3M/1Y hit the network,
+*including* tapping back to a range viewed seconds earlier — against Twelve
+Data's free tier, which allows eight requests a minute. That is the "make
+sure the fetching is fast" complaint, and it is worse right now because the
+`market` edge function is not deployed (§26), so these are direct
+rate-limited vendor calls rather than cached proxy hits.
+
+Two additions:
+
+- **A TTL cache keyed by `symbol:range`.** The TTL varies by bar size
+  rather than being one blanket number: 1D is built from 5-minute bars and
+  genuinely moves (2 min), 5D from 30-minute bars (10 min), and 1M/3M/1Y
+  from daily and weekly bars that cannot change again until the market
+  closes (1 hour). Caching those for an hour is correctness, not staleness.
+- **In-flight request sharing.** Two widgets asking for the same series in
+  the same frame now await one call instead of racing into two.
+
+**Failures are deliberately not cached.** Storing an empty result would pin
+a transient outage in place for the whole TTL and a retry could never
+recover; `candle_cache_test.dart` covers that case specifically, along with
+cache hits, per-range and per-symbol separation, and the concurrent-request
+path.

@@ -113,7 +113,10 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Future<void> _deleteUser(String userId) async {
-    await supabase!.from('profiles').update({'disabled': true}).eq('id', userId);
+    await supabase!
+        .from('profiles')
+        .update({'disabled': true})
+        .eq('id', userId);
 
     _refresh();
   }

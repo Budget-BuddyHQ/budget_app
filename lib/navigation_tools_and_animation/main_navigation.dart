@@ -11,7 +11,6 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../constants/app_assets.dart';
 import '../controllers_that_updates_stats/user_stats_controller.dart';
 import '../services_backend_and_other_services/app_sound_service.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
@@ -145,7 +144,7 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 }
 
-/// The app bar: **Daily — 🐢 Budget Buddy — 🏆 Profile**.
+/// The app bar: **Daily — Budget Buddy — 🏆 Profile**.
 ///
 /// Daily and Profile moved off the bottom bar (seven tabs down there read as
 /// crowded). Learn was here first and swapped places with Daily by request —
@@ -155,15 +154,16 @@ class _MainNavigationState extends State<MainNavigation> {
 ///
 /// First version of this bar was flat-filled and text-only, and read as
 /// "generic row of buttons" rather than as the app's own identity — hence
-/// "I'm not getting that top nav bar feeling". Three changes here are
-/// specifically about that: the turtle mascot (`AppAssets.logo`, sitting
-/// completely unused before this) sits next to the wordmark instead of
-/// leaving it as bare text; the fill is a gradient instead of one flat
-/// colour, matching the puffy-card look used everywhere else in the app;
-/// and the leaderboard — previously reachable only from a small button
-/// buried in Home's now-removed AppBar — gets its own permanent trophy
-/// pill here, next to Profile, so it's visible from every tab instead of
-/// only from Home.
+/// "I'm not getting that top nav bar feeling". What gives it that now: the
+/// fill is a gradient rather than one flat colour, matching the puffy-card
+/// look used everywhere else in the app; and the leaderboard — previously
+/// reachable only from a small button buried in Home's now-removed AppBar
+/// — gets its own permanent trophy pill here, next to Profile, so it is
+/// visible from every tab instead of only from Home.
+///
+/// The turtle mascot was tried next to the wordmark and removed by
+/// request: at 22px it read as clutter beside an already-strong pixel
+/// wordmark rather than as branding. Left as text.
 ///
 /// It sits above the `IndexedStack` rather than inside any screen's own
 /// `AppBar`, so it is identical on all seven tabs.
@@ -227,20 +227,6 @@ class _TopIconBar extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(7),
-                          child: Image.asset(
-                            AppAssets.logo,
-                            width: 22,
-                            height: 22,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => const SizedBox(
-                              width: 22,
-                              height: 22,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 7),
                         Text(
                           'Budget Buddy',
                           maxLines: 1,
@@ -304,7 +290,10 @@ class _LeaderboardIconButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: _gold.withValues(alpha: 0.14),
               shape: BoxShape.circle,
-              border: Border.all(color: _gold.withValues(alpha: 0.4), width: 1.5),
+              border: Border.all(
+                color: _gold.withValues(alpha: 0.4),
+                width: 1.5,
+              ),
             ),
             child: Icon(
               Icons.emoji_events_rounded,

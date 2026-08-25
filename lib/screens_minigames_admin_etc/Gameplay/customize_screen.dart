@@ -18,6 +18,7 @@ import '../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
 import '../../widgets_custom_lotties/hover_lift.dart';
 import '../../widgets_custom_lotties/vivid_backdrop.dart';
+import '../../widgets_custom_lotties/fitted_label.dart';
 
 class CustomizeScreen extends StatefulWidget {
   const CustomizeScreen({
@@ -596,7 +597,10 @@ class _CaseOddsPanel extends StatelessWidget {
                   ),
                   Text(
                     odds.oddsLabel,
-                    style: GoogleFonts.pixelifySans(color: color, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.pixelifySans(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ],
               ),
@@ -869,10 +873,8 @@ class _SkinTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(
+              FittedLabel(
                 skin.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: unlocked ? Colors.white : Colors.white70,
                   fontSize: 13,

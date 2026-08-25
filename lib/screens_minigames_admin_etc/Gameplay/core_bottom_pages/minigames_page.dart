@@ -17,6 +17,7 @@ import '../minigames_pages/finance_brawl_game.dart';
 import '../minigames_pages/react_challenge_screen.dart';
 import '../minigames_pages/stock_market_page.dart';
 import 'arcade_catalog.dart';
+import '../../../widgets_custom_lotties/fitted_label.dart';
 
 class MinigamesPage extends StatelessWidget {
   const MinigamesPage({
@@ -363,7 +364,10 @@ class _FeaturedCard extends StatelessWidget {
           onTap: onPlay,
           child: Container(
             padding: const EdgeInsets.all(20),
-            decoration: _cardDecoration(game.accent, radius: AppTheme.radiusXLarge),
+            decoration: _cardDecoration(
+              game.accent,
+              radius: AppTheme.radiusXLarge,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -384,10 +388,8 @@ class _FeaturedCard extends StatelessWidget {
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          Text(
+                          FittedLabel(
                             game.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.pixelifySans(
                               color: Colors.white,
                               fontSize: 26,
@@ -461,7 +463,10 @@ class _GameCard extends StatelessWidget {
           onTap: onPlay,
           child: Container(
             padding: const EdgeInsets.all(14),
-            decoration: _cardDecoration(game.accent, radius: AppTheme.radiusLarge),
+            decoration: _cardDecoration(
+              game.accent,
+              radius: AppTheme.radiusLarge,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -599,10 +604,8 @@ class _MetaChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: color.withValues(alpha: 0.28)),
       ),
-      child: Text(
+      child: FittedLabel(
         label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: color,
           fontSize: dense ? 10 : 11.5,
@@ -618,10 +621,7 @@ BoxDecoration _cardDecoration(Color accent, {required double radius}) {
     gradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [
-        AppTheme.panelStrong,
-        Color.lerp(AppTheme.panel, accent, 0.14)!,
-      ],
+      colors: [AppTheme.panelStrong, Color.lerp(AppTheme.panel, accent, 0.14)!],
     ),
     borderRadius: BorderRadius.circular(radius),
     border: Border.all(color: accent.withValues(alpha: 0.30)),

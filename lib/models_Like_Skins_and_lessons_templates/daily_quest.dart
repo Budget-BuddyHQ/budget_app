@@ -15,7 +15,13 @@ import 'quiz_bank.dart';
 /// steps in one funnel rather than separate destinations — Money Habits in
 /// particular used to be its own big standalone promo card on Home; it lives
 /// here now instead, so Home doesn't grow a new card per feature.
-enum QuestSurface { academyLesson, academyPractice, arcade, adventure, moneyHabit }
+enum QuestSurface {
+  academyLesson,
+  academyPractice,
+  arcade,
+  adventure,
+  moneyHabit,
+}
 
 @immutable
 class DailyQuest {
@@ -134,12 +140,15 @@ class DailyPlanBuilder {
     required List<String> activeArcadeGameIds,
     List<String> savedHabitIds = const <String>[],
     Set<String> habitsDoneToday = const <String>{},
+    // The player's own self-declared age band, so the learning slot can
+    // skip units pitched below them — see [_nextLesson].
+    AgeStage? readerStage,
   }) {
     final quests = <DailyQuest>[];
 
     // 1. Learning slot — the next uncompleted lesson keeps the curriculum
     //    moving, which is the backbone of the whole app.
-    final nextLesson = _nextLesson(completedLessons);
+    final nextLesson = _nextLesson(completedLessons, readerStage);
     if (nextLesson != null) {
       quests.add(
         DailyQuest(
@@ -229,18 +238,52 @@ class DailyPlanBuilder {
     );
   }
 
-  ({Lesson lesson, LessonUnit unit})? _nextLesson(Set<String> completed) {
-    for (final unit in lessonUnits) {
-      for (final lesson in unit.lessons) {
-        if (lesson.type != LessonNodeType.lesson) {
-          continue;
-        }
-        if (!completed.contains(lesson.id)) {
-          return (lesson: lesson, unit: unit);
+  /// The lesson to quest today.
+  ///
+  /// **Why this takes an age stage.** This used to walk `lessonUnits` in raw
+  /// list order and quest the first uncompleted node it found, which made
+  /// list position secretly mean "difficulty order". That forced the
+  /// youngest units (ages 4-6, 7-10) to be pinned at the *end* of the
+  /// curriculum list purely so they wouldn't be recommended to adults —
+  /// while the Academy's own unit strip displayed them first, because it
+  /// sorts by age. List order and reading order disagreed, and the list
+  /// could never be put in the order a human would expect.
+  ///
+  /// Filtering by the reader's own age band decouples those two things: the
+  /// curriculum list is now in chronological (age) order like the Academy
+  /// shows it, and an adult still never gets "What Is Money?" as their
+  /// daily quest, because units below their stage are skipped on the first
+  /// pass.
+  ///
+  /// The fallback matters: a reader who has finished everything at or above
+  /// their own stage still gets *something* rather than no learning quest,
+  /// so the slot never silently disappears.
+  ({Lesson lesson, LessonUnit unit})? _nextLesson(
+    Set<String> completed,
+    AgeStage? readerStage,
+  ) {
+    ({Lesson lesson, LessonUnit unit})? firstUncompleted(
+      bool Function(LessonUnit unit) where,
+    ) {
+      for (final unit in lessonUnits) {
+        if (!where(unit)) continue;
+        for (final lesson in unit.lessons) {
+          if (lesson.type != LessonNodeType.lesson) continue;
+          if (!completed.contains(lesson.id)) {
+            return (lesson: lesson, unit: unit);
+          }
         }
       }
+      return null;
     }
-    return null;
+
+    if (readerStage != null) {
+      final atOrAboveReader = firstUncompleted(
+        (unit) => unit.ageStage.minAge >= readerStage.minAge,
+      );
+      if (atOrAboveReader != null) return atOrAboveReader;
+    }
+    return firstUncompleted((_) => true);
   }
 
   ({String unitId, String skillLabel})? _unitForWeakestSkill(

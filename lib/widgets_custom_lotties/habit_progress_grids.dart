@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../models_Like_Skins_and_lessons_templates/money_habit_models.dart';
 import '../themes_colors/app_theme.dart';
+import 'fitted_label.dart';
 
 const List<String> _weekdayLabels = <String>['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -62,10 +63,8 @@ class HabitWeeklyTrackerGrid extends StatelessWidget {
               children: [
                 Expanded(
                   flex: 3,
-                  child: Text(
+                  child: FittedLabel(
                     habit.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.quicksand(
                       color: AppTheme.textPrimary,
                       fontWeight: FontWeight.w600,
@@ -77,10 +76,14 @@ class HabitWeeklyTrackerGrid extends StatelessWidget {
                   Expanded(
                     child: Center(
                       child: _DayCell(
-                        done: (weeklyLog[day] ?? const <String>[]).contains(habit.id),
+                        done: (weeklyLog[day] ?? const <String>[]).contains(
+                          habit.id,
+                        ),
                         isToday: day == today,
                         accent: habit.category.accent,
-                        onTap: day == today ? () => onCompleteToday(habit) : null,
+                        onTap: day == today
+                            ? () => onCompleteToday(habit)
+                            : null,
                       ),
                     ),
                   ),
@@ -136,8 +139,18 @@ class _DayCell extends StatelessWidget {
           ),
         ),
         child: done
-            ? const Icon(Icons.check_rounded, size: 16, color: Color(0xFF0B2419))
-            : (isToday ? Icon(Icons.add_rounded, size: 14, color: accent.withValues(alpha: 0.8)) : null),
+            ? const Icon(
+                Icons.check_rounded,
+                size: 16,
+                color: Color(0xFF0B2419),
+              )
+            : (isToday
+                  ? Icon(
+                      Icons.add_rounded,
+                      size: 14,
+                      color: accent.withValues(alpha: 0.8),
+                    )
+                  : null),
       ),
     );
   }
