@@ -19,6 +19,7 @@ import '../../loading/temporary_loading_screen.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import 'lesson_detail_screen.dart';
 import 'practice_screen.dart';
+import '../../../widgets_custom_lotties/fitted_label.dart';
 
 class LessonScreen extends StatefulWidget {
   const LessonScreen({
@@ -808,10 +809,8 @@ class _UnitJumpChip extends StatelessWidget {
                   const SizedBox(height: 3),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 118),
-                    child: Text(
+                    child: FittedLabel(
                       unit.title.replaceFirst('Unit ${index + 1}: ', ''),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.pixelifySans(
                         color: selected
                             ? const Color(0xFF062C21)
@@ -976,7 +975,9 @@ class _HubHeader extends StatelessWidget {
                         icon: const Icon(Icons.play_arrow_rounded),
                         label: Text(
                           'Resume Learning',
-                          style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+                          style: GoogleFonts.pixelifySans(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                   ];
@@ -1215,7 +1216,10 @@ class _FocusPill extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: GoogleFonts.pixelifySans(color: accent, fontWeight: FontWeight.w700),
+            style: GoogleFonts.pixelifySans(
+              color: accent,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -1549,7 +1553,10 @@ class _MasteryBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.pixelifySans(color: color, fontWeight: FontWeight.w700),
+        style: GoogleFonts.pixelifySans(
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

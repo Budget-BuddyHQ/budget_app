@@ -28,8 +28,10 @@ class MoneyHabitController extends ChangeNotifier {
 
   List<HabitTemplate> get customHabits => _stats.stats.customHabitTemplates;
 
-  List<HabitTemplate> get allAvailableHabits =>
-      <HabitTemplate>[...habitCatalog, ...customHabits];
+  List<HabitTemplate> get allAvailableHabits => <HabitTemplate>[
+    ...habitCatalog,
+    ...customHabits,
+  ];
 
   List<HabitTemplate> get savedHabits => _stats.stats.savedHabitIds
       .map((id) => habitTemplateById(id, customHabits: customHabits))
@@ -57,22 +59,27 @@ class MoneyHabitController extends ChangeNotifier {
     final lastMonthDate = DateTime(now.year, now.month - 1);
     final lastKey = HabitDateKeys.keyFor(lastMonthDate).substring(0, 7);
     final monthly = monthlyTotals;
-    return (thisMonth: monthly[thisKey] ?? HabitImpact.zero, lastMonth: monthly[lastKey]);
+    return (
+      thisMonth: monthly[thisKey] ?? HabitImpact.zero,
+      lastMonth: monthly[lastKey],
+    );
   }
 
   int get jarXp => _stats.stats.jarXp;
 
   JarStage get jarStage => JarStage.forXp(jarXp);
 
-  JarMood get jarMood =>
-      JarMood.forDaysSinceActive(HabitDateKeys.daysSince(_stats.stats.jarLastActive));
+  JarMood get jarMood => JarMood.forDaysSinceActive(
+    HabitDateKeys.daysSince(_stats.stats.jarLastActive),
+  );
 
   bool isSavedToday(String habitId) {
     final today = HabitDateKeys.todayKey();
     return (weeklyLog[today] ?? const <String>[]).contains(habitId);
   }
 
-  Set<String> get completedChallengeTasks => _stats.stats.completedChallengeTasks.toSet();
+  Set<String> get completedChallengeTasks =>
+      _stats.stats.completedChallengeTasks.toSet();
 
   bool isChallengeTaskAvailable(ChallengeTask task) {
     final done = completedChallengeTasks;
@@ -88,22 +95,24 @@ class MoneyHabitController extends ChangeNotifier {
     required String title,
     required String blurb,
     required double moneySavedUsd,
-  }) =>
-      _stats.createCustomHabit(
-        title: title,
-        blurb: blurb,
-        moneySavedUsd: moneySavedUsd,
-      );
+  }) => _stats.createCustomHabit(
+    title: title,
+    blurb: blurb,
+    moneySavedUsd: moneySavedUsd,
+  );
 
   Future<void> unsaveHabit(String habitId) => _stats.unsaveHabit(habitId);
 
   Future<void> completeTrackedHabit(HabitTemplate template) =>
       _stats.completeHabit(template, units: paramValueFor(template));
 
-  Future<void> completeChallengeTask(ChallengeTask challengeTask, {double? units}) async {
+  Future<void> completeChallengeTask(
+    ChallengeTask challengeTask, {
+    double? units,
+  }) async {
     final template = challengeTask.template;
     if (template == null) return;
-    
+
     await _stats.completeHabit(
       template,
       units: units,
@@ -114,7 +123,9 @@ class MoneyHabitController extends ChangeNotifier {
   double challengeProgress(HabitChallenge challenge) {
     if (challenge.tasks.isEmpty) return 0;
     final done = completedChallengeTasks;
-    final completedCount = challenge.tasks.where((t) => done.contains(t.id)).length;
+    final completedCount = challenge.tasks
+        .where((t) => done.contains(t.id))
+        .length;
     return completedCount / challenge.tasks.length;
   }
 }

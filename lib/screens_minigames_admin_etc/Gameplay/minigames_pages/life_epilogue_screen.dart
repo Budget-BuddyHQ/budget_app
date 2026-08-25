@@ -328,11 +328,7 @@ class _GoldRewardCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.paid_rounded,
-            color: Color(0xFFFFD45C),
-            size: 26,
-          ),
+          const Icon(Icons.paid_rounded, color: Color(0xFFFFD45C), size: 26),
           const SizedBox(width: 12),
           Expanded(
             child: Text(

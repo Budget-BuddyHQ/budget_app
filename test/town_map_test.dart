@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:bonfire/bonfire.dart' show BlockMovementCollision;
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/town_spot_models.dart';
+import 'package:budget_app/constants/app_assets.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/adventure/adventure_world_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/adventure/town_components.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -24,6 +26,38 @@ Map<String, dynamic> _loadMap() {
 
 /// Compiles only for types that actually mix in [BlockMovementCollision].
 bool _requiresBlockMovement<T extends BlockMovementCollision>() => true;
+
+/// Four-way flood fill over walkable tiles.
+///
+/// Reachability rather than per-tile checks is the point: a per-tile
+/// assertion still passes if a later map edit opens a route *around*
+/// whatever it was guarding, and it can't notice a walkable area being
+/// stranded at all.
+Set<({int x, int y})> _reachableFrom(
+  ({int x, int y}) start,
+  Set<({int x, int y})> solid,
+  int width,
+  int height,
+) {
+  final seen = <({int x, int y})>{start};
+  final queue = <({int x, int y})>[start];
+  while (queue.isNotEmpty) {
+    final cur = queue.removeLast();
+    for (final step in <({int x, int y})>[
+      (x: cur.x + 1, y: cur.y),
+      (x: cur.x - 1, y: cur.y),
+      (x: cur.x, y: cur.y + 1),
+      (x: cur.x, y: cur.y - 1),
+    ]) {
+      if (step.x < 0 || step.x >= width) continue;
+      if (step.y < 0 || step.y >= height) continue;
+      if (seen.contains(step) || solid.contains(step)) continue;
+      seen.add(step);
+      queue.add(step);
+    }
+  }
+  return seen;
+}
 
 Set<({int x, int y})> _solidTiles(Map<String, dynamic> map) {
   final solid = <({int x, int y})>{};
@@ -97,60 +131,96 @@ void main() {
       );
     });
 
-    // The hill: the wide tan band across map rows 34-37 is the town's
-    // southern boundary, and the player is not meant to be able to step
-    // onto it. Rows 34 and 37 were already solid, but row 34 had a
-    // six-tile hole at x=29..34 and rows 35-36 had no collision at all —
-    // so the player could walk in through the gap and wander around
-    // *inside* the hill. Rows 34-36 now live in their own `terrain_hill`
-    // layer with `"collider": true`.
+    // Replaces an earlier test that asserted the exact opposite — that
+    // nothing south of row 34 was reachable. That "hill band" turned out to
+    // be a flat tan ROAD (tile ids 91/92/289/290), which had been exported
+    // into collider-marked layers by mistake; sealing it walled off 357
+    // walkable tiles including the whole southern strip. The real hill is
+    // the stepped cliff-face art on the west side (ids 106/107/109/110),
+    // now in its own `terrain_cliff` layer.
     //
-    // Asserted by flood-filling from the spawn tile rather than by
-    // checking the band tile-by-tile: what actually matters is that no
-    // reachable path leads into or past it, which a per-tile check would
-    // miss if a future map edit opened a way around the ends.
-    test('the hill band is sealed — nothing south of it is reachable', () {
+    // The invariant worth testing is not "this specific band is sealed" but
+    // "no walkable tile is stranded" — that catches both over-blocking (a
+    // road wrongly made solid) and under-blocking, and doesn't have to be
+    // rewritten every time the level design shifts.
+    test('every walkable tile is reachable from spawn — nothing stranded', () {
       const spawn = (x: 25, y: 25);
       expect(
         solid.contains(spawn),
         isFalse,
-        reason: 'the spawn tile itself became solid',
+        reason: 'the spawn tile itself is solid',
       );
 
-      final seen = <({int x, int y})>{spawn};
-      final queue = <({int x, int y})>[spawn];
-      while (queue.isNotEmpty) {
-        final cur = queue.removeLast();
-        for (final step in <({int x, int y})>[
-          (x: cur.x + 1, y: cur.y),
-          (x: cur.x - 1, y: cur.y),
-          (x: cur.x, y: cur.y + 1),
-          (x: cur.x, y: cur.y - 1),
-        ]) {
-          if (step.x < 0 || step.x >= width) continue;
-          if (step.y < 0 || step.y >= height) continue;
-          if (seen.contains(step) || solid.contains(step)) continue;
-          seen.add(step);
-          queue.add(step);
+      final seen = _reachableFrom(spawn, solid, width, height);
+
+      final walkable = <({int x, int y})>{};
+      for (var x = 0; x < width; x++) {
+        for (var y = 0; y < height; y++) {
+          final tile = (x: x, y: y);
+          if (!solid.contains(tile)) walkable.add(tile);
         }
       }
 
-      final pastTheHill = seen.where((t) => t.y >= 34).toList();
+      final stranded = walkable.difference(seen).toList();
       expect(
-        pastTheHill,
+        stranded,
         isEmpty,
-        reason: 'the player can reach ${pastTheHill.length} tile(s) on or '
-            'past the hill band (rows 34+), e.g. '
-            '${pastTheHill.take(5).toList()}',
+        reason:
+            '${stranded.length} walkable tile(s) cannot be reached from '
+            'spawn — something walkable got walled off. Examples: '
+            '${stranded.take(8).toList()}',
       );
+    });
 
-      // Sanity check the flood fill actually explored the town, so this
-      // test can't pass simply because the player is walled into a closet.
+    test('the player spawns outside their own house, on a clear tile', () {
+      final spawn = (x: kTownSpawnTile.x, y: kTownSpawnTile.y);
       expect(
-        seen.length,
-        greaterThan(600),
-        reason: 'only ${seen.length} tiles are reachable from spawn — the '
-            'map is probably over-blocked, not correctly sealed',
+        solid.contains(spawn),
+        isFalse,
+        reason: 'the spawn tile $spawn is inside something solid',
+      );
+      // Same overhead check the NPCs get: the villager sprite is ~2 tiles
+      // tall and drawn upward from its feet, so a solid tile one or two
+      // rows above means the character spawns clipped into the house.
+      for (final dy in <int>[1, 2]) {
+        expect(
+          solid.contains((x: spawn.x, y: spawn.y - dy)),
+          isFalse,
+          reason: 'solid tile $dy row(s) above the spawn clips the sprite',
+        );
+      }
+
+      final home = kTownSpots.firstWhere((s) => s.id == 'spot_home');
+      final distance =
+          (home.tileX - spawn.x).abs() + (home.tileY - spawn.y).abs();
+      expect(
+        distance,
+        lessThanOrEqualTo(2),
+        reason:
+            'spawn $spawn is $distance tiles from the house '
+            '(${home.tileX},${home.tileY}) — you should start at your door, '
+            'not across town',
+      );
+    });
+
+    test('the west cliff face is solid', () {
+      // The stepped ledge art should stop the player rather than letting
+      // them stroll up a cliff. These are the tiles that make up its face.
+      const cliffIds = <int>{106, 107, 109, 110};
+      final open = <({int x, int y})>[];
+      for (final layer in map['layers'] as List) {
+        final l = layer as Map<String, dynamic>;
+        for (final tile in l['tiles'] as List) {
+          final t = tile as Map<String, dynamic>;
+          if (!cliffIds.contains(int.parse('${t['id']}'))) continue;
+          final at = (x: int.parse('${t['x']}'), y: int.parse('${t['y']}'));
+          if (!solid.contains(at)) open.add(at);
+        }
+      }
+      expect(
+        open,
+        isEmpty,
+        reason: 'these cliff-face tiles are walkable: $open',
       );
     });
   });
@@ -218,6 +288,66 @@ void main() {
     });
   });
 
+  group('town NPCs', () {
+    final map = _loadMap();
+    final solid = _solidTiles(map);
+    final width = int.parse('${map['mapWidth']}');
+    final height = int.parse('${map['mapHeight']}');
+    final reachable = _reachableFrom((x: 25, y: 25), solid, width, height);
+
+    test('npc ids are unique', () {
+      final ids = kTownNpcs.map((n) => n.id).toList();
+      expect(ids.toSet().length, ids.length);
+    });
+
+    test('every npc stands somewhere the player can actually walk to', () {
+      final bad = <String>[];
+      for (final npc in kTownNpcs) {
+        final at = (x: npc.tileX, y: npc.tileY);
+        if (solid.contains(at)) {
+          bad.add('${npc.id} is inside a solid tile at $at');
+        } else if (!reachable.contains(at)) {
+          bad.add('${npc.id} at $at cannot be reached from spawn');
+        }
+      }
+      expect(bad, isEmpty, reason: bad.join('; '));
+    });
+
+    test('no npc sprite clips into scenery above it', () {
+      // The villager sheet is ~2 tiles tall and is drawn *upward* from the
+      // character's feet tile, so a solid tile one or two rows above an NPC
+      // means its head visibly overlaps a wall/tree. This caught the
+      // Student, who was standing right against the west ledge.
+      final clipping = <String>[];
+      for (final npc in kTownNpcs) {
+        for (final dy in <int>[1, 2]) {
+          final above = (x: npc.tileX, y: npc.tileY - dy);
+          if (solid.contains(above)) {
+            clipping.add(
+              '${npc.id} at (${npc.tileX},${npc.tileY}) has solid tile '
+              '$above $dy row(s) above it',
+            );
+          }
+        }
+      }
+      expect(clipping, isEmpty, reason: clipping.join('; '));
+    });
+
+    test('no two npcs share a tile', () {
+      final tiles = kTownNpcs.map((n) => '${n.tileX},${n.tileY}').toList();
+      expect(tiles.toSet().length, tiles.length);
+    });
+
+    test('every npc has something to say', () {
+      for (final npc in kTownNpcs) {
+        expect(npc.lines, isNotEmpty, reason: '${npc.id} has no dialogue');
+        for (final line in npc.lines) {
+          expect(line.trim(), isNotEmpty, reason: '${npc.id} has a blank line');
+        }
+      }
+    });
+  });
+
   group('town coins', () {
     final map = _loadMap();
     final solid = _solidTiles(map);
@@ -242,6 +372,39 @@ void main() {
     test('no two coins share a tile', () {
       final tiles = kTownCoins.map((c) => '${c.x},${c.y}').toList();
       expect(tiles.toSet().length, tiles.length);
+    });
+  });
+
+  group('side walk cycle', () {
+    // Rows 2 and 3 (west/east) ship eight frames, but columns 0 and 4 were
+    // drawn with *front-facing* legs on a profile body, so the walk snapped
+    // to a face-on stance twice per cycle. Those two are skipped rather
+    // than repainted — see [kSideWalkFrames] for the full reasoning.
+    test('skips the front-facing neutral frames', () {
+      expect(kSideWalkFrames, isNot(contains(0)));
+      expect(kSideWalkFrames, isNot(contains(4)));
+    });
+
+    test('is a whole number of half-cycles', () {
+      // One entry per leg per step, so an odd count would make the
+      // character limp — the same leg would lead twice in a row at the
+      // loop point.
+      expect(kSideWalkFrames.length.isEven, isTrue);
+      expect(kSideWalkFrames, isNotEmpty);
+    });
+
+    test('every frame is a real column of the sheet', () {
+      for (final column in kSideWalkFrames) {
+        expect(column, inInclusiveRange(0, AppAssets.villagerSheetColumns - 1));
+      }
+      expect(kSideWalkFrames.toSet().length, kSideWalkFrames.length);
+    });
+
+    test('the idle pose is one of the good frames', () {
+      // Standing still facing sideways used to show column 0 — the worst
+      // instance of the bug, because it held the bad pose indefinitely
+      // instead of flashing past it.
+      expect(kSideWalkFrames, contains(kSideIdleFrame));
     });
   });
 }

@@ -117,7 +117,8 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
   bool _companyLoadStarted = false;
 
   bool _hideShortingWarning = false;
-  static const String _shortingWarningKey = 'budget_buddy_shorting_warning_hidden';
+  static const String _shortingWarningKey =
+      'budget_buddy_shorting_warning_hidden';
 
   @override
   void initState() {
@@ -180,7 +181,9 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
       _detailsError = null;
     });
 
-    final details = await context.read<MarketDataService>().fetchTwelveDataQuoteDetails(widget.symbol);
+    final details = await context
+        .read<MarketDataService>()
+        .fetchTwelveDataQuoteDetails(widget.symbol);
     if (!mounted) return;
 
     setState(() {
@@ -247,9 +250,8 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
   bool get _isShort => _action == TradeAction.short;
   bool get _isCover => _action == TradeAction.cover;
 
-  int get _dailyBorrowCost => _isShort ? ((
-        _effectiveTotal * 0.0015
-      )).round() : 0;
+  int get _dailyBorrowCost =>
+      _isShort ? ((_effectiveTotal * 0.0015)).round() : 0;
 
   /// True when a limit order would fill the instant it is placed: a buy limit
   /// at or above the ask, a sell limit at or below the bid.
@@ -268,7 +270,10 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
   /// True when the order rests as a working (pending) order rather than filling
   /// immediately. This is a normal, expected state — not an error.
   bool get _restsAsWorkingOrder =>
-      _orderType == OrderType.limit && !_marketableNow && !_isShort && !_isCover;
+      _orderType == OrderType.limit &&
+      !_marketableNow &&
+      !_isShort &&
+      !_isCover;
 
   double get _maxQuantity {
     if (_isShort) {
@@ -418,7 +423,9 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                           SizedBox(height: 4),
                           Text('• Unlimited loss potential if price climbs.'),
                           Text('• Daily borrow interest can add up.'),
-                          Text('• Covering at a higher price can erase gains fast.'),
+                          Text(
+                            '• Covering at a higher price can erase gains fast.',
+                          ),
                         ],
                       ),
                     ),
@@ -466,7 +473,9 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                   onPressed: () => Navigator.of(dialogContext).pop(true),
                   child: Text(
                     'I understand',
-                    style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+                    style: GoogleFonts.pixelifySans(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
@@ -625,19 +634,27 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                 ),
                 const SizedBox(height: 18),
                 GestureDetector(
-                  onTap: () => setState(() => _detailsExpanded = !_detailsExpanded),
+                  onTap: () =>
+                      setState(() => _detailsExpanded = !_detailsExpanded),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.10),
+                      ),
                     ),
                     child: Row(
                       children: [
                         Expanded(
                           child: Text(
-                            _detailsExpanded ? 'Hide company details' : 'Show additional company details',
+                            _detailsExpanded
+                                ? 'Hide company details'
+                                : 'Show additional company details',
                             style: GoogleFonts.pixelifySans(
                               color: Colors.white.withValues(alpha: 0.9),
                               fontWeight: FontWeight.w700,
@@ -666,11 +683,16 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                 GestureDetector(
                   onTap: _toggleCompanyExpanded,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.10),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -782,7 +804,8 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                 if (_isShort) ...[
                   const SizedBox(height: 12),
                   _NoteCard(
-                    text: 'Daily borrow cost estimate: ${_dailyBorrowCost}g (~0.15% of notional per day).',
+                    text:
+                        'Daily borrow cost estimate: ${_dailyBorrowCost}g (~0.15% of notional per day).',
                     color: const Color(0xFFE1BB72),
                     icon: Icons.warning_amber_rounded,
                   ),
@@ -994,7 +1017,7 @@ class _ChartSection extends StatelessWidget {
           if (!loading && hasRealCandles) ...[
             const SizedBox(height: 8),
             Text(
-              'Pinch to zoom • drag to pan • prices on the right',
+              'Use + / − to zoom • drag to pan • prices on the right',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.4),
@@ -1296,7 +1319,10 @@ class _QuoteChip extends StatelessWidget {
           const SizedBox(height: 3),
           Text(
             value,
-            style: GoogleFonts.pixelifySans(color: color, fontWeight: FontWeight.w700),
+            style: GoogleFonts.pixelifySans(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -1377,10 +1403,7 @@ class _CompanyDetailsSection extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: Colors.red.withValues(alpha: 0.18)),
         ),
-        child: Text(
-          error!,
-          style: const TextStyle(color: Colors.white70),
-        ),
+        child: Text(error!, style: const TextStyle(color: Colors.white70)),
       );
     }
 
@@ -1410,21 +1433,38 @@ class _CompanyDetailsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-         // _DetailRow(label: 'Bid Size', value: loadedDetails.bidSize.toStringAsFixed(0)),
+          // _DetailRow(label: 'Bid Size', value: loadedDetails.bidSize.toStringAsFixed(0)),
           //_DetailRow(label: 'Ask Size', value: loadedDetails.askSize.toStringAsFixed(0)),
-          
           const SizedBox(height: 8),
           Wrap(
             spacing: 12,
             runSpacing: 8,
             children: [
-              _DetailRow(label: 'Last Price', value: usdLabel(loadedDetails.price)),
-              _DetailRow(label: 'Today High', value: usdLabel(loadedDetails.high)),
-              _DetailRow(label: 'Today Low', value: usdLabel(loadedDetails.low)),
-              _DetailRow(label: 'Volume', value: loadedDetails.volume.toStringAsFixed(0)),
-              _DetailRow(label: 'Avg Volume', value: loadedDetails.averageVolume.toStringAsFixed(0)),
+              _DetailRow(
+                label: 'Last Price',
+                value: usdLabel(loadedDetails.price),
+              ),
+              _DetailRow(
+                label: 'Today High',
+                value: usdLabel(loadedDetails.high),
+              ),
+              _DetailRow(
+                label: 'Today Low',
+                value: usdLabel(loadedDetails.low),
+              ),
+              _DetailRow(
+                label: 'Volume',
+                value: loadedDetails.volume.toStringAsFixed(0),
+              ),
+              _DetailRow(
+                label: 'Avg Volume',
+                value: loadedDetails.averageVolume.toStringAsFixed(0),
+              ),
               //_DetailRow(label: 'Market Cap', value: _formatLargeNumber(loadedDetails.marketCap)),
-              _DetailRow(label: '52 week Range', value: loadedDetails.fiftyTwoWeekRange),
+              _DetailRow(
+                label: '52 week Range',
+                value: loadedDetails.fiftyTwoWeekRange,
+              ),
             ],
           ),
         ],
@@ -1593,7 +1633,8 @@ class _CompanyProfileBody extends StatelessWidget {
                   width: 40,
                   height: 40,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const SizedBox(width: 40, height: 40),
+                  errorBuilder: (_, _, _) =>
+                      const SizedBox(width: 40, height: 40),
                 ),
               ),
             if (info.logoUrl.isNotEmpty) const SizedBox(width: 12),

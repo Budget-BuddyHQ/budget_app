@@ -1051,7 +1051,9 @@ class UserStatsController extends ChangeNotifier {
     final order = WorkingOrder(
       id: 'wo_${now.microsecondsSinceEpoch}',
       symbol: symbol,
-      company: companyName?.trim().isNotEmpty == true ? companyName!.trim() : symbol,
+      company: companyName?.trim().isNotEmpty == true
+          ? companyName!.trim()
+          : symbol,
       isBuy: isBuy,
       quantity: quantity,
       limitPrice: limitPrice,
@@ -1107,7 +1109,8 @@ class UserStatsController extends ChangeNotifier {
       holdings[holdingKey] = (holdings[holdingKey] ?? 0.0) + target.quantity;
       holdings['stocks'] = (holdings['stocks'] ?? 0.0) + target.quantity;
       if (target.reservedCost > 0) {
-        costBasis[holdingKey] = (costBasis[holdingKey] ?? 0) + target.reservedCost;
+        costBasis[holdingKey] =
+            (costBasis[holdingKey] ?? 0) + target.reservedCost;
       }
     }
 
@@ -1394,16 +1397,40 @@ class UserStatsController extends ChangeNotifier {
 
   /// Checks if the daily budget battle challenge has already been completed today.
   /// Checks if any challenge task has been completed.
-bool get isTodayChallengeCompleted {
-  final completed = _stats.completedChallengeTasks;
-  final today = HabitDateKeys.todayKey();
-  
-  return completed.contains('daily_budget_battle') ||
-      completed.contains('daily_budget_battle_$today');
-}
+  bool get isTodayChallengeCompleted {
+    final completed = _stats.completedChallengeTasks;
+    final today = HabitDateKeys.todayKey();
+
+    return completed.contains('daily_budget_battle') ||
+        completed.contains('daily_budget_battle_$today');
+  }
+
   /// Records an arcade run so the hub can show a personal best and play count.
   ///
   /// Rewards are granted by the games themselves through
+  /// Clears Adventure Town progress so a new life starts on a fresh map.
+  ///
+  /// Visited spots and collected coins persist per *player* (they live in
+  /// `spending_habits`, like every other saved list), which is right while
+  /// a single life is in progress — leaving the town and coming back should
+  /// not re-hand you the same coins. But it means a second life would
+  /// otherwise inherit a town that is already fully explored. Starting a
+  /// new life wipes them; gold already earned is untouched, since that was
+  /// genuinely earned.
+  Future<StatsActionResult> resetTownProgress() {
+    return _saveStats(
+      _stats.copyWith(
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          'town_visited_spots': const <String>[],
+          'town_collected_coins': const <String>[],
+        },
+        updatedAt: DateTime.now().toUtc(),
+      ),
+      savingMessage: 'Preparing a fresh town...',
+    );
+  }
+
   /// [applyChallengePayload]; this only tracks the scoreboard, so it must not
   /// touch gold or XP.
   Future<StatsActionResult> recordArcadeRun({

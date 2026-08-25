@@ -185,7 +185,9 @@ class _PopNavTileState extends State<_PopNavTile>
   Widget build(BuildContext context) {
     final iconSize = widget.veryTight ? 20.0 : (widget.dense ? 21.0 : 24.0);
     final labelHeight = widget.veryTight ? 13.0 : (widget.dense ? 15.0 : 17.0);
-    final labelFontSize = widget.veryTight ? 11.0 : (widget.dense ? 12.5 : 14.0);
+    final labelFontSize = widget.veryTight
+        ? 11.0
+        : (widget.dense ? 12.5 : 14.0);
     // Home's badge is bigger than the other tabs' plain icons — it's the
     // one thing on the bar that isn't a rounded pill, so it needs its own
     // presence to read as deliberate rather than a rendering glitch.
@@ -249,9 +251,7 @@ class _PopNavTileState extends State<_PopNavTile>
                           ),
                           child: Icon(
                             widget.item.icon,
-                            color: widget.active
-                                ? _deepCharcoal
-                                : Colors.white,
+                            color: widget.active ? _deepCharcoal : Colors.white,
                             size: badgeSize * 0.5,
                           ),
                         ),
@@ -292,9 +292,13 @@ class _PopNavTileState extends State<_PopNavTile>
                       color: widget.active
                           ? _activeAccent
                           : Colors.white.withValues(alpha: 0.04),
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.radiusMedium,
+                      ),
                       border: Border.all(
-                        color: widget.active ? _deepCharcoal : Colors.transparent,
+                        color: widget.active
+                            ? _deepCharcoal
+                            : Colors.transparent,
                         width: 3,
                       ),
                       boxShadow: widget.active

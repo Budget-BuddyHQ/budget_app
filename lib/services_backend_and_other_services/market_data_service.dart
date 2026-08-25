@@ -150,6 +150,7 @@ class CompanyProfile {
   final String website;
   final String exchange;
   final String country;
+
   /// In millions of dollars, Finnhub's unit.
   final double marketCapitalization;
   final String ipoDate;
@@ -409,12 +410,16 @@ class MarketDataService extends ChangeNotifier {
     Map<String, String>? fallbackHeaders,
   }) async {
     final response = await _client.get(uri, headers: headers).timeout(_timeout);
-    if ((response.statusCode == 404 || response.statusCode == 502 || response.statusCode == 503) &&
+    if ((response.statusCode == 404 ||
+            response.statusCode == 502 ||
+            response.statusCode == 503) &&
         fallbackUri != null) {
       debugPrint(
         'Proxy request failed with ${response.statusCode}; retrying direct vendor request.',
       );
-      return _client.get(fallbackUri, headers: fallbackHeaders ?? {}).timeout(_timeout);
+      return _client
+          .get(fallbackUri, headers: fallbackHeaders ?? {})
+          .timeout(_timeout);
     }
     return response;
   }
@@ -431,7 +436,8 @@ class MarketDataService extends ChangeNotifier {
 
   final Map<String, LiveQuote> _quotes = <String, LiveQuote>{};
 
-  final Map<String, TwelveDataQuoteDetails> _details = <String, TwelveDataQuoteDetails>{};
+  final Map<String, TwelveDataQuoteDetails> _details =
+      <String, TwelveDataQuoteDetails>{};
 
   /// Real intraday closes per symbol, powering the inline card sparklines.
   /// Without this the cards can only draw the 3-point quote fallback, which
@@ -499,10 +505,7 @@ class MarketDataService extends ChangeNotifier {
   ///
   /// Twelve Data's free tier allows 8 requests/minute, so this is throttled and
   /// deliberately fetches only the handful of symbols actually on screen.
-  Future<void> refreshSeries(
-    List<String> symbols, {
-    bool force = false,
-  }) async {
+  Future<void> refreshSeries(List<String> symbols, {bool force = false}) async {
     if ((_candleApiKey == null && !usesProxy) || symbols.isEmpty) {
       return;
     }
@@ -519,9 +522,7 @@ class MarketDataService extends ChangeNotifier {
     for (final symbol in symbols.take(8)) {
       final candles = await fetchCandles(symbol, ChartRange.day1);
       if (candles.length >= 2) {
-        _series[symbol] = candles
-            .map((c) => c.close)
-            .toList(growable: false);
+        _series[symbol] = candles.map((c) => c.close).toList(growable: false);
         changed = true;
       }
     }
@@ -616,7 +617,9 @@ class MarketDataService extends ChangeNotifier {
         : {'X-Finnhub-Token': apiKey};
 
     try {
-      final directUri = Uri.https(_host, '/api/v1/quote', {'symbol': entry.symbol});
+      final directUri = Uri.https(_host, '/api/v1/quote', {
+        'symbol': entry.symbol,
+      });
       final response = await _getWithProxyFallback(
         uri,
         headers,
@@ -679,7 +682,10 @@ class MarketDataService extends ChangeNotifier {
     }
 
     final proxied = _proxyUri({'op': 'search', 'q': trimmed});
-    final directUri = Uri.https(_host, '/api/v1/search', {'q': trimmed, 'exchange': 'US'});
+    final directUri = Uri.https(_host, '/api/v1/search', {
+      'q': trimmed,
+      'exchange': 'US',
+    });
     final uri = proxied ?? directUri;
     final headers = proxied != null
         ? _proxyHeaders
@@ -690,7 +696,9 @@ class MarketDataService extends ChangeNotifier {
         uri,
         headers,
         fallbackUri: proxied == null ? null : directUri,
-        fallbackHeaders: proxied == null ? null : {'X-Finnhub-Token': key ?? ''},
+        fallbackHeaders: proxied == null
+            ? null
+            : {'X-Finnhub-Token': key ?? ''},
       ).timeout(_timeout);
 
       if (response.statusCode != 200) {
@@ -754,7 +762,9 @@ class MarketDataService extends ChangeNotifier {
     return quote;
   }
 
-  Future<TwelveDataQuoteDetails?> fetchTwelveDataQuoteDetails(String symbol) async {
+  Future<TwelveDataQuoteDetails?> fetchTwelveDataQuoteDetails(
+    String symbol,
+  ) async {
     final key = _candleApiKey;
     if (key == null && !usesProxy) {
       return null;
@@ -841,12 +851,67 @@ class MarketDataService extends ChangeNotifier {
     return trimmed;
   }
 
+  final Map<String, ({DateTime at, List<Candle> bars})> _candleCache = {};
+
+  /// In-flight requests, so two widgets asking for the same series at the
+  /// same moment share one network call instead of racing.
+  final Map<String, Future<List<Candle>>> _candleInFlight = {};
+
+  /// How long a cached series stays good.
+  ///
+  /// Keyed off the bar size, not one blanket number: a 1-day chart is built
+  /// from 5-minute bars and genuinely moves, while 1M/3M/1Y are daily and
+  /// weekly bars that cannot change again until the market closes. Caching
+  /// those for an hour is not staleness, it is correctness.
+  static Duration _candleTtl(ChartRange range) => switch (range) {
+    ChartRange.day1 => const Duration(minutes: 2),
+    ChartRange.day5 => const Duration(minutes: 10),
+    _ => const Duration(hours: 1),
+  };
+
   /// Historical OHLC bars for [symbol] over [range].
   ///
   /// Returns an empty list when no key is configured or the request fails —
   /// the chart then falls back to the quote-derived mini series so the trade
   /// screen still renders something real.
+  ///
+  /// **Cached.** Every tap of 1D/5D/1M/3M/1Y used to be an uncached network
+  /// round trip, including tapping straight back to a range just viewed —
+  /// so flipping between timeframes meant waiting on Twelve Data each time,
+  /// against a free tier that allows 8 requests a minute. Switching to an
+  /// already-loaded range is now instant, and the rate limit is far harder
+  /// to hit.
   Future<List<Candle>> fetchCandles(String symbol, ChartRange range) async {
+    final cacheKey = '$symbol:${range.name}';
+    final cached = _candleCache[cacheKey];
+    if (cached != null &&
+        DateTime.now().difference(cached.at) < _candleTtl(range)) {
+      return cached.bars;
+    }
+    final pending = _candleInFlight[cacheKey];
+    if (pending != null) {
+      return pending;
+    }
+
+    final request = _fetchCandlesUncached(symbol, range);
+    _candleInFlight[cacheKey] = request;
+    try {
+      final bars = await request;
+      // Only cache a real answer. Caching an empty list would pin a
+      // transient failure in place for the whole TTL.
+      if (bars.isNotEmpty) {
+        _candleCache[cacheKey] = (at: DateTime.now(), bars: bars);
+      }
+      return bars;
+    } finally {
+      _candleInFlight.remove(cacheKey);
+    }
+  }
+
+  Future<List<Candle>> _fetchCandlesUncached(
+    String symbol,
+    ChartRange range,
+  ) async {
     final key = _candleApiKey;
     if (key == null && !usesProxy) {
       return const <Candle>[];
@@ -952,7 +1017,9 @@ class MarketDataService extends ChangeNotifier {
         uri,
         headers,
         fallbackUri: proxied == null ? null : directUri,
-        fallbackHeaders: proxied == null ? null : {'X-Finnhub-Token': key ?? ''},
+        fallbackHeaders: proxied == null
+            ? null
+            : {'X-Finnhub-Token': key ?? ''},
       ).timeout(_timeout);
       if (response.statusCode != 200) {
         return null;
@@ -1037,7 +1104,9 @@ class MarketDataService extends ChangeNotifier {
         uri,
         headers,
         fallbackUri: proxied == null ? null : directUri,
-        fallbackHeaders: proxied == null ? null : {'X-Finnhub-Token': key ?? ''},
+        fallbackHeaders: proxied == null
+            ? null
+            : {'X-Finnhub-Token': key ?? ''},
       ).timeout(_timeout);
       if (response.statusCode != 200) {
         return const <CompanyNewsItem>[];
@@ -1094,7 +1163,11 @@ class MarketDataService extends ChangeNotifier {
     return input
         .toLowerCase()
         .split(' ')
-        .map((word) => word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1)}')
+        .map(
+          (word) => word.isEmpty
+              ? word
+              : '${word[0].toUpperCase()}${word.substring(1)}',
+        )
         .join(' ');
   }
 

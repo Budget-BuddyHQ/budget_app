@@ -1139,7 +1139,8 @@ class _MoneyHabitsProfileCard extends StatelessWidget {
     final comparison = habits.monthComparison;
     final delta = comparison.lastMonth == null
         ? null
-        : comparison.thisMonth.moneySavedUsd - comparison.lastMonth!.moneySavedUsd;
+        : comparison.thisMonth.moneySavedUsd -
+              comparison.lastMonth!.moneySavedUsd;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1154,7 +1155,11 @@ class _MoneyHabitsProfileCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.savings_rounded, color: Color(0xFF85EFAC), size: 20),
+              const Icon(
+                Icons.savings_rounded,
+                color: Color(0xFF85EFAC),
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Money Habits',
@@ -1171,7 +1176,9 @@ class _MoneyHabitsProfileCard extends StatelessWidget {
                       ? '\$${delta.toStringAsFixed(0)} more saved than last month'
                       : '\$${delta.abs().toStringAsFixed(0)} less saved than last month',
                   style: TextStyle(
-                    color: delta >= 0 ? const Color(0xFF85EFAC) : const Color(0xFFFF8474),
+                    color: delta >= 0
+                        ? const Color(0xFF85EFAC)
+                        : const Color(0xFFFF8474),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1184,7 +1191,8 @@ class _MoneyHabitsProfileCard extends StatelessWidget {
               Expanded(
                 child: _MoneyStatColumn(
                   label: 'Money saved',
-                  value: '\$${habits.lifetimeTotals.moneySavedUsd.toStringAsFixed(0)}',
+                  value:
+                      '\$${habits.lifetimeTotals.moneySavedUsd.toStringAsFixed(0)}',
                 ),
               ),
               Expanded(
@@ -1198,7 +1206,11 @@ class _MoneyHabitsProfileCard extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'Last 12 weeks',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 8),
           HabitActivityHeatmap(activityCalendar: habits.activityCalendar),
@@ -1219,8 +1231,20 @@ class _MoneyStatColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(value, style: GoogleFonts.pixelifySans(color: Colors.white, fontWeight: FontWeight.w700)),
-        Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11)),
+        Text(
+          value,
+          style: GoogleFonts.pixelifySans(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 11,
+          ),
+        ),
       ],
     );
   }
@@ -1278,11 +1302,19 @@ class _FriendsCardState extends State<_FriendsCard> {
         children: [
           Row(
             children: [
-              const Icon(Icons.group_rounded, color: Color(0xFF85EFAC), size: 20),
+              const Icon(
+                Icons.group_rounded,
+                color: Color(0xFF85EFAC),
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Friends',
-                style: GoogleFonts.pixelifySans(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                style: GoogleFonts.pixelifySans(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
           ),
@@ -1291,7 +1323,10 @@ class _FriendsCardState extends State<_FriendsCard> {
             children: [
               Text(
                 'Your code: ',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 12,
+                ),
               ),
               GestureDetector(
                 onTap: () {
@@ -1299,7 +1334,10 @@ class _FriendsCardState extends State<_FriendsCard> {
                   GameToast.show(context, message: 'Copied $friendCode');
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(8),
@@ -1328,10 +1366,15 @@ class _FriendsCardState extends State<_FriendsCard> {
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: 'Enter a friend code',
-                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                    hintStyle: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.4),
+                    ),
                     filled: true,
                     fillColor: Colors.white.withValues(alpha: 0.06),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -1351,7 +1394,10 @@ class _FriendsCardState extends State<_FriendsCard> {
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF062017)),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF062017),
+                        ),
                       )
                     : const Text('Add'),
               ),

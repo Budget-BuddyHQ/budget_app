@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
+import '../../../widgets_custom_lotties/fitted_label.dart';
 
 class FinanceBrawlCloseResult {
   const FinanceBrawlCloseResult({
@@ -1508,88 +1509,89 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   ];
 
   @override
-void initState() {
-  super.initState();
-  _loadbrawlTreeSprite();
-  _loadbrawlRockSprite();
-  _loadbrawlDollarSprite();
-  _loadbrawlEnemyOneSprite();
-  _loadbrawlEnemyTwoSprite();
-  _loadbrawlBossSprite();
-  _loadbrawlChestSprite();
+  void initState() {
+    super.initState();
+    _loadbrawlTreeSprite();
+    _loadbrawlRockSprite();
+    _loadbrawlDollarSprite();
+    _loadbrawlEnemyOneSprite();
+    _loadbrawlEnemyTwoSprite();
+    _loadbrawlBossSprite();
+    _loadbrawlChestSprite();
 
-  const Offset playerStartPos = Offset(800, 800);
-  const double minTreeRockDistance = 55.0; // _treeRadius (35) + _rockRadius (20)
-  const double minRockRockDistance = 40.0; // _rockRadius (20) * 2
+    const Offset playerStartPos = Offset(800, 800);
+    const double minTreeRockDistance =
+        55.0; // _treeRadius (35) + _rockRadius (20)
+    const double minRockRockDistance = 40.0; // _rockRadius (20) * 2
 
-  // Generate Tree Positions
-  for (int i = 0; i < 20; i++) {
-    Offset pos = Offset.zero;
-    bool isValidPosition = false;
-    int attempts = 0;
+    // Generate Tree Positions
+    for (int i = 0; i < 20; i++) {
+      Offset pos = Offset.zero;
+      bool isValidPosition = false;
+      int attempts = 0;
 
-    // Limits at 100 attempts to prevent an infinite loop
-    while (!isValidPosition && attempts < 100) {
-      attempts++;
-      pos = Offset(
-        _rand.nextDouble() * (_mapWidth - 200) + 100,
-        _rand.nextDouble() * (_mapHeight - 200) + 100,
-      );
+      // Limits at 100 attempts to prevent an infinite loop
+      while (!isValidPosition && attempts < 100) {
+        attempts++;
+        pos = Offset(
+          _rand.nextDouble() * (_mapWidth - 200) + 100,
+          _rand.nextDouble() * (_mapHeight - 200) + 100,
+        );
 
-      // Ensure distance from player safe zone
-      if ((pos - playerStartPos).distance > 150) {
-        isValidPosition = true;
+        // Ensure distance from player safe zone
+        if ((pos - playerStartPos).distance > 150) {
+          isValidPosition = true;
+        }
+      }
+
+      if (isValidPosition) {
+        _treePositions.add(pos);
       }
     }
 
-    if (isValidPosition) {
-      _treePositions.add(pos);
+    // Generate Rock Positions (checking against player, trees, and existing rocks)
+    for (int i = 0; i < 20; i++) {
+      Offset pos = Offset.zero;
+      bool isValidPosition = false;
+      int attempts = 0;
+
+      while (!isValidPosition && attempts < 100) {
+        attempts++;
+        pos = Offset(
+          _rand.nextDouble() * (_mapWidth - 200) + 100,
+          _rand.nextDouble() * (_mapHeight - 200) + 100,
+        );
+
+        // Check safe distance from player starting position
+        if ((pos - playerStartPos).distance <= 150) continue;
+
+        // Check safe distance from all generated trees
+        bool overlapsTree = _treePositions.any(
+          (tree) => (pos - tree).distance < minTreeRockDistance,
+        );
+        if (overlapsTree) continue;
+
+        // Check safe distance from already placed rocks
+        bool overlapsRock = _rockPositions.any(
+          (rock) => (pos - rock).distance < minRockRockDistance,
+        );
+        if (overlapsRock) continue;
+
+        isValidPosition = true;
+      }
+
+      if (isValidPosition) {
+        _rockPositions.add(pos);
+      }
     }
+
+    _ticker = createTicker(_updateGameLoop);
+    _ticker.start();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _keyboardFocusNode.requestFocus();
+    });
   }
-
-  // Generate Rock Positions (checking against player, trees, and existing rocks)
-  for (int i = 0; i < 20; i++) {
-    Offset pos = Offset.zero;
-    bool isValidPosition = false;
-    int attempts = 0;
-
-    while (!isValidPosition && attempts < 100) {
-      attempts++;
-      pos = Offset(
-        _rand.nextDouble() * (_mapWidth - 200) + 100,
-        _rand.nextDouble() * (_mapHeight - 200) + 100,
-      );
-
-      // Check safe distance from player starting position
-      if ((pos - playerStartPos).distance <= 150) continue;
-
-      // Check safe distance from all generated trees
-      bool overlapsTree = _treePositions.any(
-        (tree) => (pos - tree).distance < minTreeRockDistance,
-      );
-      if (overlapsTree) continue;
-
-      // Check safe distance from already placed rocks
-      bool overlapsRock = _rockPositions.any(
-        (rock) => (pos - rock).distance < minRockRockDistance,
-      );
-      if (overlapsRock) continue;
-
-      isValidPosition = true;
-    }
-
-    if (isValidPosition) {
-      _rockPositions.add(pos);
-    }
-  }
-
-  _ticker = createTicker(_updateGameLoop);
-  _ticker.start();
-
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    _keyboardFocusNode.requestFocus();
-  });
-}
 
   @override
   void dispose() {
@@ -1870,7 +1872,7 @@ void initState() {
             _endGame();
           }
           double mobDrain = ((35.0 * 2) * dt);
-          
+
           mob.principalRemaining -= mobDrain;
           _spawnExplosion(mob.pos, mob.color);
           if (mob.principalRemaining <= 0) {
@@ -2225,7 +2227,7 @@ void initState() {
             _bankBalance = newBalance;
           }
         },
-      )
+      ),
     ]..shuffle(_rand);
   }
 
@@ -2515,10 +2517,8 @@ void initState() {
         children: [
           Image.asset(AppAssets.uiIconCoin, width: 20, height: 20),
           const SizedBox(width: 7),
-          Text(
+          FittedLabel(
             '$_goldAccumulated',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.pixelifySans(
               color: Colors.white,
               fontSize: 18,
@@ -2746,81 +2746,56 @@ void initState() {
                 ),
               ),
               const SizedBox(height: 24),
-              // Restricts the overall width of the 3 cards
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 650),
-                child: IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: upgrades.map((up) {
-                      return Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: InkWell(
-                            onTap: () => _selectUpgrade(up),
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: _brawlPanel,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: _brawlGold.withValues(alpha: 0.4),
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  _PixelIconBadge(
-                                    icon: up.icon,
-                                    accent: _brawlGold,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    up.name,
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.pixelifySans(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 14,
-                                      height: 1.1,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Expanded(
-                                    child: Center(
-                                      child: Text(
-                                        up.description,
-                                        textAlign: TextAlign.center,
-                                        style: GoogleFonts.quicksand(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.72,
-                                          ),
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
-                                          height: 1.25,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
+              // Three cards side by side needs real width. Below ~520px
+              // each card gets barely 150px, which broke words mid-syllable
+              // ("Perfor / mance Bonus", "Job Pr / omotio / n") and made the
+              // whole choice unreadable. Under that threshold they stack
+              // into a single column instead, where each card has the full
+              // width and the text simply wraps normally.
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final stack = constraints.maxWidth < 520;
+                  final cards = [
+                    for (final up in upgrades)
+                      _UpgradeCard(
+                        upgrade: up,
+                        stacked: stack,
+                        onTap: () => _selectUpgrade(up),
+                      ),
+                  ];
+
+                  if (stack) {
+                    return ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (var i = 0; i < cards.length; i++) ...[
+                            cards[i],
+                            if (i != cards.length - 1)
+                              const SizedBox(height: 12),
+                          ],
+                        ],
+                      ),
+                    );
+                  }
+
+                  return ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 650),
+                    child: IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (var i = 0; i < cards.length; i++) ...[
+                            Expanded(child: cards[i]),
+                            if (i != cards.length - 1)
+                              const SizedBox(width: 14),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -3028,56 +3003,182 @@ class _HudStatPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _PixelPanel(
-      accent: accent,
-      background: _brawlPanelDeep,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _PixelIconBadge(icon: icon, accent: accent, size: 32),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: alignStart
-                  ? CrossAxisAlignment.start
-                  : CrossAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.pixelifySans(
-                    color: Colors.white.withValues(alpha: 0.55),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.pixelifySans(
-                    color: accent,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  detail,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.quicksand(
-                    color: Colors.white.withValues(alpha: 0.70),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
+    // Two of these panels sit beside a gold chip and an exit button. On a
+    // phone that leaves each panel ~119px, and the 32px icon plus padding
+    // eats ~65px of it — so the text column had about 54px to render
+    // "Debts Paid 4/6" in. Nothing fits there at a readable size, which is
+    // why these were the last labels still showing "Debts …" / "Don't …"
+    // after the ellipsis sweep: `FittedLabel` correctly refused to shrink
+    // that far and fell back to truncating.
+    //
+    // The fix is the layout, not the text. Below ~150px the panel drops the
+    // icon and the flavour line and keeps what the player actually needs
+    // mid-fight — the label and the number.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tight = constraints.maxWidth < 150;
+        final veryTight = constraints.maxWidth < 112;
+
+        return _PixelPanel(
+          accent: accent,
+          background: _brawlPanelDeep,
+          padding: EdgeInsets.symmetric(
+            horizontal: tight ? 8 : 12,
+            vertical: tight ? 7 : 10,
           ),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!veryTight) ...[
+                _PixelIconBadge(
+                  icon: icon,
+                  accent: accent,
+                  size: tight ? 24 : 32,
+                ),
+                SizedBox(width: tight ? 6 : 9),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: alignStart
+                      ? CrossAxisAlignment.start
+                      : CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FittedLabel(
+                      label,
+                      alignment: alignStart
+                          ? Alignment.centerLeft
+                          : Alignment.center,
+                      style: GoogleFonts.pixelifySans(
+                        color: Colors.white.withValues(alpha: 0.55),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    FittedLabel(
+                      value,
+                      alignment: alignStart
+                          ? Alignment.centerLeft
+                          : Alignment.center,
+                      style: GoogleFonts.pixelifySans(
+                        color: accent,
+                        fontSize: tight ? 16 : 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    // Flavour and secondary detail. First thing to go when
+                    // there is no room — the number above it is the part
+                    // you read mid-fight.
+                    if (!tight)
+                      FittedLabel(
+                        detail,
+                        alignment: alignStart
+                            ? Alignment.centerLeft
+                            : Alignment.center,
+                        style: GoogleFonts.quicksand(
+                          color: Colors.white.withValues(alpha: 0.70),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// One upgrade choice.
+///
+/// Two layouts on purpose. Side by side (wide screens) it is a centred
+/// column — icon over name over description. Stacked (narrow screens) it
+/// turns on its side into icon-beside-text, which is what actually makes
+/// the copy readable: a full-width row gives the description a sane line
+/// length instead of a ~150px column that hyphenates words in half.
+class _UpgradeCard extends StatelessWidget {
+  const _UpgradeCard({
+    required this.upgrade,
+    required this.stacked,
+    required this.onTap,
+  });
+
+  final BrawlUpgrade upgrade;
+  final bool stacked;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final nameText = Text(
+      upgrade.name,
+      textAlign: stacked ? TextAlign.left : TextAlign.center,
+      style: GoogleFonts.pixelifySans(
+        color: Colors.white,
+        fontWeight: FontWeight.w700,
+        fontSize: stacked ? 15 : 14,
+        height: 1.1,
+      ),
+    );
+    final descText = Text(
+      upgrade.description,
+      textAlign: stacked ? TextAlign.left : TextAlign.center,
+      style: GoogleFonts.quicksand(
+        color: Colors.white.withValues(alpha: 0.72),
+        fontSize: 11.5,
+        fontWeight: FontWeight.w700,
+        height: 1.3,
+      ),
+    );
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: EdgeInsets.all(stacked ? 12 : 14),
+        decoration: BoxDecoration(
+          color: _brawlPanel,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _brawlGold.withValues(alpha: 0.4),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: stacked
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _PixelIconBadge(icon: upgrade.icon, accent: _brawlGold),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [nameText, const SizedBox(height: 4), descText],
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _PixelIconBadge(icon: upgrade.icon, accent: _brawlGold),
+                  const SizedBox(height: 12),
+                  nameText,
+                  const SizedBox(height: 8),
+                  Expanded(child: Center(child: descText)),
+                ],
+              ),
       ),
     );
   }

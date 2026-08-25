@@ -1,4 +1,6 @@
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/daily_quest.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/lesson.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/lesson_data.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -10,6 +12,7 @@ void main() {
     Set<String> completedLessons = const {},
     Map<String, int> plays = const {},
     List<String> games = const ['finance_brawl', 'market_board'],
+    AgeStage? readerStage,
   }) {
     return builder.build(
       dateKey: '2026-07-27',
@@ -19,6 +22,7 @@ void main() {
       completedLessons: completedLessons,
       arcadePlays: (id) => plays[id] ?? 0,
       activeArcadeGameIds: games,
+      readerStage: readerStage,
     );
   }
 
@@ -36,10 +40,27 @@ void main() {
     });
 
     test('leads with the next uncompleted lesson', () {
-      final plan = buildWith(completedLessons: {'lesson_1'});
+      // Derived from `lessonUnits` rather than hardcoding ids. This test
+      // used to assert `lesson_1 done -> lesson_2 next`, which quietly
+      // depended on unit_1 being *first in the list*; once the curriculum
+      // was reordered chronologically (ages 4-6 first) that stopped being
+      // true and the test failed for a reason that had nothing to do with
+      // the behaviour it was checking.
+      final firstUnit = lessonUnits.first;
+      final firstTwo = firstUnit.lessons
+          .where((l) => l.type == LessonNodeType.lesson)
+          .take(2)
+          .toList();
+
+      final plan = buildWith(completedLessons: {firstTwo.first.id});
       expect(plan.quests.first.surface, QuestSurface.academyLesson);
-      // lesson_1 is done, so the next lesson node (lesson_2) should be picked.
-      expect(plan.quests.first.id, 'lesson_lesson_2');
+      expect(
+        plan.quests.first.id,
+        'lesson_${firstTwo[1].id}',
+        reason:
+            'with ${firstTwo.first.id} done, the next lesson node in '
+            '${firstUnit.id} should be picked',
+      );
     });
 
     test('routes a weak skill to a practice quest', () {
@@ -87,6 +108,77 @@ void main() {
           expect(quest.unitId, isNotNull);
         }
       }
+    });
+  });
+
+  group('the learning quest respects the reader\'s age', () {
+    // This is the guard that lets `lessonUnits` stay in chronological
+    // order. Before `readerStage` existed, `_nextLesson` walked raw list
+    // order — so with ages 4-6 now genuinely first in the list, an adult's
+    // daily quest would be "What Is Money?" every single day.
+    LessonUnit unitOf(DailyPlan plan) {
+      final quest = plan.quests.firstWhere(
+        (q) => q.surface == QuestSurface.academyLesson,
+      );
+      return lessonUnits.firstWhere((u) => u.id == quest.unitId);
+    }
+
+    test('an adult is never sent to the ages 4-6 unit', () {
+      final plan = buildWith(readerStage: AgeStage.adult);
+      final unit = unitOf(plan);
+      expect(
+        unit.ageStage.minAge,
+        greaterThanOrEqualTo(AgeStage.adult.minAge),
+        reason:
+            'an adult with nothing completed was quested '
+            '"${unit.title}" (${unit.ageStage.name})',
+      );
+    });
+
+    test('a young child is sent to the youngest unit', () {
+      final plan = buildWith(readerStage: AgeStage.earlyChildhood);
+      expect(unitOf(plan).ageStage, AgeStage.earlyChildhood);
+    });
+
+    test('every age band gets a quest at or above its own level', () {
+      for (final stage in AgeStage.values) {
+        final unit = unitOf(buildWith(readerStage: stage));
+        expect(
+          unit.ageStage.minAge,
+          greaterThanOrEqualTo(stage.minAge),
+          reason:
+              '$stage was quested "${unit.title}" '
+              '(${unit.ageStage.name}), which is pitched younger',
+        );
+      }
+    });
+
+    test('an unknown age still gets a learning quest', () {
+      // Plenty of players never share an age; the slot must not vanish.
+      final plan = buildWith();
+      expect(
+        plan.quests.where((q) => q.surface == QuestSurface.academyLesson),
+        isNotEmpty,
+      );
+    });
+
+    test('finishing everything at your level falls back, not silent', () {
+      // An adult who has completed every adult lesson should still be
+      // offered something rather than losing the learning slot entirely.
+      final adultLessons = <String>{
+        for (final unit in lessonUnits)
+          if (unit.ageStage.minAge >= AgeStage.adult.minAge)
+            for (final lesson in unit.lessons) lesson.id,
+      };
+      final plan = buildWith(
+        readerStage: AgeStage.adult,
+        completedLessons: adultLessons,
+      );
+      expect(
+        plan.quests.where((q) => q.surface == QuestSurface.academyLesson),
+        isNotEmpty,
+        reason: 'the learning slot disappeared instead of falling back',
+      );
     });
   });
 }

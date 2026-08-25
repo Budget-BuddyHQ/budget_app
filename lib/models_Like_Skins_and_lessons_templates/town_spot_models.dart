@@ -154,8 +154,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     id: 'spot_school',
     kind: TownSpotKind.school,
     title: 'School',
-    prompt:
-        'The library is open and nobody is using the money-skills shelf.',
+    prompt: 'The library is open and nobody is using the money-skills shelf.',
     tileX: 15,
     tileY: 16,
     choices: [
@@ -354,8 +353,13 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
     id: 'npc_student',
     name: 'Student',
     look: TownNpcLook.customer,
+    // Was (17, 17), which sat right against the west ledge with a solid
+    // tile two rows up — the NPC sprite is ~2 tiles tall and drawn upward
+    // from its feet, so its head visibly clipped into the scenery above.
+    // Every NPC tile is now checked for two clear rows overhead; see
+    // `test/town_map_test.dart`.
     tileX: 17,
-    tileY: 17,
+    tileY: 21,
     lines: [
       'The library has a whole shelf on money and nobody touches it.',
       'I learned more about budgeting from tracking one week of spending '
@@ -375,23 +379,34 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
   ),
 ];
 
+/// Where the player appears when they walk into town — just outside their
+/// own front door (`spot_home` sits at 13,30).
+///
+/// Not the map centre: you leave home to go into town and come back to it,
+/// so spawning in the middle of the square made the map read as a level
+/// select rather than somewhere you live. `test/town_map_test.dart` checks
+/// this tile is walkable, reachable, and has two clear rows overhead so the
+/// sprite does not clip the house.
+const ({int x, int y}) kTownSpawnTile = (x: 13, y: 31);
+
 /// Coin pickups scattered on confirmed-walkable tiles across the open
 /// middle of the map, so exploring pays a little on its own.
-const List<({int x, int y, int value})> kTownCoins = <({
-  int x,
-  int y,
-  int value,
-})>[
-  (x: 24, y: 6, value: 3),
-  (x: 34, y: 10, value: 3),
-  (x: 12, y: 20, value: 5),
-  (x: 44, y: 21, value: 5),
-  (x: 20, y: 24, value: 3),
-  (x: 30, y: 31, value: 5),
-  (x: 8, y: 24, value: 3),
-  // Was (27, 36) — that tile is now inside the sealed hill band (map rows
-  // 34-37, see docs/ADVENTURE_TOWN.md), so the highest-value coin had
-  // become physically unreachable. Moved to the far south-east corner:
-  // still the longest walk on the map, still north of the hill.
-  (x: 47, y: 32, value: 8),
-];
+const List<({int x, int y, int value})> kTownCoins =
+    <({int x, int y, int value})>[
+      (x: 24, y: 6, value: 3),
+      (x: 34, y: 10, value: 3),
+      // Was (12, 20) — that tile turned out to sit on the west ledge, which is
+      // now correctly solid (see the `terrain_cliff` layer). Moved into the
+      // southern strip, which reopened once the road tiles were freed from the
+      // collider layer, so there is a reason to cross the road.
+      (x: 12, y: 44, value: 5),
+      (x: 44, y: 21, value: 5),
+      (x: 20, y: 24, value: 3),
+      (x: 30, y: 31, value: 5),
+      (x: 8, y: 24, value: 3),
+      // Was (27, 36) — that tile is now inside the sealed hill band (map rows
+      // 34-37, see docs/ADVENTURE_TOWN.md), so the highest-value coin had
+      // become physically unreachable. Moved to the far south-east corner:
+      // still the longest walk on the map, still north of the hill.
+      (x: 47, y: 32, value: 8),
+    ];

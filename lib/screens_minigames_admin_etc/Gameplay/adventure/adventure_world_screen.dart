@@ -290,21 +290,31 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
           SafeArea(
             child: Stack(
               children: [
+                // A Row rather than two `Positioned`s with a hardcoded
+                // `left: 66` gap between them. That offset was sized around
+                // a circular icon-only back button; the moment it became a
+                // labelled "Go home" pill it was too narrow and the two
+                // overlapped. Laying them out relative to each other means
+                // the objective bar takes whatever is left, whatever the
+                // button's label ends up being.
                 Positioned(
                   top: 12,
                   left: 12,
-                  child: _AdventureBackButton(
-                    onTap: () => Navigator.of(context).maybePop(),
-                  ),
-                ),
-                Positioned(
-                  top: 12,
-                  left: 66,
                   right: 12,
-                  child: _ObjectiveBar(
-                    visitedCount: _visited.length,
-                    totalCount: kTownSpots.length,
-                    coinsFound: _coinsFound,
+                  child: Row(
+                    children: [
+                      _AdventureBackButton(
+                        onTap: () => Navigator.of(context).maybePop(),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _ObjectiveBar(
+                          visitedCount: _visited.length,
+                          totalCount: kTownSpots.length,
+                          coinsFound: _coinsFound,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 if (_nearby != null)
@@ -349,13 +359,33 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
         );
     Future<SpriteAnimation> frame(int rowIndex) =>
         _loadRowAnimation(sheetAsset, rowIndex, 1, stepTime: 1);
+    // Side rows skip their front-facing neutral frames — see
+    // [kSideWalkFrames] / [kSideIdleFrame].
+    Future<SpriteAnimation> sideRow(int rowIndex) => _loadRowFrames(
+      sheetAsset,
+      rowIndex,
+      kSideWalkFrames,
+      stepTime: kTownWalkStepTime,
+    );
+    Future<SpriteAnimation> sideIdle(int rowIndex) => _loadRowFrames(
+      sheetAsset,
+      rowIndex,
+      const <int>[kSideIdleFrame],
+      stepTime: 1,
+    );
 
     return TownPlayer(
-      // Town-square tile (25,25) — the open, fenced playground area at the
-      // map's centre, clear of every collider-marked structure/wall layer
-      // in all directions. The map has no dedicated "spawn" object of its
-      // own, so this was picked by checking the layer data directly.
-      position: Vector2(400, 400),
+      // Just outside your own front door (tile 13,31 — the `spot_home`
+      // house is at 13,30), rather than the old town-square spawn at
+      // (25,25). You leave home to go into town and come back to it, so
+      // starting anywhere else made the map read as a level select rather
+      // than a place you live. Verified walkable, reachable, and with two
+      // clear rows overhead so the sprite doesn't clip the house — the
+      // same checks `test/town_map_test.dart` runs on every NPC.
+      position: Vector2(
+        kTownSpawnTile.x * 16.0,
+        kTownSpawnTile.y * 16.0,
+      ),
       // Was `Vector2.all(32)` — a square. The sprite cell is 104x152, so
       // squeezing it into a square squashed every skin and made the walk
       // cycle look wrong. Height-first, width derived from the real cell
@@ -372,10 +402,10 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
         runDown: row(0, 8),
         idleUp: frame(1),
         runUp: row(1, 7),
-        idleLeft: frame(2),
-        runLeft: row(2, 8),
-        idleRight: frame(3),
-        runRight: row(3, 8),
+        idleLeft: sideIdle(2),
+        runLeft: sideRow(2),
+        idleRight: sideIdle(3),
+        runRight: sideRow(3),
       ),
     );
   }
@@ -1017,6 +1047,13 @@ class _RewardPill extends StatelessWidget {
 /// The game canvas is a full-bleed [BonfireWidget] with no `AppBar` of its
 /// own, so there was no way out of the map short of the OS back gesture —
 /// this floats a real, always-visible exit above the canvas.
+/// Leaves the town and returns to the life you are living.
+///
+/// Reads as **"Go home"**, not a generic back arrow. The town is somewhere
+/// your character walked *to* from their house, so the way out is going
+/// home — a bare `arrow_back` described the navigation stack rather than
+/// anything happening in the game. Labelled as well as iconed, because a
+/// lone house glyph could just as easily mean "the home screen".
 class _AdventureBackButton extends StatelessWidget {
   const _AdventureBackButton({required this.onTap});
 
@@ -1024,18 +1061,32 @@ class _AdventureBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.black.withValues(alpha: 0.55),
-      shape: const CircleBorder(),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: const Padding(
-          padding: EdgeInsets.all(10),
-          child: Icon(
-            Icons.arrow_back_rounded,
-            color: Colors.white,
-            size: 24,
+    return Semantics(
+      button: true,
+      label: 'Go home, leaving the town',
+      child: Material(
+        color: Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 14, 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.home_rounded, color: Colors.white, size: 22),
+                const SizedBox(width: 6),
+                Text(
+                  'Go home',
+                  style: GoogleFonts.pixelifySans(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1098,6 +1149,55 @@ Future<SpriteAnimation> _loadRowAnimation(
   );
   return sheet.createAnimation(row: row, stepTime: stepTime, to: frameCount);
 }
+
+/// Frames of a row, by explicit column, in the order given.
+///
+/// Needed because the side-facing rows use a **non-contiguous** subset —
+/// see [kSideWalkFrames].
+Future<SpriteAnimation> _loadRowFrames(
+  String sheetAsset,
+  int row,
+  List<int> columns, {
+  double stepTime = 0.12,
+}) async {
+  final image = await _villagerSheetImages.load(sheetAsset);
+  final sheet = SpriteSheet(
+    image: image,
+    srcSize: Vector2(AppAssets.villagerCellWidth, AppAssets.villagerCellHeight),
+  );
+  return SpriteAnimation.spriteList(
+    [for (final c in columns) sheet.getSprite(row, c)],
+    stepTime: stepTime,
+  );
+}
+
+/// The west/east walk cycle, **skipping frames 0 and 4**.
+///
+/// Those two are the neutral/contact poses, and in the side-facing rows
+/// they were drawn with *front-facing* legs — two parallel leg columns with
+/// a gap between them, as if the character were facing the camera. Frames
+/// 1-3 and 5-7 are correct profile poses. So twice per cycle the legs
+/// snapped front-on and back, which is what made the side walk look wrong
+/// while every structural measurement of the cycle (legs alternate, halves
+/// mirror, feet planted) came back correct.
+///
+/// Fixed by using the good art rather than repainting the bad art. Three
+/// pixel edits were prototyped — merging the two legs into one, deleting
+/// the far leg, and re-centring — and each left a visible flaw (too chunky,
+/// or a leg sitting off-centre under the coat). Dropping the two frames
+/// costs nothing: what remains is contact-pass-contact for each leg, a
+/// valid six-frame cycle, and it cannot damage the source art.
+///
+/// If the sheets are ever redrawn with proper profile neutral frames, set
+/// this back to all eight columns.
+const List<int> kSideWalkFrames = <int>[1, 2, 3, 5, 6, 7];
+
+/// Standing still, facing sideways.
+///
+/// Frame 1 rather than frame 0 for the same reason — frame 0 is the
+/// front-facing stance, so an idle character facing west used to stand
+/// with their legs pointing at the camera.
+const int kSideIdleFrame = 1;
 
 class _AdventureMapPendingScreen extends StatelessWidget {
   const _AdventureMapPendingScreen();

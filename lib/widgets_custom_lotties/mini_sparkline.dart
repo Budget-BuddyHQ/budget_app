@@ -140,7 +140,10 @@ class _MiniSparklinePainter extends CustomPainter {
     final stepX = size.width / (series.length - 1);
     final points = <Offset>[
       for (var i = 0; i < series.length; i++)
-        Offset(i * stepX, size.height - ((series[i] - minV) / range) * size.height),
+        Offset(
+          i * stepX,
+          size.height - ((series[i] - minV) / range) * size.height,
+        ),
     ];
 
     final line = Path()..moveTo(points.first.dx, points.first.dy);
@@ -190,11 +193,7 @@ class _MiniSparklinePainter extends CustomPainter {
         strokeWidth * (1.4 + swell * 2.6),
         Paint()..color = color.withValues(alpha: (1 - swell) * 0.45),
       );
-      canvas.drawCircle(
-        last,
-        strokeWidth * 1.25,
-        Paint()..color = color,
-      );
+      canvas.drawCircle(last, strokeWidth * 1.25, Paint()..color = color);
     }
   }
 

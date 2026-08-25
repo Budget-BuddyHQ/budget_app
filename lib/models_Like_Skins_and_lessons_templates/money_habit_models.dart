@@ -131,7 +131,8 @@ const String customHabitIdPrefix = 'custom_habit_';
 HabitTemplate customHabitFromMap(Map<String, dynamic> map) {
   final id = _readString(map['id']) ?? '${customHabitIdPrefix}restored';
   final title = _readString(map['title']) ?? 'Custom habit';
-  final blurb = _readString(map['blurb']) ??
+  final blurb =
+      _readString(map['blurb']) ??
       _readString(map['description']) ??
       'A money habit you created.';
   final moneySaved = _readDouble(map['money_saved_usd']);
@@ -141,10 +142,7 @@ HabitTemplate customHabitFromMap(Map<String, dynamic> map) {
     title: title,
     category: HabitCategory.saveMore,
     blurb: blurb,
-    impactPerUnit: HabitImpact(
-      moneySavedUsd: moneySaved,
-      choicesKept: 1,
-    ),
+    impactPerUnit: HabitImpact(moneySavedUsd: moneySaved, choicesKept: 1),
     icon: Icons.edit_note_rounded,
   );
 }
@@ -181,7 +179,8 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
     id: 'skip_eating_out',
     title: 'Skip eating out today',
     category: HabitCategory.cutSpending,
-    blurb: 'Cooking or packing instead of ordering keeps real money in your pocket.',
+    blurb:
+        'Cooking or packing instead of ordering keeps real money in your pocket.',
     impactPerUnit: HabitImpact(moneySavedUsd: 15, choicesKept: 1),
     icon: Icons.no_food_rounded,
   ),
@@ -200,7 +199,8 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
       defaultValue: 1,
     ),
     icon: Icons.coffee_rounded,
-    photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/3/3a/Coffee_cup_seen_from_above.jpg',
+    photoUrl:
+        'https://upload.wikimedia.org/wikipedia/commons/3/3a/Coffee_cup_seen_from_above.jpg',
   ),
   HabitTemplate(
     id: 'no_impulse_buy',
@@ -209,7 +209,8 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
     blurb: 'Something you almost bought without thinking — and didn\'t.',
     impactPerUnit: HabitImpact(moneySavedUsd: 20, choicesKept: 1),
     icon: Icons.remove_shopping_cart_rounded,
-    photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/83/Shopping_cart.jpg',
+    photoUrl:
+        'https://upload.wikimedia.org/wikipedia/commons/8/83/Shopping_cart.jpg',
   ),
   HabitTemplate(
     id: 'cancel_unused_sub',
@@ -257,7 +258,8 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
     id: 'round_up_savings',
     title: 'Round up a purchase to savings',
     category: HabitCategory.saveMore,
-    blurb: 'The spare change from rounding up goes straight to savings instead of nowhere.',
+    blurb:
+        'The spare change from rounding up goes straight to savings instead of nowhere.',
     impactPerUnit: HabitImpact(moneySavedUsd: 3),
     icon: Icons.trending_up_rounded,
   ),
@@ -265,7 +267,8 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
     id: 'sell_something',
     title: 'Sell something you don\'t use',
     category: HabitCategory.saveMore,
-    blurb: 'Clutter is money sitting still — selling it turns it back into cash.',
+    blurb:
+        'Clutter is money sitting still — selling it turns it back into cash.',
     impactPerUnit: HabitImpact(moneySavedUsd: 1),
     adjustable: HabitAdjustableParam(
       label: 'Dollars earned',
@@ -276,16 +279,19 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
       defaultValue: 20,
     ),
     icon: Icons.sell_rounded,
-    photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/2/28/Pile_of_Cash.jpg',
+    photoUrl:
+        'https://upload.wikimedia.org/wikipedia/commons/2/28/Pile_of_Cash.jpg',
   ),
   HabitTemplate(
     id: 'pack_lunch',
     title: 'Pack lunch instead of buying',
     category: HabitCategory.saveMore,
-    blurb: 'Buying lunch out every day is one of the fastest ways a budget quietly breaks.',
+    blurb:
+        'Buying lunch out every day is one of the fastest ways a budget quietly breaks.',
     impactPerUnit: HabitImpact(moneySavedUsd: 10, choicesKept: 1),
     icon: Icons.lunch_dining_rounded,
-    photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/f/f8/Asda_-_lunch_boxes.jpg',
+    photoUrl:
+        'https://upload.wikimedia.org/wikipedia/commons/f/f8/Asda_-_lunch_boxes.jpg',
   ),
   HabitTemplate(
     id: 'set_aside_allowance',
@@ -302,14 +308,16 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
       defaultValue: 5,
     ),
     icon: Icons.account_balance_wallet_rounded,
-    photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Putting_money_into_a_piggybank.jpg',
+    photoUrl:
+        'https://upload.wikimedia.org/wikipedia/commons/e/e0/Putting_money_into_a_piggybank.jpg',
   ),
   // ---------------- Smart Habits ----------------
   HabitTemplate(
     id: 'track_every_expense',
     title: 'Track every expense today',
     category: HabitCategory.smartHabits,
-    blurb: 'You can\'t fix what you don\'t see — one full day of tracking shows the leaks.',
+    blurb:
+        'You can\'t fix what you don\'t see — one full day of tracking shows the leaks.',
     impactPerUnit: HabitImpact(choicesKept: 1),
     icon: Icons.receipt_long_rounded,
   ),
@@ -325,7 +333,8 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
     id: 'make_a_budget_check',
     title: 'Check your budget before spending',
     category: HabitCategory.smartHabits,
-    blurb: 'Looking before you spend catches problems before they happen, not after.',
+    blurb:
+        'Looking before you spend catches problems before they happen, not after.',
     impactPerUnit: HabitImpact(choicesKept: 1),
     icon: Icons.fact_check_rounded,
   ),
@@ -333,7 +342,8 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
     id: 'wait_24_hours',
     title: 'Wait 24 hours before a big purchase',
     category: HabitCategory.smartHabits,
-    blurb: 'A day\'s wait is enough to tell a want from a need most of the time.',
+    blurb:
+        'A day\'s wait is enough to tell a want from a need most of the time.',
     impactPerUnit: HabitImpact(moneySavedUsd: 25, choicesKept: 1),
     icon: Icons.hourglass_bottom_rounded,
   ),
@@ -341,7 +351,8 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
     id: 'review_subscriptions',
     title: 'Review your subscriptions list',
     category: HabitCategory.smartHabits,
-    blurb: 'A quick audit is the easiest way to find money you forgot you were spending.',
+    blurb:
+        'A quick audit is the easiest way to find money you forgot you were spending.',
     impactPerUnit: HabitImpact(choicesKept: 1),
     icon: Icons.checklist_rounded,
   ),
@@ -349,7 +360,8 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
     id: 'set_a_savings_goal',
     title: 'Set a savings goal for the week',
     category: HabitCategory.smartHabits,
-    blurb: 'A number to aim for turns "save more" into something you can actually hit.',
+    blurb:
+        'A number to aim for turns "save more" into something you can actually hit.',
     impactPerUnit: HabitImpact(choicesKept: 1),
     icon: Icons.flag_rounded,
   ),
@@ -418,7 +430,8 @@ const List<HabitChallenge> habitChallenges = <HabitChallenge>[
         challengeId: 'challenge_cut_spending',
         order: 1,
         templateId: 'cancel_unused_sub',
-        resource: 'Forgotten subscriptions are one of the sneakiest budget leaks.',
+        resource:
+            'Forgotten subscriptions are one of the sneakiest budget leaks.',
       ),
       ChallengeTask(
         id: 'challenge_spend_2',
@@ -426,7 +439,8 @@ const List<HabitChallenge> habitChallenges = <HabitChallenge>[
         order: 2,
         templateId: 'skip_eating_out',
         prerequisites: <String>['challenge_spend_1'],
-        resource: 'Eating out even once a week can outweigh a whole grocery budget.',
+        resource:
+            'Eating out even once a week can outweigh a whole grocery budget.',
       ),
       ChallengeTask(
         id: 'challenge_spend_3',
@@ -434,7 +448,8 @@ const List<HabitChallenge> habitChallenges = <HabitChallenge>[
         order: 3,
         templateId: 'no_impulse_buy',
         prerequisites: <String>['challenge_spend_2'],
-        resource: 'Impulse buys feel small in the moment and add up fast in a month.',
+        resource:
+            'Impulse buys feel small in the moment and add up fast in a month.',
       ),
       ChallengeTask(
         id: 'challenge_spend_4',
@@ -468,7 +483,8 @@ const List<HabitChallenge> habitChallenges = <HabitChallenge>[
         order: 2,
         templateId: 'round_up_savings',
         prerequisites: <String>['challenge_save_1'],
-        resource: 'Rounding up turns every purchase into a tiny savings deposit.',
+        resource:
+            'Rounding up turns every purchase into a tiny savings deposit.',
       ),
       ChallengeTask(
         id: 'challenge_save_3',
@@ -484,7 +500,8 @@ const List<HabitChallenge> habitChallenges = <HabitChallenge>[
         order: 4,
         templateId: 'set_aside_allowance',
         prerequisites: <String>['challenge_save_3'],
-        resource: 'Paying yourself first is the single biggest lever in saving.',
+        resource:
+            'Paying yourself first is the single biggest lever in saving.',
       ),
     ],
   ),

@@ -6,6 +6,7 @@ import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../themes_colors/app_theme.dart';
+import '../../../widgets_custom_lotties/fitted_label.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -72,7 +73,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     return Scaffold(
       backgroundColor: AppTheme.deepForest,
       appBar: AppBar(
-        title: Text('Leaderboard', style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700)),
+        title: Text(
+          'Leaderboard',
+          style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+        ),
         backgroundColor: AppTheme.deepForest,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -174,7 +178,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                         child: _LeaderboardRow(
                           leader: leader,
                           byGold: _byGold,
-                          currentUserProfileImageUrl: currentUser.profileImageUrl,
+                          currentUserProfileImageUrl:
+                              currentUser.profileImageUrl,
                         ),
                       ),
                     ),
@@ -340,10 +345,8 @@ class _SegmentTab extends StatelessWidget {
               : null,
         ),
         alignment: Alignment.center,
-        child: Text(
+        child: FittedLabel(
           label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.pixelifySans(
             color: active ? AppTheme.deepForest : Colors.white70,
             fontWeight: FontWeight.w700,
@@ -425,7 +428,11 @@ class _CurrentUserSummary extends StatelessWidget {
 }
 
 class _StatChip extends StatelessWidget {
-  const _StatChip({required this.label, required this.value, this.isGold = false});
+  const _StatChip({
+    required this.label,
+    required this.value,
+    this.isGold = false,
+  });
 
   final String label;
   final String value;
@@ -673,7 +680,11 @@ class _PodiumPlace extends StatelessWidget {
         if (crowned)
           const Padding(
             padding: EdgeInsets.only(bottom: 4),
-            child: Icon(Icons.emoji_events_rounded, color: Color(0xFFF4D06F), size: 26),
+            child: Icon(
+              Icons.emoji_events_rounded,
+              color: Color(0xFFF4D06F),
+              size: 26,
+            ),
           ),
         Stack(
           clipBehavior: Clip.none,
@@ -752,13 +763,20 @@ class _PodiumPlace extends StatelessWidget {
                 medalColor.withValues(alpha: 0.12),
               ],
             ),
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(12),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
             border: Border(
-              top: BorderSide(color: medalColor.withValues(alpha: 0.8), width: 2),
-              left: BorderSide(color: medalColor.withValues(alpha: 0.3), width: 1),
-              right: BorderSide(color: medalColor.withValues(alpha: 0.3), width: 1),
+              top: BorderSide(
+                color: medalColor.withValues(alpha: 0.8),
+                width: 2,
+              ),
+              left: BorderSide(
+                color: medalColor.withValues(alpha: 0.3),
+                width: 1,
+              ),
+              right: BorderSide(
+                color: medalColor.withValues(alpha: 0.3),
+                width: 1,
+              ),
             ),
             boxShadow: [
               BoxShadow(
@@ -895,10 +913,7 @@ class _LeaderboardRow extends StatelessWidget {
           ),
           Text(
             byGold ? '${leader.gold}g' : leader.scoreLabel,
-            style: TextStyle(
-              color: rowAccent,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: rowAccent, fontWeight: FontWeight.bold),
           ),
         ],
       ),
