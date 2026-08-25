@@ -368,3 +368,157 @@ a bash heredoc mangles it. Apostrophes in comments and doc text
 **Rule:** write Dart with the file-writing tools, never a shell heredoc. If
 content has to be appended, write it to a scratch file first and `cat` it
 on.
+
+---
+
+## 11. The walking animation, round four: measuring the wrong thing correctly
+
+**Symptom:** *"Sidewalking is sitlll bad"* — the fourth report, after §2's
+timing fix, after re-celling the sheets taller, and after a full structural
+audit that came back clean.
+
+That clean audit is the interesting part. It checked that the legs
+alternate, that the two halves of the cycle mirror each other, and that the
+feet stay planted. All three passed. All three were true. And the animation
+still looked wrong, because **every one of those checks describes the cycle,
+and the fault was in two individual frames.**
+
+Rendering the west row's leg region enlarged made it obvious in one look:
+columns 0 and 4 have two legs side by side, symmetric about the body, with a
+gap between them — a *front-facing* stance drawn onto a profile body.
+Columns 1-3 and 5-7 are correct profile strides. Twice per cycle the legs
+snapped face-on and back.
+
+And `idleLeft` loaded column 0, so standing still facing west **held** the
+bad pose rather than flashing past it.
+
+**Three redraws were tried and all three were rejected.** Filling the gap
+merged the legs into one column too chunky to match frame 1. Deleting the
+far leg left the survivor off-centre under the coat. Re-centring it moved
+it out from under the torso. Each was measurably worse than the original,
+so the script was deleted instead of committed.
+
+**What shipped: use the good frames.** `kSideWalkFrames = [1, 2, 3, 5, 6,
+7]`, `kSideIdleFrame = 1`. Contact-pass-contact for each leg is a valid
+cycle, and dropping frames cannot damage art.
+
+**Two lessons, and the second is the one that cost four rounds:**
+
+1. *Verify at the altitude of the complaint.* "The walk looks bad" is a
+   statement about frames. Every measurement taken was about the cycle.
+   Correct measurements of the wrong thing look exactly like evidence that
+   nothing is wrong.
+2. *When the redraws are all worse, stop redrawing.* Three attempts at
+   pixel surgery each made the art worse. The answer was not a fourth
+   attempt with a better algorithm; it was to notice that six correct
+   frames already existed.
+
+---
+
+## 12. A `Spacer` is not a gap
+
+**Symptom:** a new panel overflowed by 9.8px at 288px wide — caught by its
+own layout test before it reached the app.
+
+The row was: emoji, gap, heading `Text`, `Spacer()`, action `Text`. Which
+looks like the safest possible arrangement, since a `Spacer` is "just the
+empty bit in the middle".
+
+It is not. `Spacer` is `Expanded`, which makes it a **flex child**. So it
+competes with any `Flexible` siblings for the same free space — wrap the
+labels in `Flexible` to protect them and the flex is now split three ways,
+squeezing the labels rather than the gap. Leave them rigid and they
+overflow.
+
+**The shape that works:** `Expanded` on the label that is allowed to give
+way, a fixed `SizedBox` for the gap, and the value that must stay readable
+left rigid. That also encodes a decision — *which* text loses first — that
+a `Spacer` silently makes for you, usually wrong.
+
+This is the same family as §7's font problems: a widget whose name
+describes its appearance rather than its layout behaviour.
+
+---
+
+## 13. A hundred events that still felt like the same game
+
+**Symptom:** *"still pretty repetitive"* — with 109 events in the pool.
+
+The instinct is to write more events. That would not have worked, and it is
+worth being precise about why.
+
+Every event was standalone. It fired, it moved some numbers, and nothing
+downstream could know it had happened. A run draws about sixty, so two runs
+differed in **which cards came up** and never in **what the life was
+about**. Adding fifty more events makes a bigger deck, not a different
+game — the variety was already real, and it was all the same shape.
+
+The fix was structural: a flag system, so a choice can be remembered and a
+later event can be *about* it. Eight storylines, mostly money, because that
+is exactly the shape a money lesson needs — taking a credit card teaches
+nothing on its own, and the minimum-payment trap three years later teaches
+everything.
+
+**The part that nearly did not work.** Chain beats have to win a weighted
+roll against 120 standalone events, several times, inside one life. The
+fourth beat of the investing chain was unreachable across 2,000 simulated
+lives. A 4x draw boost for any event with an open prerequisite fixed it in
+one line, and as one rule rather than twelve hand-tuned weights.
+
+**Lesson:** when more content does not fix "repetitive", the problem is the
+shape of the content, not the amount.
+
+---
+
+## 14. Most players could never get a job
+
+**Symptom:** none. Nobody reported this. It was found by printing the state
+of four simulated runs while checking whether a *test helper* reached a
+useful state.
+
+Three of the four reached **age forty still listed as "Newborn" on zero
+salary**.
+
+Only eight of ~130 events could set a job, each behind its own gate and
+behind the player picking one specific branch. No salary means `canBudget`
+is false, which means the budget split, the emergency fund, the paycheck
+line and the debt model never switch on. **The entire thing the app exists
+to teach was gated behind a lottery**, and it had been that way for as long
+as the budgeting model had existed.
+
+Fixed with a `findJob()` action, where Smarts widens the list you can reach.
+
+**Then the fix was wrong too, in the other direction.** The first salary
+table paid 900-3000 a year, against career events paying 260-520 and a year
+of essentials costing 110-180. A simulated life had banked a 6,378 emergency
+fund by thirty — no tension, no lesson. Rescaled to 240-560. The same four
+seeds then finished at thirty with a small fund, no fund, a 468 debt, and a
+6,674 debt spiral on a 260 salary.
+
+**Two lessons:**
+
+1. *Instrument the simulation, not just the assertions.* Every test passed
+   the whole time this bug existed, because every test that touched
+   budgeting used the `startSalary` constructor hook to skip straight past
+   the part that was broken. The convenience seam hid the hole it was
+   working around.
+2. *A new number is a balance change.* Adding the action was the easy half;
+   picking its numbers against the existing economy was the half that
+   decided whether the game still had stakes.
+
+---
+
+## 15. A test suite that measured the wrong screen
+
+`responsive_layout_test.dart` had pumped `LifeSimPage` at eight viewports for
+months. `LifeSimPage` pushes character creation in a post-frame callback — so
+all eight were measuring the **creation screen**. The feed, which is where
+every reflowing widget in that feature lives, had no coverage at all while
+the report said otherwise.
+
+A `debugInitialLife` seam that skips creation found two real 320px overflows
+within a minute of existing.
+
+**Lesson:** a test that renders *a* screen is not a test that renders *the*
+screen. Green coverage of the wrong widget is worse than no coverage, because
+it stops anyone looking.

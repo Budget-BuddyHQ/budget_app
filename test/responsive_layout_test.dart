@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:budget_app/controllers_that_updates_stats/app_settings_controller.dart';
+import 'package:budget_app/controllers_that_updates_stats/life_sim_controller.dart';
 import 'package:budget_app/controllers_that_updates_stats/daily_plan_controller.dart';
 import 'package:budget_app/controllers_that_updates_stats/money_habit_controller.dart';
 import 'package:budget_app/controllers_that_updates_stats/user_stats_controller.dart';
@@ -10,9 +13,12 @@ import 'package:budget_app/screens_minigames_admin_etc/Gameplay/academy/lesson_d
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/academy/lesson_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/academy/practice_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/adventure/adventure_world_screen.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/town_spot_models.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/adventure/town_interior_screen.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_ending.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/life_epilogue_screen.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/feedback_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/personal_details_sheet.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/core_bottom_pages/main_game_page.dart';
@@ -73,6 +79,38 @@ List<LiveQuote> _fakeQuotes() {
         fetchedAt: now,
       ),
   ];
+}
+
+
+/// A freshly created character, bypassing the character sheet.
+LifeSimController _newborn() =>
+    LifeSimController(random: Random(5), initialAge: 0);
+
+/// A life partway through, with the feed carrying everything it can carry:
+/// a salary (so the budget bar and runway line render), an event to answer,
+/// and whatever chain chips the run picked up on the way.
+LifeSimController _midLife() {
+  final life = LifeSimController(
+    random: Random(7),
+    initialAge: 0,
+    startMoney: 0,
+  );
+  final picker = Random(99);
+  // Play forward until an event is on screen at an age where the budget
+  // controls exist, so the widest version of the feed is what gets measured.
+  // Taking a job is part of that: without a salary `canBudget` stays false
+  // and the budget bar, the runway line and the paycheck history never
+  // render, which would make this the same test as the newborn one.
+  for (var i = 0; i < 40 && !life.finished; i++) {
+    if (life.canJobHunt) life.findJob();
+    final event = life.currentEvent;
+    if (event != null) {
+      if (life.age >= 30 && life.canBudget) break;
+      life.chooseOption(picker.nextInt(event.choices.length));
+    }
+    life.ageUp();
+  }
+  return life;
 }
 
 Widget _wrap(Widget child) {
@@ -148,6 +186,24 @@ void main() {
         initialGender: GenderIdentity.undisclosed,
         isFirstRun: true,
       ),
+    ),
+    // The main game itself, not just its ending screen. The feed carries
+    // the money panel and the stat meters, both of which reflow rather
+    // than truncate, so they need every viewport in the sweep.
+    // Age 0, straight out of character creation.
+    'Life sim': () => LifeSimPage(debugInitialLife: _newborn()),
+    // Mid-life, with money in four places, debt, an event on screen and a
+    // row of chain chips. This is the state the feed is actually busiest
+    // in, and none of it had viewport coverage before the test seam.
+    'Life sim (mid-life)': () => LifeSimPage(debugInitialLife: _midLife()),
+    // The town interiors. The Corner Store is the one with the animated
+    // stall and the widest choice list, so it is the worst case; the bank
+    // takes the NPC branch instead of the stall branch.
+    'Corner Store interior': () => TownInteriorScreen(
+      spot: kTownSpots.firstWhere((s) => s.kind == TownSpotKind.store),
+    ),
+    'Bank interior': () => TownInteriorScreen(
+      spot: kTownSpots.firstWhere((s) => s.kind == TownSpotKind.bank),
     ),
     'Finance Brawl': () => const FinanceBrawlScreen(),
     'Market Board': () => const StockMarketPage(),

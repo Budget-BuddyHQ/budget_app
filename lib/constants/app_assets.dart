@@ -161,6 +161,41 @@ class AppAssets {
   static List<String> get workerIdleFrames =>
       _frames('$_workerRoot/idle', 'Worker_idle', 3);
 
+  static const String _shopRoot = 'assets/map_assets_coins/shop';
+
+  /// The market stall, 240x175 — the same height as the room backdrop, so
+  /// the two composite without scaling.
+  static const double shopStallWidth = 240;
+  static const double shopStallHeight = 175;
+
+  /// The stall's left [shopStallCropLeft] pixels are an **opaque purple
+  /// wall panel** left over from the sprite's original scene. Everything to
+  /// the right of it is transparent-backed, so drawn over a different room
+  /// the untrimmed sprite paints a purple stripe across the wall.
+  ///
+  /// Trimmed at draw time (`ClipRect` + `Align(widthFactor:)`) rather than
+  /// by re-exporting the PNGs, because there are 36 of them across two
+  /// stalls and an edited copy would drift from the source art.
+  static const double shopStallCropLeft = 24;
+
+  /// Fraction of the sprite that survives the crop above.
+  static const double shopStallCropFactor =
+      (shopStallWidth - shopStallCropLeft) / shopStallWidth;
+
+  static List<String> get shopIdleFrames =>
+      _frames('$_shopRoot/0/idle', 'Shop1_idle', 4);
+
+  /// The over-the-counter sale, played once per purchase.
+  static List<String> get shopSellFrames =>
+      _frames('$_shopRoot/0/sell', 'Shop1_sell', 14);
+
+  /// The lamplit stall — used for the upmarket shops so two stores in the
+  /// same town do not look like the same building.
+  static List<String> get fancyShopIdleFrames =>
+      _frames('$_shopRoot/1/idle', 'Shop2_idle', 4);
+  static List<String> get fancyShopSellFrames =>
+      _frames('$_shopRoot/1/sell', 'Shop2_sell', 14);
+
   static const List<String> humanVariantIds = <String>[
     'emerald_scout',
     'gold_banker',
