@@ -722,6 +722,82 @@ mascot (`AmbientMotif.turtle`) instead. Other quest types are untouched.
 The game shipped with subscriptions the player was structurally unable to remove.
 *Fix:* corrected the cancel path. (Game later deleted for other reasons.)
 
+**The side walk snapped front-on twice per cycle**
+Columns 0 and 4 of the west/east sprite rows were drawn with front-facing legs
+-- two leg columns with a gap between them -- on an otherwise profile body, so
+the character flipped face-on and back twice per stride. `idleLeft` loaded
+column 0, so standing still facing west held the bad pose indefinitely. Three
+previous audits passed because they all measured the *cycle* (legs alternate,
+halves mirror, feet planted), and the cycle was fine; the fault was in two
+individual frames.
+*Fix:* three pixel redraws were prototyped and all three made the art worse
+(merged legs too chunky, single leg off-centre, re-centred leg outside the
+torso), so none shipped. Instead `kSideWalkFrames = [1, 2, 3, 5, 6, 7]` and
+`kSideIdleFrame = 1` skip the bad columns entirely; `_loadRowFrames` builds the
+animation from an explicit column list because `createAnimation` only takes a
+contiguous range. A real fix needs a pixel artist.
+*Files:* `adventure_world_screen.dart`, `town_map_test.dart`
+
+**The budget ran silently on every year it worked**
+`_applyBudget()` only wrote to the life feed to report a needs shortfall or debt
+interest, so a year where the budget went fine produced no money line at all.
+The one mechanic the game exists to teach was invisible on exactly the years it
+succeeded.
+*Fix:* every working year now writes a paycheck line naming all three slices,
+or, before a budget is chosen, says it is running the 50/30/20 default and
+points at the menu.
+*Files:* `life_sim_controller.dart`, `budget_teaching_test.dart`
+
+**A `Spacer` between two rigid labels overflowed by 9.8px at 288 wide**
+`Spacer` is `Expanded`, so it is a flex child and competes with any `Flexible`
+siblings for the same free space -- protecting the labels with `Flexible` makes
+it worse, not better, because the free space is then split three ways.
+*Fix:* `Expanded` on the label allowed to give way, a fixed `SizedBox` gap, and
+the figure that must stay readable left rigid. Caught by a new layout test
+before it shipped.
+*Files:* `life_money_panel.dart`, `life_money_panel_test.dart`
+
+**Most simulated players never got a job, so budgeting never switched on**
+Only 8 of ~130 events could set a job, each behind its own gate and behind the
+player picking one specific branch. Simulated runs showed three of four seeds
+reaching age 40 still listed as "Newborn" on zero salary — and with no salary
+`canBudget` is false, so the budget split, emergency fund, paycheck line and
+debt model were all unreachable. Every test passed throughout, because every
+budgeting test used the `startSalary` constructor hook to skip past the broken
+part.
+*Fix:* a `findJob()` action in the Career menu, with Smarts widening the list
+of open roles. The first salary table (900-3000/yr) was 5x the game's economy
+and removed all tension — rescaled to 240-560, below what the career-ladder
+events award.
+*Files:* `life_sim_controller.dart`, `life_sim_page.dart`, `budget_teaching_test.dart`
+
+**The responsive sweep had been measuring the wrong screen for months**
+`LifeSimPage` pushes character creation in a post-frame callback, so pumping it
+at eight viewports only ever measured the creation screen. The feed — money
+panel, stat meters, event card, chain chips — had no viewport coverage while
+the report said it had eight viewports' worth.
+*Fix:* a `debugInitialLife` seam that skips creation. It immediately found two
+real 320px overflows: the bottom menu bar (five rigid children with
+`spaceEvenly`, which distributes leftover space and does nothing when there is
+none) and the header inside `AppBar.title`.
+*Files:* `life_sim_page.dart`, `responsive_layout_test.dart`
+
+**A four-step storyline was unreachable across 2,000 simulated lives**
+Chain events have to win a weighted roll against ~120 standalone events once
+per beat, so `chain_index_payoff` — the payoff for holding an index fund
+through a crash — never fired.
+*Fix:* `_openChainBoost`, a 4x draw multiplier for any event with an unmet
+prerequisite already satisfied, applied in the draw rather than baked into each
+event's weight so future chains inherit it.
+*Files:* `life_sim_controller.dart`, `life_chains_test.dart`
+
+**The most-repeated line in the game was the one that never varied**
+About a quarter of years draw no event by design, and every one of them printed
+"Turned N. A quiet year." — so a run read as repetitive even when its events
+were not.
+*Fix:* `_quietYearLine()`, age-banded so the filler suits the life stage.
+*Files:* `life_sim_controller.dart`
+
 ### Process / tooling
 
 **`responsive_layout_test.dart` silently failed to compile**
@@ -862,7 +938,9 @@ does not ship.
 flutter analyze && flutter test
 ```
 
-144 tests covering responsive layout at seven viewports (now including
-Feedback and the Adventure map-pending screen), chart painters against
-pathological input, working-order accounting, the Life simulation rules, the
-quiz bank, and asset integrity.
+480 tests covering responsive layout at eight viewports (including the Life
+sim itself, Feedback, and the Adventure map-pending screen), the money
+panel at seven widths, the life-event chain wiring, chart painters against pathological input,
+working-order accounting, the Life simulation rules and its budgeting
+model, town-map reachability, the side-walk frame selection, candle
+caching, the quiz bank, and asset integrity.

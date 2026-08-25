@@ -2309,3 +2309,268 @@ a transient outage in place for the whole TTL and a retry could never
 recover; `candle_cache_test.dart` covers that case specifically, along with
 cache hits, per-range and per-symbol separation, and the concurrent-request
 path.
+
+---
+
+## 29. The side walk, and making the money model visible
+
+### The side-walk sprite: the real defect, and why no redraw shipped
+
+§27 measured the west/east rows structurally — legs alternate, the two
+halves mirror, feet stay planted — and every check passed while the
+animation still looked wrong. That is because the fault was not in the
+*cycle*; it was in two individual frames.
+
+Rendering the west row's leg region enlarged showed it immediately:
+**columns 0 and 4 have two legs side by side, symmetric about the body,
+with a gap between them.** That is a *front-facing* stance drawn onto a
+profile body. Columns 1-3 and 5-7 are correct profile strides. So twice per
+cycle the character snapped face-on and back, which no structural
+measurement of the cycle could ever catch, because the cycle was fine.
+
+A pixel scan of row 2, frame 0 confirmed the shape:
+
+```
+y=118..136   leg A x=27..46 | GAP x=47..51 | leg B x=52..71
+y=138..146   shoes, one solid block
+```
+
+Worse, `idleLeft` was `frame(2)` — which loads **column 0 of row 2**, the
+bad frame. Standing still facing west held the wrong pose indefinitely
+instead of flashing past it, which is almost certainly the version of this
+bug that was most visible.
+
+**Three redraws were prototyped and all three were rejected.** Filling the
+gap merged the legs into one chunky column that did not match frame 1's
+weight. Deleting the far leg left the remaining one sitting off-centre
+under the coat. Re-centring the survivor moved it out from under the torso.
+Each was measurably worse art than what shipped, so the script was deleted
+rather than committed.
+
+**What shipped instead: stop using the bad frames.** `kSideWalkFrames`
+is `[1, 2, 3, 5, 6, 7]` and `kSideIdleFrame` is `1`. What remains is
+contact-pass-contact for each leg — a valid six-frame cycle — and it
+cannot damage the source art. `createAnimation` only takes a contiguous
+`from`/`to`, so `_loadRowFrames` builds the animation from an explicit
+column list via `SpriteAnimation.spriteList`.
+
+This is a workaround, and the comment in the code says so: a genuine fix
+means a pixel artist drawing two profile neutral frames. Until then the
+constant is a single place to undo it.
+
+`test/town_map_test.dart` guards it — the bad columns stay excluded, the
+count stays even (an odd count would make the same leg lead twice at the
+loop point), every column is real, and the idle frame is one of the good
+ones.
+
+### The money model was real and invisible
+
+The Life sim already modelled cash, an emergency fund, investments, debt at
+18% a year, and a needs/wants/savings split. None of it was on the feed.
+The header showed a coin count; everything else lived behind the Money
+menu. A player could live a whole life and never be shown that a budget
+existed.
+
+Worse, `_applyBudget()` only ever wrote to the feed to *complain* — on a
+needs shortfall or on debt interest. A year where the budget worked
+produced no money line at all. The implicit lesson was "budgeting is
+something that shows up when you get it wrong".
+
+Three changes, in order of how much they matter:
+
+1. **A paycheck line every working year.** `_applyBudget()` now always
+   names the three numbers: `Paycheck 2400. Needs 1200, wants 720,
+   savings 480.` Before a budget is chosen it says so instead, and points
+   at the menu. Four tests in `budget_teaching_test.dart` cover it,
+   including that a year with no salary writes no such line.
+2. **`LifeMoneyPanel`, on the feed, under the year card.** Four tiles —
+   cash, saved, invested, owed — so the categories become familiar before
+   the vocabulary is explained; the split as a bar rather than three
+   percentages; and the emergency fund expressed as *months of cover*,
+   which is the entire point of the concept and the part a balance never
+   communicates. Under 18 it shows an age-appropriate note instead of a
+   disabled budget bar, because a control you are not allowed to touch
+   teaches nothing.
+3. **The concepts strip.** `FinanceConcept`s were already being recorded by
+   `_teach(...)`, but only visible inside a menu. They now show as a row of
+   16 glyph slots that fills in, with a `4/16` count. The empty slots are
+   the invitation.
+
+### Emoji as structure, not decoration
+
+`LifeLogEntry` gained a `kind`. The tempting cheap version was to guess the
+category by scanning the log text for words like "paid" or "school", but a
+single sentence can mention a job, a cost and a friend, and the scan would
+pick whichever keyword came first. Tagging at the point the line is
+*written* is the only version that is right. Event outcomes derive their
+kind from what the choice actually did (`_kindOf`), money first — if a
+choice moved coins or taught an idea, that is the headline.
+
+The stat pills became meters with bars: "46" means nothing on its own, a
+bar not quite half full is legible to the youngest end of this app's
+audience. Net worth and investments left that row entirely — they are in
+the money panel now, and repeating them made money look like one more stat
+out of five rather than the subject of the game. The happiness face now
+reacts to the value; it used to be a static "very satisfied" icon sitting
+next to a 12% bar.
+
+### A `Spacer` between two rigid labels overflowed at 288px
+
+`test/life_money_panel_test.dart` caught this before it shipped: the budget
+strip's header row overflowed by 9.8px at 288 wide.
+
+The cause is worth remembering, because the fix is not the obvious one. A
+`Spacer` is `Expanded`, which makes it a **flex child** — so it competes
+with any `Flexible` siblings for the same free space, and the labels get
+squeezed instead of the gap. The pattern that works is `Expanded` on the
+label that may give way, a fixed `SizedBox` gap, and the figure that must
+stay readable left rigid. All three headers in the panel use that shape
+now.
+
+### The Corner Store is a place now, not a dialog
+
+Walking into a shop used to open a modal bottom sheet with a 96px strip of
+interior art across the top. It read as a menu with a picture on it — the
+building was never somewhere you *went*.
+
+`TownInteriorScreen` is a pushed route. The room art is the room (`fitWidth`
+aligned top, with the scaffold painted the floor colour sampled out of the
+art's bottom strip, so the floor continues below rather than the app
+background showing through — `cover` on a 500x175 source crops away either
+the whole wall or the whole floor on a tall phone). The layout goes side by
+side when the viewport is wider than 1.15x its height, which on this screen
+is the *common* case, since the Adventure map locks landscape and this
+pushes on top of it.
+
+The shopkeeper is animated. `PixelFrameAnimation` is new and exists because
+all of this project's character art ships one PNG per frame, and the only
+thing that could animate that was Flame, inside the Bonfire canvas —
+so every screen outside the map was showing a still. Frames are precached
+before the timer starts; on a four-frame idle, the decode stutter is
+otherwise most of the animation.
+
+Choosing an option plays the 14-frame `sell` sequence — the shopkeeper
+ducks under the counter and comes back with a parcel — and the screen pops
+when it finishes, so the purchase visibly happens instead of the screen
+vanishing mid-tap. The choice list is disabled while it plays so a second
+tap cannot queue a second purchase.
+
+**One asset quirk worth knowing.** The stall sprites are 240x175 and their
+left 24 columns are an opaque purple wall panel from the sprite's original
+scene, so drawn over a different room the untrimmed sprite paints a stripe
+across the wall. It is trimmed at draw time with `ClipRect` +
+`Align(widthFactor:)` rather than by re-exporting, because there are 36
+files across the two stalls and an edited copy would drift from the source.
+Purple also fills the triangle above the sloping awning; that part is left
+alone, since it reads as wall behind the stall and removing it would mean
+editing every frame.
+
+Every other building takes the NPC branch instead — the suited character at
+the bank, the worker at the job board — using idle frames that already
+shipped and had never been used outside the map.
+
+Both variants are in the responsive sweep (`Corner Store interior` and
+`Bank interior`) at all eight viewports.
+
+---
+
+## 30. Chains, and the job nobody could get
+
+### The pool was 109 events and still felt repetitive
+
+Adding more events was the obvious answer and would not have worked. Every
+event was **standalone**: it fired, it moved numbers, and nothing downstream
+could know it had happened. A run draws roughly sixty of them, so two runs
+differed in *which cards came up* and never in what the life was about. A
+hundred unrelated beats in a random order still reads as a shuffled deck.
+
+`LifeFlag` is the memory that fixes the shape rather than the count.
+`LifeChoice.setsFlag`/`clearsFlag` record what happened;
+`LifeEvent.requiresFlag`/`forbidsFlag` gate on it. An enum rather than free
+strings, because a typo would produce a beat that silently never fires —
+invisible, since a missing event looks exactly like an unlucky roll.
+
+`kLifeEventsChains` has eight storylines. They are mostly money on purpose:
+taking a credit card at twenty-two teaches nothing on its own, and the
+minimum-payment trap three years later teaches everything — but only if the
+game remembers the card. Same with index investing: "hold or sell" is only a
+decision worth having if you were the one who invested.
+
+**Chain beats are boosted 4x in the draw** (`_openChainBoost`). Left on their
+declared weight, the third beat of a four-step storyline has to win a
+weighted roll against 120-odd standalone events, three separate times,
+inside one life — `chain_index_payoff` was unreachable across 2,000
+simulated lives before the boost existed, and that is the beat where twenty
+years of leaving a fund alone finally shows the player what compounding did.
+Applied in the draw rather than baked into each event's weight, so it stays
+one rule that every future chain inherits.
+
+`life_chains_test.dart` checks the wiring rather than the prose: every flag a
+continuation waits on is set by something, every flag that *gates* something
+can also be cleared, openers are not themselves gated, and every thread has
+at least one beat that advances it. Those four caught three real content
+holes on first run — `hasSideHustle` had no ending, `heldThroughCrash` never
+closed, and the `chain_hustle_grow` beat left a business still flagged as a
+side hustle.
+
+**Chains are also visible.** `_YourLifeStrip` shows what you currently
+*have* — dog, car, card, debt — because a chain the player cannot see is
+indistinguishable from coincidence, and the vet bill six years after
+adopting the dog only lands as a consequence if you knew in between that you
+had a dog. Chain beats also carry a "Because of the dog" badge on the event
+card.
+
+### Quiet years were the most repeated string in the game
+
+About a quarter of years draw no event, by design, so events feel like
+events. Every one of them printed the identical sentence: "Turned 12. A quiet
+year." The *most common* line in the feed was the only line that never
+varied, so a run looked repetitive even when its events were not.
+`_quietYearLine()` is age-banded, because "you learned to ride a bike" and
+"your knees have opinions about the weather" are both quiet years and neither
+works at the other end of a life.
+
+### Most players could never get a job
+
+Found by instrumenting simulated runs while checking something else: three of
+four seeds reached **age forty still listed as "Newborn" on zero salary**.
+
+Only eight of the ~130 events could set a job, each behind its own age or
+skill gate *and* behind the player picking that specific branch. With no
+salary, `canBudget` is false — so the budget split, the emergency fund, the
+paycheck line and the debt model were all unreachable. The entire thing the
+app exists to teach was gated behind a lottery.
+
+`findJob()` makes work a decision. Smarts widens the list you can reach,
+which is the one place in the game where studying visibly pays for itself,
+and the pick is best-of-two rolls so raising Smarts is *felt* rather than
+merely permitted.
+
+**The first version of the salary table was five times too generous** —
+900-3000 a year against career events paying 260-520 and a year of essentials
+costing 110-180. A simulated run banked a 6,378 emergency fund by thirty: a
+game with no tension and therefore no lesson. Rescaled to 240-560, with the
+ceiling deliberately at the *bottom* of what the career-ladder events award,
+so walking into a job stays worse than earning one. After that, the same four
+seeds finished at thirty with a small fund, no fund, a 468 debt, and a 6,674
+debt spiral on a 260 salary — which is a game where money decisions matter.
+
+### A test seam that immediately paid for itself
+
+`LifeSimPage` pushes character creation in a post-frame callback, so the
+responsive sweep pumping `LifeSimPage` was only ever measuring the
+**creation screen**. The feed — money panel, stat meters, event card, chain
+chips, every part that actually reflows — had no viewport coverage at all
+while appearing to have eight viewports' worth.
+
+`debugInitialLife` skips creation. Adding it surfaced two real overflows at
+320px within a minute:
+
+- **The bottom menu bar, by 3.4px.** Five rigid children with `spaceEvenly` —
+  which distributes *leftover* space and does nothing when there is none. The
+  four menu slots are `Expanded` now, sharing what is left beside the fixed
+  Age button.
+- **The header, by 1.1px.** It lives in `AppBar.title`, which hands it
+  whatever survives the back button and two actions. The avatar is decoration
+  and the name and balance are content, so the avatar is what drops below
+  210px.

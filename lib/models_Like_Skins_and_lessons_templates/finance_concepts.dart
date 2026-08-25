@@ -61,6 +61,35 @@ extension FinanceConceptInfo on FinanceConcept {
     FinanceConcept.lifestyleCreep => 'Lifestyle creep',
   };
 
+  /// A one-glyph shorthand for the idea.
+  ///
+  /// Sits alongside [icon] rather than replacing it: Material icons carry
+  /// the app's own styling and tint to any accent colour, which is what a
+  /// list row wants, while an emoji survives at 10px inside a chip where a
+  /// tinted vector turns into a smudge. Both are used, in different places.
+  ///
+  /// These read as *pictures of the idea*, not decoration — a basket for
+  /// needs versus wants, an umbrella for the emergency fund — so a reader
+  /// too young for the label still gets a hook.
+  String get emoji => switch (this) {
+    FinanceConcept.needsVsWants => '\u{1F9FA}',
+    FinanceConcept.opportunityCost => '\u{2696}',
+    FinanceConcept.payYourselfFirst => '\u{1F437}',
+    FinanceConcept.budgetRule => '\u{1F4CA}',
+    FinanceConcept.emergencyFund => '\u{2602}',
+    FinanceConcept.compoundGrowth => '\u{1F331}',
+    FinanceConcept.interestCost => '\u{1F4B3}',
+    FinanceConcept.creditScore => '\u{1F3AF}',
+    FinanceConcept.inflation => '\u{1F388}',
+    FinanceConcept.diversification => '\u{1F95A}',
+    FinanceConcept.incomeVsWealth => '\u{1F45B}',
+    FinanceConcept.insurance => '\u{1F6E1}',
+    FinanceConcept.taxes => '\u{1F9FE}',
+    FinanceConcept.impulseSpending => '\u{26A1}',
+    FinanceConcept.sunkCost => '\u{1F573}',
+    FinanceConcept.lifestyleCreep => '\u{1F6CD}',
+  };
+
   IconData get icon => switch (this) {
     FinanceConcept.needsVsWants => Icons.shopping_basket_rounded,
     FinanceConcept.opportunityCost => Icons.compare_arrows_rounded,

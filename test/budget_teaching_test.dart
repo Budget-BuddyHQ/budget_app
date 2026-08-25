@@ -290,4 +290,161 @@ void main() {
       }
     });
   });
+
+  group('the paycheck is visible every year', () {
+    // Before this the budget ran silently and only spoke up on a shortfall
+    // or on debt interest, so the one mechanic the game exists to teach
+    // was invisible on exactly the years it went well.
+    test('a working year always writes a money line', () {
+      final life = _employed();
+      life.setBudget(needs: 50, wants: 30, savings: 20);
+      final before = life.history.length;
+      life.ageUp();
+      final added = life.history.skip(before);
+      expect(
+        added.where((e) => e.kind == LifeLogKind.money),
+        isNotEmpty,
+        reason: 'a year with a salary must name the split in the feed',
+      );
+    });
+
+    test('it names all three slices once a budget is chosen', () {
+      final life = _employed(salary: 1000);
+      life.setBudget(needs: 50, wants: 30, savings: 20);
+      final before = life.history.length;
+      life.ageUp();
+      final line = life.history
+          .skip(before)
+          .firstWhere((e) => e.text.startsWith('Paycheck'));
+      expect(line.text, contains('Needs 500'));
+      expect(line.text, contains('wants 300'));
+      expect(line.text, contains('savings 200'));
+    });
+
+    test('before a budget is chosen it says so', () {
+      final life = _employed();
+      final before = life.history.length;
+      life.ageUp();
+      final line = life.history
+          .skip(before)
+          .firstWhere((e) => e.text.startsWith('Paycheck'));
+      expect(line.text, contains('50/30/20'));
+    });
+
+    test('a year with no salary writes no paycheck line', () {
+      final life = LifeSimController(
+        random: Random(3),
+        initialAge: 8,
+        startMoney: 0,
+      );
+      final before = life.history.length;
+      life.ageUp();
+      expect(
+        life.history.skip(before).where((e) => e.text.startsWith('Paycheck')),
+        isEmpty,
+      );
+    });
+  });
+
+  group('getting a job', () {
+    // Only eight of the ~130 events could hand out a job, each behind its
+    // own gate and behind picking one specific branch. Simulated lives
+    // routinely hit forty on zero salary, which meant `canBudget` never
+    // became true and the entire budgeting model — the thing this app
+    // exists to teach — was unreachable for most players.
+    LifeSimController jobless({int age = 25, int seed = 3}) =>
+        LifeSimController(random: Random(seed), initialAge: age);
+
+    test('an adult with no job can find one', () {
+      final life = jobless();
+      expect(life.canBudget, isFalse);
+      expect(life.findJob(), isTrue);
+      expect(life.salary, greaterThan(0));
+      expect(life.canBudget, isTrue);
+    });
+
+    test('a child cannot', () {
+      final life = jobless(age: 9);
+      expect(life.canJobHunt, isFalse);
+      expect(life.findJob(), isFalse);
+      expect(life.salary, 0);
+    });
+
+    test('the age gate is exactly the documented one', () {
+      expect(
+        jobless(age: LifeSimController.jobHuntingAge - 1).canJobHunt,
+        isFalse,
+      );
+      expect(jobless(age: LifeSimController.jobHuntingAge).canJobHunt, isTrue);
+    });
+
+    test('you cannot take a second job while employed', () {
+      final life = _employed();
+      expect(life.canJobHunt, isFalse);
+      expect(life.findJob(), isFalse);
+      expect(life.job, 'Tester');
+    });
+
+    test('quitting makes you employable again', () {
+      final life = _employed();
+      life.quitJob();
+      expect(life.canJobHunt, isTrue);
+      expect(life.findJob(), isTrue);
+    });
+
+    test('being hired teaches the budget rule', () {
+      // The moment a salary exists is the moment a split becomes a real
+      // decision, so that is where the idea is introduced.
+      final life = jobless();
+      life.findJob();
+      expect(life.conceptsMet, contains(FinanceConcept.budgetRule));
+    });
+
+    test('smarter characters reach better-paid work', () {
+      // Averaged over many draws rather than asserted on one, because the
+      // pick is deliberately random within what is open — the guarantee is
+      // that studying pays, not that it pays every single time.
+      int averageSalary(int smarts) {
+        var total = 0;
+        const runs = 60;
+        for (var seed = 0; seed < runs; seed++) {
+          final life = LifeSimController(random: Random(seed), initialAge: 30);
+          for (var i = 0; i < 40 && life.smarts < smarts; i++) {
+            life.visitLibrary();
+          }
+          life.findJob();
+          total += life.salary;
+        }
+        return total ~/ runs;
+      }
+
+      expect(averageSalary(95), greaterThan(averageSalary(30)));
+    });
+
+    test('the market never offers nothing to a zero-smarts character', () {
+      final life = LifeSimController(random: Random(8), initialAge: 30);
+      expect(life.findJob(), isTrue);
+    });
+
+    test('entry-level pay stays below the career ladders', () {
+      // Walking into a job should always be worse than earning one through
+      // the music/sports/business events, or those ladders stop mattering.
+      var best = 0;
+      for (var seed = 0; seed < 200; seed++) {
+        final life = LifeSimController(random: Random(seed), initialAge: 30);
+        for (var i = 0; i < 60; i++) {
+          life.visitLibrary();
+        }
+        life.findJob();
+        if (life.salary > best) best = life.salary;
+      }
+      expect(
+        best,
+        lessThanOrEqualTo(600),
+        reason:
+            'entry-level pay reached $best, which is at or above what the '
+            'career events award',
+      );
+    });
+  });
 }

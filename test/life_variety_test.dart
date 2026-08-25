@@ -150,8 +150,15 @@ void main() {
       // record_deal required 10, with no other source of music fame — so the
       // top three events on this ladder could never fire for anybody. 400
       // simulated lives never saw one of them.
+      //
+      // Widened 120 -> 300 when the chain pack (kLifeEventsChains) landed,
+      // for the same reason the sweep below was widened 200 -> 400: this is
+      // a *sampling* guard, so its sensitivity falls with every batch of
+      // new content competing for the same draws. The tell that it is the
+      // sample and not the content is that the exhaustive sweep below —
+      // which is strictly harder to pass — still went green.
       final seen = <String>{};
-      for (var seed = 0; seed < 120; seed++) {
+      for (var seed = 0; seed < 300; seed++) {
         seen.addAll(_play(seed + 900, focus: LifeSkill.music).fired);
       }
       for (final id in ['first_gig', 'record_deal', 'sold_out_tour']) {
