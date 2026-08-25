@@ -21,6 +21,7 @@ import '../../../widgets_custom_lotties/profile_avatar.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../money_habits/money_habits_screen.dart';
 import 'leaderboard_screen.dart';
+import '../../../widgets_custom_lotties/fitted_label.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -338,10 +339,8 @@ class _LeaderboardPromoCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  FittedLabel(
                     'Leaderboard',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.pixelifySans(
                       color: Colors.white,
                       fontSize: 16,
@@ -349,11 +348,14 @@ class _LeaderboardPromoCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
+                  // Shortened rather than ellipsised. `$gold` can be seven
+                  // digits, so the sentence length varies with the player's
+                  // balance — the long version fit at 1,200 gold and
+                  // truncated at 999,999. Naming the two boards was the
+                  // expendable half; the card opens straight onto them.
                   Text(
-                    'You\'ve got $gold gold — see who\'s ahead in Finance '
-                    'Wizards and Most Gold.',
+                    'You have $gold gold — see where that ranks.',
                     maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.quicksand(
                       color: Colors.white.withValues(alpha: 0.78),
                       fontSize: 12.5,
@@ -365,11 +367,7 @@ class _LeaderboardPromoCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: _gold,
-              size: 30,
-            ),
+            const Icon(Icons.chevron_right_rounded, color: _gold, size: 30),
           ],
         ),
       ),
@@ -511,10 +509,8 @@ class _AdventureLaunchHero extends StatelessWidget {
                               ).withValues(alpha: 0.20),
                             ),
                           ),
-                          child: Text(
+                          child: FittedLabel(
                             'Level ${stats.level}  |  ${stats.gold} Gold',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.pixelifySans(
                               color: Color(0xFF85EFAC),
                               fontSize: 11,
@@ -550,21 +546,33 @@ class _AdventureLaunchHero extends StatelessWidget {
                             ),
                           ),
                         ),
-                        if (!veryTight) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            'Start a life, then walk the town — the store, '
-                            'the bank and the job board are all real money '
-                            'decisions.',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.quicksand(
-                              color: Colors.white.withValues(alpha: 0.80),
-                              height: 1.32,
-                              fontWeight: FontWeight.w700,
-                            ),
+                        SizedBox(height: veryTight ? 5 : 8),
+                        // Always shown. This used to be wrapped in
+                        // `if (!veryTight)`, where veryTight is
+                        // `maxHeight < 196` — and the hero's own computed
+                        // height lands within a couple of pixels of 196 on
+                        // a phone. So a hair more or less available height
+                        // made a whole paragraph appear or vanish, which is
+                        // why a *wider* window could show *less* text than
+                        // a narrow one. Content should not blink in and out
+                        // on a 2px threshold.
+                        //
+                        // Copy shortened instead so it fits two lines
+                        // unaided at any width this app supports, with no
+                        // ellipsis. It also no longer repeats "Start a
+                        // life", which the button directly below already
+                        // says.
+                        Text(
+                          'Walk the town — every shop is a real money '
+                          'decision.',
+                          maxLines: 2,
+                          style: GoogleFonts.quicksand(
+                            color: Colors.white.withValues(alpha: 0.80),
+                            height: 1.3,
+                            fontSize: veryTight ? 12.5 : 13.5,
+                            fontWeight: FontWeight.w700,
                           ),
-                        ],
+                        ),
                         SizedBox(height: veryTight ? 10 : 16),
                         _ActionButton(
                           label: 'Start a Life',
@@ -685,10 +693,8 @@ class _CurrentObjectiveCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Text(
+                        FittedLabel(
                           'Daily run | Academy | Arcade tools',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.64),
                             fontWeight: FontWeight.w700,
@@ -872,10 +878,8 @@ class _ObjectiveIconButton extends StatelessWidget {
                   if (!iconOnly) ...[
                     const SizedBox(width: 6),
                     Flexible(
-                      child: Text(
+                      child: FittedLabel(
                         label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.pixelifySans(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
@@ -1049,11 +1053,8 @@ class _ActionButtonState extends State<_ActionButton>
                           ),
                           SizedBox(width: widget.compact ? 6 : 8),
                           Flexible(
-                            child: Text(
+                            child: FittedLabel(
                               widget.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: false,
                               style: GoogleFonts.pixelifySans(
                                 color: Color(0xFF062C21),
                                 fontWeight: FontWeight.w700,

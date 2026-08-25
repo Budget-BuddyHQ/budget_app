@@ -2412,7 +2412,12 @@ const List<QuizQuestion> _unit10Quiz = <QuizQuestion>[
     prompt:
         'You get two coins and put both in your piggy bank instead of '
         'spending them. What did you just do?',
-    options: ['Lost your coins', 'Spent your coins', 'Traded your coins', 'Saved your coins'],
+    options: [
+      'Lost your coins',
+      'Spent your coins',
+      'Traded your coins',
+      'Saved your coins',
+    ],
     correctIndex: 3,
     explanation:
         'Putting money away instead of spending it right away is called '
@@ -2437,7 +2442,8 @@ const List<QuizQuestion> _unit10Test = <QuizQuestion>[
   QuizQuestion(
     id: 'u10t2',
     skillId: QuizSkills.earlySaving,
-    prompt: 'Why might you choose to save a coin instead of spending it right away?',
+    prompt:
+        'Why might you choose to save a coin instead of spending it right away?',
     options: [
       'So it disappears faster',
       'So you have it later for something you want more',
@@ -2468,9 +2474,15 @@ const List<QuizQuestion> _unit10Test = <QuizQuestion>[
     id: 'u10t4',
     skillId: QuizSkills.earlySaving,
     prompt: 'Where is a good safe place to keep coins you want to save?',
-    options: ['On the floor', 'In a piggy bank', 'Outside in the rain', 'In your mouth'],
+    options: [
+      'On the floor',
+      'In a piggy bank',
+      'Outside in the rain',
+      'In your mouth',
+    ],
     correctIndex: 1,
-    explanation: 'A piggy bank keeps your coins together and safe until you need them.',
+    explanation:
+        'A piggy bank keeps your coins together and safe until you need them.',
   ),
   QuizQuestion(
     id: 'u10t5',
@@ -2483,12 +2495,14 @@ const List<QuizQuestion> _unit10Test = <QuizQuestion>[
       'Nothing, toys are free',
     ],
     correctIndex: 0,
-    explanation: 'Buying something at a store means paying enough money for it.',
+    explanation:
+        'Buying something at a store means paying enough money for it.',
   ),
   QuizQuestion(
     id: 'u10t6',
     skillId: QuizSkills.earlySaving,
-    prompt: 'You have 3 coins. You spend all 3 on candy. How many coins are left to save?',
+    prompt:
+        'You have 3 coins. You spend all 3 on candy. How many coins are left to save?',
     options: ['3', '2', '1', '0'],
     correctIndex: 3,
     explanation: 'Spending all of your coins means none are left to save.',
@@ -2529,7 +2543,12 @@ const List<QuizQuestion> _unit11Practice = <QuizQuestion>[
     id: 'u11p2',
     skillId: QuizSkills.wantsVsNeeds,
     prompt: 'Which of these is a want, not a need?',
-    options: ['A warm coat in winter', 'A new video game', 'Food for dinner', 'A place to sleep'],
+    options: [
+      'A warm coat in winter',
+      'A new video game',
+      'Food for dinner',
+      'A place to sleep',
+    ],
     correctIndex: 1,
     explanation:
         'A need is something you cannot really do without. A video game is '
@@ -2558,14 +2577,10 @@ const List<QuizQuestion> _unit11Quiz = <QuizQuestion>[
     id: 'u11q1',
     skillId: QuizSkills.allowanceEarning,
     prompt: 'Doing a chore to earn money is an example of:',
-    options: [
-      'Saving',
-      'Spending',
-      'Earning',
-      'Borrowing',
-    ],
+    options: ['Saving', 'Spending', 'Earning', 'Borrowing'],
     correctIndex: 2,
-    explanation: 'Earning means getting money in exchange for doing something, like a chore.',
+    explanation:
+        'Earning means getting money in exchange for doing something, like a chore.',
   ),
   QuizQuestion(
     id: 'u11q2',
@@ -2573,15 +2588,18 @@ const List<QuizQuestion> _unit11Quiz = <QuizQuestion>[
     prompt: 'Your shoes have holes and hurt your feet. New shoes are a:',
     options: ['Want', 'Need', 'Trick', 'Toy'],
     correctIndex: 1,
-    explanation: 'Shoes that actually work are a need — you use them every day and cannot go without them.',
+    explanation:
+        'Shoes that actually work are a need — you use them every day and cannot go without them.',
   ),
   QuizQuestion(
     id: 'u11q3',
     skillId: QuizSkills.simpleSavingsPlan,
-    prompt: 'You get \$5 a week. You decide to save \$2 and spend \$3 every week. This is called:',
+    prompt:
+        'You get \$5 a week. You decide to save \$2 and spend \$3 every week. This is called:',
     options: ['A trade', 'A plan', 'A loan', 'A gift'],
     correctIndex: 1,
-    explanation: 'Deciding ahead of time how to split your money between saving and spending is a plan.',
+    explanation:
+        'Deciding ahead of time how to split your money between saving and spending is a plan.',
   ),
   QuizQuestion(
     id: 'u11q4',
@@ -2618,14 +2636,21 @@ const List<QuizQuestion> _unit11Test = <QuizQuestion>[
     id: 'u11t2',
     skillId: QuizSkills.wantsVsNeeds,
     prompt: 'Which of these is a need?',
-    options: ['A poster for your wall', 'Dinner tonight', 'A new toy', 'Extra stickers'],
+    options: [
+      'A poster for your wall',
+      'Dinner tonight',
+      'A new toy',
+      'Extra stickers',
+    ],
     correctIndex: 1,
-    explanation: 'Food is something your body needs regularly — that makes it a need, not a want.',
+    explanation:
+        'Food is something your body needs regularly — that makes it a need, not a want.',
   ),
   QuizQuestion(
     id: 'u11t3',
     skillId: QuizSkills.simpleSavingsPlan,
-    prompt: 'You want to buy a \$20 toy. You save \$5 a week. About how many weeks until you can buy it?',
+    prompt:
+        'You want to buy a \$20 toy. You save \$5 a week. About how many weeks until you can buy it?',
     options: ['1 week', '2 weeks', '4 weeks', '10 weeks'],
     correctIndex: 2,
     explanation: 'Saving \$5 a week for 4 weeks adds up to \$20.',
@@ -2642,12 +2667,14 @@ const List<QuizQuestion> _unit11Test = <QuizQuestion>[
       'Only lets grown-ups inside',
     ],
     correctIndex: 1,
-    explanation: 'A bank\'s main job is keeping money safe and helping people save and manage it.',
+    explanation:
+        'A bank\'s main job is keeping money safe and helping people save and manage it.',
   ),
   QuizQuestion(
     id: 'u11t5',
     skillId: QuizSkills.allowanceEarning,
-    prompt: 'You do the dishes every day and get \$1 each time. After 5 days, how much have you earned?',
+    prompt:
+        'You do the dishes every day and get \$1 each time. After 5 days, how much have you earned?',
     options: ['\$1', '\$3', '\$5', '\$10'],
     correctIndex: 2,
     explanation: '\$1 a day for 5 days adds up to \$5.',
@@ -2656,7 +2683,8 @@ const List<QuizQuestion> _unit11Test = <QuizQuestion>[
   QuizQuestion(
     id: 'u11t6',
     skillId: QuizSkills.wantsVsNeeds,
-    prompt: 'Why is it useful to know the difference between a need and a want?',
+    prompt:
+        'Why is it useful to know the difference between a need and a want?',
     options: [
       'So you always buy wants first',
       'So you can decide what really matters before you spend',

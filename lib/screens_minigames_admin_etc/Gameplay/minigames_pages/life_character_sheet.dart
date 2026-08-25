@@ -22,12 +22,35 @@ class LifeCharacter {
 }
 
 const List<String> _firstNames = [
-  'Alex', 'Sam', 'Jordan', 'Riley', 'Casey', 'Morgan', 'Quinn', 'Avery',
-  'Rowan', 'Kai', 'Noor', 'Ellis', 'Frankie', 'Sasha', 'Devon',
+  'Alex',
+  'Sam',
+  'Jordan',
+  'Riley',
+  'Casey',
+  'Morgan',
+  'Quinn',
+  'Avery',
+  'Rowan',
+  'Kai',
+  'Noor',
+  'Ellis',
+  'Frankie',
+  'Sasha',
+  'Devon',
 ];
 const List<String> _lastNames = [
-  'Morgan', 'Reyes', 'Okafor', 'Lindqvist', 'Nakamura', 'Silva', 'Bennett',
-  'Haddad', 'Kowalski', 'Osei', 'Romano', 'Fischer',
+  'Morgan',
+  'Reyes',
+  'Okafor',
+  'Lindqvist',
+  'Nakamura',
+  'Silva',
+  'Bennett',
+  'Haddad',
+  'Kowalski',
+  'Osei',
+  'Romano',
+  'Fischer',
 ];
 
 /// Character creation for a new life: name, gender, and the family you are
@@ -66,9 +89,7 @@ class _LifeCharacterSheetState extends State<LifeCharacterSheet> {
       LifeOrigin.comfortable: 22,
       LifeOrigin.wealthy: 8,
     };
-    var roll = _random.nextInt(
-      originWeights.values.reduce((a, b) => a + b),
-    );
+    var roll = _random.nextInt(originWeights.values.reduce((a, b) => a + b));
     var picked = LifeOrigin.workingClass;
     for (final entry in originWeights.entries) {
       roll -= entry.value;
@@ -231,7 +252,10 @@ class _LifeCharacterSheetState extends State<LifeCharacterSheet> {
               icon: const Icon(Icons.child_care_rounded),
               label: Text(
                 'Begin life',
-                style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700, fontSize: 16),
+                style: GoogleFonts.pixelifySans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
               ),
             ),
           ],

@@ -26,11 +26,8 @@ class AchievementCelebration {
     return showDialog<void>(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.72),
-      builder: (_) => _AchievementDialog(
-        title: title,
-        subtitle: subtitle,
-        accent: accent,
-      ),
+      builder: (_) =>
+          _AchievementDialog(title: title, subtitle: subtitle, accent: accent),
     );
   }
 }

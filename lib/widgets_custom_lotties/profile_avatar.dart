@@ -59,11 +59,7 @@ class ProfileAvatar extends StatelessWidget {
             : null,
       ),
       child: ClipOval(
-        child: SizedBox(
-          width: inner,
-          height: inner,
-          child: _buildImage(inner),
-        ),
+        child: SizedBox(width: inner, height: inner, child: _buildImage(inner)),
       ),
     );
   }

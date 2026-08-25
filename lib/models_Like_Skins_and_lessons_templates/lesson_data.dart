@@ -1,13 +1,154 @@
 import 'lesson.dart';
 
+/// The curriculum, **in chronological (age) order** — ages 4-6 first,
+/// adult last, one continuous prerequisite chain from Unit 1 to Unit 11.
+///
+/// It did not use to be. The youngest units were pinned to the *end* of
+/// this list, because `DailyPlanBuilder._nextLesson` walked it in raw list
+/// order and quested the first uncompleted node — so putting "What Is
+/// Money?" first would have made it every adult's daily quest. List
+/// position was secretly encoding difficulty, which meant the list could
+/// never be in the order a reader expects, and the Academy's own unit strip
+/// (which sorts by `ageStage.minAge`) permanently disagreed with it.
+///
+/// That coupling is gone: `_nextLesson` now takes the reader's `AgeStage`
+/// and skips units below it, so list order is free to mean what it looks
+/// like it means.
+///
+/// **Two invariants to preserve when editing:**
+///
+/// 1. **`id`s are permanent.** Progress is stored per lesson/unit id
+///    (`completed_lessons`), so renumbering a *title* is safe but renaming
+///    an id silently orphans every player's history. That is why `unit_10`
+///    is titled "Unit 1" — the display number follows position, the id does
+///    not move.
+/// 2. **One chain, in list order.** Each unit's first lesson lists the
+///    previous unit's final test as its prerequisite; only the very first
+///    unit is a root. `test/lesson_data_test.dart` enforces this.
 const List<LessonUnit> lessonUnits = <LessonUnit>[
   LessonUnit(
+    id: 'unit_10',
+    title: 'Unit 1: Money Is Real',
+    subtitle: 'The very first ideas about money',
+    description:
+        'What money actually is, why things cost money, and the first idea '
+        'behind saving: a piggy bank. Written for the very youngest players — '
+        'best explored together with a grown-up or older sibling.',
+    order: 1,
+    ageStage: AgeStage.earlyChildhood,
+    lessons: <Lesson>[
+      Lesson(
+        id: 'lesson_46',
+        title: 'What Is Money?',
+        unitId: 'unit_10',
+        order: 1,
+        estimatedMinutes: 5,
+      ),
+      Lesson(
+        id: 'lesson_47',
+        title: 'Things Cost Money',
+        unitId: 'unit_10',
+        order: 2,
+        prerequisites: <String>['lesson_46'],
+        estimatedMinutes: 5,
+      ),
+      Lesson(
+        id: 'quiz_10',
+        title: 'Quick Quiz',
+        unitId: 'unit_10',
+        order: 3,
+        type: LessonNodeType.quiz,
+        prerequisites: <String>['lesson_47'],
+        estimatedMinutes: 4,
+      ),
+      Lesson(
+        id: 'lesson_48',
+        title: 'Saving in a Piggy Bank',
+        unitId: 'unit_10',
+        order: 4,
+        prerequisites: <String>['quiz_10'],
+        estimatedMinutes: 5,
+      ),
+      Lesson(
+        id: 'test_10',
+        title: 'Unit Test',
+        unitId: 'unit_10',
+        order: 5,
+        type: LessonNodeType.unitTest,
+        prerequisites: <String>['lesson_48'],
+        estimatedMinutes: 4,
+      ),
+    ],
+  ),
+  LessonUnit(
+    id: 'unit_11',
+    title: 'Unit 2: Saving and Spending',
+    subtitle: 'Your first real choices with money',
+    description:
+        'Earning a little money, telling a need from a want, and making a '
+        'simple plan for what to do with what you have.',
+    order: 2,
+    ageStage: AgeStage.youngKids,
+    lessons: <Lesson>[
+      Lesson(
+        id: 'lesson_49',
+        title: 'Earning an Allowance',
+        unitId: 'unit_11',
+        order: 1,
+        prerequisites: <String>['test_10'],
+        estimatedMinutes: 6,
+      ),
+      Lesson(
+        id: 'lesson_50',
+        title: 'Needs vs Wants',
+        unitId: 'unit_11',
+        order: 2,
+        prerequisites: <String>['lesson_49'],
+        estimatedMinutes: 6,
+      ),
+      Lesson(
+        id: 'quiz_11',
+        title: 'Quick Quiz',
+        unitId: 'unit_11',
+        order: 3,
+        type: LessonNodeType.quiz,
+        prerequisites: <String>['lesson_50'],
+        estimatedMinutes: 4,
+      ),
+      Lesson(
+        id: 'lesson_51',
+        title: 'Making a Simple Plan',
+        unitId: 'unit_11',
+        order: 4,
+        prerequisites: <String>['quiz_11'],
+        estimatedMinutes: 6,
+      ),
+      Lesson(
+        id: 'lesson_52',
+        title: 'Why Banks Keep Money Safe',
+        unitId: 'unit_11',
+        order: 5,
+        prerequisites: <String>['lesson_51'],
+        estimatedMinutes: 6,
+      ),
+      Lesson(
+        id: 'test_11',
+        title: 'Unit Test',
+        unitId: 'unit_11',
+        order: 6,
+        type: LessonNodeType.unitTest,
+        prerequisites: <String>['lesson_52'],
+        estimatedMinutes: 5,
+      ),
+    ],
+  ),
+  LessonUnit(
     id: 'unit_1',
-    title: 'Unit 1: Budgeting',
+    title: 'Unit 3: Budgeting',
     subtitle: 'Foundations',
     description:
         'Build the core habits behind budgeting, saving, and planning each dollar with intention.',
-    order: 1,
+    order: 3,
     ageStage: AgeStage.middleSchool,
     lessons: <Lesson>[
       Lesson(
@@ -15,6 +156,7 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
         title: 'Introduction to Budgeting',
         unitId: 'unit_1',
         order: 1,
+        prerequisites: <String>['test_11'],
       ),
       Lesson(
         id: 'lesson_2',
@@ -72,336 +214,14 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
     ],
   ),
   LessonUnit(
-    id: 'unit_2',
-    title: 'Unit 2: Credit',
-    subtitle: 'Borrowing, banking, and growth',
-    description:
-        'Learn how credit works, how to avoid harmful debt, and how long-term planning creates stability.',
-    order: 2,
-    ageStage: AgeStage.graduating,
-    lessons: <Lesson>[
-      Lesson(
-        id: 'lesson_6',
-        title: 'Credit and Debt Management',
-        unitId: 'unit_2',
-        order: 1,
-        prerequisites: <String>['test_1'],
-      ),
-      Lesson(
-        id: 'lesson_7',
-        title: 'Introduction to Investing',
-        unitId: 'unit_2',
-        order: 2,
-        prerequisites: <String>['lesson_6'],
-      ),
-      Lesson(
-        id: 'quiz_2',
-        title: 'Quick Quiz',
-        unitId: 'unit_2',
-        order: 3,
-        type: LessonNodeType.quiz,
-        prerequisites: <String>['lesson_7'],
-        estimatedMinutes: 4,
-      ),
-      Lesson(
-        id: 'lesson_8',
-        title: 'Banking and Financial Tools',
-        unitId: 'unit_2',
-        order: 4,
-        prerequisites: <String>['quiz_2'],
-      ),
-      Lesson(
-        id: 'lesson_9',
-        title: 'Emergency Planning',
-        unitId: 'unit_2',
-        order: 5,
-        prerequisites: <String>['lesson_8'],
-      ),
-      Lesson(
-        id: 'lesson_10',
-        title: 'Long-Term Financial Goals',
-        unitId: 'unit_2',
-        order: 6,
-        prerequisites: <String>['lesson_9'],
-      ),
-      Lesson(
-        id: 'test_2',
-        title: 'Unit Test',
-        unitId: 'unit_2',
-        order: 7,
-        type: LessonNodeType.unitTest,
-        prerequisites: <String>['lesson_10'],
-        estimatedMinutes: 6,
-      ),
-    ],
-  ),
-  LessonUnit(
-    id: 'unit_3',
-    title: 'Unit 3: Saving Systems',
-    subtitle: 'Cash flow and account setup',
-    description:
-        'Set up money systems that make saving easier, smoother, and more automatic.',
-    order: 3,
-    ageStage: AgeStage.highSchool,
-    lessons: <Lesson>[
-      Lesson(
-        id: 'lesson_11',
-        title: 'Pay Yourself First',
-        unitId: 'unit_3',
-        order: 1,
-        prerequisites: <String>['test_2'],
-      ),
-      Lesson(
-        id: 'lesson_12',
-        title: 'Sinking Funds',
-        unitId: 'unit_3',
-        order: 2,
-        prerequisites: <String>['lesson_11'],
-      ),
-      Lesson(
-        id: 'quiz_3',
-        title: 'Quick Quiz',
-        unitId: 'unit_3',
-        order: 3,
-        type: LessonNodeType.quiz,
-        prerequisites: <String>['lesson_12'],
-        estimatedMinutes: 4,
-      ),
-      Lesson(
-        id: 'lesson_13',
-        title: 'Choosing Savings Accounts',
-        unitId: 'unit_3',
-        order: 4,
-        prerequisites: <String>['quiz_3'],
-      ),
-      Lesson(
-        id: 'lesson_14',
-        title: 'Automating Good Habits',
-        unitId: 'unit_3',
-        order: 5,
-        prerequisites: <String>['lesson_13'],
-      ),
-      Lesson(
-        id: 'lesson_15',
-        title: 'Preparing for Irregular Costs',
-        unitId: 'unit_3',
-        order: 6,
-        prerequisites: <String>['lesson_14'],
-      ),
-      Lesson(
-        id: 'test_3',
-        title: 'Unit Test',
-        unitId: 'unit_3',
-        order: 7,
-        type: LessonNodeType.unitTest,
-        prerequisites: <String>['lesson_15'],
-        estimatedMinutes: 6,
-      ),
-    ],
-  ),
-  LessonUnit(
-    id: 'unit_4',
-    title: 'Unit 4: Investing Basics',
-    subtitle: 'Risk, growth, and strategy',
-    description:
-        'Learn how investing grows wealth over time and how to manage risk without guessing.',
-    order: 4,
-    ageStage: AgeStage.adult,
-    lessons: <Lesson>[
-      Lesson(
-        id: 'lesson_16',
-        title: 'Why People Invest',
-        unitId: 'unit_4',
-        order: 1,
-        prerequisites: <String>['test_3'],
-      ),
-      Lesson(
-        id: 'lesson_17',
-        title: 'Risk and Diversification',
-        unitId: 'unit_4',
-        order: 2,
-        prerequisites: <String>['lesson_16'],
-      ),
-      Lesson(
-        id: 'quiz_4',
-        title: 'Quick Quiz',
-        unitId: 'unit_4',
-        order: 3,
-        type: LessonNodeType.quiz,
-        prerequisites: <String>['lesson_17'],
-        estimatedMinutes: 4,
-      ),
-      Lesson(
-        id: 'lesson_18',
-        title: 'Stocks, Bonds, and Funds',
-        unitId: 'unit_4',
-        order: 4,
-        prerequisites: <String>['quiz_4'],
-      ),
-      Lesson(
-        id: 'lesson_19',
-        title: 'Compound Growth',
-        unitId: 'unit_4',
-        order: 5,
-        prerequisites: <String>['lesson_18'],
-      ),
-      Lesson(
-        id: 'lesson_20',
-        title: 'Long-Term Investor Mindset',
-        unitId: 'unit_4',
-        order: 6,
-        prerequisites: <String>['lesson_19'],
-      ),
-      Lesson(
-        id: 'test_4',
-        title: 'Unit Test',
-        unitId: 'unit_4',
-        order: 7,
-        type: LessonNodeType.unitTest,
-        prerequisites: <String>['lesson_20'],
-        estimatedMinutes: 6,
-      ),
-    ],
-  ),
-  LessonUnit(
-    id: 'unit_5',
-    title: 'Unit 5: Real-World Money Moves',
-    subtitle: 'Decision-making and adulthood',
-    description:
-        'Practice how budgeting, saving, credit, and investing connect in everyday life decisions.',
-    order: 5,
-    ageStage: AgeStage.graduating,
-    lessons: <Lesson>[
-      Lesson(
-        id: 'lesson_21',
-        title: 'Reading a Pay Stub',
-        unitId: 'unit_5',
-        order: 1,
-        prerequisites: <String>['test_4'],
-      ),
-      Lesson(
-        id: 'lesson_22',
-        title: 'Comparing Job Offers',
-        unitId: 'unit_5',
-        order: 2,
-        prerequisites: <String>['lesson_21'],
-      ),
-      Lesson(
-        id: 'quiz_5',
-        title: 'Quick Quiz',
-        unitId: 'unit_5',
-        order: 3,
-        type: LessonNodeType.quiz,
-        prerequisites: <String>['lesson_22'],
-        estimatedMinutes: 4,
-      ),
-      Lesson(
-        id: 'lesson_23',
-        title: 'Rent, Utilities, and Living Costs',
-        unitId: 'unit_5',
-        order: 4,
-        prerequisites: <String>['quiz_5'],
-      ),
-      Lesson(
-        id: 'lesson_24',
-        title: 'Taxes and Withholding',
-        unitId: 'unit_5',
-        order: 5,
-        prerequisites: <String>['lesson_23'],
-      ),
-      Lesson(
-        id: 'lesson_25',
-        title: 'Building a Personal Money Plan',
-        unitId: 'unit_5',
-        order: 6,
-        prerequisites: <String>['lesson_24'],
-      ),
-      Lesson(
-        id: 'test_5',
-        title: 'Unit Test',
-        unitId: 'unit_5',
-        order: 7,
-        type: LessonNodeType.unitTest,
-        prerequisites: <String>['lesson_25'],
-        estimatedMinutes: 6,
-      ),
-    ],
-  ),
-  LessonUnit(
-    id: 'unit_6',
-    title: 'Unit 6: Stocks and Trading',
-    subtitle: 'Owning a piece of a company',
-    description:
-        'What a share actually is, how markets move, and why patience beats '
-        'reacting. Completing these pays out real gold and starter shares you '
-        'can trade on the Market Board.',
-    order: 6,
-    ageStage: AgeStage.adult,
-    lessons: <Lesson>[
-      Lesson(
-        id: 'lesson_26',
-        title: 'What a Share Really Is',
-        unitId: 'unit_6',
-        order: 1,
-        prerequisites: <String>['test_5'],
-      ),
-      Lesson(
-        id: 'lesson_27',
-        title: 'Why Prices Move',
-        unitId: 'unit_6',
-        order: 2,
-        prerequisites: <String>['lesson_26'],
-      ),
-      Lesson(
-        id: 'quiz_6',
-        title: 'Quick Quiz',
-        unitId: 'unit_6',
-        order: 3,
-        type: LessonNodeType.quiz,
-        prerequisites: <String>['lesson_27'],
-        estimatedMinutes: 4,
-      ),
-      Lesson(
-        id: 'lesson_28',
-        title: 'Risk, Diversification, and Index Funds',
-        unitId: 'unit_6',
-        order: 4,
-        prerequisites: <String>['quiz_6'],
-      ),
-      Lesson(
-        id: 'lesson_29',
-        title: 'Orders, Spreads, and Fees',
-        unitId: 'unit_6',
-        order: 5,
-        prerequisites: <String>['lesson_28'],
-      ),
-      Lesson(
-        id: 'lesson_30',
-        title: 'Time in the Market',
-        unitId: 'unit_6',
-        order: 6,
-        prerequisites: <String>['lesson_29'],
-      ),
-      Lesson(
-        id: 'test_6',
-        title: 'Unit Test',
-        unitId: 'unit_6',
-        order: 7,
-        type: LessonNodeType.unitTest,
-        prerequisites: <String>['lesson_30'],
-        estimatedMinutes: 6,
-      ),
-    ],
-  ),
-  LessonUnit(
     id: 'unit_7',
-    title: 'Unit 7: Spending Traps',
+    title: 'Unit 4: Spending Traps',
     subtitle: 'Spotting the tricks aimed at you',
     description:
         'Ads, in-game shops, hype and scams are all designed by adults to '
         'separate you from your money. This unit teaches you to see them '
         'coming — the earliest money skill worth having.',
-    order: 7,
+    order: 4,
     ageStage: AgeStage.middleSchool,
     lessons: <Lesson>[
       Lesson(
@@ -409,7 +229,7 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
         title: 'Wants Wearing a Needs Costume',
         unitId: 'unit_7',
         order: 1,
-        prerequisites: <String>['test_6'],
+        prerequisites: <String>['test_1'],
       ),
       Lesson(
         id: 'lesson_32',
@@ -460,14 +280,78 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
     ],
   ),
   LessonUnit(
+    id: 'unit_3',
+    title: 'Unit 5: Saving Systems',
+    subtitle: 'Cash flow and account setup',
+    description:
+        'Set up money systems that make saving easier, smoother, and more automatic.',
+    order: 5,
+    ageStage: AgeStage.highSchool,
+    lessons: <Lesson>[
+      Lesson(
+        id: 'lesson_11',
+        title: 'Pay Yourself First',
+        unitId: 'unit_3',
+        order: 1,
+        prerequisites: <String>['test_7'],
+      ),
+      Lesson(
+        id: 'lesson_12',
+        title: 'Sinking Funds',
+        unitId: 'unit_3',
+        order: 2,
+        prerequisites: <String>['lesson_11'],
+      ),
+      Lesson(
+        id: 'quiz_3',
+        title: 'Quick Quiz',
+        unitId: 'unit_3',
+        order: 3,
+        type: LessonNodeType.quiz,
+        prerequisites: <String>['lesson_12'],
+        estimatedMinutes: 4,
+      ),
+      Lesson(
+        id: 'lesson_13',
+        title: 'Choosing Savings Accounts',
+        unitId: 'unit_3',
+        order: 4,
+        prerequisites: <String>['quiz_3'],
+      ),
+      Lesson(
+        id: 'lesson_14',
+        title: 'Automating Good Habits',
+        unitId: 'unit_3',
+        order: 5,
+        prerequisites: <String>['lesson_13'],
+      ),
+      Lesson(
+        id: 'lesson_15',
+        title: 'Preparing for Irregular Costs',
+        unitId: 'unit_3',
+        order: 6,
+        prerequisites: <String>['lesson_14'],
+      ),
+      Lesson(
+        id: 'test_3',
+        title: 'Unit Test',
+        unitId: 'unit_3',
+        order: 7,
+        type: LessonNodeType.unitTest,
+        prerequisites: <String>['lesson_15'],
+        estimatedMinutes: 6,
+      ),
+    ],
+  ),
+  LessonUnit(
     id: 'unit_8',
-    title: 'Unit 8: Money by the Numbers',
+    title: 'Unit 6: Money by the Numbers',
     subtitle: 'Reading data without being fooled by it',
     description:
         'Percentages, averages, and charts decide how money decisions get '
         'argued. Learn to read them properly — and to notice when a graph is '
         'quietly lying to you.',
-    order: 8,
+    order: 6,
     ageStage: AgeStage.highSchool,
     lessons: <Lesson>[
       Lesson(
@@ -475,7 +359,7 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
         title: 'Percentages You Actually Use',
         unitId: 'unit_8',
         order: 1,
-        prerequisites: <String>['test_7'],
+        prerequisites: <String>['test_3'],
       ),
       Lesson(
         id: 'lesson_37',
@@ -526,14 +410,272 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
     ],
   ),
   LessonUnit(
+    id: 'unit_2',
+    title: 'Unit 7: Credit',
+    subtitle: 'Borrowing, banking, and growth',
+    description:
+        'Learn how credit works, how to avoid harmful debt, and how long-term planning creates stability.',
+    order: 7,
+    ageStage: AgeStage.graduating,
+    lessons: <Lesson>[
+      Lesson(
+        id: 'lesson_6',
+        title: 'Credit and Debt Management',
+        unitId: 'unit_2',
+        order: 1,
+        prerequisites: <String>['test_8'],
+      ),
+      Lesson(
+        id: 'lesson_7',
+        title: 'Introduction to Investing',
+        unitId: 'unit_2',
+        order: 2,
+        prerequisites: <String>['lesson_6'],
+      ),
+      Lesson(
+        id: 'quiz_2',
+        title: 'Quick Quiz',
+        unitId: 'unit_2',
+        order: 3,
+        type: LessonNodeType.quiz,
+        prerequisites: <String>['lesson_7'],
+        estimatedMinutes: 4,
+      ),
+      Lesson(
+        id: 'lesson_8',
+        title: 'Banking and Financial Tools',
+        unitId: 'unit_2',
+        order: 4,
+        prerequisites: <String>['quiz_2'],
+      ),
+      Lesson(
+        id: 'lesson_9',
+        title: 'Emergency Planning',
+        unitId: 'unit_2',
+        order: 5,
+        prerequisites: <String>['lesson_8'],
+      ),
+      Lesson(
+        id: 'lesson_10',
+        title: 'Long-Term Financial Goals',
+        unitId: 'unit_2',
+        order: 6,
+        prerequisites: <String>['lesson_9'],
+      ),
+      Lesson(
+        id: 'test_2',
+        title: 'Unit Test',
+        unitId: 'unit_2',
+        order: 7,
+        type: LessonNodeType.unitTest,
+        prerequisites: <String>['lesson_10'],
+        estimatedMinutes: 6,
+      ),
+    ],
+  ),
+  LessonUnit(
+    id: 'unit_5',
+    title: 'Unit 8: Real-World Money Moves',
+    subtitle: 'Decision-making and adulthood',
+    description:
+        'Practice how budgeting, saving, credit, and investing connect in everyday life decisions.',
+    order: 8,
+    ageStage: AgeStage.graduating,
+    lessons: <Lesson>[
+      Lesson(
+        id: 'lesson_21',
+        title: 'Reading a Pay Stub',
+        unitId: 'unit_5',
+        order: 1,
+        prerequisites: <String>['test_2'],
+      ),
+      Lesson(
+        id: 'lesson_22',
+        title: 'Comparing Job Offers',
+        unitId: 'unit_5',
+        order: 2,
+        prerequisites: <String>['lesson_21'],
+      ),
+      Lesson(
+        id: 'quiz_5',
+        title: 'Quick Quiz',
+        unitId: 'unit_5',
+        order: 3,
+        type: LessonNodeType.quiz,
+        prerequisites: <String>['lesson_22'],
+        estimatedMinutes: 4,
+      ),
+      Lesson(
+        id: 'lesson_23',
+        title: 'Rent, Utilities, and Living Costs',
+        unitId: 'unit_5',
+        order: 4,
+        prerequisites: <String>['quiz_5'],
+      ),
+      Lesson(
+        id: 'lesson_24',
+        title: 'Taxes and Withholding',
+        unitId: 'unit_5',
+        order: 5,
+        prerequisites: <String>['lesson_23'],
+      ),
+      Lesson(
+        id: 'lesson_25',
+        title: 'Building a Personal Money Plan',
+        unitId: 'unit_5',
+        order: 6,
+        prerequisites: <String>['lesson_24'],
+      ),
+      Lesson(
+        id: 'test_5',
+        title: 'Unit Test',
+        unitId: 'unit_5',
+        order: 7,
+        type: LessonNodeType.unitTest,
+        prerequisites: <String>['lesson_25'],
+        estimatedMinutes: 6,
+      ),
+    ],
+  ),
+  LessonUnit(
+    id: 'unit_4',
+    title: 'Unit 9: Investing Basics',
+    subtitle: 'Risk, growth, and strategy',
+    description:
+        'Learn how investing grows wealth over time and how to manage risk without guessing.',
+    order: 9,
+    ageStage: AgeStage.adult,
+    lessons: <Lesson>[
+      Lesson(
+        id: 'lesson_16',
+        title: 'Why People Invest',
+        unitId: 'unit_4',
+        order: 1,
+        prerequisites: <String>['test_5'],
+      ),
+      Lesson(
+        id: 'lesson_17',
+        title: 'Risk and Diversification',
+        unitId: 'unit_4',
+        order: 2,
+        prerequisites: <String>['lesson_16'],
+      ),
+      Lesson(
+        id: 'quiz_4',
+        title: 'Quick Quiz',
+        unitId: 'unit_4',
+        order: 3,
+        type: LessonNodeType.quiz,
+        prerequisites: <String>['lesson_17'],
+        estimatedMinutes: 4,
+      ),
+      Lesson(
+        id: 'lesson_18',
+        title: 'Stocks, Bonds, and Funds',
+        unitId: 'unit_4',
+        order: 4,
+        prerequisites: <String>['quiz_4'],
+      ),
+      Lesson(
+        id: 'lesson_19',
+        title: 'Compound Growth',
+        unitId: 'unit_4',
+        order: 5,
+        prerequisites: <String>['lesson_18'],
+      ),
+      Lesson(
+        id: 'lesson_20',
+        title: 'Long-Term Investor Mindset',
+        unitId: 'unit_4',
+        order: 6,
+        prerequisites: <String>['lesson_19'],
+      ),
+      Lesson(
+        id: 'test_4',
+        title: 'Unit Test',
+        unitId: 'unit_4',
+        order: 7,
+        type: LessonNodeType.unitTest,
+        prerequisites: <String>['lesson_20'],
+        estimatedMinutes: 6,
+      ),
+    ],
+  ),
+  LessonUnit(
+    id: 'unit_6',
+    title: 'Unit 10: Stocks and Trading',
+    subtitle: 'Owning a piece of a company',
+    description:
+        'What a share actually is, how markets move, and why patience beats '
+        'reacting. Completing these pays out real gold and starter shares you '
+        'can trade on the Market Board.',
+    order: 10,
+    ageStage: AgeStage.adult,
+    lessons: <Lesson>[
+      Lesson(
+        id: 'lesson_26',
+        title: 'What a Share Really Is',
+        unitId: 'unit_6',
+        order: 1,
+        prerequisites: <String>['test_4'],
+      ),
+      Lesson(
+        id: 'lesson_27',
+        title: 'Why Prices Move',
+        unitId: 'unit_6',
+        order: 2,
+        prerequisites: <String>['lesson_26'],
+      ),
+      Lesson(
+        id: 'quiz_6',
+        title: 'Quick Quiz',
+        unitId: 'unit_6',
+        order: 3,
+        type: LessonNodeType.quiz,
+        prerequisites: <String>['lesson_27'],
+        estimatedMinutes: 4,
+      ),
+      Lesson(
+        id: 'lesson_28',
+        title: 'Risk, Diversification, and Index Funds',
+        unitId: 'unit_6',
+        order: 4,
+        prerequisites: <String>['quiz_6'],
+      ),
+      Lesson(
+        id: 'lesson_29',
+        title: 'Orders, Spreads, and Fees',
+        unitId: 'unit_6',
+        order: 5,
+        prerequisites: <String>['lesson_28'],
+      ),
+      Lesson(
+        id: 'lesson_30',
+        title: 'Time in the Market',
+        unitId: 'unit_6',
+        order: 6,
+        prerequisites: <String>['lesson_29'],
+      ),
+      Lesson(
+        id: 'test_6',
+        title: 'Unit Test',
+        unitId: 'unit_6',
+        order: 7,
+        type: LessonNodeType.unitTest,
+        prerequisites: <String>['lesson_30'],
+        estimatedMinutes: 6,
+      ),
+    ],
+  ),
+  LessonUnit(
     id: 'unit_9',
-    title: 'Unit 9: Retirement and the 401(k)',
+    title: 'Unit 11: Retirement and the 401(k)',
     subtitle: 'The account you open decades before you need it',
     description:
         'Employer matches, Roth vs traditional, and why starting at 22 beats '
         'starting at 40 by a margin that looks like a typo. Written for '
         'adults, but worth reading early.',
-    order: 9,
+    order: 11,
     ageStage: AgeStage.adult,
     lessons: <Lesson>[
       Lesson(
@@ -541,7 +683,7 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
         title: 'Why Retirement Accounts Exist',
         unitId: 'unit_9',
         order: 1,
-        prerequisites: <String>['test_8'],
+        prerequisites: <String>['test_6'],
       ),
       Lesson(
         id: 'lesson_42',
@@ -588,135 +730,6 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
         type: LessonNodeType.unitTest,
         prerequisites: <String>['lesson_45'],
         estimatedMinutes: 6,
-      ),
-    ],
-  ),
-  // Units 10-11 are a second, independent starting chain for younger
-  // players, placed at the *end* of this list on purpose (not the front):
-  // DailyPlanBuilder._nextLesson walks lessonUnits in list order and quests
-  // the first uncompleted lesson node it finds, so putting these first
-  // would recommend "What Is Money?" to every existing teen/adult player as
-  // their daily quest. Putting them last means the existing curriculum is
-  // exhausted before they ever surface there, while the Academy's unit
-  // strip still shows them *first* regardless — it groups by
-  // ageStage.minAge, not list position. Ages 4-6 and 7-10 aren't
-  // realistically gated behind the teen/adult curriculum either way, so
-  // their first lesson carries no prerequisite of its own rather than
-  // opening off unit_9 — see test/lesson_data_test.dart's "starts its own
-  // root" test, which documents and checks this on purpose.
-  LessonUnit(
-    id: 'unit_10',
-    title: 'Unit 10: Money Is Real',
-    subtitle: 'The very first ideas about money',
-    description:
-        'What money actually is, why things cost money, and the first idea '
-        'behind saving: a piggy bank. Written for the very youngest players — '
-        'best explored together with a grown-up or older sibling.',
-    order: 10,
-    ageStage: AgeStage.earlyChildhood,
-    lessons: <Lesson>[
-      Lesson(
-        id: 'lesson_46',
-        title: 'What Is Money?',
-        unitId: 'unit_10',
-        order: 1,
-        estimatedMinutes: 5,
-      ),
-      Lesson(
-        id: 'lesson_47',
-        title: 'Things Cost Money',
-        unitId: 'unit_10',
-        order: 2,
-        prerequisites: <String>['lesson_46'],
-        estimatedMinutes: 5,
-      ),
-      Lesson(
-        id: 'quiz_10',
-        title: 'Quick Quiz',
-        unitId: 'unit_10',
-        order: 3,
-        type: LessonNodeType.quiz,
-        prerequisites: <String>['lesson_47'],
-        estimatedMinutes: 4,
-      ),
-      Lesson(
-        id: 'lesson_48',
-        title: 'Saving in a Piggy Bank',
-        unitId: 'unit_10',
-        order: 4,
-        prerequisites: <String>['quiz_10'],
-        estimatedMinutes: 5,
-      ),
-      Lesson(
-        id: 'test_10',
-        title: 'Unit Test',
-        unitId: 'unit_10',
-        order: 5,
-        type: LessonNodeType.unitTest,
-        prerequisites: <String>['lesson_48'],
-        estimatedMinutes: 4,
-      ),
-    ],
-  ),
-  LessonUnit(
-    id: 'unit_11',
-    title: 'Unit 11: Saving and Spending',
-    subtitle: 'Your first real choices with money',
-    description:
-        'Earning a little money, telling a need from a want, and making a '
-        'simple plan for what to do with what you have.',
-    order: 11,
-    ageStage: AgeStage.youngKids,
-    lessons: <Lesson>[
-      Lesson(
-        id: 'lesson_49',
-        title: 'Earning an Allowance',
-        unitId: 'unit_11',
-        order: 1,
-        prerequisites: <String>['test_10'],
-        estimatedMinutes: 6,
-      ),
-      Lesson(
-        id: 'lesson_50',
-        title: 'Needs vs Wants',
-        unitId: 'unit_11',
-        order: 2,
-        prerequisites: <String>['lesson_49'],
-        estimatedMinutes: 6,
-      ),
-      Lesson(
-        id: 'quiz_11',
-        title: 'Quick Quiz',
-        unitId: 'unit_11',
-        order: 3,
-        type: LessonNodeType.quiz,
-        prerequisites: <String>['lesson_50'],
-        estimatedMinutes: 4,
-      ),
-      Lesson(
-        id: 'lesson_51',
-        title: 'Making a Simple Plan',
-        unitId: 'unit_11',
-        order: 4,
-        prerequisites: <String>['quiz_11'],
-        estimatedMinutes: 6,
-      ),
-      Lesson(
-        id: 'lesson_52',
-        title: 'Why Banks Keep Money Safe',
-        unitId: 'unit_11',
-        order: 5,
-        prerequisites: <String>['lesson_51'],
-        estimatedMinutes: 6,
-      ),
-      Lesson(
-        id: 'test_11',
-        title: 'Unit Test',
-        unitId: 'unit_11',
-        order: 6,
-        type: LessonNodeType.unitTest,
-        prerequisites: <String>['lesson_52'],
-        estimatedMinutes: 5,
       ),
     ],
   ),

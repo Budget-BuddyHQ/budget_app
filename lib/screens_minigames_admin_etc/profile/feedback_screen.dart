@@ -107,7 +107,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             ),
           ),
           Positioned.fill(
-            child: Container(color: const Color(0xFF071711).withValues(alpha: 0.72)),
+            child: Container(
+              color: const Color(0xFF071711).withValues(alpha: 0.72),
+            ),
           ),
           SafeArea(
             child: ListView(
@@ -182,7 +184,11 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(category.icon, color: category.accent, size: 18),
+                            Icon(
+                              category.icon,
+                              color: category.accent,
+                              size: 18,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               category.label,
@@ -212,7 +218,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
                   ),
                   child: TextField(
                     controller: _messageController,

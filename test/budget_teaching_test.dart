@@ -52,15 +52,34 @@ void main() {
   });
 
   group('savings actually accumulate', () {
-    test('ageing a year banks the savings slice into the fund', () {
-      final life = _employed(salary: 1000);
-      life.setBudget(needs: 50, wants: 30, savings: 20);
-      final before = life.emergencyFund;
-      life.ageUp();
+    test('saving beats not saving over the same life', () {
+      // Deliberately a *comparison between two identically-seeded lives*
+      // rather than "the fund is above N after one year". Ageing can fire a
+      // random expense shock that legitimately empties the fund, so any
+      // absolute threshold is really testing the RNG, not the budget — an
+      // earlier version of this test broke the moment an unrelated change
+      // shifted the random sequence by one draw.
+      //
+      // Same seed means both lives get the same shocks in the same years,
+      // so the only difference left is the budget itself. That is the
+      // actual claim worth locking down.
+      final saver = _employed(salary: 1000, seed: 11)
+        ..setBudget(needs: 50, wants: 30, savings: 20);
+      final spender = _employed(salary: 1000, seed: 11)
+        ..setBudget(needs: 70, wants: 30, savings: 0);
+
+      for (var year = 0; year < 6; year++) {
+        saver.ageUp();
+        spender.ageUp();
+      }
+
       expect(
-        life.emergencyFund,
-        greaterThan(before),
-        reason: 'a 20% savings slice of 1000 should reach the fund',
+        saver.netWorth,
+        greaterThan(spender.netWorth),
+        reason:
+            'saving 20% should leave you better off than saving nothing '
+            'across the same six years and the same shocks '
+            '(saver=${saver.netWorth}, spender=${spender.netWorth})',
       );
     });
 

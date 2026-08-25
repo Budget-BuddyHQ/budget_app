@@ -13,6 +13,7 @@ import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/habit_progress_grids.dart';
 import '../../../widgets_custom_lotties/savings_jar_widget.dart';
 import '../minigames_pages/react_challenge_screen.dart';
+import '../../../widgets_custom_lotties/fitted_label.dart';
 
 /// Entry point for Money Habits: a daily budgeting-habit tracker (skip
 /// eating out, save spare change, wait before a big purchase) with a
@@ -22,11 +23,7 @@ import '../minigames_pages/react_challenge_screen.dart';
 /// P&L/Analytics tabs — see docs/MONEY_HABITS_FEATURE.md §4 for the full
 /// navigation map.
 class MoneyHabitsScreen extends StatefulWidget {
-  const MoneyHabitsScreen({
-    super.key,
-    this.activeTabIndex,
-    this.onNavSelected,
-  });
+  const MoneyHabitsScreen({super.key, this.activeTabIndex, this.onNavSelected});
 
   /// Set when this is hosted as the "Daily" bottom tab. Left null when it's
   /// pushed as a route (from Home's daily card), in which case it keeps its
@@ -68,21 +65,22 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
             )
           : null,
       appBar: AppBar(
-        toolbarHeight: 70,
+        // Default toolbar height, no extra title padding. This screen sits
+        // *below* MainNavigation's global top bar when it's a tab, so a
+        // 70px toolbar plus a 12px title inset stacked a second header's
+        // worth of empty space under the first one — the gap between
+        // "Daily" and the content.
         backgroundColor: AppTheme.deepForest,
         foregroundColor: Colors.white,
         elevation: 0,
+        titleSpacing: 16,
         // As a tab there is nothing to go back *to*, so the arrow would be
         // a dead control.
         automaticallyImplyLeading: !asTab,
-        title: Padding(
-            padding: const EdgeInsets.only(top: 12.0), 
-            child: Text(
-              'Money Habits',
-              style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700), // Moved here
-            ),
-          ),
-        //title: Text('Money Habits', style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700)),
+        title: Text(
+          'Money Habits',
+          style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+        ),
         bottom: PreferredSize(
           // isScrollable already lets the tabs scroll off-screen on a narrow
           // phone, but with no visible thumb there was no hint that "My Jar"
@@ -119,10 +117,22 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
               // tell a first-time user which one listed habits and which
               // one logged them.
               tabs: const [
-                Tab(icon: Icon(Icons.check_circle_outline_rounded, size: 18), text: 'My Week'),
-                Tab(icon: Icon(Icons.search_rounded, size: 18), text: 'Find/Create Habits'),
-                Tab(icon: Icon(Icons.flag_rounded, size: 18), text: 'Challenges'),
-                Tab(icon: Icon(Icons.savings_rounded, size: 18), text: 'My Jar'),
+                Tab(
+                  icon: Icon(Icons.check_circle_outline_rounded, size: 18),
+                  text: 'My Week',
+                ),
+                Tab(
+                  icon: Icon(Icons.search_rounded, size: 18),
+                  text: 'Find/Create Habits',
+                ),
+                Tab(
+                  icon: Icon(Icons.flag_rounded, size: 18),
+                  text: 'Challenges',
+                ),
+                Tab(
+                  icon: Icon(Icons.savings_rounded, size: 18),
+                  text: 'My Jar',
+                ),
               ],
             ),
           ),
@@ -156,44 +166,44 @@ class _TrackTab extends StatelessWidget {
   /// game itself lives here instead, at the top of the screen its name
   /// points to.
   Future<void> _launchDailyChallenge(BuildContext context) async {
-  final userStatsController = context.read<UserStatsController>();
-  final stats = userStatsController.stats;
-  final isCompleted = userStatsController.isTodayChallengeCompleted;
+    final userStatsController = context.read<UserStatsController>();
+    final stats = userStatsController.stats;
+    final isCompleted = userStatsController.isTodayChallengeCompleted;
 
-  debugPrint('--- DEBUG CHECK ---');
-  debugPrint('Completed List: ${stats.completedChallengeTasks}');
+    debugPrint('--- DEBUG CHECK ---');
+    debugPrint('Completed List: ${stats.completedChallengeTasks}');
 
-  // PRINT 2: Check what boolean value is being passed down
-  debugPrint('Is Completed Flag: $isCompleted');
-  debugPrint('-------------------');
+    // PRINT 2: Check what boolean value is being passed down
+    debugPrint('Is Completed Flag: $isCompleted');
+    debugPrint('-------------------');
 
-  final result = await Navigator.of(context).push<ReactGameCloseResult>(
-    MaterialPageRoute(
-      builder: (_) => ReactChallengeScreen(
-        gameId: 'daily_budget_battle',
-        difficulty: 'normal',
-        playerLevel: stats.level,
-        userId: stats.id,
-        isCompleted: isCompleted, // Passes completion status to the screen
+    final result = await Navigator.of(context).push<ReactGameCloseResult>(
+      MaterialPageRoute(
+        builder: (_) => ReactChallengeScreen(
+          gameId: 'daily_budget_battle',
+          difficulty: 'normal',
+          playerLevel: stats.level,
+          userId: stats.id,
+          isCompleted: isCompleted, // Passes completion status to the screen
+        ),
       ),
-    ),
-  );
+    );
 
-  if (!context.mounted || result == null) {
-    return;
+    if (!context.mounted || result == null) {
+      return;
+    }
+
+    GameToast.show(
+      context,
+      title: result.status == 'victory'
+          ? 'Daily Challenge Cleared'
+          : 'Challenge Complete',
+      message:
+          '+${result.goldEarned} gold | +${result.xpEarned} XP | ${result.syncState.message}',
+      icon: Icons.workspace_premium_rounded,
+      accent: const Color(0xFFFFD45C),
+    );
   }
-
-  GameToast.show(
-    context,
-    title: result.status == 'victory'
-        ? 'Daily Challenge Cleared'
-        : 'Challenge Complete',
-    message:
-        '+${result.goldEarned} gold | +${result.xpEarned} XP | ${result.syncState.message}',
-    icon: Icons.workspace_premium_rounded,
-    accent: const Color(0xFFFFD45C),
-  );
-}
 
   @override
   Widget build(BuildContext context) {
@@ -220,7 +230,11 @@ class _TrackTab extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           'This week',
-          style: GoogleFonts.pixelifySans(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+          style: GoogleFonts.pixelifySans(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         const SizedBox(height: 8),
         HabitWeeklyTrackerGrid(
@@ -237,7 +251,11 @@ class _TrackTab extends StatelessWidget {
         if (habits.savedHabits.isNotEmpty) ...[
           Text(
             'Saved habits',
-            style: GoogleFonts.pixelifySans(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+            style: GoogleFonts.pixelifySans(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 8),
           for (final habit in habits.savedHabits)
@@ -311,10 +329,8 @@ class _DailyChallengeCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      FittedLabel(
                         "Challenge Completed!",
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.pixelifySans(
                           color: Colors.white,
                           fontSize: 16,
@@ -419,10 +435,8 @@ class _DailyChallengeCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  FittedLabel(
                     "Today's Challenge",
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.pixelifySans(
                       color: Colors.white,
                       fontSize: 16,
@@ -465,13 +479,15 @@ class _HowItWorksCard extends StatelessWidget {
         n: 1,
         icon: Icons.search_rounded,
         title: 'Pick a habit',
-        body: 'Open "Find/Create Habits" and choose some meaningful, attainable habits.',
+        body:
+            'Open "Find/Create Habits" and choose some meaningful, attainable habits.',
       ),
       (
         n: 2,
         icon: Icons.check_circle_rounded,
         title: 'Log it each day',
-        body: 'Tap today\'s circle under "This week". Each day builds consistency!',
+        body:
+            'Tap today\'s circle under "This week". Each day builds consistency!',
       ),
       (
         n: 3,
@@ -500,10 +516,8 @@ class _HowItWorksCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Flexible(
-                child: Text(
+                child: FittedLabel(
                   'How this works',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.pixelifySans(
                     color: Colors.white,
                     fontSize: 16,
@@ -552,10 +566,8 @@ class _HowItWorksCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           Flexible(
-                            child: Text(
+                            child: FittedLabel(
                               step.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.pixelifySans(
                                 color: Colors.white,
                                 fontSize: 14,
@@ -618,7 +630,11 @@ class _MoneyStatsRow extends StatelessWidget {
 }
 
 class _StatTile extends StatelessWidget {
-  const _StatTile({required this.label, required this.value, required this.accent});
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
 
   final String label;
   final String value;
@@ -631,9 +647,23 @@ class _StatTile extends StatelessWidget {
       decoration: AppTheme.getPuffyDecoration(accent: accent, restAlpha: 0.16),
       child: Column(
         children: [
-          Text(value, style: GoogleFonts.pixelifySans(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+          Text(
+            value,
+            style: GoogleFonts.pixelifySans(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(label, textAlign: TextAlign.center, style: GoogleFonts.quicksand(color: AppTheme.textMuted, fontSize: 11)),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.quicksand(
+              color: AppTheme.textMuted,
+              fontSize: 11,
+            ),
+          ),
         ],
       ),
     );
@@ -659,12 +689,22 @@ class _SavedHabitRow extends StatelessWidget {
           Icon(habit.icon, color: habit.category.accent, size: 20),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(habit.title, style: GoogleFonts.quicksand(color: Colors.white, fontWeight: FontWeight.w600)),
+            child: Text(
+              habit.title,
+              style: GoogleFonts.quicksand(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           IconButton(
             tooltip: 'Remove from tracker',
             onPressed: onRemove,
-            icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 18),
+            icon: const Icon(
+              Icons.close_rounded,
+              color: Colors.white54,
+              size: 18,
+            ),
           ),
         ],
       ),
@@ -711,8 +751,8 @@ class _ActivityTabState extends State<_ActivityTab> {
     final list = _showCustomCreator
         ? habits.customHabits
         : habits.allAvailableHabits
-            .where((t) => _filter == null || t.category == _filter)
-            .toList();
+              .where((t) => _filter == null || t.category == _filter)
+              .toList();
 
     return Column(
       children: [
@@ -721,9 +761,20 @@ class _ActivityTabState extends State<_ActivityTab> {
           // 8px lane, so adding it costs no extra vertical space and the
           // top of this tab stays as open as it was.
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 2),
+          // NOT thumbVisibility: true. This tab lives inside a TabBarView,
+          // which builds the adjacent tab *offstage* — so on the frame this
+          // is built but not laid out, the controller has no attached
+          // ScrollPosition yet, and a persistent thumb has nothing to
+          // measure against:
+          //
+          //   Scrollbar's ScrollController has no ScrollPosition attached
+          //
+          // which threw on every open of the Daily tab. Default mode has no
+          // such requirement — it tracks scroll notifications and fades the
+          // thumb in during a drag, which is still the discoverability cue
+          // this row needs.
           child: Scrollbar(
             controller: _filterScroll,
-            thumbVisibility: true,
             thickness: 3,
             radius: const Radius.circular(3),
             child: SingleChildScrollView(
@@ -820,7 +871,8 @@ class _ActivityTabState extends State<_ActivityTab> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (sheetContext) => _HabitDetailSheet(habit: habit, habits: habits),
+      builder: (sheetContext) =>
+          _HabitDetailSheet(habit: habit, habits: habits),
     );
   }
 
@@ -881,7 +933,10 @@ class _CreateHabitCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.edit_note_rounded, color: AppTheme.greenPrimary),
+                const Icon(
+                  Icons.edit_note_rounded,
+                  color: AppTheme.greenPrimary,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -898,13 +953,13 @@ class _CreateHabitCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'Can\'t find a habit for your unique financial situation? Create your own!',
-               style: GoogleFonts.pixelifySans(
-              color: Colors.white.withValues(alpha: 0.6),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
+              style: GoogleFonts.pixelifySans(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
             ),
-            ),
-            
+
             const SizedBox(height: 14),
             TextFormField(
               controller: titleController,
@@ -938,11 +993,14 @@ class _CreateHabitCard extends StatelessWidget {
             const SizedBox(height: 10),
             TextFormField(
               controller: amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               textInputAction: TextInputAction.done,
               style: GoogleFonts.pixelifySans(color: Colors.white),
-              decoration: _customInputDecoration('Money saved')
-                  .copyWith(prefixText: '\$ '),
+              decoration: _customInputDecoration(
+                'Money saved',
+              ).copyWith(prefixText: '\$ '),
               validator: (value) {
                 final amount = double.tryParse(
                   (value ?? '').replaceAll(RegExp(r'[\$,]'), '').trim(),
@@ -1005,7 +1063,12 @@ class _CreateHabitCard extends StatelessWidget {
 }
 
 class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({required this.label, required this.selected, required this.onTap, this.accent});
+  const _CategoryChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.accent,
+  });
 
   final String label;
   final bool selected;
@@ -1023,7 +1086,9 @@ class _CategoryChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? color : AppTheme.panel,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: color.withValues(alpha: selected ? 1 : 0.4)),
+          border: Border.all(
+            color: color.withValues(alpha: selected ? 1 : 0.4),
+          ),
         ),
         child: Text(
           label,
@@ -1084,7 +1149,11 @@ class _HabitPhoto extends StatelessWidget {
 }
 
 class _ActivityCard extends StatelessWidget {
-  const _ActivityCard({required this.habit, required this.saved, required this.onTap});
+  const _ActivityCard({
+    required this.habit,
+    required this.saved,
+    required this.onTap,
+  });
 
   final HabitTemplate habit;
   final bool saved;
@@ -1097,7 +1166,10 @@ class _ActivityCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
       child: Container(
         padding: const EdgeInsets.all(14),
-        decoration: AppTheme.getPuffyDecoration(accent: habit.category.accent, restAlpha: 0.14),
+        decoration: AppTheme.getPuffyDecoration(
+          accent: habit.category.accent,
+          restAlpha: 0.14,
+        ),
         child: Row(
           children: [
             _HabitPhoto(habit: habit, size: 48),
@@ -1106,13 +1178,32 @@ class _ActivityCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(habit.title, style: GoogleFonts.pixelifySans(color: Colors.white, fontWeight: FontWeight.w700)),
+                  Text(
+                    habit.title,
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 3),
-                  Text(habit.blurb, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.quicksand(color: AppTheme.textMuted, fontSize: 12)),
+                  Text(
+                    habit.blurb,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.quicksand(
+                      color: AppTheme.textMuted,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             ),
-            if (saved) Icon(Icons.bookmark_rounded, color: habit.category.accent, size: 20),
+            if (saved)
+              Icon(
+                Icons.bookmark_rounded,
+                color: habit.category.accent,
+                size: 20,
+              ),
           ],
         ),
       ),
@@ -1136,7 +1227,8 @@ class _HabitDetailSheetState extends State<_HabitDetailSheet> {
   @override
   void initState() {
     super.initState();
-    _units = widget.habits.savedHabitParams[widget.habit.id] ??
+    _units =
+        widget.habits.savedHabitParams[widget.habit.id] ??
         widget.habit.adjustable?.defaultValue ??
         1;
   }
@@ -1148,10 +1240,17 @@ class _HabitDetailSheetState extends State<_HabitDetailSheet> {
     final impact = habit.impactFor(_units);
 
     return Container(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        20,
+        20,
+        20 + MediaQuery.of(context).viewInsets.bottom,
+      ),
       decoration: const BoxDecoration(
         color: AppTheme.panelStrong,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.radiusXLarge)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXLarge),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1162,21 +1261,46 @@ class _HabitDetailSheetState extends State<_HabitDetailSheet> {
               _HabitPhoto(habit: habit, size: 56),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(habit.title, style: GoogleFonts.pixelifySans(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+                child: Text(
+                  habit.title,
+                  style: GoogleFonts.pixelifySans(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(habit.blurb, style: GoogleFonts.quicksand(color: AppTheme.textMuted, height: 1.4)),
+          Text(
+            habit.blurb,
+            style: GoogleFonts.quicksand(
+              color: AppTheme.textMuted,
+              height: 1.4,
+            ),
+          ),
           const SizedBox(height: 18),
           if (adjustable != null) ...[
-            Text(adjustable.label, style: GoogleFonts.pixelifySans(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w700)),
+            Text(
+              adjustable.label,
+              style: GoogleFonts.pixelifySans(
+                color: Colors.white70,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
                 _StepperButton(
                   icon: Icons.remove_rounded,
-                  onTap: () => setState(() => _units = (_units - adjustable.step).clamp(adjustable.min, adjustable.max)),
+                  onTap: () => setState(
+                    () => _units = (_units - adjustable.step).clamp(
+                      adjustable.min,
+                      adjustable.max,
+                    ),
+                  ),
                 ),
                 Expanded(
                   child: Text(
@@ -1184,12 +1308,21 @@ class _HabitDetailSheetState extends State<_HabitDetailSheet> {
                         ? '\$${_units.toStringAsFixed(_units % 1 == 0 ? 0 : 1)}'
                         : '${_units.toStringAsFixed(_units % 1 == 0 ? 0 : 1)} ${adjustable.unit}',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.pixelifySans(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
                 _StepperButton(
                   icon: Icons.add_rounded,
-                  onTap: () => setState(() => _units = (_units + adjustable.step).clamp(adjustable.min, adjustable.max)),
+                  onTap: () => setState(
+                    () => _units = (_units + adjustable.step).clamp(
+                      adjustable.min,
+                      adjustable.max,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1202,7 +1335,10 @@ class _HabitDetailSheetState extends State<_HabitDetailSheet> {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () async {
-                    await widget.habits.saveHabit(habit, paramValue: adjustable != null ? _units : null);
+                    await widget.habits.saveHabit(
+                      habit,
+                      paramValue: adjustable != null ? _units : null,
+                    );
                     if (context.mounted) Navigator.of(context).pop();
                   },
                   icon: const Icon(Icons.bookmark_add_rounded),
@@ -1212,12 +1348,18 @@ class _HabitDetailSheetState extends State<_HabitDetailSheet> {
               const SizedBox(width: 10),
               Expanded(
                 child: FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: AppTheme.greenPrimary, foregroundColor: AppTheme.deepForest),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppTheme.greenPrimary,
+                    foregroundColor: AppTheme.deepForest,
+                  ),
                   onPressed: () async {
                     await widget.habits.completeTrackedHabit(habit);
                     if (context.mounted) {
                       Navigator.of(context).pop();
-                      GameToast.show(context, message: 'Logged: ${habit.title}');
+                      GameToast.show(
+                        context,
+                        message: 'Logged: ${habit.title}',
+                      );
                     }
                   },
                   icon: const Icon(Icons.check_rounded),
@@ -1246,7 +1388,10 @@ class _StepperButton extends StatelessWidget {
       child: Container(
         width: 40,
         height: 40,
-        decoration: BoxDecoration(color: AppTheme.panel, shape: BoxShape.circle),
+        decoration: BoxDecoration(
+          color: AppTheme.panel,
+          shape: BoxShape.circle,
+        ),
         child: Icon(icon, color: Colors.white),
       ),
     );
@@ -1262,8 +1407,14 @@ class _ImpactPreviewRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _MiniStat(label: 'Money saved', value: '\$${impact.moneySavedUsd.toStringAsFixed(2)}'),
-        _MiniStat(label: 'Smart choices', value: impact.choicesKept.toStringAsFixed(0)),
+        _MiniStat(
+          label: 'Money saved',
+          value: '\$${impact.moneySavedUsd.toStringAsFixed(2)}',
+        ),
+        _MiniStat(
+          label: 'Smart choices',
+          value: impact.choicesKept.toStringAsFixed(0),
+        ),
       ],
     );
   }
@@ -1280,8 +1431,20 @@ class _MiniStat extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(value, style: GoogleFonts.pixelifySans(color: AppTheme.greenPrimary, fontWeight: FontWeight.w700)),
-          Text(label, style: GoogleFonts.quicksand(color: AppTheme.textMuted, fontSize: 11)),
+          Text(
+            value,
+            style: GoogleFonts.pixelifySans(
+              color: AppTheme.greenPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            label,
+            style: GoogleFonts.quicksand(
+              color: AppTheme.textMuted,
+              fontSize: 11,
+            ),
+          ),
         ],
       ),
     );
@@ -1306,27 +1469,53 @@ class _ChallengesTab extends StatelessWidget {
         final progress = habits.challengeProgress(challenge);
         return Container(
           padding: const EdgeInsets.all(18),
-          decoration: AppTheme.getPuffyDecoration(accent: challenge.category.accent, restAlpha: 0.18),
+          decoration: AppTheme.getPuffyDecoration(
+            accent: challenge.category.accent,
+            restAlpha: 0.18,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(challenge.category.icon, color: challenge.category.accent, size: 26),
+                  Icon(
+                    challenge.category.icon,
+                    color: challenge.category.accent,
+                    size: 26,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(challenge.title, style: GoogleFonts.pixelifySans(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
-                        Text(challenge.subtitle, style: GoogleFonts.quicksand(color: AppTheme.textMuted, fontSize: 12)),
+                        Text(
+                          challenge.title,
+                          style: GoogleFonts.pixelifySans(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          challenge.subtitle,
+                          style: GoogleFonts.quicksand(
+                            color: AppTheme.textMuted,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 10),
-              Text(challenge.description, style: GoogleFonts.pixelifySans(color: Colors.white70, height: 1.4)),
+              Text(
+                challenge.description,
+                style: GoogleFonts.pixelifySans(
+                  color: Colors.white70,
+                  height: 1.4,
+                ),
+              ),
               const SizedBox(height: 12),
               ClipRRect(
                 borderRadius: BorderRadius.circular(999),
@@ -1338,20 +1527,33 @@ class _ChallengesTab extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              Text('${(progress * 100).round()}% complete', style: GoogleFonts.quicksand(color: AppTheme.textMuted, fontSize: 12)),
+              Text(
+                '${(progress * 100).round()}% complete',
+                style: GoogleFonts.quicksand(
+                  color: AppTheme.textMuted,
+                  fontSize: 12,
+                ),
+              ),
               const SizedBox(height: 14),
               HabitChallengeRowItem(
                 tasks: challenge.tasks,
                 statusFor: (task) {
-                  if (habits.completedChallengeTasks.contains(task.id)) return HabitRowStatus.completed;
-                  if (habits.isChallengeTaskAvailable(task)) return HabitRowStatus.available;
+                  if (habits.completedChallengeTasks.contains(task.id)) {
+                    return HabitRowStatus.completed;
+                  }
+                  if (habits.isChallengeTaskAvailable(task)) {
+                    return HabitRowStatus.available;
+                  }
                   return HabitRowStatus.locked;
                 },
                 onTaskTap: (task) async {
                   await habits.completeChallengeTask(task);
                   if (context.mounted) {
                     final title = task.template?.title ?? task.id;
-                    GameToast.show(context, message: 'Challenge habit complete: $title');
+                    GameToast.show(
+                      context,
+                      message: 'Challenge habit complete: $title',
+                    );
                   }
                 },
               ),
@@ -1377,17 +1579,36 @@ class _JarTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Center(child: SavingsJarWidget(stage: stage, mood: mood, size: 220)),
+        Center(
+          child: SavingsJarWidget(stage: stage, mood: mood, size: 220),
+        ),
         const SizedBox(height: 12),
         Center(
-          child: Text(stage.label, style: GoogleFonts.pixelifySans(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
+          child: Text(
+            stage.label,
+            style: GoogleFonts.pixelifySans(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
         Center(
           child: Container(
             margin: const EdgeInsets.only(top: 6),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: mood.color.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(999)),
-            child: Text(mood.label, style: GoogleFonts.pixelifySans(color: mood.color, fontWeight: FontWeight.w700, fontSize: 12)),
+            decoration: BoxDecoration(
+              color: mood.color.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              mood.label,
+              style: GoogleFonts.pixelifySans(
+                color: mood.color,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 20),
@@ -1411,7 +1632,10 @@ class _JarTab extends StatelessWidget {
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: AppTheme.panel, borderRadius: BorderRadius.circular(AppTheme.radiusLarge)),
+          decoration: BoxDecoration(
+            color: AppTheme.panel,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+          ),
           child: Text(
             mood == JarMood.slipping
                 ? 'You haven\'t logged a habit in a while — log one on Track or Activity to get back on track.'

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
 import '../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
+import '../models_Like_Skins_and_lessons_templates/outing_rules.dart';
 
 /// The rules engine for **Life**, the main game.
 ///
@@ -39,6 +40,8 @@ class LifeSimController extends ChangeNotifier {
     // diverge.
     final pool = List<LifeTrait>.from(LifeTrait.values)..shuffle(_random);
     _traits.addAll(pool.take(2));
+    _strictness = HouseholdStrictness
+        .values[_random.nextInt(HouseholdStrictness.values.length)];
     _setLog(
       'Born into a ${origin.label.toLowerCase()} family. '
       'Tap Age to live your first year.',
@@ -68,6 +71,33 @@ class LifeSimController extends ChangeNotifier {
 
   final Map<LifeSkill, int> _skills = <LifeSkill, int>{};
   final Set<LifeTrait> _traits = <LifeTrait>{};
+
+  // ---- Going outside ---------------------------------------------------
+  //
+  // "Explore the town" used to be an always-on button — a newborn could
+  // walk to the bank. These two fields are what make leaving the house a
+  // *situation* instead of a menu item: one rolled once at birth, one
+  // re-rolled every year. See `outing_rules.dart`.
+  // Assigned in the constructor body, NOT via `late final` with a random
+  // initializer. A lazily-initialised random field consumes its number the
+  // first time anything *reads* it, so the whole RNG sequence — every later
+  // event draw, every expense shock — would silently depend on whether the
+  // UI happened to check `outingPermission` this frame. Same seed, same
+  // life, every time is worth more than the one saved line.
+  HouseholdStrictness _strictness = HouseholdStrictness.normal;
+  HouseholdStrictness get strictness => _strictness;
+
+  Weather _weather = Weather.clear;
+
+  Weather get weather => _weather;
+
+  /// Whether the character may leave the house right now, and why not.
+  OutingPermission get outingPermission => OutingPermission.evaluate(
+    age: _age,
+    health: _health,
+    strictness: strictness,
+    weather: _weather,
+  );
 
   // ---- Budgeting -------------------------------------------------------
   //
@@ -127,7 +157,11 @@ class LifeSimController extends ChangeNotifier {
 
   /// Sets the split. Rejects anything that doesn't total 100 — the point of
   /// the exercise is that a budget has to add up.
-  bool setBudget({required int needs, required int wants, required int savings}) {
+  bool setBudget({
+    required int needs,
+    required int wants,
+    required int savings,
+  }) {
     if (needs < 0 || wants < 0 || savings < 0) return false;
     if (needs + wants + savings != 100) return false;
     _needsPct = needs;
@@ -135,9 +169,7 @@ class LifeSimController extends ChangeNotifier {
     _savingsPct = savings;
     _budgetSet = true;
     _teach(FinanceConcept.budgetRule);
-    _setLog(
-      'Budget set: $needs% needs, $wants% wants, $savings% savings.',
-    );
+    _setLog('Budget set: $needs% needs, $wants% wants, $savings% savings.');
     notifyListeners();
     return true;
   }
@@ -251,9 +283,7 @@ class LifeSimController extends ChangeNotifier {
       );
       _teach(FinanceConcept.emergencyFund);
     } else {
-      _setLog(
-        '$reason cost $amount — covered from savings without borrowing.',
-      );
+      _setLog('$reason cost $amount — covered from savings without borrowing.');
       _teach(FinanceConcept.emergencyFund);
     }
     notifyListeners();
@@ -339,6 +369,9 @@ class LifeSimController extends ChangeNotifier {
       return;
     }
     _age++;
+    // Re-rolled every year, so whether the town is open changes over a
+    // life rather than being fixed at birth.
+    _weather = WeatherInfo.roll(_random);
 
     if (!isDependent) {
       if (_salary > 0) {
@@ -718,6 +751,69 @@ class LifeSimController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- More on-demand activities ---------------------------------------
+  //
+  // The Activities menu was five rows, three of them free stat bumps, and
+  // it read as a stat vending machine rather than a life. These add the
+  // three things a life sim actually needs from this menu: something that
+  // *costs* time as well as money, something that can go wrong, and
+  // something that only makes sense at a particular age.
+
+  /// A side job. Real money for a real cost in time and energy — the only
+  /// income source available before a career event fires.
+  void workSideJob() {
+    if (finished || _age < 14) return;
+    final earned = 40 + _random.nextInt(60);
+    _money += earned;
+    _happiness = _clamp(_happiness - 4);
+    _health = _clamp(_health - 2);
+    _setLog(
+      'Picked up shifts and earned $earned coins. Tiring: -4 Happiness, '
+      '-2 Health.',
+    );
+    _teach(FinanceConcept.incomeVsWealth);
+    notifyListeners();
+  }
+
+  /// Volunteering. No money at all, and deliberately the best happiness
+  /// per coin in the game — the counterweight to a menu where every other
+  /// good outcome has a price tag.
+  void volunteer() {
+    if (finished || _age < 10) return;
+    _happiness = _clamp(_happiness + 9);
+    _smarts = _clamp(_smarts + 2);
+    _setLog('Volunteered locally: +9 Happiness, +2 Smarts. Cost: nothing.');
+    notifyListeners();
+  }
+
+  /// A calculated risk with real downside. Gambling is in here precisely
+  /// so it can lose — the log names the odds afterwards, which is the
+  /// lesson.
+  void takeARisk() {
+    if (finished || _age < 18) return;
+    const stake = 100;
+    if (_money < stake) return;
+    // Deliberately worse than even money, like every real version of this.
+    final won = _random.nextInt(100) < 42;
+    if (won) {
+      _money += stake;
+      _happiness = _clamp(_happiness + 6);
+      _setLog(
+        'You gambled $stake coins and won $stake. It will not always go '
+        'this way — the odds were against you.',
+      );
+    } else {
+      _money -= stake;
+      _happiness = _clamp(_happiness - 7);
+      _setLog(
+        'You gambled $stake coins and lost the lot. The odds were always '
+        'against you.',
+      );
+    }
+    _teach(FinanceConcept.opportunityCost);
+    notifyListeners();
+  }
+
   /// Time with someone you know. Free, and the happiest thing in the game
   /// per coin spent — which is the point.
   void spendTimeWith(String person) {
@@ -744,8 +840,7 @@ class LifeSimController extends ChangeNotifier {
   }
 
   /// True once the character actually holds a paying job.
-  bool get hasJob =>
-      _salary > 0 && _job != 'Newborn' && _job != 'Unemployed';
+  bool get hasJob => _salary > 0 && _job != 'Newborn' && _job != 'Unemployed';
 
   /// Move cash into investments, which compound each year.
   void invest(int amount) {

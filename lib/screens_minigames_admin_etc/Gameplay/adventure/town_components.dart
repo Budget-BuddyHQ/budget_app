@@ -143,20 +143,14 @@ class TownNpcComponent extends SimpleNpc with Sensor<Player> {
     required this.onEnter,
     required this.onExit,
   }) : super(
-         position: Vector2(
-           npc.tileX * 16.0,
-           npc.tileY * 16.0,
-         ),
+         position: Vector2(npc.tileX * 16.0, npc.tileY * 16.0),
          // Height-first so the frames keep their 102:116 shape — sizing an
          // NPC into a square squashes it the same way it squashed the
          // player (see [TownPlayer]).
          size: Vector2(26 * AppAssets.npcAspectRatio, 26),
          // These NPCs stand still, so every facing is the same idle loop —
          // `SimpleDirectionAnimation` only requires the two "right" ones.
-         animation: SimpleDirectionAnimation(
-           idleRight: idle,
-           runRight: idle,
-         ),
+         animation: SimpleDirectionAnimation(idleRight: idle, runRight: idle),
        );
 
   final TownNpc npc;
@@ -223,11 +217,7 @@ class TownCoinComponent extends GameComponent with Sensor<Player> {
   void render(Canvas canvas) {
     final lift = math.sin(_bob * math.pi) * 1.5;
     final centre = Offset(size.x / 2, size.y / 2 + lift);
-    canvas.drawCircle(
-      centre,
-      6,
-      Paint()..color = const Color(0xFFFFD45C),
-    );
+    canvas.drawCircle(centre, 6, Paint()..color = const Color(0xFFFFD45C));
     canvas.drawCircle(
       centre,
       6,

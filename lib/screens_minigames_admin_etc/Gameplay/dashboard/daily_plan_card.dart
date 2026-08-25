@@ -7,6 +7,7 @@ import '../../../controllers_that_updates_stats/daily_plan_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/daily_quest.dart';
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
 import '../../../widgets_custom_lotties/idle_hover_icon.dart';
+import '../../../widgets_custom_lotties/fitted_label.dart';
 
 /// The home screen's spine: today's ordered checklist.
 ///
@@ -209,10 +210,8 @@ class _QuestRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    FittedLabel(
                       quest.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: done
                             ? Colors.white.withValues(alpha: 0.5)
@@ -223,10 +222,8 @@ class _QuestRow extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    FittedLabel(
                       quest.detail,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.55),
                         fontSize: 12,

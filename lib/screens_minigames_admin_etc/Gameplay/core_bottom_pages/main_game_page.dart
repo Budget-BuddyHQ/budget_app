@@ -264,9 +264,7 @@ class _EndingSlot extends StatelessWidget {
         children: [
           Icon(
             found ? ending.icon : Icons.lock_rounded,
-            color: found
-                ? ending.color
-                : Colors.white.withValues(alpha: 0.28),
+            color: found ? ending.color : Colors.white.withValues(alpha: 0.28),
             size: 24,
           ),
           const SizedBox(height: 6),
@@ -309,8 +307,13 @@ class _LifeHeroCard extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: [Color(0xFF2A5F46), Color(0xFF12301F)],
           ),
-          border: Border.all(color: const Color(0xFF85EFAC).withValues(alpha: 0.32)),
-          boxShadow: AppTheme.puffyShadow(const Color(0xFF85EFAC), restAlpha: 0.2),
+          border: Border.all(
+            color: const Color(0xFF85EFAC).withValues(alpha: 0.32),
+          ),
+          boxShadow: AppTheme.puffyShadow(
+            const Color(0xFF85EFAC),
+            restAlpha: 0.2,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,7 +321,10 @@ class _LifeHeroCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFD45C).withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(999),
@@ -360,12 +366,18 @@ class _LifeHeroCard extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF85EFAC),
                 foregroundColor: const Color(0xFF06251A),
-                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 22),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 15,
+                  horizontal: 22,
+                ),
               ),
               icon: const Icon(Icons.play_arrow_rounded),
               label: Text(
                 'Start your life',
-                style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700, fontSize: 15),
+                style: GoogleFonts.pixelifySans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
               ),
             ),
           ],

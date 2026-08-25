@@ -17,6 +17,13 @@ class AppAssets {
   static const String uiIconStar = 'assets/images/ui/icon_star.png';
   static const String uiIconBag = 'assets/images/ui/icon_bag.png';
 
+  /// Nine-sliceable panel art from the same kit — see `PixelPanel`, which
+  /// is the only thing that should reference these directly. Sizes are
+  /// tiny on purpose (48x32 / 32x32): they are stretched, not drawn at
+  /// source size.
+  static const String uiPanelDialog = 'assets/images/ui/panel_dialog.png';
+  static const String uiPanelSquare = 'assets/images/ui/panel_square.png';
+
   /// 8-frame celebration sprite sheet — 3 columns × 3 rows of 640x640 cells,
   /// with the bottom-right cell empty. Frames build from smile → sparkle
   /// burst. Wired into `AchievementCelebration`.
@@ -53,23 +60,22 @@ class AppAssets {
       'assets/map_assets_coins/PNG_more_map_tiles/rpgTile010.png';
   static const String tileCoin = 'assets/images/tiles/coin.png';
   static const String brawlGrasstile =
-    'assets/self_made_backgrounds/brawl_grass_tile.png';
+      'assets/self_made_backgrounds/brawl_grass_tile.png';
   static const String brawlTreeSprite =
-    'assets/images/finance_brawl_ui/brawl_tree.png';
-  static const String brawlRockSprite = 
-    'assets/images/finance_brawl_ui/brawl_rock.png';
+      'assets/images/finance_brawl_ui/brawl_tree.png';
+  static const String brawlRockSprite =
+      'assets/images/finance_brawl_ui/brawl_rock.png';
   static const String brawlDollarSprite =
-    'assets/images/finance_brawl_ui/brawl_dollar.png';
+      'assets/images/finance_brawl_ui/brawl_dollar.png';
   static const String brawlEnemyOneSprite =
-    'assets/images/finance_brawl_ui/brawl_enemy_one.png';
+      'assets/images/finance_brawl_ui/brawl_enemy_one.png';
   static const String brawlEnemyTwoSprite =
-    'assets/images/finance_brawl_ui/brawl_enemy_two.png';
+      'assets/images/finance_brawl_ui/brawl_enemy_two.png';
   static const String brawlBossSprite =
-    'assets/images/finance_brawl_ui/brawl_boss.png';
+      'assets/images/finance_brawl_ui/brawl_boss.png';
   static const String brawlChestSprite =
-   'assets/images/finance_brawl_ui/brawl_vault.png';
+      'assets/images/finance_brawl_ui/brawl_vault.png';
 
-    
   static const String turtleClassic =
       'assets/images/turtles/Wface_no_bg_l7nvmfum.png';
   static const String turtleCoinShell =
