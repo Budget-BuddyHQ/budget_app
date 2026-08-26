@@ -7,6 +7,9 @@ import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../constants/app_assets.dart';
+import '../../../widgets_custom_lotties/pixel_kit.dart';
+
 /// The recap shown when a [LifeSummary] life ends — replaces what used to be
 /// a silent `Navigator.pop()` straight back to Home. Purely presentational;
 /// [LifeSummary] already carries the resolved [LifeEndingArchetype] and
@@ -62,6 +65,13 @@ class LifeEpilogueScreen extends StatelessWidget {
   }
 }
 
+/// The ending card: who you turned out to be.
+///
+/// This used to be an accent colour and a Material glyph in a circle, which
+/// meant all seven endings were the same screen wearing different tints —
+/// nothing to recognise, nothing to want to collect. It now leads with a
+/// **portrait**, because an ending is a person you became, and the name sits
+/// on a ribbon so it reads as a title rather than as a heading.
 class _ArchetypeCard extends StatelessWidget {
   const _ArchetypeCard({required this.archetype});
 
@@ -69,52 +79,50 @@ class _ArchetypeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF173B2E),
-            Color.lerp(const Color(0xFF10281F), archetype.color, 0.16)!,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: archetype.color.withValues(alpha: 0.4)),
-      ),
+    return PixelFrame(
+      style: PixelFrameStyle.slate,
+      padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
       child: Column(
         children: [
+          // The portrait, on a plate tinted with the ending's own colour so
+          // the two read as one thing rather than as art dropped onto a card.
           Container(
-            width: 64,
-            height: 64,
+            width: 96,
+            height: 96,
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: archetype.color.withValues(alpha: 0.16),
-              shape: BoxShape.circle,
+              color: archetype.color.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: archetype.color.withValues(alpha: 0.5),
+                color: archetype.color.withValues(alpha: 0.65),
                 width: 2,
               ),
             ),
-            child: Icon(archetype.icon, color: archetype.color, size: 30),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            archetype.label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.pixelifySans(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
+            child: Image.asset(
+              archetype.portrait,
+              // 38x38 source drawn at 84 — nearest-neighbour or it turns to
+              // mush.
+              filterQuality: FilterQuality.none,
+              fit: BoxFit.contain,
+              // Falls back to the glyph this card used to lead with, so a
+              // missing portrait is a downgrade rather than a hole.
+              errorBuilder: (_, _, _) =>
+                  Icon(archetype.icon, color: archetype.color, size: 40),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
+          PixelRibbon(
+            label: archetype.label,
+            asset: AppAssets.kitRibbonGold,
+            height: 52,
+          ),
+          const SizedBox(height: 14),
           Text(
             archetype.blurb,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.78),
-              height: 1.4,
+              color: Colors.white.withValues(alpha: 0.82),
+              height: 1.45,
               fontWeight: FontWeight.w600,
             ),
           ),
