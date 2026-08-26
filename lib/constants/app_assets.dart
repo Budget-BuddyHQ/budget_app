@@ -1,3 +1,5 @@
+import 'dart:ui' show Rect, Size;
+
 class AppAssets {
   AppAssets._();
 
@@ -23,6 +25,132 @@ class AppAssets {
   /// source size.
   static const String uiPanelDialog = 'assets/images/ui/panel_dialog.png';
   static const String uiPanelSquare = 'assets/images/ui/panel_square.png';
+
+  // ---- Pixel UI kit (generated) ---------------------------------------
+  //
+  // Everything under `assets/images/ui_kit/` is produced by
+  // `tool/make_ui_kit.py`. Read that script before editing any of it — the
+  // files are rewritten wholesale on every run, so hand-edits are lost.
+  //
+  // This exists because the older kit above is a flat rounded rectangle and
+  // four 8x8 glyphs, which is why the app kept reading as Material defaults
+  // with a pixel font on top rather than as a game. These have real bevels,
+  // corner rivets, pressed states, and 16x16 icons with enough detail to
+  // survive being scaled up.
+  static const String _kit = 'assets/images/ui_kit';
+
+  /// Nine-slice surfaces, sliced and recoloured from the Tiny Swords pack by
+  /// `tool/build_ui_pack.py`. Each ships with its own `centerSlice` rect —
+  /// the script prints them, and a guessed rect smears the bevel into
+  /// something that looks like a scaling bug.
+  static const String kitPanelPaper = '$_kit/panel_paper.png';
+  static const String kitPanelSlate = '$_kit/panel_slate.png';
+  static const String kitPanelBanner = '$_kit/panel_banner.png';
+  static const String kitPanelWood = '$_kit/panel_wood.png';
+
+  // Slice rects, printed by `tool/build_ui_pack.py`. Do not guess these, and
+  // do not share one between assets.
+  //
+  // Each is per-asset because the generator **trims transparent padding**
+  // before saving, so no two outputs end up the same size. That trim is a
+  // correctness fix, not tidying: Flutter fits an image to its *file* bounds,
+  // not to the art inside them, so the untrimmed pack drew a bar whose 64x64
+  // file held 24 rows of colour as a 2px hairline inside a 6px box — which is
+  // exactly what the Finance Brawl progress bar looked like.
+  //
+  // A nine-slice also can never render smaller than its two end caps
+  // combined; Flutter subtracts them from the destination and a negative
+  // remainder throws rather than clipping. `PixelFrame` and friends guard
+  // for that, but keep it in mind when sizing a call site.
+  /// Source pixel sizes, needed alongside the slices.
+  ///
+  /// A nine-slice's end caps are everything *outside* the slice, so working
+  /// out the minimum size a widget can render at needs the source extent —
+  /// and after trimming, no two of these are the same. Derived from the
+  /// slice alone they would be wrong, because the caps are no longer
+  /// symmetric.
+  static const Size kitSizePanelPaper = Size(90, 82);
+  static const Size kitSizePanelSlate = Size(92, 81);
+  static const Size kitSizePanelBanner = Size(104, 103);
+  static const Size kitSizePanelWood = Size(98, 106);
+  static const Size kitSizeBtnPrimary = Size(82, 84);
+  static const Size kitSizeBtnPrimaryPressed = Size(88, 80);
+  static const Size kitSizeBtnDanger = Size(82, 84);
+  static const Size kitSizeBtnDangerPressed = Size(88, 80);
+  static const Size kitSizeBarBase = Size(34, 16);
+  static const Size kitSizeRibbon = Size(135, 57);
+  static const Size kitSizeRibbonSmall = Size(96, 32);
+
+  static const Rect kitSlicePanelPaper = Rect.fromLTRB(29, 25, 61, 57);
+  static const Rect kitSlicePanelSlate = Rect.fromLTRB(30, 25, 62, 57);
+  static const Rect kitSlicePanelBanner = Rect.fromLTRB(42, 30, 68, 56);
+  static const Rect kitSlicePanelWood = Rect.fromLTRB(36, 36, 62, 62);
+  static const Rect kitSliceBtnPrimary = Rect.fromLTRB(25, 26, 57, 58);
+  static const Rect kitSliceBtnPrimaryPressed = Rect.fromLTRB(28, 21, 60, 53);
+  static const Rect kitSliceBtnDanger = Rect.fromLTRB(25, 26, 57, 58);
+  static const Rect kitSliceBtnDangerPressed = Rect.fromLTRB(28, 21, 60, 53);
+  static const Rect kitSliceBarBase = Rect.fromLTRB(9, 0, 25, 16);
+  static const Rect kitSliceBarBaseSmall = Rect.fromLTRB(6, 0, 22, 10);
+  static const Rect kitSliceRibbonGreen = Rect.fromLTRB(52, 0, 84, 57);
+  static const Rect kitSliceRibbonGold = Rect.fromLTRB(52, 0, 84, 57);
+  static const Rect kitSliceRibbonRed = Rect.fromLTRB(52, 0, 84, 57);
+  static const Rect kitSliceRibbonSmallGreen = Rect.fromLTRB(32, 0, 64, 32);
+  static const Rect kitSliceRibbonSmallGold = Rect.fromLTRB(32, 0, 64, 32);
+
+  static const String kitBtnPrimary = '$_kit/btn_primary.png';
+  static const String kitBtnPrimaryPressed = '$_kit/btn_primary_pressed.png';
+  static const String kitBtnDanger = '$_kit/btn_danger.png';
+  static const String kitBtnDangerPressed = '$_kit/btn_danger_pressed.png';
+
+  /// Section headings. A heading on a ribbon reads as a game; the same words
+  /// in bold text read as a settings screen.
+  static const String kitRibbonGreen = '$_kit/ribbon_green.png';
+  static const String kitRibbonGold = '$_kit/ribbon_gold.png';
+  static const String kitRibbonRed = '$_kit/ribbon_red.png';
+  static const String kitRibbonSmallGreen = '$_kit/ribbon_small_green.png';
+  static const String kitRibbonSmallGold = '$_kit/ribbon_small_gold.png';
+
+  /// Progress bars. The pack's fill is red — right for health, wrong for
+  /// progress — so it is emitted in three colours and picked by meaning.
+  static const String kitBarBase = '$_kit/bar_base.png';
+  static const String kitBarBaseSmall = '$_kit/bar_base_small.png';
+  static const String kitBarFillGreen = '$_kit/bar_fill_green.png';
+  static const String kitBarFillGold = '$_kit/bar_fill_gold.png';
+  static const String kitBarFillRed = '$_kit/bar_fill_red.png';
+  static const String kitBarFillSmallGreen = '$_kit/bar_fill_small_green.png';
+  static const String kitBarFillSmallRed = '$_kit/bar_fill_small_red.png';
+
+  /// The pack's own icons, kept at their painted colours.
+  static const String kitPackCoin = '$_kit/pack_icon_coin.png';
+  static const String kitPackShield = '$_kit/pack_icon_shield.png';
+  static const String kitPackArrowGreen = '$_kit/pack_icon_arrow_green.png';
+  static const String kitPackArrowOrange = '$_kit/pack_icon_arrow_orange.png';
+  static const String kitPackX = '$_kit/pack_icon_x.png';
+  static const String kitPackInfo = '$_kit/pack_icon_info.png';
+
+  // 16x16 icons from tool/make_ui_kit.py. The pack has no coin stack, piggy
+  // bank or up/down chart, and those are the concepts a budgeting app needs
+  // most — so these are hand-drawn rather than borrowed.
+  static const String kitIconCoin = '$_kit/icon_coin.png';
+  static const String kitIconStack = '$_kit/icon_stack.png';
+  static const String kitIconPiggy = '$_kit/icon_piggy.png';
+  static const String kitIconChartUp = '$_kit/icon_chart_up.png';
+  static const String kitIconChartDown = '$_kit/icon_chart_down.png';
+  static const String kitIconHeart = '$_kit/icon_heart.png';
+  static const String kitIconStar = '$_kit/icon_star.png';
+  static const String kitIconShield = '$_kit/icon_shield.png';
+  static const String kitIconLock = '$_kit/icon_lock.png';
+  static const String kitIconBook = '$_kit/icon_book.png';
+  static const String kitIconTrophy = '$_kit/icon_trophy.png';
+  static const String kitIconCheck = '$_kit/icon_check.png';
+  static const String kitIconCross = '$_kit/icon_cross.png';
+
+  /// Chunky pointers for the first-run tutorial. White-cored on purpose so
+  /// they stay readable over both the dark panels and the bright pixel map.
+  static const String kitArrowUp = '$_kit/arrow_up.png';
+  static const String kitArrowDown = '$_kit/arrow_down.png';
+  static const String kitArrowLeft = '$_kit/arrow_left.png';
+  static const String kitArrowRight = '$_kit/arrow_right.png';
 
   /// 8-frame celebration sprite sheet — 3 columns × 3 rows of 640x640 cells,
   /// with the bottom-right cell empty. Frames build from smile → sparkle

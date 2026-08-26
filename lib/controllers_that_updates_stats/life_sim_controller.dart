@@ -735,11 +735,76 @@ class LifeSimController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- Always-available activities ---
+  // --- Age-gated activities ---
+  //
+  // These used to be labelled "always-available", and they were: a
+  // three-year-old could hit the books, work out at the gym, take themselves
+  // to the library and buy 100 coins of index funds. That is the single
+  // biggest thing making the sim feel unreal — the menu offered a grown
+  // adult's life to a toddler.
+  //
+  // The rules live here rather than in the menu because the menu is a
+  // *view*: putting them there means the constraint is unenforced anywhere
+  // else (an event, a future screen, a test) and cannot be unit-tested
+  // without pumping a widget. [gateFor] is the one place that decides, and
+  // the menu asks it what to grey out and why.
+
+  /// Something the player can choose to do, and the age it becomes real.
+  ///
+  /// Ages are the ordinary ones a child actually reaches these at, which is
+  /// what makes the early years feel like childhood instead of like an adult
+  /// life with less money.
+  static const Map<LifeAction, int> _minimumAge = <LifeAction, int>{
+    LifeAction.study: 5, // school age
+    LifeAction.library: 6,
+    LifeAction.exercise: 12,
+    LifeAction.goOut: 12, // out with friends, unsupervised
+    LifeAction.buyGift: 6,
+    LifeAction.volunteer: 10,
+    LifeAction.sideJob: 14,
+    LifeAction.findJob: jobHuntingAge, // 16
+    LifeAction.invest: 16,
+    LifeAction.gamble: 18,
+    // A parent takes a small child to the doctor, so this one has no floor.
+    LifeAction.doctor: 0,
+    LifeAction.practise: 4,
+    LifeAction.spendTime: 0,
+  };
+
+  /// Why [action] is unavailable, or null when it is allowed.
+  ///
+  /// Returns copy aimed at the player rather than a boolean, because "You
+  /// are too little for that" *is* the content at age three — being told what
+  /// you cannot do yet is how the early years teach that a life has stages.
+  String? gateFor(LifeAction action) {
+    if (finished) return 'This life is over';
+    final minAge = _minimumAge[action] ?? 0;
+    if (_age < minAge) {
+      return switch (action) {
+        LifeAction.study => 'You are not old enough for school yet',
+        LifeAction.library => 'You cannot read well enough yet',
+        LifeAction.exercise => 'You are too little for the gym',
+        LifeAction.goOut => 'Your family will not let you out alone yet',
+        LifeAction.buyGift => 'You have no money of your own yet',
+        LifeAction.volunteer => 'You are too young to volunteer',
+        LifeAction.sideJob => 'You are too young to work',
+        LifeAction.findJob => 'You are too young to work',
+        LifeAction.invest => 'You need to be 16 to open an account',
+        LifeAction.gamble => 'You have to be 18',
+        LifeAction.practise => 'You are still a baby',
+        _ => 'Not yet',
+      };
+    }
+    return null;
+  }
+
+  bool allows(LifeAction action) => gateFor(action) == null;
+
+  // --- Activities ---
 
   /// Study to raise Smarts.
   void study() {
-    if (finished) return;
+    if (!allows(LifeAction.study)) return;
     _smarts = _clamp(_smarts + 6);
     _happiness = _clamp(_happiness - 2);
     if (!isDependent) {
@@ -756,7 +821,7 @@ class LifeSimController extends ChangeNotifier {
 
   /// Spend time (and money, once independent) on fun.
   void haveFun() {
-    if (finished) return;
+    if (!allows(LifeAction.goOut)) return;
     if (!isDependent && _money < 40) {
       _log = 'Not enough coins for a night out.';
       notifyListeners();
@@ -774,7 +839,7 @@ class LifeSimController extends ChangeNotifier {
   /// skills gate which career events can fire at all, so a music contract
   /// only becomes reachable after actually putting the hours in.
   void practise(LifeSkill skill) {
-    if (finished) return;
+    if (!allows(LifeAction.practise)) return;
     final gain = 4 + (_smarts ~/ 25);
     _skills[skill] = ((_skills[skill] ?? 0) + gain).clamp(0, 100);
     _happiness = _clamp(_happiness - 2);
@@ -791,7 +856,7 @@ class LifeSimController extends ChangeNotifier {
 
   /// Work out — better health and looks, a little tiring.
   void exercise() {
-    if (finished) return;
+    if (!allows(LifeAction.exercise)) return;
     _health = _clamp(_health + 8);
     _looks = _clamp(_looks + 3);
     _happiness = _clamp(_happiness - 1);
@@ -919,7 +984,7 @@ class LifeSimController extends ChangeNotifier {
   ///
   /// Returns false when the character cannot look for work right now.
   bool findJob() {
-    if (!canJobHunt) return false;
+    if (!canJobHunt || !allows(LifeAction.findJob)) return false;
 
     final open = _jobMarket
         .where((j) => _smarts >= j.minSmarts)
@@ -972,7 +1037,7 @@ class LifeSimController extends ChangeNotifier {
   /// A check-up. Costs money, buys health back — the cheapest healthcare
   /// is the kind you get before you need it.
   void visitDoctor() {
-    if (finished) return;
+    if (!allows(LifeAction.doctor)) return;
     const cost = 60;
     if (!isDependent && _money < cost) {
       _setLog('Not enough coins for a check-up.', kind: LifeLogKind.money);
@@ -995,7 +1060,7 @@ class LifeSimController extends ChangeNotifier {
   /// Free smarts. Deliberately free — the library being the one action
   /// that costs nothing is itself a small lesson.
   void visitLibrary() {
-    if (finished) return;
+    if (!allows(LifeAction.library)) return;
     _smarts = _clamp(_smarts + 4);
     _setLog(
       'Spent an afternoon at the library: +4 Smarts. Cost: nothing.',
@@ -1015,7 +1080,7 @@ class LifeSimController extends ChangeNotifier {
   /// A side job. Real money for a real cost in time and energy — the only
   /// income source available before a career event fires.
   void workSideJob() {
-    if (finished || _age < 14) return;
+    if (!allows(LifeAction.sideJob)) return;
     final earned = 40 + _random.nextInt(60);
     _money += earned;
     _happiness = _clamp(_happiness - 4);
@@ -1033,7 +1098,7 @@ class LifeSimController extends ChangeNotifier {
   /// per coin in the game — the counterweight to a menu where every other
   /// good outcome has a price tag.
   void volunteer() {
-    if (finished || _age < 10) return;
+    if (!allows(LifeAction.volunteer)) return;
     _happiness = _clamp(_happiness + 9);
     _smarts = _clamp(_smarts + 2);
     _setLog(
@@ -1047,7 +1112,7 @@ class LifeSimController extends ChangeNotifier {
   /// so it can lose — the log names the odds afterwards, which is the
   /// lesson.
   void takeARisk() {
-    if (finished || _age < 18) return;
+    if (!allows(LifeAction.gamble)) return;
     const stake = 100;
     if (_money < stake) return;
     // Deliberately worse than even money, like every real version of this.
@@ -1088,7 +1153,7 @@ class LifeSimController extends ChangeNotifier {
   /// A gift. Costs real money and gives less happiness than [spendTimeWith]
   /// — an intentional comparison the player can notice on their own.
   void giveGift(String person) {
-    if (finished) return;
+    if (!allows(LifeAction.buyGift)) return;
     const cost = 50;
     if (_money < cost) {
       _setLog('Not enough coins for a gift.', kind: LifeLogKind.money);
@@ -1109,7 +1174,7 @@ class LifeSimController extends ChangeNotifier {
 
   /// Move cash into investments, which compound each year.
   void invest(int amount) {
-    if (finished || amount <= 0 || _money < amount) {
+    if (!allows(LifeAction.invest) || amount <= 0 || _money < amount) {
       return;
     }
     _money -= amount;

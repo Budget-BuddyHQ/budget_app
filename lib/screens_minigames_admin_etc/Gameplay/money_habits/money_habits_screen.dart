@@ -219,6 +219,12 @@ class _TrackTab extends StatelessWidget {
           onPlayAgain: () => _launchDailyChallenge(context),
           onViewResults: () => _launchDailyChallenge(context),
         ),
+        // The gap below the challenge card used to live *inside* the
+        // "no habits yet" branch below, so it vanished the moment the player
+        // pinned their first habit and the challenge card ended up welded to
+        // the stats row. Spacing between two siblings belongs between them,
+        // not inside a conditional that happens to sit in the middle.
+        const SizedBox(height: 16),
         // Shown only until the first habit is pinned. New users landed on
         // an empty grid with no idea what the tabs did or where to start —
         // this spells the loop out once, then gets out of the way.

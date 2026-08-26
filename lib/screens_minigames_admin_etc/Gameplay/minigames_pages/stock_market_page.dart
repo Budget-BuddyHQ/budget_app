@@ -14,6 +14,7 @@ import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/hover_lift.dart';
 import '../../../widgets_custom_lotties/mini_sparkline.dart';
 import '../../../widgets_custom_lotties/price_chart.dart';
+import '../../../widgets_custom_lotties/symbol_badge.dart';
 import 'order_ticket_page.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 
@@ -146,24 +147,6 @@ _kSymbolStyle = {
     thesis: 'Processors and graphics chips competing with Nvidia and Intel.',
   ),
 };
-
-/// Tickers with a real downloaded company logo (Wikimedia Commons — freely
-/// licensed, used here only to identify the real public company each ticker
-/// trades as) under `assets/images/stock_logos/`. Everything else falls back
-/// to the Material-icon treatment above; this set is intentionally small and
-/// curated rather than covering every symbol in [_kSymbolStyle].
-const Set<String> _kLogoSymbols = {
-  'AAPL',
-  'TSLA',
-  'MSFT',
-  'NVDA',
-  'AMZN',
-  'GOOGL',
-};
-
-String? _logoAssetFor(String symbol) => _kLogoSymbols.contains(symbol)
-    ? 'assets/images/stock_logos/$symbol.png'
-    : null;
 
 /// Bid-ask spread: what a buyer pays and a seller receives always differ a
 /// little, and it widens on more volatile days — without this, buying and
@@ -543,7 +526,15 @@ class _StockMarketPageState extends State<StockMarketPage>
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0C2418).withValues(alpha: 0.62),
+                  // Was 0.62/0.66 — the pixel village stayed clearly legible
+                  // through it, so every price, label and chart line on this
+                  // screen competed with a busy tiled illustration for the
+                  // reader's attention. Numbers are the entire point of a
+                  // trading screen and they were the thing losing.
+                  //
+                  // 0.88 keeps the backdrop as texture (you can still tell it
+                  // is the village) while stopping it reading as content.
+                  color: const Color(0xFF0C2418).withValues(alpha: 0.88),
                 ),
               ),
             ),
@@ -822,7 +813,7 @@ class _TrendingPromoStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final featured = quotes
-        .where((quote) => _kLogoSymbols.contains(quote.symbol))
+        .where((quote) => kStockLogoSymbols.contains(quote.symbol))
         .toList(growable: false);
     if (featured.isEmpty) {
       return const SizedBox.shrink();
@@ -881,7 +872,6 @@ class _TrendingPromoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final up = quote.changePercent >= 0;
     final changeColor = up ? const Color(0xFF4BD2A3) : const Color(0xFFFF6B6B);
-    final logo = _logoAssetFor(quote.symbol);
 
     return HoverLift(
       accent: quote.accent,
@@ -907,22 +897,11 @@ class _TrendingPromoCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // A white badge behind every logo — several of these marks
-              // (Apple's, Amazon's) are solid black/dark and would nearly
-              // vanish straight on this dark card, the same reason real
-              // trading apps put a white circle behind ticker logos
-              // regardless of their own app theme.
-              Container(
-                width: 38,
-                height: 38,
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: logo == null
-                    ? Icon(quote.icon, color: quote.accent, size: 20)
-                    : Image.asset(logo, fit: BoxFit.contain),
+              SymbolBadge(
+                symbol: quote.symbol,
+                icon: quote.icon,
+                accent: quote.accent,
+                size: 38,
               ),
               const Spacer(),
               Text(
@@ -1004,6 +983,39 @@ class _TradeTabState extends State<_TradeTab> {
   List<SymbolMatch> _matches = const <SymbolMatch>[];
   bool _searching = false;
   int _searchGeneration = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _primeVisibleLogos();
+  }
+
+  @override
+  void didUpdateWidget(covariant _TradeTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.quotes.length != widget.quotes.length) {
+      _primeVisibleLogos();
+    }
+  }
+
+  /// Loads real company logos for the tickers on this tab.
+  ///
+  /// Only six logos ship as bundled assets, so every other company on the
+  /// board wore a generic Material glyph — while its real mark sat one field
+  /// away in the `/stock/profile2` response the order ticket was already
+  /// fetching for its Company Background panel. This asks for the rest.
+  ///
+  /// Deferred to a post-frame callback because it notifies listeners when it
+  /// finishes, and notifying during `didChangeDependencies` would rebuild a
+  /// widget that is mid-build. Rate limiting lives in `primeLogos` itself.
+  void _primeVisibleLogos() {
+    final symbols = widget.quotes.map((q) => q.symbol).toList(growable: false);
+    if (symbols.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<MarketDataService>().primeLogos(symbols);
+    });
+  }
 
   @override
   void dispose() {
@@ -1384,14 +1396,10 @@ class _HoldingRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: quote.accent.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(quote.icon, color: quote.accent),
+          SymbolBadge(
+            symbol: quote.symbol,
+            icon: quote.icon,
+            accent: quote.accent,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1803,7 +1811,12 @@ class _TickerTapeState extends State<_TickerTape> {
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(quote.icon, color: quote.accent, size: 14),
+                SymbolBadge(
+                  symbol: quote.symbol,
+                  icon: quote.icon,
+                  accent: quote.accent,
+                  size: 18,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   quote.symbol,
@@ -2014,14 +2027,11 @@ class _StockCardState extends State<_StockCard> {
               final headerInfo = Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: quote.accent.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(quote.icon, color: quote.accent),
+                  SymbolBadge(
+                    symbol: quote.symbol,
+                    icon: quote.icon,
+                    accent: quote.accent,
+                    size: 48,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -2342,23 +2352,16 @@ class _StockSparklineState extends State<_StockSparkline> {
   /// Index of the point the pointer is over, or null when not hovering.
   int? _hoverIndex;
 
-  void _updateHover(Offset local, double width, int points) {
-    if (points < 2 || width <= 0) return;
-    // The painter reserves a 52px gutter on the right for its price labels,
-    // so the plotted area stops short of the widget's full width.
-    const gutter = 52.0;
-    final chartWidth = (width - gutter).clamp(1.0, width);
-    final frac = (local.dx / chartWidth).clamp(0.0, 1.0);
-    final index = (frac * (points - 1)).round();
-    if (index != _hoverIndex) {
-      setState(() => _hoverIndex = index);
-    }
-  }
-
-  void _clearHover() {
-    if (_hoverIndex != null) {
-      setState(() => _hoverIndex = null);
-    }
+  /// Receives the crosshair position from [InteractivePriceChart].
+  ///
+  /// The pointer-to-index maths used to live here, with its own hardcoded
+  /// copy of the painter'''s 52px label gutter. It moved into the chart, which
+  /// is the only place that knows how wide the plotted area actually is —
+  /// and which now also has to translate between the zoomed window and the
+  /// full series, maths this widget has no business duplicating.
+  void _setHoverIndex(int? index) {
+    if (index == _hoverIndex) return;
+    setState(() => _hoverIndex = index);
   }
 
   @override
@@ -2458,40 +2461,19 @@ class _StockSparklineState extends State<_StockSparkline> {
             ],
           ),
           Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final chart = PriceChart(
-                  candles: _flatCandles(series),
-                  mode: ChartMode.line,
-                  accent: lineColor,
-                  hoverIndex: _hoverIndex,
-                );
-                return MouseRegion(
-                  onHover: (event) => _updateHover(
-                    event.localPosition,
-                    constraints.maxWidth,
-                    series.length,
-                  ),
-                  onExit: (_) => _clearHover(),
-                  child: GestureDetector(
-                    // Touch devices have no hover, so a press-and-drag scrubs.
-                    behavior: HitTestBehavior.opaque,
-                    onHorizontalDragStart: (d) => _updateHover(
-                      d.localPosition,
-                      constraints.maxWidth,
-                      series.length,
-                    ),
-                    onHorizontalDragUpdate: (d) => _updateHover(
-                      d.localPosition,
-                      constraints.maxWidth,
-                      series.length,
-                    ),
-                    onHorizontalDragEnd: (_) => _clearHover(),
-                    onHorizontalDragCancel: _clearHover,
-                    child: chart,
-                  ),
-                );
-              },
+            // [InteractivePriceChart] rather than a bare [PriceChart]. It
+            // owns the hover/scrub gestures that used to be wired up here by
+            // hand, and adds the pinch-zoom and pan that repeatedly did not
+            // work on this screen — because the interactive wrapper existed
+            // but no call site had ever used it.
+            //
+            // The scrub index still comes back out to this widget, since the
+            // header above reads it to show the price at the crosshair.
+            child: InteractivePriceChart(
+              candles: _flatCandles(series),
+              mode: ChartMode.line,
+              accent: lineColor,
+              onHoverIndexChanged: _setHoverIndex,
             ),
           ),
           const SizedBox(height: 6),
@@ -3031,8 +3013,12 @@ class _PnlTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 SizedBox(
-                  height: 150,
-                  child: PriceChart(
+                  height: 170,
+                  // Interactive too. A long-running player accumulates
+                  // hundreds of net-worth snapshots, and the whole history
+                  // squeezed into 150px is a smear — being able to zoom into
+                  // the last twenty is the only way to read a recent trade.
+                  child: InteractivePriceChart(
                     candles: _flatCandles(portfolioHistory),
                     mode: ChartMode.line,
                     accent: curveColor,
@@ -3367,14 +3353,14 @@ class _AnalyticsTab extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Container(
-              height: 130,
+              height: 150,
               padding: const EdgeInsets.fromLTRB(6, 12, 6, 6),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
-              child: PriceChart(
+              child: InteractivePriceChart(
                 candles: _flatCandles(equityCurve),
                 mode: ChartMode.line,
                 accent: const Color(0xFF4993FF),
@@ -3505,7 +3491,12 @@ class _PositionBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          Icon(entry.quote.icon, color: entry.quote.accent, size: 18),
+          SymbolBadge(
+            symbol: entry.quote.symbol,
+            icon: entry.quote.icon,
+            accent: entry.quote.accent,
+            size: 22,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

@@ -1798,6 +1798,17 @@ class _LifeMenuSheet extends StatelessWidget {
 
     final young = life.isDependent;
 
+    // Age rules come from the controller, not from here.
+    //
+    // The menu is a view: duplicating the rules in it meant they were
+    // unenforced everywhere else, and drifted — which is how a three-year-old
+    // ended up able to hit the books, work out at the gym, walk to the
+    // library alone and buy index funds. `gateFor` is the single source of
+    // truth, and a local reason (usually "not enough coins") only applies
+    // once the age gate is clear.
+    String? gate(LifeAction action, [String? alsoBlockedBy]) =>
+        life.gateFor(action) ?? alsoBlockedBy;
+
     switch (menu) {
       case _LifeMenu.career:
         return [
@@ -1826,6 +1837,7 @@ class _LifeMenuSheet extends StatelessWidget {
             icon: Icons.menu_book_rounded,
             cost: young ? null : 30,
             onTap: () => run(life.study),
+            disabledReason: gate(LifeAction.study),
           ),
           _LifeAction(
             label: 'Work harder',
@@ -1869,7 +1881,10 @@ class _LifeMenuSheet extends StatelessWidget {
               icon: Icons.card_giftcard_rounded,
               cost: 50,
               onTap: () => run(() => life.giveGift(person)),
-              disabledReason: life.money >= 50 ? null : 'Not enough coins',
+              disabledReason: gate(
+                LifeAction.buyGift,
+                life.money >= 50 ? null : 'Not enough coins',
+              ),
             ),
           ],
         ];
@@ -1882,21 +1897,24 @@ class _LifeMenuSheet extends StatelessWidget {
             icon: Icons.celebration_rounded,
             cost: young ? null : 40,
             onTap: () => run(life.haveFun),
-            disabledReason: young || life.money >= 40
-                ? null
-                : 'Not enough coins',
+            disabledReason: gate(
+              LifeAction.goOut,
+              young || life.money >= 40 ? null : 'Not enough coins',
+            ),
           ),
           _LifeAction(
             label: 'Go to the gym',
             detail: 'Free. +8 Health, +3 Looks.',
             icon: Icons.fitness_center_rounded,
             onTap: () => run(life.exercise),
+            disabledReason: gate(LifeAction.exercise),
           ),
           _LifeAction(
             label: 'Visit the library',
             detail: 'Free. +4 Smarts.',
             icon: Icons.local_library_rounded,
             onTap: () => run(life.visitLibrary),
+            disabledReason: gate(LifeAction.library),
           ),
           _LifeAction(
             label: 'See a doctor',
@@ -1904,23 +1922,24 @@ class _LifeMenuSheet extends StatelessWidget {
             icon: Icons.medical_services_rounded,
             cost: young ? null : 60,
             onTap: () => run(life.visitDoctor),
-            disabledReason: young || life.money >= 60
-                ? null
-                : 'Not enough coins',
+            disabledReason: gate(
+              LifeAction.doctor,
+              young || life.money >= 60 ? null : 'Not enough coins',
+            ),
           ),
           _LifeAction(
             label: 'Work a side job',
             detail: 'Earn 40-100 coins. Costs Happiness and Health.',
             icon: Icons.work_history_rounded,
             onTap: () => run(life.workSideJob),
-            disabledReason: life.age >= 14 ? null : 'You are too young to work',
+            disabledReason: gate(LifeAction.sideJob),
           ),
           _LifeAction(
             label: 'Volunteer',
             detail: 'No pay at all. +9 Happiness, +2 Smarts.',
             icon: Icons.volunteer_activism_rounded,
             onTap: () => run(life.volunteer),
-            disabledReason: life.age >= 10 ? null : 'You are too young',
+            disabledReason: gate(LifeAction.volunteer),
           ),
           _LifeAction(
             label: 'Gamble 100 coins',
