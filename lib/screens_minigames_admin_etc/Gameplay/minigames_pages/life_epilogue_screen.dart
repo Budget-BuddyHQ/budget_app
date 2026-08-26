@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
+import '../../../models_Like_Skins_and_lessons_templates/life_record.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart'
     show LifeOriginInfo;
 import '../../../themes_colors/app_theme.dart';
@@ -15,9 +16,18 @@ import '../../../widgets_custom_lotties/pixel_kit.dart';
 /// [LifeSummary] already carries the resolved [LifeEndingArchetype] and
 /// every stat needed here.
 class LifeEpilogueScreen extends StatelessWidget {
-  const LifeEpilogueScreen({super.key, required this.summary});
+  const LifeEpilogueScreen({
+    super.key,
+    required this.summary,
+    this.bestsBeaten = const <LifeBest>{},
+  });
 
   final LifeSummary summary;
+
+  /// Personal bests this run beat, from `recordLifeRun`. Empty for a first
+  /// life (nothing to beat yet) and empty when replaying an old screen, so
+  /// the banner is genuinely an event rather than decoration.
+  final Set<LifeBest> bestsBeaten;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +54,10 @@ class LifeEpilogueScreen extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               _ArchetypeCard(archetype: archetype),
+              if (bestsBeaten.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _PersonalBestBanner(bests: bestsBeaten),
+              ],
               const SizedBox(height: 18),
               _LifeRecapCard(summary: summary),
               if (summary.relationships.isNotEmpty) ...[
@@ -60,6 +74,77 @@ class LifeEpilogueScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// "You beat your own record" — shown only when this run actually topped a
+/// previous one, so it stays an event rather than another stat row.
+class _PersonalBestBanner extends StatelessWidget {
+  const _PersonalBestBanner({required this.bests});
+
+  final Set<LifeBest> bests;
+
+  static const _gold = Color(0xFFFFD45C);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _gold.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: _gold.withValues(alpha: 0.42), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.workspace_premium_rounded,
+                  color: _gold, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  bests.length == 1 ? 'New personal best' : 'New personal bests',
+                  style: GoogleFonts.pixelifySans(
+                    color: _gold,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final best in LifeBest.values)
+                if (bests.contains(best))
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _gold.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      best.label,
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+            ],
+          ),
+        ],
       ),
     );
   }
