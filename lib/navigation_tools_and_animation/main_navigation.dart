@@ -4,6 +4,7 @@ import 'package:budget_app/screens_minigames_admin_etc/Gameplay/core_bottom_page
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/customize_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/home_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/money_habits/money_habits_screen.dart';
+import 'package:budget_app/screens_minigames_admin_etc/onboarding/tutorial_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/personal_details_sheet.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../controllers_that_updates_stats/app_settings_controller.dart';
 import '../controllers_that_updates_stats/user_stats_controller.dart';
 import '../services_backend_and_other_services/app_sound_service.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
@@ -27,7 +29,14 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   late int _currentIndex;
   UserStatsController? _controller;
+  AppSettingsController? _settings;
   bool _askedForPersonalDetails = false;
+
+  /// Set once the tutorial question has been answered for this session —
+  /// either it was shown and dismissed, or it was never due. Gates the
+  /// personal-details sheet so the two first-run interruptions queue instead
+  /// of stacking on top of each other.
+  bool _tutorialResolved = false;
 
   @override
   void initState() {
@@ -38,6 +47,14 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
+    final settings = context.read<AppSettingsController>();
+    if (!identical(settings, _settings)) {
+      _settings?.removeListener(_maybeShowTutorial);
+      _settings = settings..addListener(_maybeShowTutorial);
+      _maybeShowTutorial();
+    }
+
     final controller = context.read<UserStatsController>();
     if (identical(controller, _controller)) {
       return;
@@ -50,7 +67,45 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   void dispose() {
     _controller?.removeListener(_maybeAskForPersonalDetails);
+    _settings?.removeListener(_maybeShowTutorial);
     super.dispose();
+  }
+
+  /// Opens the guided tour on a genuine first run, then hands off to the
+  /// personal-details sheet.
+  ///
+  /// Waits on `isInitialized` rather than firing immediately: the seen flag
+  /// lives in SharedPreferences, and acting on its pre-read default would
+  /// show the whole tour again to an existing player on every cold start.
+  void _maybeShowTutorial() {
+    final settings = _settings;
+    if (_tutorialResolved || settings == null || !mounted) {
+      return;
+    }
+    if (!settings.isInitialized) {
+      return;
+    }
+
+    _tutorialResolved = true;
+
+    if (!settings.isTutorialDue) {
+      _maybeAskForPersonalDetails();
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        return;
+      }
+      final jumpTab = await TutorialScreen.show(context);
+      if (!mounted) {
+        return;
+      }
+      if (jumpTab != null) {
+        _selectTab(jumpTab);
+      }
+      _maybeAskForPersonalDetails();
+    });
   }
 
   /// Prompts once per app run for the age/gender details, but only after the
@@ -59,6 +114,11 @@ class _MainNavigationState extends State<MainNavigation> {
   void _maybeAskForPersonalDetails() {
     final controller = _controller;
     if (_askedForPersonalDetails || controller == null || !mounted) {
+      return;
+    }
+    // Never in front of the tour — `_maybeShowTutorial` calls back here once
+    // it's done, so nothing is lost by waiting.
+    if (!_tutorialResolved) {
       return;
     }
     if (controller.isLoading || !controller.isAuthenticated) {

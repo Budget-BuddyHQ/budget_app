@@ -140,6 +140,7 @@ class LifeSummary {
     required this.relationships,
     required this.goldReward,
     required this.archetype,
+    this.conceptsMet = 0,
   });
 
   factory LifeSummary.fromController(LifeSimController life) {
@@ -158,6 +159,7 @@ class LifeSummary {
       looks: life.looks,
       relationships: life.relationships,
       goldReward: life.goldReward,
+      conceptsMet: life.conceptsMet.length,
       archetype: resolveLifeEnding(
         died: life.dead,
         age: life.age,
@@ -183,4 +185,8 @@ class LifeSummary {
   final List<String> relationships;
   final int goldReward;
   final LifeEndingArchetype archetype;
+
+  /// How many distinct money ideas this life ran into. Carried on the
+  /// snapshot so [LifeRecord] can keep it after the controller is disposed.
+  final int conceptsMet;
 }

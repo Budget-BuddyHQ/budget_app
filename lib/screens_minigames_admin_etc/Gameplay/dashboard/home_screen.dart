@@ -17,6 +17,7 @@ import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
 import '../../../widgets_custom_lotties/feedback_prompt_sheet.dart';
 import '../../../widgets_custom_lotties/idle_hover_icon.dart';
+import '../../../widgets_custom_lotties/mentor_tip_card.dart';
 import '../../../widgets_custom_lotties/profile_avatar.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../money_habits/money_habits_screen.dart';
@@ -116,6 +117,10 @@ class HomeScreen extends StatelessWidget {
                                 builder: (_) => const MoneyHabitsScreen(),
                               ),
                             ),
+                          ),
+                          const SizedBox(height: 10),
+                          MentorTipCard(
+                            simpleWording: stats.ageBand.prefersSimpleWording,
                           ),
                           const SizedBox(height: 10),
                           _CurrentObjectiveCard(

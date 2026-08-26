@@ -156,6 +156,20 @@ class AppAssets {
   static const int turtleCelebrateFrames = 8;
   static const double turtleCelebrateCellSize = 640;
 
+  /// The mentor turtle's non-celebration poses — same character, same
+  /// palette (sampled straight off [turtleCelebrateSheet]), drawn for the
+  /// "Buddy's tip" companion card rather than the win moment. One static
+  /// PNG per pose, not a sprite sheet — there is nothing to animate frame by
+  /// frame here, just a gentle idle bob applied in the widget.
+  static const String turtleMentorIdle =
+      'assets/own_skins/turtle_mentor/turtle_mentor_idle.png';
+  static const String turtleMentorWave =
+      'assets/own_skins/turtle_mentor/turtle_mentor_wave.png';
+  static const String turtleMentorThinking =
+      'assets/own_skins/turtle_mentor/turtle_mentor_thinking.png';
+  static const String turtleMentorWorried =
+      'assets/own_skins/turtle_mentor/turtle_mentor_worried.png';
+
   static const String loadingAnimation =
       'assets/animations/02_Manny_Run_Fill.json';
 

@@ -9,6 +9,7 @@ class AppSettingsController extends ChangeNotifier {
   static const String _lastFeedbackPromptKey =
       'budget_buddy_last_feedback_prompt';
   static const String _launchCountKey = 'budget_buddy_launch_count';
+  static const String _tutorialSeenKey = 'budget_buddy_tutorial_seen';
 
   /// How long to wait before asking again after the prompt is shown —
   /// dismissed or not. Deliberately not "every launch"; that reads as
@@ -27,6 +28,7 @@ class AppSettingsController extends ChangeNotifier {
   bool _soundEnabled = AppSoundService.enabled;
   bool _notificationsEnabled = true;
   bool _initialized = false;
+  bool _tutorialSeen = false;
   SharedPreferences? _preferences;
   DateTime? _lastFeedbackPromptShown;
   int _launchCount = 0;
@@ -37,6 +39,25 @@ class AppSettingsController extends ChangeNotifier {
 
   /// How many times the app has been opened, counting this session.
   int get launchCount => _launchCount;
+
+  /// Whether the guided tour has been completed *or* deliberately skipped.
+  ///
+  /// Skipping counts: someone who dismissed the tour has told us they don't
+  /// want it, and re-offering it on the next launch would be the same
+  /// nagging the feedback prompt's cooldown exists to avoid.
+  ///
+  /// This only gates the *automatic* first-run opening. Profile's "Replay
+  /// Tutorial" row pushes the tour directly, so watching it again never
+  /// needs the flag cleared.
+  bool get tutorialSeen => _tutorialSeen;
+
+  /// Whether to auto-open the tour. Only on a genuine first run — a player
+  /// who has been here before gets their app, not an interruption.
+  ///
+  /// Reads [isInitialized] so a caller cannot act on the default `false`
+  /// before SharedPreferences has been read back, which would show the tour
+  /// to an existing player for one frame on every cold start.
+  bool get isTutorialDue => _initialized && !_tutorialSeen;
 
   /// Whether the occasional feedback prompt is due: the player has opened the
   /// app a few times, and enough time has passed since it was last shown.
@@ -72,8 +93,22 @@ class AppSettingsController extends ChangeNotifier {
     _launchCount = (_preferences?.getInt(_launchCountKey) ?? 0) + 1;
     await _preferences?.setInt(_launchCountKey, _launchCount);
 
+    _tutorialSeen = _preferences?.getBool(_tutorialSeenKey) ?? false;
+
     _initialized = true;
     notifyListeners();
+  }
+
+  /// Records that the tour is done with — finished or skipped, same result.
+  Future<void> markTutorialSeen() async {
+    if (_tutorialSeen) {
+      return;
+    }
+    _tutorialSeen = true;
+    notifyListeners();
+
+    _preferences ??= await SharedPreferences.getInstance();
+    await _preferences?.setBool(_tutorialSeenKey, true);
   }
 
   /// Records "just showed the feedback prompt" so [isFeedbackPromptDue]

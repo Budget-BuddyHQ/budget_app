@@ -135,6 +135,10 @@ class _LifeSimPageState extends State<LifeSimPage> {
     }
     // Adds this ending to the collection shown on the Adventure hub.
     await controller.recordLifeEnding(summary.archetype.name);
+    // ...and files the run itself, which is what Past Lives and the
+    // personal bests are built from. Must come after the gold award above
+    // so the record's reward figure matches what was actually paid out.
+    final bestsBeaten = await controller.recordLifeRun(summary);
     if (!mounted) return;
     GameToast.show(
       context,
@@ -146,7 +150,10 @@ class _LifeSimPageState extends State<LifeSimPage> {
       accent: const Color(0xFFE1BB72),
     );
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => LifeEpilogueScreen(summary: summary)),
+      MaterialPageRoute(
+        builder: (_) =>
+            LifeEpilogueScreen(summary: summary, bestsBeaten: bestsBeaten),
+      ),
     );
   }
 
