@@ -913,6 +913,55 @@ Zero!") from a progress line — only the second is information, and only the
 second has to survive a narrow screen.
 *Files:* `finance_brawl_game.dart`
 
+**A three-year-old could study, go to the gym, and buy index funds**
+Age rules lived in the Life sim's *menu builder*, which is a view, so each
+option's gate was whatever that call site happened to remember — and five of
+them remembered nothing. The section was commented "Always-available
+activities". At age 3 the menu offered Hit the books, Go to the gym, Visit the
+library alone, Go out (free while young) and Invest 100 coins.
+*Fix:* a `LifeAction` enum plus `LifeSimController.gateFor`, one table in the
+controller. Every action method guards on `allows(...)` so the rule holds no
+matter who calls, and the menu asks the controller what to grey out. Seeing a
+doctor deliberately has no age floor — a parent takes a small child. An existing
+test failed correctly: a helper named `_adult()` was 15 and was investing.
+*Files:* `life_sim_controller.dart`, `life_sim_models.dart`, `life_sim_page.dart`,
+`life_age_gates_test.dart`
+
+**The Brawl progress bar rendered as a brown stick — three separate causes**
+1. *Transparent padding.* Flutter fits an image to its **file** bounds, not the
+   art inside them. `bar_fill_green` was a 64x64 file holding 24 rows of colour,
+   so a 6px-tall box painted a 2px hairline; `bar_base` was 48 wide with art
+   only from x=7 to x=41, so the track never reached its widget's edges.
+2. *Slice rects escaping the image.* Trimming the padding pushed a full-height
+   strip's slice `top` negative (ribbons −7, small bar −3), and Flutter asserts
+   on a centerSlice not contained by the image.
+3. *Caps equal to the destination.* The guard used `<` where it needed `<=` — a
+   destination exactly equal to the caps leaves zero stretchable middle and
+   fails like a negative one. A 52px button drawn from art with 52px of vertical
+   caps asserted even after the guard existed.
+*Fix:* trim to bbox and move the slice with it, clamp the rect back inside
+afterwards, use `<=` in the guard, and emit button art at 0.25 scale so its caps
+fit a real button. Slices and source sizes are now per-asset (the trim makes
+every output a different size with non-symmetric caps) and the generator prints
+them ready to paste.
+*Files:* `tool/build_ui_pack.py`, `app_assets.dart`, `pixel_kit.dart`,
+`pixel_kit_test.dart`
+
+**The side-facing villager was 90px wide against a 100px front view**
+Measured rather than guessed: the profile's *head* was wider than the front
+view's (85 vs 70), which is anatomically backwards, and the torso only 7%
+narrower face-on. Five earlier rounds had all examined the walk *cycle* — frame
+timing, leg alternation, which frames were front-facing — and the cycle was
+never the problem.
+*Fix:* `tool/narrow_side_profile.py` deletes columns from the interior of each
+row's widest flat run (the middle of the hair slab, the middle of the coat) and
+slides the remainder across, so both edges survive exactly as drawn. The shift
+must be **uniform** — a first version cut per row and the coat's back came out
+as a staircase. A nose and an eye are added on top, since a narrower blob is
+still a blob. Profile is now 71px wide. Colours are recovered from each sheet
+rather than hardcoded, because all 22 sheets are palette swaps.
+*Files:* `tool/narrow_side_profile.py`, `assets/self_made_skins/*.png`
+
 ### Process / tooling
 
 **`responsive_layout_test.dart` silently failed to compile**
@@ -1053,7 +1102,7 @@ does not ship.
 flutter analyze && flutter test
 ```
 
-557 tests covering responsive layout at eight viewports (including the Life
+589 tests covering responsive layout at eight viewports (including the Life
 sim itself, Feedback, and the Adventure map-pending screen), the money
 panel at seven widths, the life-event chain wiring, price-chart zoom/pan/scrub, chart painters against pathological input,
 working-order accounting, the Life simulation rules and its budgeting
