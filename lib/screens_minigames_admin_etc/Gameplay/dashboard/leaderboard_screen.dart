@@ -467,7 +467,7 @@ class _StatChip extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (isGold) ...[
-                Image.asset(AppAssets.uiIconCoin, width: 13, height: 13),
+                Image.asset(AppAssets.kitIconCoin, width: 13, height: 13),
                 const SizedBox(width: 4),
               ],
               Text(

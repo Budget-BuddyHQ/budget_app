@@ -18,6 +18,7 @@ import 'life_epilogue_screen.dart';
 import '../../../constants/app_assets.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/life_money_panel.dart';
+import '../../../widgets_custom_lotties/money_glyphs.dart';
 import '../../../widgets_custom_lotties/pixel_panel.dart';
 
 /// **Life** — the main game, in the BitLife format: a scrolling life feed up
@@ -597,15 +598,13 @@ class _HeaderBar extends StatelessWidget {
             // thing in the header that must stay readable.
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 96),
-              child: FittedLabel(
-                '$money',
+              // The balance is the number this header exists to show, so it
+              // gets the display face. `FittedBox` keeps a six-figure fortune
+              // inside the same 96px the pixel font was clamped to.
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
                 alignment: Alignment.centerRight,
-                textAlign: TextAlign.right,
-                style: GoogleFonts.pixelifySans(
-                  color: const Color(0xFFE1BB72),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                ),
+                child: MoneyGlyphs('$money', height: 20),
               ),
             ),
             Text(
@@ -2907,7 +2906,7 @@ class _ThisYearPanel extends StatelessWidget {
         children: [
           Row(
             children: [
-              const PixelIcon(AppAssets.uiIconStar, size: 14),
+              const PixelIcon(AppAssets.kitIconStar, size: 14),
               const SizedBox(width: 7),
               Text(
                 'This year',

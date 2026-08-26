@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../widgets_custom_lotties/fitted_label.dart';
+import '../../../widgets_custom_lotties/money_glyphs.dart';
+import '../../../widgets_custom_lotties/pixel_kit.dart';
+import '../../../constants/app_assets.dart';
 import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
@@ -58,13 +62,34 @@ class MainGamePage extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  'Level ${stats.level} • ${stats.gold} gold',
-                  style: GoogleFonts.pixelifySans(
-                    color: const Color(0xFFFFD45C),
-                    fontWeight: FontWeight.w700,
-                  ),
+                const SizedBox(height: 8),
+                // Level and gold, with the balance in the game's own display
+                // face. This line is the page's only status readout, and a
+                // gold figure drawn as art is the difference between a game
+                // and a settings header.
+                Row(
+                  children: [
+                    PixelKitIcon(AppAssets.kitIconStar, size: 18),
+                    const SizedBox(width: 7),
+                    Text(
+                      'Level ${stats.level}',
+                      style: GoogleFonts.pixelifySans(
+                        color: const Color(0xFFFFD45C),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    PixelKitIcon(AppAssets.kitIconCoin, size: 18),
+                    const SizedBox(width: 7),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: MoneyGlyphs('${stats.gold}', height: 20),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 20),
                 _LifeHeroCard(onPlay: () => _playLife(context)),
@@ -244,8 +269,13 @@ class _EndingSlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Undiscovered slots deliberately keep their silhouette and colour but
-    // hide the name — enough to hint the set's shape without spoiling it.
+    // A found ending shows the face you became; an undiscovered one shows a
+    // padlock over the same plate. Keeping the *shape* identical either way
+    // is what makes the row read as a collection with gaps in it, rather
+    // than as a list that happens to be partly greyed out.
+    //
+    // The portrait is deliberately not silhouetted when locked: a blacked-out
+    // face reads as a bug at this size, where a padlock reads as a lock.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
       decoration: BoxDecoration(
@@ -262,17 +292,26 @@ class _EndingSlot extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            found ? ending.icon : Icons.lock_rounded,
-            color: found ? ending.color : Colors.white.withValues(alpha: 0.28),
-            size: 24,
+          SizedBox(
+            width: 38,
+            height: 38,
+            child: found
+                ? Image.asset(
+                    ending.portrait,
+                    filterQuality: FilterQuality.none,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, _, _) =>
+                        Icon(ending.icon, color: ending.color, size: 24),
+                  )
+                : Center(
+                    child: PixelKitIcon(AppAssets.kitIconLock, size: 22),
+                  ),
           ),
           const SizedBox(height: 6),
-          Text(
+          FittedLabel(
             found ? ending.label : 'Undiscovered',
+            alignment: Alignment.center,
             textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.pixelifySans(
               color: found
                   ? Colors.white

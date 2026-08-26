@@ -35,6 +35,34 @@ enum LifeEndingArchetype {
   final IconData icon;
   final Color color;
 
+  /// A face for this ending.
+  ///
+  /// An ending screen that differs only in its accent colour and one
+  /// Material glyph reads as the same screen seven times — which is exactly
+  /// what it was. A portrait makes each ending a *person* the player ended
+  /// up as, and that is the thing worth collecting.
+  ///
+  /// Curated one-by-one rather than assigned by index, because the match is
+  /// the whole point: the Noble's face is hidden under a top hat, which is
+  /// what "rich but lonely" looks like, and no automatic mapping would find
+  /// that.
+  String get portrait => switch (this) {
+    LifeEndingArchetype.goneTooSoon =>
+      'assets/images/ending_faces/gone_too_soon.png',
+    LifeEndingArchetype.cautionaryTale =>
+      'assets/images/ending_faces/cautionary_tale.png',
+    LifeEndingArchetype.richButLonely =>
+      'assets/images/ending_faces/rich_but_lonely.png',
+    LifeEndingArchetype.brokeButHappy =>
+      'assets/images/ending_faces/broke_but_happy.png',
+    LifeEndingArchetype.legacyBuilder =>
+      'assets/images/ending_faces/legacy_builder.png',
+    LifeEndingArchetype.comfortableRetiree =>
+      'assets/images/ending_faces/comfortable_retiree.png',
+    LifeEndingArchetype.quietLife =>
+      'assets/images/ending_faces/quiet_life.png',
+  };
+
   String get blurb => switch (this) {
     LifeEndingArchetype.goneTooSoon =>
       'Life had other plans — a reminder that health and safety are the '

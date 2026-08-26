@@ -11,6 +11,7 @@ import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
+import '../../../widgets_custom_lotties/money_glyphs.dart';
 import '../../../widgets_custom_lotties/pixel_kit.dart';
 
 class FinanceBrawlCloseResult {
@@ -2519,7 +2520,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Image.asset(AppAssets.uiIconCoin, width: 20, height: 20),
+          Image.asset(AppAssets.kitIconCoin, width: 20, height: 20),
           const SizedBox(width: 7),
           FittedLabel(
             '$_goldAccumulated',
@@ -3083,17 +3084,31 @@ class _HudStatPanel extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    FittedLabel(
-                      value,
-                      alignment: alignStart
-                          ? Alignment.centerLeft
-                          : Alignment.center,
-                      style: GoogleFonts.pixelifySans(
-                        color: accent,
-                        fontSize: tight ? 16 : 20,
-                        fontWeight: FontWeight.w700,
+                    // Money in the game's own display face rather than in a
+                    // text font. `canRender` guards it: a figure that is half
+                    // art and half fallback text looks worse than one drawn
+                    // entirely in the text font, so anything with a character
+                    // the glyph set lacks stays as it was.
+                    if (MoneyGlyphs.canRender(value))
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: alignStart
+                            ? Alignment.centerLeft
+                            : Alignment.center,
+                        child: MoneyGlyphs(value, height: tight ? 17 : 22),
+                      )
+                    else
+                      FittedLabel(
+                        value,
+                        alignment: alignStart
+                            ? Alignment.centerLeft
+                            : Alignment.center,
+                        style: GoogleFonts.pixelifySans(
+                          color: accent,
+                          fontSize: tight ? 16 : 20,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
                     // Progress survives at every width; flavour does not.
                     //
                     // This used to drop `detail` entirely below 150px, which
