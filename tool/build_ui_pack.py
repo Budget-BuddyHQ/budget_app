@@ -206,8 +206,12 @@ def repack(img: Image.Image):
 # there, and the layout sweep caught it.
 #
 # Downscaling is safe for this pack because it is painted, anti-aliased art
-# rather than 1:1 pixel art, so LANCZOS keeps it clean. Minimum renderable
-# size after scaling: bars 32px wide, panels/buttons 64px, ribbons 80px.
+# rather than 1:1 pixel art, so LANCZOS keeps it clean.
+#
+# Buttons go to 0.25 rather than 0.5 because of the *vertical* caps: at 0.5
+# the art carried 52px of them, and a 52px-tall button therefore had exactly
+# zero stretchable middle and fell back to a plain rounded rect every single
+# time. A kit asset that never renders is the same as no kit asset.
 def _trim(img: Image.Image, rect):
     """Crop transparent padding, moving the slice rect with it.
 
@@ -269,10 +273,10 @@ JOBS = [
     ("Papers/SpecialPaper.png", "panel_slate", TEAL_TO_GREEN, 0.5),
     ("Banners/Banner.png", "panel_banner", TAN_TO_GOLD, 0.4),
     ("Wood Table/WoodTable.png", "panel_wood", TEAL_TO_GREEN, 0.4),
-    ("Buttons/BigBlueButton_Regular.png", "btn_primary", BLUE_TO_GREEN, 0.5),
-    ("Buttons/BigBlueButton_Pressed.png", "btn_primary_pressed", BLUE_TO_GREEN, 0.5),
-    ("Buttons/BigRedButton_Regular.png", "btn_danger", RED_TO_RED, 0.5),
-    ("Buttons/BigRedButton_Pressed.png", "btn_danger_pressed", RED_TO_RED, 0.5),
+    ("Buttons/BigBlueButton_Regular.png", "btn_primary", BLUE_TO_GREEN, 0.25),
+    ("Buttons/BigBlueButton_Pressed.png", "btn_primary_pressed", BLUE_TO_GREEN, 0.25),
+    ("Buttons/BigRedButton_Regular.png", "btn_danger", RED_TO_RED, 0.25),
+    ("Buttons/BigRedButton_Pressed.png", "btn_danger_pressed", RED_TO_RED, 0.25),
     ("Bars/BigBar_Base.png", "bar_base", TEAL_TO_GREEN, 0.25),
     ("Bars/SmallBar_Base.png", "bar_base_small", TEAL_TO_GREEN, 0.25),
 ]

@@ -2940,3 +2940,80 @@ the `Ninja Adventure` pack already in the repo: 95 characters with
 purpose-drawn 4-direction walk cycles whose profiles are correct by
 construction. That is the next item in the plan, and it is the one that
 actually solves this rather than improving it.
+
+---
+
+## 36. Age gates, and three ways a nine-slice can refuse to draw
+
+### A three-year-old with an investment account
+
+Reported as *"when the age is like 3, there are options that shouldn't be
+unlocked"*. It was worse than one option. At age three the menu offered:
+
+- **Hit the books** — no age check
+- **Go to the gym** — no age check
+- **Visit the library**, alone — no age check
+- **Go out** — no age check, and *free* while young
+- **Invest 100 coins** — gated only on having the money
+
+The cause is structural, not five separate oversights. The rules lived in the
+**menu builder**, which is a view, so each option's gate was whatever that call
+site happened to remember — and five of them remembered nothing. The section
+was even commented "Always-available activities".
+
+`LifeAction` and `LifeSimController.gateFor` move the rules into the controller
+as one table. The menu now asks what to grey out and why. That matters for two
+reasons: a menu-only check leaves the rule unenforced everywhere else (an
+event, a future screen, a direct call), and it cannot be unit-tested without
+pumping a widget. Every action method now guards on `allows(...)`, so the rule
+holds no matter who calls.
+
+Ages are the ordinary ones a child reaches these at — school 5, library 6,
+gifts 6, volunteering 10, gym and going out alone 12, side job 14, work and
+investing 16, gambling 18. **Seeing a doctor has no floor**: a parent takes a
+small child, and gating it would punish the character with least control over
+it.
+
+The refusals are sentences, not booleans — *"Your family will not let you out
+alone yet"*, *"You need to be 16 to open an account"*. At age three, being told
+what you cannot do yet **is** the content; it is how the early years read as
+childhood instead of as an adult life with less money.
+
+One existing test failed, correctly: `life_sim_test.dart` had a helper named
+`_adult()` that was fifteen years old and was investing. The test was fixed,
+not the rule.
+
+### Three ways a nine-slice refuses to draw
+
+The Finance Brawl progress bar shipped looking like a brown stick. Diagnosing
+it turned up three distinct failure modes, all of which had to be fixed.
+
+**1. Transparent padding.** Every asset in the pack carries generous margins,
+and **Flutter fits an image to its file bounds, not to the art inside them**.
+`bar_fill_green` was a 64x64 file holding 24 rows of colour, so drawn into a
+6px-tall box it painted a ~2px hairline. `bar_base` was 48 wide with art only
+between x=7 and x=41, so the track never reached its own widget's edges. The
+panels had the same bug less visibly — they rendered inset and never quite
+filled. The generator now trims to the bounding box, moving the slice rect by
+the same offset.
+
+**2. Slice rects escaping the image.** Trimming introduced a new hazard:
+cropping blank rows off the top of a full-height strip pushes its slice `top`
+negative, and Flutter asserts on a `centerSlice` not contained by the image.
+Seen for real on the ribbons (top −7) and the small bar (−3). The trim clamps
+the rect back inside afterwards.
+
+**3. Caps larger than the destination.** Flutter subtracts the end caps from
+the destination before fitting, so a nine-slice can never render smaller than
+its own corners. The guard for this used `<` where it needed `<=`: a
+destination *exactly* equal to the caps leaves a stretchable middle of zero,
+which fails the same way a negative one does. That is how a 52px-tall button
+drawn from art with 52px of vertical caps still asserted after the guard was
+added — and why button art is now emitted at 0.25 scale rather than 0.5. **A
+kit asset that always falls back is the same as no kit asset.**
+
+Because the trim makes every output a different size with non-symmetric caps,
+slices can no longer share one constant, and the source extent can no longer be
+derived from the slice. Both are now per-asset, and the generator prints them
+ready to paste rather than leaving them to be re-derived by hand — which is how
+a rect ends up one pixel off and the bevel smears.
