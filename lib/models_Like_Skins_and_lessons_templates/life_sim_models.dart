@@ -218,6 +218,29 @@ class LifeChoice {
   final LifeFlag? clearsFlag;
 }
 
+/// Something the player can choose to do from a menu.
+///
+/// Exists so age rules live in one table in `LifeSimController` instead of
+/// being scattered ad hoc across menu builders. Before it, the gating was
+/// whatever each call site remembered to check — which is why a three-year-old
+/// could take a course, work out at the gym, walk to the library alone and buy
+/// index funds.
+enum LifeAction {
+  study,
+  library,
+  exercise,
+  goOut,
+  doctor,
+  buyGift,
+  spendTime,
+  volunteer,
+  sideJob,
+  findJob,
+  invest,
+  gamble,
+  practise,
+}
+
 /// A learnable skill. Skills gate career events and scale their payoff — a
 /// music contract should not fire for someone who has never practised.
 enum LifeSkill {
