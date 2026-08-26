@@ -221,7 +221,13 @@ enum ChartRange {
   day5('5D', '30min', 65),
   month1('1M', '1day', 30),
   month3('3M', '1day', 90),
-  year1('1Y', '1week', 52);
+  // 6M and 5Y added so there is somewhere to go *back* to. Panning left on
+  // a 1D chart cannot reach yesterday — an intraday series only holds one
+  // session — so 'let me look at older prices' is answered by the range
+  // strip, not by the pan gesture, and the strip stopped at a single year.
+  month6('6M', '1day', 180),
+  year1('1Y', '1week', 52),
+  year5('5Y', '1week', 260);
 
   const ChartRange(this.label, this.interval, this.points);
 
@@ -987,6 +993,53 @@ class MarketDataService extends ChangeNotifier {
 
   final Map<String, CompanyProfile> _profiles = <String, CompanyProfile>{};
 
+  /// Symbols whose profile fetch is already in flight, so a list rebuilding
+  /// mid-fetch does not queue a second request for the same company.
+  final Set<String> _profilesInFlight = <String>{};
+
+  /// The logo URL for [symbol] if a profile has already been fetched.
+  ///
+  /// Synchronous and never triggers a request, so a list row can call it
+  /// during `build` without turning a scroll into a burst of network calls.
+  /// Returns null until [primeLogos] has done the work.
+  String? logoUrlFor(String symbol) {
+    final url = _profiles[symbol]?.logoUrl;
+    return (url == null || url.isEmpty) ? null : url;
+  }
+
+  /// Fetches profiles for [symbols] in the background so their logos are
+  /// available to the next rebuild.
+  ///
+  /// **Why this is throttled.** The Market Board shows real company logos,
+  /// and only six were bundled as assets — every other ticker fell back to a
+  /// generic Material glyph even though `/stock/profile2` returns a logo URL
+  /// for all of them. Fetching them is the fix, but the naive version is a
+  /// request per visible row on every scroll, against a free tier that allows
+  /// 60 calls a minute. So: skip anything already cached or in flight, cap
+  /// each call to a handful of new symbols, and stay silent on failure —
+  /// a missing logo is a cosmetic downgrade, not an error worth surfacing.
+  Future<void> primeLogos(Iterable<String> symbols, {int limit = 6}) async {
+    final wanted = <String>[];
+    for (final symbol in symbols) {
+      if (_profiles.containsKey(symbol) || _profilesInFlight.contains(symbol)) {
+        continue;
+      }
+      wanted.add(symbol);
+      if (wanted.length >= limit) break;
+    }
+    if (wanted.isEmpty) return;
+
+    _profilesInFlight.addAll(wanted);
+    try {
+      await Future.wait(wanted.map(fetchCompanyProfile));
+    } catch (_) {
+      // Swallowed on purpose — see above.
+    } finally {
+      _profilesInFlight.removeAll(wanted);
+    }
+    notifyListeners();
+  }
+
   /// Static company background — logo, industry, description, market cap.
   /// Finnhub's free-tier `/stock/profile2`, same key as quotes/search.
   /// Cached indefinitely per session: a company's profile does not change
@@ -1145,10 +1198,28 @@ class MarketDataService extends ChangeNotifier {
           ),
         );
       }
-      // Newest first, capped — the free tier's window can return dozens of
-      // wire-service reprints of the same story.
+      // Newest first, then de-duplicated, then capped.
+      //
+      // The two-week window routinely comes back with the same wire story
+      // carried by a dozen outlets under near-identical headlines, so a
+      // plain 'take(12)' could fill the entire panel with one piece of news
+      // and hide everything else that happened. Matching on a normalised
+      // headline (lowercased, punctuation stripped, whitespace collapsed)
+      // catches the reprints, which differ only in casing and trailing
+      // attribution, without needing to compare article bodies.
       items.sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
-      final capped = items.take(12).toList(growable: false);
+      final seenHeadlines = <String>{};
+      final unique = <CompanyNewsItem>[];
+      for (final item in items) {
+        final fingerprint = item.headline
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z0-9 ]'), '')
+            .replaceAll(RegExp(r'\s+'), ' ')
+            .trim();
+        if (fingerprint.isEmpty || !seenHeadlines.add(fingerprint)) continue;
+        unique.add(item);
+      }
+      final capped = unique.take(12).toList(growable: false);
       _newsCache[symbol] = (fetchedAt: DateTime.now(), items: capped);
       return capped;
     } catch (error) {

@@ -11,6 +11,7 @@ import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
+import '../../../widgets_custom_lotties/pixel_kit.dart';
 
 class FinanceBrawlCloseResult {
   const FinanceBrawlCloseResult({
@@ -2483,11 +2484,14 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       icon: Icons.waves_rounded,
       label: isCrisis ? 'CRISIS' : 'WAVE',
       value: 'WAVE $_wave',
-      detail: isCrisis
-          ? 'Neutralize Market Crisis'
-          : 'Debts Paid $_debtsCleared/$_debtsNeededForLevelUp',
+      detail: isCrisis ? 'Neutralize Market Crisis' : 'Debts Paid',
       accent: isCrisis ? _brawlDanger : _brawlMint,
       alignStart: false,
+      // The count the player is actually tracking toward their next upgrade.
+      progress: HudProgress(
+        current: _debtsCleared,
+        total: _debtsNeededForLevelUp,
+      ),
     );
 
     final balancePanel = _HudStatPanel(
@@ -2984,6 +2988,25 @@ class _TouchJoystick extends StatelessWidget {
   }
 }
 
+/// Something countable a HUD panel can draw as a bar.
+///
+/// Exists so the panel can tell the difference between a *flavour* line
+/// ("Don't Let it Hit Zero!") and a *progress* line ("Debts Paid 3/12").
+/// Only the second one is information the player is tracking, and only the
+/// second one therefore has to survive a narrow phone.
+@immutable
+class HudProgress {
+  const HudProgress({required this.current, required this.total});
+
+  final int current;
+  final int total;
+
+  /// Guards a zero total rather than letting it become NaN and blank the bar.
+  double get fraction => total <= 0 ? 0 : (current / total).clamp(0.0, 1.0);
+
+  String get caption => '$current / $total';
+}
+
 class _HudStatPanel extends StatelessWidget {
   const _HudStatPanel({
     required this.icon,
@@ -2992,6 +3015,7 @@ class _HudStatPanel extends StatelessWidget {
     required this.detail,
     required this.accent,
     this.alignStart = false,
+    this.progress,
   });
 
   final IconData icon;
@@ -3000,6 +3024,10 @@ class _HudStatPanel extends StatelessWidget {
   final String detail;
   final Color accent;
   final bool alignStart;
+
+  /// When set, the panel draws a bar instead of the flavour line — and keeps
+  /// it at every width. See the comment at the render site.
+  final HudProgress? progress;
 
   @override
   Widget build(BuildContext context) {
@@ -3066,10 +3094,39 @@ class _HudStatPanel extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    // Flavour and secondary detail. First thing to go when
-                    // there is no room — the number above it is the part
-                    // you read mid-fight.
-                    if (!tight)
+                    // Progress survives at every width; flavour does not.
+                    //
+                    // This used to drop `detail` entirely below 150px, which
+                    // meant the panel hid "Debts Paid 3/12" — the number
+                    // telling the player how far they are from the next
+                    // upgrade — on exactly the phones where the HUD is
+                    // tightest. A bar is legible at any width, so nothing has
+                    // to be dropped to make room, and it answers "how much
+                    // further" at a glance in a way the sentence never did.
+                    if (progress != null) ...[
+                      SizedBox(height: tight ? 4 : 5),
+                      PixelProgressBar(
+                        value: progress!.fraction,
+                        height: tight ? 12 : 14,
+                        fillAsset: accent == _brawlDanger
+                            ? AppAssets.kitBarFillRed
+                            : AppAssets.kitBarFillGreen,
+                      ),
+                      const SizedBox(height: 3),
+                      FittedLabel(
+                        progress!.caption,
+                        alignment: alignStart
+                            ? Alignment.centerLeft
+                            : Alignment.center,
+                        style: GoogleFonts.quicksand(
+                          color: Colors.white.withValues(alpha: 0.78),
+                          fontSize: tight ? 10 : 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ] else if (!tight)
+                      // Panels with nothing to measure keep the old flavour
+                      // line, and it is still the first thing to go.
                       FittedLabel(
                         detail,
                         alignment: alignStart

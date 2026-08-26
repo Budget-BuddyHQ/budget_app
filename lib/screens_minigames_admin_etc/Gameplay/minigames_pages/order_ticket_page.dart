@@ -11,6 +11,8 @@ import '../../../services_backend_and_other_services/market_data_service.dart';
 import '../../../widgets_custom_lotties/price_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../widgets_custom_lotties/symbol_badge.dart';
+
 /// What kind of order the player is placing.
 ///
 /// A market order crosses the spread and fills now. A limit order fills now if
@@ -550,7 +552,15 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: const Color(0xFF0C2418).withValues(alpha: 0.66),
+              // Was 0.62/0.66 — the pixel village stayed clearly legible
+              // through it, so every price, label and chart line on this
+              // screen competed with a busy tiled illustration for the
+              // reader's attention. Numbers are the entire point of a
+              // trading screen and they were the thing losing.
+              //
+              // 0.88 keeps the backdrop as texture (you can still tell it
+              // is the village) while stopping it reading as content.
+              color: const Color(0xFF0C2418).withValues(alpha: 0.88),
             ),
           ),
         ),
@@ -576,7 +586,16 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
             elevation: 0,
             title: Row(
               children: [
-                Icon(widget.icon, color: widget.accent, size: 22),
+                // The real company mark, not a generic glyph. This is the
+                // most prominent place the symbol appears on the whole
+                // screen, and it was the one place still showing a Material
+                // icon after the rest of the board moved to [SymbolBadge].
+                SymbolBadge(
+                  symbol: widget.symbol,
+                  icon: widget.icon,
+                  accent: widget.accent,
+                  size: 32,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -977,7 +996,7 @@ class _ChartSection extends StatelessWidget {
                             selected: option == range,
                             // Without a Twelve Data key `fetchCandles`
                             // returns an empty list for *every* range, so
-                            // all five buttons produced the identical
+                            // every button produced the identical
                             // quote-derived shape and looked broken.
                             // Disabling them says so honestly — the
                             // alternative would be inventing price
@@ -1017,7 +1036,7 @@ class _ChartSection extends StatelessWidget {
           if (!loading && hasRealCandles) ...[
             const SizedBox(height: 8),
             Text(
-              'Use + / − to zoom • drag to pan • prices on the right',
+              'Pinch or + / − to zoom • drag to pan • drag to scrub',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.4),

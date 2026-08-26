@@ -2574,3 +2574,369 @@ while appearing to have eight viewports' worth.
   whatever survives the back button and two actions. The avatar is decoration
   and the name and balance are content, so the avatar is what drops below
   210px.
+
+---
+
+## 31. Charts you can move, and a deep link that was never declared
+
+### "I still cannot zoom on the buy screen", three times
+
+Two separate causes, which is why fixing it once did not fix it.
+
+**Cause one: the gesture lost an arena fight.** The order ticket *was*
+already using `InteractivePriceChart`, and its +/- buttons did work. But
+those are a 28px control in a corner, and what anyone actually tries is to
+pinch or drag. Those did nothing, because the wrapper drove them from a
+`ScaleGestureRecognizer` — which accepts pointers in **any** direction and so
+competes with the enclosing vertical `ListView` for every gesture. The list
+wins. The feature existed, the maths was right, and it was unreachable by the
+input a person would use.
+
+**Cause two: three other charts were never interactive at all.** The Market
+Board's detail sparkline, the P&L curve and the net-worth trend all
+instantiated the plain `PriceChart` directly.
+
+The rebuild changes the input model:
+
+- **One finger, horizontal.** `HorizontalDragGestureRecognizer` never
+  competes with a vertical list, so it always wins. At 1x there is nowhere to
+  pan, so it scrubs the crosshair; zoomed in, it pans.
+- **Two fingers.** Pinch, anchored on the focal point so the candle under
+  your fingers stays put. Two-pointer gestures do not conflict with a
+  one-pointer list drag.
+- **Buttons** for zoom in/out/fit and pan left/right, because a mouse has no
+  pinch and buttons cannot be stolen by a parent scrollable.
+
+The window is stored as **integer candle indices**, not a zoom factor plus a
+fractional centre. A fractional centre drifts as it is re-derived, so
+pan-zoom-pan would not land back where it started.
+
+Two subtler fixes came out of it. `PriceChart.axisGutter` is now public —
+the painter reserves 52px on the right for price labels, and the Market Board
+had its own hardcoded copy of that number for pointer-to-index maths, which
+is exactly the sort of duplicated constant that drifts. And the crosshair
+index is reported in **whole-series** coordinates, because the painter is
+handed a slice when zoomed and an untranslated index would point at the wrong
+candle, making the price readout disagree with the crosshair.
+
+`price_chart_interaction_test.dart` asserts what the painter is actually
+handed, which is the only honest measure of "is it zoomed" — the visible
+window is what it draws and what the price axis is derived from.
+
+### How the news actually works
+
+Finnhub `/api/v1/company-news`, with `from`/`to` set to a rolling 14-day
+window, called alongside `/stock/profile2` from the order ticket's
+`initState`. Both go through `_proxyUri` when the Supabase edge function is
+configured and fall back to a direct call with an `X-Finnhub-Token` header
+otherwise.
+
+Responses are cached per symbol for 15 minutes. Failures return an empty list
+and are **not** cached, so a transient outage does not pin an empty panel in
+place for the whole TTL.
+
+One real fix in this pass: the results were sorted newest-first and capped at
+12, with a comment acknowledging that the window returns wire-service
+reprints — but nothing actually de-duplicated them. A single story carried by
+a dozen outlets could fill the entire panel and hide everything else that
+happened. Reprints differ only in casing and trailing attribution, so
+matching on a normalised headline (lowercased, punctuation stripped,
+whitespace collapsed) catches them without comparing article bodies.
+
+### Password reset was complete in code and dead on device
+
+`resetPasswordForEmail`, the captcha token, the recovery-session handling in
+`main.dart` — all already correct. But `passwordResetRedirectUrl` is
+`budgetbuddy://password-reset` on mobile, and **that scheme was declared
+nowhere**. No intent-filter in `AndroidManifest.xml`, no `CFBundleURLTypes`
+in `Info.plist`. So the OS had no idea which app owned the link, tapping it
+in a mail client did nothing, and the reset dead-ended — with no error, on a
+path that looked finished in the code.
+
+Both are declared now. Three things have to agree for this to work, and the
+third is not in the repo:
+
+1. `passwordResetRedirectUrl` in `supabase_service.dart`
+2. the native declarations (intent-filter / `CFBundleURLTypes`)
+3. the same URL allowlisted under **Authentication → URL Configuration →
+   Redirect URLs** in the Supabase dashboard
+
+If (3) is missing, Supabase silently substitutes the project's Site URL and
+the app never receives the recovery session — which is the same
+indistinguishable dead end.
+
+---
+
+## 32. The crosshair that said nothing, and one company with five faces
+
+### The dot told you where you were pointing, never what was there
+
+Scrubbing drew a vertical line and a dot on the series. That is *position*
+information. It answered "which bar am I on" and never "what price is that",
+which is the only question anyone scrubs a chart to ask — reading a value off
+a y-axis by eye is precisely the work a chart exists to save you.
+
+The readout is now four things, which is what every real trading app draws:
+
+- a **dashed** crosshair (both axes), so it reads as a measurement overlay
+  rather than as another series painted on the chart;
+- a haloed dot with a white ring, visible over both the filled area under the
+  line and the empty space above it;
+- a **price tag** pinned into the right-hand gutter beside the axis labels;
+- a **card** with the value, the move since that bar opened (absolute and
+  percent, coloured), and the timestamp.
+
+Two details that are easy to get wrong and were handled deliberately. The
+card **flips to the other side of the crosshair** near the right edge, because
+that is exactly where the newest and most-looked-at bars are, and a readout
+that runs off the canvas is worse than none. And the timestamp trims itself to
+what actually varies in the series — an intraday series spans one day so the
+date is noise, a yearly one spans months so the clock time is meaningless.
+Which one it is can be read straight off the data rather than needing the
+timeframe threaded down from the caller.
+
+### "Go back on past days" is a range problem, not a pan problem
+
+Panning left on a 1D chart cannot reach yesterday: an intraday series only
+holds one session's bars. So the answer is the range strip, and it stopped at
+a single year. Added **6M** and **5Y**.
+
+### One company, five different faces
+
+`_logoAssetFor` existed and exactly one widget called it. Apple appeared as
+the Apple mark on the trending promo card and as a generic phone glyph in the
+search results, the ticker tape, the stock card, the holdings list, the
+allocation rows and the order-ticket header — the same company wearing five
+faces on one screen.
+
+`SymbolBadge` (now in `widgets_custom_lotties/`, since the order ticket needs
+it too) is the single treatment: the real logo where there is one, on a
+**white** plate — several of these marks are solid black and would vanish
+against this app's dark panels, which is why real trading apps put a white
+circle behind ticker logos whatever their own theme — and the accent-tinted
+Material glyph otherwise, because a coloured glyph on white would look like a
+broken image.
+
+### The backdrop was winning against the numbers
+
+Both Market Board screens draw the pixel village behind a transparent
+`Scaffold`, scrimmed at 0.62/0.66. At that alpha the village stayed clearly
+legible, so every price, label and chart line competed with a busy tiled
+illustration. Numbers are the entire point of a trading screen and they were
+the thing losing. Raised to **0.88**: still recognisably the village, no
+longer reading as content.
+
+---
+
+## 33. The app had no UI because it had nothing to build UI out of
+
+"I still don't see that the app has UI" came back repeatedly, and it was not a
+matter of taste. Every panel was a `BoxDecoration` rounded rect, every button a
+`FilledButton`, every icon a Material glyph. The one pixel kit — the older
+`assets/images/ui/` — is a flat green rectangle with a gold stripe and four 8x8
+glyphs. There was no game interface to reach for, so every screen fell back to
+Material with a pixel font on top.
+
+**The art was already in the repo, referenced by nothing.**
+`assets/imported/Tiny Swords (Free Pack)/UI Elements/` ships papers, banners,
+ribbons, bars, buttons with real pressed states and an icon set — better art
+than anything worth generating. Two things stopped it being usable, and
+`tool/build_ui_pack.py` fixes both.
+
+**It ships as contact sheets, not nine-slices.** Each file is a 64px grid with
+the nine pieces parked at cells 0, 2 and 4, gaps between them. Flutter needs
+them packed adjacently so `centerSlice` can pin the corners. The slicer detects
+pieces by opacity and snaps to the 64px grid rather than assuming a 3x3 split,
+because the sheets are not uniform: `RegularPaper` is 320px with one-cell
+pieces, `Banner` is 448px with two-cell pieces. Snapping recovers the author's
+intent in both without hardcoding either.
+
+**It is fantasy-medieval.** Teal, wood-brown and parchment, against an app whose
+identity is forest green and gold. The recolour maps *hue* while preserving
+saturation and value — that is the whole trick, because the light edge, shadow
+edge and mid tone in this pack are the same hue at three different values, and
+it is that ramp, not the hue, that makes a rectangle read as a raised panel. A
+flat colour replacement would throw the bevel away.
+
+### The bug that made the scale column non-negotiable
+
+First build asserted in the layout sweep:
+
+> centerSlice was used with a BoxFit that does not guarantee that the image is
+> fully visible
+
+Not a fit problem. **Flutter subtracts a nine-slice's end caps from the
+destination before fitting, and a negative remainder throws rather than
+clipping.** The pack is authored for a desktop RTS on a 64px grid, so a 192px
+bar carries 128px of caps — and the Finance Brawl HUD gives its panels about
+119px on a phone. That bar was *mathematically unable to render there*.
+
+Two fixes, both needed:
+
+1. **Downscale on the way out.** Bars 0.25, panels/buttons 0.5, banners 0.4.
+   Safe for this pack because it is painted, anti-aliased art rather than 1:1
+   pixel art. Slicing happens at full resolution *first* — scaling first would
+   move the piece boundaries off the 64px grid and the band detection would
+   find the wrong seams. Minimum renderable sizes are now bars 32px, panels
+   64px, ribbons 128px.
+2. **A `_NineSlice` guard in the widget.** These are shared widgets, so any
+   caller with a tight `Expanded` can hit the limit; below it they draw a plain
+   rounded rect, which at that size is indistinguishable from the art anyway.
+   This is not defensive padding — without it a too-narrow panel takes the
+   frame down.
+
+`test/pixel_kit_test.dart` pins it: every widget at eight widths including the
+119px that crashed, plus slice-rect sanity (a rect one pixel off pins the wrong
+column and smears the bevel).
+
+### `pixel_kit.dart`
+
+Assets on disk fix nothing on their own — the previous kit sat unused for
+exactly that reason. `PixelFrame`, `PixelRibbon`, `PixelButton`,
+`PixelProgressBar` and `PixelKitIcon` are the bridge: they make the art the
+*easy* choice at a call site so new UI reaches for it by default.
+
+`tool/make_ui_kit.py` no longer emits frames or buttons — shipping two
+competing panel sets would be more unused art on top of the unused art this
+whole effort exists to fix. It still owns the **icons**, because the pack has
+no coin stack, piggy bank or up/down chart, and those are the concepts a
+budgeting app needs most.
+
+### Two fixes that fell out of it
+
+**Money Habits lost its gap.** The `SizedBox(height: 16)` under the Today's
+Challenge card lived *inside* the `if (habits.savedHabits.isEmpty)` branch, so
+it vanished the moment a player pinned their first habit and the challenge card
+ended up welded to the stats row. Spacing between two siblings belongs between
+them, not inside a conditional that happens to sit in the middle.
+
+**Finance Brawl was hiding the number the player needs.** `_HudStatPanel`
+dropped its `detail` line below 150px — and that line is "Debts Paid 3/12", the
+count telling you how far you are from the next upgrade. So the progress
+disappeared on exactly the phones where the HUD is tightest, which is why wave 1
+showed nothing and wave 2 did. It now draws a `PixelProgressBar` plus a compact
+`3 / 12`, kept at *every* width. A new `HudProgress` type is what lets the panel
+tell a flavour line ("Don't Let it Hit Zero!") from a progress line — only the
+second is information, and only the second has to survive.
+
+---
+
+## 34. Dates on the chart, and the logo that was one field away
+
+### "10:40" does not say which 10:40
+
+The scrub readout printed a bare clock time on an intraday chart. That was a
+deliberate call and it was wrong: the reasoning was that a one-day series makes
+the date redundant, which stops being true the moment the chart can be zoomed
+and panned — and asking *which* moment is the entire purpose of scrubbing.
+
+The date is always shown now, with the year only when the bar is not from the
+current year, so a 1D chart stays short and a 5Y chart stays unambiguous.
+
+A real bug came out of it. The old code decided "is this intraday" from the
+series' **total span** — but `PriceChart` only ever receives the *visible
+window* when it sits inside an `InteractivePriceChart`. So zooming a multi-day
+chart down to a handful of bars shrank the span below a day and silently
+dropped the date mid-gesture: the label changed meaning as the user pinched.
+
+It now measures the **median gap between consecutive bars**, which does not
+move when the window narrows. Median rather than mean because a daily series
+jumps three days across every weekend and a month across some holidays, and an
+average of those lands between "daily" and "weekly" and decides nothing.
+
+### The chart had no horizontal axis at all
+
+Prices were plotted against nothing. A shape was readable but never locatable
+in time. Three labels — first, middle, last — is the most a phone-width chart
+carries without collisions, and enough to answer "what period am I looking at".
+The plot area now stops above them, but only when the chart is tall enough to
+afford it: on a short sparkline the prices matter more than the dates, and
+squeezing both makes neither readable.
+
+### One company, one mark — including the ones nobody bundled
+
+Six logos ship as assets. The board trades dozens, so everything else wore a
+generic Material glyph — while its real mark sat **one field away** in the
+`/stock/profile2` response the order ticket was already fetching for its
+Company Background panel. Disney had a logo on its profile card and a purple
+glyph in the list, on the same screen.
+
+`MarketDataService.primeLogos` now fetches the rest, and `SymbolBadge` falls
+back to that URL. The throttling is the important part: the naive version is
+one request per visible row on every scroll, against a free tier that allows
+sixty calls a minute. So it skips anything cached or in flight, caps each call
+to a handful of new symbols, and stays silent on failure — a missing logo is a
+cosmetic downgrade, not an error worth surfacing. Bundled art still wins where
+it exists, because it is instant and works offline.
+
+---
+
+## 35. The side view was fat, and the measurement said so
+
+Five rounds on this sprite, and the breakthrough was the user's exact word:
+*"the character is fat"*. That is a claim about **silhouette width**, which is
+measurable, and the measurement is damning:
+
+| row | front (south) | profile (west) |
+|---|---|---|
+| head top | 40 | **50** |
+| hair | 70 | **85** |
+| torso | 70 | 75 |
+
+The profile was **wider than the front view at the head** — anatomically
+backwards — and its torso only 7% narrower face-on when a real profile is
+closer to half. Every earlier round had been looking at the walk *cycle*:
+frame timing, leg alternation, which frames were front-facing. The cycle was
+never the problem. A too-wide silhouette reads as fat no matter how well the
+legs animate.
+
+### Column deletion, not scaling
+
+Squashing horizontally would blur every outline and destroy the 5px block grid
+the art is drawn on. Instead `tool/narrow_side_profile.py` finds the longest
+run of a single flat colour in each row — the middle of the hair slab, the
+middle of the coat — and deletes columns from *inside* it, sliding the
+remainder across. Both edges survive untouched, so the face, the arm and the
+back outline come through exactly as drawn.
+
+**The shift has to be uniform.** The first version chose the cut per row
+independently, so a row whose flat run could only afford 14 columns shifted 14
+while its neighbour shifted 25, and the back of the coat came out as a
+staircase — visible immediately in the contact sheet. Every row above the hip
+now moves by the same amount; rows too narrow to donate that many columns are
+translated by half of it instead, which keeps the neck attached above and
+below. Legs are translated by the same half-shift rather than left alone,
+because leaving them put detached them from a coat that had moved. Translating
+every frame by one constant preserves the walk cycle exactly.
+
+Result: profile width 90 → 71 against a 100-wide front view.
+
+### A narrower blob is still a blob
+
+Slimming fixed "fat" and the sprite still did not read as a person, because
+there was no face in it: a 15px skin notch with hair covering everything
+behind it, no nose, no eye. So `add_profile_face` adds a nose — one block
+pushed forward past the face line, with the outline moved out to meet it,
+since a profile is recognisable almost entirely by its nose — and an eye set
+back from the front edge.
+
+Every colour is recovered from the art itself (`_palette`) rather than
+hardcoded, because the 22 sheets are palette swaps: hardcoding would fix one
+skin and corrupt the other twenty-one.
+
+**One step was removed after looking at it.** An earlier version also opened
+the hairline, turning hair in front of the face into skin. On most frames it
+helped; on frames where the head sits at a different angle it ate the face
+entirely and left a head of pure hair. Additive edits cannot fail that way, so
+only the nose and eye remain: the worst case is now a frame that gains
+nothing, not a frame that loses its face.
+
+### The honest ceiling
+
+This is materially better and it is not *good*. The head still sits large and
+juts backwards, because that is how it was drawn and no amount of transforming
+existing pixels will re-draw it. The real fix for genuinely good side views is
+the `Ninja Adventure` pack already in the repo: 95 characters with
+purpose-drawn 4-direction walk cycles whose profiles are correct by
+construction. That is the next item in the plan, and it is the one that
+actually solves this rather than improving it.

@@ -798,6 +798,121 @@ were not.
 *Fix:* `_quietYearLine()`, age-banded so the filler suits the life stage.
 *Files:* `life_sim_controller.dart`
 
+**Pinch and drag on the price chart lost a gesture-arena fight, three times**
+The order ticket already used `InteractivePriceChart` and its +/- buttons worked,
+but the pinch and pan were driven by a `ScaleGestureRecognizer`, which accepts
+pointers in any direction and therefore competes with the enclosing vertical
+`ListView` for every gesture. The list wins. So the feature existed, the maths
+was right, and it was unreachable by the input anyone would actually try. The
+Market Board's other three charts used the plain `PriceChart` and were not
+interactive at all.
+*Fix:* rewrote the wrapper around a `HorizontalDragGestureRecognizer` (never
+competes with a vertical list) that scrubs at 1x and pans when zoomed, plus a
+`ScaleGestureRecognizer` that ignores single-pointer gestures so it only claims
+real pinches. Added pan arrows for mouse users, and wired the wrapper into all
+three remaining charts.
+*Files:* `price_chart.dart`, `stock_market_page.dart`, `order_ticket_page.dart`,
+`price_chart_interaction_test.dart`
+
+**The chart's 52px label gutter was hardcoded in two places**
+`_PriceChartPainter` reserves 52px on the right for price labels, and the Market
+Board kept its own copy of that number to map a pointer x onto a candle index.
+*Fix:* `PriceChart.axisGutter` is public and both sides read it. The
+pointer-to-index maths moved into the chart, which is also the only place that
+can translate a zoomed window back into whole-series coordinates.
+*Files:* `price_chart.dart`, `stock_market_page.dart`
+
+**Company news could show the same story twelve times**
+Results were sorted newest-first and capped at 12, with a comment noting that
+the 14-day window returns wire-service reprints — but nothing de-duplicated
+them, so one story carried by a dozen outlets could fill the panel and hide
+everything else.
+*Fix:* de-duplicate on a normalised headline (lowercased, punctuation stripped,
+whitespace collapsed) before capping. Reprints differ only in casing and
+trailing attribution, so this catches them without comparing article bodies.
+*Files:* `market_data_service.dart`
+
+**Password reset was complete in code and dead on device**
+`passwordResetRedirectUrl` is `budgetbuddy://password-reset` on mobile, and the
+scheme was declared nowhere — no intent-filter in AndroidManifest.xml, no
+CFBundleURLTypes in Info.plist. The OS had no idea which app owned the link, so
+tapping it in a mail client did nothing and the reset dead-ended silently on a
+path that looked finished in the code.
+*Fix:* declared the scheme on both platforms. Note this needs a third piece
+that is not in the repo — the same URL allowlisted under Authentication -> URL
+Configuration -> Redirect URLs in the Supabase dashboard, or Supabase quietly
+substitutes the Site URL and the app never receives the recovery session.
+*Files:* `AndroidManifest.xml`, `Info.plist`
+
+**The scrub dot showed no price, unlike every real trading app**
+The crosshair drew a vertical line and a dot — position information only. It
+answered "which bar am I on" and never "what price is that", which is the only
+question anyone scrubs a chart to ask.
+*Fix:* a dashed two-axis crosshair, a haloed marker, a price tag pinned to the
+axis gutter, and a card with the value, the move since that bar opened, and the
+timestamp. The card flips to the other side of the crosshair near the right
+edge (where the newest bars are), and the timestamp trims itself to what varies
+in the series — date for a yearly range, clock time for an intraday one.
+*Files:* `price_chart.dart`, `price_chart_interaction_test.dart`
+
+**One company wore five different faces on the same screen**
+`_logoAssetFor` existed and only the trending promo strip ever called it, so
+Apple was the Apple mark on one card and a generic phone glyph in the search
+results, ticker tape, stock card, holdings list and order-ticket header.
+*Fix:* extracted `SymbolBadge` into `widgets_custom_lotties/` and used it
+everywhere a ticker appears. Logos sit on a white plate — several of these
+marks are solid black and would vanish against the app's dark panels.
+*Files:* `symbol_badge.dart`, `stock_market_page.dart`, `order_ticket_page.dart`
+
+**The pixel-village backdrop was competing with the prices**
+Both Market Board screens scrim the village art at 0.62/0.66 alpha, which left
+it clearly legible — so every price, label and chart line fought a busy tiled
+illustration for attention, on a screen whose entire point is numbers.
+*Fix:* raised the scrim to 0.88. Still recognisably the village, no longer
+reading as content.
+*Files:* `stock_market_page.dart`, `order_ticket_page.dart`
+
+**Panning could not reach yesterday, and the range strip stopped at 1Y**
+An intraday series only holds one session's bars, so "show me older prices" is
+a range question, not a pan question.
+*Fix:* added 6M and 5Y ranges.
+*Files:* `market_data_service.dart`
+
+**A nine-slice panel narrower than its own corners crashes the frame**
+The Tiny Swords UI pack is authored on a 64px grid, so its bar art carries 128px
+of end caps. Flutter subtracts a `centerSlice`'s caps from the destination before
+fitting and a negative remainder *throws* rather than clipping — and the Finance
+Brawl HUD gives its panels about 119px on a phone, so that bar was
+mathematically unable to render there. The layout sweep caught it as
+"centerSlice was used with a BoxFit that does not guarantee that the image is
+fully visible", which reads like a fit problem and is not one.
+*Fix:* downscale the pack on the way out (bars 0.25, panels/buttons 0.5) so the
+caps shrink with it, slicing at full resolution *first* so the piece boundaries
+stay on the 64px grid; plus a `_NineSlice` guard that falls back to a rounded
+rect below the cap limit, since these are shared widgets and any caller with a
+tight `Expanded` can hit it.
+*Files:* `tool/build_ui_pack.py`, `pixel_kit.dart`, `app_assets.dart`,
+`pixel_kit_test.dart`
+
+**Money Habits lost the gap under Today's Challenge once you saved a habit**
+The `SizedBox(height: 16)` lived inside the `if (habits.savedHabits.isEmpty)`
+branch, so it disappeared the moment the player pinned their first habit and the
+challenge card welded itself to the stats row.
+*Fix:* moved the spacing out of the conditional. Spacing between two siblings
+belongs between them, not inside a branch that happens to sit in the middle.
+*Files:* `money_habits_screen.dart`
+
+**Finance Brawl hid the progress the player needs to see**
+`_HudStatPanel` dropped its `detail` line below 150px width — and that line is
+"Debts Paid 3/12", the count telling you how far you are from the next upgrade.
+So it vanished on exactly the phones where the HUD is tightest (wave 1 showed
+nothing, wave 2 did).
+*Fix:* a `PixelProgressBar` plus a compact `3 / 12`, kept at every width. A new
+`HudProgress` type lets the panel distinguish a flavour line ("Don't Let it Hit
+Zero!") from a progress line — only the second is information, and only the
+second has to survive a narrow screen.
+*Files:* `finance_brawl_game.dart`
+
 ### Process / tooling
 
 **`responsive_layout_test.dart` silently failed to compile**
@@ -938,9 +1053,9 @@ does not ship.
 flutter analyze && flutter test
 ```
 
-480 tests covering responsive layout at eight viewports (including the Life
+557 tests covering responsive layout at eight viewports (including the Life
 sim itself, Feedback, and the Adventure map-pending screen), the money
-panel at seven widths, the life-event chain wiring, chart painters against pathological input,
+panel at seven widths, the life-event chain wiring, price-chart zoom/pan/scrub, chart painters against pathological input,
 working-order accounting, the Life simulation rules and its budgeting
 model, town-map reachability, the side-walk frame selection, candle
 caching, the quiz bank, and asset integrity.
