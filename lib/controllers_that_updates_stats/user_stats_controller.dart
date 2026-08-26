@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
+import '../models_Like_Skins_and_lessons_templates/life_ending.dart';
+import '../models_Like_Skins_and_lessons_templates/life_record.dart';
 import '../models_Like_Skins_and_lessons_templates/money_habit_models.dart';
 import '../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import '../services_backend_and_other_services/market_data_service.dart'
@@ -373,6 +375,36 @@ class UserStatsController extends ChangeNotifier {
       ),
       savingMessage: 'Saving your story...',
     );
+  }
+
+  /// Files a finished Life run in the player's history and reports which
+  /// personal bests it beat.
+  ///
+  /// Returns the beaten categories rather than persisting them, because
+  /// bests are derived from the history (see [LifeRecordBook]) — the caller
+  /// wants them only to decorate the epilogue.
+  ///
+  /// Deliberately separate from [recordLifeEnding]: that one owns the
+  /// "outcomes discovered" collection and is idempotent per ending, while
+  /// every run belongs in the history even when its ending is a repeat.
+  Future<Set<LifeBest>> recordLifeRun(LifeSummary summary) async {
+    final book = _stats.lifeRecords;
+    final record = LifeRecord.fromSummary(summary);
+    // Judged against the book as it stands, so this must happen before add.
+    final beaten = book.bestsBeaten(record);
+
+    await _saveStats(
+      _stats.copyWith(
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          'life_records': book.add(record).toJson(),
+        },
+        updatedAt: DateTime.now().toUtc(),
+      ),
+      savingMessage: 'Filing your life story...',
+    );
+
+    return beaten;
   }
 
   /// Marks badges as already celebrated so their unlock popup shows once.

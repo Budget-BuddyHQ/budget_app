@@ -9,7 +9,9 @@ import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
+import '../../../models_Like_Skins_and_lessons_templates/life_record.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
+import '../minigames_pages/past_lives_screen.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/idle_hover_icon.dart';
@@ -35,6 +37,13 @@ class MainGamePage extends StatelessWidget {
   void _openTab(int tab) {
     HapticFeedback.lightImpact();
     onNavSelected?.call(tab);
+  }
+
+  Future<void> _openPastLives(BuildContext context) async {
+    HapticFeedback.lightImpact();
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const PastLivesScreen()),
+    );
   }
 
   @override
@@ -93,6 +102,11 @@ class MainGamePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 _LifeHeroCard(onPlay: () => _playLife(context)),
+                const SizedBox(height: 18),
+                _PastLivesCard(
+                  book: stats.lifeRecords,
+                  onOpen: () => _openPastLives(context),
+                ),
                 const SizedBox(height: 18),
                 _EndingsCollection(
                   discovered: stats.discoveredEndings.toSet(),
@@ -476,6 +490,91 @@ class _ShortcutCard extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Entry point to [PastLivesScreen], showing enough of the history to be
+/// worth tapping.
+///
+/// Before any life is finished this is a prompt rather than an empty stat
+/// row: a card reading "0 lives · — coins" teaches nothing and looks broken,
+/// while "finish one and it gets recorded" explains what the feature is.
+class _PastLivesCard extends StatelessWidget {
+  const _PastLivesCard({required this.book, required this.onOpen});
+
+  final LifeRecordBook book;
+  final VoidCallback onOpen;
+
+  static const _gold = Color(0xFFFFD45C);
+
+  @override
+  Widget build(BuildContext context) {
+    final richest = book.richest;
+    final longest = book.longest;
+
+    return InkWell(
+      onTap: onOpen,
+      borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: AppTheme.getPuffyDecoration(
+          accent: _gold,
+          fillColor: const Color(0xFF3B301A),
+          restAlpha: 0.16,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: _gold.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: const Icon(
+                Icons.history_edu_rounded,
+                color: _gold,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FittedLabel(
+                    'Past Lives',
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    book.isEmpty
+                        ? 'Finish a life and it gets recorded here.'
+                        : '${book.totalLives} lived · best '
+                              '${richest?.netWorth ?? 0} coins · longest '
+                              '${longest?.age ?? 0} years',
+                    maxLines: 2,
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white.withValues(alpha: 0.78),
+                      fontSize: 12.5,
+                      height: 1.3,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.chevron_right_rounded, color: _gold, size: 28),
           ],
         ),
       ),

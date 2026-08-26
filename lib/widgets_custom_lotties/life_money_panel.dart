@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../controllers_that_updates_stats/life_sim_controller.dart';
 import '../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
+import '../utils/number_format.dart';
 import 'fitted_label.dart';
 import 'pixel_panel.dart';
 
@@ -51,15 +52,10 @@ class LifeMoneyPanel extends StatelessWidget {
   /// Opens the list of money ideas this life has met.
   final VoidCallback onOpenConcepts;
 
-  static String coinsLabel(int value) {
-    final digits = value.abs().toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(',');
-      buffer.write(digits[i]);
-    }
-    return '${value < 0 ? '-' : ''}$buffer';
-  }
+  /// Kept as an alias so the several call sites that already reach for
+  /// `LifeMoneyPanel.coinsLabel` keep working; the implementation lives in
+  /// [groupedNumber] now that three copies of it existed.
+  static String coinsLabel(int value) => groupedNumber(value);
 
   @override
   Widget build(BuildContext context) {

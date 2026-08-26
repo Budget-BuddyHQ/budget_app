@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
+import '../models_Like_Skins_and_lessons_templates/life_record.dart';
 import '../models_Like_Skins_and_lessons_templates/money_habit_models.dart';
 import '../models_Like_Skins_and_lessons_templates/player_profile.dart';
 
@@ -247,6 +248,15 @@ class UserStats {
         .toSet()
         .toList(growable: false);
   }
+
+  /// Finished Life runs, newest first.
+  ///
+  /// Separate from [discoveredEndings], which is only a set of ids: this is
+  /// the per-run history the Past Lives screen and the personal bests are
+  /// built from. Both are kept — the ending set answers "have I ever seen
+  /// this outcome", which survives the record cap trimming an old run.
+  LifeRecordBook get lifeRecords =>
+      LifeRecordBook.fromJson(spendingHabits['life_records']);
 
   List<String> get completedLessons {
     final raw = spendingHabits['completed_lessons'];
