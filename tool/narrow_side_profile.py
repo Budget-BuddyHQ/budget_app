@@ -224,42 +224,90 @@ def add_profile_face(cell: Image.Image) -> Image.Image:
     return out
 
 
+def _neck_row(src, w: int, h: int) -> int:
+    """The narrowest row between the head's widest point and the shoulders.
+
+    Found rather than hardcoded so the same pass works on both the male and
+    the female geometry.
+
+    **It has to search below the head's widest row, not from the top.** A
+    first version took the minimum width anywhere in 24..70 and, on the
+    female sheets, latched onto the narrow hair peak at y=24 — so the "head"
+    was five rows tall, the whole face counted as body, and the female
+    profiles came out untouched at 71px wide while the male ones narrowed to
+    56. Anchoring the search below the widest row cannot make that mistake:
+    the neck is by definition the pinch *after* the skull.
+    """
+    def width_at(y: int) -> int:
+        runs = _runs(src, y, w)
+        return (runs[-1][1] - runs[0][0] + 1) if runs else 0
+
+    head_y, head_w = 24, 0
+    for y in range(16, min(64, h)):
+        wy = width_at(y)
+        if wy > head_w:
+            head_w, head_y = wy, y
+
+    best_y, best_w = head_y + BLOCK, 10**9
+    for y in range(head_y + BLOCK, min(head_y + 44, h)):
+        wy = width_at(y)
+        if 0 < wy < best_w:
+            best_w, best_y = wy, y
+    return best_y
+
+
 def narrow_cell(cell: Image.Image, cut: int) -> Image.Image:
-    """Delete `cut` columns from the body, keeping the silhouette straight.
+    """Delete columns from the body, keeping the silhouette straight.
 
-    **The shift has to be uniform.** A first version chose the cut per row
-    independently, so a row whose flat run could only afford 14 columns
-    shifted 14 while its neighbour shifted 25 — and the back of the coat came
-    out as a staircase. Every row above the hip therefore moves by the *same*
-    amount; rows too narrow to donate that many columns are translated by
-    half of it instead of cut, which keeps the neck attached to both the head
-    above and the shoulders below.
+    **The shift has to be uniform within a region.** A first version chose the
+    cut per row independently, so a row whose flat run could only afford 14
+    columns shifted 14 while its neighbour shifted 25 — and the back of the
+    coat came out as a staircase.
 
-    Rows below the hip are translated by the same half-shift rather than left
-    alone, for the same reason: leaving the legs where they were detached
-    them from a coat that had moved. Translating every frame by one constant
-    preserves the walk cycle exactly — it is a horizontal move of the whole
-    sprite, not a change to the animation.
+    **But the head and the body are sized separately.** A single take across
+    the whole sprite left the profile measuring head 66 wide against a torso
+    of 56 — a head wider than its own shoulders, which is the bobblehead
+    silhouette that kept reading as fat however slim the coat got. Head rows
+    and body rows now each get the largest cut their own region can donate,
+    computed independently, which brings the head to 51 against a 56 torso.
+    Uniform *within* a region, so neither silhouette staircases.
+
+    A `head_extra` knob was tried here and removed: the top-of-head rows are
+    only ~30px wide, so they cap what the head region can give long before
+    any extra is reached, and the parameter never bit. The separate per-region
+    takes are what actually do the work.
+
+    Rows below the hip are translated by half the body cut rather than left
+    alone: leaving the legs where they were detached them from a coat that
+    had moved. Translating every frame by one constant preserves the walk
+    cycle exactly.
     """
     w, h = cell.size
     src = cell.load()
     out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     dst = out.load()
 
-    # One `take` for the whole cell, sized off the widest flat run available
-    # in the torso — the region with the most fill to give.
-    torso_runs = []
-    for y in range(60, min(HIP_Y, h)):
+    neck = _neck_row(src, w, h)
+
+    def widest_run_len(y: int) -> int:
         runs = _runs(src, y, w)
-        if runs:
-            widest = max(runs, key=lambda r: r[1] - r[0])
-            torso_runs.append(widest[1] - widest[0] + 1)
-    if not torso_runs:
+        if not runs:
+            return 0
+        widest = max(runs, key=lambda r: r[1] - r[0])
+        return widest[1] - widest[0] + 1
+
+    def take_for(rows) -> int:
+        lens = [widest_run_len(y) for y in rows]
+        lens = [n for n in lens if n > 0]
+        if not lens:
+            return 0
+        return max(0, min(lens) - MIN_KEEP)
+
+    body_take = min(cut, take_for(range(neck + BLOCK, min(HIP_Y, h))))
+    head_take = take_for(range(BLOCK * 4, neck))
+    if body_take <= 0 and head_take <= 0:
         return cell.copy()
-    take = min(cut, max(0, min(torso_runs) - MIN_KEEP))
-    if take <= 0:
-        return cell.copy()
-    half = take // 2
+    half = body_take // 2
 
     def shift_row(y: int, by: int) -> None:
         for x in range(w):
@@ -272,8 +320,10 @@ def narrow_cell(cell: Image.Image, cut: int) -> Image.Image:
             shift_row(y, half)
             continue
 
+        take = head_take if y < neck else body_take
         runs = _runs(src, y, w)
-        if not runs:
+        if not runs or take <= 0:
+            shift_row(y, half)
             continue
 
         # The widest flat run is the fill: the middle of the hair slab on a
@@ -282,6 +332,8 @@ def narrow_cell(cell: Image.Image, cut: int) -> Image.Image:
         widest = max(runs, key=lambda r: r[1] - r[0])
         run_len = widest[1] - widest[0] + 1
         if run_len < take + MIN_KEEP:
+            # The neck and other narrow rows cannot donate this much; move
+            # them by half so they stay attached above and below.
             shift_row(y, half)
             continue
 
@@ -339,7 +391,7 @@ def contact_sheet(path: str, cuts, out_path: str) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true")
-    ap.add_argument("--cut", type=int, default=25)
+    ap.add_argument("--cut", type=int, default=20)
     ap.add_argument("--preview-out", default="side_preview.png")
     args = ap.parse_args()
 
@@ -354,7 +406,7 @@ def main() -> None:
             (f for f in files if "male_classic" in f.replace("female", "")),
             files[0],
         )
-        contact_sheet(sample, [15, 22, 30], args.preview_out)
+        contact_sheet(sample, [16, 20, 24], args.preview_out)
         return
 
     for path in files:

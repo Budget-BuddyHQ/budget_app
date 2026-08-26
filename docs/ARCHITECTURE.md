@@ -3017,3 +3017,78 @@ slices can no longer share one constant, and the source extent can no longer be
 derived from the slice. Both are now per-asset, and the generator prints them
 ready to paste rather than leaving them to be re-derived by hand — which is how
 a rect ends up one pixel off and the bevel smears.
+
+---
+
+## 37. The money font's missing digit, and giving each ending a face
+
+### A number font with no 5
+
+The underwater set converted to PNG cleanly — 124 files — except
+`hud_number_5`, which simply is not there. Not corrupt, not misnamed: absent.
+The set has 0,1,2,3,4,6,7,8,9.
+
+That is a blocker rather than a nitpick. A money font missing a digit cannot be
+used at all, because no balance, price or percentage can be relied on to avoid
+it, and the failure mode is a hole in the middle of a number.
+
+`tool/make_hud_five.py` rebuilds it by **vertically flipping the 2**. That is
+how the two letterforms relate: a 2 is a bowl over a flat bar, a 5 is a flat bar
+over a bowl, and flipping swaps them exactly. Reusing the real glyph is what
+makes the stroke weight, the white outline and the drop shadow match — the part
+hand-drawing a replacement would have struggled with. Flipping also negates the
+italic, so the slant is measured off the `1` (a single stroke, so its centre
+line *is* the slant: k = 0.157) and twice that is sheared back.
+
+Rejected first, recorded in the tool so nobody retries them: 7's top bar plus
+6's bowl reads as an 8 (the 7's "bar" is a diagonal, not a flat top); 7's top
+plus 3's bottom reads as a 3; 9 mirrored reads as an 'e'.
+
+The set is then packed into `assets/images/hud_font/` with a **shared
+baseline** — cropped to one common vertical band, each glyph keeping its own
+width. Without the shared band every digit would be a different height and the
+number would bounce as its value changed; without per-glyph widths a `1` would
+be as wide as an `8`.
+
+`MoneyGlyphs` draws it. It is a widget rather than a `TextStyle` because the
+glyphs are art, not a `.ttf`. `canRender` guards each call site, because a
+figure that is half art and half fallback text looks worse than one drawn
+entirely in the text font.
+
+### The old kit is deleted, not deprecated
+
+`assets/images/ui/` is gone — thirteen files. It was a flat green rounded
+rectangle with a gold stripe plus four 8x8 glyphs, and it is the single clearest
+reason the app kept reading as Material with a pixel font on top. Everything it
+offered now comes from the sliced, recoloured pack at a quality it could not
+reach, and keeping both would have meant shipping two competing panel sets —
+exactly the unused-art problem this whole effort exists to fix. `PixelPanel` and
+`PixelIcon` survive as thin aliases over `PixelFrame` and `PixelKitIcon` so the
+existing call sites keep compiling.
+
+### Seven endings that were the same screen
+
+The epilogue card was an accent colour and a Material glyph in a circle. Seven
+endings, one layout, one glyph shape — nothing to recognise and nothing worth
+collecting.
+
+Each archetype now has a **portrait**, curated one by one from the Ninja
+Adventure facesets rather than assigned by index, because the match is the whole
+point: the Noble's face is hidden under a top hat, which is what "rich but
+lonely" looks like, and no automatic mapping would find that. The Spirit is
+"Gone Too Soon", the Master is "Legacy Builder", the laughing Old Man is
+"Comfortable Retiree".
+
+The Play page's collection row shows the same faces, with a padlock on the ones
+not yet found — the plate keeps its shape either way, so the row reads as a
+collection with gaps rather than a list that is partly greyed out. The portrait
+is deliberately *not* silhouetted when locked: at 38px a blacked-out face reads
+as a bug, where a padlock reads as a lock.
+
+Only the seven portraits that ship are copied into `assets/`; the 3,298-file
+imported tree stays out of the bundle.
+
+`life_ending_faces_test.dart` asserts every archetype's file exists and that no
+two share one — the same class of bug as the missing 5, where a switch
+references an asset that is not there and fails silently into a fallback that
+looks deliberate.
