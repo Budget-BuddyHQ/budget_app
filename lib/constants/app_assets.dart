@@ -7,24 +7,18 @@ class AppAssets {
   static const String coolTurtle = 'assets/images/cool_turtle.png';
   static const String pixelMainTurtle = 'assets/own_skins/pixelMainTurtle.png';
 
-  // Small pixel-art icon kit — a hand-drawn coin/heart/star/bag matching
-  // the app's own palette, sitting unused in assets/images/ui/ while every
-  // currency/stat icon elsewhere in the app used a generic Material glyph
-  // instead. Swap in wherever a Material icon is standing in for one of
-  // these specific things (gold, health, a rating/level, an inventory
-  // slot) — not a blanket icon replacement, just the places these four
-  // concepts already show up as bare Material icons.
-  static const String uiIconCoin = 'assets/images/ui/icon_coin.png';
-  static const String uiIconHeart = 'assets/images/ui/icon_heart.png';
-  static const String uiIconStar = 'assets/images/ui/icon_star.png';
-  static const String uiIconBag = 'assets/images/ui/icon_bag.png';
-
-  /// Nine-sliceable panel art from the same kit — see `PixelPanel`, which
-  /// is the only thing that should reference these directly. Sizes are
-  /// tiny on purpose (48x32 / 32x32): they are stretched, not drawn at
-  /// source size.
-  static const String uiPanelDialog = 'assets/images/ui/panel_dialog.png';
-  static const String uiPanelSquare = 'assets/images/ui/panel_square.png';
+  // The original hand-made kit that used to live in `assets/images/ui/` has
+  // been deleted, not just deprecated.
+  //
+  // It was a flat green rounded rectangle with a gold stripe plus four 8x8
+  // glyphs, and it is the reason the app kept reading as Material with a
+  // pixel font on top. Everything it offered now comes from the sliced,
+  // recoloured pack below, at a quality it could not reach — so keeping it
+  // would have meant shipping two competing panel sets, which is exactly the
+  // unused-art problem this whole effort exists to fix.
+  //
+  // `PixelPanel` and `PixelIcon` survive as thin aliases over `PixelFrame`
+  // and `PixelKitIcon` so existing call sites keep compiling.
 
   // ---- Pixel UI kit (generated) ---------------------------------------
   //
