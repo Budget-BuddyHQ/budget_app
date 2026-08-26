@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/runtime_env.dart';
+import '../utils/number_format.dart';
 
 /// A real-world stock quote from Finnhub.
 @immutable
@@ -297,19 +298,7 @@ String usdLabel(num coins) {
 }
 
 /// Formats a coin amount with a thousands separator, e.g. `3,382g`.
-String coinLabel(num coins) {
-  final whole = coins.round();
-  final digits = whole.abs().toString();
-  final buffer = StringBuffer(whole < 0 ? '-' : '');
-  for (var i = 0; i < digits.length; i++) {
-    if (i > 0 && (digits.length - i) % 3 == 0) {
-      buffer.write(',');
-    }
-    buffer.write(digits[i]);
-  }
-  buffer.write('g');
-  return buffer.toString();
-}
+String coinLabel(num coins) => '${groupedNumber(coins.round())}g';
 
 /// Formats a (possibly fractional) share count without a trailing `.0`:
 /// `2` → "2", `0.5` → "0.5", `1.25` → "1.25".

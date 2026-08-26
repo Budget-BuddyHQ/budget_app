@@ -29,6 +29,7 @@ import '../../widgets_custom_lotties/idle_hover_icon.dart';
 import '../../widgets_custom_lotties/vivid_backdrop.dart';
 import '../admin/admin_screen.dart';
 import '../auth/auth_screen.dart';
+import '../onboarding/tutorial_screen.dart';
 import 'feedback_screen.dart';
 import 'personal_details_sheet.dart';
 
@@ -169,6 +170,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return parts.isEmpty ? 'Not shared' : parts.join(' • ');
   }
 
+  /// Replays the guided tour on purpose.
+  ///
+  /// Honours "Take me there" the same way the first-run flow does — but only
+  /// when Profile is hosted as a tab. Pushed as a standalone route there is
+  /// no tab bar to switch, so the request is simply dropped rather than
+  /// faked with a navigation the player didn't ask for.
+  Future<void> _replayTutorial(BuildContext context) async {
+    HapticFeedback.lightImpact();
+    final jumpTab = await TutorialScreen.show(context);
+    if (!mounted || jumpTab == null) {
+      return;
+    }
+    widget.onNavSelected?.call(jumpTab);
+  }
+
   Future<void> _editPersonalDetails(
     BuildContext context,
     UserStats stats,
@@ -264,6 +280,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               HapticFeedback.lightImpact();
                               await settings.setSoundEnabled(value);
                             },
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _SettingsCard(
+                          title: 'Replay Tutorial',
+                          subtitle:
+                              'Take Buddy\'s tour of every page again.',
+                          icon: Icons.school_rounded,
+                          onTap: () => _replayTutorial(context),
+                          trailing: const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Color(0xFFB7F7D7),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -947,74 +975,12 @@ class _ProfileInsightCard extends StatelessWidget {
                   ],
                 );
 
-          return Column(
-            children: [
-              metricRow,
-              const SizedBox(height: 14),
-              const _BadgePreview(),
-            ],
-          );
+          // Just the metrics. A "Badge Showcase — reserved for earned
+          // finance badges" placeholder used to sit under here, directly
+          // above the real `_BadgeShowcase`: two cards with the same name
+          // and the same trophy glyph, one of which never did anything.
+          return metricRow;
         },
-      ),
-    );
-  }
-}
-
-class _BadgePreview extends StatelessWidget {
-  const _BadgePreview();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF4BD2A3).withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF4BD2A3).withValues(alpha: 0.14),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF2C66D).withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(
-              Icons.military_tech_rounded,
-              color: Color(0xFFF2C66D),
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Badge Showcase',
-                  style: GoogleFonts.pixelifySans(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Reserved for earned finance badges.',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.64),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
