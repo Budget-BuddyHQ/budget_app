@@ -45,5 +45,24 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Deep link for the Supabase password-reset email. The iOS half of the
+	     Android intent-filter in AndroidManifest.xml: without it the system
+	     does not know this app owns budgetbuddy://, so tapping the emailed
+	     link does nothing and the reset dead-ends. The same URL must also be
+	     allowlisted under Authentication -> URL Configuration -> Redirect
+	     URLs in the Supabase dashboard. See passwordResetRedirectUrl. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.budgetbuddy.passwordreset</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>budgetbuddy</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

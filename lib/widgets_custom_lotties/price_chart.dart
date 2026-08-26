@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../services_backend_and_other_services/market_data_service.dart';
@@ -30,6 +33,15 @@ class PriceChart extends StatelessWidget {
   /// Draws the right-hand price labels, gridlines, and current-price line.
   final bool showAxis;
 
+  /// Width reserved on the right for the price labels, so the plotted area
+  /// stops short of the widget's full width.
+  ///
+  /// Public because anything mapping a pointer position onto a candle index
+  /// has to subtract it — [InteractivePriceChart] does, and the Market Board
+  /// used to hardcode its own copy of '52', which is exactly the kind of
+  /// duplicated constant that drifts.
+  static const double axisGutter = 52;
+
   /// Index of the candle the pointer is over, if any. Drawn as a crosshair.
   /// Lives here rather than in an overlay so it shares the painter's exact
   /// min/max scaling — an overlay would have to duplicate that maths and would
@@ -59,133 +71,374 @@ class PriceChart extends StatelessWidget {
   }
 }
 
-/// Wraps [PriceChart] with pinch-to-zoom and drag-to-pan by slicing the visible
-/// candle window, so the price axis stays honest — it always labels the candles
-/// actually on screen.
+/// [PriceChart] you can actually move: pinch to zoom, drag to pan, drag to
+/// scrub a crosshair, with buttons for anything a gesture cannot do.
+///
+/// **Why this was rebuilt.** "I still cannot zoom on the buy screen" came
+/// back three times, and there were two separate causes.
+///
+/// The order ticket *was* using the interactive wrapper, and its +/- buttons
+/// did work — but the buttons are a 28px control in a corner, and what
+/// people actually try is to pinch or drag. Those did nothing, because the
+/// old wrapper drove them from a `ScaleGestureRecognizer`, which accepts
+/// pointers in **any** direction and therefore fights the enclosing vertical
+/// `ListView` for every gesture. The list wins. So the feature was there,
+/// the maths was right, and it was unreachable by the input anyone would
+/// use.
+///
+/// The other three charts — the Market Board's detail sparkline, the P&L
+/// curve and the net-worth trend — used the plain [PriceChart] directly and
+/// were not interactive at all.
+///
+/// The gesture design is the part that is genuinely hard here, because this
+/// chart lives inside a **vertical** `ListView`:
+///
+/// - **One finger, horizontal.** A `HorizontalDragGestureRecognizer` never
+///   competes with a vertical `ListView`, so it always wins — which is why
+///   the single-finger interaction is on horizontal drag rather than on a
+///   scale recogniser. A scale recogniser accepts pointers in *any*
+///   direction, so it fights the parent list for every vertical pixel and
+///   usually loses. That is the arena fight the previous version kept
+///   losing.
+/// - **What that drag does depends on zoom.** At 1x the whole series is on
+///   screen and there is nowhere to pan to, so dragging scrubs the
+///   crosshair. Zoomed in, dragging pans — which is what someone who just
+///   zoomed in expects.
+/// - **Two fingers.** Pinch zooms, anchored on the focal point rather than
+///   on the centre, so the candle under your fingers stays put. Two-pointer
+///   gestures do not conflict with a one-pointer list drag.
+/// - **Buttons.** Zoom in, out, fit, and pan left/right. Not decoration: a
+///   mouse has no pinch, a trackpad's pinch is inconsistent across
+///   platforms, and buttons cannot be stolen by a parent scrollable no
+///   matter who wins the arena.
+///
+/// The window is stored as **integer candle indices**, not as a zoom factor
+/// plus a fractional centre. A fractional centre drifts as it is repeatedly
+/// re-derived, so a pan-zoom-pan sequence would not land back where it
+/// started. With indices the visible slice is exactly what it says it is,
+/// and the price axis stays honest because [PriceChart] only ever sees the
+/// candles actually on screen.
 class InteractivePriceChart extends StatefulWidget {
   const InteractivePriceChart({
     super.key,
     required this.candles,
     required this.mode,
     required this.accent,
+    this.onHoverIndexChanged,
   });
 
   final List<Candle> candles;
   final ChartMode mode;
   final Color accent;
 
+  /// Reports the crosshair position in **whole-series** coordinates, so a
+  /// caller showing "the price at this point" reads the same candle the user
+  /// is touching however far the view is zoomed in.
+  final ValueChanged<int?>? onHoverIndexChanged;
+
   @override
   State<InteractivePriceChart> createState() => _InteractivePriceChartState();
 }
 
 class _InteractivePriceChartState extends State<InteractivePriceChart> {
-  double _zoom = 1;
-  double _centerFrac = 1; // start focused on the most recent candles
-  double _zoomAtStart = 1;
+  /// Index of the first visible candle in the full series.
+  int _start = 0;
+
+  /// How many candles are visible. Equal to the series length at 1x.
+  int _count = 0;
+
+  /// Crosshair, in whole-series coordinates. Null when not scrubbing.
+  int? _hover;
+
+  // Captured when a gesture begins, so each update is applied against the
+  // state the gesture started from. Accumulating frame-by-frame deltas
+  // instead would round every frame to whole candles and lose all
+  // sub-candle movement, making a slow drag do nothing at all.
+  int _startAtBegin = 0;
+  int _countAtBegin = 0;
+  double _dragOriginDx = 0;
+  double _focalFracAtBegin = 0.5;
+
+  /// Never show fewer than this many candles — below it the chart is a
+  /// couple of bars and a price axis, which is not a chart.
+  static const int _minVisible = 6;
+
+  int get _total => widget.candles.length;
+  int get _floor => _minVisible < _total ? _minVisible : _total;
+  bool get _isZoomed => _count < _total;
+
+  @override
+  void initState() {
+    super.initState();
+    _count = _total;
+  }
 
   @override
   void didUpdateWidget(covariant InteractivePriceChart oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // A new range/timeframe was loaded — reset the view.
+    // A different series (new symbol, new timeframe). An old window would be
+    // meaningless against it and could point past the end.
     if (oldWidget.candles.length != widget.candles.length) {
-      _zoom = 1;
-      _centerFrac = 1;
+      setState(_resetView);
     }
   }
 
-  static const double _minZoom = 1;
-  static const double _maxZoom = 8;
+  void _resetView() {
+    _start = 0;
+    _count = _total;
+    _hover = null;
+    widget.onHoverIndexChanged?.call(null);
+  }
 
-  void _setZoom(double next) {
-    setState(() => _zoom = next.clamp(_minZoom, _maxZoom));
+  void _clampWindow() {
+    if (_total == 0) {
+      _start = 0;
+      _count = 0;
+      return;
+    }
+    _count = _count.clamp(_floor, _total);
+    _start = _start.clamp(0, _total - _count);
+  }
+
+  /// Zooms so that [anchorFrac] of the visible width stays put.
+  void _zoomBy(double factor, {double anchorFrac = 0.5}) {
+    if (_total < 2) return;
+    final anchorIndex = _start + anchorFrac * _count;
+    setState(() {
+      _count = (_count / factor).round().clamp(_floor, _total);
+      _start = (anchorIndex - anchorFrac * _count).round();
+      _clampWindow();
+    });
+  }
+
+  void _nudge(int direction) {
+    setState(() {
+      _start += direction * (_count * 0.4).round().clamp(1, _total);
+      _clampWindow();
+    });
+  }
+
+  void _panTo(double currentDx, double width) {
+    if (!_isZoomed || width <= 0) return;
+    // Content follows the finger: dragging right reveals earlier candles.
+    final candlesPerPixel = _count / width;
+    setState(() {
+      _start = (_startAtBegin - (currentDx - _dragOriginDx) * candlesPerPixel)
+          .round();
+      _clampWindow();
+    });
+  }
+
+  void _scrubTo(double dx, double width) {
+    if (width <= 0 || _total == 0) return;
+    final frac = (dx / width).clamp(0.0, 1.0);
+    final index = (_start + frac * (_count - 1)).round().clamp(0, _total - 1);
+    if (index == _hover) return;
+    setState(() => _hover = index);
+    widget.onHoverIndexChanged?.call(index);
+  }
+
+  void _clearHover() {
+    if (_hover == null) return;
+    setState(() => _hover = null);
+    widget.onHoverIndexChanged?.call(null);
   }
 
   @override
   Widget build(BuildContext context) {
-    final total = widget.candles.length;
-
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: GestureDetector(
-            // Opaque so the chart actually receives the pointer rather than
-            // letting it fall through to the page behind.
-            behavior: HitTestBehavior.opaque,
-            onScaleStart: (_) => _zoomAtStart = _zoom,
-            onScaleUpdate: (details) {
-              setState(() {
-                _zoom = (_zoomAtStart * details.scale).clamp(
-                  _minZoom,
-                  _maxZoom,
-                );
-                final width = context.size?.width ?? 1;
-                // Drag right → pan back in time.
-                _centerFrac =
-                    (_centerFrac -
-                            details.focalPointDelta.dx / (width * _zoom))
-                        .clamp(0.0, 1.0);
-              });
-            },
-            child: PriceChart(
-              candles: _visibleCandles(total),
-              mode: widget.mode,
-              accent: widget.accent,
-            ),
-          ),
-        ),
-        // Explicit controls, not just pinch.
-        //
-        // This chart lives inside the order ticket's vertical ListView, and
-        // a scale recogniser competes with that ListView's drag recogniser
-        // in the gesture arena — the ListView usually wins, which is why
-        // "pinch to zoom, drag to pan" did nothing on a phone however
-        // correct the maths was. Buttons cannot be stolen by a parent
-        // scrollable, so zoom works regardless of who wins the arena. They
-        // are also simply more discoverable than an undocumented gesture.
-        // Left, not right: the right 52px is the price-label gutter, so
-        // buttons over there would sit on top of the numbers.
-        Positioned(
-          left: 4,
-          top: 4,
-          child: Column(
-            children: [
-              _ZoomButton(
-                icon: Icons.add_rounded,
-                accent: widget.accent,
-                onTap: _zoom >= _maxZoom ? null : () => _setZoom(_zoom * 1.6),
-              ),
-              const SizedBox(height: 6),
-              _ZoomButton(
-                icon: Icons.remove_rounded,
-                accent: widget.accent,
-                onTap: _zoom <= _minZoom ? null : () => _setZoom(_zoom / 1.6),
-              ),
-              if (_zoom > _minZoom) ...[
-                const SizedBox(height: 6),
-                _ZoomButton(
-                  icon: Icons.fit_screen_rounded,
-                  accent: widget.accent,
-                  onTap: () => setState(() {
-                    _zoom = _minZoom;
-                    _centerFrac = 1;
-                  }),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  List<Candle> _visibleCandles(int total) {
-    if (total < 2 || _zoom <= 1.0) {
-      return widget.candles;
+    if (_total < 2) {
+      return PriceChart(
+        candles: widget.candles,
+        mode: widget.mode,
+        accent: widget.accent,
+      );
     }
-    final visibleCount = (total / _zoom).round().clamp(2, total);
-    final center = (_centerFrac * total).round();
-    final start = (center - visibleCount ~/ 2).clamp(0, total - visibleCount);
-    return widget.candles.sublist(start, start + visibleCount);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // The plotted area stops short of the right edge — the painter keeps
+        // a gutter there for the price labels. Mapping a pointer x onto a
+        // candle index against the *full* width would put the crosshair
+        // progressively ahead of the finger, worst at the right-hand side.
+        final width = (constraints.maxWidth - PriceChart.axisGutter).clamp(
+          1.0,
+          constraints.maxWidth <= 0 ? 1.0 : constraints.maxWidth,
+        );
+        _clampWindow();
+        final visible = widget.candles.sublist(_start, _start + _count);
+        // The painter indexes into the *visible* slice, so the crosshair is
+        // translated into that frame — and dropped entirely once the
+        // hovered candle has been panned off screen.
+        final offset = _hover == null ? -1 : _hover! - _start;
+        final localHover = offset >= 0 && offset < visible.length
+            ? offset
+            : null;
+
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: RawGestureDetector(
+                behavior: HitTestBehavior.opaque,
+                gestures: <Type, GestureRecognizerFactory>{
+                  // Horizontal only — see the class doc. This is what keeps
+                  // the parent ListView out of the fight.
+                  HorizontalDragGestureRecognizer:
+                      GestureRecognizerFactoryWithHandlers<
+                        HorizontalDragGestureRecognizer
+                      >(HorizontalDragGestureRecognizer.new, (recognizer) {
+                        recognizer
+                          ..onStart = (details) {
+                            _startAtBegin = _start;
+                            _dragOriginDx = details.localPosition.dx;
+                            if (!_isZoomed) {
+                              _scrubTo(details.localPosition.dx, width);
+                            }
+                          }
+                          ..onUpdate = (details) {
+                            if (_isZoomed) {
+                              _panTo(details.localPosition.dx, width);
+                            } else {
+                              _scrubTo(details.localPosition.dx, width);
+                            }
+                          }
+                          ..onEnd = (_) {
+                            if (!_isZoomed) _clearHover();
+                          }
+                          ..onCancel = _clearHover;
+                      }),
+                  // Two fingers or more: pinch. Ignoring single-pointer
+                  // scales is what stops this recogniser claiming ordinary
+                  // vertical list drags.
+                  ScaleGestureRecognizer:
+                      GestureRecognizerFactoryWithHandlers<
+                        ScaleGestureRecognizer
+                      >(ScaleGestureRecognizer.new, (recognizer) {
+                        recognizer
+                          ..onStart = (details) {
+                            if (details.pointerCount < 2) return;
+                            _startAtBegin = _start;
+                            _countAtBegin = _count;
+                            _focalFracAtBegin =
+                                (details.localFocalPoint.dx / width).clamp(
+                                  0.0,
+                                  1.0,
+                                );
+                          }
+                          ..onUpdate = (details) {
+                            if (details.pointerCount < 2) return;
+                            final anchorIndex =
+                                _startAtBegin +
+                                _focalFracAtBegin * _countAtBegin;
+                            setState(() {
+                              _count = (_countAtBegin / details.scale)
+                                  .round()
+                                  .clamp(_floor, _total);
+                              _start =
+                                  (anchorIndex - _focalFracAtBegin * _count)
+                                      .round();
+                              _clampWindow();
+                            });
+                          };
+                      }),
+                },
+                child: MouseRegion(
+                  // A mouse has no pinch and no drag-to-scrub, so hovering
+                  // does the scrubbing on desktop and web.
+                  onHover: (event) => _scrubTo(event.localPosition.dx, width),
+                  onExit: (_) => _clearHover(),
+                  child: PriceChart(
+                    candles: visible,
+                    mode: widget.mode,
+                    accent: widget.accent,
+                    hoverIndex: localHover,
+                  ),
+                ),
+              ),
+            ),
+            // Left, not right: the right-hand gutter holds the price labels,
+            // so controls over there would sit on top of the numbers.
+            Positioned(
+              left: 4,
+              top: 4,
+              child: Column(
+                children: [
+                  _ZoomButton(
+                    icon: Icons.add_rounded,
+                    accent: widget.accent,
+                    onTap: _count <= _floor ? null : () => _zoomBy(1.6),
+                  ),
+                  const SizedBox(height: 6),
+                  _ZoomButton(
+                    icon: Icons.remove_rounded,
+                    accent: widget.accent,
+                    onTap: !_isZoomed ? null : () => _zoomBy(1 / 1.6),
+                  ),
+                  if (_isZoomed) ...[
+                    const SizedBox(height: 6),
+                    _ZoomButton(
+                      icon: Icons.fit_screen_rounded,
+                      accent: widget.accent,
+                      onTap: () => setState(_resetView),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            // Pan arrows, only while there is somewhere to pan to.
+            //
+            // Not redundant with the drag: on a mouse, hovering scrubs and
+            // there is no drag-to-pan at all, so without these a desktop user
+            // could zoom in and then never move the window.
+            if (_isZoomed)
+              Positioned(
+                left: 4,
+                bottom: 4,
+                right: 56,
+                child: Row(
+                  children: [
+                    _ZoomButton(
+                      icon: Icons.chevron_left_rounded,
+                      accent: widget.accent,
+                      onTap: _start <= 0 ? null : () => _nudge(-1),
+                    ),
+                    const Spacer(),
+                    _ZoomButton(
+                      icon: Icons.chevron_right_rounded,
+                      accent: widget.accent,
+                      onTap: _start + _count >= _total ? null : () => _nudge(1),
+                    ),
+                  ],
+                ),
+              ),
+            // Says what you are looking at. Without it a zoomed chart is
+            // indistinguishable from a shorter timeframe.
+            if (_isZoomed)
+              Positioned(
+                left: 40,
+                top: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0B1F17).withValues(alpha: 0.78),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '$_count of $_total bars',
+                    style: GoogleFonts.quicksand(
+                      color: widget.accent,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -206,7 +459,10 @@ class _PriceChartPainter extends CustomPainter {
 
   static const Color _up = Color(0xFF85EFAC);
   static const Color _down = Color(0xFFFF8A80);
-  static const double _gutter = 52; // room for price labels on the right
+  static const double _gutter = PriceChart.axisGutter;
+
+  /// Height reserved at the bottom for date labels.
+  static const double _axisHeight = 16;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -229,8 +485,15 @@ class _PriceChartPainter extends CustomPainter {
     }
     final range = (maxV - minV) <= 0 ? 1.0 : (maxV - minV);
 
+    // Reserve a strip at the bottom for the date labels, so the plotted line
+    // stops above them instead of running underneath the text. Only when
+    // there is genuinely room — on a short sparkline the prices matter more
+    // than the dates, and squeezing both makes neither readable.
+    final axisRoom = showAxis && size.height > 90 ? _axisHeight : 0.0;
+    final plotHeight = size.height - axisRoom;
+
     double y(double value) =>
-        size.height - ((value - minV) / range) * size.height;
+        plotHeight - ((value - minV) / range) * plotHeight;
 
     if (showAxis) {
       _paintGrid(canvas, size, chartWidth, minV, maxV, y);
@@ -246,14 +509,28 @@ class _PriceChartPainter extends CustomPainter {
       _paintCurrentPrice(canvas, size, chartWidth, bars.last.close, y);
     }
 
-    _paintCrosshair(canvas, size, chartWidth, bars, y);
+    if (axisRoom > 0) {
+      _paintTimeAxis(canvas, size, chartWidth, bars);
+    }
+    _paintCrosshair(canvas, size, chartWidth, plotHeight, bars, y);
   }
 
-  /// Vertical scrub line plus a dot on the series at the hovered point.
+  /// The scrub readout: a vertical line, a dot on the series, a price tag
+  /// pinned to the axis, and a card naming the value and the moment.
+  ///
+  /// The dot alone used to be the whole thing, which meant scrubbing told
+  /// you *where* you were pointing and never *what* was there — you could
+  /// see the line dip and still have no idea what price the dip was. Every
+  /// real trading app answers that question at the crosshair, because
+  /// reading a value off a y-axis by eye is exactly the work a chart exists
+  /// to save you.
   void _paintCrosshair(
     Canvas canvas,
     Size size,
     double chartWidth,
+    // The plot area stops above the date labels; the crosshair has to stop
+    // with it or the scrub line draws straight through the dates.
+    double plotHeight,
     List<Candle> bars,
     double Function(double) y,
   ) {
@@ -261,23 +538,246 @@ class _PriceChartPainter extends CustomPainter {
     if (index == null || index < 0 || index >= bars.length) {
       return;
     }
-    final stepX = chartWidth / (bars.length - 1);
+    final bar = bars[index];
+    final stepX = bars.length > 1 ? chartWidth / (bars.length - 1) : chartWidth;
     final x = (index * stepX).clamp(0.0, chartWidth);
-    final cy = y(bars[index].close).clamp(0.0, size.height);
+    final cy = y(bar.close).clamp(0.0, plotHeight);
 
-    canvas.drawLine(
-      Offset(x, 0),
-      Offset(x, size.height),
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.45)
-        ..strokeWidth = 1,
-    );
+    // Dashed, so it reads as a measurement overlay rather than as another
+    // series drawn on the chart.
+    final linePaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.4)
+      ..strokeWidth = 1;
+    const dash = 4.0;
+    for (var dy = 0.0; dy < plotHeight; dy += dash * 2) {
+      canvas.drawLine(
+        Offset(x, dy),
+        Offset(x, (dy + dash).clamp(0, plotHeight)),
+        linePaint,
+      );
+    }
+    for (var dx = 0.0; dx < chartWidth; dx += dash * 2) {
+      canvas.drawLine(
+        Offset(dx, cy),
+        Offset((dx + dash).clamp(0, chartWidth), cy),
+        linePaint,
+      );
+    }
+
+    // The marker itself: a haloed dot with a white ring, so it stays visible
+    // over both the filled area under the line and the empty space above it.
     canvas.drawCircle(
       Offset(x, cy),
-      5,
-      Paint()..color = accent.withValues(alpha: 0.30),
+      7,
+      Paint()..color = accent.withValues(alpha: 0.25),
     );
-    canvas.drawCircle(Offset(x, cy), 2.6, Paint()..color = Colors.white);
+    canvas.drawCircle(Offset(x, cy), 4.5, Paint()..color = Colors.white);
+    canvas.drawCircle(Offset(x, cy), 3, Paint()..color = accent);
+
+    if (showAxis) {
+      _priceTag(canvas, size, chartWidth, cy, _fmt(bar.close), accent);
+    }
+    _scrubCard(canvas, size, chartWidth, x, bar);
+  }
+
+  /// The value, pinned into the right-hand gutter beside the axis labels.
+  void _priceTag(
+    Canvas canvas,
+    Size size,
+    double chartWidth,
+    double cy,
+    String text,
+    Color color,
+  ) {
+    final tp = _textPainter(text, Colors.white, bold: true);
+    final rect = Rect.fromLTWH(
+      chartWidth + 2,
+      cy - tp.height / 2 - 3,
+      tp.width + 10,
+      tp.height + 6,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(4)),
+      Paint()..color = color,
+    );
+    tp.paint(canvas, Offset(rect.left + 5, rect.top + 3));
+  }
+
+  /// The card above the marker: price, move since the bar opened, and when.
+  ///
+  /// Flipped to the other side of the crosshair near the right-hand edge, so
+  /// it never runs off the canvas — a readout you cannot read is worse than
+  /// no readout, and the right edge is exactly where the newest and most
+  /// interesting bars live.
+  void _scrubCard(
+    Canvas canvas,
+    Size size,
+    double chartWidth,
+    double x,
+    Candle bar,
+  ) {
+    final change = bar.close - bar.open;
+    final pct = bar.open == 0 ? 0.0 : change / bar.open * 100;
+    final lines = <(String, Color)>[
+      (_fmt(bar.close), Colors.white),
+      (
+        '${change >= 0 ? '+' : ''}${_fmt(change)} '
+            '(${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(2)}%)',
+        change >= 0 ? const Color(0xFF4BD2A3) : const Color(0xFFFF6B6B),
+      ),
+      (_stamp(bar.time), Colors.white.withValues(alpha: 0.62)),
+    ];
+
+    final painters = [
+      for (final (text, color) in lines)
+        _textPainter(text, color, bold: text == lines.first.$1),
+    ];
+    final w = painters.map((p) => p.width).reduce(math.max) + 16;
+    final h = painters.fold<double>(0, (sum, p) => sum + p.height + 2) + 10;
+
+    // Prefer the right of the crosshair; flip when that would overflow.
+    var left = x + 12;
+    if (left + w > chartWidth) {
+      left = x - 12 - w;
+    }
+    left = left.clamp(0.0, math.max(0.0, chartWidth - w)).toDouble();
+    final top = 6.0.clamp(0.0, math.max(0.0, size.height - h)).toDouble();
+
+    final rect = Rect.fromLTWH(left, top, w, h);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(8)),
+      Paint()..color = const Color(0xFF071710).withValues(alpha: 0.92),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(8)),
+      Paint()
+        ..color = accent.withValues(alpha: 0.45)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+
+    var dy = top + 5;
+    for (final tp in painters) {
+      tp.paint(canvas, Offset(left + 8, dy));
+      dy += tp.height + 2;
+    }
+  }
+
+  static const List<String> _months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  /// Whether these bars are finer than a day, so a clock time means anything.
+  ///
+  /// Measured from the **median gap between consecutive bars**, not from the
+  /// series' total span. Two reasons, and the first is a bug this replaced:
+  /// [candles] is the *visible window* when this sits inside an
+  /// [InteractivePriceChart], so a total-span test changed its answer as the
+  /// user zoomed — a 5D chart zoomed down to nineteen bars silently dropped
+  /// from "25 Aug 10:40" to "10:40" mid-gesture. Bar spacing does not move
+  /// when the window narrows.
+  ///
+  /// Median rather than mean because a daily series jumps three days across
+  /// every weekend and a month across some holidays; an average of those
+  /// lands between "daily" and "weekly" and decides nothing.
+  bool get _barsAreIntraday {
+    if (candles.length < 2) return false;
+    final gaps = <int>[
+      for (var i = 1; i < candles.length; i++)
+        candles[i].time.difference(candles[i - 1].time).inMinutes.abs(),
+    ]..sort();
+    final median = gaps[gaps.length ~/ 2];
+    return median > 0 && median < 24 * 60;
+  }
+
+  /// A human date for one bar, with the clock time only where it means
+  /// something.
+  ///
+  /// The date is always present. An earlier version dropped it on intraday
+  /// charts on the theory that a one-day series makes the date redundant —
+  /// which is wrong the moment the chart can be zoomed and panned, because
+  /// then "10:40" alone does not say *which* 10:40, and the whole point of
+  /// scrubbing is to ask exactly that.
+  ///
+  /// The year appears only when the bar is not from the current year, so a
+  /// 1D chart stays short while a 5Y chart stays unambiguous.
+  String _stamp(DateTime t) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    final month = _months[(t.month - 1).clamp(0, 11)];
+    var out = '${t.day} $month';
+    if (t.year != DateTime.now().year) {
+      out = '$out ${two(t.year % 100)}';
+    }
+    if (_barsAreIntraday) {
+      out = '$out  ${two(t.hour)}:${two(t.minute)}';
+    }
+    return out;
+  }
+
+  /// A short axis label — the same date, trimmed hard enough to sit three
+  /// across the bottom of a phone-width chart without colliding.
+  String _axisStamp(DateTime t) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    if (_barsAreIntraday) {
+      return '${two(t.hour)}:${two(t.minute)}';
+    }
+    final month = _months[(t.month - 1).clamp(0, 11)];
+    if (t.year != DateTime.now().year) {
+      return '$month ${two(t.year % 100)}';
+    }
+    return '${t.day} $month';
+  }
+
+  /// Dates along the bottom.
+  ///
+  /// The chart had **no horizontal axis at all** — it showed prices against
+  /// nothing, so a shape was readable but never locatable in time. Three
+  /// labels (first, middle, last) is the most a phone-width chart can carry
+  /// without them colliding, and it is enough to answer "what period am I
+  /// looking at", which is the question a range chart exists to answer.
+  void _paintTimeAxis(
+    Canvas canvas,
+    Size size,
+    double chartWidth,
+    List<Candle> bars,
+  ) {
+    if (bars.length < 2 || chartWidth < 120) return;
+
+    final slots = <(int, TextAlign)>[
+      (0, TextAlign.left),
+      (bars.length ~/ 2, TextAlign.center),
+      (bars.length - 1, TextAlign.right),
+    ];
+    for (final (index, align) in slots) {
+      final tp = _textPainter(
+        _axisStamp(bars[index].time),
+        Colors.white.withValues(alpha: 0.42),
+      );
+      final centre = chartWidth * (index / (bars.length - 1));
+      final x = switch (align) {
+        TextAlign.left => 0.0,
+        TextAlign.right => chartWidth - tp.width,
+        _ => centre - tp.width / 2,
+      };
+      tp.paint(
+        canvas,
+        Offset(
+          x.clamp(0.0, math.max(0.0, chartWidth - tp.width)),
+          size.height - tp.height,
+        ),
+      );
+    }
   }
 
   void _paintGrid(

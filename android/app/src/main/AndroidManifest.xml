@@ -24,6 +24,27 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Deep link for the Supabase password-reset email.
+
+                 Without this the OS has no idea who owns budgetbuddy://, so
+                 tapping the emailed link does nothing at all and the reset
+                 dead-ends on device — even though the app code, the Supabase
+                 call and the recovery-session handling in main.dart were all
+                 already correct. See `passwordResetRedirectUrl` in
+                 supabase_service.dart; the same URL also has to be listed
+                 under Authentication -> URL Configuration -> Redirect URLs in
+                 the Supabase dashboard, or Supabase quietly substitutes the
+                 project's Site URL. All three have to agree.
+
+                 BROWSABLE + DEFAULT is what makes a link tapped inside a mail
+                 client resolve here; without them the filter only matches
+                 intents an app fires explicitly. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="budgetbuddy" android:host="password-reset"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

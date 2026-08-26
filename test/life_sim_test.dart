@@ -20,10 +20,10 @@ class _FixedRandom implements Random {
   bool nextBool() => false;
 }
 
-LifeSimController _adult({int value = 1, int money = 200}) =>
+LifeSimController _adult({int value = 1, int money = 200, int age = 15}) =>
     LifeSimController(
       random: _FixedRandom(value),
-      initialAge: 15,
+      initialAge: age,
       startMoney: money,
     );
 
@@ -127,7 +127,9 @@ void main() {
   });
 
   test('investing moves cash into compounding investments', () {
-    final life = _adult();
+    // Explicitly 18: investing is age-gated at 16 now, and this helper's
+    // default is a fifteen-year-old despite its name.
+    final life = _adult(age: 18);
     life.invest(100);
     expect(life.money, 100);
     expect(life.investments, 100);
@@ -135,7 +137,7 @@ void main() {
   });
 
   test('cannot invest more than you hold', () {
-    final life = _adult();
+    final life = _adult(age: 18);
     life.invest(9999);
     expect(life.money, 200);
     expect(life.investments, 0);
