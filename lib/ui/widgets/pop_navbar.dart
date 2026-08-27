@@ -48,6 +48,18 @@ class PopNavBar extends StatelessWidget {
   final int activeIndex;
   final ValueChanged<int>? onSelected;
 
+  // NOTE: no GlobalKeys on the tabs.
+  //
+  // An earlier version keyed each tile so the tutorial could spotlight the
+  // real button. It crashed every Dashboard test with "Multiple widgets used
+  // the same GlobalKey": `MainNavigation` keeps all seven screens alive in an
+  // `IndexedStack`, and each renders its own bottom bar, so one static key per
+  // tab was attached to seven widgets at once.
+  //
+  // The tab rect is derived from layout instead — see
+  // `TutorialTargets.navTabRect`, which is exact because the bar's height and
+  // tab count are both known.
+
   void _handleTap(BuildContext context, int index) {
     if (onSelected == null || index == activeIndex) {
       return;

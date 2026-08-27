@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../services_backend_and_other_services/app_sound_service.dart';
+
 import '../../constants/app_assets.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../themes_colors/app_theme.dart';
@@ -44,6 +46,10 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
     }
 
     setState(() => _openingCase = true);
+    // The ratchet starts before the roll resolves, so the sound is what the
+    // player is waiting *through* rather than a noise that confirms an
+    // outcome they can already see.
+    AppSoundService.play(AppSoundEffect.caseRoll);
     final result = await context.read<UserStatsController>().openSkinCase();
     if (!mounted) {
       return;
@@ -61,6 +67,16 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
       );
       return;
     }
+
+    // Rarity picks the chime. The reward sound arrives *before* the dialog
+    // so the player hears what they got a beat before they read it, which is
+    // the whole reason an unboxing has a sound at all.
+    AppSoundService.play(switch (result.skin.rarity) {
+      SkinRarity.legendary => AppSoundEffect.unboxLegendary,
+      SkinRarity.epic => AppSoundEffect.unboxEpic,
+      SkinRarity.rare => AppSoundEffect.unboxRare,
+      _ => AppSoundEffect.unboxCommon,
+    });
 
     await showDialog<void>(
       context: context,
@@ -642,19 +658,25 @@ class _RarityDot extends StatelessWidget {
       SkinRarity.common => '',
     };
 
+    // The letter used to be the skin's own accent on a 22% wash of that same
+    // accent — which for the darker skins meant a badge with an invisible
+    // letter on it (the navy legendary measured 1.04:1). [AppTheme.tintedChip]
+    // hands back the wash and a letter colour proven against it.
+    final chip = AppTheme.tintedChip(accent, alpha: 0.22);
+
     return Container(
       width: 18,
       height: 18,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.22),
+        color: chip.fill,
         shape: BoxShape.circle,
         border: Border.all(color: accent.withValues(alpha: 0.55)),
       ),
       child: Text(
         label,
         style: GoogleFonts.pixelifySans(
-          color: accent,
+          color: chip.ink,
           fontSize: 10,
           fontWeight: FontWeight.w700,
         ),
@@ -891,7 +913,12 @@ class _SkinTile extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: unlocked ? skin.accent : Colors.white54,
+                  // Against the tile, not in a vacuum: several skin accents
+                  // are dark enough that their own name sat at 4.4:1 or less
+                  // on the card they label.
+                  color: unlocked
+                      ? AppTheme.legibleOn(skin.accent, AppTheme.panel)
+                      : Colors.white70,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),

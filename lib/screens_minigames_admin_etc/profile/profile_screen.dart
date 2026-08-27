@@ -284,6 +284,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 12),
                         _SettingsCard(
+                          title: 'Music',
+                          subtitle:
+                              'A calm loop under the app. Separate from sound.',
+                          icon: Icons.music_note_rounded,
+                          trailing: Switch.adaptive(
+                            value: settings.musicEnabled,
+                            activeThumbColor: const Color(0xFF4BD2A3),
+                            onChanged: (value) async {
+                              HapticFeedback.lightImpact();
+                              await settings.setMusicEnabled(value);
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _SettingsCard(
                           title: 'Replay Tutorial',
                           subtitle:
                               'Take Buddy\'s tour of every page again.',
@@ -308,8 +323,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 12),
                         _SettingsCard(
                           title: 'Account',
-                          subtitle:
-                              user?.email ?? 'Signed in as ${stats.username}.',
+                          // Masked, never the full address.
+                          //
+                          // This app is aimed at children, and a profile
+                          // screen is one of the most screenshotted places in
+                          // any app — printing a full email address there puts
+                          // a real contact detail into every screenshot and
+                          // every over-the-shoulder glance. The masked form
+                          // still answers the only question this row exists to
+                          // answer: which account am I signed into.
+                          subtitle: user?.email == null
+                              ? 'Signed in as ${stats.username}.'
+                              : _maskEmail(user!.email!),
                           icon: Icons.manage_accounts_rounded,
                           trailing: Text(
                             stats.levelTitle,
@@ -1049,6 +1074,25 @@ class _InsightMetric extends StatelessWidget {
   }
 }
 
+/// Hides most of an email while leaving it recognisable to its owner.
+///
+/// `noobability21@gmail.com` becomes `no••••••••21@gmail.com` — enough for the
+/// account holder to confirm it is theirs, not enough for a stranger reading
+/// over a shoulder or a screenshot shared in a group chat.
+///
+/// Short local parts are masked entirely rather than partially: with three
+/// characters there is nothing left to hide once you keep two.
+String _maskEmail(String email) {
+  final at = email.indexOf('@');
+  if (at <= 0) return 'Signed in';
+  final local = email.substring(0, at);
+  final domain = email.substring(at);
+  if (local.length <= 4) return '${'•' * local.length}$domain';
+  final head = local.substring(0, 2);
+  final tail = local.substring(local.length - 2);
+  return '$head${'•' * (local.length - 4)}$tail$domain';
+}
+
 class _SettingsCard extends StatelessWidget {
   const _SettingsCard({
     required this.title,
@@ -1094,9 +1138,19 @@ class _SettingsCard extends StatelessWidget {
         ),
         subtitle: Text(
           subtitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(color: Colors.white.withValues(alpha: 0.62)),
         ),
-        trailing: trailing,
+        // `ListTile.trailing` is *not* width-constrained, so a long trailing
+        // widget takes whatever it wants and leaves the title/subtitle column
+        // with the remainder. "Level 86 Finance Wizard" squeezed the Account
+        // row's subtitle down to roughly one character wide, which is why the
+        // email rendered as a vertical stack of single letters.
+        trailing: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 96),
+          child: trailing,
+        ),
       ),
     );
   }

@@ -213,13 +213,13 @@ class AppAssets {
       'assets/images/finance_brawl_ui/brawl_vault.png';
 
   static const String turtleClassic =
-      'assets/images/turtles/Wface_no_bg_l7nvmfum.png';
+      'assets/images/turtles/classic.png';
   static const String turtleCoinShell =
-      'assets/images/turtles/cuteBigHead_no_bg_3xfq2ne3.png';
+      'assets/images/turtles/coin_shell.png';
   static const String turtleGuildRunner =
-      'assets/images/turtles/walkingredshell_no_bg_63pfbf03.png';
+      'assets/images/turtles/guild_runner.png';
   static const String turtleExplorer =
-      'assets/images/turtles/cuteTropicalhandDrawn_no_bg_i3ipxxln.png';
+      'assets/images/turtles/explorer.png';
 
   // --- Villager sprite sheets -------------------------------------------
   //
