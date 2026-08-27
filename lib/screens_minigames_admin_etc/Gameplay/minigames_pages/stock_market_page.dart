@@ -661,6 +661,8 @@ class _StockMarketPageState extends State<StockMarketPage>
                     ),
                     _PnlTab(
                       portfolioHistory: statsController.realPortfolioHistory,
+                      portfolioHistoryAt:
+                          statsController.portfolioHistoryTimes,
                       netWorth: totalAssets,
                       totalEarned: totalUnrealised.round(),
                     ),
@@ -2930,11 +2932,15 @@ class _OrderRow extends StatelessWidget {
 class _PnlTab extends StatelessWidget {
   const _PnlTab({
     required this.portfolioHistory,
+    required this.portfolioHistoryAt,
     required this.netWorth,
     required this.totalEarned,
   });
 
   final List<double> portfolioHistory;
+
+  /// Real recording times, where the save has them. See [_flatCandles].
+  final List<DateTime> portfolioHistoryAt;
   final int netWorth;
   final int totalEarned;
 
@@ -3019,7 +3025,7 @@ class _PnlTab extends StatelessWidget {
                   // squeezed into 150px is a smear — being able to zoom into
                   // the last twenty is the only way to read a recent trade.
                   child: InteractivePriceChart(
-                    candles: _flatCandles(portfolioHistory),
+                    candles: _flatCandles(portfolioHistory, portfolioHistoryAt),
                     mode: ChartMode.line,
                     accent: curveColor,
                   ),
@@ -3065,12 +3071,27 @@ class _PnlTab extends StatelessWidget {
 
 /// Wraps a plain value series as flat-bodied candles so it can be drawn by
 /// [PriceChart], which gives it a price axis and a current-value tag.
-List<Candle> _flatCandles(List<double> values) {
+/// Turns a plain value series into candles the chart can draw.
+///
+/// [times] are the real recording times where they exist. They are paired
+/// from the **end**, because a save that predates timestamps has values with
+/// no times and the newest points are the ones that have them — aligning from
+/// the front would put yesterday's clock on today's balance.
+///
+/// Without real times this falls back to one-minute spacing, which is what it
+/// always did. That fallback is a lie the chart used to tell everywhere: the
+/// x-axis showed invented times, and the visible span could never exceed one
+/// minute per point regardless of how long the player had been trading.
+List<Candle> _flatCandles(List<double> values, [List<DateTime>? times]) {
+  final stamps = times ?? const <DateTime>[];
+  final offset = values.length - stamps.length;
   final now = DateTime.now();
   return [
     for (var i = 0; i < values.length; i++)
       Candle(
-        time: now.subtract(Duration(minutes: values.length - i)),
+        time: (i - offset) >= 0 && (i - offset) < stamps.length
+            ? stamps[i - offset].toLocal()
+            : now.subtract(Duration(minutes: values.length - i)),
         open: values[i],
         high: values[i],
         low: values[i],

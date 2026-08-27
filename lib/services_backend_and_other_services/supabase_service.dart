@@ -449,6 +449,29 @@ class UserStats {
   /// tracked only in `AdventureWorldScreen`'s own `State`, so leaving the
   /// screen — even just to check Profile — reset "visit every place" back
   /// to zero every time.
+  /// When each `portfolioHistory` point was recorded, as UTC times.
+  ///
+  /// **Why this exists.** The equity curve stored bare numbers with no times,
+  /// and the chart invented them — `_flatCandles` pretended every snapshot was
+  /// exactly one minute apart, ending now. So the x-axis was fiction, and the
+  /// window could never span more than one minute per point however long the
+  /// player had actually been trading. "Let me see further than a day" was not
+  /// a range setting, it was missing data.
+  ///
+  /// Kept in `spending_habits` rather than as a new column so no migration is
+  /// needed, matching how every other ad-hoc field on this model is stored.
+  /// Older saves have no timestamps at all, so this can be shorter than the
+  /// value list — callers must handle that rather than indexing blindly.
+  List<DateTime> get portfolioHistoryAt {
+    final raw = spendingHabits['portfolio_history_at'];
+    if (raw is! List) return const <DateTime>[];
+    return raw
+        .map((entry) => int.tryParse(entry.toString()))
+        .whereType<int>()
+        .map((s) => DateTime.fromMillisecondsSinceEpoch(s * 1000, isUtc: true))
+        .toList(growable: false);
+  }
+
   List<String> get townVisitedSpotIds {
     final raw = spendingHabits['town_visited_spots'];
     if (raw is! List) return const <String>[];

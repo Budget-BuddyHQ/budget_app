@@ -53,6 +53,9 @@ flutter:
     # facesets. Only the seven that ship are copied in — the 3,298-file
     # imported tree stays out of the bundle. See LifeEndingArchetype.portrait.
     - assets/images/ending_faces/
+    # The mascot the in-app tutorial speaks through, drawn by
+    # tool/make_turtle_skins.py alongside the four turtle skins.
+    - assets/images/turtle_guide/
     - assets/images/tiles/
     - assets/images/finance_brawl_ui/
     # Adventure map: Bonfire's TiledAssetReader is hardcoded to read Tiled

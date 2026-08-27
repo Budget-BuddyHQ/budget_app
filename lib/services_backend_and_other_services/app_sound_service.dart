@@ -14,6 +14,18 @@ enum AppSoundEffect {
   wantHit,
   celebration,
   shutdown,
+
+  /// The decelerating ratchet while a skin case rolls.
+  caseRoll,
+
+  // One per rarity. Rarity reads as harmonic richness plus how long the tail
+  // rings, not as a different melody — so these are the same figure getting
+  // brighter and lasting longer, which is what makes an upgrade *feel* like
+  // one without the player having to read the label.
+  unboxCommon,
+  unboxRare,
+  unboxEpic,
+  unboxLegendary,
 }
 
 /// Lightweight sound service that persists user preference.
@@ -23,6 +35,8 @@ class AppSoundService {
   AppSoundService._();
 
   static const String _soundEnabledKey = 'budget_buddy_sound_enabled';
+  static const String _musicEnabledKey = 'budget_buddy_music_enabled';
+  static const String _musicAsset = 'audio/ambient_loop.wav';
   static const Map<AppSoundEffect, String> _assetPaths =
       <AppSoundEffect, String>{
         AppSoundEffect.tap: 'audio/tap.wav',
@@ -35,6 +49,11 @@ class AppSoundService {
         AppSoundEffect.wantHit: 'audio/want_hit.wav',
         AppSoundEffect.celebration: 'audio/celebration.wav',
         AppSoundEffect.shutdown: 'audio/shutdown.wav',
+        AppSoundEffect.caseRoll: 'audio/case_roll.wav',
+        AppSoundEffect.unboxCommon: 'audio/unbox_common.wav',
+        AppSoundEffect.unboxRare: 'audio/unbox_rare.wav',
+        AppSoundEffect.unboxEpic: 'audio/unbox_epic.wav',
+        AppSoundEffect.unboxLegendary: 'audio/unbox_legendary.wav',
       };
   static final Map<AppSoundEffect, AudioPlayer> _players =
       <AppSoundEffect, AudioPlayer>{};
@@ -44,17 +63,87 @@ class AppSoundService {
   static SharedPreferences? _preferences;
   static bool _playersReady = false;
 
-  // Off by default — the bundled SFX read as harsh/abrupt rather than
-  // subtle, so nothing plays until a real, quieter sound pass replaces
-  // them. The toggle in Profile still works for anyone who wants them on
-  // in the meantime; this only changes what a fresh install starts with.
-  static bool enabled = false;
+  // On by default, now that there is something worth hearing.
+  //
+  // This was off because the old bundled effects read as harsh — but there
+  // were no files at all behind the asset paths, so the setting was moot.
+  // `tool/make_sounds.py` now generates the whole set with soft attacks and
+  // exponential decays specifically to avoid that harshness. The toggle in
+  // Profile still turns everything off for anyone who wants silence.
+  static bool enabled = true;
+
+  /// Background music is a separate switch from the effects.
+  ///
+  /// They are genuinely different preferences: plenty of people want the
+  /// click when they tap a button and do not want a loop playing under it,
+  /// and someone listening to their own music wants the opposite of what a
+  /// single toggle would give them.
+  static bool musicEnabled = true;
+
+  static AudioPlayer? _music;
+  static bool _musicWanted = false;
 
   static bool get _canUseAssetPlayers => true;
 
+  /// Starts the ambient loop, or does nothing if it is already running.
+  ///
+  /// Idempotent on purpose — this is called from screen entry points, and a
+  /// tab switch that restarted the track from the top would be worse than
+  /// no music at all.
+  static Future<void> startMusic() async {
+    _musicWanted = true;
+    if (!musicEnabled || !enabled) return;
+    if (_music != null) return;
+    try {
+      final player = AudioPlayer(playerId: 'budget_buddy_music');
+      // Loop, and at a level that sits under speech and effects rather than
+      // competing with them. 0.28 was picked by ear against `tap.wav`.
+      await player.setReleaseMode(ReleaseMode.loop);
+      await player.setVolume(0.28);
+      await player.play(AssetSource(_musicAsset));
+      _music = player;
+    } catch (error) {
+      debugPrint('Background music unavailable: $error');
+      _music = null;
+    }
+  }
+
+  static Future<void> stopMusic() async {
+    _musicWanted = false;
+    await _disposeMusic();
+  }
+
+  static Future<void> _disposeMusic() async {
+    final player = _music;
+    _music = null;
+    if (player == null) return;
+    try {
+      await player.stop();
+      await player.dispose();
+    } catch (error) {
+      debugPrint('Background music teardown: $error');
+    }
+  }
+
+  static Future<void> setMusicEnabled(bool value) async {
+    musicEnabled = value;
+    _preferences ??= await SharedPreferences.getInstance();
+    await _preferences!.setBool(_musicEnabledKey, value);
+    if (value) {
+      if (_musicWanted) await startMusic();
+    } else {
+      await _disposeMusic();
+    }
+  }
+
   static Future<void> initialize() async {
     _preferences ??= await SharedPreferences.getInstance();
-    enabled = _preferences?.getBool(_soundEnabledKey) ?? false;
+    // `?? enabled` rather than `?? false`. Hardcoding the fallback here is
+    // what made the field default above meaningless: a fresh install has no
+    // stored key, so every launch reset sound to off no matter what the
+    // declaration said.
+    enabled = _preferences?.getBool(_soundEnabledKey) ?? enabled;
+    musicEnabled = _preferences?.getBool(_musicEnabledKey) ?? musicEnabled;
 
     if (!_canUseAssetPlayers) {
       _playersReady = true;
@@ -86,6 +175,13 @@ class AppSoundService {
     enabled = value;
     _preferences ??= await SharedPreferences.getInstance();
     await _preferences!.setBool(_soundEnabledKey, value);
+    // Sound off means *silence*, music included — otherwise the mute switch
+    // leaves a loop playing and reads as broken.
+    if (!value) {
+      await _disposeMusic();
+    } else if (_musicWanted) {
+      await startMusic();
+    }
   }
 
   static Future<void> play(AppSoundEffect effect) async {
@@ -136,7 +232,16 @@ class AppSoundService {
       case AppSoundEffect.wantHit:
       case AppSoundEffect.celebration:
       case AppSoundEffect.shutdown:
+      case AppSoundEffect.unboxCommon:
+      case AppSoundEffect.unboxRare:
+      case AppSoundEffect.unboxEpic:
+      case AppSoundEffect.unboxLegendary:
         return SystemSound.play(SystemSoundType.alert);
+      case AppSoundEffect.caseRoll:
+        // No system fallback. The ratchet is four seconds of rhythm; a
+        // single system click in its place would fire once and read as a
+        // misfire rather than as a shortened version of the same thing.
+        return;
     }
   }
 }

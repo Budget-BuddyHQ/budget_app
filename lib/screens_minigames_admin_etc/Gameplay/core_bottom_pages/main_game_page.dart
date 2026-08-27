@@ -16,6 +16,13 @@ import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/idle_hover_icon.dart';
 
+/// The "MAIN GAME" pill: a gold wash with a gold label, made legible.
+///
+/// Computed once at load rather than per build — it is a pure function of two
+/// constants, and the whole point is that the fill and the ink stay a pair.
+final _mainGameTag = AppTheme.tintedChip(const Color(0xFFFFD45C));
+
+
 /// The main-game tab: a launcher for **Life** (the BitLife-style main game),
 /// with quick jumps to Academy and Arcade. The old open-world map lived here
 /// and has been removed.
@@ -379,13 +386,17 @@ class _LifeHeroCard extends StatelessWidget {
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFD45C).withValues(alpha: 0.18),
+                    // Gold-on-gold: the 18% wash pulls the pill up towards
+                    // the label and the pair measured 3.48:1. This is the
+                    // "yellow text is hard to see" case, and it is the wash
+                    // that causes it rather than the gold.
+                    color: _mainGameTag.fill,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     'MAIN GAME',
                     style: GoogleFonts.pixelifySans(
-                      color: const Color(0xFFFFD45C),
+                      color: _mainGameTag.ink,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),

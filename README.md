@@ -1102,7 +1102,7 @@ does not ship.
 flutter analyze && flutter test
 ```
 
-624 tests covering responsive layout at eight viewports (including the Life
+673 tests covering responsive layout at eight viewports (including the Life
 sim itself, Feedback, and the Adventure map-pending screen), the money
 panel at seven widths, the life-event chain wiring, price-chart zoom/pan/scrub, chart painters against pathological input,
 working-order accounting, the Life simulation rules and its budgeting

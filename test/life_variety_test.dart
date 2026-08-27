@@ -201,4 +201,62 @@ void main() {
       );
     });
   });
+
+  group('the pre-school years are not one scripted scene', () {
+    // `plain` lives in the pool-depth group above, so this one needs its own.
+    LifeContext infant(int age) => LifeContext(
+      age: age,
+      money: 0,
+      happiness: 60,
+      health: 80,
+      smarts: 45,
+      fame: 0,
+      skills: const {},
+      traits: const {},
+      hasJob: false,
+    );
+
+    // The gap this closes: ages 0-3 had exactly *one* eligible event between
+    // them, so every toddler in every run played the identical scene and the
+    // opening minute of the game read as scripted — because it was.
+    test('every early age has real choice', () {
+      for (final age in [0, 1, 2, 3, 4]) {
+        final count = kLifeEvents.where((e) => e.matches(infant(age))).length;
+        expect(
+          count,
+          greaterThanOrEqualTo(6),
+          reason: 'only $count events are eligible at age $age',
+        );
+      }
+    });
+
+    test('two toddlers with different luck see different years', () {
+      // The real complaint was repetition across runs, which a per-age count
+      // alone cannot prove. This plays the first handful of years twice with
+      // different seeds and checks the stories diverge.
+      Set<String> earlyRun(int seed) {
+        final life = LifeSimController(random: Random(seed), initialAge: 0);
+        final seen = <String>{};
+        for (var i = 0; i < 6 && !life.finished; i++) {
+          final event = life.currentEvent;
+          if (event != null) {
+            seen.add(event.id);
+            life.chooseOption(0);
+          }
+          life.ageUp();
+        }
+        return seen;
+      }
+
+      final a = earlyRun(11);
+      final b = earlyRun(4242);
+      expect(a, isNotEmpty);
+      expect(b, isNotEmpty);
+      expect(
+        a.difference(b),
+        isNotEmpty,
+        reason: 'two seeds produced the same early life: $a',
+      );
+    });
+  });
 }
