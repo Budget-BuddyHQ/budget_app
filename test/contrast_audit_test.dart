@@ -311,7 +311,7 @@ List<ContrastFinding> auditContrast(WidgetTester tester, String screen) {
     // logical pixels are close enough to pt at the default text scale that
     // treating them as equal is the standard reading of this rule.
     final size = style?.fontSize ?? 14.0;
-    final bold = (style?.fontWeight?.index ?? 3) >= FontWeight.w700.index;
+    final bold = (style?.fontWeight?.value ?? 3) >= FontWeight.w700.value;
     final large = size >= 18 || (bold && size >= 14);
     final needed = large ? 3.0 : 4.5;
 
