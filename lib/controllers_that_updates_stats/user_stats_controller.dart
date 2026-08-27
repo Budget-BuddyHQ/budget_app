@@ -1917,19 +1917,57 @@ class UserStatsController extends ChangeNotifier {
       return;
     }
     series.add(netWorth.toDouble());
-    // Keep the curve bounded; 60 points is plenty for a readable sparkline.
-    while (series.length > 60) {
+
+    // Timestamps travel with the values. Without them the chart had to invent
+    // an x-axis — it assumed one minute per point — so no amount of history
+    // could ever show a real date, which is what "let me see further than a
+    // day" was actually asking for.
+    final now = DateTime.now().toUtc();
+    final stamps = List<DateTime>.from(_stats.portfolioHistoryAt);
+    // Older saves have values but no stamps. Pad the front so the two lists
+    // line up by index rather than silently mis-pairing every point.
+    while (stamps.length < series.length - 1) {
+      stamps.insert(0, now);
+    }
+    stamps.add(now);
+
+    // Keep the curve bounded, but drop the *oldest* points rather than
+    // refusing new ones. 400 is a few weeks of trading at a snapshot per
+    // refresh, where the old 60 was under an hour — which is why the chart
+    // never reached back beyond the current session.
+    while (series.length > _portfolioHistoryLimit) {
       series.removeAt(0);
+      if (stamps.isNotEmpty) stamps.removeAt(0);
     }
 
     await _saveStats(
       _stats.copyWith(
         portfolioHistory: series,
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          'portfolio_history_at': [
+            for (final t in stamps) t.millisecondsSinceEpoch ~/ 1000,
+          ],
+        },
         updatedAt: DateTime.now().toUtc(),
       ),
       savingMessage: 'Updating portfolio history...',
     );
   }
+
+  /// How many net-worth snapshots to keep.
+  ///
+  /// At a snapshot per price refresh this is a few weeks of trading. The old
+  /// limit of 60 was well under an hour, so the curve could not reach past
+  /// the current session no matter how long the player had been playing.
+  static const int _portfolioHistoryLimit = 400;
+
+  /// Times for [realPortfolioHistory], aligned to it by index.
+  ///
+  /// Empty when the save predates timestamps; shorter than the values when
+  /// only part of the history was recorded with them. Callers pair from the
+  /// **end**, because the newest points are the ones that have stamps.
+  List<DateTime> get portfolioHistoryTimes => _stats.portfolioHistoryAt;
 
   /// The equity curve with any legacy synthetic points stripped.
   ///

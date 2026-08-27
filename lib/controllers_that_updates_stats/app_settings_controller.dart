@@ -26,6 +26,7 @@ class AppSettingsController extends ChangeNotifier {
   static const int _minLaunchesBeforeFeedbackPrompt = 3;
 
   bool _soundEnabled = AppSoundService.enabled;
+  bool _musicEnabled = AppSoundService.musicEnabled;
   bool _notificationsEnabled = true;
   bool _initialized = false;
   bool _tutorialSeen = false;
@@ -34,6 +35,7 @@ class AppSettingsController extends ChangeNotifier {
   int _launchCount = 0;
 
   bool get soundEnabled => _soundEnabled;
+  bool get musicEnabled => _musicEnabled;
   bool get notificationsEnabled => _notificationsEnabled;
   bool get isInitialized => _initialized;
 
@@ -81,6 +83,7 @@ class AppSettingsController extends ChangeNotifier {
 
     await AppSoundService.initialize();
     _soundEnabled = AppSoundService.enabled;
+    _musicEnabled = AppSoundService.musicEnabled;
 
     _preferences ??= await SharedPreferences.getInstance();
     _notificationsEnabled =
@@ -131,6 +134,18 @@ class AppSettingsController extends ChangeNotifier {
     _soundEnabled = enabled;
     notifyListeners();
     await AppSoundService.setEnabled(enabled);
+  }
+
+  /// Background music, separate from the effects — see [AppSoundService]
+  /// for why the two are not one switch.
+  Future<void> setMusicEnabled(bool enabled) async {
+    if (_musicEnabled == enabled && _initialized) {
+      return;
+    }
+
+    _musicEnabled = enabled;
+    notifyListeners();
+    await AppSoundService.setMusicEnabled(enabled);
   }
 
   /// Persists the player's preference so it survives a restart. There is no

@@ -3092,3 +3092,60 @@ imported tree stays out of the bundle.
 two share one — the same class of bug as the missing 5, where a switch
 references an asset that is not there and fails silently into a fallback that
 looks deliberate.
+
+---
+
+## 38. Turtles drawn as pixels, and a chart whose dates were invented
+
+### Four turtles in four styles at four resolutions
+
+`assets/images/turtles/` held smooth vector cartoons at 563x750, 736x736,
+3200x2400 and 1024x1024 — four rendering styles, four unrelated sizes, one
+with a white background baked in. Beside the pixel map, the pixel UI kit and
+the pixel ending portraits they read as clip-art dropped into a game. The
+verdict was exact: the ending pictures look right and the turtle pictures do
+not.
+
+`tool/make_turtle_skins.py` redraws them. One silhouette, one resolution,
+varying only by palette and accessory — which is what makes a skin *set*
+rather than four unrelated pictures.
+
+**The first attempt used an ASCII sprite map and came out as a bench.** That
+technique is right for the 16x16 icons and wrong here: a turtle is curves — a
+domed shell, a round head, stubby legs — and hand-placing curve pixels across
+a 33-column grid means counting the same arc three times and getting a
+different answer each time. The head ended up detached, the shell flat, the
+feet floating. Drawing from **ellipses at 1:1** and scaling up
+nearest-neighbour gets the proportions right by construction while keeping
+every pixel a clean block.
+
+A second pass was still needed: the shell was painted over the head, leaving
+it a wedge peeking out the side. Order matters — neck, then head, then eye,
+each sitting on the last.
+
+**The celebrating turtle is deliberately untouched.** It is an eight-frame
+animation the player sees on every achievement, it reads well, and it was
+singled out as the one to keep.
+
+### "Let me see further than a day" was missing data, not a missing setting
+
+The P&L equity curve stored **bare numbers with no times**, and the chart
+invented an axis for them: `_flatCandles` pretended every snapshot was exactly
+one minute apart, ending now. So the dates on that chart were fiction, and the
+visible span could never exceed one minute per point however long the player
+had been trading.
+
+The history was also capped at **60 points** — under an hour at a snapshot per
+price refresh, which is why the curve never reached past the current session.
+
+Both fixed: timestamps are recorded alongside each value (in `spending_habits`,
+so no migration), and the cap is 400. Two details worth keeping:
+
+* Stamps pair with values **from the end**. A save that predates timestamps has
+  values with no times, and the newest points are the ones that have them —
+  aligning from the front would put yesterday's clock on today's balance.
+* Old points are dropped from the front rather than new ones being refused,
+  so the curve keeps moving once it is full.
+
+`portfolio_history_test.dart` covers the pairing rule directly, including the
+partly-stamped case that a real upgrade will actually hit.

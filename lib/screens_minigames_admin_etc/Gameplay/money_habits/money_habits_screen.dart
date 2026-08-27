@@ -15,6 +15,25 @@ import '../../../widgets_custom_lotties/savings_jar_widget.dart';
 import '../minigames_pages/react_challenge_screen.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 
+/// The numbered step badge on the "How this works" card.
+///
+/// Mint text on a mint wash on a mint-lit panel — three shades of one colour
+/// stacked, which measured 2.39:1. Computed once: fill and ink have to move
+/// together or the fix comes undone the next time either is touched.
+final _stepChip = AppTheme.tintedChip(
+  AppTheme.greenPrimary,
+  on: AppTheme.panelStrong,
+  target: 3.0,
+);
+
+/// Mint that stays readable on [AppTheme.panelStrong], for the icons that
+/// share that card.
+final _panelMint = AppTheme.legibleOn(
+  AppTheme.greenPrimary,
+  AppTheme.panelStrong,
+);
+
+
 /// Entry point for Money Habits: a daily budgeting-habit tracker (skip
 /// eating out, save spare change, wait before a big purchase) with a
 /// savings jar that fills up as habits stick. A pushed, non-tab screen (own
@@ -515,9 +534,9 @@ class _HowItWorksCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.lightbulb_rounded,
-                color: AppTheme.greenPrimary,
+                color: _panelMint,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -543,7 +562,7 @@ class _HowItWorksCard extends StatelessWidget {
                   height: 30,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: AppTheme.greenPrimary.withValues(alpha: 0.18),
+                    color: _stepChip.fill,
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: AppTheme.greenPrimary.withValues(alpha: 0.5),
@@ -552,7 +571,10 @@ class _HowItWorksCard extends StatelessWidget {
                   child: Text(
                     '${step.n}',
                     style: GoogleFonts.pixelifySans(
-                      color: AppTheme.greenPrimary,
+                      // Mint on a mint wash over a mint-lit panel: the step
+                      // numbers measured 2.39:1, which on a "how this works"
+                      // explainer is the one place you cannot afford it.
+                      color: _stepChip.ink,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
@@ -568,7 +590,7 @@ class _HowItWorksCard extends StatelessWidget {
                           Icon(
                             step.icon,
                             size: 15,
-                            color: AppTheme.greenPrimary,
+                            color: _panelMint,
                           ),
                           const SizedBox(width: 6),
                           Flexible(

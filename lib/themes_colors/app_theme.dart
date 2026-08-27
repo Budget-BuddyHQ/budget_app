@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -316,5 +318,120 @@ class AppTheme {
       ),
       boxShadow: puffyShadow(accent, restAlpha: restAlpha),
     );
+  }
+
+  // --------------------------------------------------------------------
+  // Legibility
+  // --------------------------------------------------------------------
+
+  /// Relative luminance, per WCAG 2.1.
+  static double luminance(Color c) {
+    double channel(double v) => v <= 0.03928
+        ? v / 12.92
+        : math.pow((v + 0.055) / 1.055, 2.4).toDouble();
+    return 0.2126 * channel(c.r) +
+        0.7152 * channel(c.g) +
+        0.0722 * channel(c.b);
+  }
+
+  /// The WCAG contrast ratio between two opaque colours, 1.0 to 21.0.
+  static double contrast(Color a, Color b) {
+    final la = luminance(a);
+    final lb = luminance(b);
+    final hi = la > lb ? la : lb;
+    final lo = la > lb ? lb : la;
+    return (hi + 0.05) / (lo + 0.05);
+  }
+
+  /// Flattens [fg] onto an opaque [bg] — what the eye actually receives.
+  static Color flatten(Color fg, Color bg) {
+    final a = fg.a;
+    if (a >= 1.0) return fg;
+    return Color.from(
+      alpha: 1.0,
+      red: fg.r * a + bg.r * (1 - a),
+      green: fg.g * a + bg.g * (1 - a),
+      blue: fg.b * a + bg.b * (1 - a),
+    );
+  }
+
+  /// [tint] shifted just far enough in lightness to be readable on [surface].
+  ///
+  /// **Why this is a function and not a lookup table.** The app colours
+  /// hundreds of small chips by *meaning* — a category's colour, a rarity's
+  /// colour, a stat's colour — and then writes the label in that same colour
+  /// over a translucent wash of it. That reads beautifully when the tint is
+  /// bright and becomes unreadable when it is not, and which is which depends
+  /// on a colour chosen somewhere else entirely. Hardcoding a legible variant
+  /// beside every tint means the two drift apart the first time one changes.
+  ///
+  /// So: keep the hue and saturation, walk the lightness away from the
+  /// surface until the contrast target is met, and give up gracefully at the
+  /// ends of the ramp rather than looping.
+  ///
+  /// [target] defaults to WCAG AA for body text. Pass 3.0 for large or bold
+  /// text, which is the standard's own allowance.
+  static Color legibleOn(Color tint, Color surface, {double target = 4.5}) {
+    final flat = flatten(tint, surface);
+    if (contrast(flat, surface) >= target) return tint;
+
+    final hsl = HSLColor.fromColor(flat);
+    // Move away from the surface: lighten a tint on a dark ground, darken one
+    // on a light ground. Going the other way would reach the target too, but
+    // by inverting the design's light/dark intent.
+    final lighten = luminance(surface) < 0.18;
+
+    var best = flat;
+    for (var step = 1; step <= 24; step++) {
+      final l = lighten
+          ? (hsl.lightness + step * 0.04).clamp(0.0, 1.0)
+          : (hsl.lightness - step * 0.04).clamp(0.0, 1.0);
+      final candidate = hsl.withLightness(l).toColor();
+      best = candidate;
+      if (contrast(candidate, surface) >= target) return candidate;
+      if (l == 0.0 || l == 1.0) break;
+    }
+    // The ramp ran out — this hue cannot make the target against this
+    // surface. Return the far end rather than the original: it is the most
+    // legible this colour gets, and it is still recognisably itself.
+    return best;
+  }
+
+  /// A tinted chip: the fill and the label colour, together.
+  ///
+  /// The app's most common small component is a wash of some meaningful
+  /// colour with the label written in that same colour — rarity badges,
+  /// difficulty pills, stat meters, category tags. It is also where nearly
+  /// every legibility failure came from, for two compounding reasons:
+  ///
+  /// 1. The wash raises the background *towards* the label, so the darker the
+  ///    tint the closer the two get. A deep-blue legendary badge measured
+  ///    **1.04:1** — a badge with no letter on it. At the call site both
+  ///    colours are the same identifier, so nothing looks wrong.
+  /// 2. The wash is translucent, so what the label actually sits on depends
+  ///    on whatever is behind the chip — which the call site cannot know and
+  ///    which changes when the chip is reused somewhere else.
+  ///
+  /// Returning both fixes both. The fill comes back **opaque**, pre-blended
+  /// over [on], so the chip looks identical on the usual dark surface but no
+  /// longer inherits whatever is underneath it; and the ink is measured
+  /// against that exact fill. Use them as a pair — taking one and inventing
+  /// the other is the bug this exists to prevent.
+  ///
+  /// ```dart
+  /// final chip = AppTheme.tintedChip(rarity.color);
+  /// Container(
+  ///   decoration: BoxDecoration(color: chip.fill, ...),
+  ///   child: Text(label, style: TextStyle(color: chip.ink)),
+  /// )
+  /// ```
+  static ({Color fill, Color ink}) tintedChip(
+    Color tint, {
+    double alpha = 0.18,
+    Color on = deepForest,
+    double target = 4.5,
+  }) {
+    final fill = flatten(tint.withValues(alpha: alpha), on);
+    return (fill: fill, ink: legibleOn(tint, fill, target: target));
   }
 }

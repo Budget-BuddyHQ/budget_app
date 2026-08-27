@@ -42,6 +42,11 @@ class _MainNavigationState extends State<MainNavigation> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex.clamp(0, AppTabIndex.count - 1).toInt();
+    // Music starts here rather than in `main()` so it begins when the player
+    // reaches the app proper — a loop playing under the sign-in screen is
+    // music over a form, which is not what anybody means by ambience.
+    // `startMusic` is idempotent and no-ops when the preference is off.
+    AppSoundService.startMusic();
   }
 
   @override
@@ -66,6 +71,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   void dispose() {
+    AppSoundService.stopMusic();
     _controller?.removeListener(_maybeAskForPersonalDetails);
     _settings?.removeListener(_maybeShowTutorial);
     super.dispose();
