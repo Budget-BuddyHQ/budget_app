@@ -8,7 +8,6 @@ import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../constants/app_assets.dart';
 import '../../../widgets_custom_lotties/pixel_kit.dart';
 
 /// The recap shown when a [LifeSummary] life ends — replaces what used to be
@@ -198,7 +197,7 @@ class _ArchetypeCard extends StatelessWidget {
           const SizedBox(height: 16),
           PixelRibbon(
             label: archetype.label,
-            asset: AppAssets.kitRibbonGold,
+            tone: PixelRibbonTone.gold,
             height: 52,
           ),
           const SizedBox(height: 14),

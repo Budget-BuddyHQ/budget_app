@@ -253,8 +253,35 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   bool _isSavingAndExiting = false;
   bool _bossActive = false;
 
-  final double _attackSpeedMultiplier = 1.0;
+  /// Fire-rate scale. No longer final: "Compound Interest" raises it, which
+  /// is the upgrade that makes every other weapon modifier land more often.
+  double _attackSpeedMultiplier = 1.0;
   double _coinDamage = 35.0;
+
+  // ---- Weapon modifiers -------------------------------------------------
+  //
+  // The game had five upgrades, four of which were flat number bumps, so a
+  // long run felt the same as a short one with bigger digits. These change
+  // *how* you shoot rather than how hard, which is what lets a build become
+  // genuinely overpowered — the surviv.io feel of turning a losing fight
+  // into a lawnmower.
+  //
+  // They stack multiplicatively with the flat upgrades on purpose: spread x
+  // splash x pierce is where the power fantasy lives.
+
+  /// Extra coins per shot, fanned around the aim line.
+  int _spreadShots = 0;
+
+  /// Radius of the damage burst when a coin lands. Zero disables it.
+  double _splashRadius = 0;
+
+  /// Enemies each coin passes through before expiring.
+  int _pierceCount = 0;
+
+  /// Coins released in a ring on a timer. Zero disables the nova entirely.
+  int _novaCoins = 0;
+  double _novaTimer = 0;
+  static const double _novaInterval = 3.2;
   final double _coinSpeed = 380.0;
   int _coinStreamCount = 1;
   double _playerSpeed = 220.0;
@@ -1737,6 +1764,17 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
         _fireCoins();
       }
 
+      // The nova runs on its own clock rather than off the aimed shot, so it
+      // keeps covering the player's back while they are running away from a
+      // wave rather than only when they are shooting into it.
+      if (_novaCoins > 0) {
+        _novaTimer += dt;
+        if (_novaTimer >= _novaInterval) {
+          _novaTimer = 0;
+          _fireNova();
+        }
+      }
+
       // 3b. Automatic Boss Projectile Firing
       if (_bossActive) {
         _lastBossAttackTime += dt;
@@ -1908,12 +1946,27 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
             double dist = (coin.pos - mob.pos).distance;
 
             if (dist < (mob.radius + coin.radius)) {
+              // A piercing coin must not tick the same debt every frame while
+              // it travels through it, so each coin remembers what it has
+              // already hit.
+              if (coin.hitIds.contains(identityHashCode(mob))) continue;
+              coin.hitIds.add(identityHashCode(mob));
+
               mob.principalRemaining -= coin.damage;
-              coinDestroyed = true;
               _spawnExplosion(mob.pos, mob.color);
+              final impact = mob.pos;
 
               if (mob.principalRemaining <= 0) {
                 _onLiabilityCleared(mIdx, mob);
+              }
+              // Splash after the direct hit, so a coin that kills its target
+              // still clears the cluster around it.
+              _applySplash(impact, coin.damage * 0.55);
+
+              if (coin.pierce > 0) {
+                coin.pierce--;
+              } else {
+                coinDestroyed = true;
               }
               break;
             }
@@ -2072,16 +2125,65 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       Offset direction = target.pos - _playerPos;
       double dist = direction.distance;
       if (dist == 0) continue;
+      final aim = direction / dist;
 
-      Offset normalizedVelocity = (direction / dist) * _coinSpeed;
+      // Shotgun spread: the aimed coin plus a symmetric fan either side.
+      // Spread is drawn around the *aim line* rather than around the player,
+      // so extra pellets still travel toward the threat instead of spraying
+      // into empty grass.
+      final pellets = 1 + _spreadShots;
+      const spreadArc = 0.42; // radians between outermost pellets
+      for (int p = 0; p < pellets; p++) {
+        final t = pellets == 1 ? 0.0 : (p / (pellets - 1)) - 0.5;
+        final angle = atan2(aim.dy, aim.dx) + t * spreadArc;
+        _coins.add(
+          _CoinProjectile(
+            pos: _playerPos,
+            velocity: Offset(cos(angle), sin(angle)) * _coinSpeed,
+            damage: _coinDamage,
+            radius: 7.0,
+            pierce: _pierceCount,
+          ),
+        );
+      }
+    }
+  }
+
+  /// A ring of coins in every direction.
+  ///
+  /// Deliberately on its own timer rather than tied to the aimed shot: its
+  /// job is to cover the player's back while they are running, which is the
+  /// thing that stops a dense wave being a death sentence.
+  void _fireNova() {
+    if (_novaCoins <= 0) return;
+    for (int i = 0; i < _novaCoins; i++) {
+      final angle = (i / _novaCoins) * pi * 2;
       _coins.add(
         _CoinProjectile(
           pos: _playerPos,
-          velocity: normalizedVelocity,
-          damage: _coinDamage,
-          radius: 7.0,
+          velocity: Offset(cos(angle), sin(angle)) * (_coinSpeed * 0.8),
+          damage: _coinDamage * 0.7,
+          radius: 6.0,
+          pierce: _pierceCount,
         ),
       );
+    }
+  }
+
+  /// Damages everything within [_splashRadius] of a landed coin.
+  ///
+  /// Returns nothing: cleared debts are handled inline so the caller does not
+  /// have to re-scan the list it is already iterating backwards.
+  void _applySplash(Offset centre, double damage) {
+    if (_splashRadius <= 0) return;
+    _spawnExplosion(centre, const Color(0xFFFFD45C));
+    for (int i = _liabilities.length - 1; i >= 0; i--) {
+      final mob = _liabilities[i];
+      if ((mob.pos - centre).distance > _splashRadius) continue;
+      mob.principalRemaining -= damage;
+      if (mob.principalRemaining <= 0) {
+        _onLiabilityCleared(i, mob);
+      }
     }
   }
 
@@ -2208,6 +2310,51 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
             : "Expand cash shield radius & contact damage (Level ${_emergencyFundLevel + 1})",
         icon: Icons.shield_rounded,
         action: () => _emergencyFundLevel++,
+      ),
+      // --- Weapon shape upgrades -------------------------------------
+      //
+      // These change *how* you shoot rather than how hard. The five original
+      // upgrades were four flat number bumps and a cash top-up, so a long run
+      // played the same as a short one with bigger digits. Stacking spread
+      // with splash and pierce is where a build actually becomes
+      // overpowered — which is the point of surviving twenty waves.
+      BrawlUpgrade(
+        name: "Diversified Portfolio",
+        description: _spreadShots == 0
+            ? "Fan every payment into a 3-coin spread"
+            : "Widen the spread (${3 + _spreadShots} coins per shot)",
+        icon: Icons.call_split_rounded,
+        action: () => _spreadShots += 2,
+      ),
+      BrawlUpgrade(
+        name: "Market Contagion",
+        description: _splashRadius == 0
+            ? "Payments splash, damaging nearby debts"
+            : "Widen the splash radius (+25)",
+        icon: Icons.blur_on_rounded,
+        action: () => _splashRadius += _splashRadius == 0 ? 62 : 25,
+      ),
+      BrawlUpgrade(
+        name: "Debt Consolidation",
+        description: _pierceCount == 0
+            ? "Payments punch through one extra debt"
+            : "Punch through ${_pierceCount + 1} debts per coin",
+        icon: Icons.compress_rounded,
+        action: () => _pierceCount += 1,
+      ),
+      BrawlUpgrade(
+        name: "Dividend Burst",
+        description: _novaCoins == 0
+            ? "Release a ring of coins every few seconds"
+            : "Denser dividend ring (${_novaCoins + 4} coins)",
+        icon: Icons.brightness_7_rounded,
+        action: () => _novaCoins += _novaCoins == 0 ? 8 : 4,
+      ),
+      BrawlUpgrade(
+        name: "Compound Interest",
+        description: "Pay out faster (+18% fire rate)",
+        icon: Icons.speed_rounded,
+        action: () => _attackSpeedMultiplier *= 1.18,
       ),
       BrawlUpgrade(
         name: "Liquid Asset Speed",
@@ -3395,6 +3542,7 @@ class _CoinProjectile {
     required this.damage,
     this.isEnemyProjectile = false,
     this.radius = 7.0,
+    this.pierce = 0,
   });
 
   Offset pos;
@@ -3402,6 +3550,17 @@ class _CoinProjectile {
   double damage;
   final bool isEnemyProjectile;
   final double radius;
+
+  /// How many more enemies this coin can pass through before it is spent.
+  ///
+  /// Zero is the old behaviour: hit one thing, disappear. Pierce is what
+  /// turns a crowd from a wall into a queue, which is the single biggest
+  /// difference between "hard" and "unfair" once waves get dense.
+  int pierce;
+
+  /// Enemies already hit, so one coin cannot damage the same debt twice on
+  /// consecutive frames while passing through it.
+  final Set<int> hitIds = <int>{};
 }
 
 class _Particle {

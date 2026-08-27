@@ -406,7 +406,7 @@ class _FeaturedCard extends StatelessWidget {
                 Text(
                   game.tagline,
                   style: GoogleFonts.quicksand(
-                    color: Colors.white.withValues(alpha: 0.82),
+                    color: AppTheme.textMuted,
                     fontWeight: FontWeight.w600,
                     height: 1.4,
                   ),
@@ -419,13 +419,23 @@ class _FeaturedCard extends StatelessWidget {
                     _MetaChip(
                       label: game.difficulty.label,
                       color: game.difficulty.color,
+                      cardAccent: game.accent,
                     ),
-                    _MetaChip(label: game.length.label, color: Colors.white70),
-                    _MetaChip(label: game.teaches, color: game.accent),
+                    _MetaChip(
+                      label: game.length.label,
+                      color: AppTheme.textMuted,
+                      cardAccent: game.accent,
+                    ),
+                    _MetaChip(
+                      label: game.teaches,
+                      color: game.accent,
+                      cardAccent: game.accent,
+                    ),
                     if (best != null)
                       _MetaChip(
                         label: '${game.scoreLabel}: $best',
                         color: const Color(0xFFFFD45C),
+                        cardAccent: game.accent,
                       ),
                   ],
                 ),
@@ -496,7 +506,11 @@ class _GameCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.quicksand(
-                      color: Colors.white.withValues(alpha: 0.70),
+                      // Full-strength muted rather than 70% white: the card
+                      // is a *tinted* panel, so knocking the text back with
+                      // alpha pulls it toward the card instead of toward a
+                      // neutral grey, and it landed at 4.46:1.
+                      color: AppTheme.textMuted,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       height: 1.35,
@@ -509,6 +523,7 @@ class _GameCard extends StatelessWidget {
                     _MetaChip(
                       label: game.difficulty.label,
                       color: game.difficulty.color,
+                      cardAccent: game.accent,
                       dense: true,
                     ),
                     const SizedBox(width: 6),
@@ -518,7 +533,8 @@ class _GameCard extends StatelessWidget {
                     Flexible(
                       child: _MetaChip(
                         label: game.length.label,
-                        color: Colors.white60,
+                        color: AppTheme.textMuted,
+                        cardAccent: game.accent,
                         dense: true,
                       ),
                     ),
@@ -535,7 +551,7 @@ class _GameCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: best == null
-                        ? Colors.white.withValues(alpha: 0.42)
+                        ? AppTheme.textMuted
                         : const Color(0xFFFFD45C),
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -585,29 +601,48 @@ class _MetaChip extends StatelessWidget {
   const _MetaChip({
     required this.label,
     required this.color,
+    required this.cardAccent,
     this.dense = false,
   });
 
   final String label;
   final Color color;
+
+  /// The accent of the card this chip is sitting on — see [build].
+  final Color cardAccent;
   final bool dense;
 
   @override
   Widget build(BuildContext context) {
+    // The chip sits on a card that is already a *tinted* panel — the card
+    // gradient lerps the card's accent in — so "the accent on 12% of the
+    // accent" ends up two shades of one colour. Difficulty "Hard" measured
+    // 2.4:1.
+    //
+    // [cardAccent] is the card's colour, not the chip's, and getting that
+    // wrong matters: the neutral "5-10 min" chip is near-white, so blending
+    // the base over *its* colour invented a pale card that no text could sit
+    // on, and the fix looked like it had made things worse.
+    final chip = AppTheme.tintedChip(
+      color,
+      alpha: 0.12,
+      on: Color.lerp(AppTheme.panel, cardAccent, 0.14)!,
+    );
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: dense ? 7 : 10,
         vertical: dense ? 3 : 5,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: chip.fill,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: color.withValues(alpha: 0.28)),
       ),
       child: FittedLabel(
         label,
         style: TextStyle(
-          color: color,
+          color: chip.ink,
           fontSize: dense ? 10 : 11.5,
           fontWeight: FontWeight.w800,
         ),

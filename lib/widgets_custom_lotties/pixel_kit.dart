@@ -23,6 +23,15 @@ import 'package:flutter/material.dart';
 import '../constants/app_assets.dart';
 
 /// Which surface art a [PixelFrame] wears.
+///
+/// Each style carries the **measured** mean colour of its own art plus the
+/// ink colours that clear WCAG AA against it. Those are not taste calls:
+/// `tool/build_ui_pack.py` recolours the source pack, so a caller cannot know
+/// what its panel ended up looking like, and the two light styles here are
+/// cream parchment — gold text on `paper` measures **1.09:1**, which is
+/// invisible. Every constant below is checked against the real PNG by
+/// `test/pixel_kit_test.dart`, so recolouring the pack fails the test rather
+/// than silently producing unreadable panels.
 enum PixelFrameStyle {
   /// Cream parchment. The default reading surface — highest contrast for
   /// body text, so it is what long copy sits on.
@@ -30,6 +39,10 @@ enum PixelFrameStyle {
     AppAssets.kitPanelPaper,
     AppAssets.kitSlicePanelPaper,
     AppAssets.kitSizePanelPaper,
+    Color(0xFFEDE1C2),
+    Color(0xFF12251C),
+    Color(0xFF3C5147),
+    Color(0xFF6B4A05),
   ),
 
   /// Dark slate with gold filigree corners. For panels on top of bright art,
@@ -38,6 +51,10 @@ enum PixelFrameStyle {
     AppAssets.kitPanelSlate,
     AppAssets.kitSlicePanelSlate,
     AppAssets.kitSizePanelSlate,
+    Color(0xFF51655E),
+    Color(0xFFF7FFFB),
+    Color(0xFFD8EFE4),
+    Color(0xFFF9DD95),
   ),
 
   /// A hanging scroll with a rolled bottom edge. Deliberately *not*
@@ -47,6 +64,10 @@ enum PixelFrameStyle {
     AppAssets.kitPanelBanner,
     AppAssets.kitSlicePanelBanner,
     AppAssets.kitSizePanelBanner,
+    Color(0xFFD9C9A3),
+    Color(0xFF12251C),
+    Color(0xFF3C5147),
+    Color(0xFF6B4A05),
   ),
 
   /// Wooden boards with green corner brackets. Shops, inventory, the town.
@@ -54,9 +75,21 @@ enum PixelFrameStyle {
     AppAssets.kitPanelWood,
     AppAssets.kitSlicePanelWood,
     AppAssets.kitSizePanelWood,
+    Color(0xFF976753),
+    Color(0xFFFFFFFF),
+    Color(0xFFF0FFF8),
+    Color(0xFFFFFAE8),
   );
 
-  const PixelFrameStyle(this.asset, this.slice, this.source);
+  const PixelFrameStyle(
+    this.asset,
+    this.slice,
+    this.source,
+    this.surface,
+    this.ink,
+    this.inkMuted,
+    this.accent,
+  );
 
   final String asset;
   final Rect slice;
@@ -64,6 +97,25 @@ enum PixelFrameStyle {
   /// The art's own pixel size, needed to work out the end caps — see
   /// [AppAssets.kitSizePanelPaper].
   final Size source;
+
+  /// The mean colour of the art's centre cell — what text actually sits on,
+  /// and what [PixelFrame] falls back to when it is too small to nine-slice.
+  ///
+  /// The fallback used to be one hardcoded dark green for all four styles,
+  /// which meant a paper panel squeezed below its corner size flipped to dark
+  /// green while its text stayed dark ink: legible copy turning invisible on
+  /// a narrow phone, with nothing in the source to suggest it.
+  final Color surface;
+
+  /// Body text on this surface. >= 4.5:1 against [surface].
+  final Color ink;
+
+  /// Secondary text. >= 4.5:1, dimmer but still AA.
+  final Color inkMuted;
+
+  /// The "gold" for this surface. On the cream styles this is a *dark* gold,
+  /// because bright gold on cream is unreadable.
+  final Color accent;
 }
 
 /// Draws a nine-slice, falling back when the box is smaller than its caps.
@@ -164,14 +216,79 @@ class PixelFrame extends StatelessWidget {
             asset: style.asset,
             slice: style.slice,
             source: style.source,
-            fallbackColor: const Color(0xFF264F3D),
+            // The style's own measured colour, not one green for all four.
+            // See [PixelFrameStyle.surface].
+            fallbackColor: style.surface,
             fallbackBorder: const Color(0xFF0A1A12),
           ),
         ),
-        Padding(padding: padding, child: child),
+        Padding(
+          padding: padding,
+          // Text inside a frame defaults to that frame's ink. Without this
+          // the caller has to know what colour the art ended up, which is the
+          // knowledge nobody has at a call site — and getting it wrong on the
+          // two cream styles produces text at 1.09:1, i.e. none.
+          child: DefaultTextStyle.merge(
+            style: TextStyle(color: style.ink),
+            child: child,
+          ),
+        ),
       ],
     );
   }
+}
+
+/// Which ribbon art a [PixelRibbon] wears.
+///
+/// Carries the measured surface and the label ink that clears WCAG AA on it,
+/// for the same reason [PixelFrameStyle] does: the gold ribbon is a light
+/// mustard (#B6AD4B) and the green one is mid-teal, so one label colour
+/// cannot serve both — white reads at 2.3:1 on gold.
+enum PixelRibbonTone {
+  green(
+    AppAssets.kitRibbonGreen,
+    AppAssets.kitSliceRibbonGreen,
+    AppAssets.kitSizeRibbon,
+    Color(0xFF3F9A78),
+  ),
+  gold(
+    AppAssets.kitRibbonGold,
+    AppAssets.kitSliceRibbonGold,
+    AppAssets.kitSizeRibbon,
+    Color(0xFFB6AD4B),
+  ),
+  red(
+    AppAssets.kitRibbonRed,
+    AppAssets.kitSliceRibbonRed,
+    AppAssets.kitSizeRibbon,
+    Color(0xFFB9605A),
+  ),
+  smallGreen(
+    AppAssets.kitRibbonSmallGreen,
+    AppAssets.kitSliceRibbonSmallGreen,
+    AppAssets.kitSizeRibbonSmall,
+    Color(0xFF419D7B),
+  ),
+  smallGold(
+    AppAssets.kitRibbonSmallGold,
+    AppAssets.kitSliceRibbonSmallGold,
+    AppAssets.kitSizeRibbonSmall,
+    Color(0xFFBBB552),
+  );
+
+  const PixelRibbonTone(this.asset, this.slice, this.source, this.surface);
+
+  final String asset;
+  final Rect slice;
+  final Size source;
+
+  /// Measured mean of the art's centre cell, and the fallback fill.
+  final Color surface;
+
+  /// Label colour. One near-black serves every ribbon: all five are
+  /// mid-to-light, so the ink has to be dark, and 0xFF0B1410 clears the bar
+  /// on the darkest of them (red, the worst case) as well as the lightest.
+  Color get ink => const Color(0xFF0B1410);
 }
 
 /// A section heading drawn on a ribbon.
@@ -184,23 +301,28 @@ class PixelRibbon extends StatelessWidget {
   const PixelRibbon({
     super.key,
     required this.label,
-    this.asset = AppAssets.kitRibbonGreen,
-    this.slice = AppAssets.kitSliceRibbonGreen,
-    this.source = AppAssets.kitSizeRibbon,
+    this.tone = PixelRibbonTone.green,
     this.height = 46,
-    this.textColor = const Color(0xFF10281F),
+    this.textColor,
   });
 
   final String label;
-  final String asset;
 
-  /// Slice and source travel with the asset: the three big ribbons share a
-  /// geometry, but the small ones do not, so a caller swapping the art has
-  /// to swap these too.
-  final Rect slice;
-  final Size source;
+  /// Which ribbon art, and with it the slice geometry and the ink that is
+  /// readable on it. Bundling those was the point: the three big ribbons
+  /// share a geometry and the small ones do not, so swapping the asset alone
+  /// used to smear the art, and the gold ribbon needs a different label
+  /// colour from the green one.
+  final PixelRibbonTone tone;
   final double height;
-  final Color textColor;
+
+  /// Overrides [PixelRibbonTone.ink]. Rarely wanted — the tone's ink is the
+  /// one measured against its own art.
+  final Color? textColor;
+
+  String get asset => tone.asset;
+  Rect get slice => tone.slice;
+  Size get source => tone.source;
 
   @override
   Widget build(BuildContext context) {
@@ -213,7 +335,7 @@ class PixelRibbon extends StatelessWidget {
               asset: asset,
               slice: slice,
               source: source,
-              fallbackColor: const Color(0xFF2C9C73),
+              fallbackColor: tone.surface,
               fallbackRadius: 999,
             ),
           ),
@@ -226,7 +348,7 @@ class PixelRibbon extends StatelessWidget {
                 label,
                 maxLines: 1,
                 style: TextStyle(
-                  color: textColor,
+                  color: textColor ?? tone.ink,
                   fontWeight: FontWeight.w900,
                   fontSize: height * 0.34,
                   letterSpacing: 0.3,
@@ -249,6 +371,7 @@ enum PixelButtonTone {
     AppAssets.kitBtnPrimaryPressed,
     AppAssets.kitSliceBtnPrimaryPressed,
     AppAssets.kitSizeBtnPrimaryPressed,
+    Color(0xFF419D7B),
   ),
   danger(
     AppAssets.kitBtnDanger,
@@ -257,6 +380,7 @@ enum PixelButtonTone {
     AppAssets.kitBtnDangerPressed,
     AppAssets.kitSliceBtnDangerPressed,
     AppAssets.kitSizeBtnDangerPressed,
+    Color(0xFFF66C5D),
   );
 
   const PixelButtonTone(
@@ -266,6 +390,7 @@ enum PixelButtonTone {
     this.pressedAsset,
     this.pressedSlice,
     this.pressedSource,
+    this.surface,
   );
 
   final String asset;
@@ -278,6 +403,13 @@ enum PixelButtonTone {
   final String pressedAsset;
   final Rect pressedSlice;
   final Size pressedSource;
+
+  /// Measured mean of the resting face, and the fallback fill. Both faces are
+  /// bright, which is why the label below is ink rather than white.
+  final Color surface;
+
+  /// Label colour, >= 4.5:1 on [surface] (4.85 on primary, 5.52 on danger).
+  Color get ink => const Color(0xFF0B1410);
 }
 
 /// A chunky pixel button that actually depresses when you hold it.
@@ -324,9 +456,7 @@ class _PixelButtonState extends State<PixelButton> {
       asset: asset,
       slice: pressed ? widget.tone.pressedSlice : widget.tone.slice,
       source: pressed ? widget.tone.pressedSource : widget.tone.source,
-      fallbackColor: widget.tone == PixelButtonTone.danger
-          ? const Color(0xFFFF8474)
-          : const Color(0xFF4BD2A3),
+      fallbackColor: widget.tone.surface,
       fallbackRadius: 10,
     );
     if (!enabled) {
@@ -382,7 +512,7 @@ class _PixelButtonState extends State<PixelButton> {
                             // and white on bright green is the least readable
                             // pairing in the palette.
                             color: enabled
-                                ? const Color(0xFF10281F)
+                                ? widget.tone.ink
                                 : Colors.white.withValues(alpha: 0.55),
                             fontWeight: FontWeight.w900,
                             fontSize: widget.height * 0.3,

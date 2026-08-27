@@ -1253,7 +1253,10 @@ class _MetricPill extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.72),
+              // Was 72% white on a 12% white pill over a mid-green hero
+              // card: 3.63:1. The pill lifts the background and the alpha
+              // drops the text, so the two meet in the middle.
+              color: AppTheme.textPrimary,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
