@@ -122,6 +122,20 @@ class QuizSkills {
   static const String allowanceEarning = 'allowance_earning';
   static const String simpleSavingsPlan = 'simple_savings_plan';
 
+  // Unit 12 — Big Purchases (graduating)
+  static const String carCosts = 'car_costs';
+  static const String loanOffers = 'loan_offers';
+  static const String renting = 'renting';
+  static const String moveInCosts = 'move_in_costs';
+  static const String buyOrWait = 'buy_or_wait';
+
+  // Unit 13 — Protecting Your Money (adult)
+  static const String identityTheft = 'identity_theft';
+  static const String creditFreeze = 'credit_freeze';
+  static const String creditReports = 'credit_reports';
+  static const String avoidableFees = 'avoidable_fees';
+  static const String complaints = 'complaints';
+
   /// Human-readable name for the mastery breakdown in the learning path.
   static String label(String skillId) => switch (skillId) {
     budgetBasics => 'Budgeting basics',
@@ -172,6 +186,16 @@ class QuizSkills {
     creditScore => 'Credit scores',
     interestRates => 'Interest rates (APR/APY)',
     minimumPayments => 'Minimum payments',
+    carCosts => 'What a car costs',
+    loanOffers => 'Reading a loan offer',
+    renting => 'Renting and leases',
+    moveInCosts => 'Move-in costs',
+    buyOrWait => 'Buy, finance or wait',
+    identityTheft => 'Identity theft',
+    creditFreeze => 'Credit freezes',
+    creditReports => 'Credit reports',
+    avoidableFees => 'Avoidable fees',
+    complaints => 'Complaints and collectors',
     earlyMoneyBasics => 'What money is',
     earlySaving => 'Saving in a piggy bank',
     allowanceEarning => 'Earning an allowance',
@@ -1349,7 +1373,463 @@ const Map<String, List<QuizQuestion>> quizBank = <String, List<QuizQuestion>>{
   'test_10': _unit10Test,
   'quiz_11': _unit11Quiz,
   'test_11': _unit11Test,
+  'quiz_12': _unit12Quiz,
+  'test_12': _unit12Test,
+  'quiz_13': _unit13Quiz,
+  'test_13': _unit13Test,
 };
+
+// ---------------------------------------------------------------------------
+// Unit 12 — Big Purchases
+// ---------------------------------------------------------------------------
+//
+// The distractors here are the actual sales tactics: comparing monthly
+// payments instead of totals, reading "50% of the first 6%"-style formulas
+// too fast, and treating a deposit as the whole move-in cost. A wrong answer
+// a teenager would never pick teaches nothing.
+
+const List<QuizQuestion> _unit12Practice = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u12p1',
+    skillId: QuizSkills.carCosts,
+    prompt: 'Two cars both cost 6,000. What most decides which is cheaper?',
+    options: [
+      'Whichever looks newer',
+      'What each costs to insure, fuel and repair for a year',
+      'The colour and the trim level',
+      'They cost the same — the price is the price',
+    ],
+    correctIndex: 1,
+    explanation:
+        'The purchase price is the entry fee. Insurance, fuel, servicing and '
+        'repairs are the yearly subscription, and they differ enormously '
+        'between cars that cost the same to buy.',
+    misconception:
+        'Treating the sticker as the cost. Running costs usually outweigh the '
+        'difference in purchase price within a year or two.',
+  ),
+  QuizQuestion(
+    id: 'u12p2',
+    skillId: QuizSkills.loanOffers,
+    prompt: 'A loan is "240 a month for 60 months". You will hand over:',
+    options: ['2,400', '6,000', '14,400', 'It depends on the car'],
+    correctIndex: 2,
+    explanation: '240 x 60 = 14,400. Payment times term is the total.',
+    misconception:
+        'Judging a loan by the monthly payment. Any payment can be made '
+        'smaller by stretching the term, which raises the total.',
+  ),
+  QuizQuestion(
+    id: 'u12p3',
+    skillId: QuizSkills.loanOffers,
+    prompt: 'Why is APR more useful than the interest rate alone?',
+    options: [
+      'It is always a smaller number',
+      'It includes fees, so two offers can be compared honestly',
+      'It is set by the government',
+      'It changes every month',
+    ],
+    correctIndex: 1,
+    explanation:
+        'APR folds fees into a single yearly figure. A lower interest rate '
+        'with high fees can be the worse deal, and APR is what shows that.',
+  ),
+  QuizQuestion(
+    id: 'u12p4',
+    skillId: QuizSkills.renting,
+    prompt: 'On a joint lease, your flatmate stops paying their half. You:',
+    options: [
+      'Owe only your own half — their share is their problem',
+      'Can be pursued by the landlord for the full rent',
+      'Are released from the lease automatically',
+      'Owe nothing until a court decides',
+    ],
+    correctIndex: 1,
+    explanation:
+        'A joint lease usually makes each tenant liable for all of the rent. '
+        '"We each pay half" is your agreement with each other, not with the '
+        'landlord.',
+    misconception:
+        'Assuming splitting the rent splits the legal liability. It does not.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u12p5',
+    skillId: QuizSkills.moveInCosts,
+    prompt: 'Rent is 800. A realistic amount to have saved before moving in:',
+    options: [
+      '800 — one month',
+      'Nothing, deposits are paid later',
+      'Roughly 1,600–2,400, because deposits and setup land at once',
+      '400, since deposits are usually half a month',
+    ],
+    correctIndex: 2,
+    explanation:
+        'First month, a deposit, utility setup and everything the flat does '
+        'not come with typically add up to two or three times the rent.',
+    misconception:
+        'Budgeting only for the first month. The deposit on the new place is '
+        'usually due before the old one is returned.',
+  ),
+  QuizQuestion(
+    id: 'u12p6',
+    skillId: QuizSkills.buyOrWait,
+    prompt: 'The option a showroom is least likely to raise is:',
+    options: [
+      'Not buying yet and saving for six months',
+      'Financing over a longer term',
+      'Trading in your current car',
+      'Adding an extended warranty',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Waiting is a real option with a real return — a better car, or the '
+        'same car without a loan. Nobody in the room earns anything from it.',
+  ),
+];
+
+const List<QuizQuestion> _unit12Quiz = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u12q1',
+    skillId: QuizSkills.loanOffers,
+    prompt:
+        'Offer A: 300 a month for 48 months. Offer B: 240 a month for 72 '
+        'months. Which costs more in total?',
+    options: [
+      'A, because the payment is higher',
+      'B, at 17,280 against 14,400',
+      'They are the same',
+      'Impossible to tell without the APR',
+    ],
+    correctIndex: 1,
+    explanation:
+        '300 x 48 = 14,400. 240 x 72 = 17,280. The smaller payment is the '
+        'bigger total — that is what a longer term does.',
+    misconception:
+        'Lower monthly means cheaper. It usually means longer, and longer '
+        'means more interest.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u12q2',
+    skillId: QuizSkills.carCosts,
+    prompt: 'Depreciation is:',
+    options: [
+      'A fee charged yearly by the dealer',
+      'The value the car loses as it ages',
+      'The interest on a car loan',
+      'A tax on selling a vehicle',
+    ],
+    correctIndex: 1,
+    explanation:
+        'No bill arrives for it, but you pay it the day you sell. It is '
+        'usually the largest single cost of owning a newer car.',
+  ),
+  QuizQuestion(
+    id: 'u12q3',
+    skillId: QuizSkills.renting,
+    prompt: 'Before approving a tenant, a landlord most commonly checks:',
+    options: [
+      'Your social media',
+      'Your school grades',
+      'Income, rental history and a credit report',
+      'Nothing — first to pay gets the keys',
+    ],
+    correctIndex: 2,
+    explanation:
+        'This is often the first time a thin or damaged credit file has an '
+        'obvious cost: a bigger deposit, a guarantor, or a rejection.',
+  ),
+];
+
+const List<QuizQuestion> _unit12Test = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u12t1',
+    skillId: QuizSkills.carCosts,
+    prompt:
+        'You can afford the payments on a car whose insurance you have not '
+        'quoted. The safest next step is:',
+    options: [
+      'Get an insurance quote for that exact car first',
+      'Buy it — insurance is roughly the same for every car',
+      'Assume insurance is 10% of the price',
+      'Wait until after the purchase to shop around',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Insurance varies enormously between similar cars and a quote takes '
+        'minutes. It is the cheapest way to avoid a month-one surprise.',
+  ),
+  QuizQuestion(
+    id: 'u12t2',
+    skillId: QuizSkills.loanOffers,
+    prompt: 'Owing more on a car than it would sell for is called:',
+    options: [
+      'Depreciation',
+      'Amortisation',
+      'Negative equity',
+      'A balloon payment',
+    ],
+    correctIndex: 2,
+    explanation:
+        'It matters the moment you need to sell or the car is written off — '
+        'the loan does not disappear with the vehicle.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u12t3',
+    skillId: QuizSkills.moveInCosts,
+    prompt: 'Photographing every mark in a flat on move-in day mainly:',
+    options: [
+      'Satisfies a legal requirement',
+      'Protects your deposit when you leave',
+      'Lowers the rent',
+      'Is only useful if you plan to sue',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Dated photos turn "you damaged this" into a settled question. Ten '
+        'minutes of work against a month of rent.',
+  ),
+  QuizQuestion(
+    id: 'u12t4',
+    skillId: QuizSkills.buyOrWait,
+    prompt:
+        'Your car is how you get to work and it has failed. The reasonable '
+        'reading of "waiting is an option" here is:',
+    options: [
+      'Wait regardless — never borrow for a car',
+      'Necessity justifies buying reliable transport now, not the expensive one',
+      'Buy the nicest car you can finance, since you need it',
+      'Opportunity cost does not apply to needs',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Needing transport is a real answer to "should I buy". It is not an '
+        'answer to "how much should I spend".',
+    difficulty: QuizDifficulty.stretch,
+  ),
+];
+
+// ---------------------------------------------------------------------------
+// Unit 13 — Protecting Your Money
+// ---------------------------------------------------------------------------
+
+const List<QuizQuestion> _unit13Practice = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u13p1',
+    skillId: QuizSkills.identityTheft,
+    prompt: 'Most stolen personal details come from:',
+    options: [
+      'A breach at a company that held them',
+      'Something careless the victim did',
+      'Guessing, one person at a time',
+      'Public records only',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Being a victim is usually not carelessness. That matters, because '
+        'shame is a big reason people delay reporting.',
+  ),
+  QuizQuestion(
+    id: 'u13p2',
+    skillId: QuizSkills.creditFreeze,
+    prompt: 'A credit freeze:',
+    options: [
+      'Lowers your credit score while active',
+      'Closes your existing accounts',
+      'Stops new lenders seeing your file, and is free to place and lift',
+      'Costs a monthly fee',
+    ],
+    correctIndex: 2,
+    explanation:
+        'Federal law makes placing and lifting a freeze free. It restricts '
+        'who can see the file; it does not change what is in it.',
+    misconception:
+        'Believing a freeze damages your score. It is not a negative mark.',
+  ),
+  QuizQuestion(
+    id: 'u13p3',
+    skillId: QuizSkills.creditFreeze,
+    prompt: 'You freeze your file at one bureau. Are you protected?',
+    options: [
+      'Yes, the bureaus share freezes',
+      'No — a lender only needs one unfrozen file to approve an account',
+      'Yes, if it is the largest bureau',
+      'Only for thirty days',
+    ],
+    correctIndex: 1,
+    explanation:
+        'There are three major bureaus and a freeze at one does nothing at '
+        'the others. It is a three-part job.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+  QuizQuestion(
+    id: 'u13p4',
+    skillId: QuizSkills.creditReports,
+    prompt: 'The federally authorised place to get your free credit report is:',
+    options: [
+      'AnnualCreditReport.com',
+      'Any site offering a free score',
+      'Your bank, for a fee',
+      'The lender who declined you',
+    ],
+    correctIndex: 0,
+    explanation:
+        'It is the site set up under federal law for free reports from all '
+        'three bureaus. Lookalike sites sell subscriptions for something you '
+        'are entitled to.',
+  ),
+  QuizQuestion(
+    id: 'u13p5',
+    skillId: QuizSkills.avoidableFees,
+    prompt:
+        'For everyday debit card purchases, a bank can generally charge you '
+        'an overdraft fee only if:',
+    options: [
+      'Your balance goes below zero at any point',
+      'You opted in to overdraft coverage',
+      'You have had the account under a year',
+      'The purchase was over 100',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Without opting in, the transaction is simply declined — which is '
+        'free. The fee is the price of a convenience you chose.',
+    misconception:
+        'Assuming overdraft fees are unavoidable. For debit and ATM '
+        'transactions they are opt-in.',
+  ),
+  QuizQuestion(
+    id: 'u13p6',
+    skillId: QuizSkills.complaints,
+    prompt: 'A collector contacts you about a debt you do not recognise. You:',
+    options: [
+      'Pay it to make it go away',
+      'Ignore every letter permanently',
+      'Ask them to validate that the debt is yours before paying',
+      'Immediately close your bank account',
+    ],
+    correctIndex: 2,
+    explanation:
+        'Debts are sold on with incomplete records and collectors sometimes '
+        'pursue the wrong person. Asking for validation is a normal step.',
+  ),
+];
+
+const List<QuizQuestion> _unit13Quiz = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u13q1',
+    skillId: QuizSkills.identityTheft,
+    prompt: 'The FTC site that builds a recovery plan and the official '
+        'affidavit is:',
+    options: [
+      'IdentityTheft.gov',
+      'Your bank\'s fraud page',
+      'The credit bureau\'s blog',
+      'A police report form',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Banks and bureaus want a formal statement rather than a phone call, '
+        'and that document is what the site produces.',
+  ),
+  QuizQuestion(
+    id: 'u13q2',
+    skillId: QuizSkills.creditReports,
+    prompt: 'Scanning a credit report for fraud, the clearest red flag is:',
+    options: [
+      'A card you have paid off',
+      'A hard inquiry from a lender you never applied to',
+      'A closed account from years ago',
+      'Your current address',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Unrecognised accounts, addresses you never lived at, and inquiries '
+        'you did not trigger are how fraud shows up on paper.',
+  ),
+  QuizQuestion(
+    id: 'u13q3',
+    skillId: QuizSkills.avoidableFees,
+    prompt: 'Why is a flat overdraft fee on a small purchase so expensive?',
+    options: [
+      'Because banks compound it daily',
+      'It is not — flat fees are always cheaper',
+      'As a short loan of a few dollars, the effective rate is enormous',
+      'Because it is added to your credit report',
+    ],
+    correctIndex: 2,
+    explanation:
+        'A fixed charge to cover a few dollars for a few days works out at a '
+        'rate no credit card would be allowed to advertise.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+];
+
+const List<QuizQuestion> _unit13Test = <QuizQuestion>[
+  QuizQuestion(
+    id: 'u13t1',
+    skillId: QuizSkills.creditFreeze,
+    prompt: 'You are about to apply for a car loan with your file frozen. You:',
+    options: [
+      'Cannot apply until you permanently remove the freeze',
+      'Lift the freeze temporarily, then let it go back on',
+      'Must pay a fee to lift it',
+      'Should close the file and start a new one',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Lifting is free and temporary. The small friction is the entire '
+        'point of the protection.',
+  ),
+  QuizQuestion(
+    id: 'u13t2',
+    skillId: QuizSkills.complaints,
+    prompt: 'The order that actually resolves a problem with a bank is:',
+    options: [
+      'Regulator first, then the company',
+      'The company in writing, then the CFPB if unresolved',
+      'Social media, then a lawyer',
+      'Close the account and move on',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Most problems end at the company. The written record is what makes '
+        'the complaint work if they do not.',
+  ),
+  QuizQuestion(
+    id: 'u13t3',
+    skillId: QuizSkills.creditReports,
+    prompt: 'You find an account on your report that is not yours. You:',
+    options: [
+      'Wait to see if it disappears',
+      'Pay it so it stops affecting your score',
+      'Dispute it — the bureau has to investigate',
+      'Nothing can be done once it is reported',
+    ],
+    correctIndex: 2,
+    explanation:
+        'Wrong entries do get removed, but only for people who look and then '
+        'say something.',
+  ),
+  QuizQuestion(
+    id: 'u13t4',
+    skillId: QuizSkills.identityTheft,
+    prompt: 'Why does reporting identity theft quickly matter most?',
+    options: [
+      'It is the only way to catch the thief',
+      'Reports expire after a week',
+      'The damage compounds — each new account is more to unwind',
+      'It restores your score instantly',
+    ],
+    correctIndex: 2,
+    explanation:
+        'Speed is less about catching anyone than about limiting how much '
+        'there is to fix.',
+    difficulty: QuizDifficulty.stretch,
+  ),
+];
 
 // ---------------------------------------------------------------------------
 // Unit 6 — Stocks and Trading
@@ -1535,6 +2015,8 @@ const Map<String, List<QuizQuestion>> practiceBank =
       'unit_9': _unit9Practice,
       'unit_10': _unit10Practice,
       'unit_11': _unit11Practice,
+      'unit_12': _unit12Practice,
+      'unit_13': _unit13Practice,
     };
 
 List<QuizQuestion> quizFor(String nodeId) =>

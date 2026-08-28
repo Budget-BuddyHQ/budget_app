@@ -203,25 +203,65 @@ void main() {
       );
     });
 
-    test('the west cliff face is solid', () {
-      // The stepped ledge art should stop the player rather than letting
-      // them stroll up a cliff. These are the tiles that make up its face.
-      const cliffIds = <int>{106, 107, 109, 110};
-      final open = <({int x, int y})>[];
-      for (final layer in map['layers'] as List) {
-        final l = layer as Map<String, dynamic>;
-        for (final tile in l['tiles'] as List) {
-          final t = tile as Map<String, dynamic>;
-          if (!cliffIds.contains(int.parse('${t['id']}'))) continue;
-          final at = (x: int.parse('${t['x']}'), y: int.parse('${t['y']}'));
-          if (!solid.contains(at)) open.add(at);
+    // Replaced the old "the west cliff face is solid" check, which guarded
+    // a stepped ledge the previous hand-drawn map had. The town is composed
+    // by `tool/make_town_map.py` now and has no cliff, so that test had
+    // quietly become vacuous — it scanned for four tile ids that no longer
+    // appear anywhere and passed on an empty set, which looks identical to
+    // passing for a good reason.
+    //
+    // This is the invariant the new layout actually needs. The first draft
+    // of it dropped the player's house squarely across the south avenue:
+    // every existing test still passed, because you could walk around the
+    // house on grass, so "reachable" was true and the map was still wrong.
+    test('both avenues run unobstructed end to end', () {
+      const vertical = [24, 25, 26];
+      const horizontal = [23, 24, 25];
+
+      final blockedV = <({int x, int y})>[];
+      for (final x in vertical) {
+        for (var y = 3; y < 47; y++) {
+          if (solid.contains((x: x, y: y))) blockedV.add((x: x, y: y));
         }
       }
       expect(
-        open,
+        blockedV,
         isEmpty,
-        reason: 'these cliff-face tiles are walkable: $open',
+        reason: 'something solid is standing on the north-south avenue: '
+            '$blockedV',
       );
+
+      final blockedH = <({int x, int y})>[];
+      for (final y in horizontal) {
+        for (var x = 3; x < 47; x++) {
+          if (solid.contains((x: x, y: y))) blockedH.add((x: x, y: y));
+        }
+      }
+      expect(
+        blockedH,
+        isEmpty,
+        reason: 'something solid is standing on the east-west avenue: '
+            '$blockedH',
+      );
+    });
+
+    test('every money-decision building is a short walk from the square', () {
+      // The point of the radial layout: no spot should be a hike. Measured
+      // as Manhattan distance to the plaza centre rather than by pathing,
+      // which is enough to catch a building placed out in a far corner.
+      const squareCentre = (x: 25, y: 24);
+      for (final spot in kTownSpots) {
+        final distance =
+            (spot.tileX - squareCentre.x).abs() +
+            (spot.tileY - squareCentre.y).abs();
+        expect(
+          distance,
+          lessThanOrEqualTo(30),
+          reason:
+              '${spot.id} is $distance tiles from the square — the town is '
+              'meant to be walkable from its centre',
+        );
+      }
     });
   });
 
