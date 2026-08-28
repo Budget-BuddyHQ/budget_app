@@ -7,6 +7,7 @@ import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/pixel_frame_animation.dart';
 import '../../../widgets_custom_lotties/pixel_panel.dart';
+import '../../../models_Like_Skins_and_lessons_templates/town_scenarios.dart';
 
 /// Inside a town building — a whole screen, with the room art as the room.
 ///
@@ -347,13 +348,18 @@ class _DecisionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Today's encounter, not the spot's built-in one. Each building has
+    // several scenes and rotates them daily — see [townEncounterFor] for why
+    // the choice is fixed within a day rather than rerolled on every visit.
+    final encounter = townEncounterFor(spot);
+
     return PixelPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            spot.prompt,
+            encounter.prompt,
             style: GoogleFonts.quicksand(
               color: Colors.white,
               height: 1.45,
@@ -362,7 +368,7 @@ class _DecisionPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          for (final choice in spot.choices) ...[
+          for (final choice in encounter.choices) ...[
             _ChoiceRow(
               choice: choice,
               accent: spot.kind.accent,

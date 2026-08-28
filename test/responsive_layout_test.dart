@@ -19,11 +19,13 @@ import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_ending.d
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/life_epilogue_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/money_habits/money_habits_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/feedback_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/personal_details_sheet.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/core_bottom_pages/main_game_page.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/customize_screen.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/coin_cascade_page.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/finance_brawl_game.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/stock_market_page.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/dashboard_shell.dart';
@@ -206,8 +208,18 @@ void main() {
       spot: kTownSpots.firstWhere((s) => s.kind == TownSpotKind.bank),
     ),
     'Finance Brawl': () => const FinanceBrawlScreen(),
+    // The board fits itself to whatever space it gets, which is exactly the
+    // kind of claim that needs the landscape and small-phone entries.
+    'Coin Cascade': () => const CoinCascadePage(),
     'Market Board': () => const StockMarketPage(),
     'Feedback': () => const FeedbackScreen(),
+    // Money Habits has four inner tabs and the sweep only ever saw the
+    // first. My Jar is the one that got rebuilt — a painted jar, a milestone
+    // row and two stat cards — so it is the one most likely to overflow a
+    // small phone.
+    'Money Habits — My Week': () => const MoneyHabitsScreen(),
+    'Money Habits — Challenges': () => const MoneyHabitsScreen(initialTab: 2),
+    'Money Habits — My Jar': () => const MoneyHabitsScreen(initialTab: 3),
     // No map file exists yet, so this exercises the "waiting for the map"
     // fallback screen, not the Bonfire game canvas itself.
     'Adventure (map pending)': () => const AdventureWorldScreen(),

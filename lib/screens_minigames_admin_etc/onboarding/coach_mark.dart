@@ -256,6 +256,20 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
   }
 }
 
+/// A text button that takes only the room its label needs.
+///
+/// Material's defaults — a 64px minimum width, 16px of horizontal padding and
+/// a 48px tap target — are right for a screen's primary actions and far too
+/// generous for two secondary words sharing a row with a counter and a
+/// primary button on a phone.
+ButtonStyle _compactText(Color colour) => TextButton.styleFrom(
+  foregroundColor: colour,
+  padding: const EdgeInsets.symmetric(horizontal: 8),
+  minimumSize: Size.zero,
+  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  visualDensity: VisualDensity.compact,
+);
+
 class _CoachCard extends StatelessWidget {
   const _CoachCard({
     required this.step,
@@ -349,33 +363,50 @@ class _CoachCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              Text(
-                '${index + 1} / $total',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12,
+              // Flexible, and the first thing to give way. On a 393px phone
+              // with the Back button showing, a default-padded TextButton
+              // pair plus a 116px Next overflowed this row by 39px — Material
+              // buttons carry a 64px minimum and a 48px tap target on top of
+              // their padding, so four ordinary-looking children came to
+              // 372px inside 333. The counter is also the least important
+              // thing here, which is why it is the one that shrinks.
+              Flexible(
+                child: Text(
+                  '${index + 1} / $total',
+                  maxLines: 1,
+                  overflow: TextOverflow.clip,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                  ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 6),
               if (onBack != null)
                 TextButton(
                   onPressed: onBack,
-                  style: TextButton.styleFrom(foregroundColor: Colors.white60),
+                  style: _compactText(Colors.white60),
                   child: const Text('Back'),
                 ),
               TextButton(
                 onPressed: onSkip,
-                style: TextButton.styleFrom(foregroundColor: Colors.white38),
+                style: _compactText(Colors.white38),
                 child: const Text('Skip'),
               ),
               const SizedBox(width: 6),
-              SizedBox(
-                width: 116,
-                child: PixelButton(
-                  label: index == total - 1 ? 'Done' : 'Next',
-                  height: 42,
-                  onPressed: onNext,
+              // Up to 104px, less when the row is cramped. A fixed width here
+              // still overflowed a 320px phone by 0.8px on the last step —
+              // and a rigid primary button is the wrong thing to hold fixed
+              // when the alternative is a red overflow banner across it.
+              Flexible(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 104),
+                  child: PixelButton(
+                    label: index == total - 1 ? 'Done' : 'Next',
+                    height: 42,
+                    onPressed: onNext,
+                  ),
                 ),
               ),
             ],

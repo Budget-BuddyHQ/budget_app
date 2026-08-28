@@ -3149,3 +3149,475 @@ so no migration), and the cap is 400. Two details worth keeping:
 
 `portfolio_history_test.dart` covers the pairing rule directly, including the
 partly-stamped case that a real upgrade will actually hit.
+
+## 39. Sound that had to be built, and yellow text that was measured
+
+Two requests landed together — "add the CS:GO case-rolling sound and Minecraft
+music", and "yellow text is kinda hard to see". Neither could be done the way
+it was asked, and in both cases the reason is worth writing down.
+
+### The audio is synthesised, not sourced, and that was not a compromise
+
+`assets/audio/` held one file: `.gitkeep`. Every path in `AppSoundService`
+pointed at nothing, and `enabled` defaulted to `false` with a comment blaming
+the bundled effects for sounding harsh — effects that did not exist. The
+setting had been off for a reason that had stopped being true, if it ever was.
+
+**The named sources were not usable.** CS:GO's case audio is Valve's and
+Minecraft's soundtrack is Mojang's and C418's. Shipping either in an app going
+to the stores is the kind of infringement that pulls a listing rather than the
+kind nobody notices — and this app is being prepared for release.
+
+That turned out not to matter much, because **what makes a case-opening sound
+work is not the recording, it is the rhythm**: a ratchet of ticks that starts
+fast and decelerates, so the ear extrapolates where it will stop and the last
+few ticks feel agonising. That structure is not anyone's property.
+`tool/make_sounds.py` reproduces it exactly — intervals grow geometrically
+(`gap *= 1.075`), and the pitch drifts up as it slows, which reads as tension.
+
+The same reasoning covers the rest:
+
+| Sound | What carries the meaning |
+|---|---|
+| `case_roll` | Decelerating tick spacing over 4.2s |
+| `unbox_*` (4) | Rarity = **harmonic richness plus ring time**, not a different tune. Common is a single note with a hint of second partial and a 6.0 decay; legendary is a four-note arpeggio with three partials and a 1.5 decay |
+| `ambient_loop` | Pentatonic, so notes chosen at random cannot produce a sour interval — the same reason wind chimes are tuned that way. 24s, on a grid that divides the length exactly so the loop does not click |
+| The ten UI effects | Short pitched blips with exponential decay |
+
+Everything is pure standard library — `wave`, `math`, `struct`. No dependency,
+no download, no licence question. Every file is normalised to 0.86 peak and
+given a 10ms fade at each edge, because a hard start on a non-zero sample is an
+audible click.
+
+**Wiring, and one thing it uncovered.** `initialize()` read the stored
+preference as `?? false`, which meant the field's own default was decorative:
+a fresh install reset sound to off on every launch no matter what the
+declaration said. That is now `?? enabled`.
+
+Music is a **separate switch** from effects. They are genuinely different
+preferences — plenty of people want the click when they tap a button and not a
+loop underneath it, and someone playing their own music wants the opposite of
+what one toggle would give them. Turning sound off still stops the music,
+because a mute that leaves a loop playing reads as broken.
+
+The loop starts in `MainNavigation.initState`, not in `main()`: music under a
+sign-in form is music over a form, which is not what anybody means by ambience.
+`startMusic()` is idempotent so a tab switch cannot restart the track.
+
+### "Yellow text is hard to see" was not about the yellow
+
+The app has **128 hardcoded gold literals**, and reading any one of them tells
+you nothing, because whether it is legible depends on what ended up *behind*
+it three or four widgets up the tree. Gold on the page background measures
+10.3:1. Gold on a 18% wash of gold measures **3.5:1**. Same colour.
+
+So this was measured rather than guessed. `test/contrast_audit_test.dart`
+walks the real widget tree of nine screens, reads every `RichText`'s resolved
+colour (`Text` merges `DefaultTextStyle` before it builds one, so by that point
+the style is final), composites the backgrounds above it down to an opaque
+colour, and computes the WCAG ratio. **The first run produced 47 findings.**
+
+Two things had to be right before the numbers meant anything:
+
+* **Alpha has to survive compositing.** The first version flattened to opaque
+  after one step, so "white at 6% over white at 10% over a dark page" — the
+  app's most common card — reported as **solid white**, and every white
+  caption on it looked like a 1:1 failure. Source-over that preserves alpha,
+  and keep climbing until something is actually opaque.
+* **Emoji are colour bitmaps.** `Text('🐷', style: TextStyle(color: red))`
+  draws a pink pig. The app leans on emoji heavily, and without excluding them
+  the loudest findings were all emoji on bright chips. Private-use codepoints
+  are *not* excluded — those are icon fonts, which do take the text colour.
+
+### One pattern caused most of it
+
+The app's commonest small component is a wash of some meaningful colour with
+the label written in that same colour: rarity badges, difficulty pills, stat
+meters, category tags. It fails twice over.
+
+1. The wash raises the background **towards** the label, so the darker the
+   tint the closer the two get. The navy legendary badge measured **1.04:1** —
+   a badge with no letter on it.
+2. The wash is translucent, so what the label sits on depends on whatever is
+   behind the chip — which the call site cannot know and which changes when
+   the chip is reused.
+
+At the call site both colours are the same identifier, so nothing looks wrong.
+
+`AppTheme.tintedChip(tint)` returns the fill **and** the ink together. The
+fill comes back opaque, pre-blended, so the chip looks identical on the usual
+dark surface but no longer inherits whatever is underneath; the ink is measured
+against that exact fill. Taking one and inventing the other is the bug it
+exists to prevent. `AppTheme.legibleOn(tint, surface)` is the underlying move:
+keep hue and saturation, walk lightness until the target is met.
+
+**`legibleOn` had to try both directions.** The first version picked the
+direction from the surface's luminance, which is right for a clearly dark or
+clearly light ground and wrong for the mid-tones this app is full of — an
+accent badge is a wash of its own accent, so it lands mid, and a mint icon on
+one got *darkened* to near-black and was still below the bar at 2.75:1.
+
+### The single biggest fix was one asset
+
+`panel_slate` is the app's main panel and its own doc comment calls it "dark
+slate". The recolour left it at **#51655E — a mid tone**. Every caller had
+written its text for a dark surface, so gold body text measured 3.73:1 and the
+muted greys 2.5–3.2:1. **Roughly twenty of the 47 findings were that one PNG.**
+
+`tool/build_ui_pack.py` now dims it to 0.60 after the recolour, landing the
+centre on #303C38 where the whole palette clears AA: white 11.3:1, gold 6.9,
+mint 8.2, the muted grey 7.1, debt pink 5.4. Dimming rather than re-picking a
+colour keeps the bevel and the gold filigree, because it scales the value ramp
+uniformly instead of flattening it.
+
+While there: `PixelFrameStyle` now carries `surface`, `ink`, `inkMuted` and
+`accent` per style, and `PixelFrame` supplies its `ink` as a `DefaultTextStyle`
+so text inside a panel does not have to know what colour the art ended up.
+`PixelRibbonTone` and `PixelButtonTone` do the same. The old fallback colour
+was **one dark green for all four styles**, which meant a parchment panel
+squeezed below its own corner size flipped to dark green while its text stayed
+dark ink — legible copy turning invisible on a narrow phone, with nothing in
+the source to suggest it.
+
+`test/pixel_kit_test.dart` decodes the real PNGs and checks every one of those
+constants against the art, so a change to the recolour rules fails the build
+instead of quietly making the constants lies. That test reads from disk in a
+plain `test`, not a `testWidgets` — image decoding is real async work, and
+inside a widget test's fake-async zone the future never completes and the
+runner hangs.
+
+### Other findings worth naming
+
+* `AppTheme.textMuted` was lightened #B9D1C6 → #C8DDD3. The old value cleared
+  AA against the *page* (9.1:1) but not against the app's **cards**, which are
+  panels tinted with each screen's accent and run as light as #436452, where it
+  measured 4.08:1. One step lighter fixed a whole class at once.
+* Several labels were `Colors.white.withValues(alpha: 0.7)` on a tinted card.
+  Knocking text back with alpha pulls it *toward the card* rather than toward
+  a neutral grey, so the muting works against legibility twice.
+* The arcade's `_MetaChip` blended its base over **its own** colour. The
+  neutral "5–10 min" chip is near-white, so that invented a pale card no text
+  could sit on — the fix looked, briefly, like it had made things worse. It
+  takes the card's accent now.
+* Two sites aim slightly *above* 4.5 on purpose. The Life-sim "this year"
+  tiles sit under more veils than the nominal constant accounts for, so aiming
+  exactly at the bar left the weather icon at 4.09 on screen: fixed in code,
+  still failing in the app.
+
+**Result: 47 → 0, and 705 tests green.** The audit stays as a regression test,
+so the next screen that writes gold on gold fails before anyone has to notice
+it by eye.
+
+## 40. A tour that points at the app, a ratchet locked to the reel, and a jar you can see into
+
+Three requests, one theme: each thing described something instead of being it.
+
+### The tour is a layer over the app, not a screen about it
+
+`TutorialScreen.show()` pushed a full-screen route with eleven pages of copy.
+Read all of it and you have learned the *idea* of each feature and the location
+of none, so the first thing a new player does after finishing is go and look
+for everything they just read about.
+
+`CoachMarkOverlay` is now drawn by `MainNavigation` itself — a `Stack` layer
+over the live `IndexedStack`, not a route on top of it. Each step dims the
+screen, cuts a hole over the real widget, and puts an arrow on it; steps that
+name a tab switch to it first, so the player is standing on the feature while
+it is explained.
+
+Three things this needed:
+
+* **A tab switch has to settle before the spotlight measures.** `IndexedStack`
+  keeps every screen alive, but a screen that has never been visible has no
+  laid-out geometry — measuring in the same frame returns the *previous*
+  screen's rectangle and the spotlight lands on whatever was in that spot.
+  `_tourWantsTab` awaits `endOfFrame`, and the overlay waits another 220ms.
+* **Profile cannot start the tour itself.** The replay button lives on a
+  screen *inside* the shell that draws the tour. It raises
+  `AppSettingsController.requestTutorialReplay()` and the shell — already
+  listening to that controller — picks it up. A replay deliberately does not
+  wait on `isInitialized`: that gate exists so the *automatic* first-run
+  decision is never made from a pre-read default, and an explicit "show me
+  again" has nothing to read.
+* **Targets that the bottom bar cannot supply.** `TutorialTargets.navTabRect`
+  derives its rectangle from the bottom bar's geometry, which works for five
+  tabs and not for Daily, the leaderboard and Profile — those live in the top
+  bar. They register `GlobalKey`s instead. Safe here where it was not for the
+  bottom tabs: the top bar is built once by `MainNavigation`, not once per
+  screen in the stack.
+
+**And it found a real "random red error".** On a 393px phone, from step two
+onward, the card's footer overflowed by 39px. Four ordinary-looking children —
+a counter, Back, Skip and a 116px Next — came to 372px inside 333, because
+Material's text buttons carry a 64px minimum width and a 48px tap target on
+top of their padding. That is exactly the shape of fault the report described:
+a red flash on some screens, on some steps, gone before you can screenshot it.
+
+Fixed by making the counter flexible, giving the two text buttons a compact
+style, and letting the primary button shrink from 104px when the row is tight
+— a rigid button is the wrong thing to hold fixed when the alternative is an
+overflow banner painted across it. `tutorial_test.dart` now walks the entire
+tour at six viewports and fails on any overflow.
+
+### The ratchet is the reel, not a noise playing near it
+
+The case-opening sound was started in `_openCase()` — *before* the awaited
+network call that decides the result — and the reward chime was played before
+`showDialog`, a full 4.2 seconds before the reveal it was announcing. So how
+far out of sync the ratchet was depended on the player's connection, and the
+chime always spoiled the roll.
+
+Both now belong to `_CaseRollDialog`, which owns the reel they have to match:
+`caseRoll` starts on the same frame as the animation, the rarity chime plays
+in `_onReveal`, *Skip* stops the ratchet with the picture, and `dispose` stops
+it if the dialog is closed early.
+
+The deeper fix is that the two are now generated from the same numbers. The
+reel used to travel `4 * catalogue + indexOf(winner)` tiles — a different
+distance for every skin, which no pre-rendered sound can follow, and which
+also meant the reel showed the same parade in the same order every time. Now:
+
+* the strip is **built around the known result** — filler tiles drawn at
+  random, the winner dropped at a fixed index — so every roll looks different
+  and every roll is the same length;
+* `tool/make_sounds.py` emits one tick per tile crossing, timed by **inverting
+  the reel's own easing curve** rather than by a geometric approximation of
+  it. Tick gaps run 12ms at the start and 1.1s before the last one, because
+  that is what the picture does.
+
+`case_roll_sync_test.dart` reads the item count, duration and curve out of
+*both* files and fails if they disagree — nothing in the compiler connects a
+Python generator to a Dart animation, so that test is the connection.
+
+### The coin jar is a jar
+
+The Money Habits jar was a Material `savings` glyph scaled up inside a tinted
+circle, with two dots and a curve drawn over it for a face, and a brown
+rectangle underneath for a shelf. Two problems no amount of tinting fixes:
+
+* **It did not read as a jar.** A monochrome icon in a disc reads as an icon,
+  and "look how much you have put away" needs a container you can see into.
+* **Progress was quantised to four glyph sizes.** Points are earned
+  continuously; the picture moved four times in the whole game.
+
+It is drawn now: a glass body with a lid and a coin slot, a highlight down one
+side, and a pile of individual coins clipped inside the glass whose count
+follows the fill continuously. Rows of two and three with a sine-based nudge,
+rather than a solid block — a filled rectangle is a progress bar wearing a
+jar, and being able to *count* the coins is what makes it readable.
+
+**The face was upside down.** Canvas y grows downward, so a quadratic control
+point *below* the endpoints bows the mouth down and makes a smile. The
+original had the sign the other way, which meant the jar pulled a face at you
+for keeping a streak and grinned when you had stopped logging — the exact
+inverse of the feedback the screen exists to give. Invisible in source; found
+by rendering the widget and looking at it.
+
+The tab around it was rebuilt to answer the questions it was leaving open:
+`JarMilestones` shows all four stages rather than only the next one, the money
+and good-calls totals moved here from another tab, the mood pill says *how
+long* it has been rather than just "Slipping", and the closing card gives an
+action instead of a statement.
+
+`MoneyHabitsScreen` gained an `initialTab` seam — the same shape as
+`LifeSimPage.debugInitialLife` — so the viewport sweep and the contrast audit
+can reach My Jar and Challenges without driving a `TabBar` animation in a
+test. Both immediately earned their keep: the jar tab is now in the eight-
+viewport sweep, and the audit caught the milestone pips at 3.2:1.
+
+`savings_jar_test.dart` renders the widget and reads the pixels back: gold
+pixel count rises with every fill step, the coin line rises with it, and the
+mouth curves the right way for each mood. Two notes for anyone extending it —
+image capture must run inside `tester.runAsync` (in a widget test's fake-async
+zone `toImage` never completes and the runner hangs), and the mouth is
+measured as the **mean** ink position in bands that sit strictly inside the
+mouth and outside the eyes. The first attempt sampled the left eye and
+compared it to the middle of the mouth, which reported a confident wrong sign.
+
+**752 tests.**
+
+## 41. A game for everybody, a curriculum that cites its sources, and a town with more than one thing to say
+
+### Coin Cascade
+
+The arcade had two hard games and nothing for a seven-year-old or for a parent
+with two minutes. Match-3 is the most broadly playable format there is — the
+rule fits in a sentence and it survives being played badly — so the new game is
+one, with the budgeting in the **mechanics** rather than in a quiz bolted to
+the side:
+
+| Tile | What it does |
+|---|---|
+| 🥫 Need | Pays your bills down |
+| 🎮 Want | Scores best, and *raises* what you owe |
+| 🐷 Save | The only thing that moves the goal |
+| 🪙 Coin | Buys extra moves |
+| 🧾 Bill | Arrives on a schedule; clearing it is defence, not progress |
+
+A player who chases the biggest matches loses. A player who covers needs, keeps
+wants in check and banks the rest wins. That is 50/30/20 with the numbers taken
+out — learnable at four and still true at twenty-one.
+
+The engine is pure Dart with an injectable `Random`, separately tested from the
+screen. Design decisions worth keeping:
+
+* **Bills are scheduled, never spawned.** Being buried by luck is the fastest
+  way to lose a young player, and "the game was unfair" is the one lesson this
+  cannot teach.
+* **A swap that matches nothing costs nothing.** Charging a move for an
+  experiment teaches caution — the opposite of what a game for four-year-olds
+  should do.
+* **The board reshuffles rather than dead-ending.** Ending a run on a board the
+  player did nothing wrong to reach reads as the game breaking.
+* **Legal moves are found by performing every swap and looking**, not by
+  pattern-matching shapes. Slower and correct; the shape-table approach is
+  where "no more moves" bugs come from.
+* **L and T shapes clear as one group.** Merging overlapping runs naively
+  double-counts the shared tile and makes a five-tile L score less than two
+  separate threes, which is backwards.
+
+The board is a `Stack` of tiles keyed by a stable id rather than a `GridView`,
+so a tile that dropped two rows actually falls two rows — index-keyed children
+cross-fade instead, which reads as flicker.
+
+One test worth calling out: a bot taking the first legal swap it sees plays 40
+runs, and the suite asserts it *does not always win*. A game a random player
+always wins has no decisions in it.
+
+### The loudness pass
+
+"The sound is kind of high" and "make switching tabs more subtle" turned out to
+be one problem with two levers, and it is worth having both:
+
+* **Per-file peaks** in `tool/make_sounds.py` are the *mix* — how the sounds
+  sit against each other. Everything had been normalised to one level, so the
+  tab-switch click was as loud as an unboxing. Navigation is now 0.22, taps and
+  selections 0.30–0.34, rewards 0.62–0.80.
+* **Per-effect playback volume** in `AppSoundService` is the app's overall
+  loudness, changeable without regenerating sixteen files.
+
+Navigation also got a different *sound*, not just a quieter one: an octave down,
+55ms, almost no upper partial. A dull low thud reads as movement where a bright
+click reads as an alert.
+
+**A bug the levels exposed:** the de-click fade was symmetric at 10ms, and
+`navigation.wav` is 55ms long with its peak in the first millisecond — so the
+ramp was flattening the attack and the file came out at half its requested
+level. The fade is now asymmetric: 1.5ms in (enough to remove the
+discontinuity, short enough to keep the transient), 10ms out.
+
+### Every lesson is sourced
+
+The brief: *"source all the information ... so they know that it is trustworthy
+and then provide links to those too."* This is the part of the app most
+directly relevant to a competition submission, and it is also just correct — an
+app that teaches money to children is making claims, and "says who?" is a fair
+question. Content with no attribution is indistinguishable from content
+somebody invented, and the most useful habit a money app can model is *check
+the source*.
+
+`lesson_sources.dart` holds a catalogue of 39 citations keyed by short id.
+`lesson_extras.dart` maps every lesson and every quiz **skill** to those ids.
+Three deliberate choices:
+
+* **Ids, not inline URLs.** A URL written at each call site rots at each call
+  site. One entry changes and everything citing it follows.
+* **Primary publishers only** — CFPB, SEC/Investor.gov, IRS, SSA, FDIC, FTC,
+  BLS, DoL, Federal Student Aid, Treasury, MyMoney.gov. A bank's blog would be
+  easier to quote and would tie the curriculum's credibility to a company that
+  sells the products being explained. A `kTrustedSourceHosts` allowlist is
+  enforced by test, so broadening it is a deliberate decision.
+* **Quizzes cite by skill, not by question.** 161 questions would be 161 places
+  for a dead URL to hide, while the honest answer is the same for every
+  question on a topic. The effect is that adding a question in a new topic area
+  forces its author to say where the answer comes from.
+
+`test/lesson_sources_test.dart` fails the build when a lesson has no citation,
+when a citation points at an id that does not exist, when a source is not
+HTTPS or not on a trusted host, and when a source is defined but never used —
+because an unused citation is a URL nobody will notice has rotted.
+
+Sources render in three places: at the foot of every lesson, under each topic
+a player **got wrong** in a quiz review (the moment a citation is worth most —
+they have just been told an answer they did not expect), and in a full list
+behind the Academy's new credibility card.
+
+### The lessons were too short
+
+53 lessons now carry 79 added passages (`kLessonDeepDives`), merged at render
+time. They are written to add the thing the short version leaves out: a number,
+a mechanism, or the sentence that says what to actually do. A lesson that says
+"compound interest is powerful" and stops has taught a slogan — so the deep
+dive says 200 dollars a month for 40 years at 7 percent is about 96,000
+contributed and roughly half a million at the end, and that almost all of the
+gap appears in the final decade.
+
+The side-table approach matters: the lesson library is a 1,700-line `const` map
+inside a screen file, and editing 53 entries in place produces a diff nobody
+can review.
+
+### The Academy's credibility card
+
+New on the Academy: how many lessons, how many questions, which publishers, and
+one tap to the full source list. The counts are computed from the data rather
+than typed, so they cannot drift the way a hardcoded "50+ lessons!" would.
+
+Most learning apps ask to be believed implicitly — clean design, confident
+tone, no attribution anywhere — and a reader has no way to tell a researched
+lesson from one written from memory. Putting the claim on the front of the
+screen and making it checkable in one tap is both the honest thing and the
+habit being taught.
+
+### The town had one thing to say
+
+*"The main game map only has one type of generation."* The Adventure town is a
+fixed 50×50 map with six buildings, and each building had exactly one prompt
+and one set of choices — so the second visit to the Corner Store was the first
+visit, word for word.
+
+Building more map is the expensive answer. `town_scenarios.dart` is the cheap
+one that addresses the actual complaint: 12 new encounters across the six
+spots, rotating **daily**. Six buildings with one scene each is six things to
+do; six buildings with three each is eighteen, from data, on the same art.
+
+**Fixed within a day, different tomorrow.** A scene that rerolls on every entry
+is a slot machine and destroys the reason to have walked there; the town needs
+a *state* you can plan around. The spot id is mixed into the hash so the six
+buildings do not advance in lockstep.
+
+`town_scenarios_test.dart` checks the rotation reaches every scenario a spot
+has (a scene the rotation can never select is content nobody will ever see —
+worse than not writing it, because it looks written), that it is stable within
+a day and varies across a fortnight, and that **every encounter has at least
+one option that costs nothing**. That last one caught a real design flaw: the
+"buy 2 get 1 free" scene had three options and all three spent money, which
+teaches that spending is compulsory.
+
+**804 tests.**
+
+### Finance Brawl's two missing categories
+
+The 100-question bank covered the topics a *curriculum* lists — budgeting,
+savings, credit, investing, retirement — and went almost straight from "what
+is a budget" to "what is a 401(k)". The two areas an under-21 player actually
+meets first were the thinnest:
+
+* **Earning and work** — a first payslip, a W-4, overtime, a shift that pays
+  more per hour and costs more to reach.
+* **Scams, fees and fine print** — free trials that collect a card, overdraft
+  charges, phishing, unit pricing, the break-even sum on a membership.
+
+Twenty questions, in `brawl_questions_extra.dart` rather than in the 3,800-line
+game file, so the bank can grow without the screen growing with it and so the
+questions can be tested without pumping a game.
+
+**A note on answer position, because it looks like a bug.** Every correct
+answer in that file is written at index 0. In a bank the game read literally
+that would be fatal — an earlier Academy bank had the answer at index 1 for 30
+of 34 questions, so "always pick B" scored 88 percent without learning
+anything. Finance Brawl shuffles per encounter and compares the *text* of the
+chosen option (`ShuffledQuizQuestion` carries `correctOptionText`, not an
+index), so authored position never reaches a player. The test models the
+shuffle and asserts the property the player experiences — the answer lands in
+every slot, and no slot holds more than half — so the day that shuffle is
+removed, the build fails instead of the game quietly becoming guessable.

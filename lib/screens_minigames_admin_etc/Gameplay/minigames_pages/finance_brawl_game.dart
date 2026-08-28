@@ -13,6 +13,7 @@ import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/money_glyphs.dart';
 import '../../../widgets_custom_lotties/pixel_kit.dart';
+import '../../../models_Like_Skins_and_lessons_templates/brawl_questions_extra.dart';
 
 class FinanceBrawlCloseResult {
   const FinanceBrawlCloseResult({
@@ -39,6 +40,22 @@ class FinanceQuestion {
   final int correctIndex;
   final String explanation;
 }
+
+/// The extra bank, adapted to the game's own question type.
+///
+/// Kept as a separate model in `brawl_questions_extra.dart` so the bank can
+/// grow without this 3,800-line file growing with it, and so the questions can
+/// be tested without pumping a game.
+final List<FinanceQuestion> _extraBrawlQuestions = kBrawlExtraQuestions
+    .map(
+      (q) => FinanceQuestion(
+        question: q.question,
+        options: q.options,
+        correctIndex: q.correctIndex,
+        explanation: q.explanation,
+      ),
+    )
+    .toList(growable: false);
 
 class ShuffledQuizQuestion {
   ShuffledQuizQuestion({
@@ -2203,7 +2220,14 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   }
 
   void _triggerQuizGate() {
-    var pooledQuestions = List<FinanceQuestion>.from(_questionBank)
+    // The 100-question bank plus the two categories in
+    // `brawl_questions_extra.dart` — earning/work and scams/fees/fine print,
+    // the two areas an under-21 player actually meets first and the two the
+    // original bank was thinnest on.
+    var pooledQuestions = <FinanceQuestion>[
+      ..._questionBank,
+      ..._extraBrawlQuestions,
+    ]
       ..shuffle(_rand);
     var chosenRawQuestions = pooledQuestions.take(3).toList();
 

@@ -1094,6 +1094,232 @@ does not ship.
 *Fix:* documented in `tool/README.md`; run them with
 `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`.
 
+### Legibility
+
+**The sound toggle reset itself to off on every launch**
+`AppSoundService.enabled` declared a default, and then `initialize()` read the
+stored preference as `?? false`. A fresh install has no stored key, so the
+hardcoded fallback won and the declaration was decorative.
+*Fix:* `?? enabled`, so the field's default is the actual default.
+*Files:* `app_sound_service.dart`
+
+**Every audio asset path pointed at nothing**
+`assets/audio/` contained only `.gitkeep`, while `_assetPaths` listed ten WAVs.
+Sound was disabled by default with a comment blaming those files for sounding
+harsh — files that did not exist.
+*Fix:* `tool/make_sounds.py` synthesises all sixteen from the standard library
+(`wave`, `math`, `struct`). Named sources were not usable — CS:GO case audio is
+Valve's, Minecraft's music is Mojang's/C418's, and this app is going to the
+stores — but what makes a case roll work is the decelerating tick rhythm, which
+is reproducible and is not anyone's property.
+*Files:* `tool/make_sounds.py`, `app_sound_service.dart`, `customize_screen.dart`
+
+**A gold label on a gold chip: the "yellow text" report**
+The "MAIN GAME" pill wrote `#FFD45C` on an 18% wash of `#FFD45C`, measuring
+**3.48:1**. The same gold on the page background measures 10.3:1, so nothing
+about the colour was wrong — the wash raises the background *towards* the label.
+The pattern is everywhere: rarity badges, difficulty pills, stat meters,
+category tags. The navy legendary badge measured **1.04:1**, i.e. a badge with
+no letter on it.
+*Fix:* `AppTheme.tintedChip()` returns the fill and the ink as a pair, with the
+fill pre-blended to opaque so the label cannot inherit whatever is behind the
+chip. `test/contrast_audit_test.dart` walks nine screens and fails on anything
+below WCAG AA; it found 47 of these.
+*Files:* `app_theme.dart`, `main_game_page.dart`, `customize_screen.dart`,
+`minigames_page.dart`, `lesson_screen.dart`, `money_habits_screen.dart`,
+`life_sim_page.dart`, `life_money_panel.dart`, `habit_progress_grids.dart`
+
+**"Dark slate" was a mid tone, and twenty findings came from it**
+`panel_slate` is the app's main panel. The pack recolour left its centre at
+`#51655E`, so every caller — all of which wrote their text for a dark surface —
+was wrong at once: gold body text at 3.73:1, muted greys at 2.5–3.2:1.
+*Fix:* `tool/build_ui_pack.py` dims that one asset to 0.60 after recolouring
+(centre `#303C38`), and `PixelFrameStyle` now carries the measured surface plus
+inks that clear AA against it. `test/pixel_kit_test.dart` decodes the real PNGs
+and checks the constants, so recolouring fails the build rather than silently
+producing unreadable panels.
+*Files:* `tool/build_ui_pack.py`, `pixel_kit.dart`, `test/pixel_kit_test.dart`
+
+**A nine-slice too small to draw fell back to the wrong colour**
+`PixelFrame` used one hardcoded dark green as the fallback fill for all four
+styles. A parchment panel squeezed below its own corner size therefore flipped
+to dark green while its text stayed dark ink — legible copy becoming invisible
+on a narrow phone, with nothing in the source to suggest it.
+*Fix:* the fallback is `style.surface`.
+*Files:* `pixel_kit.dart`
+
+**The contrast audit's first run was almost entirely false positives**
+Compositing flattened to opaque after a single layer, so "white at 6% over
+white at 10% over a dark page" — the app's most common card — reported as solid
+white, and every white caption on it looked like a 1:1 failure.
+*Fix:* source-over that preserves alpha, and keep climbing the tree until a
+layer is actually opaque. A second pass excluded emoji, which are colour
+bitmaps and ignore the declared text colour.
+*Files:* `test/contrast_audit_test.dart`
+
+**A contrast fix turned a mint icon near-black and still failed**
+`legibleOn` picked its direction from the surface's luminance — right for a
+clearly dark or light ground, wrong for the mid-tones this app is full of. An
+accent badge is a wash of its own accent, so it lands mid.
+*Fix:* walk both directions and take whichever reaches the target with the
+smaller change.
+*Files:* `app_theme.dart`
+
+**A chip blended its base over its own colour**
+The arcade `_MetaChip` computed the card colour it sits on by lerping in *the
+chip's* tint instead of the card's. The neutral near-white "5–10 min" chip
+therefore invented a pale card that no text could sit on, and the fix briefly
+looked like a regression.
+*Fix:* the chip takes `cardAccent` explicitly.
+*Files:* `minigames_page.dart`
+
+**The kit-constant test hung until the runner killed it**
+`test/pixel_kit_test.dart` decoded PNGs inside `testWidgets`. Image decoding is
+real asynchronous engine work, and inside a widget test's fake-async zone the
+future is never completed.
+*Fix:* plain `test`, reading bytes from disk with `dart:io`.
+*Files:* `test/pixel_kit_test.dart`
+
+### Onboarding, audio and the jar
+
+**The coach card overflowed a phone from step two onward**
+Four ordinary-looking children in the tour card's footer — a counter, Back,
+Skip and a 116px Next — came to 372px inside 333 on a 393px phone, because
+Material's text buttons carry a 64px minimum width and a 48px tap target on
+top of their padding. Back only exists from the second step, so it appeared
+mid-tour, on some devices, and vanished when the tour closed: a red flash the
+user could not screenshot.
+*Fix:* flexible counter, compact button style, and a primary button that
+shrinks from 104px when the row is tight. `tutorial_test.dart` walks the whole
+tour at six viewports.
+*Files:* `coach_mark.dart`, `test/tutorial_test.dart`
+
+**The tour described the app instead of showing it**
+`TutorialScreen.show` pushed a full-screen deck, so a player who read all
+eleven pages still had to go and find every feature afterwards.
+*Fix:* `CoachMarkOverlay` is drawn by `MainNavigation` as a layer over the live
+`IndexedStack`, spotlighting real widgets and switching tabs underneath as it
+goes. Profile asks for a replay through `AppSettingsController` rather than
+pushing anything, because it is a screen inside the shell that draws the tour.
+*Files:* `main_navigation.dart`, `coach_mark.dart`, `app_settings_controller.dart`,
+`profile_screen.dart`
+
+**The case-roll sound was out of sync by however slow your connection was**
+The ratchet started in `_openCase()` *before* the awaited network call that
+decides the result, and the reward chime played before `showDialog` — 4.2
+seconds before the reveal it was announcing.
+*Fix:* both moved into `_CaseRollDialog`, which owns the reel. The ratchet
+starts on the same frame as the animation, the chime plays on reveal, and Skip
+stops the ratchet with the picture.
+*Files:* `customize_screen.dart`, `app_sound_service.dart`
+
+**The reel travelled a different distance for every skin**
+`4 * catalogue + indexOf(winner)` tiles, so no pre-rendered ratchet could ever
+match more than one result — and the reel showed the same parade in the same
+order on every open.
+*Fix:* the strip is built around the known result (random filler, winner at a
+fixed index), and `tool/make_sounds.py` emits one tick per tile crossing by
+inverting the reel's own easing curve. `case_roll_sync_test.dart` reads the
+item count, duration and curve from both files and fails if they disagree.
+*Files:* `customize_screen.dart`, `tool/make_sounds.py`, `test/case_roll_sync_test.dart`
+
+**The savings jar frowned when you were doing well**
+Canvas y grows downward, so a quadratic control point *below* the endpoints
+makes a smile. The mouth had the sign inverted, so the jar pulled a face at
+players for keeping a streak and grinned at them for abandoning it.
+*Fix:* signs corrected, and `savings_jar_test.dart` renders the widget and
+measures the mouth's curvature so it cannot silently flip again.
+*Files:* `savings_jar_widget.dart`, `test/savings_jar_test.dart`
+
+**The jar showed four states for a continuous number**
+Progress was a Material glyph at one of four sizes, so a player earning habit
+points saw nothing change for most of a stage.
+*Fix:* a painted glass jar with coins clipped inside, whose count follows
+`MoneyHabitController.jarFill` — a fraction of the *whole* ladder, not of the
+current stage, which used to reset to zero at the exact moment the player was
+being congratulated.
+*Files:* `savings_jar_widget.dart`, `money_habit_controller.dart`,
+`money_habits_screen.dart`
+
+**Three of four Money Habits tabs were never laid out in the sweep**
+The viewport sweep and the contrast audit both saw only the first tab, so the
+jar tab shipped unchecked.
+*Fix:* an `initialTab` seam on `MoneyHabitsScreen`, the same shape as
+`LifeSimPage.debugInitialLife`. It immediately caught the jar's milestone pips
+at 3.2:1.
+*Files:* `money_habits_screen.dart`, `test/responsive_layout_test.dart`,
+`test/contrast_audit_test.dart`
+
+**Rendering a widget to pixels in a widget test hangs the runner**
+`toImage` and `toByteData` are real engine work; inside a widget test's
+fake-async zone their futures are never completed, so the test runs until the
+harness kills it instead of failing.
+*Fix:* wrap the capture in `tester.runAsync`. (The same class of problem as the
+PNG-decoding test in `pixel_kit_test.dart`, which uses a plain `test` instead.)
+*Files:* `test/savings_jar_test.dart`
+
+### Content, credibility and audio levels
+
+**Every UI sound was mixed at the same loudness**
+`tool/make_sounds.py` normalised all sixteen files to a single peak, so the
+click under a tab switch — which fires dozens of times a session — was as loud
+as opening a case.
+*Fix:* per-file peak targets (navigation 0.22, taps 0.30–0.34, rewards
+0.62–0.80) plus a per-effect playback volume in `AppSoundService`, so overall
+loudness can change without regenerating the files.
+*Files:* `tool/make_sounds.py`, `app_sound_service.dart`
+
+**The de-click fade was eating short sounds**
+A symmetric 10ms fade on a 55ms navigation blip whose peak is in the first
+millisecond flattened the attack, and the file came out at roughly half its
+requested level.
+*Fix:* asymmetric — 1.5ms in, 10ms out. Long enough to remove the
+discontinuity, short enough to keep the transient.
+*Files:* `tool/make_sounds.py`
+
+**The town said the same thing every visit**
+Six buildings, one prompt and one choice set each, so the second visit to any
+of them was the first visit word for word.
+*Fix:* `town_scenarios.dart` adds 12 encounters that rotate daily — fixed
+within a day so the town has a state you can plan around, different tomorrow.
+*Files:* `town_scenarios.dart`, `town_interior_screen.dart`
+
+**A town scene where every option cost money**
+The "buy 2 get 1 free" encounter offered three choices and all three spent
+something, which teaches that spending is compulsory.
+*Fix:* a fourth option that costs nothing, and a test asserting every encounter
+has one.
+*Files:* `town_scenarios.dart`, `test/town_scenarios_test.dart`
+
+**Lessons made claims with nothing behind them**
+Nothing in the Academy said where any fact came from, so a researched lesson
+and one written from memory looked identical to a reader.
+*Fix:* `lesson_sources.dart` (39 citations, primary publishers only, enforced
+by an allowlist) plus `lesson_extras.dart` mapping every lesson and every quiz
+skill to them. `test/lesson_sources_test.dart` fails the build on an uncited
+lesson, a broken citation, a non-HTTPS or untrusted source, or a source that is
+defined and never used.
+*Files:* `lesson_sources.dart`, `lesson_extras.dart`, `lesson_detail_screen.dart`,
+`quiz_widgets.dart`, `curriculum_sources_card.dart`
+
+**Finance Brawl never asked about a payslip or a free trial**
+The 100-question bank covered curriculum topics and skipped the two areas an
+under-21 player meets first — earning/work and scams/fees/fine print.
+*Fix:* 20 questions in `brawl_questions_extra.dart`, kept out of the 3,800-line
+game file so they can be tested without pumping a game. The test models the
+game's per-encounter option shuffle and asserts the correct answer reaches
+every slot, so the source's authored index can never become guessable.
+*Files:* `brawl_questions_extra.dart`, `finance_brawl_game.dart`,
+`test/brawl_extra_questions_test.dart`
+
+**The arcade had nothing for a younger player**
+Two hard games, both requiring reading and quick recall.
+*Fix:* Coin Cascade — a match-3 where needs pay bills, wants raise them and
+savings win the run. Pure-Dart engine, 19 tests, including one asserting that a
+bot taking the first legal swap it sees does *not* always win.
+*Files:* `coin_cascade_models.dart`, `coin_cascade_page.dart`,
+`test/coin_cascade_test.dart`, `arcade_catalog.dart`, `minigames_page.dart`
+
 ---
 
 ## Testing
@@ -1102,9 +1328,39 @@ does not ship.
 flutter analyze && flutter test
 ```
 
-673 tests covering responsive layout at eight viewports (including the Life
+812 tests covering responsive layout at eight viewports (including the Life
 sim itself, Feedback, and the Adventure map-pending screen), the money
-panel at seven widths, the life-event chain wiring, price-chart zoom/pan/scrub, chart painters against pathological input,
-working-order accounting, the Life simulation rules and its budgeting
-model, town-map reachability, the side-walk frame selection, candle
-caching, the quiz bank, and asset integrity.
+panel at seven widths, the life-event chain wiring, price-chart zoom/pan/scrub,
+chart painters against pathological input, working-order accounting, the Life
+simulation rules and its budgeting model, town-map reachability, the side-walk
+frame selection, candle caching, the quiz bank, and asset integrity.
+
+Two of those suites are worth calling out because they measure rendered output
+rather than logic:
+
+* **`contrast_audit_test.dart`** walks the real widget tree of nine screens and
+  fails on any text below WCAG AA (4.5:1, relaxed to 3:1 for large or bold
+  text, which is the standard's own allowance). It found 47 illegible labels on
+  its first run. Anything it cannot resolve — text over a sprite, over a
+  `CustomPaint` — is skipped rather than guessed at, and emoji are excluded
+  because they are colour bitmaps that ignore the declared text colour.
+* **`pixel_kit_test.dart`** decodes the generated UI-pack PNGs and checks that
+  each surface's declared colour and ink constants still match the art, so a
+  change to `tool/build_ui_pack.py` fails the build instead of quietly making
+  those constants wrong.
+* **`savings_jar_test.dart`** renders the coin jar and reads the pixels back —
+  gold rises with the fill, the coin line climbs with it, and the mouth curves
+  the right way per mood. It exists because the mouth's sign was inverted for
+  months without anyone being able to see it in source.
+* **`case_roll_sync_test.dart`** reads the roll duration, tile count and easing
+  curve out of both `customize_screen.dart` and `tool/make_sounds.py`, because
+  the pre-rendered ratchet only lines up with the reel while those agree and
+  nothing in the compiler links the two.
+* **`lesson_sources_test.dart`** is the one the curriculum's credibility rests
+  on: it fails the build if any lesson ships without a citation, if a citation
+  points at a source that does not exist, if a source is not HTTPS or not on
+  the trusted-publisher allowlist, or if a source is defined and never used.
+* **`coin_cascade_test.dart`** drives the match-3 engine through whole runs —
+  including an assertion that a bot taking the first legal swap it sees does
+  *not* always win, because a game a random player always wins has no decisions
+  in it.
