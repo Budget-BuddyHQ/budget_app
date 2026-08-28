@@ -84,8 +84,8 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'The shelf label says CHIPS — \$4. There is also a bigger bag for '
         '\$6 that holds three times as much.',
-    tileX: 31,
-    tileY: 4,
+    tileX: 11,
+    tileY: 14,
     choices: [
       TownChoice(
         label: 'Buy the \$4 bag',
@@ -121,8 +121,8 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'A teller waves you over. "Want to open a savings account? Money in '
         'here grows a little every year on its own."',
-    tileX: 39,
-    tileY: 7,
+    tileX: 37,
+    tileY: 13,
     choices: [
       TownChoice(
         label: 'Deposit 20 coins',
@@ -155,8 +155,8 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     kind: TownSpotKind.school,
     title: 'School',
     prompt: 'The library is open and nobody is using the money-skills shelf.',
-    tileX: 15,
-    tileY: 16,
+    tileX: 10,
+    tileY: 37,
     choices: [
       TownChoice(
         label: 'Read for an hour',
@@ -181,8 +181,8 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'Two cards are pinned up. One pays 15 coins today. One pays 40 coins '
         'but takes all weekend.',
-    tileX: 38,
-    tileY: 14,
+    tileX: 36,
+    tileY: 37,
     choices: [
       TownChoice(
         label: 'Take the quick job (15)',
@@ -217,8 +217,8 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'Your budget notebook is open on the kitchen table, a few days '
         'behind.',
-    tileX: 13,
-    tileY: 30,
+    tileX: 27,
+    tileY: 42,
     choices: [
       TownChoice(
         label: 'Fill in the missing days',
@@ -243,8 +243,8 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'A hand-written note is pinned here: "Whoever keeps track of the '
         'small stuff ends up with the big stuff. — a neighbour"',
-    tileX: 25,
-    tileY: 20,
+    tileX: 32,
+    tileY: 24,
     choices: [
       TownChoice(
         label: 'Take the note',
@@ -297,8 +297,8 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
     id: 'npc_taxer',
     name: 'Tax Collector',
     look: TownNpcLook.taxer,
-    tileX: 37,
-    tileY: 8,
+    tileX: 34,
+    tileY: 16,
     lines: [
       'Your paycheck is smaller than your pay rate. The gap is taxes — '
           'and it comes out before you ever see the money.',
@@ -312,8 +312,8 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
     id: 'npc_shopper',
     name: 'Shopper',
     look: TownNpcLook.customer,
-    tileX: 29,
-    tileY: 6,
+    tileX: 14,
+    tileY: 16,
     lines: [
       'I nearly bought this twice. Waiting a day is the cheapest trick '
           'I know.',
@@ -326,8 +326,8 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
     id: 'npc_saver',
     name: 'Careful Spender',
     look: TownNpcLook.fancy,
-    tileX: 23,
-    tileY: 21,
+    tileX: 22,
+    tileY: 24,
     lines: [
       'I pay myself first — a slice goes to savings the day money arrives, '
           'before anything else gets a turn.',
@@ -339,8 +339,8 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
     id: 'npc_worker',
     name: 'Shift Worker',
     look: TownNpcLook.worker,
-    tileX: 36,
-    tileY: 15,
+    tileX: 33,
+    tileY: 27,
     lines: [
       'Every job is really trading hours for money. Worth asking what an '
           'hour of yours is worth.',
@@ -358,8 +358,8 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
     // from its feet, so its head visibly clipped into the scenery above.
     // Every NPC tile is now checked for two clear rows overhead; see
     // `test/town_map_test.dart`.
-    tileX: 17,
-    tileY: 21,
+    tileX: 13,
+    tileY: 27,
     lines: [
       'The library has a whole shelf on money and nobody touches it.',
       'I learned more about budgeting from tracking one week of spending '
@@ -370,8 +370,8 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
     id: 'npc_neighbour',
     name: 'Neighbour',
     look: TownNpcLook.fancy,
-    tileX: 33,
-    tileY: 22,
+    tileX: 28,
+    tileY: 27,
     lines: [
       'An emergency fund is boring right up until the week it saves you.',
       'Start with one month of costs. That first month changes the most.',
@@ -387,26 +387,17 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
 /// select rather than somewhere you live. `test/town_map_test.dart` checks
 /// this tile is walkable, reachable, and has two clear rows overhead so the
 /// sprite does not clip the house.
-const ({int x, int y}) kTownSpawnTile = (x: 13, y: 31);
+const ({int x, int y}) kTownSpawnTile = (x: 26, y: 42);
 
 /// Coin pickups scattered on confirmed-walkable tiles across the open
 /// middle of the map, so exploring pays a little on its own.
 const List<({int x, int y, int value})> kTownCoins =
     <({int x, int y, int value})>[
-      (x: 24, y: 6, value: 3),
-      (x: 34, y: 10, value: 3),
-      // Was (12, 20) — that tile turned out to sit on the west ledge, which is
-      // now correctly solid (see the `terrain_cliff` layer). Moved into the
-      // southern strip, which reopened once the road tiles were freed from the
-      // collider layer, so there is a reason to cross the road.
-      (x: 12, y: 44, value: 5),
-      (x: 44, y: 21, value: 5),
-      (x: 20, y: 24, value: 3),
-      (x: 30, y: 31, value: 5),
+      (x: 25, y: 8, value: 3),
+      (x: 25, y: 17, value: 3),
       (x: 8, y: 24, value: 3),
-      // Was (27, 36) — that tile is now inside the sealed hill band (map rows
-      // 34-37, see docs/ADVENTURE_TOWN.md), so the highest-value coin had
-      // become physically unreachable. Moved to the far south-east corner:
-      // still the longest walk on the map, still north of the hill.
-      (x: 47, y: 32, value: 8),
+      (x: 41, y: 24, value: 5),
+      (x: 25, y: 31, value: 5),
+      (x: 18, y: 24, value: 3),
+      (x: 25, y: 44, value: 5),
     ];

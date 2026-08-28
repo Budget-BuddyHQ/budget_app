@@ -2785,4 +2785,427 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       ),
     ],
   ),
+
+  // ------------------------- Unit 12 · Big Purchases -------------------------
+  'lesson_53': _LessonContent(
+    icon: Icons.directions_car_rounded,
+    objectives: [
+      'List the costs a sticker price leaves out',
+      'Explain why a cheap car can be the expensive one',
+      'Estimate a yearly cost of ownership before buying',
+    ],
+    keyTerms: {
+      'Depreciation': 'the value a car loses just by getting older',
+      'Total cost of ownership':
+          'purchase price plus fuel, insurance, maintenance, tax and repairs',
+      'Running costs': 'what the car takes from you every month you keep it',
+    },
+    takeaway:
+        'The sticker is the entry fee. Insurance, fuel, tax and repairs are '
+        'the subscription, and the subscription is usually the bigger number.',
+    sections: [
+      _LessonSection(
+        title: 'The price is the smallest question',
+        content:
+            'Two cars at the same price are not the same purchase. One may '
+            'cost twice as much to insure, drink twice the fuel and need '
+            'parts that are hard to get. Ask what a year of owning it costs '
+            'before you ask what it costs to drive away.',
+      ),
+      _LessonSection(
+        title: 'Depreciation is a real cost even if no bill arrives',
+        content:
+            'A new car loses value fastest in its first years. You do not feel '
+            'it monthly, but you pay it the day you sell. Buying something a '
+            'few years old lets the first owner absorb that drop for you.',
+      ),
+      _LessonSection(
+        title: 'Insurance before you commit',
+        content:
+            'Get an insurance quote for the exact car before you buy it, not '
+            'after. Two similar cars can differ enormously, and a quote takes '
+            'minutes — this is the single easiest way to avoid a nasty '
+            'surprise in month one.',
+      ),
+    ],
+  ),
+  'lesson_54': _LessonContent(
+    icon: Icons.request_quote_rounded,
+    objectives: [
+      'Separate the monthly payment from the total price',
+      'Explain what APR includes that an interest rate does not',
+      'Say why a longer loan term costs more overall',
+    ],
+    keyTerms: {
+      'APR':
+          'the yearly cost of borrowing including fees, not just interest',
+      'Term': 'how many months you will be making payments',
+      'Principal': 'the amount you actually borrowed',
+      'Negative equity': 'owing more on the car than the car is worth',
+    },
+    takeaway:
+        'A dealer sells you a monthly payment; a lender sells you a total. '
+        'Multiply the payment by the term before you agree to anything.',
+    sections: [
+      _LessonSection(
+        title: 'The monthly payment is the sales pitch',
+        content:
+            '"Only 240 a month" is not a price. Ask for the term, multiply, '
+            'and compare that to the car. A payment can always be made '
+            'smaller by stretching the loan — which makes the total bigger.',
+      ),
+      _LessonSection(
+        title: 'Why a longer term costs more',
+        content:
+            'A longer loan means more months of interest on a balance that '
+            'falls more slowly. The payment drops and the total rises. Those '
+            'two facts feel contradictory, which is exactly why the tactic '
+            'works.',
+      ),
+      _LessonSection(
+        title: 'APR is the number that compares',
+        content:
+            'APR folds fees into the rate, so it is the figure that lets you '
+            'compare two offers honestly. A lower interest rate with higher '
+            'fees can be the worse deal, and APR is what exposes that.',
+      ),
+      _LessonSection(
+        title: 'Get the loan before the showroom',
+        content:
+            'Arranging finance with your own bank or credit union first gives '
+            'you a rate to beat. Walking in pre-approved changes the '
+            'conversation from "what payment can you afford" to "can you beat '
+            'this number".',
+      ),
+    ],
+  ),
+  'lesson_55': _LessonContent(
+    icon: Icons.apartment_rounded,
+    objectives: [
+      'Describe what a landlord checks before approving you',
+      'Explain what a lease commits you to',
+      'Judge whether a rent is affordable on your income',
+    ],
+    keyTerms: {
+      'Lease': 'a contract fixing your rent and your obligations for a term',
+      'Security deposit': 'money held against damage, returnable if you leave the place as you found it',
+      'Joint and several liability':
+          'each person on the lease is responsible for all of the rent, not just their share',
+    },
+    takeaway:
+        'A lease is the largest contract most people sign before a mortgage. '
+        'Read the exit terms before you read the kitchen.',
+    sections: [
+      _LessonSection(
+        title: 'What they check',
+        content:
+            'Landlords generally look at income, rental history and a credit '
+            'report. This is one of the first places a thin or damaged credit '
+            'file costs you something concrete — sometimes a bigger deposit, '
+            'sometimes a guarantor, sometimes the flat.',
+      ),
+      _LessonSection(
+        title: 'The 30% guide, and what it is for',
+        content:
+            'A long-standing housing guideline treats spending more than 30% '
+            'of income on housing as cost-burdened. It is a rule of thumb, not '
+            'a law — but if rent takes far more than that, the rest of the '
+            'budget has to give somewhere, and usually it is savings.',
+      ),
+      _LessonSection(
+        title: 'Splitting rent does not split the liability',
+        content:
+            'On a joint lease, if your flatmate does not pay, the landlord '
+            'can pursue you for the whole amount. "We each pay half" is an '
+            'agreement between you two; the lease is the agreement that '
+            'counts.',
+      ),
+    ],
+  ),
+  'lesson_56': _LessonContent(
+    icon: Icons.local_shipping_rounded,
+    objectives: [
+      'Total the real cost of moving in',
+      'Plan for the gap between deposit out and deposit back',
+      'Avoid the first-month cash crunch',
+    ],
+    keyTerms: {
+      'Move-in cost': 'everything due before you get keys',
+      'Utilities': 'power, water, heating, internet — usually separate from rent',
+      'Proration': 'paying part of a month when you move in mid-month',
+    },
+    takeaway:
+        'Moving in costs far more than one month of rent, and your old deposit '
+        'usually arrives after the new one is due.',
+    sections: [
+      _LessonSection(
+        title: 'Add it up before you sign',
+        content:
+            'First month, a security deposit, sometimes a last month, utility '
+            'connection charges, and everything a flat does not come with — '
+            'from a shower curtain to a bed. It is normal for this to be two '
+            'to three times the monthly rent.',
+      ),
+      _LessonSection(
+        title: 'The deposit gap',
+        content:
+            'You pay the new deposit before you get the old one back. If both '
+            'are a month of rent, you need both at once. This is the single '
+            'most common reason a first move goes onto a credit card.',
+      ),
+      _LessonSection(
+        title: 'Photograph everything on day one',
+        content:
+            'Date-stamped photos of every existing mark, taken before you '
+            'move anything in, is what turns "you damaged this" into a '
+            'settled question. It takes ten minutes and is worth a deposit.',
+      ),
+    ],
+  ),
+  'lesson_57': _LessonContent(
+    icon: Icons.compare_arrows_rounded,
+    objectives: [
+      'Compare buying, financing and waiting as three real options',
+      'Identify when not buying is the strongest move',
+      'Apply opportunity cost to a large purchase',
+    ],
+    keyTerms: {
+      'Opportunity cost': 'what the same money could have done instead',
+      'Sunk cost': 'money already spent, which should not drive the next choice',
+      'Cash purchase': 'buying outright, owing nothing afterwards',
+    },
+    takeaway:
+        'Waiting is a real option with a real return, and it is the one that '
+        'never appears on the forecourt.',
+    sections: [
+      _LessonSection(
+        title: 'Three options, not two',
+        content:
+            'Buy outright, finance, or do not buy yet. The third is usually '
+            'missing from the conversation because nobody in the room earns '
+            'anything from it.',
+      ),
+      _LessonSection(
+        title: 'What the money would have done',
+        content:
+            'Money spent on a depreciating thing is money not in an emergency '
+            'fund or an index fund. That is not an argument against ever '
+            'buying — it is the price tag the sticker leaves off.',
+      ),
+      _LessonSection(
+        title: 'Needing it is a real answer',
+        content:
+            'If a car is how you get to work, the analysis changes: no car '
+            'may cost you the job. Necessity is a legitimate reason to buy '
+            'the cheap reliable option now. It is not a reason to buy the '
+            'expensive one.',
+      ),
+    ],
+  ),
+
+  // -------------------- Unit 13 · Protecting Your Money --------------------
+  'lesson_58': _LessonContent(
+    icon: Icons.person_off_rounded,
+    objectives: [
+      'Describe how stolen details become opened accounts',
+      'Recognise the early signs before the damage compounds',
+      'Know the one site to go to first',
+    ],
+    keyTerms: {
+      'Identity theft': 'someone using your details to borrow or buy as you',
+      'Data breach': 'a leak of customer details from a company you used',
+      'Recovery plan': 'the step-by-step FTC process for undoing the damage',
+    },
+    takeaway:
+        'Identity theft is usually noticed on a statement or a credit report, '
+        'not at the moment it happens — which is why checking matters.',
+    sections: [
+      _LessonSection(
+        title: 'It rarely starts with you',
+        content:
+            'Most stolen details come from a breach at a company that held '
+            'them, not from something you did wrong. That is worth saying '
+            'plainly: being a victim here is usually not carelessness.',
+      ),
+      _LessonSection(
+        title: 'The early signs',
+        content:
+            'A bill for something you did not buy, a letter about an account '
+            'you did not open, a card declined for no reason, or a credit '
+            'report entry you do not recognise. Any one of these is worth '
+            'ten minutes of checking.',
+      ),
+      _LessonSection(
+        title: 'Where to go',
+        content:
+            'The FTC runs IdentityTheft.gov specifically for this. It builds '
+            'a recovery plan for your situation and produces the official '
+            'affidavit that banks and credit bureaus ask for — which is the '
+            'part that is hard to do on your own.',
+      ),
+    ],
+  ),
+  'lesson_59': _LessonContent(
+    icon: Icons.lock_rounded,
+    objectives: [
+      'Explain what a credit freeze does and does not do',
+      'Name the three bureaus a freeze must be placed with',
+      'Decide between a freeze and a fraud alert',
+    ],
+    keyTerms: {
+      'Credit freeze': 'a lock stopping new lenders from seeing your file',
+      'Fraud alert': 'a flag asking lenders to verify identity before lending',
+      'Credit bureau': 'a company that keeps your credit file — Equifax, Experian, TransUnion',
+    },
+    takeaway:
+        'A freeze is free, reversible, and the strongest single thing you can '
+        'do — but it only counts at the bureaus you actually freeze.',
+    sections: [
+      _LessonSection(
+        title: 'What it actually blocks',
+        content:
+            'Most lenders will not open an account without checking your '
+            'file. Freeze the file and that check fails, so the account does '
+            'not open. It does not touch your existing accounts, and it does '
+            'not affect your score.',
+      ),
+      _LessonSection(
+        title: 'All three, or it does not count',
+        content:
+            'There are three major bureaus and a freeze at one does nothing '
+            'at the other two. A lender only needs to reach one unfrozen file '
+            'to approve a fraudulent account, so this is a three-part job.',
+      ),
+      _LessonSection(
+        title: 'Freezing is free, and reversible',
+        content:
+            'Federal law makes placing and lifting a freeze free. You lift it '
+            'temporarily when you genuinely apply for credit. The friction is '
+            'the point — it is a few minutes against someone opening a loan '
+            'in your name.',
+      ),
+    ],
+  ),
+  'lesson_60': _LessonContent(
+    icon: Icons.fact_check_rounded,
+    objectives: [
+      'Get your report from the official free source',
+      'Know what to look for line by line',
+      'Dispute an entry that is not yours',
+    ],
+    keyTerms: {
+      'Credit report': 'the record of your accounts and payment history',
+      'Hard inquiry': 'a lender checking your file because you applied',
+      'Dispute': 'a formal challenge to an entry you believe is wrong',
+    },
+    takeaway:
+        'AnnualCreditReport.com is the federally authorised free source. '
+        'Anything charging you for the same report is selling you something '
+        'you are entitled to.',
+    sections: [
+      _LessonSection(
+        title: 'One official site',
+        content:
+            'AnnualCreditReport.com is the site set up under federal law for '
+            'free reports from all three bureaus. Search results are full of '
+            'lookalikes that want a subscription — this is the one that does '
+            'not.',
+      ),
+      _LessonSection(
+        title: 'What to scan for',
+        content:
+            'Accounts you do not recognise, addresses you never lived at, and '
+            'hard inquiries from lenders you never applied to. Those three '
+            'are how fraud shows up on paper.',
+      ),
+      _LessonSection(
+        title: 'Disputing works',
+        content:
+            'You have a right to dispute an entry, and the bureau has to '
+            'investigate. Wrong entries do get removed — but only for people '
+            'who look, which is most of the value of ever opening the report.',
+      ),
+    ],
+  ),
+  'lesson_61': _LessonContent(
+    icon: Icons.money_off_rounded,
+    objectives: [
+      'Identify fees that are opt-in rather than automatic',
+      'Explain what overdraft coverage actually buys',
+      'Choose account features that avoid fees entirely',
+    ],
+    keyTerms: {
+      'Overdraft': 'spending past your balance, if the bank allows it',
+      'Opt in': 'a choice you have to actively make — the default is off',
+      'Declined transaction': 'the free alternative to an overdraft fee',
+    },
+    takeaway:
+        'Some of the most expensive fees on a bank account are optional, and '
+        'the option was presented as a convenience.',
+    sections: [
+      _LessonSection(
+        title: 'Overdraft coverage is a choice',
+        content:
+            'For ATM and everyday debit card transactions, a bank generally '
+            'needs your opt-in before it can charge overdraft fees. Without '
+            'it the transaction is simply declined — which is free, and '
+            'briefly embarrassing rather than expensive.',
+      ),
+      _LessonSection(
+        title: 'Do the arithmetic on the convenience',
+        content:
+            'A flat fee on a small purchase is an enormous effective rate. '
+            'Paying a fixed charge so a coffee goes through is the most '
+            'expensive borrowing most people ever do, measured properly.',
+      ),
+      _LessonSection(
+        title: 'Pick the account, not the apology',
+        content:
+            'Accounts differ on monthly charges, minimum balances and ATM '
+            'fees. Choosing one that fits how you actually bank removes those '
+            'costs permanently, rather than fighting them one refund at a '
+            'time.',
+      ),
+    ],
+  ),
+  'lesson_62': _LessonContent(
+    icon: Icons.gavel_rounded,
+    objectives: [
+      'Escalate a problem in the right order',
+      'Use the federal complaint process',
+      'Know what debt collectors may and may not do',
+    ],
+    keyTerms: {
+      'Complaint': 'a formal, recorded report to a regulator',
+      'Debt collector': 'a company pursuing a debt, often bought from someone else',
+      'Validation': 'a collector\'s obligation to prove the debt is really yours',
+    },
+    takeaway:
+        'Complaining to the company first and the regulator second is not '
+        'politeness — it is the order that actually gets things fixed.',
+    sections: [
+      _LessonSection(
+        title: 'Company first, in writing',
+        content:
+            'Start with the company and keep a record: dates, names, and what '
+            'was said. Most problems end here, and the record is what makes '
+            'the next step work if they do not.',
+      ),
+      _LessonSection(
+        title: 'Then the CFPB',
+        content:
+            'The CFPB takes complaints about financial products and forwards '
+            'them to the company, which is expected to respond. A complaint '
+            'is on the record — a phone call is not.',
+      ),
+      _LessonSection(
+        title: 'Collectors have rules',
+        content:
+            'A collector has to tell you who they are and what the debt is, '
+            'and you can ask them to prove it is yours before paying '
+            'anything. Debts get sold with bad data attached; asking for '
+            'validation is normal, not obstructive.',
+      ),
+    ],
+  ),
 };

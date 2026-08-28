@@ -83,6 +83,44 @@ def _write(name: str, samples: list[float], peak_target: float = 0.86) -> None:
     print(f"  {name:24} {len(samples) / RATE:.2f}s")
 
 
+def _write_stereo(
+    name: str,
+    left: list[float],
+    right: list[float],
+    peak_target: float = 0.34,
+) -> None:
+    """Write one stereo 16-bit WAV, with **no edge fades**.
+
+    Deliberately different from [_write] on exactly that point. Fades exist
+    there to kill the click at the start and end of a one-shot effect. A
+    seamless loop is the opposite problem: playback runs off the end of this
+    file straight back into its start, so a fade at either edge is an audible
+    dip in the music every 48 seconds. [ambient_loop_stereo] instead makes the
+    join continuous by construction — every layer wraps — so there is nothing
+    here to de-click.
+
+    Both channels share one gain so the stereo image is not shifted by
+    normalising each side independently.
+    """
+    if not left or not right:
+        return
+    peak = max(max(abs(s) for s in left), max(abs(s) for s in right)) or 1.0
+    gain = peak_target / peak
+
+    frames = bytearray()
+    for l, r in zip(left, right):
+        for v in (l * gain, r * gain):
+            frames += struct.pack("<h", int(max(-1.0, min(1.0, v)) * 32767))
+
+    path = os.path.join(OUT, name)
+    with wave.open(path, "wb") as f:
+        f.setnchannels(2)
+        f.setsampwidth(2)
+        f.setframerate(RATE)
+        f.writeframes(bytes(frames))
+    print(f"  {name:24} {len(left) / RATE:.2f}s stereo")
+
+
 def _tone(freq: float, dur: float, *, decay=8.0, harmonics=(1.0, 0.0, 0.0)):
     """A pitched blip with an exponential decay.
 
@@ -239,45 +277,236 @@ def ui_blip(freq: float, dur: float, decay: float, harmonics=(1.0, 0.2, 0.0)):
     return _tone(freq, dur, decay=decay, harmonics=harmonics)
 
 
-def ambient_loop(seconds=24.0) -> list[float]:
-    """A calm, seamless pad-and-pluck loop.
+# ---------------------------------------------------------------------------
+# Ambient music
+# ---------------------------------------------------------------------------
+#
+# WHAT WAS WRONG WITH THE FIRST VERSION
+# -------------------------------------
+# It was a fixed A-and-E drone with random pentatonic plucks sprinkled on a
+# uniform 0.75s grid, 24 seconds long, in mono. Four things followed from
+# that, and all four are why it wore thin:
+#
+#   * **The harmony never moved.** One dyad for the whole loop, forever. A
+#     drone is a bed, not a piece of music, and the ear stops hearing a bed
+#     within a minute and starts hearing a hum.
+#   * **The melody had no phrasing.** A 62% chance of a note in *every* slot
+#     is a note roughly every 1.2 seconds with no rests, which reads as
+#     noodling rather than as a tune. Music needs silence to have shape.
+#   * **It repeated every 24 seconds**, which is short enough to notice.
+#   * **It was mono**, so it sat in the middle of your head instead of
+#     around you — the single biggest reason background music feels cheap.
+#
+# WHAT THIS DOES INSTEAD
+# ----------------------
+# An eight-chord progression in A natural minor (Am F C G Am Dm F Em), six
+# seconds each, 48 seconds total. Every chord is diatonic, which matters for
+# a specific reason: the melody is drawn from the A-minor pentatonic (A C D
+# E G), and those five notes are consonant against all six of those chords.
+# So the melody can still be generated rather than composed and *cannot*
+# produce a sour interval — the same safety the original relied on, but now
+# over harmony that actually moves. (This is why the turnaround is Em and not
+# a "stronger" E major: E major's G# clashes with the pentatonic's G.)
+#
+# Seamlessness is by construction rather than by fading the edges. Every
+# layer is mixed with wrap-around, so the last chord's pad tail and the final
+# plucks' decay ring *into the start of the file*. A fade at the boundary
+# would be an audible dip every 48 seconds; this way the join is inaudible
+# because there is no join.
 
-    Pentatonic on purpose: with no semitone clashes, notes chosen at random
-    cannot produce a sour interval, so a generated melody stays pleasant
-    without anyone composing it. This is the same reason wind chimes are
-    tuned that way.
+# root, then the pad voicing above it. Voiced to keep motion small between
+# neighbours rather than leaping an octave every six seconds.
+_PROGRESSION = (
+    ("Am", 110.00, (220.00, 261.63, 329.63)),
+    ("F", 87.31, (220.00, 261.63, 349.23)),
+    ("C", 130.81, (261.63, 329.63, 392.00)),
+    ("G", 98.00, (246.94, 293.66, 392.00)),
+    ("Am", 110.00, (220.00, 261.63, 329.63)),
+    ("Dm", 146.83, (220.00, 293.66, 349.23)),
+    ("F", 87.31, (220.00, 261.63, 349.23)),
+    ("Em", 82.41, (246.94, 329.63, 392.00)),
+)
 
-    The loop is made seamless by choosing a note grid that divides the total
-    length exactly and by the edge fades in [_write] — a background track
-    that clicks every 24 seconds is worse than silence.
+# A minor pentatonic, mid register. Deliberately capped below ~880Hz: the
+# old loop ran to C#6 and the result was tinkly over a low drone, with a
+# hollow middle where the music should have been.
+_PENTATONIC = (329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00)
+
+
+def _mix_wrap(dst: list[float], src: list[float], start: int, gain=1.0) -> None:
+    """Mix `src` into `dst` at `start`, wrapping past the end back to 0.
+
+    This is what makes the loop seamless: a note or pad tail that overhangs
+    the end of the file continues at the beginning, which is exactly where
+    playback goes next.
     """
-    rng = random.Random(11)
-    total = int(RATE * seconds)
-    out = [0.0] * total
+    n = len(dst)
+    if n == 0:
+        return
+    for i, v in enumerate(src):
+        dst[(start + i) % n] += v * gain
 
-    # A slow two-chord drone underneath, so the plucks have somewhere to sit.
-    for i in range(total):
+
+def _pad_voice(freq: float, dur: float, detune_cents: float) -> list[float]:
+    """One sustained pad note with a slow swell in and out.
+
+    Two oscillators a few cents apart, because the slow beating between them
+    is most of what separates a warm pad from a test tone. A quiet octave
+    above adds air without brightness.
+    """
+    n = int(RATE * dur)
+    out = [0.0] * n
+    f2 = freq * (2 ** (detune_cents / 1200.0))
+    attack = int(n * 0.35)
+    release = int(n * 0.45)
+    for i in range(n):
         t = i / RATE
-        swell = 0.5 + 0.5 * math.sin(2 * math.pi * t / seconds)
-        drone = (
-            math.sin(2 * math.pi * 110.0 * t) * 0.35
-            + math.sin(2 * math.pi * 164.81 * t) * 0.22
+        if i < attack:
+            env = i / attack
+        elif i > n - release:
+            env = (n - i) / release
+        else:
+            env = 1.0
+        env *= env  # squared, so the swell is gentle rather than linear
+        v = (
+            math.sin(2 * math.pi * freq * t)
+            + 0.85 * math.sin(2 * math.pi * f2 * t)
+            + 0.12 * math.sin(2 * math.pi * freq * 2 * t)
         )
-        out[i] += drone * 0.16 * (0.6 + 0.4 * swell)
+        out[i] = v * env
+    return out
 
-    # Pentatonic plucks on a fixed grid.
-    scale = [0, 2, 4, 7, 9, 12, 14, 16]
-    step = 0.75
-    n = 0
-    while n * step < seconds - 1.6:
-        if rng.random() < 0.62:
-            semitone = scale[rng.randrange(len(scale))]
-            freq = 440.0 * (2 ** (semitone / 12))
-            note = _tone(freq, 1.5, decay=3.2, harmonics=(1.0, 0.25, 0.08))
-            _mix(out, [v * 0.30 for v in note], int(n * step * RATE))
-        n += 1
 
-    return out[:total]
+def _bass_note(freq: float, dur: float) -> list[float]:
+    """The chord root, with a soft attack so it never thumps."""
+    n = int(RATE * dur)
+    out = [0.0] * n
+    attack = int(n * 0.25)
+    release = int(n * 0.4)
+    for i in range(n):
+        t = i / RATE
+        if i < attack:
+            env = i / attack
+        elif i > n - release:
+            env = (n - i) / release
+        else:
+            env = 1.0
+        out[i] = (
+            math.sin(2 * math.pi * freq * t)
+            + 0.18 * math.sin(2 * math.pi * freq * 2 * t)
+        ) * env * env
+    return out
+
+
+def _lowpass_circular(samples: list[float], coeff: float) -> list[float]:
+    """One-pole smoothing, run as if the signal were already looping.
+
+    Takes the edge off the synthesised harmonics so the result reads as warm
+    rather than buzzy — but the *circular* part is load-bearing, not a
+    flourish. Starting a one-pole filter from zero ramps the first few
+    milliseconds up from silence, and on a seamless loop that ramp lands
+    exactly at the join: measured, it made the loop point a 5x-larger sample
+    step than anywhere else in the file, which is a click every 48 seconds.
+    Priming the filter with the state it ends in makes the response periodic,
+    like the signal it is filtering.
+    """
+    prev = 0.0
+    for s in samples:  # warm-up pass, output discarded
+        prev += coeff * (s - prev)
+    out = [0.0] * len(samples)
+    for i, s in enumerate(samples):
+        prev += coeff * (s - prev)
+        out[i] = prev
+    return out
+
+
+def ambient_loop_stereo(chord_seconds=6.0) -> tuple[list[float], list[float]]:
+    """The 48-second stereo music bed. Returns (left, right)."""
+    rng = random.Random(7)
+    total = int(RATE * chord_seconds * len(_PROGRESSION))
+    left = [0.0] * total
+    right = [0.0] * total
+
+    # Chords overlap their neighbour so the harmony crossfades instead of
+    # pulsing; the overlap on the *last* chord wraps into the first.
+    overlap = chord_seconds * 0.5
+    voice_dur = chord_seconds + overlap
+
+    for index, (_name, root, voicing) in enumerate(_PROGRESSION):
+        start = int(index * chord_seconds * RATE)
+
+        # Bass stays centred — low frequencies carry no useful directional
+        # information and a panned bass just sounds lopsided. Its level is
+        # kept modest because a loud centred layer is also the thing that
+        # drags the stereo image back to mono.
+        bass = _bass_note(root, voice_dur)
+        _mix_wrap(left, bass, start, 0.24)
+        _mix_wrap(right, bass, start, 0.24)
+
+        # Each pad voice sits at a different point in the stereo field, is
+        # detuned differently, and reaches the two ears a few milliseconds
+        # apart. That last one is the Haas effect and it is doing most of the
+        # work: amplitude panning alone left the mix 95% correlated, which is
+        # very nearly mono, and a few ms of inter-channel delay widens it far
+        # more convincingly than turning the pan knob further would.
+        for v, freq in enumerate(voicing):
+            pan = -0.8 + 1.6 * (v / max(1, len(voicing) - 1))
+            detune = (-7.0, 4.0, 9.0)[v % 3]
+            voice = _pad_voice(freq, voice_dur, detune)
+            haas = int(RATE * 0.006 * pan)  # ±6ms, following the pan
+            _mix_wrap(left, voice, start, 0.13 * (1.0 - max(0.0, pan) * 0.75))
+            _mix_wrap(
+                right,
+                voice,
+                start + haas,
+                0.13 * (1.0 + min(0.0, pan) * 0.75),
+            )
+
+    # Melody, phrased. Each chord gets a short run of notes and then a rest,
+    # which is the difference between a tune and a note generator.
+    for index in range(len(_PROGRESSION)):
+        chord_start = index * chord_seconds
+        # Rest entirely on some chords — the space is what makes the phrases
+        # that do play read as deliberate.
+        if rng.random() < 0.22:
+            continue
+        note_count = rng.choice((2, 3, 3, 4))
+        cursor = chord_start + rng.uniform(0.0, 0.6)
+        for _ in range(note_count):
+            freq = _PENTATONIC[rng.randrange(len(_PENTATONIC))]
+            note = _tone(freq, 2.2, decay=2.6, harmonics=(1.0, 0.22, 0.06))
+            pan = rng.uniform(-0.5, 0.5)
+            level = rng.uniform(0.16, 0.26)
+            at = int(cursor * RATE)
+            _mix_wrap(left, note, at, level * (1.0 - max(0.0, pan)))
+            _mix_wrap(right, note, at, level * (1.0 + min(0.0, pan)))
+            cursor += rng.choice((0.5, 0.75, 0.75, 1.0, 1.5))
+            if cursor > chord_start + chord_seconds - 0.4:
+                break
+
+    # Cross-panned echoes. Four fixed taps rather than a feedback loop,
+    # because taps can be wrapped around the loop point and a feedback line
+    # cannot — and an echo that dies at the seam is the seam becoming
+    # audible.
+    echo_l = [0.0] * total
+    echo_r = [0.0] * total
+    tap = int(0.42 * RATE)
+    gain = 0.34
+    for n in range(1, 5):
+        offset = tap * n
+        g = gain ** n
+        # Swap sides each tap so the repeats bounce across the field.
+        src_l, src_r = (right, left) if n % 2 else (left, right)
+        for i in range(total):
+            j = (i + offset) % total
+            echo_l[j] += src_l[i] * g
+            echo_r[j] += src_r[i] * g
+
+    for i in range(total):
+        left[i] += echo_l[i]
+        right[i] += echo_r[i]
+
+    return _lowpass_circular(left, 0.42), _lowpass_circular(right, 0.42)
 
 
 def main() -> None:
@@ -329,8 +558,10 @@ def main() -> None:
         _write(f"unbox_{rarity}.wav", unbox(rarity), peak_target=level)
 
     # The quietest thing in the app by a wide margin: it is under everything
-    # else for as long as the app is open.
-    _write("ambient_loop.wav", ambient_loop(), peak_target=0.34)
+    # else for as long as the app is open. Written last because it is also by
+    # far the slowest to synthesise.
+    music_l, music_r = ambient_loop_stereo()
+    _write_stereo("ambient_loop.wav", music_l, music_r, peak_target=0.34)
 
 
 if __name__ == "__main__":
