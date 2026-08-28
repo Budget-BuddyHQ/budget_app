@@ -4,7 +4,8 @@ import 'package:budget_app/screens_minigames_admin_etc/Gameplay/core_bottom_page
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/customize_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/home_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/money_habits/money_habits_screen.dart';
-import 'package:budget_app/screens_minigames_admin_etc/onboarding/tutorial_screen.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/tutorial_steps.dart';
+import 'package:budget_app/screens_minigames_admin_etc/onboarding/coach_mark.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/personal_details_sheet.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -37,6 +38,17 @@ class _MainNavigationState extends State<MainNavigation> {
   /// personal-details sheet so the two first-run interruptions queue instead
   /// of stacking on top of each other.
   bool _tutorialResolved = false;
+
+  /// Whether the guided tour is currently on screen.
+  ///
+  /// The tour is a **layer over this widget**, not a route pushed on top of
+  /// it. That is the whole difference between the old deck and this one: a
+  /// route replaces the app with a description of the app, so a player who
+  /// read all seven pages still had to go and find everything afterwards.
+  /// Drawn here, each step spotlights the real widget on the real screen, and
+  /// switching steps switches tabs underneath — so by the time the tour ends
+  /// the player has already been everywhere it talks about.
+  bool _touring = false;
 
   @override
   void initState() {
@@ -85,33 +97,65 @@ class _MainNavigationState extends State<MainNavigation> {
   /// show the whole tour again to an existing player on every cold start.
   void _maybeShowTutorial() {
     final settings = _settings;
-    if (_tutorialResolved || settings == null || !mounted) {
+    if (settings == null || !mounted || _touring) {
       return;
     }
-    if (!settings.isInitialized) {
-      return;
+    // A replay request is honoured even for a player who has already seen the
+    // tour — that is the whole point of the button in Profile — and it does
+    // *not* wait on `isInitialized`. That gate exists so the automatic
+    // first-run decision is never made from a pre-read default; an explicit
+    // "show me the tour again" has nothing to read.
+    final replay = settings.tutorialReplayRequested;
+    if (replay) {
+      settings.consumeTutorialReplay();
+    } else {
+      if (_tutorialResolved) {
+        return;
+      }
+      if (!settings.isInitialized) {
+        return;
+      }
+      _tutorialResolved = true;
+      if (!settings.isTutorialDue) {
+        _maybeAskForPersonalDetails();
+        return;
+      }
     }
 
-    _tutorialResolved = true;
-
-    if (!settings.isTutorialDue) {
-      _maybeAskForPersonalDetails();
-      return;
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
       }
-      final jumpTab = await TutorialScreen.show(context);
-      if (!mounted) {
-        return;
-      }
-      if (jumpTab != null) {
-        _selectTab(jumpTab);
-      }
-      _maybeAskForPersonalDetails();
+      setState(() => _touring = true);
     });
+  }
+
+  /// Ends the tour — finished or skipped, same result — and hands off to the
+  /// personal-details sheet so the two first-run interruptions queue.
+  Future<void> _finishTour() async {
+    if (!_touring) {
+      return;
+    }
+    setState(() => _touring = false);
+    await _settings?.markTutorialSeen();
+    if (!mounted) {
+      return;
+    }
+    _maybeAskForPersonalDetails();
+  }
+
+  /// Switches tabs for a tour step and waits for the new screen to lay out.
+  ///
+  /// The wait is not politeness. `IndexedStack` keeps every screen alive, but
+  /// a screen that has never been the visible child has no laid-out geometry
+  /// to measure, so a spotlight that asks for its target in the same frame
+  /// gets the *previous* screen's rectangle and lands on whatever happened to
+  /// be in that spot.
+  Future<void> _tourWantsTab(int index) async {
+    if (_currentIndex != index) {
+      setState(() => _currentIndex = index);
+    }
+    await WidgetsBinding.instance.endOfFrame;
   }
 
   /// Prompts once per app run for the age/gender details, but only after the
@@ -161,6 +205,25 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    final app = _buildApp(context);
+    if (!_touring) {
+      return app;
+    }
+    return Stack(
+      children: [
+        app,
+        Positioned.fill(
+          child: CoachMarkOverlay(
+            steps: kTutorialSteps,
+            onFinished: _finishTour,
+            onWantTab: _tourWantsTab,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildApp(BuildContext context) {
     return Column(
       children: [
         _TopIconBar(currentIndex: _currentIndex, onSelected: _selectTab),
@@ -282,6 +345,7 @@ class _TopIconBar extends StatelessWidget {
                 icon: Icons.savings_rounded,
                 active: currentIndex == AppTabIndex.daily,
                 compact: narrow,
+                tourId: 'daily',
                 onTap: () => onSelected(AppTabIndex.daily),
               ),
               // Expanded on both sides keeps the wordmark optically centred
@@ -308,13 +372,23 @@ class _TopIconBar extends StatelessWidget {
                   ),
                 ),
               ),
-              _LeaderboardIconButton(compact: narrow),
+              Builder(
+                builder: (context) {
+                  final key = _tourKeys.putIfAbsent(
+                    'leaderboard',
+                    GlobalKey.new,
+                  );
+                  TutorialTargets.register('leaderboard', key);
+                  return _LeaderboardIconButton(key: key, compact: narrow);
+                },
+              ),
               SizedBox(width: narrow ? 6 : 8),
               _TopIconButton(
                 label: 'Profile',
                 icon: Icons.person_rounded,
                 active: currentIndex == AppTabIndex.profile,
                 compact: narrow,
+                tourId: 'profile',
                 onTap: () => onSelected(AppTabIndex.profile),
               ),
             ],
@@ -329,7 +403,7 @@ class _TopIconBar extends StatelessWidget {
 /// (the leaderboard isn't one of the seven `IndexedStack` screens), a real
 /// push, same as Home's promo card already did.
 class _LeaderboardIconButton extends StatelessWidget {
-  const _LeaderboardIconButton({required this.compact});
+  const _LeaderboardIconButton({super.key, required this.compact});
 
   final bool compact;
 
@@ -373,6 +447,10 @@ class _LeaderboardIconButton extends StatelessWidget {
   }
 }
 
+/// One `GlobalKey` per top-bar button, kept outside the widget so a rebuild
+/// hands back the same key instead of orphaning the registered one.
+final Map<String, GlobalKey> _tourKeys = <String, GlobalKey>{};
+
 class _TopIconButton extends StatelessWidget {
   const _TopIconButton({
     required this.label,
@@ -380,12 +458,25 @@ class _TopIconButton extends StatelessWidget {
     required this.active,
     required this.onTap,
     this.compact = false,
+    this.tourId,
   });
 
   final String label;
   final IconData icon;
   final bool active;
   final VoidCallback onTap;
+
+  /// Registers this button as a coach-mark target under [tourId].
+  ///
+  /// Daily, the leaderboard and Profile live up here rather than in the
+  /// bottom bar, so `TutorialTargets.navTabRect` — which derives its
+  /// rectangle from the bottom bar's geometry — cannot find them. Without a
+  /// key the tour simply centred its card and pointed at nothing for three of
+  /// its eleven steps.
+  ///
+  /// Safe as a `GlobalKey` where the bottom tabs were not: this bar is built
+  /// once by `MainNavigation`, not once per screen in the `IndexedStack`.
+  final String? tourId;
 
   /// Tighter padding + slightly smaller text below ~380px wide, so the
   /// wordmark in the middle keeps its room on small phones. The label is
@@ -395,7 +486,12 @@ class _TopIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final id = tourId;
+    if (id != null) {
+      TutorialTargets.register(id, _tourKeys.putIfAbsent(id, GlobalKey.new));
+    }
     return Semantics(
+      key: id == null ? null : _tourKeys[id],
       button: true,
       selected: active,
       label: '$label tab',

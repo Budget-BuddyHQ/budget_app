@@ -102,6 +102,32 @@ class AppSettingsController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Set while somebody has asked to see the guided tour again.
+  ///
+  /// The tour is drawn by `MainNavigation`, because it spotlights the real
+  /// tabs — but the button that replays it lives in Profile, which is one of
+  /// the screens *inside* that navigation. So Profile cannot start the tour
+  /// itself, and it should not have to know how: it raises a flag here and
+  /// the shell, which is already listening to this controller, picks it up.
+  bool _replayRequested = false;
+
+  bool get tutorialReplayRequested => _replayRequested;
+
+  /// "Show me the tour again."
+  void requestTutorialReplay() {
+    if (_replayRequested) {
+      return;
+    }
+    _replayRequested = true;
+    notifyListeners();
+  }
+
+  /// Called by the shell once it has actually started the tour, so a later
+  /// rebuild does not restart it.
+  void consumeTutorialReplay() {
+    _replayRequested = false;
+  }
+
   /// Records that the tour is done with — finished or skipped, same result.
   Future<void> markTutorialSeen() async {
     if (_tutorialSeen) {

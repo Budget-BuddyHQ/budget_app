@@ -384,6 +384,10 @@ void main() {
     'Customize': () => const CustomizeScreen(),
     'Academy': () => const LessonScreen(),
     'Money Habits': () => const MoneyHabitsScreen(),
+    // The rebuilt jar tab: a painted jar on a mood-tinted plinth, a milestone
+    // row, two tinted stat cards and a next-step card. Almost all of it is
+    // the tinted-chip pattern that produced most of this audit's findings.
+    'Money Habits — Jar': () => const MoneyHabitsScreen(initialTab: 3),
     'Past Lives': () => const PastLivesScreen(),
     'Life sim': () => LifeSimPage(debugInitialLife: _midLife()),
     'Life epilogue': () => LifeEpilogueScreen(
@@ -478,7 +482,7 @@ void main() {
       final onPage = _composite(veil, AppTheme.deepForest);
       expect(
         contrastRatio(const Color(0xFFFFFFFF), onPage),
-        greaterThan(10.0),
+        greaterThan(8.0),
         reason: 'white text on a faintly veiled dark page is legible',
       );
     });

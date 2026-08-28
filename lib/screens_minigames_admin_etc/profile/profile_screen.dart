@@ -172,12 +172,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   /// Replays the guided tour on purpose.
   ///
-  /// Honours "Take me there" the same way the first-run flow does — but only
-  /// when Profile is hosted as a tab. Pushed as a standalone route there is
-  /// no tab bar to switch, so the request is simply dropped rather than
-  /// faked with a navigation the player didn't ask for.
+  /// Raises a flag on [AppSettingsController] rather than pushing a screen.
+  /// The tour spotlights the real tabs, which means it has to be drawn by the
+  /// navigation shell — and Profile is one of the screens inside that shell,
+  /// so it asks rather than acts. The shell is already listening.
+  ///
+  /// Falls back to the standalone deck when Profile is *not* hosted as a tab
+  /// (it can be pushed as its own route), because there are no tabs to point
+  /// at in that case and a spotlight with nothing under it is worse than a
+  /// description.
   Future<void> _replayTutorial(BuildContext context) async {
     HapticFeedback.lightImpact();
+
+    if (widget.onNavSelected != null) {
+      context.read<AppSettingsController>().requestTutorialReplay();
+      return;
+    }
+
     final jumpTab = await TutorialScreen.show(context);
     if (!mounted || jumpTab == null) {
       return;

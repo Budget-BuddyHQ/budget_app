@@ -55,6 +55,40 @@ class AppSoundService {
         AppSoundEffect.unboxEpic: 'audio/unbox_epic.wav',
         AppSoundEffect.unboxLegendary: 'audio/unbox_legendary.wav',
       };
+  /// Playback level per effect, 0..1.
+  ///
+  /// A second lever on top of the per-file peaks baked in by
+  /// `tool/make_sounds.py`, and worth having separately: the file levels are
+  /// the *mix* — how these sounds sit against each other — while this is the
+  /// app's overall loudness, which is the thing that turned out to be wrong
+  /// ("the sound is kind of high right now"). Changing one number here is
+  /// also something that can happen without regenerating sixteen files.
+  ///
+  /// Navigation is deliberately the quietest: it fires on every tab switch,
+  /// dozens of times a session, and anything that frequent has to be texture
+  /// rather than an announcement.
+  static const Map<AppSoundEffect, double> _volumes = <AppSoundEffect, double>{
+    AppSoundEffect.navigation: 0.22,
+    AppSoundEffect.tap: 0.34,
+    AppSoundEffect.selection: 0.34,
+    AppSoundEffect.needPickup: 0.42,
+    AppSoundEffect.wantHit: 0.46,
+    AppSoundEffect.error: 0.46,
+    AppSoundEffect.shutdown: 0.42,
+    AppSoundEffect.notification: 0.55,
+    AppSoundEffect.success: 0.58,
+    AppSoundEffect.celebration: 0.66,
+    AppSoundEffect.caseRoll: 0.50,
+    AppSoundEffect.unboxCommon: 0.58,
+    AppSoundEffect.unboxRare: 0.62,
+    AppSoundEffect.unboxEpic: 0.66,
+    AppSoundEffect.unboxLegendary: 0.70,
+  };
+
+  /// Anything not listed above. Middle of the range rather than full, so a
+  /// newly added effect is quiet by default and gets turned up on purpose.
+  static const double _defaultVolume = 0.5;
+
   static final Map<AppSoundEffect, AudioPlayer> _players =
       <AppSoundEffect, AudioPlayer>{};
 
@@ -99,7 +133,8 @@ class AppSoundService {
       // Loop, and at a level that sits under speech and effects rather than
       // competing with them. 0.28 was picked by ear against `tap.wav`.
       await player.setReleaseMode(ReleaseMode.loop);
-      await player.setVolume(0.28);
+      // Under the effects, which are themselves turned down — see [_volumes].
+      await player.setVolume(0.18);
       await player.play(AssetSource(_musicAsset));
       _music = player;
     } catch (error) {
@@ -209,6 +244,7 @@ class AppSoundService {
     if (assetPath != null && player != null) {
       try {
         await player.stop();
+        await player.setVolume(_volumes[effect] ?? _defaultVolume);
         await player.play(AssetSource(assetPath));
         return;
       } catch (error) {
@@ -217,6 +253,23 @@ class AppSoundService {
     }
 
     await _playSystemFallback(effect);
+  }
+
+  /// Cuts an effect off part-way through.
+  ///
+  /// Only meaningful for the long ones. [AppSoundEffect.caseRoll] runs for
+  /// 4.2 seconds in lockstep with the reel animation, so a player who taps
+  /// *Skip* has to have the ratchet stop with the picture — otherwise the
+  /// reward chime lands on top of ticks for a reel that is no longer moving,
+  /// which reads as the app having lost track of itself.
+  static Future<void> stop(AppSoundEffect effect) async {
+    final player = _players[effect];
+    if (player == null) return;
+    try {
+      await player.stop();
+    } catch (error) {
+      debugPrint('Could not stop ${effect.name}: $error');
+    }
   }
 
   static Future<void> _playSystemFallback(AppSoundEffect effect) async {

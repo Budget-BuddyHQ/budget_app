@@ -5,6 +5,14 @@ import '../models_Like_Skins_and_lessons_templates/money_habit_models.dart';
 import '../themes_colors/app_theme.dart';
 import 'fitted_label.dart';
 
+/// Mint that clears WCAG AA on [AppTheme.panelStrong], for the weekday
+/// initial marking today.
+final _todayMint = AppTheme.legibleOn(
+  AppTheme.greenPrimary,
+  AppTheme.panelStrong,
+);
+
+
 const List<String> _weekdayLabels = <String>['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 /// The Track tab's 7-day habit grid: one row per saved habit, one column
@@ -46,8 +54,12 @@ class HabitWeeklyTrackerGrid extends StatelessWidget {
                     child: Text(
                       _weekdayLabels[DateTime.parse(days[i]).weekday - 1],
                       style: GoogleFonts.pixelifySans(
+                        // Today's initial is the mint highlight, but mint on
+                        // [AppTheme.panelStrong] measures 3.95:1 — so the one
+                        // letter meant to stand out was the least readable of
+                        // the seven. Lifted just far enough to clear AA.
                         color: days[i] == today
-                            ? AppTheme.greenPrimary
+                            ? _todayMint
                             : AppTheme.textMuted,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,

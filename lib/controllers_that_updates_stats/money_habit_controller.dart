@@ -69,9 +69,29 @@ class MoneyHabitController extends ChangeNotifier {
 
   JarStage get jarStage => JarStage.forXp(jarXp);
 
-  JarMood get jarMood => JarMood.forDaysSinceActive(
-    HabitDateKeys.daysSince(_stats.stats.jarLastActive),
-  );
+  JarMood get jarMood => JarMood.forDaysSinceActive(daysSinceJarActive);
+
+  /// Days since the last habit was logged. Drives [jarMood], and shown
+  /// directly on the Jar tab — "slipping" is more actionable when the player
+  /// can see *how long* it has been.
+  int get daysSinceJarActive =>
+      HabitDateKeys.daysSince(_stats.stats.jarLastActive);
+
+  /// How full the jar is drawn, 0..1, across the **whole** ladder rather
+  /// than within the current stage.
+  ///
+  /// The stage-relative number resets to zero every time a stage is reached,
+  /// so the jar emptied itself at the exact moment the player was being
+  /// congratulated. Progress toward the next stage still has its own bar; the
+  /// glass shows the journey.
+  double get jarFill {
+    final top = JarStage.values.last.xpThreshold;
+    if (top <= 0) return 1;
+    // A little in the glass from the first point earned — an empty jar after
+    // a completed habit reads as the tap not having registered.
+    final raw = jarXp / top;
+    return (0.04 + raw * 0.96).clamp(0.0, 1.0);
+  }
 
   bool isSavedToday(String habitId) {
     final today = HabitDateKeys.todayKey();
