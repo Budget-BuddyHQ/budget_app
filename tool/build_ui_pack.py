@@ -268,6 +268,46 @@ def _downscale(img: Image.Image, rect, scale: float):
     )
 
 
+def dim(img: Image.Image, factor: float) -> Image.Image:
+    """Scale every pixel's brightness, leaving hue, saturation and alpha alone.
+
+    Used on `panel_slate`, which the recolour left at a mean of #51655E — a
+    *mid* tone, not the dark slate its name and its whole role in the app
+    imply. That difference is not cosmetic: it is the app's main panel, every
+    caller wrote its text for a dark surface, and on the real art gold body
+    text measured 3.73:1 and the muted greys 2.5-3.2:1. Roughly twenty of the
+    contrast audit's findings were this one asset.
+
+    Dimming rather than re-picking a colour keeps the bevel and the gold
+    filigree intact, because it scales the whole value ramp uniformly instead
+    of flattening it.
+    """
+    img = img.convert("RGBA")
+    px = img.load()
+    w, h = img.size
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if a == 0:
+                continue
+            px[x, y] = (
+                int(r * factor),
+                int(g * factor),
+                int(b * factor),
+                a,
+            )
+    return img
+
+
+# Output name -> brightness factor, applied after the recolour. See [dim].
+DIM = {
+    # 0.60 lands the centre on ~#303C38, where every colour in the app's
+    # palette clears WCAG AA against it: white 11.3:1, gold 6.9, mint 8.2,
+    # the muted grey 7.1, and the debt pink 5.4.
+    "panel_slate": 0.60,
+}
+
+
 JOBS = [
     ("Papers/RegularPaper.png", "panel_paper", TAN_TO_GOLD, 0.5),
     ("Papers/SpecialPaper.png", "panel_slate", TEAL_TO_GREEN, 0.5),
@@ -346,6 +386,8 @@ def main() -> None:
         src = Image.open(os.path.join(SRC, rel)).convert("RGBA")
         if rules:
             src = recolor(src, rules)
+        if name in DIM:
+            src = dim(src, DIM[name])
         # Slice at full resolution, *then* scale. Scaling first would move the
         # piece boundaries off the 64px grid and the band detection would find
         # the wrong seams.
@@ -361,6 +403,8 @@ def main() -> None:
         src = Image.open(os.path.join(SRC, rel)).convert("RGBA")
         if rules:
             src = recolor(src, rules)
+        if name in DIM:
+            src = dim(src, DIM[name])
         packed, slice_rect = extract_ribbon(src, row_index)
         if packed is None:
             continue

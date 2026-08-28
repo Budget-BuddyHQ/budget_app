@@ -19,6 +19,7 @@ import '../../../constants/app_assets.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/life_money_panel.dart';
 import '../../../widgets_custom_lotties/money_glyphs.dart';
+import '../../../widgets_custom_lotties/pixel_kit.dart';
 import '../../../widgets_custom_lotties/pixel_panel.dart';
 
 /// **Life** — the main game, in the BitLife format: a scrolling life feed up
@@ -614,12 +615,9 @@ class _HeaderBar extends StatelessWidget {
                 child: MoneyGlyphs('$money', height: 20),
               ),
             ),
-            Text(
+            const Text(
               'coins',
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.white.withValues(alpha: 0.55),
-              ),
+              style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
             ),
           ],
         ),
@@ -709,22 +707,22 @@ class _LifeFeed extends StatelessWidget {
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF8FB1).withValues(alpha: 0.14),
+                    color: _personChip.fill,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.favorite_rounded,
                         size: 11,
-                        color: Color(0xFFFF8FB1),
+                        color: _personChip.ink,
                       ),
                       const SizedBox(width: 5),
                       Text(
                         person,
-                        style: const TextStyle(
-                          color: Color(0xFFFF8FB1),
+                        style: TextStyle(
+                          color: _personChip.ink,
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                         ),
@@ -945,10 +943,14 @@ class _StatMeter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Opaque, so the figure below can be measured against a known colour
+    // instead of against "whatever the feed put behind this meter".
+    final chip = AppTheme.tintedChip(color, alpha: 0.12, target: 3.0);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: chip.fill,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
@@ -964,7 +966,7 @@ class _StatMeter extends StatelessWidget {
                 child: FittedLabel(
                   label,
                   style: GoogleFonts.quicksand(
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: AppTheme.textMuted,
                     fontSize: 10.5,
                     fontWeight: FontWeight.w800,
                   ),
@@ -974,7 +976,7 @@ class _StatMeter extends StatelessWidget {
               Text(
                 '$value',
                 style: GoogleFonts.pixelifySans(
-                  color: color,
+                  color: chip.ink,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -2907,6 +2909,16 @@ class _ThisYearPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Mint when you may go out, pink when you may not — on a 12% wash of that
+    // same colour, over the slate panel. Resolved opaque so the icon can be
+    // measured against it.
+    final outingChip = AppTheme.tintedChip(
+      outing.allowed ? const Color(0xFF4BD2A3) : const Color(0xFFFF8FB1),
+      alpha: 0.12,
+      on: PixelFrameStyle.slate.surface,
+      target: 3.0,
+    );
+
     return PixelPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2956,11 +2968,7 @@ class _ThisYearPanel extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color:
-                  (outing.allowed
-                          ? const Color(0xFF4BD2A3)
-                          : const Color(0xFFFF8FB1))
-                      .withValues(alpha: 0.12),
+              color: outingChip.fill,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -2971,9 +2979,7 @@ class _ThisYearPanel extends StatelessWidget {
                       ? Icons.directions_walk_rounded
                       : (outing.reason?.icon ?? Icons.lock_rounded),
                   size: 15,
-                  color: outing.allowed
-                      ? const Color(0xFF4BD2A3)
-                      : const Color(0xFFFF8FB1),
+                  color: outingChip.ink,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -2997,6 +3003,31 @@ class _ThisYearPanel extends StatelessWidget {
     );
   }
 }
+
+/// The relationship chip: pink text and a pink heart on a 14% pink wash.
+/// Three shades of one colour, which measured 4.26:1 — see
+/// [AppTheme.tintedChip] for why that keeps happening.
+final _personChip = AppTheme.tintedChip(
+  const Color(0xFFFF8FB1),
+  alpha: 0.14,
+);
+
+/// What a [_YearFact] tile actually sits on: a 5% white veil over the slate
+/// panel. Named because two colours in that tile have to be measured against
+/// it and neither can be judged against the page.
+final Color _yearFactSurface = AppTheme.flatten(
+  Colors.white.withValues(alpha: 0.05),
+  PixelFrameStyle.slate.surface,
+);
+
+/// Aim above the bar rather than at it.
+///
+/// [_yearFactSurface] is the tile's *nominal* colour, but the feed stacks
+/// another faint veil or two above the panel before this tile is drawn, so
+/// the real surface renders a shade lighter than the constant says. Aiming
+/// exactly at 4.5 left the weather icon at 4.09 on screen — close enough to
+/// look fixed in code and still fail in the app.
+const double _yearFactTarget = 5.4;
 
 class _YearFact extends StatelessWidget {
   const _YearFact({
@@ -3022,7 +3053,18 @@ class _YearFact extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: accent),
+          Icon(
+            icon,
+            size: 16,
+            // The tile is a white veil over the slate panel, so an accent
+            // picked to sit on the dark page is not necessarily readable
+            // here — the "unsettled weather" orange measured 3.68:1.
+            color: AppTheme.legibleOn(
+              accent,
+              _yearFactSurface,
+              target: _yearFactTarget,
+            ),
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -3032,7 +3074,7 @@ class _YearFact extends StatelessWidget {
                 Text(
                   label,
                   style: GoogleFonts.quicksand(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: AppTheme.textMuted,
                     fontSize: 9.5,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.3,

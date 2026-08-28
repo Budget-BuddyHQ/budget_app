@@ -85,6 +85,17 @@ const List<ArcadeGame> _allArcadeGames = <ArcadeGame>[
     scoreLabel: 'Best portfolio',
   ),
   ArcadeGame(
+    id: 'coin_cascade',
+    title: 'Coin Cascade',
+    tagline: 'Match three. Needs pay bills, wants cost you, savings win.',
+    teaches: 'Needs before wants',
+    accent: Color(0xFF69C6FF),
+    icon: Icons.grid_view_rounded,
+    difficulty: ArcadeDifficulty.easy,
+    length: ArcadeLength.short,
+    scoreLabel: 'Best score',
+  ),
+  ArcadeGame(
     id: 'react_challenge',
     title: 'React Challenge',
     tagline: 'Snap decisions on everyday money calls.',
@@ -99,6 +110,7 @@ const List<ArcadeGame> _allArcadeGames = <ArcadeGame>[
 
 /// Add or remove IDs here to control which games appear in the app.
 const Set<String> activeArcadeGameIds = <String>{
+  'coin_cascade',
   'finance_brawl',
   'market_board',
 };

@@ -21,7 +21,13 @@ class AppTheme {
   static const Color panel = Color(0xFF264F3D);
   static const Color panelStrong = Color(0xFF335D48);
   static const Color textPrimary = Color(0xFFF7FFFB);
-  static const Color textMuted = Color(0xFFB9D1C6);
+  // Lightened from #B9D1C6 after the contrast audit. The old value cleared
+  // AA against the page (9.1:1) but not against the app's *cards*, which are
+  // panels tinted with each screen's accent and run as light as #436452 —
+  // where it measured 4.08:1. Since this is the colour every secondary label
+  // reaches for, one step lighter fixed a whole class of findings at once and
+  // is still visibly muted next to [textPrimary].
+  static const Color textMuted = Color(0xFFC8DDD3);
 
   // Spacing constants
   static const double spacingXSmall = 4.0;
@@ -376,25 +382,44 @@ class AppTheme {
     if (contrast(flat, surface) >= target) return tint;
 
     final hsl = HSLColor.fromColor(flat);
-    // Move away from the surface: lighten a tint on a dark ground, darken one
-    // on a light ground. Going the other way would reach the target too, but
-    // by inverting the design's light/dark intent.
-    final lighten = luminance(surface) < 0.18;
 
-    var best = flat;
-    for (var step = 1; step <= 24; step++) {
-      final l = lighten
-          ? (hsl.lightness + step * 0.04).clamp(0.0, 1.0)
-          : (hsl.lightness - step * 0.04).clamp(0.0, 1.0);
-      final candidate = hsl.withLightness(l).toColor();
-      best = candidate;
-      if (contrast(candidate, surface) >= target) return candidate;
-      if (l == 0.0 || l == 1.0) break;
+    // Walk both ways and take whichever reaches the target with the *smaller*
+    // change, so the result stays as close to the designer's colour as the
+    // target allows.
+    //
+    // Trying only one direction was the first version's mistake. It picked
+    // the direction from the surface's own luminance, which is right for a
+    // clearly dark or clearly light ground and wrong for the mid-tones this
+    // app is full of — an accent badge is a wash of its own accent, so it
+    // lands mid, and a mint icon on it got *darkened* to near-black. That is
+    // both ugly and, at 2.75:1, still a failure.
+    Color? walk(int direction) {
+      for (var step = 1; step <= 25; step++) {
+        final l = (hsl.lightness + direction * step * 0.04).clamp(0.0, 1.0);
+        final candidate = hsl.withLightness(l).toColor();
+        if (contrast(candidate, surface) >= target) return candidate;
+        if (l == 0.0 || l == 1.0) return null;
+      }
+      return null;
     }
-    // The ramp ran out — this hue cannot make the target against this
-    // surface. Return the far end rather than the original: it is the most
-    // legible this colour gets, and it is still recognisably itself.
-    return best;
+
+    final lighter = walk(1);
+    final darker = walk(-1);
+    if (lighter != null && darker != null) {
+      final upBy = (HSLColor.fromColor(lighter).lightness - hsl.lightness).abs();
+      final downBy =
+          (HSLColor.fromColor(darker).lightness - hsl.lightness).abs();
+      return upBy <= downBy ? lighter : darker;
+    }
+    if (lighter != null) return lighter;
+    if (darker != null) return darker;
+
+    // Neither ramp reaches the target — this hue cannot make it against this
+    // surface. Return the end that gets furthest rather than the original: it
+    // is the most legible this colour gets, and still recognisably itself.
+    final white = hsl.withLightness(1.0).toColor();
+    final black = hsl.withLightness(0.0).toColor();
+    return contrast(white, surface) >= contrast(black, surface) ? white : black;
   }
 
   /// A tinted chip: the fill and the label colour, together.

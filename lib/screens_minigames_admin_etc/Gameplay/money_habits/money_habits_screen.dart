@@ -42,7 +42,12 @@ final _panelMint = AppTheme.legibleOn(
 /// P&L/Analytics tabs — see docs/MONEY_HABITS_FEATURE.md §4 for the full
 /// navigation map.
 class MoneyHabitsScreen extends StatefulWidget {
-  const MoneyHabitsScreen({super.key, this.activeTabIndex, this.onNavSelected});
+  const MoneyHabitsScreen({
+    super.key,
+    this.activeTabIndex,
+    this.onNavSelected,
+    this.initialTab = 0,
+  });
 
   /// Set when this is hosted as the "Daily" bottom tab. Left null when it's
   /// pushed as a route (from Home's daily card), in which case it keeps its
@@ -50,6 +55,16 @@ class MoneyHabitsScreen extends StatefulWidget {
   /// entry points without a second copy.
   final int? activeTabIndex;
   final ValueChanged<int>? onNavSelected;
+
+  /// Which of the four inner tabs opens first.
+  ///
+  /// A test seam, the same shape as `LifeSimPage.debugInitialLife`: the
+  /// viewport sweep needs to lay out My Jar and Challenges, and reaching them
+  /// by tapping a `TabBar` in a test means driving an animation and finding a
+  /// label — which fails for reasons that have nothing to do with the layout
+  /// being checked. Also genuinely useful: a deep link to the jar has an
+  /// obvious home here now.
+  final int initialTab;
 
   @override
   State<MoneyHabitsScreen> createState() => _MoneyHabitsScreenState();
@@ -62,7 +77,11 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(
+      length: 4,
+      vsync: this,
+      initialIndex: widget.initialTab.clamp(0, 3),
+    );
   }
 
   @override
@@ -961,10 +980,7 @@ class _CreateHabitCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(
-                  Icons.edit_note_rounded,
-                  color: AppTheme.greenPrimary,
-                ),
+                Icon(Icons.edit_note_rounded, color: _panelMint),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -1462,7 +1478,7 @@ class _MiniStat extends StatelessWidget {
           Text(
             value,
             style: GoogleFonts.pixelifySans(
-              color: AppTheme.greenPrimary,
+              color: _panelMint,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -1595,6 +1611,19 @@ class _ChallengesTab extends StatelessWidget {
 
 // ==================== Jar ====================
 
+/// The Jar tab: the screen that answers "is this working?".
+///
+/// Rebuilt because the old one was a scaled-up Material glyph, a bare
+/// `LinearProgressIndicator` and a grey paragraph — three unrelated pieces
+/// stacked with no shape to them. What it was missing was not decoration:
+///
+/// * **Where am I overall?** One bar toward the next stage says how far to the
+///   next step and never how far through the whole thing you are.
+/// * **What did this earn me?** The habit points were shown; the money and the
+///   choices they came from were on another tab entirely.
+/// * **What do I do now?** The closing paragraph was a sentence, not an
+///   action, and it looked identical whether the player was on a streak or had
+///   not logged anything in a fortnight.
 class _JarTab extends StatelessWidget {
   const _JarTab();
 
@@ -1603,75 +1632,339 @@ class _JarTab extends StatelessWidget {
     final habits = context.watch<MoneyHabitController>();
     final stage = habits.jarStage;
     final mood = habits.jarMood;
+    final next = stage.next;
+    final totals = habits.lifetimeTotals;
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
       children: [
-        Center(
-          child: SavingsJarWidget(stage: stage, mood: mood, size: 220),
-        ),
-        const SizedBox(height: 12),
-        Center(
-          child: Text(
-            stage.label,
-            style: GoogleFonts.pixelifySans(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
+        // The jar itself, on its own tinted plinth so it reads as an object
+        // in a scene rather than as an image floating on the page.
+        Container(
+          padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color.lerp(AppTheme.panelStrong, mood.color, 0.10)!,
+                AppTheme.panel,
+              ],
             ),
+            border: Border.all(color: mood.color.withValues(alpha: 0.26)),
+            boxShadow: AppTheme.puffyShadow(mood.color, restAlpha: 0.18),
           ),
-        ),
-        Center(
-          child: Container(
-            margin: const EdgeInsets.only(top: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: mood.color.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              mood.label,
-              style: GoogleFonts.pixelifySans(
-                color: mood.color,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
+          child: Column(
+            children: [
+              SavingsJarWidget(
+                stage: stage,
+                mood: mood,
+                // The real number, not a stage bucket. See
+                // [MoneyHabitController.jarFill].
+                fill: habits.jarFill,
+                size: 210,
               ),
-            ),
+              const SizedBox(height: 10),
+              FittedLabel(
+                stage.label,
+                style: GoogleFonts.pixelifySans(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _MoodPill(mood: mood, daysSince: habits.daysSinceJarActive),
+            ],
           ),
         ),
-        const SizedBox(height: 20),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: LinearProgressIndicator(
-            value: stage.progressToNext(habits.jarXp),
-            minHeight: 10,
-            backgroundColor: Colors.white12,
-            valueColor: const AlwaysStoppedAnimation(AppTheme.greenPrimary),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          stage.next == null
-              ? 'Jar\'s full — ${habits.jarXp} habit points earned.'
-              : '${habits.jarXp} / ${stage.next!.xpThreshold} habit points to ${stage.next!.label}',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.quicksand(color: AppTheme.textMuted),
-        ),
-        const SizedBox(height: 20),
+
+        const SizedBox(height: 18),
+
+        // The whole ladder, not just the next rung.
+        JarMilestones(stage: stage, xp: habits.jarXp),
+
+        const SizedBox(height: 18),
+
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppTheme.panel,
             borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
-          child: Text(
-            mood == JarMood.slipping
-                ? 'You haven\'t logged a habit in a while — log one on Track or Activity to get back on track.'
-                : 'Complete habits on Track or Activity to earn habit points and fill your jar.',
-            style: GoogleFonts.quicksand(color: Colors.white70, height: 1.4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: FittedLabel(
+                      next == null
+                          ? 'Jar full'
+                          : 'Next: ${next.label}',
+                      style: GoogleFonts.pixelifySans(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    next == null
+                        ? '${habits.jarXp} pts'
+                        : '${habits.jarXp} / ${next.xpThreshold}',
+                    style: GoogleFonts.pixelifySans(
+                      color: _jarAccent,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: stage.progressToNext(habits.jarXp),
+                  minHeight: 12,
+                  backgroundColor: Colors.white.withValues(alpha: 0.10),
+                  valueColor: const AlwaysStoppedAnimation(
+                    AppTheme.greenPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                next == null
+                    ? 'Every habit from here still counts — the totals below '
+                          'keep climbing.'
+                    : '${next.xpThreshold - habits.jarXp} more points to go.',
+                style: GoogleFonts.quicksand(
+                  color: AppTheme.textMuted,
+                  height: 1.35,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
+
+        const SizedBox(height: 14),
+
+        // What the points actually represent. These numbers existed on
+        // another tab; the jar is where a player looks to feel good about
+        // them, so they belong here too.
+        Row(
+          children: [
+            Expanded(
+              child: _JarStat(
+                icon: Icons.payments_rounded,
+                label: 'Saved',
+                value: '\$${totals.moneySavedUsd.toStringAsFixed(0)}',
+                accent: AppTheme.greenPrimary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _JarStat(
+                icon: Icons.check_circle_rounded,
+                label: 'Good calls',
+                value: '${totals.choicesKept.round()}',
+                accent: const Color(0xFF69C6FF),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 14),
+
+        _JarNextStep(mood: mood, daysSince: habits.daysSinceJarActive),
       ],
+    );
+  }
+}
+
+/// Mint that stays readable on the jar card. See [AppTheme.legibleOn].
+final _jarAccent = AppTheme.legibleOn(
+  const Color(0xFFFFD45C),
+  AppTheme.panel,
+);
+
+class _MoodPill extends StatelessWidget {
+  const _MoodPill({required this.mood, required this.daysSince});
+
+  final JarMood mood;
+  final int daysSince;
+
+  String get _detail {
+    if (daysSince <= 0) return 'logged today';
+    if (daysSince == 1) return 'last logged yesterday';
+    return 'last logged $daysSince days ago';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Opaque fill and a measured ink — the mood colours run from mint to a
+    // pale amber, and amber-on-amber was one of the contrast audit's finds.
+    final chip = AppTheme.tintedChip(mood.color, on: AppTheme.panelStrong);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: chip.fill,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: mood.color.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.local_fire_department_rounded, size: 13, color: chip.ink),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              // The label alone said "Slipping" with no indication of how far
+              // — which is a judgement without a fact attached to it.
+              '${mood.label} · $_detail',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.pixelifySans(
+                color: chip.ink,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _JarStat extends StatelessWidget {
+  const _JarStat({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    // Full AA, not the large-text allowance: the value on this card is 20px
+    // and bold, but the little icon beside the label is 15px, and the ink is
+    // shared between them. Sizing the target to the largest thing that uses
+    // a colour is how small icons end up under the bar.
+    final chip = AppTheme.tintedChip(accent, alpha: 0.14);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: chip.fill,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: accent.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 15, color: chip.ink),
+              const SizedBox(width: 6),
+              Flexible(
+                child: FittedLabel(
+                  label,
+                  style: GoogleFonts.quicksand(
+                    color: AppTheme.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          FittedLabel(
+            value,
+            style: GoogleFonts.pixelifySans(
+              color: chip.ink,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The closing card, which now says what to do rather than what is true.
+class _JarNextStep extends StatelessWidget {
+  const _JarNextStep({required this.mood, required this.daysSince});
+
+  final JarMood mood;
+  final int daysSince;
+
+  @override
+  Widget build(BuildContext context) {
+    final slipping = mood == JarMood.slipping;
+    final accent = slipping ? AppTheme.warningOrange : AppTheme.greenPrimary;
+    final chip = AppTheme.tintedChip(accent, alpha: 0.12, target: 3.0);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: chip.fill,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: accent.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            slipping ? Icons.restart_alt_rounded : Icons.trending_up_rounded,
+            color: chip.ink,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  slipping ? 'Pick it back up' : 'Keep it going',
+                  style: GoogleFonts.pixelifySans(
+                    color: chip.ink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  slipping
+                      ? 'It has been $daysSince days. One habit on Track is '
+                            'enough to restart the streak — the jar keeps '
+                            'everything you have already put in.'
+                      : 'Log a habit on Track, or take on a challenge on '
+                            'Activity. Both drop points straight into the jar.',
+                  style: GoogleFonts.quicksand(
+                    color: AppTheme.textMuted,
+                    height: 1.4,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

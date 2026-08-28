@@ -38,24 +38,40 @@ OUT = os.path.join("assets", "audio")
 RATE = 22050  # plenty for UI effects, and a quarter the size of 44.1k
 
 
-def _write(name: str, samples: list[float]) -> None:
-    """Normalise, de-click and write one mono 16-bit WAV."""
+def _write(name: str, samples: list[float], peak_target: float = 0.86) -> None:
+    """Normalise, de-click and write one mono 16-bit WAV.
+
+    `peak_target` is per-file rather than one global number because these
+    sounds do not want the same loudness. A reward chime is an event and
+    should land; the blip under a tab switch is punctuation, and punctuation
+    at the same level as an event is what makes an interface feel like it is
+    shouting. The first pass normalised everything to 0.86 and the navigation
+    click was as loud as an unboxing.
+    """
     if not samples:
         return
     peak = max(abs(s) for s in samples) or 1.0
-    gain = 0.86 / peak
+    gain = peak_target / peak
 
-    # A hard start or end on a non-zero sample is an audible click. Ten
-    # milliseconds of fade at each edge removes it and is far too short to
-    # hear as a fade.
-    edge = min(int(RATE * 0.01), len(samples) // 2)
+    # A hard start or end on a non-zero sample is an audible click, so both
+    # edges get a fade — but they get *different* fades, and that asymmetry is
+    # the point.
+    #
+    # A symmetric 10ms fade destroys short percussive sounds: `navigation.wav`
+    # is 55ms long and its peak is in the first millisecond, so a 10ms ramp
+    # was flattening the attack and the file came out at half its requested
+    # level. 1.5ms is enough to remove the discontinuity and short enough that
+    # the transient survives; the tail keeps the full 10ms, where there is
+    # nothing to preserve and a real risk of cutting off mid-cycle.
+    fade_in = min(int(RATE * 0.0015), len(samples) // 4)
+    fade_out = min(int(RATE * 0.01), len(samples) // 2)
     frames = bytearray()
     for i, s in enumerate(samples):
         v = s * gain
-        if i < edge:
-            v *= i / edge
-        elif i > len(samples) - edge:
-            v *= (len(samples) - i) / edge
+        if fade_in > 0 and i < fade_in:
+            v *= i / fade_in
+        elif fade_out > 0 and i > len(samples) - fade_out:
+            v *= (len(samples) - i) / fade_out
         frames += struct.pack("<h", int(max(-1.0, min(1.0, v)) * 32767))
 
     path = os.path.join(OUT, name)
@@ -108,24 +124,93 @@ def _mix(base: list[float], add: list[float], at: int) -> None:
         base[at + i] += v
 
 
-def case_roll(seconds=4.2) -> list[float]:
-    """The case ratchet: fast ticks that decelerate to a stop.
+# --------------------------------------------------------------------------
+# The case ratchet, locked to the reel
+# --------------------------------------------------------------------------
+#
+# These four numbers are the contract with `customize_screen.dart`. The reel
+# animates a strip of skin tiles past a marker with a decelerating curve, and
+# every tick in this file is one tile crossing that marker. If any of them
+# changes on one side and not the other, the sound stops being the reel and
+# becomes a noise playing near it.
+#
+# `CASE_ROLL_ITEMS` is why the Dart side places the winning skin at a *fixed*
+# index and randomises the rest of the strip around it, rather than putting
+# the winner wherever it happens to sit in the catalogue: a variable distance
+# would mean a variable number of tile crossings, and no pre-rendered file can
+# match that.
+CASE_ROLL_SECONDS = 4.2
+CASE_ROLL_ITEMS = 72
+CASE_ROLL_CURVE = (0.16, 0.86, 0.41, 1.0)  # Flutter Cubic(a, b, c, d)
 
-    The deceleration is what makes this sound like an unboxing rather than
-    like a rattle. Intervals grow geometrically, so the gaps stretch in a way
-    the ear can extrapolate — and the final two ticks land far enough apart
-    that they feel like a decision being made.
+
+def _cubic_bezier(a: float, b: float, c: float, d: float, t: float) -> float:
+    """Flutter's `Cubic.transform`: the y of the curve at parameter x = t.
+
+    Flutter solves for the Bezier parameter whose x equals the input, then
+    returns that point's y. Bisection rather than Newton because it cannot
+    diverge and 30 iterations is exact enough at audio resolution.
+    """
+
+    def bezier(p1, p2, s):
+        one = 1.0 - s
+        return 3 * one * one * s * p1 + 3 * one * s * s * p2 + s * s * s
+
+    lo, hi = 0.0, 1.0
+    for _ in range(30):
+        mid = (lo + hi) / 2
+        if bezier(a, c, mid) < t:
+            lo = mid
+        else:
+            hi = mid
+    return bezier(b, d, (lo + hi) / 2)
+
+
+def _tick_times(items: int, seconds: float) -> list[float]:
+    """When each tile crosses the marker, in seconds.
+
+    The reel's *position* follows the eased curve, so the tick for tile `k`
+    lands at the time whose eased progress equals `k / items`. Inverting the
+    curve like this is what makes the deceleration match: the gaps stretch on
+    exactly the schedule the tiles slow down on, instead of on a geometric
+    approximation of it that drifts apart from the picture.
+    """
+    times: list[float] = []
+    k = 1
+    steps = 4000
+    for i in range(steps + 1):
+        t = i / steps
+        progress = _cubic_bezier(*CASE_ROLL_CURVE, t)
+        while k <= items and progress >= k / items:
+            times.append(t * seconds)
+            k += 1
+        if k > items:
+            break
+    return times
+
+
+def case_roll(
+    seconds: float = CASE_ROLL_SECONDS,
+    items: int = CASE_ROLL_ITEMS,
+) -> list[float]:
+    """The case ratchet: one tick per tile, decelerating with the reel.
+
+    The deceleration is what makes this an unboxing rather than a rattle. The
+    ear extrapolates where the ticks are heading, so the last two — landing
+    the better part of a second apart — feel like a decision being made.
     """
     rng = random.Random(7)
     out: list[float] = []
-    t = 0.0
-    gap = 0.035
-    while t < seconds:
-        # Pitch drifts up slightly as it slows, which reads as tension.
-        freq = 1200 + 420 * (t / seconds)
-        _mix(out, _tick(freq=freq, rng=rng), int(t * RATE))
-        t += gap
-        gap *= 1.075
+    times = _tick_times(items, seconds)
+    for i, t in enumerate(times):
+        # Pitch drifts up as it slows, which reads as tension. The last few
+        # ticks are also the loudest, because by then each one is a candidate
+        # for being the result.
+        progress = i / max(1, len(times) - 1)
+        freq = 1200 + 460 * progress
+        gain = 0.7 + 0.3 * progress
+        tick = [v * gain for v in _tick(freq=freq, rng=rng)]
+        _mix(out, tick, int(t * RATE))
     return out
 
 
@@ -200,23 +285,52 @@ def main() -> None:
     print(f"writing to {OUT}/")
 
     # The ten effects `AppSoundService` already expects.
-    _write("tap.wav", ui_blip(880, 0.07, 40))
-    _write("navigation.wav", ui_blip(660, 0.10, 26))
-    _write("selection.wav", ui_blip(1046, 0.09, 30))
-    _write("notification.wav", unbox("common"))
-    _write("success.wav", unbox("rare"))
-    _write("error.wav", ui_blip(196, 0.28, 9, harmonics=(1.0, 0.5, 0.25)))
-    _write("need_pickup.wav", ui_blip(1318, 0.12, 24))
-    _write("want_hit.wav", ui_blip(294, 0.20, 14, harmonics=(1.0, 0.4, 0.2)))
-    _write("celebration.wav", unbox("legendary"))
-    _write("shutdown.wav", ui_blip(330, 0.35, 7))
+    #
+    # The peak targets are the loudness design. Roughly: navigation is
+    # background texture (0.22), taps and selections are light (0.30-0.34),
+    # gameplay feedback sits in the middle, and only the reward sounds are
+    # allowed to be an event. A tab switch happens dozens of times a session
+    # and a case opens rarely, so they cannot share a level.
+    _write("tap.wav", ui_blip(880, 0.06, 46), peak_target=0.30)
+    # Softer, shorter and an octave down from the old blip, with almost no
+    # upper partial — the brief was "make switching tabs more subtle", and a
+    # dull low thud reads as movement where a bright click reads as an alert.
+    _write(
+        "navigation.wav",
+        ui_blip(392, 0.055, 60, harmonics=(1.0, 0.04, 0.0)),
+        peak_target=0.22,
+    )
+    _write("selection.wav", ui_blip(1046, 0.07, 38), peak_target=0.34)
+    _write("notification.wav", unbox("common"), peak_target=0.62)
+    _write("success.wav", unbox("rare"), peak_target=0.70)
+    _write(
+        "error.wav",
+        ui_blip(196, 0.26, 10, harmonics=(1.0, 0.45, 0.2)),
+        peak_target=0.48,
+    )
+    _write("need_pickup.wav", ui_blip(1318, 0.10, 28), peak_target=0.40)
+    _write(
+        "want_hit.wav",
+        ui_blip(294, 0.18, 15, harmonics=(1.0, 0.4, 0.2)),
+        peak_target=0.46,
+    )
+    _write("celebration.wav", unbox("legendary"), peak_target=0.80)
+    _write("shutdown.wav", ui_blip(330, 0.32, 8), peak_target=0.40)
 
-    # Case opening.
-    _write("case_roll.wav", case_roll())
-    for rarity in ("common", "rare", "epic", "legendary"):
-        _write(f"unbox_{rarity}.wav", unbox(rarity))
+    # Case opening. The ratchet runs for four seconds under everything else,
+    # so it sits below the chime that resolves it.
+    _write("case_roll.wav", case_roll(), peak_target=0.52)
+    for rarity, level in (
+        ("common", 0.62),
+        ("rare", 0.68),
+        ("epic", 0.74),
+        ("legendary", 0.80),
+    ):
+        _write(f"unbox_{rarity}.wav", unbox(rarity), peak_target=level)
 
-    _write("ambient_loop.wav", ambient_loop())
+    # The quietest thing in the app by a wide margin: it is under everything
+    # else for as long as the app is open.
+    _write("ambient_loop.wav", ambient_loop(), peak_target=0.34)
 
 
 if __name__ == "__main__":
