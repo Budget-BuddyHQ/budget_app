@@ -768,6 +768,155 @@ const Map<String, List<DeepDive>> kLessonDeepDives =
               'compounding that were the point.',
         ),
       ],
+
+      // ------------------- Unit 12 · Big Purchases -------------------
+      'lesson_53': [
+        DeepDive(
+          title: 'Work it out per year, not per purchase',
+          content:
+              'Insurance, fuel, servicing, tyres, tax and the odd repair are '
+              'the yearly figure that decides whether a car fits your budget. '
+              'A cheap car with expensive insurance can cost more per year '
+              'than a pricier one with cheap everything.',
+        ),
+        DeepDive(
+          title: 'The repair fund is part of owning a car',
+          content:
+              'Older cars are cheaper to buy and more likely to need work. '
+              'That is a fair trade only if the money for the work exists. '
+              'Setting aside a fixed amount monthly turns a breakdown from a '
+              'crisis into an errand.',
+        ),
+      ],
+      'lesson_54': [
+        DeepDive(
+          title: 'Multiply before you sign',
+          content:
+              'Payment times term is the total you will hand over. Compare '
+              'that to the price of the car. The gap is what borrowing cost '
+              'you, and seeing it as one number is what makes a long term '
+              'feel as expensive as it is.',
+        ),
+        DeepDive(
+          title: 'Owing more than it is worth',
+          content:
+              'A long loan on a fast-depreciating car can leave you owing '
+              'more than the car would sell for. That matters the moment you '
+              'need to sell or the car is written off, because the loan does '
+              'not disappear with the vehicle.',
+        ),
+      ],
+      'lesson_55': [
+        DeepDive(
+          title: 'Read the ending, not the kitchen',
+          content:
+              'Notice period, what happens if you leave early, who fixes '
+              'what, and the conditions for getting the deposit back. Those '
+              'clauses decide what the year actually costs you; the worktops '
+              'do not.',
+        ),
+        DeepDive(
+          title: 'Your credit file shows up here first',
+          content:
+              'For many people a rental application is the first time a thin '
+              'or damaged credit file has a visible cost — a larger deposit, '
+              'a guarantor, or a rejection. It is a good reason to have '
+              'looked at your report before you need it.',
+        ),
+      ],
+      'lesson_56': [
+        DeepDive(
+          title: 'The list nobody budgets for',
+          content:
+              'A flat rarely comes with a bed, curtains, cookware, a bin, or '
+              'a shower curtain. None of it is expensive alone and all of it '
+              'lands in the same week. Writing the list before you move turns '
+              'a surprise into a plan.',
+        ),
+      ],
+      'lesson_57': [
+        DeepDive(
+          title: 'Waiting has a return',
+          content:
+              'Six months of saving can move you from financing at a high '
+              'rate to paying outright, or from a shaky car to a reliable '
+              'one. That is a real return on doing nothing, and it is the '
+              'option nobody in a showroom will raise.',
+        ),
+      ],
+
+      // --------------- Unit 13 · Protecting Your Money ---------------
+      'lesson_58': [
+        DeepDive(
+          title: 'Why speed matters',
+          content:
+              'The damage from a stolen identity compounds: one opened '
+              'account becomes several, and each takes its own paperwork to '
+              'unwind. Reporting early is less about catching anyone than '
+              'about limiting how much there is to fix.',
+        ),
+        DeepDive(
+          title: 'The affidavit is the useful part',
+          content:
+              'Banks and bureaus want a formal statement, not a phone call. '
+              'IdentityTheft.gov produces exactly that document alongside a '
+              'checklist, which is why it is the first stop rather than the '
+              'bank.',
+        ),
+      ],
+      'lesson_59': [
+        DeepDive(
+          title: 'Freeze versus fraud alert',
+          content:
+              'A fraud alert asks lenders to take extra care and is easy to '
+              'set. A freeze blocks access to the file outright and is '
+              'stronger. A freeze is the better default; an alert is what you '
+              'use when you need the file reachable.',
+        ),
+        DeepDive(
+          title: 'It does not hurt your score',
+          content:
+              'A freeze restricts who can see the file. It does not change '
+              'what is in it, and it is not a negative mark. The common worry '
+              'that freezing looks bad to lenders is simply not how it works.',
+        ),
+      ],
+      'lesson_60': [
+        DeepDive(
+          title: 'Stagger them',
+          content:
+              'Because there are three bureaus, requesting from a different '
+              'one every few months gives you a look at your file several '
+              'times a year rather than all at once — the cheapest fraud '
+              'monitoring available.',
+        ),
+      ],
+      'lesson_61': [
+        DeepDive(
+          title: 'A flat fee on a small purchase is a huge rate',
+          content:
+              'Think of an overdraft fee as the price of a very short loan. '
+              'A fixed charge to cover a few dollars for a few days works out '
+              'at a rate no credit card would be allowed to advertise.',
+        ),
+      ],
+      'lesson_62': [
+        DeepDive(
+          title: 'Write it down as you go',
+          content:
+              'Date, who you spoke to, what they promised. It takes seconds '
+              'and it is the difference between a complaint that resolves and '
+              'one that becomes your word against a call centre\'s.',
+        ),
+        DeepDive(
+          title: 'Ask a collector to validate',
+          content:
+              'Debts are sold on, often with incomplete records, and '
+              'collectors sometimes pursue the wrong person or an amount that '
+              'is wrong. Requesting validation before paying is a normal '
+              'step, not an admission of anything.',
+        ),
+      ],
     };
 
 /// Which sources back each lesson. See [kLessonSources] for the catalogue.
@@ -856,6 +1005,20 @@ const Map<String, List<String>> kLessonCitations = <String, List<String>>{
   'lesson_43': ['irs_retirement_plans', 'investor_home'],
   'lesson_44': ['investor_compound', 'irs_retirement_plans'],
   'lesson_45': ['dol_401k', 'investor_fees'],
+
+  // Unit 12 · Big Purchases
+  'lesson_53': ['cfpb_auto_loans', 'usa_gov_money'],
+  'lesson_54': ['cfpb_auto_loans', 'cfpb_credit_cards'],
+  'lesson_55': ['cfpb_renting', 'cfpb_credit_reports'],
+  'lesson_56': ['cfpb_renting', 'cfpb_budget'],
+  'lesson_57': ['cfpb_auto_loans', 'cfpb_savings'],
+
+  // Unit 13 · Protecting Your Money
+  'lesson_58': ['identitytheft_gov', 'ftc_identity_theft'],
+  'lesson_59': ['ftc_identity_theft', 'cfpb_credit_reports'],
+  'lesson_60': ['annualcreditreport', 'cfpb_credit_reports'],
+  'lesson_61': ['cfpb_overdraft', 'usa_gov_money'],
+  'lesson_62': ['cfpb_complaints', 'cfpb_debt_collection'],
 };
 
 /// Which sources back each quiz **skill**.
@@ -944,4 +1107,18 @@ const Map<String, List<String>> kQuizSkillSources = <String, List<String>>{
   'credit_score': ['cfpb_credit_reports', 'annualcreditreport'],
   'minimum_payments': ['cfpb_credit_cards', 'cfpb_debt_collection'],
   'interest_rates': ['cfpb_credit_cards', 'investor_compound'],
+
+  // Unit 12 · Big Purchases
+  'car_costs': ['cfpb_auto_loans', 'usa_gov_money'],
+  'loan_offers': ['cfpb_auto_loans', 'cfpb_credit_cards'],
+  'renting': ['cfpb_renting', 'cfpb_credit_reports'],
+  'move_in_costs': ['cfpb_renting', 'cfpb_budget'],
+  'buy_or_wait': ['cfpb_auto_loans', 'cfpb_savings'],
+
+  // Unit 13 · Protecting Your Money
+  'identity_theft': ['identitytheft_gov', 'ftc_identity_theft'],
+  'credit_freeze': ['ftc_identity_theft', 'cfpb_credit_reports'],
+  'credit_reports': ['annualcreditreport', 'cfpb_credit_reports'],
+  'avoidable_fees': ['cfpb_overdraft', 'usa_gov_money'],
+  'complaints': ['cfpb_complaints', 'cfpb_debt_collection'],
 };

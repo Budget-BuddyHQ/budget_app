@@ -1166,118 +1166,244 @@ class _EventCard extends StatelessWidget {
             label.contains('put'));
   }
 
+  /// The card's colour, taken from the money idea the event teaches.
+  ///
+  /// Every event used to be the same blue, so the most-seen surface in the
+  /// game — you meet one of these every year of every life — looked
+  /// identical whether you were being offered a credit card or a puppy.
+  /// Tinting by concept means a run has visual variety *and* the colour
+  /// carries meaning: debt events are consistently pink, growth events
+  /// consistently blue, and the palette matches the concept chips the money
+  /// panel already shows.
+  Color get _accent {
+    for (final choice in event.choices) {
+      final concept = choice.teaches;
+      if (concept != null) return concept.accent;
+    }
+    return const Color(0xFF58C7FF);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final accent = _accent;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: const Color(0xFF58C7FF).withValues(alpha: 0.08),
+        color: const Color(0xFF10241E),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF58C7FF).withValues(alpha: 0.35),
-        ),
+        border: Border.all(color: accent.withValues(alpha: 0.42), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: 0.16),
+            blurRadius: 22,
+            spreadRadius: -6,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          // A picture band rather than a 20px glyph on a heading row. The
+          // icon is the only art an event has, so it gets to be the size of
+          // art instead of the size of punctuation.
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  accent.withValues(alpha: 0.30),
+                  accent.withValues(alpha: 0.06),
+                ],
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0A1D17).withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: accent.withValues(alpha: 0.55),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Icon(event.icon, color: accent, size: 28),
+                ),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FittedLabel(
+                        'What do you do?',
+                        style: GoogleFonts.pixelifySans(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      if (_becauseOf(event.requiresFlag) case final because?)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const LifeEmoji('\u{1F517}', size: 10),
+                              const SizedBox(width: 5),
+                              Flexible(
+                                child: FittedLabel(
+                                  because,
+                                  style: GoogleFonts.quicksand(
+                                    color: Colors.white.withValues(alpha: 0.82),
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  event.prompt,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                for (var i = 0; i < event.choices.length; i++) ...[
+                  _ChoiceRow(
+                    index: i,
+                    choice: event.choices[i],
+                    accent: accent,
+                    showPrice: _priceIsAlreadyStated(event.choices[i]),
+                    onTap: () => onChoose(i),
+                  ),
+                  if (i != event.choices.length - 1)
+                    const SizedBox(height: 8),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One option, as a tappable card rather than a row of button text.
+///
+/// **What is deliberately *not* here.** No stat deltas, no "this costs you 8
+/// happiness" preview. The sim hides outcomes on purpose — you are supposed
+/// to decide on judgement and then live with it, which is the entire
+/// pedagogy — so the only figure ever shown is a price the option's own
+/// wording already stated out loud. Making the trade-offs visible would turn
+/// every event into a priced menu and delete the lesson.
+///
+/// The lettered badge is what replaced that: it gives each option a distinct
+/// anchor and a sense of a list you are choosing *between*, without leaking
+/// anything about which one is better.
+class _ChoiceRow extends StatelessWidget {
+  const _ChoiceRow({
+    required this.index,
+    required this.choice,
+    required this.accent,
+    required this.showPrice,
+    required this.onTap,
+  });
+
+  final int index;
+  final LifeChoice choice;
+  final Color accent;
+  final bool showPrice;
+  final VoidCallback onTap;
+
+  static const _letters = ['A', 'B', 'C', 'D', 'E'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.055),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: accent.withValues(alpha: 0.22)),
+          ),
+          child: Row(
             children: [
-              Icon(event.icon, color: const Color(0xFF58C7FF), size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: FittedLabel(
-                  'What do you do?',
+              Container(
+                width: 26,
+                height: 26,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Text(
+                  _letters[index % _letters.length],
                   style: GoogleFonts.pixelifySans(
-                    color: const Color(0xFF58C7FF),
-                    fontWeight: FontWeight.w700,
+                    color: accent,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
-              if (_becauseOf(event.requiresFlag) case final because?) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+              const SizedBox(width: 11),
+              Expanded(
+                child: Text(
+                  choice.label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    height: 1.25,
                   ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFB388FF).withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const LifeEmoji('\u{1F517}', size: 10),
-                      const SizedBox(width: 5),
-                      Text(
-                        because,
-                        style: GoogleFonts.quicksand(
-                          color: const Color(0xFFB388FF),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
+                ),
+              ),
+              if (showPrice && choice.money != 0) ...[
+                const SizedBox(width: 10),
+                Text(
+                  '${choice.money > 0 ? '+' : ''}${choice.money}',
+                  style: GoogleFonts.pixelifySans(
+                    color: choice.money < 0
+                        ? const Color(0xFFFF8FB1)
+                        : const Color(0xFF85EFAC),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            event.prompt,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              fontSize: 15,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 14),
-          for (var i = 0; i < event.choices.length; i++) ...[
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => onChoose(i),
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.white.withValues(alpha: 0.08),
-                  foregroundColor: Colors.white,
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 13,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        event.choices[i].label,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                    if (_priceIsAlreadyStated(event.choices[i]) &&
-                        event.choices[i].money != 0) ...[
-                      const SizedBox(width: 10),
-                      Text(
-                        '${event.choices[i].money > 0 ? '+' : ''}'
-                        '${event.choices[i].money}',
-                        style: GoogleFonts.pixelifySans(
-                          color: event.choices[i].money < 0
-                              ? const Color(0xFFFF8FB1)
-                              : const Color(0xFF85EFAC),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            if (i != event.choices.length - 1) const SizedBox(height: 8),
-          ],
-        ],
+        ),
       ),
     );
   }

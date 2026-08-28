@@ -42,19 +42,57 @@ too if you ever export from Tiled instead — just drop a Tiled-exported
 orientation only) here and swap the reader in
 `adventure_world_screen.dart` back.
 
+## How this map is made
+
+`map.json` is **generated** by `tool/make_town_map.py`, not drawn by hand:
+
+```
+python tool/make_town_map.py --preview
+```
+
+The previous hand-drawn town is kept at `tool/town_v1_source.json` as the
+generator's *input*, not as a shipped asset. Nothing in the script draws a
+building — it lifts each structure out of that old map as a prefab (the exact
+tiles, across the exact layers) and only decides where they stand. So every
+building is one somebody actually drew; the layout is the generated part.
+
+The layout is radial: a brick square in the middle, a north-south and an
+east-west avenue crossing at it, and the six money-decision buildings placed
+around it with short spur lanes joining each door to the nearest avenue.
+
+`reference/town_preview.png` is re-rendered by the same script (`--preview`)
+and is not read by the app.
+
+### Editing it
+
+Change `PLACEMENTS`, `PROPS`, `DECOR` or `SPURS` near the top of the script
+and re-run. Before writing anything it verifies the map itself — sealed
+border, full reachability from spawn, both avenues clear, and every spot /
+NPC / coin on a walkable tile — and exits non-zero rather than shipping a
+broken town. The tile ids for grass, paths and paving are read off the old
+map's own palette, so the art stays consistent.
+
+The spot, NPC, coin and spawn coordinates are duplicated in the script
+(`SPOTS`, `NPCS`, `COINS`, `SPAWN`) purely so it can prove they are valid;
+the values the app actually uses live in `town_spot_models.dart` and
+`kTownSpawnTile`. **If you move a building, update both.**
+
 ## Collision
 
-`walls`, `Wall Texturing`, `structures`, `structures mre`, `more
-Structures`, and `Structure Ground` are the layers marked `"collider":
-true` — every other layer (`floor`, `terrain`, `playground`,
-`top_playground`, `inside`) is walkable. **The outer ring (x=0, x=49, y=0,
-y=49 — the rock border) is fully solid with zero gaps**, verified directly
-against the tile data (not just visually): the player cannot reach open
-space beyond the map edge. `CameraConfig.moveOnlyMapArea` in
-`adventure_world_screen.dart` is deliberately left `false`, so standing at
-the wall still shows a sliver of empty void past it rather than the camera
-clamping a tile early — the collider (not the camera) is what stops the
-player, same as any open-world map.
+Solid layers are `walls` (the outer ring), `structures`, `Structure Ground`,
+`Wall Texturing`, `more Structures` and `structures mre`. `floor`, `terrain`
+(paths and paving), `texture` (grass detail) and `inside` (building decor
+drawn over the roofs) are walkable.
+
+**The outer ring is copied verbatim from the old map** rather than
+re-derived, because it is the one part where "looks about right" is not good
+enough — a single gap lets the player walk into the void. `town_map_test.dart`
+re-checks it anyway.
+
+`CameraConfig.moveOnlyMapArea` in `adventure_world_screen.dart` is
+deliberately left `false`, so standing at the wall still shows a sliver of
+empty void past it rather than the camera clamping a tile early — the
+collider, not the camera, is what stops the player.
 
 ## Building triggers (not wired yet)
 
