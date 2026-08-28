@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 
 import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson.dart';
+import '../../../models_Like_Skins_and_lessons_templates/lesson_extras.dart';
+import '../../../models_Like_Skins_and_lessons_templates/lesson_sources.dart';
 import '../../../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import '../../../models_Like_Skins_and_lessons_templates/progression_service.dart';
 import '../../../models_Like_Skins_and_lessons_templates/quiz_bank.dart';
@@ -159,6 +162,18 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
     }
   }
 
+  /// The lesson's own sections plus any [kLessonDeepDives] written for it.
+  ///
+  /// Merged here rather than folded into `_lessonLibrary` because the library
+  /// is a 1,700-line `const` map in this file: adding depth to 53 lessons by
+  /// editing it in place produces a diff nobody can review, and the extra
+  /// passages read better as content in a content file.
+  List<_LessonSection> _sectionsFor(_LessonContent content) => <_LessonSection>[
+    ...content.sections,
+    for (final dive in kLessonDeepDives[widget.lesson.id] ?? const <DeepDive>[])
+      _LessonSection(title: dive.title, content: dive.content),
+  ];
+
   _LessonContent _getLessonContent() {
     final custom = _lessonLibrary[widget.lesson.id];
     if (custom != null) {
@@ -238,7 +253,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                         const SizedBox(height: 8),
                       ],
                       if (quiz.isEmpty)
-                        ...content.sections.map(
+                        ..._sectionsFor(content).map(
                           (section) => Container(
                             padding: const EdgeInsets.symmetric(vertical: 22),
                             decoration: BoxDecoration(
@@ -304,6 +319,10 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                       if (quiz.isEmpty && content.takeaway != null) ...[
                         const SizedBox(height: 14),
                         _TakeawayCard(text: content.takeaway!),
+                      ],
+                      if (quiz.isEmpty) ...[
+                        const SizedBox(height: 14),
+                        _SourcesCard(lessonId: widget.lesson.id),
                       ],
                     ],
                   ),
@@ -689,6 +708,141 @@ class _TakeawayCard extends StatelessWidget {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Where this lesson's facts came from, with links.
+///
+/// **Why every lesson has one.** The app makes claims about interest, credit,
+/// pay and tax to an audience that includes children, and "says who?" is a
+/// fair question — the most useful habit a money app can model is *check the
+/// source*. It also matters that these are primary publishers (federal
+/// agencies and the regulators' own education arms) rather than a bank's blog:
+/// citing a company that sells the products being explained would undercut
+/// the point of citing anything.
+///
+/// Renders nothing at all when a lesson has no citations rather than an empty
+/// heading — but `test/lesson_sources_test.dart` fails the build in that case,
+/// so the empty state should never ship.
+class _SourcesCard extends StatelessWidget {
+  const _SourcesCard({required this.lessonId});
+
+  final String lessonId;
+
+  Future<void> _open(BuildContext context, LessonSource source) async {
+    final uri = Uri.parse(source.url);
+    final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && context.mounted) {
+      // A device with no browser, or a link the platform refuses. Showing the
+      // URL is more useful than a failure toast: it can still be typed or
+      // copied, which is the whole point of publishing a citation.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(source.url)),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sources = resolveSources(
+      kLessonCitations[lessonId] ?? const <String>[],
+    );
+    if (sources.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.panel,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.verified_outlined,
+                size: 17,
+                color: AppTheme.textMuted,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Sources',
+                style: GoogleFonts.pixelifySans(
+                  color: AppTheme.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Checked against the agencies that publish the rules.',
+            style: GoogleFonts.quicksand(
+              color: AppTheme.textMuted,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final source in sources)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () => _open(context, source),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.open_in_new_rounded,
+                        size: 15,
+                        color: Color(0xFF69C6FF),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              source.publisher,
+                              style: GoogleFonts.quicksand(
+                                color: const Color(0xFF9CDBFF),
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              source.title,
+                              style: GoogleFonts.quicksand(
+                                color: AppTheme.textMuted,
+                                fontSize: 12.5,
+                                height: 1.35,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

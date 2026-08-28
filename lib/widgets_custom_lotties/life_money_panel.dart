@@ -3,8 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../controllers_that_updates_stats/life_sim_controller.dart';
 import '../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
+import '../themes_colors/app_theme.dart';
 import '../utils/number_format.dart';
 import 'fitted_label.dart';
+import 'pixel_kit.dart';
 import 'pixel_panel.dart';
 
 /// The money you actually have, on screen every single year.
@@ -232,7 +234,11 @@ class _MoneyTile extends StatelessWidget {
                 child: FittedLabel(
                   label,
                   style: GoogleFonts.quicksand(
-                    color: Colors.white.withValues(alpha: 0.62),
+                    // Full-strength muted, not 62% white. These tiles are
+                    // washed in their own accent, so knocking the label back
+                    // with alpha pulls it toward the tile rather than toward
+                    // grey — "Cash" and "Saved" both measured under 4:1.
+                    color: AppTheme.textMuted,
                     fontSize: 9.5,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.3,
@@ -245,7 +251,19 @@ class _MoneyTile extends StatelessWidget {
           FittedLabel(
             value,
             style: GoogleFonts.pixelifySans(
-              color: dim ? Colors.white.withValues(alpha: 0.45) : accent,
+              // The figure is the tile's point, so it keeps the accent — but
+              // measured against the wash it actually sits on rather than
+              // against the panel behind it.
+              color: dim
+                  ? AppTheme.textMuted
+                  : AppTheme.legibleOn(
+                      accent,
+                      AppTheme.flatten(
+                        accent.withValues(alpha: 0.12),
+                        PixelFrameStyle.slate.surface,
+                      ),
+                      target: 3.0,
+                    ),
               fontSize: 15,
               fontWeight: FontWeight.w700,
             ),

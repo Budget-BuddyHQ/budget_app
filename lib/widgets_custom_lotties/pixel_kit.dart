@@ -51,10 +51,14 @@ enum PixelFrameStyle {
     AppAssets.kitPanelSlate,
     AppAssets.kitSlicePanelSlate,
     AppAssets.kitSizePanelSlate,
-    Color(0xFF51655E),
+    // Dark, as the name says — `tool/build_ui_pack.py` dims this one asset
+    // after the recolour. The pack's own value left it at #51655E, a mid
+    // tone on which gold body text measured 3.73:1; every colour in the
+    // app's palette clears AA against #303C38.
+    Color(0xFF303C38),
     Color(0xFFF7FFFB),
-    Color(0xFFD8EFE4),
-    Color(0xFFF9DD95),
+    Color(0xFFB9D1C6),
+    Color(0xFFE9C46A),
   ),
 
   /// A hanging scroll with a rolled bottom edge. Deliberately *not*

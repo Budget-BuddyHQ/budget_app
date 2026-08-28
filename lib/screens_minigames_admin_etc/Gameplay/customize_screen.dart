@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:budget_app/services_backend_and_other_services/supabase_service.dart'
     show UserStats;
@@ -46,10 +47,12 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
     }
 
     setState(() => _openingCase = true);
-    // The ratchet starts before the roll resolves, so the sound is what the
-    // player is waiting *through* rather than a noise that confirms an
-    // outcome they can already see.
-    AppSoundService.play(AppSoundEffect.caseRoll);
+    // No sound here. Both the ratchet and the reward chime belong to
+    // `_CaseRollDialog`, which owns the reel they have to line up with — see
+    // the note on [_CaseRollDialogState.initState]. Starting the ratchet at
+    // this point instead meant it began before the network round-trip that
+    // decides the result, so on a slow connection a chunk of it had already
+    // played by the time the reel appeared.
     final result = await context.read<UserStatsController>().openSkinCase();
     if (!mounted) {
       return;
@@ -67,16 +70,6 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
       );
       return;
     }
-
-    // Rarity picks the chime. The reward sound arrives *before* the dialog
-    // so the player hears what they got a beat before they read it, which is
-    // the whole reason an unboxing has a sound at all.
-    AppSoundService.play(switch (result.skin.rarity) {
-      SkinRarity.legendary => AppSoundEffect.unboxLegendary,
-      SkinRarity.epic => AppSoundEffect.unboxEpic,
-      SkinRarity.rare => AppSoundEffect.unboxRare,
-      _ => AppSoundEffect.unboxCommon,
-    });
 
     await showDialog<void>(
       context: context,
@@ -953,7 +946,27 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
   // phone without the dialog scrolling or clipping the action button.
   static const double _itemWidth = 70;
   static const double _itemSpacing = 12;
-  static const int _minCycles = 4;
+
+  /// How many tiles pass the marker before the reel stops.
+  ///
+  /// **Fixed, not derived from where the winner sits in the catalogue.** This
+  /// number, [_rollDuration] and [_rollCurve] are shared with
+  /// `tool/make_sounds.py`, which emits one tick of `case_roll.wav` for each
+  /// tile crossing — so the ratchet you hear *is* the reel you are watching.
+  ///
+  /// The previous version travelled `4 * catalogue + indexOf(winner)` tiles,
+  /// which is a different distance for every skin. No pre-rendered sound can
+  /// follow that, and the reel also showed the same parade of skins in the
+  /// same order on every open. Pinning the distance and shuffling the strip
+  /// around the winner fixes both: each roll looks different and every roll
+  /// ticks identically.
+  static const int _rollItems = 72;
+  static const Duration _rollDuration = Duration(milliseconds: 4200);
+  static const Curve _rollCurve = Cubic(0.16, 0.86, 0.41, 1.0);
+
+  /// Tiles either side of the winner, so the reel is not empty as it settles
+  /// and the player can see what they *nearly* got.
+  static const int _rollTail = 6;
 
   double get _itemExtent => _itemWidth + _itemSpacing;
 
@@ -961,6 +974,10 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
     if (!_revealed && !_skipped) {
       setState(() => _skipped = true);
       _scrollController.stop();
+      // Cut the ratchet with the picture. Ticks continuing under a stopped
+      // reel — and under the reward chime — is the thing that makes a skip
+      // feel like a glitch rather than a choice.
+      AppSoundService.stop(AppSoundEffect.caseRoll);
       _onReveal();
     }
   }
@@ -968,39 +985,39 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
   @override
   void initState() {
     super.initState();
-    _rollSkins = List<AvatarSkin>.generate(
-      budgetBuddySkins.length * 8,
-      (index) => budgetBuddySkins[index % budgetBuddySkins.length],
-    );
+
+    // The strip is built around the known result: filler tiles drawn at
+    // random, the winner dropped at exactly [_rollItems]. This is how the
+    // real thing works too — the outcome is decided first and the animation
+    // is staged to arrive at it.
+    final rng = Random();
+    _rollSkins = <AvatarSkin>[
+      for (var i = 0; i < _rollItems + _rollTail; i++)
+        budgetBuddySkins[rng.nextInt(budgetBuddySkins.length)],
+    ];
+    _rollSkins[_rollItems] = widget.result.skin;
+
     _rollTrack = _RollTrack(
       rollSkins: _rollSkins,
       itemWidth: _itemWidth,
       itemSpacing: _itemSpacing,
     );
 
-    final targetIndex = budgetBuddySkins.indexWhere(
-      (skin) => skin.id == widget.result.skin.id,
-    );
-    final safeTargetIndex = targetIndex < 0 ? 0 : targetIndex;
-    final finalIndex = (_minCycles * budgetBuddySkins.length) + safeTargetIndex;
-    final totalScroll = finalIndex * _itemExtent;
-
-    _scrollController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 4200),
-    );
+    _scrollController = AnimationController(vsync: this, duration: _rollDuration);
     _scrollAnimation =
-        Tween<double>(begin: 0, end: totalScroll).animate(
-          CurvedAnimation(
-            parent: _scrollController,
-            curve: const Cubic(0.16, 0.86, 0.41, 1.0),
-          ),
+        Tween<double>(begin: 0, end: _rollItems * _itemExtent).animate(
+          CurvedAnimation(parent: _scrollController, curve: _rollCurve),
         )..addStatusListener((status) {
           if (status == AnimationStatus.completed) {
             _onReveal();
           }
         });
 
+    // Sound and motion start on the same frame, which is the only way the
+    // two stay in step: the ratchet was previously started back in
+    // `_openCase`, before an awaited network call, so how far out of sync it
+    // was depended on the connection.
+    AppSoundService.play(AppSoundEffect.caseRoll);
     _scrollController.forward();
   }
 
@@ -1015,6 +1032,18 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
     }
     setState(() {
       _revealed = true;
+    });
+
+    // The chime lands *here*, on the frame the skin is revealed — not before
+    // the dialog opens, which is where it used to fire, a full 4.2 seconds
+    // early. Rarity picks which one: richer harmonics and a longer tail as it
+    // climbs, so a legendary is audibly a bigger deal than a common without
+    // anyone reading the label.
+    AppSoundService.play(switch (widget.result.skin.rarity) {
+      SkinRarity.legendary => AppSoundEffect.unboxLegendary,
+      SkinRarity.epic => AppSoundEffect.unboxEpic,
+      SkinRarity.rare => AppSoundEffect.unboxRare,
+      _ => AppSoundEffect.unboxCommon,
     });
 
     GameToast.show(
@@ -1033,6 +1062,10 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
 
   @override
   void dispose() {
+    // The dialog can be closed before the reel finishes (rotation, a back
+    // gesture on Android), and a 4.2-second ratchet playing over the screen
+    // behind it would outlive the thing it belongs to.
+    AppSoundService.stop(AppSoundEffect.caseRoll);
     _scrollController.dispose();
     super.dispose();
   }

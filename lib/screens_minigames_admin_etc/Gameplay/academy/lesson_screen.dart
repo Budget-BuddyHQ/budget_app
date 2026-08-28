@@ -20,6 +20,7 @@ import '../../../widgets_custom_lotties/game_toast.dart';
 import 'lesson_detail_screen.dart';
 import 'practice_screen.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
+import 'curriculum_sources_card.dart';
 
 class LessonScreen extends StatefulWidget {
   const LessonScreen({
@@ -394,6 +395,8 @@ class _LessonScreenState extends State<LessonScreen> {
                             : () => _openLesson(nextLesson),
                       ),
                       const SizedBox(height: 12),
+                      const CurriculumSourcesCard(compact: true),
+                      const SizedBox(height: 12),
                       _NextLessonFocusCard(
                         nextLesson: nextLesson,
                         nextUnit: nextUnit,
@@ -450,6 +453,8 @@ class _LessonScreenState extends State<LessonScreen> {
                           ? null
                           : () => _openLesson(nextLesson),
                     ),
+                    const SizedBox(height: 12),
+                    const CurriculumSourcesCard(),
                     const SizedBox(height: 12),
                     _NextLessonFocusCard(
                       nextLesson: nextLesson,
@@ -1207,10 +1212,16 @@ class _FocusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Accent on an 18% wash of the same accent. The two mid-tone accents
+    // here — the mastery green and the mode blue — landed at 2.6:1 and 2.5:1
+    // respectively, i.e. the *numbers* were the least readable thing on the
+    // card that exists to show them.
+    final chip = AppTheme.tintedChip(accent, target: 3.0);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.18),
+        color: chip.fill,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: accent.withValues(alpha: 0.28)),
       ),
@@ -1220,7 +1231,7 @@ class _FocusPill extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              color: Color(0xFFB9D1C6),
+              color: AppTheme.textMuted,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -1229,7 +1240,7 @@ class _FocusPill extends StatelessWidget {
           Text(
             value,
             style: GoogleFonts.pixelifySans(
-              color: accent,
+              color: chip.ink,
               fontWeight: FontWeight.w700,
             ),
           ),

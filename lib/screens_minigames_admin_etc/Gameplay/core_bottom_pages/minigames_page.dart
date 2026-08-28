@@ -13,6 +13,8 @@ import '../../../widgets_custom_lotties/confetti_burst.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/hover_lift.dart';
+import '../../../models_Like_Skins_and_lessons_templates/coin_cascade_models.dart';
+import '../minigames_pages/coin_cascade_page.dart';
 import '../minigames_pages/finance_brawl_game.dart';
 import '../minigames_pages/react_challenge_screen.dart';
 import '../minigames_pages/stock_market_page.dart';
@@ -38,6 +40,8 @@ class MinigamesPage extends StatelessWidget {
         await _openStockMarket(context);
       case 'finance_brawl':
         await _openFinanceBrawl(context);
+      case 'coin_cascade':
+        await _openCoinCascade(context);
     }
   }
 
@@ -86,6 +90,38 @@ class MinigamesPage extends StatelessWidget {
           '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
       icon: Icons.bolt_rounded,
       accent: const Color(0xFF6CB6DA),
+    );
+  }
+
+  Future<void> _openCoinCascade(BuildContext context) async {
+    final controller = context.read<UserStatsController>();
+    final previousBest = controller.stats.bestArcadeScore('coin_cascade');
+
+    final game = await Navigator.of(context).push<CoinCascadeGame>(
+      FadePageRoute(builder: (_) => const CoinCascadePage()),
+    );
+    if (!context.mounted || game == null) {
+      return;
+    }
+
+    await controller.recordArcadeRun(
+      gameId: 'coin_cascade',
+      score: game.score,
+    );
+    if (!context.mounted) {
+      return;
+    }
+
+    GameToast.show(
+      context,
+      title: game.status == CascadeStatus.won
+          ? 'Goal reached'
+          : 'Run finished',
+      message: game.score > (previousBest ?? 0)
+          ? 'New best: ${game.score} · +${game.goldEarned} gold'
+          : '${game.score} points · +${game.goldEarned} gold',
+      icon: Icons.grid_view_rounded,
+      accent: const Color(0xFF69C6FF),
     );
   }
 
@@ -574,6 +610,26 @@ class _GameArt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The badge is a wash of the accent and the glyph *is* the accent, so the
+    // brighter the game's colour the more the icon vanishes into its own
+    // badge — the mint one measured 2.6:1.
+    //
+    // Both gradient stops are resolved to **opaque** colours here rather than
+    // left as alpha over whatever is behind. That is what makes the glyph
+    // colour below trustworthy: a translucent wash means the real background
+    // depends on the card, and the first attempt at this fix aimed at a
+    // guessed surface and landed short. The lighter stop is the worst case,
+    // so it is the one the glyph is measured against.
+    final cardBase = Color.lerp(AppTheme.panel, game.accent, 0.14)!;
+    final bright = AppTheme.flatten(
+      game.accent.withValues(alpha: 0.28),
+      cardBase,
+    );
+    final faint = AppTheme.flatten(
+      game.accent.withValues(alpha: 0.10),
+      cardBase,
+    );
+
     return Container(
       width: size,
       height: size,
@@ -581,10 +637,7 @@ class _GameArt extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            game.accent.withValues(alpha: 0.28),
-            game.accent.withValues(alpha: 0.10),
-          ],
+          colors: [bright, faint],
         ),
         borderRadius: BorderRadius.circular(size * 0.26),
         border: Border.all(
@@ -592,7 +645,11 @@ class _GameArt extends StatelessWidget {
           width: 2,
         ),
       ),
-      child: Icon(game.icon, color: game.accent, size: size * 0.48),
+      child: Icon(
+        game.icon,
+        color: AppTheme.legibleOn(game.accent, bright, target: 3.0),
+        size: size * 0.48,
+      ),
     );
   }
 }

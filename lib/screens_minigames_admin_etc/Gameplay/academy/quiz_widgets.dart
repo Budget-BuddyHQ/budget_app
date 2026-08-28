@@ -2,8 +2,12 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../models_Like_Skins_and_lessons_templates/quiz_bank.dart';
+import '../../../models_Like_Skins_and_lessons_templates/lesson_extras.dart';
+import '../../../models_Like_Skins_and_lessons_templates/lesson_sources.dart';
+import '../../../themes_colors/app_theme.dart';
 
 // Shared quiz presentation, used by both the graded lesson/quiz flow in
 // lesson_detail_screen.dart and the repeatable practice runs in
@@ -321,6 +325,9 @@ class QuizResultsCard extends StatelessWidget {
               questions: missed
                   .where((question) => question.skillId == skill)
                   .toList(growable: false),
+              sources: resolveSources(
+                kQuizSkillSources[skill] ?? const <String>[],
+              ),
             ),
             const SizedBox(height: 10),
           ],
@@ -330,12 +337,75 @@ class QuizResultsCard extends StatelessWidget {
   }
 }
 
+/// "CFPB · Credit reports and scores", tappable.
+///
+/// Shown on the topics a player got **wrong**, which is the moment a citation
+/// is worth most: they have just been told an answer they did not expect, and
+/// the right response to that is to go and check rather than to take the
+/// app's word for it. A source line under a question they got right would be
+/// decoration; here it is the next step.
+class SourceLink extends StatelessWidget {
+  const SourceLink({super.key, required this.source});
+
+  final LessonSource source;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () async {
+        final launched = await launchUrl(
+          Uri.parse(source.url),
+          mode: LaunchMode.externalApplication,
+        );
+        if (!launched && context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(source.url)));
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.open_in_new_rounded,
+              size: 13,
+              color: Color(0xFF9CDBFF),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                source.label,
+                style: GoogleFonts.quicksand(
+                  color: const Color(0xFF9CDBFF),
+                  fontSize: 11.5,
+                  height: 1.3,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// One skill the player got wrong, with the correct answers spelled out.
 class _MissedSkillRow extends StatelessWidget {
-  const _MissedSkillRow({required this.label, required this.questions});
+  const _MissedSkillRow({
+    required this.label,
+    required this.questions,
+    this.sources = const <LessonSource>[],
+  });
 
   final String label;
   final List<QuizQuestion> questions;
+
+  /// Where the correct answers for this topic come from. See [SourceLink].
+  final List<LessonSource> sources;
 
   @override
   Widget build(BuildContext context) {
@@ -392,6 +462,22 @@ class _MissedSkillRow extends StatelessWidget {
               ],
             ),
             if (question != questions.last) const SizedBox(height: 12),
+          ],
+          if (sources.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Divider(color: Colors.white.withValues(alpha: 0.10), height: 1),
+            const SizedBox(height: 8),
+            Text(
+              'Check it yourself',
+              style: GoogleFonts.quicksand(
+                color: AppTheme.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.4,
+              ),
+            ),
+            const SizedBox(height: 2),
+            for (final source in sources) SourceLink(source: source),
           ],
         ],
       ),
