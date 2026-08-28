@@ -147,11 +147,16 @@ void main() {
     test('unit ids are NOT renumbered — saved progress depends on them', () {
       // Renaming an id silently orphans every player's `completed_lessons`.
       // unit_10 being titled "Unit 1" is deliberate, not a mistake.
+      // Growing this set is fine and is the point of pinning it: adding a
+      // unit is a deliberate edit here, while *renaming* one shows up as a
+      // swap and gets caught. unit_12 and unit_13 were added with the Big
+      // Purchases and Protecting Your Money units.
       expect(
         lessonUnits.map((u) => u.id).toSet(),
         {
           'unit_1', 'unit_2', 'unit_3', 'unit_4', 'unit_5', 'unit_6',
-          'unit_7', 'unit_8', 'unit_9', 'unit_10', 'unit_11',
+          'unit_7', 'unit_8', 'unit_9', 'unit_10', 'unit_11', 'unit_12',
+          'unit_13',
         },
         reason: 'a unit id changed — saved lesson progress would be lost',
       );

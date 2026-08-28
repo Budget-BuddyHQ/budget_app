@@ -1,7 +1,7 @@
 import 'lesson.dart';
 
 /// The curriculum, **in chronological (age) order** — ages 4-6 first,
-/// adult last, one continuous prerequisite chain from Unit 1 to Unit 11.
+/// adult last, one continuous prerequisite chain from Unit 1 to Unit 13.
 ///
 /// It did not use to be. The youngest units were pinned to the *end* of
 /// this list, because `DailyPlanBuilder._nextLesson` walked it in raw list
@@ -537,13 +537,84 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
       ),
     ],
   ),
+  // Slotted here, not appended, because the list is required to run
+  // youngest to oldest: a first car and a first lease are things people
+  // do at 18-20, so this belongs with the other `graduating` units
+  // rather than after the adult investing and retirement track.
+  LessonUnit(
+    id: 'unit_12',
+    title: 'Unit 9: Big Purchases',
+    subtitle: 'Cars, deposits and your first lease',
+    description:
+        'The two biggest cheques most people write before a mortgage. What a '
+        'car costs after the sticker, how a loan offer hides its real price '
+        'in the monthly payment, and what a landlord actually wants before '
+        'handing over keys.',
+    order: 9,
+    ageStage: AgeStage.graduating,
+    lessons: <Lesson>[
+      Lesson(
+        id: 'lesson_53',
+        title: 'What a Car Really Costs',
+        unitId: 'unit_12',
+        order: 1,
+        prerequisites: <String>['test_5'],
+      ),
+      Lesson(
+        id: 'lesson_54',
+        title: 'Reading a Loan Offer',
+        unitId: 'unit_12',
+        order: 2,
+        prerequisites: <String>['lesson_53'],
+      ),
+      Lesson(
+        id: 'quiz_12',
+        title: 'Quick Quiz',
+        unitId: 'unit_12',
+        order: 3,
+        type: LessonNodeType.quiz,
+        prerequisites: <String>['lesson_54'],
+        estimatedMinutes: 4,
+      ),
+      Lesson(
+        id: 'lesson_55',
+        title: 'Renting Your First Place',
+        unitId: 'unit_12',
+        order: 4,
+        prerequisites: <String>['quiz_12'],
+      ),
+      Lesson(
+        id: 'lesson_56',
+        title: 'The Move-In Bill',
+        unitId: 'unit_12',
+        order: 5,
+        prerequisites: <String>['lesson_55'],
+      ),
+      Lesson(
+        id: 'lesson_57',
+        title: 'Buy, Lease, or Wait',
+        unitId: 'unit_12',
+        order: 6,
+        prerequisites: <String>['lesson_56'],
+      ),
+      Lesson(
+        id: 'test_12',
+        title: 'Unit Test',
+        unitId: 'unit_12',
+        order: 7,
+        type: LessonNodeType.unitTest,
+        prerequisites: <String>['lesson_57'],
+        estimatedMinutes: 6,
+      ),
+    ],
+  ),
   LessonUnit(
     id: 'unit_4',
-    title: 'Unit 9: Investing Basics',
+    title: 'Unit 10: Investing Basics',
     subtitle: 'Risk, growth, and strategy',
     description:
         'Learn how investing grows wealth over time and how to manage risk without guessing.',
-    order: 9,
+    order: 10,
     ageStage: AgeStage.adult,
     lessons: <Lesson>[
       Lesson(
@@ -551,7 +622,7 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
         title: 'Why People Invest',
         unitId: 'unit_4',
         order: 1,
-        prerequisites: <String>['test_5'],
+        prerequisites: <String>['test_12'],
       ),
       Lesson(
         id: 'lesson_17',
@@ -603,13 +674,13 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
   ),
   LessonUnit(
     id: 'unit_6',
-    title: 'Unit 10: Stocks and Trading',
+    title: 'Unit 11: Stocks and Trading',
     subtitle: 'Owning a piece of a company',
     description:
         'What a share actually is, how markets move, and why patience beats '
         'reacting. Completing these pays out real gold and starter shares you '
         'can trade on the Market Board.',
-    order: 10,
+    order: 11,
     ageStage: AgeStage.adult,
     lessons: <Lesson>[
       Lesson(
@@ -669,13 +740,13 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
   ),
   LessonUnit(
     id: 'unit_9',
-    title: 'Unit 11: Retirement and the 401(k)',
+    title: 'Unit 12: Retirement and the 401(k)',
     subtitle: 'The account you open decades before you need it',
     description:
         'Employer matches, Roth vs traditional, and why starting at 22 beats '
         'starting at 40 by a margin that looks like a typo. Written for '
         'adults, but worth reading early.',
-    order: 11,
+    order: 12,
     ageStage: AgeStage.adult,
     lessons: <Lesson>[
       Lesson(
@@ -729,6 +800,73 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
         order: 7,
         type: LessonNodeType.unitTest,
         prerequisites: <String>['lesson_45'],
+        estimatedMinutes: 6,
+      ),
+    ],
+  ),
+  LessonUnit(
+    id: 'unit_13',
+    title: 'Unit 13: Protecting Your Money',
+    subtitle: 'Fraud, freezes and getting it back',
+    description:
+        'Unit 4 covered the tricks aimed at you. This is the grown-up '
+        'version: what to do when someone opens an account in your name, how '
+        'to lock your credit before they do, and which fees you were never '
+        'required to pay.',
+    order: 13,
+    ageStage: AgeStage.adult,
+    lessons: <Lesson>[
+      Lesson(
+        id: 'lesson_58',
+        title: 'How Identity Theft Happens',
+        unitId: 'unit_13',
+        order: 1,
+        prerequisites: <String>['test_9'],
+      ),
+      Lesson(
+        id: 'lesson_59',
+        title: 'Freezing Your Credit',
+        unitId: 'unit_13',
+        order: 2,
+        prerequisites: <String>['lesson_58'],
+      ),
+      Lesson(
+        id: 'quiz_13',
+        title: 'Quick Quiz',
+        unitId: 'unit_13',
+        order: 3,
+        type: LessonNodeType.quiz,
+        prerequisites: <String>['lesson_59'],
+        estimatedMinutes: 4,
+      ),
+      Lesson(
+        id: 'lesson_60',
+        title: 'Reading Your Credit Report',
+        unitId: 'unit_13',
+        order: 4,
+        prerequisites: <String>['quiz_13'],
+      ),
+      Lesson(
+        id: 'lesson_61',
+        title: 'Fees You Can Turn Off',
+        unitId: 'unit_13',
+        order: 5,
+        prerequisites: <String>['lesson_60'],
+      ),
+      Lesson(
+        id: 'lesson_62',
+        title: 'When Something Goes Wrong',
+        unitId: 'unit_13',
+        order: 6,
+        prerequisites: <String>['lesson_61'],
+      ),
+      Lesson(
+        id: 'test_13',
+        title: 'Unit Test',
+        unitId: 'unit_13',
+        order: 7,
+        type: LessonNodeType.unitTest,
+        prerequisites: <String>['lesson_62'],
         estimatedMinutes: 6,
       ),
     ],

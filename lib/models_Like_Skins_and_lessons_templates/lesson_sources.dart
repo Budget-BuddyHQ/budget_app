@@ -67,6 +67,7 @@ const Set<String> kTrustedSourceHosts = <String>{
   'www.ftc.gov',
   'www.usda.gov',
   'www.treasurydirect.gov',
+  'www.identitytheft.gov',
 };
 
 /// The citation catalogue, keyed by a short stable id.
@@ -280,6 +281,16 @@ const Map<String, LessonSource> kLessonSources = <String, LessonSource>{
     publisher: 'USA.gov',
     title: 'Money and credit',
     url: 'https://www.usa.gov/money',
+  ),
+  // The FTC's dedicated recovery site, kept separate from `ftc_identity_theft`
+  // (which explains the problem) because this one *is* the action: it builds
+  // a personal recovery plan and generates the affidavit banks ask for. A
+  // lesson that tells someone their identity was stolen and does not tell
+  // them where to go has stopped one step short of being useful.
+  'identitytheft_gov': LessonSource(
+    publisher: 'FTC',
+    title: 'IdentityTheft.gov — report and recover',
+    url: 'https://www.identitytheft.gov/',
   ),
 };
 
