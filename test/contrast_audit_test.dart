@@ -22,8 +22,9 @@ import 'package:budget_app/themes_colors/app_theme.dart';
 import 'package:budget_app/widgets_custom_lotties/pixel_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+
+import 'support/app_fonts.dart';
 
 /// Automated colour-contrast audit.
 ///
@@ -375,7 +376,11 @@ LifeSimController _midLife() {
 }
 
 void main() {
-  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+  // Registers the real typefaces up front. `google_fonts` resolves a
+  // bundled face asynchronously on first use, so without this only the
+  // faces touched by the first build are loaded when anything is
+  // measured — see test/support/app_fonts.dart.
+  setUpAll(loadAppFonts);
 
   final screens = <String, Widget Function()>{
     'Home': () => const HomeScreen(),

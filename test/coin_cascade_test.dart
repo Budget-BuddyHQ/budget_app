@@ -298,27 +298,58 @@ void main() {
       }
     });
 
-    test('a run ends in a real result', () {
-      var wins = 0;
-      var losses = 0;
-      for (var seed = 0; seed < 40; seed++) {
-        final board = game(seed);
-        while (board.status == CascadeStatus.playing) {
-          if (!_makeAnyMove(board)) break;
-          board.resolveAll();
+    test('a run always ends in a real result', () {
+      for (final level in kCascadeLevels) {
+        for (var seed = 0; seed < 12; seed++) {
+          final board = CoinCascadeGame(random: Random(seed), level: level);
+          while (board.status == CascadeStatus.playing) {
+            if (!_makeAnyMove(board)) break;
+            board.resolveAll();
+          }
+          expect(
+            board.status,
+            isNot(CascadeStatus.playing),
+            reason: '${level.name} seed $seed never resolved',
+          );
         }
-        if (board.status == CascadeStatus.won) wins++;
-        if (board.status == CascadeStatus.lost) losses++;
       }
+    });
+
+    test('level 1 is winnable by a beginner, level 7 is not', () {
       // Played by a bot taking the first legal swap it finds — the weakest
-      // possible strategy. It should mostly lose, but not always: a game a
-      // random player can never win is too hard, and one they always win has
-      // no decisions in it.
-      expect(wins + losses, 40);
+      // strategy there is. The two ends of the ladder should answer it
+      // differently, or the levels are decoration.
+      //
+      // This is what caught level 1 being *too* easy when the ladder landed:
+      // the original single-tuning test asserted the bot must sometimes lose,
+      // and level 1 is deliberately a walkover, so the property had to be
+      // restated across the ladder rather than relaxed.
+      int lossesOn(CascadeLevel level) {
+        var losses = 0;
+        for (var seed = 0; seed < 25; seed++) {
+          final board = CoinCascadeGame(random: Random(seed), level: level);
+          while (board.status == CascadeStatus.playing) {
+            if (!_makeAnyMove(board)) break;
+            board.resolveAll();
+          }
+          if (board.status == CascadeStatus.lost) losses++;
+        }
+        return losses;
+      }
+
+      final first = lossesOn(kCascadeLevels.first);
+      final last = lossesOn(kCascadeLevels.last);
       expect(
-        losses,
-        greaterThan(0),
-        reason: 'the first-move-you-see strategy wins every time — no choice',
+        first,
+        lessThan(10),
+        reason: 'level 1 beats a beginner $first times in 25 — too harsh for '
+            'the first thing a player meets',
+      );
+      expect(
+        last,
+        greaterThan(first),
+        reason: 'the last level is no harder than the first for a random '
+            'player, so the ladder is not a ladder',
       );
     });
   });
@@ -338,6 +369,147 @@ void main() {
       expect(board.buyMoves(), isTrue);
       expect(board.coins, 3);
       expect(board.movesLeft, moves + CoinCascadeGame.extraMovesPerPurchase);
+    });
+  });
+
+  group('the level ladder', () {
+    // A single tuning is one puzzle. Once a player has solved it there is
+    // nothing left to find out, which is why each level changes *what you have
+    // to think about* rather than just how much of it there is.
+    test('every level is reachable and numbered in order', () {
+      for (var i = 0; i < kCascadeLevels.length; i++) {
+        expect(kCascadeLevels[i].number, i + 1);
+        expect(cascadeLevelFor(i + 1), kCascadeLevels[i]);
+      }
+    });
+
+    test('the ladder is long enough to be a ladder', () {
+      // It stopped at 7 -- about twenty minutes -- and then repeated its
+      // hardest level for ever, because `cascadeLevelFor` falls back to the
+      // last one. A game whose progression ends silently is a game that
+      // teaches you it has nothing left.
+      expect(kCascadeLevels.length, greaterThanOrEqualTo(13));
+    });
+
+    test('each level changes what you have to think about', () {
+      // Not just bigger numbers: every level has to differ from the one
+      // before it on at least one *rule* dial, or the ladder is a grind
+      // wearing a progression's clothes.
+      for (var i = 1; i < kCascadeLevels.length; i++) {
+        final a = kCascadeLevels[i - 1];
+        final b = kCascadeLevels[i];
+        final changed =
+            a.billInterval != b.billInterval ||
+            a.wantsCostMultiplier != b.wantsCostMultiplier ||
+            a.coinValue != b.coinValue ||
+            a.billCapacity != b.billCapacity ||
+            a.moves != b.moves;
+        expect(
+          changed,
+          isTrue,
+          reason: 'level ${b.number} plays identically to ${a.number}',
+        );
+      }
+    });
+
+    test('an unknown level falls back rather than throwing', () {
+      // Reached by "Next" on the last level if that guard ever regresses. A
+      // crash there would end a winning run on an error screen.
+      expect(cascadeLevelFor(999), kCascadeLevels.last);
+      expect(cascadeLevelFor(0), kCascadeLevels.last);
+    });
+
+    test('every level states its rule in one line', () {
+      // A rule that needs two lines is too complicated for a game a
+      // seven-year-old plays.
+      for (final level in kCascadeLevels) {
+        expect(level.name, isNotEmpty);
+        expect(level.rule.length, greaterThan(20), reason: level.name);
+        expect(level.rule.length, lessThan(90), reason: level.name);
+      }
+    });
+
+    test('the ladder gets harder', () {
+      // Not monotonic in any single number — level 3 lowers the goal and
+      // halves the moves — so this checks the *combination*: goal per move
+      // available, which is the thing a player actually feels.
+      double pressure(CascadeLevel l) => l.savingsGoal / l.moves;
+      expect(
+        pressure(kCascadeLevels.last),
+        greaterThan(pressure(kCascadeLevels.first)),
+        reason: 'the last level asks less per move than the first',
+      );
+    });
+
+    test('the rule twists actually change play', () {
+      // Guards the twists being data that nothing reads — the failure mode
+      // where a level says "wants cost double" and plays identically.
+      final doubled = kCascadeLevels.firstWhere(
+        (l) => l.wantsCostMultiplier > 1,
+      );
+      final board = CoinCascadeGame(
+        random: Random(3),
+        level: doubled,
+        columns: 5,
+        rows: 5,
+      );
+      _paint(board, [
+        'www..',
+        '.....',
+        '.....',
+        '.....',
+        '.....',
+      ]);
+      final doubledCost = board.step().billsAdded;
+
+      final plain = CoinCascadeGame(
+        random: Random(3),
+        level: kCascadeLevels.first,
+        columns: 5,
+        rows: 5,
+      );
+      _paint(plain, [
+        'www..',
+        '.....',
+        '.....',
+        '.....',
+        '.....',
+      ]);
+      final plainCost = plain.step().billsAdded;
+
+      expect(
+        doubledCost,
+        greaterThan(plainCost),
+        reason: 'the "wants cost double" level charges the same as level 1',
+      );
+    });
+
+    test('a level with richer coins pays more per match', () {
+      final rich = kCascadeLevels.firstWhere((l) => l.coinValue > 1);
+      final board = CoinCascadeGame(
+        random: Random(5),
+        level: rich,
+        columns: 5,
+        rows: 5,
+      );
+      _paint(board, [
+        'ccc..',
+        '.....',
+        '.....',
+        '.....',
+        '.....',
+      ]);
+      expect(board.step().coins, greaterThan(3));
+    });
+
+    test('bills arrive on the level schedule', () {
+      for (final level in kCascadeLevels) {
+        expect(
+          level.billInterval,
+          inInclusiveRange(2, 6),
+          reason: '${level.name} schedules bills every ${level.billInterval}',
+        );
+      }
     });
   });
 

@@ -277,6 +277,8 @@ class TownNpc {
     required this.tileX,
     required this.tileY,
     required this.lines,
+    this.patrolTiles = 0,
+    this.patrolHorizontal = true,
   });
 
   final String id;
@@ -284,6 +286,23 @@ class TownNpc {
   final TownNpcLook look;
   final int tileX;
   final int tileY;
+
+  /// How far this NPC paces, in tiles, and along which axis.
+  ///
+  /// **Why a short patrol rather than free wandering.** A town of people
+  /// standing perfectly still reads as a diorama, and that was the note: the
+  /// map looked stale. But an NPC that wanders anywhere needs pathfinding,
+  /// can walk into the sea, and — worst of all — can walk *away* from the
+  /// player who is trying to reach them. Pacing a few tiles along one axis
+  /// makes the town alive and keeps every NPC exactly where the player last
+  /// saw them.
+  ///
+  /// Zero means standing still, which is right for the ones positioned
+  /// behind counters.
+  final int patrolTiles;
+
+  /// True to pace left/right, false to pace up/down.
+  final bool patrolHorizontal;
 
   /// Cycled through on repeat visits so a second conversation isn't a
   /// copy of the first.
@@ -295,6 +314,7 @@ class TownNpc {
 const List<TownNpc> kTownNpcs = <TownNpc>[
   TownNpc(
     id: 'npc_taxer',
+    patrolTiles: 3,
     name: 'Tax Collector',
     look: TownNpcLook.taxer,
     tileX: 34,
@@ -310,6 +330,7 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
   ),
   TownNpc(
     id: 'npc_shopper',
+    patrolTiles: 4,
     name: 'Shopper',
     look: TownNpcLook.customer,
     tileX: 14,
@@ -324,6 +345,8 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
   ),
   TownNpc(
     id: 'npc_saver',
+    patrolTiles: 2,
+    patrolHorizontal: false,
     name: 'Careful Spender',
     look: TownNpcLook.fancy,
     tileX: 22,
@@ -337,6 +360,8 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
   ),
   TownNpc(
     id: 'npc_worker',
+    patrolTiles: 3,
+    patrolHorizontal: false,
     name: 'Shift Worker',
     look: TownNpcLook.worker,
     tileX: 33,
@@ -351,6 +376,7 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
   ),
   TownNpc(
     id: 'npc_student',
+    patrolTiles: 4,
     name: 'Student',
     look: TownNpcLook.customer,
     // Was (17, 17), which sat right against the west ledge with a solid

@@ -3,9 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 
-import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../themes_colors/app_theme.dart';
+import '../../../widgets_custom_lotties/map_backdrop.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson_extras.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson_sources.dart';
@@ -216,16 +216,10 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       ),
       body: Stack(
         children: [
-          Positioned.fill(
-            child: Image.asset(
-              AppAssets.villageMapBackground,
-              fit: BoxFit.cover,
-              filterQuality: FilterQuality.none,
-            ),
-          ),
-          Positioned.fill(
-            child: Container(color: AppTheme.panel.withValues(alpha: 0.74)),
-          ),
+          // Reading, not decorative: the lesson body and the quiz options
+          // are laid straight onto this. See [MapBackdrop] for why the fix
+          // was a blurred copy of the map rather than a darker scrim.
+          const MapBackdrop(style: MapBackdropStyle.reading),
           SafeArea(
             child: Column(
               children: [

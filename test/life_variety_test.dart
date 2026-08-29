@@ -130,14 +130,23 @@ void main() {
 
     test('the childhood years are not starved either', () {
       // Ages 10-11 had *zero* eligible events at one point — a life would
-      // silently skip straight through them with nothing to decide. Lower
-      // bar than the adult years because childhood is a handful of turns,
-      // not fifty, but it must never be empty.
-      for (final age in [5, 8, 10, 11, 13]) {
+      // silently skip straight through them with nothing to decide.
+      //
+      // The bar was 3, then measured at 20-23 across ages 5-15 while every
+      // adult year sat at 60-70. That gap mattered more than the numbers
+      // suggest: a run plays eighteen turns through childhood before it
+      // reaches twenty, so the thinnest stretch of the pool was also the
+      // *opening* of the game, and the whole of what the 4-12 audience ever
+      // sees. `kLifeEventsChildhood` was written for exactly this line.
+      //
+      // Still below the adult floor, because childhood is a dozen turns
+      // rather than fifty — but high enough that two children do not play
+      // the same decade.
+      for (final age in [5, 8, 10, 11, 13, 15]) {
         final count = kLifeEvents.where((e) => e.matches(plain(age))).length;
         expect(
           count,
-          greaterThanOrEqualTo(3),
+          greaterThanOrEqualTo(20),
           reason: 'only $count events are eligible at age $age',
         );
       }

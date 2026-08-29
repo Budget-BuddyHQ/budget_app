@@ -7,6 +7,7 @@ import '../../../widgets_custom_lotties/pixel_kit.dart';
 import '../../../constants/app_assets.dart';
 import 'package:provider/provider.dart';
 
+import '../../../controllers_that_updates_stats/app_settings_controller.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_record.dart';
@@ -15,13 +16,13 @@ import '../minigames_pages/past_lives_screen.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/idle_hover_icon.dart';
+import '../../../widgets_custom_lotties/day_night_sky.dart';
 
 /// The "MAIN GAME" pill: a gold wash with a gold label, made legible.
 ///
 /// Computed once at load rather than per build — it is a pure function of two
 /// constants, and the whole point is that the fill and the ink stay a pair.
 final _mainGameTag = AppTheme.tintedChip(const Color(0xFFFFD45C));
-
 
 /// The main-game tab: a launcher for **Life** (the BitLife-style main game),
 /// with quick jumps to Academy and Arcade. The old open-world map lived here
@@ -41,6 +42,18 @@ class MainGamePage extends StatelessWidget {
     await Navigator.of(context).pushNamed('/life');
   }
 
+  /// Replays the in-game tour: clears the "seen" flag and starts a life.
+  ///
+  /// The hub cannot draw the tour itself — every step spotlights a widget
+  /// that only exists inside a run — so it does what the Profile screen does
+  /// for the app tour: it sets the state that makes the next screen show it.
+  Future<void> _replayLifeTour(BuildContext context) async {
+    HapticFeedback.mediumImpact();
+    await context.read<AppSettingsController>().requestLifeTourReplay();
+    if (!context.mounted) return;
+    await Navigator.of(context).pushNamed('/life');
+  }
+
   void _openTab(int tab) {
     HapticFeedback.lightImpact();
     onNavSelected?.call(tab);
@@ -48,9 +61,9 @@ class MainGamePage extends StatelessWidget {
 
   Future<void> _openPastLives(BuildContext context) async {
     HapticFeedback.lightImpact();
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const PastLivesScreen()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const PastLivesScreen()));
   }
 
   @override
@@ -66,84 +79,100 @@ class MainGamePage extends StatelessWidget {
                   activeIndex: activeTabIndex,
                   onSelected: onNavSelected!,
                 ),
-          body: SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 120),
-              children: [
-                Text(
-                  'Play',
-                  style: GoogleFonts.pixelifySans(
-                    color: Colors.white,
-                    fontSize: 30,
-                    fontWeight: FontWeight.w700,
+          // The sky behind the main game changes with the hour. Fourteen
+          // gradients had been sitting unreferenced in the asset folder while
+          // the app painted the same flat green at every time of day — see
+          // [DayNightSky] for why it is dimmed and scrimmed rather than shown
+          // at full strength.
+          body: DayNightSky(
+            child: SafeArea(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 120),
+                children: [
+                  Text(
+                    'Play',
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontSize: 30,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                // Level and gold, with the balance in the game's own display
-                // face. This line is the page's only status readout, and a
-                // gold figure drawn as art is the difference between a game
-                // and a settings header.
-                Row(
-                  children: [
-                    PixelKitIcon(AppAssets.kitIconStar, size: 18),
-                    const SizedBox(width: 7),
-                    Text(
-                      'Level ${stats.level}',
-                      style: GoogleFonts.pixelifySans(
-                        color: const Color(0xFFFFD45C),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
+                  const SizedBox(height: 8),
+                  // Level and gold, with the balance in the game's own display
+                  // face. This line is the page's only status readout, and a
+                  // gold figure drawn as art is the difference between a game
+                  // and a settings header.
+                  Row(
+                    children: [
+                      PixelKitIcon(AppAssets.kitIconStar, size: 18),
+                      const SizedBox(width: 7),
+                      Text(
+                        'Level ${stats.level}',
+                        style: GoogleFonts.pixelifySans(
+                          color: const Color(0xFFFFD45C),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    PixelKitIcon(AppAssets.kitIconCoin, size: 18),
-                    const SizedBox(width: 7),
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: MoneyGlyphs('${stats.gold}', height: 20),
+                      const SizedBox(width: 16),
+                      PixelKitIcon(AppAssets.kitIconCoin, size: 18),
+                      const SizedBox(width: 7),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: MoneyGlyphs('${stats.gold}', height: 20),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _LifeHeroCard(onPlay: () => _playLife(context)),
-                const SizedBox(height: 18),
-                _PastLivesCard(
-                  book: stats.lifeRecords,
-                  onOpen: () => _openPastLives(context),
-                ),
-                const SizedBox(height: 18),
-                _EndingsCollection(
-                  discovered: stats.discoveredEndings.toSet(),
-                  onPlay: () => _playLife(context),
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _ShortcutCard(
-                        label: 'Academy',
-                        subtitle: 'Lessons & quizzes',
-                        icon: Icons.school_rounded,
-                        color: const Color(0xFF58C7FF),
-                        onTap: () => _openTab(AppTabIndex.academy),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _LifeHeroCard(onPlay: () => _playLife(context)),
+                  const SizedBox(height: 18),
+                  // Deliberately here rather than in the game's own app bar.
+                  // That bar already carries the character's name, age, job
+                  // and balance beside two actions, and adding a third
+                  // squeezed the name column to 58px on a 320px phone --
+                  // "Alex Morgan" needs 96. The hub is where somebody goes
+                  // when they want to know what this is, and it is what the
+                  // tour's own closing step tells them.
+                  _HowToPlayRow(onTap: () => _replayLifeTour(context)),
+                  const SizedBox(height: 18),
+                  _PastLivesCard(
+                    book: stats.lifeRecords,
+                    onOpen: () => _openPastLives(context),
+                  ),
+                  const SizedBox(height: 18),
+                  _EndingsCollection(
+                    discovered: stats.discoveredEndings.toSet(),
+                    onPlay: () => _playLife(context),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ShortcutCard(
+                          label: 'Academy',
+                          subtitle: 'Lessons & quizzes',
+                          icon: Icons.school_rounded,
+                          color: const Color(0xFF58C7FF),
+                          onTap: () => _openTab(AppTabIndex.academy),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: _ShortcutCard(
-                        label: 'Arcade',
-                        subtitle: 'Mini-games',
-                        icon: Icons.sports_esports_rounded,
-                        color: const Color(0xFFFF8FB1),
-                        onTap: () => _openTab(AppTabIndex.minigames),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: _ShortcutCard(
+                          label: 'Arcade',
+                          subtitle: 'Mini-games',
+                          icon: Icons.sports_esports_rounded,
+                          color: const Color(0xFFFF8FB1),
+                          onTap: () => _openTab(AppTabIndex.minigames),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -324,9 +353,7 @@ class _EndingSlot extends StatelessWidget {
                     errorBuilder: (_, _, _) =>
                         Icon(ending.icon, color: ending.color, size: 24),
                   )
-                : Center(
-                    child: PixelKitIcon(AppAssets.kitIconLock, size: 22),
-                  ),
+                : Center(child: PixelKitIcon(AppAssets.kitIconLock, size: 22)),
           ),
           const SizedBox(height: 6),
           FittedLabel(
@@ -343,6 +370,68 @@ class _EndingSlot extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// "How to play" — starts a life with the in-game tour running.
+class _HowToPlayRow extends StatelessWidget {
+  const _HowToPlayRow({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final chip = AppTheme.tintedChip(const Color(0xFF69C6FF), alpha: 0.14);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: chip.fill,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+            border: Border.all(
+              color: const Color(0xFF69C6FF).withValues(alpha: 0.28),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.help_outline_rounded, color: chip.ink, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FittedLabel(
+                      'How to play',
+                      style: GoogleFonts.pixelifySans(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Buddy walks you through a life, in the game itself.',
+                      maxLines: 2,
+                      style: GoogleFonts.quicksand(
+                        color: AppTheme.textMuted,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: chip.ink),
+            ],
+          ),
+        ),
       ),
     );
   }

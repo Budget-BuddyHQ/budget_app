@@ -48,10 +48,28 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
 
   bool _finished = false;
 
+  /// Highest level cleared this session.
+  ///
+  /// Session-scoped rather than saved, deliberately: a run is a few minutes
+  /// and the ladder is seven levels, so persisting it would mostly mean a
+  /// returning player is handed level 7 and no idea what the earlier rules
+  /// were. The rules *are* the curriculum, in order.
+  int _unlocked = 1;
+
   @override
   void initState() {
     super.initState();
-    _game = CoinCascadeGame();
+    _game = CoinCascadeGame(level: kCascadeLevels.first);
+  }
+
+  void _startLevel(int number) {
+    setState(() {
+      _finished = false;
+      _selected = null;
+      _clearing = const {};
+      _flash = null;
+      _game = CoinCascadeGame(level: cascadeLevelFor(number));
+    });
   }
 
   @override
@@ -163,6 +181,7 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
   void _checkFinished() {
     if (_finished || _game.status == CascadeStatus.playing) return;
     _finished = true;
+    if (_game.status == CascadeStatus.won) _recordWin();
     AppSoundService.play(
       _game.status == CascadeStatus.won
           ? AppSoundEffect.celebration
@@ -176,14 +195,14 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
     });
   }
 
-  void _restart() {
-    setState(() {
-      _finished = false;
-      _selected = null;
-      _clearing = const {};
-      _flash = null;
-      _game.reset();
-    });
+  void _restart() => _startLevel(_game.level.number);
+
+  /// Called when a level is beaten: unlock the next one.
+  void _recordWin() {
+    final next = _game.level.number + 1;
+    if (next > _unlocked && next <= kCascadeLevels.length) {
+      _unlocked = next;
+    }
   }
 
   @override
@@ -212,6 +231,11 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
         child: Column(
           children: [
             _CascadeHud(game: _game),
+            _LevelBanner(
+              level: _game.level,
+              unlocked: _unlocked,
+              onPick: _startLevel,
+            ),
             Expanded(
               child: Stack(
                 alignment: Alignment.center,
@@ -237,6 +261,9 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
                   if (done)
                     _ResultCard(
                       game: _game,
+                      hasNext: _game.status == CascadeStatus.won &&
+                          _game.level.number < kCascadeLevels.length,
+                      onNext: () => _startLevel(_game.level.number + 1),
                       onAgain: _restart,
                       onLeave: () => Navigator.of(context).pop(_game),
                     ),
@@ -327,6 +354,91 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
 }
 
 /// Score, goal, bills and moves.
+/// The level name, its one-line rule, and a way back to earlier levels.
+///
+/// The rule is on screen the whole time rather than shown once at the start.
+/// "Every want match adds twice the bills" is the thing the player is supposed
+/// to be reasoning about, and a rule you have to remember from a dialog is a
+/// rule you play the first two minutes without.
+class _LevelBanner extends StatelessWidget {
+  const _LevelBanner({
+    required this.level,
+    required this.unlocked,
+    required this.onPick,
+  });
+
+  final CascadeLevel level;
+  final int unlocked;
+  final ValueChanged<int> onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final chip = AppTheme.tintedChip(const Color(0xFFFFD45C), alpha: 0.14);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: chip.fill,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: const Color(0xFFFFD45C).withValues(alpha: 0.28),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FittedLabel(
+                    'Level ${level.number} · ${level.name}',
+                    style: GoogleFonts.pixelifySans(
+                      color: chip.ink,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    level.rule,
+                    style: GoogleFonts.quicksand(
+                      color: AppTheme.textMuted,
+                      fontSize: 11,
+                      height: 1.3,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            PopupMenuButton<int>(
+              tooltip: 'Pick a level',
+              icon: Icon(Icons.list_rounded, size: 20, color: chip.ink),
+              onSelected: onPick,
+              itemBuilder: (context) => [
+                for (final l in kCascadeLevels)
+                  PopupMenuItem<int>(
+                    value: l.number,
+                    // Later levels stay listed but disabled, so the ladder is
+                    // visible from level one — you can see what is coming.
+                    enabled: l.number <= unlocked,
+                    child: Text(
+                      'Level ${l.number} · ${l.name}'
+                      '${l.number <= unlocked ? '' : '  (locked)'}',
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _CascadeHud extends StatelessWidget {
   const _CascadeHud({required this.game});
 
@@ -757,11 +869,18 @@ class _CascadeFooter extends StatelessWidget {
 class _ResultCard extends StatelessWidget {
   const _ResultCard({
     required this.game,
+    required this.hasNext,
+    required this.onNext,
     required this.onAgain,
     required this.onLeave,
   });
 
   final CoinCascadeGame game;
+
+  /// False on the last level and on any loss, so "Next" never offers a level
+  /// that does not exist or one the player has not earned.
+  final bool hasNext;
+  final VoidCallback onNext;
   final VoidCallback onAgain;
   final VoidCallback onLeave;
 
@@ -815,8 +934,11 @@ class _ResultCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: PixelButton(
-                      label: 'Again',
-                      onPressed: onAgain,
+                      // The primary action after a win is the next level, not
+                      // a replay — a player who just cleared something wants
+                      // the new rule, not the one they have solved.
+                      label: hasNext ? 'Next' : 'Again',
+                      onPressed: hasNext ? onNext : onAgain,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -829,6 +951,16 @@ class _ResultCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (hasNext) ...[
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: onAgain,
+                  style: TextButton.styleFrom(
+                    foregroundColor: PixelFrameStyle.slate.inkMuted,
+                  ),
+                  child: const Text('Replay this level'),
+                ),
+              ],
             ],
           ),
         ),

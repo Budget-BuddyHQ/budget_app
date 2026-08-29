@@ -758,7 +758,10 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.panelStrong.withValues(alpha: 0.72),
+        // Opaque. A 72%-transparent card over a tiled town map is a card
+        // with a map in it — see [_ProfileBackdrop] for why the
+        // background was turned down at the same time.
+        color: AppTheme.panelStrong,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
         boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
@@ -962,7 +965,7 @@ class _ProfileInsightCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.panelStrong.withValues(alpha: 0.72),
+        color: AppTheme.panelStrong,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
         boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
@@ -1123,7 +1126,7 @@ class _SettingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.panelStrong.withValues(alpha: 0.72),
+        color: AppTheme.panelStrong,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
         boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
@@ -1176,7 +1179,7 @@ class _AdminCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.panelStrong.withValues(alpha: 0.72),
+        color: AppTheme.panelStrong,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: Colors.amber.withValues(alpha: 0.18)),
       ),
@@ -1212,13 +1215,22 @@ class _ProfileBackdrop extends StatelessWidget {
     // Boosted rather than dimmed — see [VividBackdrop]. The cards on top
     // are translucent now, so the tile art reads through them instead of
     // the screen being one flat dark slab.
+    // Texture, not a picture.
+    //
+    // This was tuned *up* — saturation 1.4 behind a 0.42 scrim — on the
+    // reasoning that translucent cards should let the tile art read through.
+    // On a wide window that is exactly what happened, and the result was a
+    // town map running through every settings row: grass, fences and trees
+    // sliding behind "Notifications" and "Sound" while the labels fought the
+    // pattern for legibility. A background on a settings page has one job,
+    // which is to not be the thing you are looking at.
     return const VividBackdrop(
       image: AppAssets.profileTileBackground,
       repeat: ImageRepeat.repeat,
-      saturation: 1.4,
-      brightness: 0.03,
-      scrimOpacity: 0.42,
-      vignetteOpacity: 0.5,
+      saturation: 0.55,
+      brightness: -0.06,
+      scrimOpacity: 0.86,
+      vignetteOpacity: 0.55,
     );
   }
 }
@@ -1278,7 +1290,7 @@ class _MoneyHabitsProfileCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.panelStrong.withValues(alpha: 0.72),
+        color: AppTheme.panelStrong,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
         boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
@@ -1398,10 +1410,34 @@ class _FriendsCardState extends State<_FriendsCard> {
   final _codeController = TextEditingController();
   bool _submitting = false;
 
+  /// The list, held in a field rather than created inline.
+  ///
+  /// A `FutureBuilder` given `fetch...()` directly re-fetches on every
+  /// rebuild — and this card rebuilds on every keystroke in the code field,
+  /// so the list would flicker and hammer the server while someone typed.
+  Future<List<LeaderboardEntry>>? _friends;
+  String? _loadedFor;
+
   @override
   void dispose() {
     _codeController.dispose();
     super.dispose();
+  }
+
+  void _ensureLoaded(String currentUserId) {
+    if (currentUserId.isEmpty || _loadedFor == currentUserId) return;
+    _loadedFor = currentUserId;
+    _friends = SupabaseService.instance.fetchFriendsLeaderboard(
+      currentUserId: currentUserId,
+    );
+  }
+
+  void _reload(String currentUserId) {
+    setState(() {
+      _friends = SupabaseService.instance.fetchFriendsLeaderboard(
+        currentUserId: currentUserId,
+      );
+    });
   }
 
   Future<void> _addFriend(String currentUserId) async {
@@ -1415,17 +1451,66 @@ class _FriendsCardState extends State<_FriendsCard> {
     setState(() => _submitting = false);
     _codeController.clear();
     GameToast.show(context, message: result);
+    // Reload whatever the answer was: a successful add has to appear without
+    // the player hunting for a refresh, and a failed one should not leave a
+    // stale list looking like it worked.
+    _reload(currentUserId);
+  }
+
+  Future<void> _removeFriend(String currentUserId, LeaderboardEntry friend) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.panelStrong,
+        title: Text(
+          'Remove ${friend.username}?',
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'They will drop off your friends leaderboard. You can add them '
+          'again with their code.',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFFF8474),
+              foregroundColor: const Color(0xFF2A0D08),
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final ok = await SupabaseService.instance.removeFriend(
+      currentUserId: currentUserId,
+      friendId: friend.id,
+    );
+    if (!mounted) return;
+    GameToast.show(
+      context,
+      message: ok ? 'Removed ${friend.username}.' : 'Could not remove them.',
+    );
+    _reload(currentUserId);
   }
 
   @override
   Widget build(BuildContext context) {
     final currentUserId = context.watch<UserStatsController>().stats.id;
     final friendCode = SupabaseService.friendCodeFor(currentUserId);
+    _ensureLoaded(currentUserId);
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.panelStrong.withValues(alpha: 0.72),
+        color: AppTheme.panelStrong,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
         boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
@@ -1536,8 +1621,133 @@ class _FriendsCardState extends State<_FriendsCard> {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          _FriendsList(
+            future: _friends,
+            onRemove: (friend) => _removeFriend(currentUserId, friend),
+          ),
         ],
       ),
+    );
+  }
+}
+
+/// The friends themselves.
+///
+/// The card used to be a code plus a text field and nothing else — you could
+/// add a friend and never see one, which made the feature impossible to tell
+/// apart from a broken one. The empty state explains the two-sided part
+/// rather than leaving a blank space to interpret.
+class _FriendsList extends StatelessWidget {
+  const _FriendsList({required this.future, required this.onRemove});
+
+  final Future<List<LeaderboardEntry>>? future;
+  final ValueChanged<LeaderboardEntry> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    if (future == null) {
+      return const SizedBox.shrink();
+    }
+    return FutureBuilder<List<LeaderboardEntry>>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+
+        final friends = snapshot.data ?? const <LeaderboardEntry>[];
+        if (friends.isEmpty) {
+          return Text(
+            'No friends yet. Share your code, or enter someone else\'s — '
+            'either of you adding the other is enough for you both to show '
+            'up here.',
+            style: GoogleFonts.quicksand(
+              color: AppTheme.textMuted,
+              fontSize: 12.5,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          );
+        }
+
+        return Column(
+          children: [
+            for (final friend in friends)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: Colors.white.withValues(alpha: 0.08),
+                      backgroundImage: friend.profileImageUrl.isEmpty
+                          ? null
+                          : NetworkImage(friend.profileImageUrl),
+                      child: friend.profileImageUrl.isEmpty
+                          ? Text(
+                              friend.username.isEmpty
+                                  ? '?'
+                                  : friend.username.characters.first
+                                        .toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            friend.username,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.quicksand(
+                              color: AppTheme.textPrimary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                            ),
+                          ),
+                          Text(
+                            '${friend.literacyPoints} literacy · '
+                            '${friend.gold} gold',
+                            style: GoogleFonts.quicksand(
+                              color: AppTheme.textMuted,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Remove friend',
+                      onPressed: () => onRemove(friend),
+                      icon: Icon(
+                        Icons.person_remove_rounded,
+                        size: 18,
+                        color: Colors.white.withValues(alpha: 0.55),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

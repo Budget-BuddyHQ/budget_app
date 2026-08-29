@@ -1077,6 +1077,32 @@ class LifeSimController extends ChangeNotifier {
   // *costs* time as well as money, something that can go wrong, and
   // something that only makes sense at a particular age.
 
+  /// Applies a decision made out in the town to the life being lived.
+  ///
+  /// **Why this exists.** Walking into a building in the Adventure map and
+  /// choosing something used to change the *account* — gold, XP, literacy
+  /// points — and nothing about the character. So the one part of the app
+  /// where you physically go somewhere to make a money decision had no
+  /// bearing on the money simulation it was launched from, and the town read
+  /// as a side attraction rather than as part of the life.
+  ///
+  /// The mapping is deliberately not one-to-one. Town gold is spending money,
+  /// so it lands on cash. Literacy is what you understood, so it lands on
+  /// smarts. XP is having done something at all, so it is a small lift in
+  /// happiness — going out is good for you, and it is the smallest of the
+  /// three because turning up is the easiest part.
+  void applyTownOutcome({
+    required int gold,
+    required int xp,
+    required int literacy,
+  }) {
+    if (finished) return;
+    _money += gold;
+    if (literacy > 0) _smarts = _clamp(_smarts + (literacy / 4).round());
+    if (xp > 0) _happiness = _clamp(_happiness + (xp / 5).round());
+    notifyListeners();
+  }
+
   /// A side job. Real money for a real cost in time and energy — the only
   /// income source available before a career event fires.
   void workSideJob() {

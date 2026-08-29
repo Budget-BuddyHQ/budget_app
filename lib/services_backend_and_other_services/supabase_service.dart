@@ -788,7 +788,11 @@ create table if not exists public.friendships (
   unique (user_id, friend_id)
 );
 
-grant select, insert on table public.friendships to authenticated;
+-- `delete` as well as insert: a friends list you cannot leave is not a
+-- friends list. No `update` on purpose — nothing about an edge can change,
+-- and withholding it means a stray upsert fails loudly instead of quietly
+-- rewriting someone else's row.
+grant select, insert, delete on table public.friendships to authenticated;
 
 alter table public.friendships enable row level security;
 
@@ -821,8 +825,38 @@ begin
       to authenticated
       with check (user_id = (select auth.uid()));
   end if;
+
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'friendships'
+      and policyname = 'Users can remove their own friendships'
+  ) then
+    create policy "Users can remove their own friendships"
+      on public.friendships
+      for delete
+      to authenticated
+      using (user_id = (select auth.uid()));
+  end if;
 end
 \$\$;
+
+-- The leaderboard view must NOT be security_invoker.
+--
+-- `user_stats` RLS restricts SELECT to your own row, which is correct for the
+-- table and fatal for the view: with `security_invoker = true` the view
+-- inherits the caller's RLS and every player sees a leaderboard containing
+-- exactly themselves — and, worse for the friends feature, resolving a friend
+-- code returns "No player found with that code" every single time, because
+-- the lookup scans a view that can only ever contain the person doing the
+-- looking.
+--
+-- Views default to running as their owner, so this is the state Supabase
+-- creates. It is stated explicitly because Supabase's own database linter
+-- flags owner-run views and the one-click "fix" is to set security_invoker,
+-- which would silently break friends and the global leaderboard together.
+alter view public.leaderboard set (security_invoker = false);
 ''';
 
   final StreamController<UserStats> _localController =
@@ -1692,6 +1726,40 @@ end
     }
   }
 
+  /// Removes the edge this user owns, in both directions.
+  ///
+  /// Deletes `(me -> them)` and `(them -> me)`. The second looks wrong at
+  /// first glance — that row belongs to the other person — but the RLS delete
+  /// policy only ever lets you remove rows where you are `user_id`, so the
+  /// second statement is a no-op unless *you* created it. Sending both is what
+  /// makes "remove friend" mean the same thing regardless of who added whom,
+  /// which is the only version a player would expect.
+  Future<bool> removeFriend({
+    required String currentUserId,
+    required String friendId,
+  }) async {
+    if (!_isSupabaseConnected) return false;
+    try {
+      final client = Supabase.instance.client;
+      await client
+          .from(friendshipsTable)
+          .delete()
+          .eq('user_id', currentUserId)
+          .eq('friend_id', friendId)
+          .timeout(_supabaseReadTimeout);
+      await client
+          .from(friendshipsTable)
+          .delete()
+          .eq('user_id', friendId)
+          .eq('friend_id', currentUserId)
+          .timeout(_supabaseReadTimeout);
+      return true;
+    } catch (error) {
+      debugPrint('Supabase remove friend failed: $error');
+      return false;
+    }
+  }
+
   /// Resolves [code] against [leaderboardView] and inserts a directed
   /// friendship edge from [currentUserId] to whoever matches. Returns a
   /// short human-readable result to show the user directly.
@@ -1761,10 +1829,19 @@ end
         return "That's your own code!";
       }
 
-      await client.from(friendshipsTable).upsert(<String, dynamic>{
-        'user_id': currentUserId,
-        'friend_id': targetId,
-      }, onConflict: 'user_id,friend_id');
+      // `ignoreDuplicates`, not a plain upsert.
+      //
+      // The table grants `select, insert` and has no UPDATE policy — by
+      // design, since nothing about an edge should ever change. A default
+      // upsert resolves a conflict with an UPDATE, so adding a friend you had
+      // already added failed with a permission error rather than doing
+      // nothing. `ignoreDuplicates` sends `resolution=ignore-duplicates`,
+      // which is `ON CONFLICT DO NOTHING` and needs only INSERT.
+      await client.from(friendshipsTable).upsert(
+        <String, dynamic>{'user_id': currentUserId, 'friend_id': targetId},
+        onConflict: 'user_id,friend_id',
+        ignoreDuplicates: true,
+      );
 
       return 'Added ${match['username'] ?? 'a new friend'}!';
     } on PostgrestException catch (error) {
@@ -1785,6 +1862,21 @@ end
       }
       if (error.code == '42P01') {
         return 'Friends are not set up on the server yet.';
+      }
+      if (error.code == '42501') {
+        // The table exists and the row is refused: RLS is enabled with no
+        // policy that accepts an insert. Verified against the live database,
+        // where the message is "new row violates row-level security policy
+        // for table friendships" rather than "permission denied for table",
+        // which is the difference between a missing policy and a missing
+        // grant.
+        //
+        // Worth its own sentence rather than a raw code, because the raw code
+        // is what a player saw for months: it is not their fault, retrying
+        // will never work, and somebody has to run
+        // `supabase/migrations/0002_friendships_rls.sql`.
+        return 'Friends need one setup step on the server — see '
+            'supabase/migrations/0002_friendships_rls.sql.';
       }
       return 'Could not add that friend right now (${error.code ?? 'error'}).';
     } catch (error) {
