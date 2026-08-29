@@ -180,6 +180,12 @@ class AppAssets {
 
   static const String villageMapBackground =
       'assets/self_made_backgrounds/map.png';
+
+  /// The same map, blurred and desaturated by
+  /// `tool/make_reading_backdrop.py`, for screens that put body text straight
+  /// onto it. See [MapBackdropStyle.reading] for the measurements.
+  static const String villageMapBackgroundSoft =
+      'assets/self_made_backgrounds/map_soft.png';
   static const String homeTileBackground =
       'assets/self_made_backgrounds/home_tile_bg.png';
   static const String profileTileBackground =
@@ -296,6 +302,21 @@ class AppAssets {
       _frames('$_customerRoot/idle-fancy', 'Fancy_idle', 4);
   static List<String> get workerIdleFrames =>
       _frames('$_workerRoot/idle', 'Worker_idle', 3);
+
+  // The walk cycles. These shipped in the bundle and nothing referenced
+  // them, which is why the town's people had been standing perfectly still
+  // since the map existed.
+  static List<String> get taxerWalkFrames =>
+      _frames('$_taxerRoot/walk', 'Taxer_walk', 3);
+  static List<String> get customerWalkFrames =>
+      _frames('$_customerRoot/walk', 'Customer_walk', 3);
+  static List<String> get fancyWalkFrames =>
+      _frames('$_customerRoot/walk-fancy', 'Fancy_walk', 3);
+  // Two frames, not three: the worker sheet only ships two. Asking for a
+  // third loads a missing asset, which in Flame surfaces as a thrown future
+  // during map load rather than as a visibly absent frame.
+  static List<String> get workerWalkFrames =>
+      _frames('$_workerRoot/walk', 'Worker_walk', 2);
 
   static const String _shopRoot = 'assets/map_assets_coins/shop';
 

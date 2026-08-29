@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../constants/app_assets.dart';
+import '../../widgets_custom_lotties/map_backdrop.dart';
 import '../../navigation_tools_and_animation/fade_page_route.dart';
 import '../auth/auth_screen.dart';
 
@@ -180,18 +181,7 @@ class _WelcomeBackground extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Image.asset(
-          AppAssets.villageMapBackground,
-          fit: BoxFit.cover,
-          filterQuality: FilterQuality.none,
-        ),
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: const Color(0xFF0C2418).withValues(alpha: 0.55),
-            ),
-          ),
-        ),
+        const MapBackdrop(style: MapBackdropStyle.hero),
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(

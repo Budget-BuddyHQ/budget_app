@@ -21,6 +21,9 @@ import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/money_habits/money_habits_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/feedback_screen.dart';
+import 'package:budget_app/screens_minigames_admin_etc/profile/profile_screen.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/leaderboard_screen.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/past_lives_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/personal_details_sheet.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/core_bottom_pages/main_game_page.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/core_bottom_pages/minigames_page.dart';
@@ -36,8 +39,9 @@ import 'package:budget_app/themes_colors/app_theme.dart';
 import 'package:budget_app/widgets_custom_lotties/ambient_lottie_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+
+import 'support/app_fonts.dart';
 
 /// Screen sizes the app has to survive.
 ///
@@ -148,10 +152,10 @@ Widget _wrap(Widget child) {
 }
 
 void main() {
-  setUpAll(() {
-    // Stop google_fonts reaching for the network during tests.
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
+  // Registers the real typefaces up front rather than letting google_fonts
+  // resolve them asynchronously on first use, which loaded only the faces the
+  // first build happened to touch — see test/support/app_fonts.dart.
+  setUpAll(loadAppFonts);
 
   final unit = lessonUnits.first;
   final readingLesson = unit.lessons.firstWhere(
@@ -213,6 +217,15 @@ void main() {
     'Coin Cascade': () => const CoinCascadePage(),
     'Market Board': () => const StockMarketPage(),
     'Feedback': () => const FeedbackScreen(),
+    // The three screens this sweep never covered. Profile and the
+    // leaderboard are where a player spends the least time and the most
+    // attention -- an account page that overflows on a 320px phone is the
+    // screenshot that gets posted -- and Past Lives grows a row per run, so
+    // it is the one screen whose height is set by how much the player has
+    // done rather than by the design.
+    'Profile': () => const ProfileScreen(),
+    'Leaderboard': () => const LeaderboardScreen(),
+    'Past lives': () => const PastLivesScreen(),
     // Money Habits has four inner tabs and the sweep only ever saw the
     // first. My Jar is the one that got rebuilt — a painted jar, a milestone
     // row and two stat cards — so it is the one most likely to overflow a

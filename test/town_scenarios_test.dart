@@ -11,15 +11,20 @@ import 'package:flutter_test/flutter_test.dart';
 /// like a slot machine.
 void main() {
   group('the town has more than one thing to say', () {
-    test('every spot has at least two encounters', () {
+    test('every spot has at least five encounters', () {
+      // Raised from two once the second content pass landed. Two was the bar
+      // for "not literally the same scene twice"; five is the bar for a town
+      // worth walking back into, because the rotation is by *day* — at two
+      // scenes a spot repeats itself every other day, which is how often
+      // somebody actually plays.
       for (final spot in kTownSpots) {
         final total = 1 + (kTownScenarios[spot.id]?.length ?? 0);
         expect(
           total,
-          greaterThanOrEqualTo(2),
+          greaterThanOrEqualTo(5),
           reason:
-              '${spot.id} still has a single encounter, so a second visit '
-              'shows the identical scene',
+              '${spot.id} has only $total encounters, so it comes round again '
+              'within a week of daily play',
         );
       }
     });
@@ -29,7 +34,7 @@ void main() {
           kTownScenarios.values.fold<int>(0, (sum, list) => sum + list.length);
       expect(
         total,
-        greaterThanOrEqualTo(18),
+        greaterThanOrEqualTo(36),
         reason: 'only $total encounters exist across the whole town',
       );
     });

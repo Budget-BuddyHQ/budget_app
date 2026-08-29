@@ -140,28 +140,102 @@ class TownNpcComponent extends SimpleNpc with Sensor<Player> {
   TownNpcComponent({
     required this.npc,
     required Future<SpriteAnimation> idle,
+    required Future<SpriteAnimation> walk,
     required this.onEnter,
     required this.onExit,
-  }) : super(
+  }) : _home = Vector2(npc.tileX * 16.0, npc.tileY * 16.0),
+       super(
          position: Vector2(npc.tileX * 16.0, npc.tileY * 16.0),
          // Height-first so the frames keep their 102:116 shape — sizing an
          // NPC into a square squashes it the same way it squashed the
          // player (see [TownPlayer]).
          size: Vector2(26 * AppAssets.npcAspectRatio, 26),
-         // These NPCs stand still, so every facing is the same idle loop —
-         // `SimpleDirectionAnimation` only requires the two "right" ones.
-         animation: SimpleDirectionAnimation(idleRight: idle, runRight: idle),
+         animation: SimpleDirectionAnimation(
+           idleRight: idle,
+           runRight: walk,
+         ),
        );
 
   final TownNpc npc;
   final void Function(TownNpc npc) onEnter;
   final void Function(TownNpc npc) onExit;
 
-  @override
-  void onContact(Player component) => onEnter(npc);
+  /// Where this NPC started. The patrol is expressed as an offset from it, so
+  /// an NPC can never drift away from the position the map was authored
+  /// against — which is what "walk anywhere" pathfinding would allow, and is
+  /// the difference between a town that is alive and a town where the person
+  /// you are walking toward has left.
+  final Vector2 _home;
+
+  /// Pixels per second. Deliberately slower than the player (60): an NPC that
+  /// matches your speed feels like it is racing you.
+  static const double _patrolSpeed = 14;
+
+  /// Seconds spent standing at each end of the beat. A patrol with no pauses
+  /// reads as a machine on rails rather than as someone waiting for a bus.
+  static const double _pauseSeconds = 1.6;
+
+  double _progress = 0;
+  int _direction = 1;
+  double _pause = 0;
+  bool _talking = false;
+
+  double get _range => npc.patrolTiles * 16.0;
 
   @override
-  void onContactExit(Player component) => onExit(npc);
+  void update(double dt) {
+    super.update(dt);
+    if (npc.patrolTiles <= 0) return;
+
+    // Stop while the player is in range. Walking away mid-sentence is the
+    // single most annoying thing an NPC can do, and it also makes the
+    // proximity sensor flicker on and off.
+    if (_talking) {
+      _playIdle();
+      return;
+    }
+
+    if (_pause > 0) {
+      _pause -= dt;
+      _playIdle();
+      return;
+    }
+
+    _progress += _direction * _patrolSpeed * dt;
+    if (_progress >= _range || _progress <= 0) {
+      _progress = _progress.clamp(0, _range);
+      _direction = -_direction;
+      _pause = _pauseSeconds;
+    }
+
+    position = npc.patrolHorizontal
+        ? Vector2(_home.x + _progress, _home.y)
+        : Vector2(_home.x, _home.y + _progress);
+
+    if (npc.patrolHorizontal) {
+      if (_direction > 0) {
+        animation?.play(SimpleAnimationEnum.runRight);
+      } else {
+        animation?.play(SimpleAnimationEnum.runLeft);
+      }
+    } else {
+      animation?.play(SimpleAnimationEnum.runRight);
+    }
+  }
+
+  void _playIdle() => animation?.play(SimpleAnimationEnum.idleRight);
+
+  @override
+  void onContact(Player component) {
+    _talking = true;
+    onEnter(npc);
+  }
+
+  @override
+  void onContactExit(Player component) {
+    _talking = false;
+    onExit(npc);
+  }
 
   @override
   void render(Canvas canvas) {

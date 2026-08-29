@@ -5,6 +5,7 @@ import 'package:budget_app/controllers_that_updates_stats/user_stats_controller.
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/tutorial_steps.dart';
 import 'package:budget_app/navigation_tools_and_animation/main_navigation.dart';
 import 'package:budget_app/screens_minigames_admin_etc/onboarding/coach_mark.dart';
+import 'package:budget_app/widgets_custom_lotties/pixel_kit.dart';
 import 'package:budget_app/services_backend_and_other_services/market_data_service.dart';
 import 'package:budget_app/services_backend_and_other_services/supabase_service.dart';
 import 'package:budget_app/themes_colors/app_theme.dart';
@@ -401,6 +402,260 @@ void main() {
     });
   });
 
+  group('the coach card is sized for the screen', () {
+    // The card is a speech bubble, not a banner. Stretched edge to edge it
+    // read as a quarter of a desktop window filled with panel around three
+    // words of copy — covering the app it was pointing at.
+    Widget card(Size size) => MediaQuery(
+      data: MediaQueryData(size: size, disableAnimations: true),
+      child: MaterialApp(
+        home: Scaffold(
+          body: CoachMarkOverlay(
+            steps: kTutorialSteps,
+            onFinished: () {},
+            onWantTab: (_) async {},
+          ),
+        ),
+      ),
+    );
+
+    Future<double> cardWidth(WidgetTester tester, Size size) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(card(size));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      final width = tester.getSize(find.byType(PixelFrame).first).width;
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 300));
+      return width;
+    }
+
+    testWidgets('never spans a wide window', (tester) async {
+      // Stated as a *proportion*, not a pixel count. The card's width is
+      // derived from the viewport now, so a test pinned to the old 460px cap
+      // would fail the next time that fraction is tuned — while saying
+      // nothing about the property that matters, which is that a line of copy
+      // never gets too long to scan.
+      const size = Size(1440, 900);
+      final width = await cardWidth(tester, size);
+      expect(
+        width / size.width,
+        lessThan(0.4),
+        reason: 'the card takes ${(width / size.width * 100).round()}% of a '
+            '1440px window',
+      );
+      expect(width, lessThanOrEqualTo(540));
+    });
+
+    testWidgets('still uses the room a phone has', (tester) async {
+      // The other end of the same property: a proportional width must not
+      // leave a phone with a thin column. 34% of 375px is 127px, which is
+      // why the floor exists.
+      const size = Size(375, 812);
+      final width = await cardWidth(tester, size);
+      expect(
+        width / size.width,
+        greaterThan(0.7),
+        reason: 'the card uses only ${(width / size.width * 100).round()}% of '
+            'a 375px phone, wasting the only space there is',
+      );
+      expect(width, lessThanOrEqualTo(size.width));
+    });
+
+    testWidgets('scales between the two rather than jumping', (tester) async {
+      // The point of deriving placement from the viewport: a tablet should
+      // land between a phone and a desktop, not snap to one of them.
+      final phone = await cardWidth(tester, const Size(375, 812));
+      final tablet = await cardWidth(tester, const Size(834, 1112));
+      final desktop = await cardWidth(tester, const Size(1440, 900));
+      expect(phone, lessThan(tablet));
+      expect(tablet, lessThanOrEqualTo(desktop));
+    });
+
+    testWidgets('shrinks its contents on the smallest phones', (tester) async {
+      // Capping the width is not enough on a 320px screen: the mascot and
+      // type have to come down too, or the card is still half the viewport.
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(card(const Size(320, 568)));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final small = tester.getSize(find.byType(PixelFrame).first).height;
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 300));
+
+      tester.view.physicalSize = const Size(768, 1024);
+      await tester.pumpWidget(card(const Size(768, 1024)));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      final large = tester.getSize(find.byType(PixelFrame).first).height;
+
+      expect(
+        small,
+        lessThan(large),
+        reason: 'the card is the same height on a 320px phone as on a tablet',
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+  });
+
+  group('the card sits next to what it points at', () {
+    // The failure this guards: on a desktop window the card was pinned to the
+    // top edge while the spotlight was 700px lower down, so the explanation
+    // and the thing it explained stopped reading as one instruction.
+    testWidgets('the card follows the spotlight down the screen', (
+      tester,
+    ) async {
+      const size = Size(1440, 900);
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(size: size, disableAnimations: true),
+          child: MaterialApp(
+            home: Scaffold(
+              body: CoachMarkOverlay(
+                steps: kTutorialSteps,
+                onFinished: () {},
+                // Every step names a tab, so the overlay falls back to the
+                // bottom bar's geometry — near the bottom of a 900px window.
+                onWantTab: (_) async {},
+              ),
+            ),
+          ),
+        ),
+      );
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+
+      final card = tester.getRect(find.byType(PixelFrame).first);
+      expect(
+        card.top,
+        greaterThan(200),
+        reason: 'the card is pinned near the top of a 900px window while the '
+            'spotlight is on the bottom bar',
+      );
+      expect(
+        card.bottom,
+        lessThanOrEqualTo(size.height),
+        reason: 'the card runs off the bottom of the screen',
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+  });
+
+  group('the card never covers what it points at', () {
+    // The bug this locks down. The card used to be placed by a `Positioned`
+    // whose `top` was computed from an *estimate* of the card's height —
+    // `190 * scale`, a constant standing in for something that varies with
+    // how the copy wraps, whether a Back button is showing, and the reader's
+    // text scale. Whenever the real card was taller than the guess, the
+    // maths meant to keep it clear of the spotlight put it straight over the
+    // spotlight, and the clamp meant to keep it on screen let it hang off the
+    // bottom. Both are invisible to a test that only asks "did it render".
+    //
+    // It is a layout delegate now, which is handed the child's measured size
+    // before it has to say where the child goes. These are the two promises
+    // that becomes: fully on screen, and never on top of the target.
+    const viewports = <String, Size>{
+      'small phone': Size(320, 568),
+      'phone': Size(375, 812),
+      'landscape phone': Size(812, 375),
+      'tablet': Size(768, 1024),
+      'desktop': Size(1440, 900),
+      // Deliberately cramped: at this height the card and the bottom bar are
+      // competing for the same room, which is where an estimate goes wrong.
+      'short window': Size(900, 420),
+    };
+
+    for (final viewport in viewports.entries) {
+      testWidgets('on ${viewport.key}', (tester) async {
+        tester.view.physicalSize = viewport.value;
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          MediaQuery(
+            data: MediaQueryData(
+              size: viewport.value,
+              disableAnimations: true,
+            ),
+            child: MaterialApp(
+              home: Scaffold(
+                body: CoachMarkOverlay(
+                  steps: kTutorialSteps,
+                  onFinished: () {},
+                  onWantTab: (_) async {},
+                ),
+              ),
+            ),
+          ),
+        );
+
+        for (var step = 0; step < kTutorialSteps.length; step++) {
+          for (var i = 0; i < 3; i++) {
+            await tester.pump(const Duration(milliseconds: 200));
+          }
+
+          final card = tester.getRect(find.byType(PixelFrame).first);
+          final where = '${viewport.key}, step $step';
+
+          expect(card.top, greaterThanOrEqualTo(-0.5), reason: 'off the top: $where');
+          expect(
+            card.bottom,
+            lessThanOrEqualTo(viewport.value.height + 0.5),
+            reason: 'off the bottom: $where',
+          );
+          expect(card.left, greaterThanOrEqualTo(-0.5), reason: 'off the left: $where');
+          expect(
+            card.right,
+            lessThanOrEqualTo(viewport.value.width + 0.5),
+            reason: 'off the right: $where',
+          );
+
+          // Every step in the tour names a tab, so the spotlight falls back
+          // to the bottom bar's own geometry — the widest, lowest target the
+          // tour ever points at, and the one the card most often collided
+          // with.
+          final spotlight = TutorialTargets.navTabRect(
+            tester.element(find.byType(CoachMarkOverlay)),
+            0,
+          );
+          final band = Rect.fromLTRB(
+            0,
+            spotlight.top,
+            viewport.value.width,
+            spotlight.bottom,
+          );
+          expect(
+            card.overlaps(band.deflate(1)),
+            isFalse,
+            reason: 'the card sits on top of the bottom bar it is '
+                'describing: $where',
+          );
+
+          if (step < kTutorialSteps.length - 1) {
+            await tester.tap(find.text('Next').first, warnIfMissed: false);
+          }
+        }
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 300));
+      });
+    }
+  });
+
   group('the coach card fits every phone', () {
     // This is where a real "random red error" lived: on a 393px phone, once
     // the Back button appeared, the card's footer overflowed by 39px. It only
@@ -418,6 +673,10 @@ void main() {
       'large phone': Size(430, 932),
       'phone landscape': Size(812, 375),
       'tablet': Size(768, 1024),
+      // The desktop window the tour was first seen misbehaving in: a card
+      // pinned 14px from each edge became a 930px banner across the top.
+      'desktop window': Size(957, 742),
+      'wide desktop': Size(1440, 900),
     };
 
     for (final viewport in viewports.entries) {

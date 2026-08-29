@@ -9,7 +9,10 @@ import '../../../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import '../../../models_Like_Skins_and_lessons_templates/outing_rules.dart';
+import '../../../controllers_that_updates_stats/app_settings_controller.dart';
+import '../../../models_Like_Skins_and_lessons_templates/life_tutorial_steps.dart';
 import '../../../themes_colors/app_theme.dart';
+import '../../onboarding/coach_mark.dart';
 import '../../../widgets_custom_lotties/confetti_burst.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../adventure/adventure_world_screen.dart';
@@ -48,6 +51,18 @@ class LifeSimPage extends StatefulWidget {
 }
 
 class _LifeSimPageState extends State<LifeSimPage> {
+  // Anchors for the in-game tour. Registered with [TutorialTargets] rather
+  // than positioned by hand, so the spotlight tracks the real widget at
+  // whatever size, text scale and scroll offset the player is at -- a
+  // hardcoded rect is right on one device and points at empty space on every
+  // other one.
+  final GlobalKey _tourMoneyKey = GlobalKey();
+  final GlobalKey _tourEventKey = GlobalKey();
+  final GlobalKey _tourTownKey = GlobalKey();
+  final GlobalKey _tourMenuKey = GlobalKey();
+  final GlobalKey _tourAgeKey = GlobalKey();
+
+  bool _tourRunning = false;
   LifeSimController? _life;
   final ScrollController _feedController = ScrollController();
   bool _cashedOut = false;
@@ -92,10 +107,16 @@ class _LifeSimPageState extends State<LifeSimPage> {
         startMoney: character.origin.familyMoney,
       );
     });
+    _maybeStartFirstTour();
   }
 
   @override
   void dispose() {
+    for (final id in const <String>[
+      'life_money', 'life_event', 'life_town', 'life_menus', 'life_age',
+    ]) {
+      TutorialTargets.unregister(id);
+    }
     _life?.dispose();
     _feedController.dispose();
     super.dispose();
@@ -178,6 +199,56 @@ class _LifeSimPageState extends State<LifeSimPage> {
   /// and a life sim: a menu can hold six actions with costs and conditions
   /// where a bottom-bar slot can only hold one. Actions are built fresh on
   /// open so their enabled/disabled state reflects the character *now*.
+  void _registerTourTargets() {
+    TutorialTargets.register('life_money', _tourMoneyKey);
+    TutorialTargets.register('life_event', _tourEventKey);
+    TutorialTargets.register('life_town', _tourTownKey);
+    TutorialTargets.register('life_menus', _tourMenuKey);
+    TutorialTargets.register('life_age', _tourAgeKey);
+  }
+
+  /// Opens the in-game tour.
+  ///
+  /// A route rather than an overlay entry: the tour has to sit above the
+  /// screen's own bottom sheets and dialogs, and a route is the only thing
+  /// that reliably does. `opaque: false` keeps the game visible underneath,
+  /// which is the entire point of a coach mark.
+  Future<void> _startTour() async {
+    if (_tourRunning || !mounted) return;
+    setState(() => _tourRunning = true);
+    _registerTourTargets();
+    await Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        opaque: false,
+        barrierDismissible: false,
+        transitionDuration: const Duration(milliseconds: 180),
+        pageBuilder: (routeContext, _, _) => CoachMarkOverlay(
+          steps: kLifeTutorialSteps,
+          onFinished: () => Navigator.of(routeContext).maybePop(),
+          // Nothing to switch to: this tour runs over one screen, not over
+          // the tab bar.
+          onWantTab: (_) async {},
+        ),
+      ),
+    );
+    if (!mounted) return;
+    setState(() => _tourRunning = false);
+    await context.read<AppSettingsController>().markLifeTourSeen();
+  }
+
+  /// Runs the in-game tour the first time somebody actually reaches a life.
+  ///
+  /// Deliberately *after* character creation rather than on entering the
+  /// route: a tour that spotlights the money panel while the player is still
+  /// picking a name is pointing at widgets that do not exist yet, and the
+  /// overlay would centre every card and explain nothing.
+  void _maybeStartFirstTour() {
+    if (!mounted || _tourRunning) return;
+    final settings = context.read<AppSettingsController>();
+    if (!settings.isLifeTourDue) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startTour());
+  }
+
   Future<void> _openMenu(LifeSimController life, _LifeMenu menu) async {
     await showModalBottomSheet<void>(
       context: context,
@@ -336,6 +407,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
                   builder: (context) {
                     final permission = life.outingPermission;
                     return IconButton(
+                      key: _tourTownKey,
                       tooltip: permission.allowed
                           ? 'Explore the town'
                           : permission.message,
@@ -354,7 +426,10 @@ class _LifeSimPageState extends State<LifeSimPage> {
                         }
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => const AdventureWorldScreen(),
+                            // Hand the run over, so what you decide out
+                            // there changes the character and not only the
+                            // account.
+                            builder: (_) => AdventureWorldScreen(life: life),
                           ),
                         );
                       },
@@ -406,6 +481,8 @@ class _LifeSimPageState extends State<LifeSimPage> {
                     onOpenBudget: () => _openBudget(life),
                     onOpenMoney: () => _openMenu(life, _LifeMenu.assets),
                     onOpenConcepts: () => _openConcepts(life),
+                    moneyKey: _tourMoneyKey,
+                    eventKey: _tourEventKey,
                     onChoose: (index) {
                       life.chooseOption(index);
                       _drainLesson(life);
@@ -413,6 +490,8 @@ class _LifeSimPageState extends State<LifeSimPage> {
                   ),
                 ),
                 _BottomMenu(
+                  key: _tourMenuKey,
+                  ageKey: _tourAgeKey,
                   happiness: life.happiness,
                   blocked: event != null || life.finished,
                   stage: life.stage,
@@ -644,7 +723,14 @@ class _LifeFeed extends StatelessWidget {
     required this.onOpenBudget,
     required this.onOpenMoney,
     required this.onOpenConcepts,
+    required this.moneyKey,
+    required this.eventKey,
   });
+
+  /// Anchors for the in-game tour. The feed owns the money panel and the
+  /// event card, so it is the only place that can hand a key to either.
+  final GlobalKey moneyKey;
+  final GlobalKey eventKey;
 
   final ScrollController controller;
   final List<LifeLogEntry> history;
@@ -686,6 +772,7 @@ class _LifeFeed extends StatelessWidget {
         // subject of this game, so it sits where the eye lands first
         // rather than behind a menu — see [LifeMoneyPanel].
         LifeMoneyPanel(
+          key: moneyKey,
           life: life,
           onOpenBudget: onOpenBudget,
           onOpenMoney: onOpenMoney,
@@ -753,7 +840,7 @@ class _LifeFeed extends StatelessWidget {
           ],
         if (event != null) ...[
           const SizedBox(height: 14),
-          _EventCard(event: event!, onChoose: onChoose),
+          _EventCard(key: eventKey, event: event!, onChoose: onChoose),
         ],
         if (dead) ...[
           const SizedBox(height: 16),
@@ -827,40 +914,55 @@ class _YourLifeStrip extends StatelessWidget {
         runSpacing: 7,
         children: [
           for (final flag in shown)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-              decoration: BoxDecoration(
-                color:
-                    (flag.isTrouble
-                            ? const Color(0xFFFF8FB1)
-                            : const Color(0xFF85EFAC))
-                        .withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color:
-                      (flag.isTrouble
-                              ? const Color(0xFFFF8FB1)
-                              : const Color(0xFF85EFAC))
-                          .withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  LifeEmoji(flag.chipEmoji, size: 11),
-                  const SizedBox(width: 5),
-                  Text(
-                    flag.chipLabel!,
-                    style: GoogleFonts.quicksand(
-                      color: flag.isTrouble
-                          ? const Color(0xFFFF8FB1)
-                          : const Color(0xFF85EFAC),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
+            Builder(
+              builder: (context) {
+                // The trouble tint (#FF8FB1) reads at only 4.26:1 over its own
+                // 14% wash — under AA, and it is the chip a player most needs
+                // to read. `tintedChip` keeps the hue and lifts the ink until
+                // it clears the threshold, so "Card debt" stays pink and stays
+                // legible rather than being swapped for a colour that does not
+                // mean anything.
+                final tint = flag.isTrouble
+                    ? const Color(0xFFFF8FB1)
+                    : const Color(0xFF85EFAC);
+                // `on:` is the surface the wash sits over. The strip is laid
+                // directly on the scrolling background, which composites to
+                // roughly [AppTheme.panel] once the screen's veils are added —
+                // measuring it against `deepForest` (the default) reported a
+                // darker backdrop than the player actually sees and let the
+                // tint through unchanged at 4.26:1.
+                final chip = AppTheme.tintedChip(
+                  tint,
+                  alpha: 0.14,
+                  on: AppTheme.panel,
+                );
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 5,
                   ),
-                ],
-              ),
+                  decoration: BoxDecoration(
+                    color: tint.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: tint.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      LifeEmoji(flag.chipEmoji, size: 11),
+                      const SizedBox(width: 5),
+                      Text(
+                        flag.chipLabel!,
+                        style: GoogleFonts.quicksand(
+                          color: chip.ink,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
         ],
       ),
@@ -1132,7 +1234,11 @@ class _FeedLine extends StatelessWidget {
 /// whose cost is *not* stated in the label stay untagged: the surprise is
 /// often the lesson, and putting a number on it would give the answer away.
 class _EventCard extends StatelessWidget {
-  const _EventCard({required this.event, required this.onChoose});
+  const _EventCard({
+    super.key,
+    required this.event,
+    required this.onChoose,
+  });
 
   final LifeEvent event;
   final ValueChanged<int> onChoose;
@@ -1411,6 +1517,8 @@ class _ChoiceRow extends StatelessWidget {
 
 class _BottomMenu extends StatelessWidget {
   const _BottomMenu({
+    super.key,
+    required this.ageKey,
     required this.happiness,
     required this.blocked,
     required this.stage,
@@ -1420,6 +1528,11 @@ class _BottomMenu extends StatelessWidget {
     required this.onAssets,
     required this.onAge,
   });
+
+  /// Anchor for the in-game tour's "press this to age up" step. Passed down
+  /// rather than registered here, because the button is what the step is
+  /// about and the bar around it is a different step.
+  final GlobalKey ageKey;
 
   final int happiness;
   final bool blocked;
@@ -1514,7 +1627,7 @@ class _BottomMenu extends StatelessWidget {
                     color: const Color(0xFFFF8FB1),
                     onTap: blocked ? null : onRelationships,
                   ),
-                  _AgeButton(onTap: blocked ? null : onAge),
+                  _AgeButton(key: ageKey, onTap: blocked ? null : onAge),
                   _MenuButton(
                     label: 'Do',
                     icon: Icons.self_improvement_rounded,
@@ -1538,7 +1651,7 @@ class _BottomMenu extends StatelessWidget {
 }
 
 class _AgeButton extends StatelessWidget {
-  const _AgeButton({required this.onTap});
+  const _AgeButton({super.key, required this.onTap});
 
   final VoidCallback? onTap;
 

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'finance_concepts.dart';
 import 'life_event_chains.dart';
+import 'life_events_adult.dart';
+import 'life_events_childhood.dart';
 import 'life_events_toddler.dart';
 
 /// Data model for **Life** — the main game: a BitLife-style life simulator.
@@ -3497,4 +3499,6 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ...kLifeEventsMoney,
   ...kLifeEventsChains,
   ...kLifeEventsToddler,
+  ...kLifeEventsChildhood,
+  ...kLifeEventsAdult,
 ];

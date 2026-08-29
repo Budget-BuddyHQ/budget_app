@@ -69,13 +69,32 @@ class MoneyHabitController extends ChangeNotifier {
 
   JarStage get jarStage => JarStage.forXp(jarXp);
 
-  JarMood get jarMood => JarMood.forDaysSinceActive(daysSinceJarActive);
+  /// The jar's face and pill colour.
+  ///
+  /// A jar that has never been used reads as [JarMood.steady] rather than
+  /// [JarMood.slipping]. The day-count rule alone put a brand-new player in
+  /// front of a frowning jar labelled "Slipping" before they had done
+  /// anything — a judgement about a streak they were never given a chance to
+  /// start. Not started and lapsed are different states and should not wear
+  /// the same face.
+  JarMood get jarMood => jarEverActive
+      ? JarMood.forDaysSinceActive(daysSinceJarActive)
+      : JarMood.steady;
 
   /// Days since the last habit was logged. Drives [jarMood], and shown
   /// directly on the Jar tab — "slipping" is more actionable when the player
   /// can see *how long* it has been.
   int get daysSinceJarActive =>
       HabitDateKeys.daysSince(_stats.stats.jarLastActive);
+
+  /// Whether the jar has *ever* moved.
+  ///
+  /// [daysSinceJarActive] returns 999 when there is no last-active date at
+  /// all, which is a fine sentinel for sorting and a terrible one for copy:
+  /// a player who opened the app five minutes ago was being told "it has been
+  /// 999 days" and "last logged 999 days ago". Somebody who has not started is
+  /// not somebody who has lapsed, and the two need different sentences.
+  bool get jarEverActive => (_stats.stats.jarLastActive ?? '').isNotEmpty;
 
   /// How full the jar is drawn, 0..1, across the **whole** ladder rather
   /// than within the current stage.

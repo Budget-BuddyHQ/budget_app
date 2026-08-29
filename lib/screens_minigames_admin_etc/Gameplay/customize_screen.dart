@@ -489,7 +489,12 @@ class _StorePanel extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Spend 180 gold for a Common, Rare, Epic, Legendary or Mythic turtle skin.',
+                // Not "turtle skin": the case draws from the whole
+                // catalogue, which is four turtles, nineteen villagers and a
+                // critter. Naming one family made the other twenty look like
+                // they were not in the pool.
+                'Spend 180 gold for a Common, Rare, Epic, Legendary or '
+                'Mythic skin.',
                 style: GoogleFonts.quicksand(
                   color: Colors.white.withValues(alpha: 0.80),
                   height: 1.4,

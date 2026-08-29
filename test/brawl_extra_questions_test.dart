@@ -61,14 +61,17 @@ void main() {
 
     test('both new categories are well represented', () {
       // The two areas an under-21 player meets first, and the two the
-      // original 100-question bank was thinnest on.
+      // original 100-question bank was thinnest on. Raised from 10 to 20
+      // once both were filled out: at 10 apiece a checkpoint of three
+      // questions was pulling from a pool small enough that a second run
+      // through the same category repeated itself.
       for (final category in [kBrawlCategoryEarning, kBrawlCategoryFinePrint]) {
         final count = kBrawlExtraQuestions
             .where((q) => q.category == category)
             .length;
         expect(
           count,
-          greaterThanOrEqualTo(10),
+          greaterThanOrEqualTo(20),
           reason: 'only $count questions in $category',
         );
       }
