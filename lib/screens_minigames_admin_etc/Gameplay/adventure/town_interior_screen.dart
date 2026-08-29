@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../constants/app_assets.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_spot_models.dart';
-import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/pixel_frame_animation.dart';
 import '../../../widgets_custom_lotties/pixel_panel.dart';
@@ -90,15 +89,29 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
                 );
 
                 if (wide) {
+                  // Both columns centred, and the panel capped.
+                  //
+                  // Stretched, this read as a broken screen: the panel hugged
+                  // the top-right corner, the stall sat in the bottom-left,
+                  // and the middle of a 965px window was a field of empty
+                  // floor between them. A room with a person in it and a
+                  // conversation about it should look like one scene, which
+                  // means both halves sit on the same eye line.
                   return Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Expanded(flex: 5, child: stage),
+                      Expanded(flex: 5, child: Center(child: stage)),
                       Expanded(
                         flex: 6,
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(4, 12, 14, 14),
-                          child: panel,
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 460),
+                            child: SingleChildScrollView(
+                              padding:
+                                  const EdgeInsets.fromLTRB(4, 12, 14, 14),
+                              child: panel,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -172,23 +185,69 @@ class _RoomBackdrop extends StatelessWidget {
         ),
         // The floor runs to the bottom of the screen under a scrim, so the
         // decision panel sits on something dark enough to read against.
+        //
+        // The plain gradient alone read as *empty*, not as floor — on a wide
+        // window it is the biggest single area on screen and it had nothing
+        // in it. A skirting line where the wall meets the floor and a few
+        // faint board seams cost nothing and turn a void into a room.
         Expanded(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  const Color(0xFF593F21),
-                  AppTheme.deepForest.withValues(alpha: 0.94),
-                ],
-              ),
-            ),
+          child: CustomPaint(
+            painter: const _FloorPainter(),
+            child: const SizedBox.expand(),
           ),
         ),
       ],
     );
   }
+}
+
+/// Floorboards, receding.
+///
+/// Deliberately faint. This sits behind a decision panel that the contrast
+/// audit measures text against, so it has to add *shape* without adding
+/// contrast — the seams are two percent white and the boards get closer
+/// together toward the horizon, which is enough for the eye to read depth and
+/// far too little to interfere with anything on top of it.
+class _FloorPainter extends CustomPainter {
+  const _FloorPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF6B4B28), Color(0xFF2A1E12)],
+        ).createShader(rect),
+    );
+
+    // The skirting: the line where wall meets floor. One dark band and one
+    // light one, because a single line reads as a crack rather than an edge.
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, 3),
+      Paint()..color = const Color(0xFF3A2915),
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(0, 3, size.width, 1),
+      Paint()..color = Colors.white.withValues(alpha: 0.06),
+    );
+
+    final seam = Paint()..color = Colors.white.withValues(alpha: 0.02);
+    // Boards bunching toward the top, which is where the horizon is.
+    var y = size.height;
+    var gap = size.height * 0.16;
+    while (y > 6 && gap > 2) {
+      canvas.drawRect(Rect.fromLTWH(0, y, size.width, 1), seam);
+      y -= gap;
+      gap *= 0.78;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_FloorPainter oldDelegate) => false;
 }
 
 /// The stall (or the building's character) standing in the room.

@@ -108,7 +108,13 @@ class MentorTipCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     concept.explainerFor(simple: simpleWording),
-                    maxLines: 2,
+                    // Three, not two. At two, the longest explainers stopped
+                    // dead in the middle of a word — "A want is everything
+                    // el..." — which is worse than no tip at all, because the
+                    // card's whole job is to leave the reader with one idea.
+                    // The card sizes to its content, so the third line costs
+                    // about sixteen points of height and nothing else.
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.quicksand(
                       color: Colors.white.withValues(alpha: 0.78),

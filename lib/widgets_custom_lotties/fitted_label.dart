@@ -43,7 +43,19 @@ class FittedLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effective = style ?? DefaultTextStyle.of(context).style;
+    // **Merge, do not replace.** This used to read
+    // `style ?? DefaultTextStyle.of(context).style`, so whenever a caller
+    // passed a style at all the ambient one was dropped — for measurement
+    // only. `Text` itself always merges, so the line was *measured* in the
+    // platform default face and *painted* in Pixelify Sans or Quicksand.
+    //
+    // The failure mode is silent and one-directional: when the painted face
+    // is wider than the measured one, `needed <= available` comes out true,
+    // the widget decides no scaling is required, and the text overflows
+    // exactly as if this widget were not here. That is how "Mushroom
+    // Goomba" ellipsised inside a 114px tile it needed 123px for — a 0.93
+    // scale, nowhere near the truncation floor.
+    final effective = DefaultTextStyle.of(context).style.merge(style);
     final fontSize = effective.fontSize ?? 14.0;
 
     return LayoutBuilder(
@@ -79,7 +91,13 @@ class FittedLabel extends StatelessWidget {
           );
         }
 
-        final scale = available / needed;
+        // 0.99, not 1.0: scaling to exactly the available width leaves the
+        // result one rounding step from overflowing, and glyph advances do
+        // not scale perfectly linearly. "Mushroom Goomba" wanted 123px in a
+        // 114px tile -- a 0.93 scale, nowhere near the truncation floor --
+        // and ellipsised anyway. A 1% margin is invisible and removes the
+        // entire class of boundary case.
+        final scale = (available / needed) * 0.99;
         if (scale < minScale) {
           // Too long to shrink gracefully — almost always a remote string
           // rather than one of ours. Truncate instead of going unreadable.

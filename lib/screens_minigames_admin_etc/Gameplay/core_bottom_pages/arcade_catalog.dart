@@ -6,7 +6,7 @@ enum ArcadeLength {
   quick('1–2 min'),
   short('3–5 min'),
   medium('5–10 min'),
-  none('As much time as you need ☺️');
+  none('No time limit');
 
   const ArcadeLength(this.label);
 

@@ -1,6 +1,7 @@
 import 'package:bonfire/bonfire.dart';
 import 'package:bonfire/map/spritefusion/reader/spritefusion_asset_reader.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart' show DeviceOrientation, rootBundle;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
+import '../../../controllers_that_updates_stats/life_sim_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_spot_models.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
@@ -28,7 +30,20 @@ const String kAdventureMapAsset = 'assets/images/maps/map.json';
 /// which is what makes this "BitLife plus more" rather than a separate
 /// game: Life asks in a feed, the town asks in a world.
 class AdventureWorldScreen extends StatefulWidget {
-  const AdventureWorldScreen({super.key});
+  const AdventureWorldScreen({super.key, this.life});
+
+  /// The run this town was opened from, when it was opened from one.
+  ///
+  /// Null when the map is reached any other way, and the screen works exactly
+  /// as before in that case — the town is still a place you can visit on its
+  /// own. When it is set, what you decide in a building lands on the
+  /// character as well as on the account: see
+  /// [LifeSimController.applyTownOutcome].
+  ///
+  /// Passed rather than read from a provider because a life is not global
+  /// state — there can be a run in progress or not, and the town should not
+  /// have to guess which.
+  final LifeSimController? life;
 
   @override
   State<AdventureWorldScreen> createState() => _AdventureWorldScreenState();
@@ -78,30 +93,65 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     }
   }
 
-  void _onEnterSpot(TownSpot spot) {
+  /// Applies a state change that a Flame component asked for.
+  ///
+  /// **Every sensor callback has to go through this.** Bonfire ticks its
+  /// components from inside the game widget's own build — the widget sits in a
+  /// `LayoutBuilder` — so a sensor firing calls back into Flutter *during the
+  /// build phase*. Calling `setState` there throws:
+  ///
+  ///     setState() or markNeedsBuild() called during build.
+  ///     This AdventureWorldScreen widget cannot be marked as needing to
+  ///     build because the framework is already in the process of building
+  ///     widgets.
+  ///
+  /// which is a full-screen red error over the map, and it is what a player
+  /// saw the moment they walked up to an NPC.
+  ///
+  /// The hazard was always there — a spot sensor could trip it too — but it
+  /// became reproducible when the NPCs started patrolling, because an NPC
+  /// walking *into* the player fires the sensor from inside a frame the
+  /// player did not initiate.
+  ///
+  /// Deferring to after the frame is the correct fix rather than a
+  /// workaround: the state change is a *response* to something the game
+  /// simulated, and the next frame is exactly when it should be visible.
+  void _applyAfterFrame(VoidCallback change) {
     if (!mounted) return;
-    setState(() => _nearby = spot);
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    final duringBuild =
+        phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks;
+    if (!duringBuild) {
+      setState(change);
+      return;
+    }
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(change);
+    });
   }
+
+  void _onEnterSpot(TownSpot spot) => _applyAfterFrame(() => _nearby = spot);
 
   void _onExitSpot(TownSpot spot) {
-    if (!mounted) return;
     // Guarded on identity so leaving spot A doesn't clear the prompt for
     // spot B when two sensors overlap on adjacent tiles.
-    if (_nearby?.id == spot.id) {
-      setState(() => _nearby = null);
-    }
+    if (_nearby?.id != spot.id) return;
+    _applyAfterFrame(() {
+      // Re-checked inside the callback: by the time the frame ends the player
+      // may already have walked into the next spot, and clearing it then
+      // would blank a prompt that is currently correct.
+      if (_nearby?.id == spot.id) _nearby = null;
+    });
   }
 
-  void _onEnterNpc(TownNpc npc) {
-    if (!mounted) return;
-    setState(() => _nearbyNpc = npc);
-  }
+  void _onEnterNpc(TownNpc npc) => _applyAfterFrame(() => _nearbyNpc = npc);
 
   void _onExitNpc(TownNpc npc) {
-    if (!mounted) return;
-    if (_nearbyNpc?.id == npc.id) {
-      setState(() => _nearbyNpc = null);
-    }
+    if (_nearbyNpc?.id != npc.id) return;
+    _applyAfterFrame(() {
+      if (_nearbyNpc?.id == npc.id) _nearbyNpc = null;
+    });
   }
 
   Future<void> _talkTo(TownNpc npc) async {
@@ -128,7 +178,10 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
       // how it's reached.
       return;
     }
-    setState(() {
+    // Same build-phase hazard as the sensors above — a coin is collected by
+    // walking over it, which is a contact callback fired from inside the
+    // game's tick.
+    _applyAfterFrame(() {
       _coinsFound += value;
       _collectedCoinIds.add(coinId);
     });
@@ -186,6 +239,13 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
         'town_visited_spots': _visited.toList(),
       },
     });
+
+    // The whole point of walking here: the character feels it too.
+    widget.life?.applyTownOutcome(
+      gold: goldDelta,
+      xp: choice.xp,
+      literacy: choice.literacy,
+    );
 
     if (!mounted) return;
     await showDialog<void>(
@@ -262,6 +322,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
                 TownNpcComponent(
                   npc: npc,
                   idle: _npcIdleAnimation(npc.look),
+                  walk: _npcWalkAnimation(npc.look),
                   onEnter: _onEnterNpc,
                   onExit: _onExitNpc,
                 ),
@@ -930,6 +991,26 @@ Future<SpriteAnimation> _npcIdleAnimation(TownNpcLook look) async {
   return SpriteAnimation.spriteList(sprites, stepTime: 0.28);
 }
 
+/// The walk cycle for a patrolling NPC.
+///
+/// Faster than the idle and slower than the player's: these people are
+/// strolling, and a brisk NPC walk next to a strolling one reads as urgency
+/// nobody explained.
+Future<SpriteAnimation> _npcWalkAnimation(TownNpcLook look) async {
+  final paths = switch (look) {
+    TownNpcLook.taxer => AppAssets.taxerWalkFrames,
+    TownNpcLook.customer => AppAssets.customerWalkFrames,
+    TownNpcLook.fancy => AppAssets.fancyWalkFrames,
+    TownNpcLook.worker => AppAssets.workerWalkFrames,
+  };
+  final sprites = <Sprite>[];
+  for (final path in paths) {
+    final image = await _villagerSheetImages.load(path);
+    sprites.add(Sprite(image));
+  }
+  return SpriteAnimation.spriteList(sprites, stepTime: 0.16);
+}
+
 /// Walk speed and frame rate, tuned **together** so the feet don't slide.
 ///
 /// These are one setting, not two. A walk cycle is 8 frames = 2 footfalls,
@@ -988,30 +1069,29 @@ Future<SpriteAnimation> _loadRowFrames(
 
 /// The west/east walk cycle, **skipping frames 0 and 4**.
 ///
-/// Those two are the neutral/contact poses, and in the side-facing rows
-/// they were drawn with *front-facing* legs — two parallel leg columns with
-/// a gap between them, as if the character were facing the camera. Frames
-/// 1-3 and 5-7 are correct profile poses. So twice per cycle the legs
-/// snapped front-on and back, which is what made the side walk look wrong
-/// while every structural measurement of the cycle (legs alternate, halves
-/// mirror, feet planted) came back correct.
+/// Those two are the neutral/contact poses, and in the side-facing rows the
+/// art draws them with *front-facing* legs — two parallel leg columns with a
+/// gap between them, as if the character were facing the camera. Frames 1-3
+/// and 5-7 are correct profile poses. So twice per cycle the legs snapped
+/// front-on and back, which is what made the side walk look wrong while every
+/// structural measurement of the cycle (legs alternate, halves mirror, feet
+/// planted) came back correct.
 ///
-/// Fixed by using the good art rather than repainting the bad art. Three
-/// pixel edits were prototyped — merging the two legs into one, deleting
-/// the far leg, and re-centring — and each left a visible flaw (too chunky,
-/// or a leg sitting off-centre under the coat). Dropping the two frames
-/// costs nothing: what remains is contact-pass-contact for each leg, a
-/// valid six-frame cycle, and it cannot damage the source art.
+/// **This skip was briefly removed and has been restored.** A procedural
+/// redraw replaced the sheets with art whose frames 0 and 4 were true profile
+/// poses, and all eight frames were re-enabled to match. The hand-drawn
+/// original was then chosen over the redraw — which brings the front-facing
+/// neutral frames back with it, and the skip with them.
 ///
-/// If the sheets are ever redrawn with proper profile neutral frames, set
-/// this back to all eight columns.
+/// Dropping the two costs nothing: what remains is contact-pass-contact for
+/// each leg, a valid six-frame cycle, and it cannot damage the source art.
 const List<int> kSideWalkFrames = <int>[1, 2, 3, 5, 6, 7];
 
 /// Standing still, facing sideways.
 ///
-/// Frame 1 rather than frame 0 for the same reason — frame 0 is the
-/// front-facing stance, so an idle character facing west used to stand
-/// with their legs pointing at the camera.
+/// Frame 1 rather than frame 0, for the same reason — frame 0 is the
+/// front-facing stance, so an idle character facing west would otherwise
+/// stand with their legs pointing at the camera.
 const int kSideIdleFrame = 1;
 
 class _AdventureMapPendingScreen extends StatelessWidget {

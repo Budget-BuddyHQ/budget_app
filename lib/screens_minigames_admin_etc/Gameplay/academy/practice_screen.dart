@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../themes_colors/app_theme.dart';
+import '../../../widgets_custom_lotties/map_backdrop.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson.dart';
 import '../../../models_Like_Skins_and_lessons_templates/quiz_bank.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
@@ -107,16 +107,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
       ),
       body: Stack(
         children: [
-          Positioned.fill(
-            child: Image.asset(
-              AppAssets.villageMapBackground,
-              fit: BoxFit.cover,
-              filterQuality: FilterQuality.none,
-            ),
-          ),
-          Positioned.fill(
-            child: Container(color: AppTheme.panel.withValues(alpha: 0.78)),
-          ),
+          const MapBackdrop(style: MapBackdropStyle.reading),
           SafeArea(
             child: _questions.isEmpty
                 ? Center(

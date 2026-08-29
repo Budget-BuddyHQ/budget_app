@@ -699,7 +699,7 @@ class _CurrentObjectiveCard extends StatelessWidget {
                           ),
                         ),
                         FittedLabel(
-                          'Daily run | Academy | Arcade tools',
+                          'Daily run · Academy · Arcade',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.64),
                             fontWeight: FontWeight.w700,

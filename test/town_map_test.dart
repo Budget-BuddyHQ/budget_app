@@ -416,13 +416,26 @@ void main() {
   });
 
   group('side walk cycle', () {
-    // Rows 2 and 3 (west/east) ship eight frames, but columns 0 and 4 were
-    // drawn with *front-facing* legs on a profile body, so the walk snapped
-    // to a face-on stance twice per cycle. Those two are skipped rather
-    // than repainted — see [kSideWalkFrames] for the full reasoning.
+    // Columns 0 and 4 used to be skipped: the old sheets drew those two
+    // neutral poses with front-facing legs on a profile body, so the walk
+    // snapped face-on twice per cycle. `tool/redraw_villagers.py` redrew
+    // every sheet with a true eight-frame profile loop, so the workaround is
+    // gone — and this asserts it stays gone, because reintroducing the skip
+    // would silently shorten the cycle again.
     test('skips the front-facing neutral frames', () {
+      // Columns 0 and 4 draw front-facing legs on a profile body, so the walk
+      // would snap face-on twice per cycle. A procedural redraw briefly made
+      // those frames true profiles and the skip was removed; the hand-drawn
+      // original was then chosen over the redraw, so the skip is back and
+      // this is what stops it being removed again by accident.
       expect(kSideWalkFrames, isNot(contains(0)));
       expect(kSideWalkFrames, isNot(contains(4)));
+    });
+
+    test('idles on a profile pose, not the front-facing one', () {
+      // Frame 0 is the front-on stance, so an idle character facing west
+      // would stand with their legs pointing at the camera.
+      expect(kSideIdleFrame, 1);
     });
 
     test('is a whole number of half-cycles', () {

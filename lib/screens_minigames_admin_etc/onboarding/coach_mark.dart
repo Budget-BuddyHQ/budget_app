@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../constants/app_assets.dart';
@@ -199,6 +201,63 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
     _settleOnStep();
   }
 
+  // ---------------------------------------------------------------------
+  // Placement, derived from the viewport
+  // ---------------------------------------------------------------------
+  //
+  // **Every number below is a fraction of the window, clamped.** The card
+  // used to sit at fixed insets — 14px from each edge, a 48px gap from the
+  // spotlight, a 460px cap — and fixed pixels mean the card is a different
+  // *proportion* of the screen on every device it runs on: sensible on a
+  // phone, a thin strip lost in the middle of a 1440px window, and cramped
+  // on a 320px one. Sizing off the viewport makes it the same thing
+  // everywhere.
+  //
+  // The clamps are what stop proportion becoming absurd at the extremes: 2%
+  // of 1440 is a 29px margin (fine) and 2% of 320 is 6px (too tight), so
+  // each fraction has a floor and a ceiling in real pixels.
+
+  /// Side margin: 2.5% of the width, never below 12 or above 40.
+  static double _sideInset(Size screen) =>
+      (screen.width * 0.025).clamp(12.0, 40.0);
+
+  /// How wide the card may be: 42% of the window, floored at a readable
+  /// measure and capped before a line of copy gets too long to scan.
+  ///
+  /// The fraction is 42% rather than a third because of where the floor sits.
+  /// At 34%, a 375px phone and an 834px tablet both landed on the 300px floor
+  /// and got an identical card — a "proportional" size that was in practice
+  /// fixed across most of the range it was supposed to cover. 42% clears the
+  /// floor from tablet width up, so the ramp is real: ~300 on a phone, ~350 on
+  /// a tablet, 520 on a desktop.
+  static double _cardMaxWidth(Size screen) =>
+      (screen.width * 0.42).clamp(
+        math.min(300.0, screen.width - 2 * _sideInset(screen)),
+        520.0,
+      );
+
+  /// The gap between the spotlight and the card: 5% of the height, so the two
+  /// stay visually linked on a short window and do not crowd on a tall one.
+  static double _spotlightGap(Size screen) =>
+      (screen.height * 0.05).clamp(20.0, 72.0);
+
+  /// The breathing room the card keeps from the top and bottom edges.
+  static double _screenEdge(Size screen) =>
+      (screen.height * 0.02).clamp(10.0, 28.0);
+
+  /// How large the card's contents should be, 0.78 to 1.0.
+  ///
+  /// Driven by the shorter screen edge because that is what a card competes
+  /// for: on a landscape phone the width is generous and the height is not,
+  /// and a card sized off width alone covers the app.
+  static double _cardScale(Size screen) {
+    final shortest = math.min(screen.width, screen.height);
+    if (shortest >= 700) return 1.0;
+    if (shortest <= 320) return 0.78;
+    // Linear between the two, so there is no step where the layout jumps.
+    return 0.78 + (shortest - 320) / (700 - 320) * 0.22;
+  }
+
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
@@ -228,7 +287,12 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
           if (hole != null)
             Positioned(
               left: (hole.center.dx - 16).clamp(8.0, screen.width - 40),
-              top: showBelow ? hole.bottom + 10 : hole.top - 40,
+              // Sits in the gap the card left, rather than at a fixed 10px:
+              // on a tall window that gap is 72px and a 10px offset put the
+              // arrow nowhere near the middle of it.
+              top: showBelow
+                  ? hole.bottom + _spotlightGap(screen) * 0.28
+                  : hole.top - _spotlightGap(screen) * 0.62,
               child: IgnorePointer(
                 child: PixelKitIcon(
                   showBelow ? AppAssets.kitArrowUp : AppAssets.kitArrowDown,
@@ -236,24 +300,134 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
                 ),
               ),
             ),
-          Positioned(
-            left: 14,
-            right: 14,
-            top: showBelow ? null : media.padding.top + 16,
-            bottom: showBelow ? media.padding.bottom + 20 : null,
-            child: _CoachCard(
-              step: _step,
-              index: _index,
-              total: widget.steps.length,
-              onNext: _next,
-              onBack: _index == 0 ? null : _back,
-              onSkip: widget.onFinished,
+          // Anchored to the spotlight, not to the screen edge.
+          //
+          // Pinning the card to the top or the bottom works on a phone, where
+          // those are a few hundred pixels from anything. On a desktop window
+          // it put the explanation in the top-left while the arrow pointed at
+          // something 700px lower, and the two stopped reading as one
+          // instruction — which is the whole job of a coach mark.
+          //
+          // Positioned from the card's *measured* height — see
+          // [_CardPlacement]. The width is capped and the card centred rather
+          // than stretched edge to edge: `left: 14, right: 14` reads fine on a
+          // phone and becomes a 930px banner across a desktop window, three
+          // words of copy stranded in a field of panel, covering a quarter of
+          // the app it is meant to be pointing at. A tour card is a speech
+          // bubble; it should be the size of the speech.
+          Positioned.fill(
+            child: CustomSingleChildLayout(
+              delegate: _CardPlacement(
+                hole: hole,
+                showBelow: showBelow,
+                gap: _spotlightGap(screen),
+                edge: _screenEdge(screen),
+                inset: _sideInset(screen),
+                maxWidth: _cardMaxWidth(screen),
+                padding: media.padding,
+              ),
+              child: _CoachCard(
+                step: _step,
+                index: _index,
+                total: widget.steps.length,
+                // Everything inside scales with the *shorter* screen edge, so
+                // a 320px phone gets a smaller mascot and smaller type instead
+                // of a card that eats half the viewport, and a landscape phone
+                // (short but wide) gets the same treatment.
+                scale: _cardScale(screen),
+                onNext: _next,
+                onBack: _index == 0 ? null : _back,
+                onSkip: widget.onFinished,
+              ),
             ),
           ),
         ],
       ),
     );
   }
+}
+
+/// Places the coach card against the spotlight using its **real** height.
+///
+/// **Why this is a layout delegate and not a `Positioned`.** It used to be
+/// one, with the card's height guessed as `190 * scale`. That number is a
+/// constant standing in for something that varies: the height depends on how
+/// the title and body wrap, whether a Back button is present, and the text
+/// scale the reader has set. Whenever the real card was taller than the
+/// guess, the maths that was supposed to keep it clear of the spotlight
+/// placed it *over* the spotlight, and the clamp that was supposed to keep it
+/// on screen let it run off the bottom.
+///
+/// A delegate is handed the child's measured size before it has to answer
+/// where the child goes, so the estimate disappears. One layout pass, no
+/// second frame, no flicker.
+///
+/// It also lets the card **flip sides** when it genuinely does not fit, which
+/// an estimate could not decide: preferring below and finding no room, it
+/// tries above rather than clamping into the spotlight.
+class _CardPlacement extends SingleChildLayoutDelegate {
+  const _CardPlacement({
+    required this.hole,
+    required this.showBelow,
+    required this.gap,
+    required this.edge,
+    required this.inset,
+    required this.maxWidth,
+    required this.padding,
+  });
+
+  /// The spotlight, or null when this step points at nothing on screen.
+  final Rect? hole;
+  final bool showBelow;
+  final double gap;
+  final double edge;
+  final double inset;
+  final double maxWidth;
+  final EdgeInsets padding;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    return BoxConstraints(
+      maxWidth: math.min(maxWidth, constraints.maxWidth - 2 * inset),
+      maxHeight: math.max(
+        0.0,
+        constraints.maxHeight - padding.top - padding.bottom - 2 * edge,
+      ),
+    );
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final left = (size.width - childSize.width) / 2;
+    final top = padding.top + edge;
+    final bottom = size.height - padding.bottom - edge - childSize.height;
+    final lowest = math.max(top, bottom);
+
+    final target = hole;
+    if (target == null) {
+      // Nothing to point at, so the card sits where it is most readable:
+      // just off centre, high enough to leave the app visible under it.
+      return Offset(left, ((size.height - childSize.height) / 2).clamp(top, lowest));
+    }
+
+    final below = target.bottom + gap;
+    final above = target.top - gap - childSize.height;
+    // The preferred side first, then the other one, then whatever fits.
+    final wanted = showBelow
+        ? (below <= lowest ? below : (above >= top ? above : below))
+        : (above >= top ? above : (below <= lowest ? below : above));
+    return Offset(left, wanted.clamp(top, lowest));
+  }
+
+  @override
+  bool shouldRelayout(_CardPlacement old) =>
+      old.hole != hole ||
+      old.showBelow != showBelow ||
+      old.gap != gap ||
+      old.edge != edge ||
+      old.inset != inset ||
+      old.maxWidth != maxWidth ||
+      old.padding != padding;
 }
 
 /// A text button that takes only the room its label needs.
@@ -278,6 +452,7 @@ class _CoachCard extends StatelessWidget {
     required this.onNext,
     required this.onBack,
     required this.onSkip,
+    this.scale = 1.0,
   });
 
   final TutorialStep step;
@@ -287,11 +462,20 @@ class _CoachCard extends StatelessWidget {
   final VoidCallback? onBack;
   final VoidCallback onSkip;
 
+  /// 0.78 on the smallest phones, 1.0 from tablet size up. See
+  /// `_CoachMarkOverlayState._cardScale`.
+  final double scale;
+
   @override
   Widget build(BuildContext context) {
     return PixelFrame(
       style: PixelFrameStyle.slate,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      padding: EdgeInsets.fromLTRB(
+        16 * scale,
+        16 * scale,
+        16 * scale,
+        14 * scale,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,12 +488,12 @@ class _CoachCard extends StatelessWidget {
               // being read a manual.
               Image.asset(
                 step.mascot.asset,
-                width: 64,
-                height: 64,
+                width: 64 * scale,
+                height: 64 * scale,
                 filterQuality: FilterQuality.none,
-                errorBuilder: (_, _, _) => const SizedBox(width: 64),
+                errorBuilder: (_, _, _) => SizedBox(width: 64 * scale),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12 * scale),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,7 +503,7 @@ class _CoachCard extends StatelessWidget {
                       style: TextStyle(
                         color: step.accent,
                         fontWeight: FontWeight.w900,
-                        fontSize: 17,
+                        fontSize: 17 * scale,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -328,7 +512,7 @@ class _CoachCard extends StatelessWidget {
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.86),
                         height: 1.35,
-                        fontSize: 12.5,
+                        fontSize: 12.5 * scale,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -337,7 +521,7 @@ class _CoachCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12 * scale),
           // One bullet, not all of them. The full-screen version listed three
           // per step and nobody reads three bullets standing in front of the
           // thing they describe.
@@ -352,7 +536,7 @@ class _CoachCard extends StatelessWidget {
                     step.bullets.first,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.74),
-                      fontSize: 12,
+                      fontSize: 12 * scale,
                       height: 1.3,
                       fontWeight: FontWeight.w600,
                     ),
@@ -360,7 +544,7 @@ class _CoachCard extends StatelessWidget {
                 ),
               ],
             ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14 * scale),
           Row(
             children: [
               // Flexible, and the first thing to give way. On a 393px phone
@@ -404,7 +588,7 @@ class _CoachCard extends StatelessWidget {
                   constraints: const BoxConstraints(maxWidth: 104),
                   child: PixelButton(
                     label: index == total - 1 ? 'Done' : 'Next',
-                    height: 42,
+                    height: 42 * scale,
                     onPressed: onNext,
                   ),
                 ),

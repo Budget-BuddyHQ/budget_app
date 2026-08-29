@@ -129,6 +129,196 @@ class CascadeOutcome {
       clears.isEmpty ? 0 : clears.map((c) => c.cascade).reduce(max) + 1;
 }
 
+/// One stage of the run.
+///
+/// **Why levels rather than one endless board.** A single tuning — 25 moves,
+/// 24 savings, 12 bills — is one puzzle, and once a player has solved it there
+/// is nothing left to find out. Each level here changes *what you have to
+/// think about*, not just how much of it there is: the bills arrive faster, or
+/// wants cost double, or the move budget is short enough that coins stop being
+/// optional. That is the difference between a game with more content and a
+/// game with a longer number.
+///
+/// The rules are also the curriculum, in order. Level 1 teaches "savings win".
+/// Level 2 teaches "cover your needs first" by making bills arrive faster.
+/// Level 4 teaches the actual 50/30/20 lesson — wants are affordable until
+/// they are not — by doubling what they cost you.
+@immutable
+class CascadeLevel {
+  const CascadeLevel({
+    required this.number,
+    required this.name,
+    required this.rule,
+    required this.savingsGoal,
+    required this.moves,
+    required this.billCapacity,
+    this.billInterval = 4,
+    this.wantsCostMultiplier = 1,
+    this.coinValue = 1,
+  });
+
+  final int number;
+  final String name;
+
+  /// One line, shown before the level starts. If a rule cannot be stated in
+  /// one line it is too complicated for a game a seven-year-old plays.
+  final String rule;
+
+  final int savingsGoal;
+  final int moves;
+  final int billCapacity;
+
+  /// Moves between scheduled bills. Lower is harder.
+  final int billInterval;
+
+  /// How many bills a three-tile want match adds.
+  final int wantsCostMultiplier;
+
+  /// Coins earned per matched coin tile.
+  final int coinValue;
+}
+
+/// The ladder. Beat one, the next unlocks.
+const List<CascadeLevel> kCascadeLevels = <CascadeLevel>[
+  CascadeLevel(
+    number: 1,
+    name: 'First Jar',
+    rule: 'Match savings to fill the goal. Needs pay your bills down.',
+    savingsGoal: 18,
+    moves: 28,
+    billCapacity: 14,
+    billInterval: 5,
+  ),
+  CascadeLevel(
+    number: 2,
+    name: 'Bills Come Faster',
+    rule: 'A bill arrives every 3 moves. Cover your needs first.',
+    savingsGoal: 22,
+    moves: 28,
+    billCapacity: 12,
+    billInterval: 3,
+  ),
+  CascadeLevel(
+    number: 3,
+    name: 'Tight Month',
+    rule: 'Only 20 moves. Coins buy more — spend them early.',
+    savingsGoal: 20,
+    moves: 20,
+    billCapacity: 12,
+    billInterval: 4,
+    coinValue: 2,
+  ),
+  CascadeLevel(
+    number: 4,
+    name: 'Wants Cost Double',
+    rule: 'Every want match adds twice the bills. Worth it? Sometimes.',
+    savingsGoal: 24,
+    moves: 26,
+    billCapacity: 12,
+    billInterval: 4,
+    wantsCostMultiplier: 2,
+  ),
+  CascadeLevel(
+    number: 5,
+    name: 'Thin Margin',
+    rule: 'Bills every 3 moves and only 10 before you are under.',
+    savingsGoal: 24,
+    moves: 26,
+    billCapacity: 10,
+    billInterval: 3,
+  ),
+  CascadeLevel(
+    number: 6,
+    name: 'Big Goal',
+    rule: 'Save 30. You will need a chain or two.',
+    savingsGoal: 30,
+    moves: 30,
+    billCapacity: 12,
+    billInterval: 4,
+  ),
+  CascadeLevel(
+    number: 7,
+    name: 'Everything At Once',
+    rule: 'Fast bills, double wants, short budget. The full test.',
+    savingsGoal: 28,
+    moves: 24,
+    billCapacity: 10,
+    billInterval: 3,
+    wantsCostMultiplier: 2,
+  ),
+
+  // --- Past the first seven -------------------------------------------
+  //
+  // The ladder used to stop at 7, which is about twenty minutes of play, and
+  // then repeated its hardest level for ever (see [cascadeLevelFor], which
+  // falls back to the last one). These six do not simply raise the numbers:
+  // each turns one dial the earlier levels left alone, so the thing you have
+  // to think about keeps changing rather than the thing you have to grind.
+  CascadeLevel(
+    number: 8,
+    name: 'Payday',
+    rule: 'Coins are worth 3. A windfall is only useful if you aim it.',
+    savingsGoal: 30,
+    moves: 26,
+    billCapacity: 12,
+    billInterval: 4,
+    coinValue: 3,
+  ),
+  CascadeLevel(
+    number: 9,
+    name: 'Rent Week',
+    rule: 'A bill every 2 moves. Needs are not optional this week.',
+    savingsGoal: 26,
+    moves: 30,
+    billCapacity: 14,
+    billInterval: 2,
+  ),
+  CascadeLevel(
+    number: 10,
+    name: 'Cheap Thrills',
+    rule: 'Wants cost triple. Almost never worth it — almost.',
+    savingsGoal: 28,
+    moves: 28,
+    billCapacity: 12,
+    billInterval: 4,
+    wantsCostMultiplier: 3,
+  ),
+  CascadeLevel(
+    number: 11,
+    name: 'Living On The Edge',
+    rule: 'Eight bills and you are under. No room for a mistake.',
+    savingsGoal: 26,
+    moves: 28,
+    billCapacity: 8,
+    billInterval: 3,
+  ),
+  CascadeLevel(
+    number: 12,
+    name: 'The Long Save',
+    rule: 'Save 40. Nothing here is hard except keeping it up.',
+    savingsGoal: 40,
+    moves: 38,
+    billCapacity: 14,
+    billInterval: 4,
+  ),
+  CascadeLevel(
+    number: 13,
+    name: 'Everything, Faster',
+    rule: 'Bills every 2, wants cost triple, 22 moves. Good luck.',
+    savingsGoal: 30,
+    moves: 22,
+    billCapacity: 10,
+    billInterval: 2,
+    wantsCostMultiplier: 3,
+    coinValue: 2,
+  ),
+];
+
+CascadeLevel cascadeLevelFor(int number) => kCascadeLevels.firstWhere(
+  (level) => level.number == number,
+  orElse: () => kCascadeLevels.last,
+);
+
 enum CascadeStatus { playing, won, lost }
 
 /// The board and the run state.
@@ -139,14 +329,26 @@ enum CascadeStatus { playing, won, lost }
 class CoinCascadeGame {
   CoinCascadeGame({
     Random? random,
+    CascadeLevel? level,
     this.columns = 7,
     this.rows = 8,
-    this.moves = 25,
-    this.savingsGoal = 24,
-    this.billCapacity = 12,
-  }) : _random = random ?? Random() {
+    int? moves,
+    int? savingsGoal,
+    int? billCapacity,
+  }) : _random = random ?? Random(),
+       level = level ?? kCascadeLevels.first,
+       moves = moves ?? (level ?? kCascadeLevels.first).moves,
+       savingsGoal =
+           savingsGoal ?? (level ?? kCascadeLevels.first).savingsGoal,
+       billCapacity =
+           billCapacity ?? (level ?? kCascadeLevels.first).billCapacity {
     _fillBoardWithoutMatches();
   }
+
+  /// Which stage this run is. Supplies the goal, the move budget and the
+  /// rule twists; the explicit overrides above exist for tests that want a
+  /// specific shape without inventing a level for it.
+  final CascadeLevel level;
 
   final Random _random;
   final int columns;
@@ -173,9 +375,9 @@ class CoinCascadeGame {
   /// Moves since a bill was last dropped in.
   int _sinceBill = 0;
 
-  /// How often bills arrive. Every fourth move: often enough that ignoring
+  /// How often bills arrive, from the level. Frequent enough that ignoring
   /// them loses, rare enough that a player who covers needs stays ahead.
-  static const int billInterval = 4;
+  int get billInterval => level.billInterval;
 
   bool get isSettled => _findMatches().isEmpty;
 
@@ -403,7 +605,7 @@ class CoinCascadeGame {
 
       switch (kind) {
         case TileKind.coin:
-          gainedCoins += size;
+          gainedCoins += size * level.coinValue;
         case TileKind.save:
           gainedSavings += size;
         case TileKind.need:
@@ -414,7 +616,7 @@ class CoinCascadeGame {
           // Wants score best and cost you. One added bill per three tiles —
           // enough to feel, not enough to make wants a trap.
           gainedScore += size * 6;
-          added += size ~/ 3;
+          added += (size ~/ 3) * level.wantsCostMultiplier;
         case TileKind.bill:
           paid += size;
       }

@@ -3621,3 +3621,377 @@ index), so authored position never reaches a player. The test models the
 shuffle and asserts the property the player experiences — the answer lands in
 every slot, and no slot holds more than half — so the day that shuffle is
 removed, the build fails instead of the game quietly becoming guessable.
+
+## 42. Redrawing the villagers, levelling the upgrades, and making friends actually work
+
+### The villagers were redrawn, not narrowed again
+
+The side frames had been narrowed twice and were still wrong, and the verdict
+this time — *"they are all drawn bad"* — was the correct diagnosis. Rendering
+the existing sheets and looking at them shows four problems no amount of
+trimming fixes:
+
+* **The torso is a blob**, about twice the head's width and bulging past the
+  shoulders on both sides. That is the whole of the "looks fat" report, and it
+  is equally true facing the camera.
+* **There is no neck**, so the head reads as balanced on top of the blob.
+* **The profile is a bird** — a skin-coloured tab where a nose should be and a
+  hair wedge jutting backward, which together make a beak.
+* **The walk barely moves.** Two dark rectangles shifting a couple of pixels,
+  and arms that do not swing at all.
+
+`tool/redraw_villagers.py` draws all four directions and all eight frames from
+scratch, with proportions chosen rather than inherited:
+
+| | width |
+|---|---|
+| head | 40 |
+| shoulders | 40 |
+| waist | 33 |
+| **profile** | **23** — 0.58 of the front |
+
+Head as wide as the shoulders is deliberately chibi, which is what reads as
+friendly at this size for this audience; the failure being avoided is the
+opposite one, a body twice the head's width, which reads as inflated. And
+making the side view *narrower than the front* is the single change that stops
+a character looking like they inflate when they turn — which is what the
+previous passes were reaching for by shaving pixels off a shape that was too
+wide to begin with.
+
+**The palette bug worth remembering.** The first version ranked each sheet's
+colours by area and guessed which was which. It guessed wrong on the first
+sheet it met: `aurora_prime` has white hair on a gold shirt, so the "warm,
+light, saturated" test picked the shirt as skin and the character came out
+bright yellow. Fixed probes at four fixed coordinates — verified against all 22
+sheets, which were generated from one template — are both simpler and correct.
+
+**Two things the redraw retired:**
+
+* `kSideWalkFrames` skipped columns 0 and 4 because the old sheets drew those
+  neutral poses with *front-facing* legs on a profile body, so the walk snapped
+  face-on twice per cycle. The new walk phase is a true eight-frame loop in
+  which 0 and 4 are proper profile contact poses, so all eight frames are back.
+* `kSideIdleFrame` was 1 — a mid-stride — for the same reason, so a character
+  standing still stood with one leg permanently forward. It is 0 again.
+
+Long hair on the female sheets is drawn **before** the head, so it falls behind
+the face. The first attempt drew it afterwards and produced a helmet head-on
+and a profile with no visible face.
+
+### Finance Brawl upgrades are tracks now
+
+"Make it into levels like survival.io" — and the thing that makes that loop
+work is not the word *level*, it is that the offers **narrow**. The old pool
+served the same eight sentences forever, so a run's shape was decided by what
+the shuffle happened to show and there was no such thing as committing to a
+build.
+
+Nine levelled tracks with caps (fire rate ×8, pierce ×6, spread ×5, splash ×6,
+ring ×5, streams ×5, damage ×10, shield ×5, speed ×5). Each offer describes
+what it does *at the level you are about to take* — "18% faster · 139% total
+fire rate" — so three cards can be compared on effect rather than on slogan,
+and the card shows **Lv 2 → 3**, or **Lv 7 → MAX** on the last step.
+
+A maxed track leaves the pool. That is the property the design rests on, and
+`brawl_upgrades_test.dart` asserts it directly, along with the one that stops
+it becoming a bug: draining every track must still leave something to pick, or
+the run stalls on a level-up sheet with no buttons.
+
+### The tour card was a banner
+
+`left: 14, right: 14` reads fine on a phone and becomes a 930px banner across
+the top of a desktop window — three words of copy stranded in a field of panel,
+covering a quarter of the app it is pointing at. Capped at 460 and centred, and
+the contents scale 0.78→1.0 with the **shorter** screen edge, because that is
+what a card competes for: on a landscape phone the width is generous and the
+height is not.
+
+### Friends between accounts
+
+Three things stood between the feature and working:
+
+* **The add used a plain `upsert`.** The table grants `select, insert` and has
+  no UPDATE policy — correctly, since nothing about an edge can change — and a
+  default upsert resolves a conflict with an UPDATE. So adding a friend you had
+  already added failed with a permission error instead of doing nothing.
+  `ignoreDuplicates` sends `ON CONFLICT DO NOTHING`, which needs only INSERT.
+* **There was no way to remove one.** `removeFriend()` deletes both directions;
+  the second delete is a no-op unless you created that row, since the policy
+  only lets you remove rows where you are `user_id`. Sending both is what makes
+  "remove friend" mean the same thing regardless of who added whom.
+* **The card had no list.** You could add a friend and never see one, which is
+  indistinguishable from a broken feature. The list now loads once per user
+  (held in a field, not built inline — the card rebuilds on every keystroke in
+  the code field) and reloads after any add or removal.
+
+One trap is now written into the SQL as a comment: `public.leaderboard` must
+**not** be `security_invoker`. `user_stats` restricts SELECT to your own row,
+which is right for the table and fatal for the view — every player would see a
+leaderboard containing exactly themselves, and every friend-code lookup would
+return "No player found". Supabase's linter flags owner-run views and its
+one-click fix would break friends and the leaderboard together.
+
+The DELETE grant and policy are **not yet applied to the live database** — see
+the pending-SQL memory note.
+
+### The sky changes with the hour
+
+Fourteen 1280×720 gradients had been sitting in
+`assets/map_assets_coins/day-night-cycle/` referenced by nothing, while the app
+painted the same flat green at every hour. `DayNightSky` picks one from the
+device clock and puts it behind the main game.
+
+It is the cheapest personalisation there is — no account, no setting, nothing
+collected — and it is used as a backdrop, never as content: dimmed and covered
+with a dark scrim, because the contrast audit measures text against declared
+surfaces and a full-strength noon gradient behind a screenful of measured
+labels would invalidate every one of those numbers. The test asserts the scrim
+exists for exactly that reason.
+
+**833 tests.**
+
+## 43. Pixel art that is actually on a grid, and eight new skins
+
+### The pixels were every size and none of them lined up
+
+§42's redraw got the *proportions* right — narrow profile, real neck, no beak —
+and it still looked wrong, for a reason that only shows up zoomed in. It drew
+straight into the 104x162 cell with PIL ellipses and polygons, and an ellipse
+rasterised at 1x puts single-pixel steps wherever the curve happens to cross a
+row. So a "pixel" on the shoulder was one unit tall, one on the jaw was three,
+and none of them shared a grid: a blurry mess pretending to be pixel art.
+
+Real pixel art is drawn **at** its resolution and scaled by a whole number.
+`tool/redraw_villagers.py` now draws on a **26x40 grid** and scales x4 with
+nearest-neighbour sampling, so every visible pixel is a perfect 4x4 block and
+every edge lands on the grid. Working that small also forces the proportions to
+be deliberate — there is no room for a torso twice the head's width when the
+whole character is 26 across.
+
+**The walk is a hand-written table, not a sine.** At three pixels of travel a
+sine rounds to the same integer for several frames running, so the cycle
+hitched instead of walking. `SIDE_LEGS`, `FRONT_LIFT` and `ARM_SWING` spell out
+each of the eight frames, which is how every hand-made walk cycle works: the
+contact and passing poses are *drawn* rather than sampled.
+
+Three things had to be fixed before the walk was visible at all, and each
+failed the same way — the animation was running and nothing could be seen:
+
+* **The legs overlapped into one column.** A stride of ±2 with 3-pixel legs
+  never separates them. The table now puts the two legs at different x on every
+  frame, and the far one is darker and a pixel shorter.
+* **The arm merged into the torso.** First it sat one pixel inside the
+  silhouette, landing on the torso's own shading band; then it was the same
+  colour as the shirt. It now sits outside the body with a **dark separator
+  column** between — that line is the whole trick.
+* **The shading band flickered.** In profile it ran down the front edge, where
+  the arm swings, so it was half-overwritten on alternate frames. It moved to
+  the back edge.
+
+### New skins cost a palette, not an artist
+
+The generator does not need a source sheet, only four colours — so
+`--new` writes a full 32-frame sheet per skin from a table. Eight went in:
+Copper Apprentice, Frost Auditor, Harvest Planner, Neon Daytrader, Ember
+Founder, Jade Landlord, Royal Treasurer and Solar Index, spanning common to
+mythic and a genuine range of skin tones. The catalogue is 24 skins.
+
+Each is written as a character rather than a colourway — the palette, the name
+and the blurb chosen together, because "Frost Auditor" being pale blue is the
+only thing that makes the pull feel like it meant something.
+
+**One bug the palette work produced twice.** The probe points that read a
+sheet's colours were single coordinates, and this script now runs against
+sheets it generated itself as well as the original art. The two put the legs in
+different places, so the trouser probe landed in the *gap between the legs*
+after the first redraw, read transparent, and every skin fell back to default
+grey. Several candidate points per colour make the extraction idempotent —
+which matters, because a generator you cannot run twice is one you can only use
+once.
+
+### `docs/PAGES.md`
+
+A map of every screen: what a player does there, what it teaches, and where its
+state comes from. `ARCHITECTURE.md` is the log of changes in order; PAGES is
+the description of the app as it stands, for someone opening a screen they have
+not seen before.
+
+### Coin Cascade got a ladder
+
+One tuning is one puzzle: solve it and there is nothing left to find out. Seven
+levels now change *what you have to think about* rather than how much of it
+there is — and the rule twists are the curriculum, in order:
+
+| # | Name | The rule |
+|---|---|---|
+| 1 | First Jar | savings win; needs pay bills |
+| 2 | Bills Come Faster | a bill every 3 moves — cover needs first |
+| 3 | Tight Month | 20 moves, coins worth double — spend them early |
+| 4 | Wants Cost Double | the actual 50/30/20 lesson |
+| 5 | Thin Margin | fast bills, only 10 before you are under |
+| 6 | Big Goal | save 30; you will need a chain |
+| 7 | Everything At Once | all of it |
+
+The rule stays on screen the whole time rather than appearing once in a dialog
+— "every want match adds twice the bills" is the thing the player is supposed
+to be reasoning about, and a rule you have to remember is a rule you play the
+first two minutes without. Later levels stay listed but disabled in the picker,
+so the ladder is visible from level one.
+
+**A test had to be restated rather than relaxed.** The suite asserted that a
+bot taking the first legal swap it sees must sometimes *lose* — a game a random
+player always wins has no decisions in it. Level 1 is deliberately a walkover,
+so that assertion started failing the moment the ladder landed. The honest fix
+was to move the property to the ends of the ladder: level 1 must be winnable by
+a beginner, and level 7 must beat one more often than level 1 does. Lowering
+the bar would have deleted the only check that the levels mean anything.
+
+## 44. The detail comes back, the town starts moving, and a settings page stops being a map
+
+### Pass four on the sprites: a grid *and* detail
+
+§43 fixed the pixel grid by dropping to a 26x40 canvas — and at 26 across there
+is no room for a face, a collar or a shoe, so it traded one problem for
+another. The verdict was "I want the old design back", meaning the detail of
+the pass before it.
+
+Both are achievable at once: **52x81 at 2x**. Every visible pixel is still a
+clean 2x2 block with every edge on the grid, and there are four times as many
+of them — enough for eyes with a catchlight, a nose, a mouth, a collar, sleeve
+cuffs, shoes and hair with a highlight.
+
+**A palette bug that cost a full regeneration.** The probe that reads each
+sheet's four colours took the first *opaque* candidate, and opaque is not the
+same as correct. Run against sheets a previous version of the script had
+generated, the hair probe landed on the forehead, came back opaque, and all 22
+skins were rebuilt with hair the same colour as skin — a village of bald
+people. The sheets had to be restored from git. The probe now rejects a
+candidate that matches a colour already claimed, so the extraction survives
+being pointed at art it did not generate.
+
+### The town's people were standing perfectly still
+
+The walk cycles for all four NPC looks shipped in the bundle and nothing
+referenced them. They patrol now — but on a leash, and the constraint is the
+design:
+
+* **A short beat along one axis**, not free wandering. An NPC that wanders
+  needs pathfinding, can walk into the sea, and — worst of all — can walk
+  *away* from a player trying to reach it.
+* **They stop while you are in range.** Walking off mid-sentence is the most
+  annoying thing an NPC can do, and it makes the proximity sensor flicker.
+* **A pause at each end of the beat**, because a patrol with no pauses reads
+  as a machine on rails rather than as someone waiting for a bus.
+* Slower than the player, so nobody feels raced.
+
+`town_npc_patrol_test.dart` checks the patrols stay inside the clear 3x3 each
+NPC position was authored against, and that the worker asks for two walk frames
+rather than three — its sheet only ships two, and asking for a third throws
+during map load rather than showing a gap.
+
+### The interior looked broken on a wide window
+
+Stretched across a 965px window, the decision panel hugged the top-right, the
+stall sat bottom-left, and the middle was a field of empty floor. Both columns
+are centred now and the panel is capped at 460 — a room with a person in it and
+a conversation about it should read as one scene, which means both halves sit
+on the same eye line.
+
+The floor also got floorboards. A plain gradient read as *empty* rather than as
+floor, and on a wide window it is the largest single area on screen. The seams
+are two percent white and bunch toward the horizon: enough shape for the eye to
+read depth, far too little to interfere with the panel's measured text colours.
+
+### The coach card was pointing at nothing
+
+Pinned to the top or bottom edge, which works on a phone where those are a few
+hundred pixels from anything. On a desktop window it put the explanation in the
+top-left while the arrow pointed at something 700px lower, and the two stopped
+reading as one instruction — the entire job of a coach mark. It now anchors to
+the spotlight, clamped to stay fully on screen.
+
+### The settings page had a town map running through it
+
+`_ProfileBackdrop` was tuned *up* — saturation 1.4 behind a 0.42 scrim — on the
+reasoning that translucent cards should let the tile art read through. On a wide
+window that is exactly what happened: grass, fences and trees sliding behind
+"Notifications" and "Sound" while the labels fought the pattern.
+
+Cards are opaque now and the backdrop is texture rather than a picture. A
+background on a settings page has one job, which is to not be the thing you are
+looking at.
+
+## 45. The art was the answer; the tutorial's placement is now a fraction
+
+### Four redraws later, the original art wins
+
+The sprite work went: original (a torso twice the head's width, no neck, a
+beak) → ellipses at 1x (right proportions, pixels of every size) → a 26x40
+grid (a perfect grid, no room for a face) → 52x81 (grid *and* detail). And the
+verdict on all of them was the hand-drawn original, uploaded back as a
+reference.
+
+That is a fair call, and it changes the tooling rather than the goal:
+
+* **`tool/recolour_villager_skins.py`** makes new skins by *palette-swapping*
+  the shipped template. The 22 sheets are already palette swaps of one drawing,
+  so a new character is four colours — and the result is the original art at
+  the original quality, which is the part every from-scratch generator kept
+  losing. The eight new skins are regenerated this way, so all 30 are one set.
+  The outline and the blush are deliberately **not** remapped: they are what
+  make the skins feel like they belong together.
+* **`tool/fix_side_heads.py`** repairs the one defect worth repairing, in
+  place and on the art's own 5px grid.
+* **`tool/redraw_villagers.py` is deleted.** Keeping a 570-line generator whose
+  output was rejected three times is keeping a trap.
+
+The frame-skip workaround came back with the art: the original draws columns 0
+and 4 of the side rows with front-facing legs, so `kSideWalkFrames` skips them
+and `kSideIdleFrame` is 1 again. Both are now pinned by test.
+
+**What got fixed, and what deliberately did not.** The nose was an L — a small
+skin patch at eye level and a much wider one below jutting two or three big
+pixels past the hairline, which is what made the profile read as a bird. It is
+trimmed to a single big pixel: a nose.
+
+The thin bar across the top of the profile head *looks* like a stray shard, and
+a detector for it was written and then removed. Against the front-facing row it
+is the brim of the character's cap seen edge-on — design, not a mistake. The
+detector also only recognised it in six of sixteen frames, which would have put
+a hat on the same head in some frames of a walk cycle and not others. An
+inconsistent fix to a non-problem is worse than the non-problem.
+
+**Two idempotency bugs, both found by running the tool twice.** The first
+version trimmed one big pixel per pass, so a three-pixel beak needed three runs
+— and the run after that ate the nose it had just created, leaving a bare
+sliver of skin for a face. Requiring a two-pixel overhang only moved the
+problem. The fix is to trim to a *target*: remove `overhang - BIG`, so one run
+always lands on the same result and every run afterwards finds a one-pixel
+overhang and stops. An art tool that is not safe to re-run is an art tool that
+destroys art the second time someone runs it.
+
+### The tutorial card is sized in fractions of the window
+
+*"Instead of making the boxes for the tutorial on a fixed position, make the
+location based on the resolution of the window."*
+
+Every number in the placement is now a fraction of the viewport, clamped:
+
+| | fraction | floor | ceiling |
+|---|---|---|---|
+| side margin | 2.5% of width | 12 | 40 |
+| card width | 42% of width | ~300 | 520 |
+| gap from the spotlight | 5% of height | 20 | 72 |
+| edge margin | 2% of height | 10 | 28 |
+
+Fixed pixels mean the card is a different *proportion* of the screen on every
+device: sensible on a phone, a thin strip lost in a 1440px window, cramped on a
+320px one. The clamps are what stop a proportion becoming absurd at the
+extremes — 2% of 320px is a 6px margin.
+
+**The fraction started at 34% and had to go up.** At a third, a 375px phone and
+an 834px tablet both landed on the 300px floor and got an *identical* card — a
+"proportional" size that was fixed across most of the range it was meant to
+cover. The test that caught it asserts the ramp is real (phone < tablet <=
+desktop) rather than asserting any particular pixel count, which is the only
+form that survives the fraction being tuned again.
