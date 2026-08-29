@@ -10,6 +10,7 @@ class AppSettingsController extends ChangeNotifier {
       'budget_buddy_last_feedback_prompt';
   static const String _launchCountKey = 'budget_buddy_launch_count';
   static const String _tutorialSeenKey = 'budget_buddy_tutorial_seen';
+  static const String _lifeTourSeenKey = 'budget_buddy_life_tour_seen';
 
   /// How long to wait before asking again after the prompt is shown —
   /// dismissed or not. Deliberately not "every launch"; that reads as
@@ -30,6 +31,7 @@ class AppSettingsController extends ChangeNotifier {
   bool _notificationsEnabled = true;
   bool _initialized = false;
   bool _tutorialSeen = false;
+  bool _lifeTourSeen = false;
   SharedPreferences? _preferences;
   DateTime? _lastFeedbackPromptShown;
   int _launchCount = 0;
@@ -60,6 +62,17 @@ class AppSettingsController extends ChangeNotifier {
   /// before SharedPreferences has been read back, which would show the tour
   /// to an existing player for one frame on every cold start.
   bool get isTutorialDue => _initialized && !_tutorialSeen;
+
+  /// Whether the *in-game* tour has run.
+  ///
+  /// Separate from [tutorialSeen] because the two answer different
+  /// questions. The app tour says what each tab is for; this one says how to
+  /// play the main game, and it can only run once somebody is actually
+  /// inside a life. Sharing one flag would mean a player who took the app
+  /// tour on day one never gets shown how the life sim works.
+  bool get lifeTourSeen => _lifeTourSeen;
+
+  bool get isLifeTourDue => _initialized && !_lifeTourSeen;
 
   /// Whether the occasional feedback prompt is due: the player has opened the
   /// app a few times, and enough time has passed since it was last shown.
@@ -97,6 +110,7 @@ class AppSettingsController extends ChangeNotifier {
     await _preferences?.setInt(_launchCountKey, _launchCount);
 
     _tutorialSeen = _preferences?.getBool(_tutorialSeenKey) ?? false;
+    _lifeTourSeen = _preferences?.getBool(_lifeTourSeenKey) ?? false;
 
     _initialized = true;
     notifyListeners();
@@ -138,6 +152,32 @@ class AppSettingsController extends ChangeNotifier {
 
     _preferences ??= await SharedPreferences.getInstance();
     await _preferences?.setBool(_tutorialSeenKey, true);
+  }
+
+  /// "Show me how to play again."
+  ///
+  /// Clears the flag rather than raising a separate request bit: the life
+  /// screen already starts the tour whenever [isLifeTourDue], so un-seeing it
+  /// is the whole mechanism. The app tour needs a request bit because the
+  /// screen that replays it is *inside* the shell that draws it; this one is
+  /// started by the screen it runs on.
+  Future<void> requestLifeTourReplay() async {
+    _lifeTourSeen = false;
+    notifyListeners();
+    _preferences ??= await SharedPreferences.getInstance();
+    await _preferences?.setBool(_lifeTourSeenKey, false);
+  }
+
+  /// Records that the in-game life tour is done with.
+  Future<void> markLifeTourSeen() async {
+    if (_lifeTourSeen) {
+      return;
+    }
+    _lifeTourSeen = true;
+    notifyListeners();
+
+    _preferences ??= await SharedPreferences.getInstance();
+    await _preferences?.setBool(_lifeTourSeenKey, true);
   }
 
   /// Records "just showed the feedback prompt" so [isFeedbackPromptDue]

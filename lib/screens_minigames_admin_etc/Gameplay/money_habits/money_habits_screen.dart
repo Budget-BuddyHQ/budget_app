@@ -1675,7 +1675,11 @@ class _JarTab extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              _MoodPill(mood: mood, daysSince: habits.daysSinceJarActive),
+              _MoodPill(
+                mood: mood,
+                daysSince: habits.daysSinceJarActive,
+                everActive: habits.jarEverActive,
+              ),
             ],
           ),
         ),
@@ -1781,7 +1785,11 @@ class _JarTab extends StatelessWidget {
 
         const SizedBox(height: 14),
 
-        _JarNextStep(mood: mood, daysSince: habits.daysSinceJarActive),
+        _JarNextStep(
+          mood: mood,
+          daysSince: habits.daysSinceJarActive,
+          everActive: habits.jarEverActive,
+        ),
       ],
     );
   }
@@ -1794,15 +1802,35 @@ final _jarAccent = AppTheme.legibleOn(
 );
 
 class _MoodPill extends StatelessWidget {
-  const _MoodPill({required this.mood, required this.daysSince});
+  const _MoodPill({
+    required this.mood,
+    required this.daysSince,
+    required this.everActive,
+  });
 
   final JarMood mood;
   final int daysSince;
 
+  /// False for a player who has never logged anything, whose
+  /// [daysSince] is the 999 sentinel rather than a real gap.
+  final bool everActive;
+
+  /// How long since the jar last moved, in the coarsest unit that still
+  /// answers the question.
+  ///
+  /// It used to read "last logged 999 days ago", which is three problems in
+  /// one line: the pill is 201px wide on a small phone and that string wants
+  /// 260, "last logged" repeats what the pill already says, and a raw day
+  /// count stops meaning anything somewhere around a fortnight. Nobody reads
+  /// 340 and thinks "eleven months" — they read it as "a lot".
   String get _detail {
-    if (daysSince <= 0) return 'logged today';
-    if (daysSince == 1) return 'last logged yesterday';
-    return 'last logged $daysSince days ago';
+    if (!everActive) return 'not started yet';
+    if (daysSince <= 0) return 'today';
+    if (daysSince == 1) return 'yesterday';
+    if (daysSince < 14) return '$daysSince days ago';
+    if (daysSince < 60) return '${daysSince ~/ 7} weeks ago';
+    if (daysSince < 365) return '${daysSince ~/ 30} months ago';
+    return 'over a year ago';
   }
 
   @override
@@ -1907,10 +1935,19 @@ class _JarStat extends StatelessWidget {
 
 /// The closing card, which now says what to do rather than what is true.
 class _JarNextStep extends StatelessWidget {
-  const _JarNextStep({required this.mood, required this.daysSince});
+  const _JarNextStep({
+    required this.mood,
+    required this.daysSince,
+    required this.everActive,
+  });
 
   final JarMood mood;
   final int daysSince;
+
+  /// False for a player who has never logged anything, whose [daysSince] is
+  /// the 999 sentinel rather than a real gap. Somebody who has not started is
+  /// not somebody who has lapsed.
+  final bool everActive;
 
   @override
   Widget build(BuildContext context) {
@@ -1948,10 +1985,15 @@ class _JarNextStep extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  slipping
-                      ? 'It has been $daysSince days. One habit on Track is '
-                            'enough to restart the streak — the jar keeps '
-                            'everything you have already put in.'
+                  !everActive
+                      ? 'Nothing in the jar yet. Save one habit on Track and '
+                            'log it once — that is the whole of getting '
+                            'started.'
+                      : slipping
+                      ? 'It has been $daysSince ${daysSince == 1 ? 'day' : 'days'}. '
+                            'One habit on Track is enough to restart the '
+                            'streak — the jar keeps everything you have '
+                            'already put in.'
                       : 'Log a habit on Track, or take on a challenge on '
                             'Activity. Both drop points straight into the jar.',
                   style: GoogleFonts.quicksand(

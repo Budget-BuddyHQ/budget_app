@@ -52,6 +52,10 @@ class _LessonScreenState extends State<LessonScreen> {
       initialAccuracy: _accuracyFromStats(),
     )..addListener(_refresh);
     _statsController.addListener(_syncProgressFromStats);
+    // After the first layout, so the strip has a scroll extent to clamp to.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _revealUnit(_selectedUnitIndex, animate: false);
+    });
   }
 
   @override
@@ -92,18 +96,26 @@ class _LessonScreenState extends State<LessonScreen> {
       _selectedUnitIndex = index;
       _hasManualUnitSelection = true;
     });
+    _revealUnit(index, animate: true);
+  }
 
-    if (!_unitQuickScrollController.hasClients) {
-      return;
-    }
-
-    // The strip is grouped by age band, so a unit's position in it is no
-    // longer its curriculum index — and each band adds a header of its own
-    // width ahead of the units under it.
+  /// Scrolls the strip so the chip for [index] is fully on screen.
+  ///
+  /// Called on the first frame as well as on selection. Without that, opening
+  /// the Academy left the *selected* chip clipped by the right edge: the age
+  /// header ahead of it is about 174px and the chip is 196, which is 6px more
+  /// than a 390px phone has. The one chip that must be readable was the one
+  /// getting cut.
+  void _revealUnit(int index, {required bool animate}) {
+    if (!_unitQuickScrollController.hasClients) return;
     final targetOffset = _UnitQuickChangerBar.estimatedOffsetFor(
       _progressionService.units,
       index,
     ).clamp(0.0, _unitQuickScrollController.position.maxScrollExtent);
+    if (!animate) {
+      _unitQuickScrollController.jumpTo(targetOffset);
+      return;
+    }
     _unitQuickScrollController.animateTo(
       targetOffset,
       duration: const Duration(milliseconds: 260),
@@ -501,6 +513,14 @@ class _LessonScreenState extends State<LessonScreen> {
   }
 }
 
+/// The unit chip's declared minimum width, and the gap between chips.
+///
+/// Shared because two places need to agree on it: the chip that reserves the
+/// space, and [_UnitQuickChangerBar.estimatedOffsetFor], which works out where
+/// a chip sits so tapping one can scroll it into view.
+const double unitChipMinWidth = 196.0;
+const double unitChipGap = 10.0;
+
 class _UnitQuickChangerBar extends StatelessWidget {
   const _UnitQuickChangerBar({
     required this.controller,
@@ -552,8 +572,16 @@ class _UnitQuickChangerBar extends StatelessWidget {
   /// Roughly how far along the strip the unit at curriculum [index] sits, so
   /// tapping a chip scrolls it into view. Approximate on purpose — chip widths
   /// depend on their labels, and this only has to land near the right place.
+  ///
+  /// "Roughly" still has to be roughly *right*. This carried its own
+  /// hardcoded 156 for the chip width, and when the chip's declared minimum
+  /// went to 196 to stop unit titles being clipped, nothing connected the two
+  /// — so every jump landed 40px per chip short of its target, which is
+  /// almost half a screen by the end of a thirteen-unit strip. Reading
+  /// [unitChipMinWidth] means the next change to the chip cannot silently
+  /// break the scroll.
   static double estimatedOffsetFor(List<LessonUnit> units, int index) {
-    const chipWidth = 156.0;
+    const chipWidth = unitChipMinWidth + unitChipGap;
     const headerWidth = 174.0;
     var offset = 0.0;
     AgeStage? previousStage;
@@ -776,7 +804,22 @@ class _UnitJumpChip extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
-          constraints: const BoxConstraints(minHeight: 60, minWidth: 146),
+          // Wide enough for the text it actually holds. The chip is
+          // icon + gap + a 132px column inside 14px of padding either side,
+          // which is 192 — a 146 minimum was 46px short and unit titles ran
+          // off the edge of their own card ("Stocks and Tradin", "Protecting
+          // Your Mone").
+          //
+          // 132 rather than 118 for the column because the longest name in
+          // the curriculum, "Retirement and the 401(k)", still needed about
+          // 124px at `FittedLabel`'s 62% floor — so at 118 it was ellipsised
+          // even after scaling. The column is also `Flexible` now, so the
+          // label shrinks rather than overflowing if anything ever does
+          // constrain this chip.
+          constraints: const BoxConstraints(
+            minHeight: 60,
+            minWidth: unitChipMinWidth,
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: selected
@@ -799,55 +842,63 @@ class _UnitJumpChip extends StatelessWidget {
                 size: 22,
               ),
               const SizedBox(width: 10),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Unit ${index + 1}',
-                    style: GoogleFonts.pixelifySans(
-                      color: selected
-                          ? const Color(0xFF062C21)
-                          : const Color(0xFFB9D1C6),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 118),
-                    child: FittedLabel(
-                      unit.title.replaceFirst('Unit ${index + 1}: ', ''),
+              Flexible(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Unit ${index + 1}',
                       style: GoogleFonts.pixelifySans(
                         color: selected
                             ? const Color(0xFF062C21)
-                            : Colors.white,
-                        fontSize: 14,
+                            : const Color(0xFFB9D1C6),
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                  ),
-                  // Mastery used to be carried by this chip's icon/border
-                  // colour, which the per-unit accent now owns — so it moves
-                  // to its own progress bar rather than being dropped.
-                  const SizedBox(height: 6),
-                  SizedBox(
-                    width: 118,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: LinearProgressIndicator(
-                        minHeight: 4,
-                        value: progress,
-                        backgroundColor: selected
-                            ? const Color(0x33062C21)
-                            : Colors.white.withValues(alpha: 0.14),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          selected ? const Color(0xFF062C21) : masteryColor,
+                    const SizedBox(height: 3),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 132),
+                      child: FittedLabel(
+                        // The unit's own number, not its position: the ids are
+                        // permanent and the display order is not, so
+                        // `unit_10` is titled "Unit 1". Stripping by position
+                        // leaves the prefix in place whenever they disagree.
+                        unit.title.contains(': ')
+                            ? unit.title.split(': ').skip(1).join(': ')
+                            : unit.title,
+                        style: GoogleFonts.pixelifySans(
+                          color: selected
+                              ? const Color(0xFF062C21)
+                              : Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    // Mastery used to be carried by this chip's icon/border
+                    // colour, which the per-unit accent now owns — so it moves
+                    // to its own progress bar rather than being dropped.
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      width: 118,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          minHeight: 4,
+                          value: progress,
+                          backgroundColor: selected
+                              ? const Color(0x33062C21)
+                              : Colors.white.withValues(alpha: 0.14),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            selected ? const Color(0xFF062C21) : masteryColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

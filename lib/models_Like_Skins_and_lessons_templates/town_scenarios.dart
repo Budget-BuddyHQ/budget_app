@@ -44,6 +44,117 @@ const Map<String, List<TownScenario>> kTownScenarios =
       // ---------------------------------------------------------------
       'spot_store': [
         TownScenario(
+          id: 'store_till_snack',
+          prompt:
+              'The queue at the till runs past a rack of chocolate. \$1.80, '
+              'and you are already holding what you came for.',
+          choices: [
+            TownChoice(
+              label: 'Add it to the basket',
+              outcome:
+                  'That rack is there because it works — the till queue is the '
+                  'one place in the shop where you are standing still with '
+                  'nothing to do. Twice a week is \$187 a year.',
+              gold: -2,
+              xp: 5,
+              literacy: 6,
+            ),
+            TownChoice(
+              label: 'Put it back',
+              outcome:
+                  'The whole trick of an impulse buy is that it is decided in '
+                  'the four seconds before you pay. Deciding before you get in '
+                  'the queue is the counter to it.',
+              xp: 9,
+              literacy: 9,
+            ),
+            TownChoice(
+              label: 'Buy it, but skip tomorrow',
+              outcome:
+                  'A real budget has room for treats. What it does not have is '
+                  'room for treats that were never counted — you just counted '
+                  'this one, which is the difference.',
+              gold: -2,
+              xp: 8,
+              literacy: 8,
+            ),
+          ],
+        ),
+        TownScenario(
+          id: 'store_own_brand',
+          prompt:
+              'Same cereal, two boxes. The name you know is \$4.50; the '
+              'shop own-label beside it is \$2.20.',
+          choices: [
+            TownChoice(
+              label: 'Take the brand you know',
+              outcome:
+                  'Sometimes worth it — a brand you trust saves you the risk of '
+                  'wasting \$2.20 on something nobody eats. Just know you paid '
+                  '\$2.30 for the certainty.',
+              gold: -5,
+              xp: 5,
+              literacy: 6,
+            ),
+            TownChoice(
+              label: 'Try the own label once',
+              outcome:
+                  'One box is a cheap experiment. If it is fine you save \$2.30 '
+                  'every time from now on; if it is not, you are out \$2.20 and '
+                  'you know.',
+              gold: -2,
+              xp: 10,
+              literacy: 10,
+            ),
+            TownChoice(
+              label: 'Read both lists and buy neither today',
+              outcome:
+                  'Often the same factory and nearly the same list — the gap you '
+                  'would pay for is frequently the box. You have enough at home '
+                  'this week, so knowing costs you nothing.',
+              xp: 9,
+              literacy: 10,
+            ),
+          ],
+        ),
+        TownScenario(
+          id: 'store_reduced_shelf',
+          prompt:
+              'The reduced shelf has bread at half price, going out of date '
+              'tomorrow. You have plenty of bread at home.',
+          choices: [
+            TownChoice(
+              label: 'Buy two — half price is half price',
+              outcome:
+                  'Half price on food you will not eat is not a saving, it is a '
+                  'cheaper way to throw money away. The discount only counts if '
+                  'you would have bought it anyway.',
+              gold: -3,
+              xp: 5,
+              literacy: 7,
+            ),
+            TownChoice(
+              label: 'Walk past',
+              outcome:
+                  'Right call today. The reduced shelf is genuinely good value '
+                  'for something you were already going to buy — and a trap for '
+                  'everything else.',
+              xp: 9,
+              literacy: 9,
+            ),
+            TownChoice(
+              label: 'Buy one and freeze it',
+              outcome:
+                  'This is the version that works: the date only matters if the '
+                  'food has to be eaten by then. A freezer turns a deadline into '
+                  'a real saving.',
+              gold: -2,
+              xp: 10,
+              literacy: 10,
+            ),
+          ],
+        ),
+        TownScenario(
           id: 'store_sale',
           prompt:
               'A sign says BUY 2 GET 1 FREE on drinks — \$3 each. You came '
@@ -162,6 +273,113 @@ const Map<String, List<TownScenario>> kTownScenarios =
       // ---------------------------------------------------------------
       'spot_bank': [
         TownScenario(
+          id: 'bank_overdraft_fee',
+          prompt:
+              'Your balance went \$12 below zero for two days. The statement '
+              'shows a \$35 overdraft fee.',
+          choices: [
+            TownChoice(
+              label: 'Pay it and move on',
+              outcome:
+                  'You borrowed \$12 for two days and paid \$35 for it. As an '
+                  'interest rate that is astronomical, which is why an overdraft '
+                  'is the most expensive money most people ever borrow.',
+              gold: -35,
+              xp: 5,
+              literacy: 7,
+            ),
+            TownChoice(
+              label: 'Ask the bank to refund it',
+              outcome:
+                  'They often will, once, if you ask politely and it is your '
+                  'first. Fees are frequently a policy rather than a law — it '
+                  'costs one phone call to find out.',
+              gold: -10,
+              xp: 9,
+              literacy: 9,
+            ),
+            TownChoice(
+              label: 'Turn off overdraft cover instead',
+              outcome:
+                  'Then the payment is declined rather than fee-charged. A '
+                  'declined card is embarrassing for a minute; \$35 is '
+                  'embarrassing for a week.',
+              xp: 10,
+              literacy: 10,
+            ),
+          ],
+        ),
+        TownScenario(
+          id: 'bank_auto_save',
+          prompt:
+              'The clerk offers to set up an automatic transfer to savings the '
+              'day after your money arrives.',
+          choices: [
+            TownChoice(
+              label: 'Set it for \$10 a week',
+              outcome:
+                  'This is pay-yourself-first, and it works because it happens '
+                  'before you see the money. \$10 a week is \$520 a year with no '
+                  'willpower involved.',
+              xp: 10,
+              literacy: 10,
+            ),
+            TownChoice(
+              label: 'Set it for \$60 a week',
+              outcome:
+                  'Ambitious, and the usual outcome is that you move it back the '
+                  'first tight month and stop trusting the system. A transfer you '
+                  'never cancel beats a bigger one you do.',
+              xp: 7,
+              literacy: 8,
+            ),
+            TownChoice(
+              label: 'Save whatever is left at month end',
+              outcome:
+                  'Almost nothing is ever left — spending expands to fill the '
+                  'account. Saving last is the plan that fails quietly, which is '
+                  'why the order matters more than the amount.',
+              xp: 5,
+              literacy: 7,
+            ),
+          ],
+        ),
+        TownScenario(
+          id: 'bank_atm_fee',
+          prompt:
+              'The cash machine outside warns of a \$3.50 charge. Your own '
+              'bank machine is a six-minute walk away.',
+          choices: [
+            TownChoice(
+              label: 'Pay the \$3.50 — you are in a hurry',
+              outcome:
+                  'Sometimes six minutes really is worth \$3.50. The trap is '
+                  'doing it weekly without noticing: that is \$182 a year for '
+                  'standing in a slightly closer spot.',
+              gold: -4,
+              xp: 5,
+              literacy: 7,
+            ),
+            TownChoice(
+              label: 'Walk to your own bank',
+              outcome:
+                  'Six minutes for \$3.50 is \$35 an hour, tax free. Framed that '
+                  'way most people walk.',
+              xp: 9,
+              literacy: 9,
+            ),
+            TownChoice(
+              label: 'Get cashback at the shop instead',
+              outcome:
+                  'Free at the till in most shops, and it was the option nobody '
+                  'advertised. The cheapest route is often the one with no sign '
+                  'pointing at it.',
+              xp: 10,
+              literacy: 10,
+            ),
+          ],
+        ),
+        TownScenario(
           id: 'bank_interest',
           prompt:
               'The teller explains two accounts: one pays 0.1% a year, the '
@@ -266,6 +484,128 @@ const Map<String, List<TownScenario>> kTownScenarios =
       // ---------------------------------------------------------------
       'spot_school': [
         TownScenario(
+          id: 'school_lunch_plan',
+          prompt:
+              'You get \$25 for lunches this week. The canteen meal is \$6 and '
+              'a packed lunch costs about \$2.',
+          choices: [
+            TownChoice(
+              label: 'Buy lunch every day',
+              outcome:
+                  'Five canteen meals is \$30 out of \$25 — you run out on '
+                  'Friday. Not a disaster, but it was arithmetic you could have '
+                  'done on Monday.',
+              gold: -25,
+              xp: 5,
+              literacy: 7,
+            ),
+            TownChoice(
+              label: 'Pack lunch, buy on Friday',
+              outcome:
+                  'Four packed at \$2 plus one canteen day is \$14, leaving '
+                  '\$11. A budget that keeps one thing you look forward to is a '
+                  'budget you will still be following in March.',
+              gold: -14,
+              xp: 10,
+              literacy: 10,
+            ),
+            TownChoice(
+              label: 'Pack from the cupboard and keep the \$25',
+              outcome:
+                  'The food is already bought, so the whole \$25 survives the '
+                  'week. It works, and the thing to watch is whether you stick '
+                  'to it — the strictest plan is not always the one that lasts.',
+              xp: 9,
+              literacy: 9,
+            ),
+          ],
+        ),
+        TownScenario(
+          id: 'school_bake_sale',
+          prompt:
+              'The class bake sale needs a price. Ingredients cost \$18 and you '
+              'have 40 cupcakes.',
+          choices: [
+            TownChoice(
+              label: 'Charge 50c each',
+              outcome:
+                  'Forty at 50c is \$20 against \$18 of ingredients — you raise '
+                  '\$2 for a day of work. Cheap is not the same as generous when '
+                  'the point was to raise money.',
+              gold: 2,
+              xp: 6,
+              literacy: 8,
+            ),
+            TownChoice(
+              label: 'Charge \$1.50 each',
+              outcome:
+                  'Sell them all and you clear \$42. Price has to cover the cost '
+                  'first and the profit second — that order is the whole of '
+                  'running anything.',
+              gold: 42,
+              xp: 10,
+              literacy: 10,
+            ),
+            TownChoice(
+              label: 'Charge \$3 and expect to sell half',
+              outcome:
+                  'Twenty at \$3 is \$60 minus \$18, so \$42 as well — and you '
+                  'still have twenty cupcakes. Two very different plans can land '
+                  'on the same number.',
+              gold: 42,
+              xp: 10,
+              literacy: 10,
+            ),
+          ],
+        ),
+        TownScenario(
+          id: 'school_group_gift',
+          prompt:
+              'Six of you are buying a \$54 leaving present for a teacher. Two '
+              'people say they are short this week.',
+          choices: [
+            TownChoice(
+              label: 'Split it six ways anyway',
+              outcome:
+                  '\$9 each, and two people quietly go without something else. '
+                  'An even split is only fair when everyone is in the same '
+                  'position, which is rarely checked.',
+              gold: -9,
+              xp: 6,
+              literacy: 8,
+            ),
+            TownChoice(
+              label: 'Cover their share yourself',
+              outcome:
+                  'You pay \$27 instead of \$9. Generous, and worth being honest '
+                  'about: lending inside a friendship group usually turns into '
+                  'giving, so decide to give on purpose.',
+              gold: -27,
+              xp: 8,
+              literacy: 9,
+            ),
+            TownChoice(
+              label: 'Find a \$30 present instead',
+              outcome:
+                  '\$5 each and nobody is squeezed. Changing the size of the '
+                  'problem is a move people forget they have — the present was '
+                  'never the fixed part.',
+              gold: -5,
+              xp: 10,
+              literacy: 10,
+            ),
+            TownChoice(
+              label: 'Make something between the six of you',
+              outcome:
+                  'Costs nothing but time, and it sidesteps the real problem: '
+                  'two people were about to be pushed into spending they could '
+                  'not afford so that nobody had to say so out loud.',
+              xp: 9,
+              literacy: 9,
+            ),
+          ],
+        ),
+        TownScenario(
           id: 'school_percent',
           prompt:
               'A worksheet on the desk: "A \$50 jacket is 20% off, then 10% '
@@ -333,6 +673,108 @@ const Map<String, List<TownScenario>> kTownScenarios =
 
       // ---------------------------------------------------------------
       'spot_job': [
+        TownScenario(
+          id: 'job_first_payslip',
+          prompt:
+              'Your first payslip. You worked 20 hours at \$12, so you expected '
+              '\$240 — the bank got \$203.',
+          choices: [
+            TownChoice(
+              label: 'Assume you were underpaid',
+              outcome:
+                  'Worth checking, but the usual answer is tax and other '
+                  'deductions. Gross is what you earned; net is what arrives, '
+                  'and the payslip lists every step between them.',
+              xp: 6,
+              literacy: 8,
+            ),
+            TownChoice(
+              label: 'Read every line on the slip',
+              outcome:
+                  'Income tax, national insurance, maybe a pension '
+                  'contribution. Nobody teaches you to read this and it is the '
+                  'one document that explains where your money actually goes.',
+              xp: 10,
+              literacy: 10,
+            ),
+            TownChoice(
+              label: 'Budget from \$203, not \$240',
+              outcome:
+                  'The right habit for the rest of your life. Planning off gross '
+                  'pay is how people end a month 15% short and cannot say why.',
+              xp: 10,
+              literacy: 10,
+            ),
+          ],
+        ),
+        TownScenario(
+          id: 'job_tips_week',
+          prompt:
+              'The cafe pays \$9 an hour plus tips. Last week tips were \$80; '
+              'this week they were \$18.',
+          choices: [
+            TownChoice(
+              label: 'Budget on a good week',
+              outcome:
+                  'Planning off \$80 means most weeks come up short. Variable '
+                  'income has to be budgeted from the low end, with the good '
+                  'weeks treated as extra rather than as normal.',
+              xp: 6,
+              literacy: 8,
+            ),
+            TownChoice(
+              label: 'Budget on the base wage only',
+              outcome:
+                  'Safe, and it turns every tip into savings rather than into '
+                  'rent. This is how people with irregular income stay steady.',
+              xp: 10,
+              literacy: 10,
+            ),
+            TownChoice(
+              label: 'Average the last eight weeks',
+              outcome:
+                  'The middle answer, and a good one once you have eight weeks '
+                  'to average. Two data points is not a pattern — that is the '
+                  'part people get wrong.',
+              xp: 9,
+              literacy: 10,
+            ),
+          ],
+        ),
+        TownScenario(
+          id: 'job_ask_for_more',
+          prompt:
+              'You have worked here a year with no rise. The new starter is on '
+              'the same rate as you.',
+          choices: [
+            TownChoice(
+              label: 'Say nothing and hope it is noticed',
+              outcome:
+                  'Rises are usually asked for rather than offered. Waiting is a '
+                  'strategy, it is just one with a very low success rate.',
+              xp: 5,
+              literacy: 7,
+            ),
+            TownChoice(
+              label: 'Ask, with a list of what you do now',
+              outcome:
+                  'The ask that works is evidence, not feeling: what you handle '
+                  'that you did not a year ago. Worst case they say no and you '
+                  'know where you stand.',
+              gold: 30,
+              xp: 10,
+              literacy: 10,
+            ),
+            TownChoice(
+              label: 'Find out what the job pays elsewhere first',
+              outcome:
+                  'Knowing the market rate turns a request into a fact. It also '
+                  'tells you whether the answer to a no is to stay or to look.',
+              xp: 10,
+              literacy: 10,
+            ),
+          ],
+        ),
         TownScenario(
           id: 'job_two_offers',
           prompt:
@@ -412,6 +854,117 @@ const Map<String, List<TownScenario>> kTownScenarios =
       // ---------------------------------------------------------------
       'spot_home': [
         TownScenario(
+          id: 'home_bill_spike',
+          prompt:
+              'The heating bill is \$140 this month against \$85 last month. '
+              'Nothing obvious has changed.',
+          choices: [
+            TownChoice(
+              label: 'Pay it and hope it settles',
+              outcome:
+                  'It might. But a bill that doubles is either a colder month, a '
+                  'price rise or a fault, and all three are worth knowing about '
+                  'before the next one arrives.',
+              gold: -14,
+              xp: 5,
+              literacy: 7,
+            ),
+            TownChoice(
+              label: 'Compare it to the same month last year',
+              outcome:
+                  'The only honest comparison for anything seasonal. January '
+                  'against December tells you about the weather; January against '
+                  'January tells you about your bill.',
+              gold: -14,
+              xp: 10,
+              literacy: 10,
+            ),
+            TownChoice(
+              label: 'Read the meter yourself before paying',
+              outcome:
+                  'Free, and it settles it. A bill that jumped with no change in '
+                  'the house is very often an estimate rather than a reading — '
+                  'and an estimate you correct is money you get back.',
+              xp: 10,
+              literacy: 10,
+            ),
+          ],
+        ),
+        TownScenario(
+          id: 'home_subscriptions',
+          prompt:
+              'Your statement shows six subscriptions. You can name four of '
+              'them and you used two this month.',
+          choices: [
+            TownChoice(
+              label: 'Cancel the ones you cannot name',
+              outcome:
+                  'A subscription is designed to be forgotten — that is the '
+                  'business model. Twenty minutes on the statement usually pays '
+                  'better than any coupon.',
+              gold: 18,
+              xp: 10,
+              literacy: 10,
+            ),
+            TownChoice(
+              label: 'Keep them — they are only a few dollars',
+              outcome:
+                  'Six at \$6 is \$432 a year. Small recurring costs are hard to '
+                  'feel and easy to add up, which is exactly why they are sold '
+                  'monthly rather than yearly.',
+              gold: -6,
+              xp: 6,
+              literacy: 8,
+            ),
+            TownChoice(
+              label: 'Set a reminder to review them every six months',
+              outcome:
+                  'The version that keeps working. One cancellation session '
+                  'fixes today; a recurring review fixes the next three years.',
+              gold: 12,
+              xp: 10,
+              literacy: 10,
+            ),
+          ],
+        ),
+        TownScenario(
+          id: 'home_repair_or_replace',
+          prompt:
+              'The washing machine needs a \$120 repair. A new one is \$430 and '
+              'this one is eight years old.',
+          choices: [
+            TownChoice(
+              label: 'Repair it',
+              outcome:
+                  'A quarter of the price for maybe two more years. That is a '
+                  'good trade if it holds — the risk is paying \$120 and then '
+                  '\$430 anyway six months later.',
+              gold: -12,
+              xp: 8,
+              literacy: 9,
+            ),
+            TownChoice(
+              label: 'Replace it',
+              outcome:
+                  'More now, and the honest way to compare is cost per year: '
+                  '\$430 over ten years beats \$120 over two. The bigger number '
+                  'is not automatically the worse one.',
+              gold: -43,
+              xp: 9,
+              literacy: 10,
+            ),
+            TownChoice(
+              label: 'Ask the repairer what usually fails next',
+              outcome:
+                  'The one question that turns a guess into a decision. Somebody '
+                  'who fixes these all week knows whether eight years is old for '
+                  'this machine.',
+              xp: 10,
+              literacy: 10,
+            ),
+          ],
+        ),
+        TownScenario(
           id: 'home_bills',
           prompt:
               'Three envelopes on the mat: electricity \$60, a birthday '
@@ -483,6 +1036,113 @@ const Map<String, List<TownScenario>> kTownScenarios =
 
       // ---------------------------------------------------------------
       'spot_notice': [
+        TownScenario(
+          id: 'notice_text_scam',
+          prompt:
+              'A text: "Your parcel is held. Pay a \$2 redelivery fee at this '
+              'link." You are expecting a parcel.',
+          choices: [
+            TownChoice(
+              label: 'Pay the \$2 — it is tiny',
+              outcome:
+                  'The \$2 was never the point; the card details were. A fee '
+                  'small enough not to think about is the whole design of this '
+                  'one.',
+              gold: -2,
+              xp: 5,
+              literacy: 8,
+            ),
+            TownChoice(
+              label: 'Open the courier app instead',
+              outcome:
+                  'Right move. Never follow the link you were sent — go to the '
+                  'company the way you normally would and check there. A real '
+                  'problem will be waiting for you.',
+              xp: 10,
+              literacy: 10,
+            ),
+            TownChoice(
+              label: 'Delete it because you are not expecting one',
+              outcome:
+                  'These land in the week everyone is expecting a parcel, which '
+                  'is why they work. Coincidence is a tool, not proof.',
+              xp: 9,
+              literacy: 9,
+            ),
+          ],
+        ),
+        TownScenario(
+          id: 'notice_room_share',
+          prompt:
+              'A card offers a room at \$400 a month, "bills included, no '
+              'deposit, cash only, move in today".',
+          choices: [
+            TownChoice(
+              label: 'Take it — cheap and quick',
+              outcome:
+                  'Cash only and no paperwork means no proof you paid and no '
+                  'rights if it goes wrong. The saving is real and so is what '
+                  'you gave up for it.',
+              gold: -40,
+              xp: 5,
+              literacy: 8,
+            ),
+            TownChoice(
+              label: 'Ask for a written agreement',
+              outcome:
+                  'A tenancy agreement protects the tenant more than the '
+                  'landlord. Anyone unwilling to put the terms in writing has '
+                  'told you something.',
+              xp: 10,
+              literacy: 10,
+            ),
+            TownChoice(
+              label: 'Visit before agreeing anything',
+              outcome:
+                  'Obvious and constantly skipped when a place looks cheap. '
+                  '"Move in today" exists to stop you doing exactly this.',
+              xp: 9,
+              literacy: 10,
+            ),
+          ],
+        ),
+        TownScenario(
+          id: 'notice_charity',
+          prompt:
+              'Someone is collecting for a local shelter. They want a monthly '
+              'direct debit rather than the \$5 in your pocket.',
+          choices: [
+            TownChoice(
+              label: 'Sign up for \$10 a month',
+              outcome:
+                  'Charities push monthly because it is worth far more than a '
+                  'one-off, which is fair — as long as it is a number you '
+                  'reviewed rather than one agreed on a pavement.',
+              gold: -10,
+              xp: 7,
+              literacy: 9,
+            ),
+            TownChoice(
+              label: 'Give the \$5 and nothing ongoing',
+              outcome:
+                  'Perfectly good. Giving is part of a budget like anything '
+                  'else, and the amount you can repeat matters more than the '
+                  'amount you can manage once.',
+              gold: -5,
+              xp: 9,
+              literacy: 9,
+            ),
+            TownChoice(
+              label: 'Look the charity up and donate later',
+              outcome:
+                  'Registered charities are listed publicly and take two minutes '
+                  'to check. Wanting to give and wanting to give to *this* are '
+                  'different decisions.',
+              xp: 10,
+              literacy: 10,
+            ),
+          ],
+        ),
         TownScenario(
           id: 'notice_scam',
           prompt:

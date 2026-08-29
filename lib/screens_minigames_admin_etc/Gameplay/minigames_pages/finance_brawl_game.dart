@@ -71,18 +71,41 @@ class ShuffledQuizQuestion {
   final String explanation;
 }
 
+/// One offer on the level-up screen.
+///
+/// Carries its current level so the card can say **Lv 2 → 3** rather than
+/// repeating the same sentence every time it appears. That difference is most
+/// of what makes a run feel like it is going somewhere: an upgrade you have
+/// taken three times should look different from one you have never seen.
 class BrawlUpgrade {
   const BrawlUpgrade({
     required this.name,
     required this.description,
     required this.icon,
     required this.action,
+    this.level = 0,
+    this.maxLevel = 0,
   });
 
   final String name;
   final String description;
   final IconData icon;
   final VoidCallback action;
+
+  /// How many times this has been taken already.
+  final int level;
+
+  /// 0 for the handful of one-off effects that do not level.
+  final int maxLevel;
+
+  bool get isLevelled => maxLevel > 0;
+
+  /// "Lv 2 → 3", or "MAX" on the last step.
+  String get levelLabel {
+    if (!isLevelled) return '';
+    if (level + 1 >= maxLevel) return 'Lv $level → MAX';
+    return 'Lv $level → ${level + 1}';
+  }
 }
 
 const Color _brawlInk = Color(0xFF071711);
@@ -287,6 +310,20 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   // splash x pierce is where the power fantasy lives.
 
   /// Extra coins per shot, fanned around the aim line.
+  /// How many times each levelled upgrade has been taken.
+  ///
+  /// **Why levels rather than a bag of one-shot pickups.** The original pool
+  /// offered the same eight sentences forever, so a run's shape was decided
+  /// by which of them the shuffle happened to show you and there was no such
+  /// thing as committing to a build. Levelled tracks fix both halves: taking
+  /// Rapid Payments three times is a *decision* with a visible number
+  /// attached, and a maxed track leaves the pool — so the offers narrow as a
+  /// run goes on and the last few choices are between things you actually
+  /// want. That is the survivor-style loop the game was reaching for.
+  final Map<String, int> _upgradeLevels = <String, int>{};
+
+  int _levelOf(String id) => _upgradeLevels[id] ?? 0;
+
   int _spreadShots = 0;
 
   /// Radius of the damage burst when a coin lands. Zero disables it.
@@ -2313,95 +2350,173 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     });
   }
 
-  List<BrawlUpgrade> _getUpgradeOptions() {
-    return [
-      BrawlUpgrade(
-        name: "Multiple Income Streams",
-        description: "Fire an extra simultaneous coin stream (+1 Coin Attack)",
-        icon: Icons.payments_rounded,
-        action: () => _coinStreamCount++,
-      ),
-      BrawlUpgrade(
-        name: "Job Promotion",
-        description: "Increase coin payload value (+30 Payment Damage)",
-        icon: Icons.trending_up_rounded,
-        action: () => _coinDamage += 30,
-      ),
-      BrawlUpgrade(
-        name: "Establish Emergency Fund",
-        description: _emergencyFundLevel == 0
-            ? "Create revolving cash shield damaging touching debts (+1 Fund Level)"
-            : "Expand cash shield radius & contact damage (Level ${_emergencyFundLevel + 1})",
-        icon: Icons.shield_rounded,
-        action: () => _emergencyFundLevel++,
-      ),
-      // --- Weapon shape upgrades -------------------------------------
-      //
-      // These change *how* you shoot rather than how hard. The five original
-      // upgrades were four flat number bumps and a cash top-up, so a long run
-      // played the same as a short one with bigger digits. Stacking spread
-      // with splash and pierce is where a build actually becomes
-      // overpowered — which is the point of surviving twenty waves.
-      BrawlUpgrade(
-        name: "Diversified Portfolio",
-        description: _spreadShots == 0
-            ? "Fan every payment into a 3-coin spread"
-            : "Widen the spread (${3 + _spreadShots} coins per shot)",
-        icon: Icons.call_split_rounded,
-        action: () => _spreadShots += 2,
-      ),
-      BrawlUpgrade(
-        name: "Market Contagion",
-        description: _splashRadius == 0
-            ? "Payments splash, damaging nearby debts"
-            : "Widen the splash radius (+25)",
-        icon: Icons.blur_on_rounded,
-        action: () => _splashRadius += _splashRadius == 0 ? 62 : 25,
-      ),
-      BrawlUpgrade(
-        name: "Debt Consolidation",
-        description: _pierceCount == 0
-            ? "Payments punch through one extra debt"
-            : "Punch through ${_pierceCount + 1} debts per coin",
-        icon: Icons.compress_rounded,
-        action: () => _pierceCount += 1,
-      ),
-      BrawlUpgrade(
-        name: "Dividend Burst",
-        description: _novaCoins == 0
-            ? "Release a ring of coins every few seconds"
-            : "Denser dividend ring (${_novaCoins + 4} coins)",
-        icon: Icons.brightness_7_rounded,
-        action: () => _novaCoins += _novaCoins == 0 ? 8 : 4,
-      ),
-      BrawlUpgrade(
-        name: "Compound Interest",
-        description: "Pay out faster (+18% fire rate)",
-        icon: Icons.speed_rounded,
-        action: () => _attackSpeedMultiplier *= 1.18,
-      ),
-      BrawlUpgrade(
-        name: "Liquid Asset Speed",
-        description: "Boost movement agility velocity vectors (+40 Speed)",
-        icon: Icons.directions_run_rounded,
-        action: () => _playerSpeed += 40.0,
-      ),
-      BrawlUpgrade(
-        name: "Performance Bonus",
-        description: "Increases bank balance (+10% Net Worth, max \$10,000)",
-        icon: Icons.savings,
+  /// The levelled upgrade tracks, in the order they were designed rather than
+  /// the order they appear — [_getUpgradeOptions] shuffles.
+  ///
+  /// Each entry says what it does *at the level you are about to take*, so a
+  /// player can compare three offers on their actual effect instead of on a
+  /// slogan. Caps exist so a track ends: an upgrade that can be taken forever
+  /// makes every other offer a mistake by wave fifteen.
+  List<BrawlUpgrade> _upgradeTracks() {
+    BrawlUpgrade track({
+      required String id,
+      required String name,
+      required IconData icon,
+      required int maxLevel,
+      required String Function(int next) describe,
+      required void Function() apply,
+    }) {
+      final level = _levelOf(id);
+      return BrawlUpgrade(
+        name: name,
+        description: describe(level + 1),
+        icon: icon,
+        level: level,
+        maxLevel: maxLevel,
         action: () {
-          int bonus = (_bankBalance * 0.1).round();
-          int newBalance = _bankBalance + bonus;
-
-          if (newBalance > 10000) {
-            _bankBalance = 10000;
-          } else {
-            _bankBalance = newBalance;
-          }
+          _upgradeLevels[id] = level + 1;
+          apply();
         },
+      );
+    }
+
+    return <BrawlUpgrade>[
+      // ---- Fire rate ------------------------------------------------
+      // Named directly in the brief, and the most-wanted upgrade in any game
+      // of this shape: it multiplies everything else you have taken.
+      track(
+        id: 'fire_rate',
+        name: 'Rapid Payments',
+        icon: Icons.speed_rounded,
+        maxLevel: 8,
+        describe: (next) =>
+            'Pay out 18% faster · ${(pow(1.18, next) * 100 - 100).round()}% '
+            'total fire rate',
+        apply: () => _attackSpeedMultiplier *= 1.18,
       ),
-    ]..shuffle(_rand);
+      // ---- Pierce ---------------------------------------------------
+      track(
+        id: 'pierce',
+        name: 'Debt Consolidation',
+        icon: Icons.compress_rounded,
+        maxLevel: 6,
+        describe: (next) => next == 1
+            ? 'Payments punch through one extra debt'
+            : 'Punch through $next extra debts per coin',
+        apply: () => _pierceCount += 1,
+      ),
+      // ---- Spread ---------------------------------------------------
+      track(
+        id: 'spread',
+        name: 'Diversified Portfolio',
+        icon: Icons.call_split_rounded,
+        maxLevel: 5,
+        describe: (next) => next == 1
+            ? 'Fan every payment into a 3-coin spread'
+            : '${1 + next * 2} coins per shot',
+        apply: () => _spreadShots += 2,
+      ),
+      // ---- Splash ---------------------------------------------------
+      track(
+        id: 'splash',
+        name: 'Market Contagion',
+        icon: Icons.blur_on_rounded,
+        maxLevel: 6,
+        describe: (next) => next == 1
+            ? 'Payments splash, damaging nearby debts'
+            : 'Splash radius ${62 + (next - 1) * 25}',
+        apply: () => _splashRadius += _splashRadius == 0 ? 62 : 25,
+      ),
+      // ---- Orbiting ring --------------------------------------------
+      track(
+        id: 'nova',
+        name: 'Dividend Burst',
+        icon: Icons.brightness_7_rounded,
+        maxLevel: 5,
+        describe: (next) => next == 1
+            ? 'Release a ring of coins every few seconds'
+            : 'Denser dividend ring (${8 + (next - 1) * 4} coins)',
+        apply: () => _novaCoins += _novaCoins == 0 ? 8 : 4,
+      ),
+      // ---- Streams --------------------------------------------------
+      track(
+        id: 'streams',
+        name: 'Multiple Income Streams',
+        icon: Icons.payments_rounded,
+        maxLevel: 5,
+        describe: (next) => '${next + 1} simultaneous coin streams',
+        apply: () => _coinStreamCount++,
+      ),
+      // ---- Damage ---------------------------------------------------
+      track(
+        id: 'damage',
+        name: 'Job Promotion',
+        icon: Icons.trending_up_rounded,
+        maxLevel: 10,
+        describe: (next) => '+30 payment damage · ${30 * next} total',
+        apply: () => _coinDamage += 30,
+      ),
+      // ---- Shield ---------------------------------------------------
+      track(
+        id: 'shield',
+        name: 'Emergency Fund',
+        icon: Icons.shield_rounded,
+        maxLevel: 5,
+        describe: (next) => next == 1
+            ? 'A revolving cash shield damages debts that touch you'
+            : 'Wider shield, harder contact (Level $next)',
+        apply: () => _emergencyFundLevel++,
+      ),
+      // ---- Movement -------------------------------------------------
+      track(
+        id: 'speed',
+        name: 'Liquid Assets',
+        icon: Icons.directions_run_rounded,
+        maxLevel: 5,
+        describe: (next) => '+40 movement speed · ${40 * next} total',
+        apply: () => _playerSpeed += 40.0,
+      ),
+    ];
+  }
+
+  /// The upgrade pool, for tests.
+  ///
+  /// The levels live in this `State` and the level-up sheet only appears
+  /// several waves into a run, so the alternative to a seam is a test that
+  /// plays the game for a minute to check a list — slow, flaky, and testing
+  /// the wave pacing rather than the upgrade rules.
+  @visibleForTesting
+  List<BrawlUpgrade> getUpgradeOptionsForTest() => _getUpgradeOptions();
+
+  /// Three offers, drawn from tracks that are not yet maxed.
+  ///
+  /// Maxed tracks leaving the pool is the whole design: the choices narrow as
+  /// the run goes on, so the last few are between things you actively want
+  /// rather than between eight sentences you have already read.
+  ///
+  /// The cash top-up is kept separate and unlevelled — it is a consolation
+  /// prize, and it is appended only when fewer than three tracks remain so it
+  /// can never crowd out a real upgrade.
+  List<BrawlUpgrade> _getUpgradeOptions() {
+    final available = _upgradeTracks()
+        .where((u) => u.level < u.maxLevel)
+        .toList()
+      ..shuffle(_rand);
+
+    if (available.length < 3) {
+      available.add(
+        BrawlUpgrade(
+          name: 'Performance Bonus',
+          description: 'Add 10% to your bank balance (max \$10,000)',
+          icon: Icons.savings,
+          action: () {
+            final bonus = (_bankBalance * 0.1).round();
+            _bankBalance = (_bankBalance + bonus).clamp(0, 10000);
+          },
+        ),
+      );
+    }
+    return available;
   }
 
   void _selectUpgrade(BrawlUpgrade choice) {
@@ -3376,6 +3491,29 @@ class _UpgradeCard extends StatelessWidget {
       ),
     );
 
+    // "Lv 2 → 3", or nothing for the one-off cash bonus. Without it a player
+    // taking Rapid Payments for the fourth time sees the identical card they
+    // saw the first time, and a build stops feeling like it is being built.
+    final levelChip = upgrade.isLevelled
+        ? Container(
+            margin: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: _brawlGold.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: _brawlGold.withValues(alpha: 0.42)),
+            ),
+            child: Text(
+              upgrade.levelLabel,
+              style: GoogleFonts.pixelifySans(
+                color: _brawlGold,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          )
+        : const SizedBox.shrink();
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -3406,7 +3544,15 @@ class _UpgradeCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
-                      children: [nameText, const SizedBox(height: 4), descText],
+                      children: [
+                        nameText,
+                        const SizedBox(height: 4),
+                        descText,
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: levelChip,
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -3420,6 +3566,7 @@ class _UpgradeCard extends StatelessWidget {
                   nameText,
                   const SizedBox(height: 8),
                   Expanded(child: Center(child: descText)),
+                  levelChip,
                 ],
               ),
       ),

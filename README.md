@@ -153,7 +153,7 @@ equivalent of a website's layout breaking out of its container.
 - **`Wrap` instead of `Row`** when a row of chips or badges might not fit; it
   moves items onto a second line instead of overflowing.
 - **A regression test.** `test/responsive_layout_test.dart` pumps every major
-  screen at seven viewport sizes (small phone through tablet, portrait and
+  screen at eight viewport sizes (small phone through tablet, portrait and
   landscape) and **fails the build if anything overflows**. This is what turns
   clipping from a bug we find by accident into one CI catches for us.
 
@@ -1312,6 +1312,30 @@ every slot, so the source's authored index can never become guessable.
 *Files:* `brawl_questions_extra.dart`, `finance_brawl_game.dart`,
 `test/brawl_extra_questions_test.dart`
 
+**Coin Cascade was one puzzle**
+A single tuning — 25 moves, one goal, one bill schedule — so once a player
+solved it there was nothing left to find out.
+*Fix:* seven levels whose rule twists are the curriculum in order (bills every
+3 moves, coins worth double, wants costing double). The rule stays on screen
+rather than appearing once in a dialog.
+*Files:* `coin_cascade_models.dart`, `coin_cascade_page.dart`,
+`test/coin_cascade_test.dart`
+
+**Eight new skins, and a generator that makes more from four colours**
+*Fix:* `tool/redraw_villagers.py --new` writes a full 32-frame sheet per skin
+from a palette entry, so growing the gacha pool after release costs a table row
+rather than an art commission. Catalogue is 24.
+*Files:* `tool/redraw_villagers.py`, `avatar_skin.dart`, `assets/self_made_skins/*`
+
+**The sprites were the right shape and still looked wrong**
+Drawn with ellipses at 1x, so a "pixel" was one unit tall on the shoulder and
+three on the jaw and none of them shared a grid — a blur pretending to be pixel
+art.
+*Fix:* draw on a 26x40 grid and scale x4 with nearest-neighbour, so every
+visible pixel is a perfect 4x4 block. The walk is a hand-written eight-frame
+table, because at three pixels of travel a sine rounds to a stutter.
+*Files:* `tool/redraw_villagers.py`
+
 **The arcade had nothing for a younger player**
 Two hard games, both requiring reading and quick recall.
 *Fix:* Coin Cascade — a match-3 where needs pay bills, wants raise them and
@@ -1319,6 +1343,517 @@ savings win the run. Pure-Dart engine, 19 tests, including one asserting that a
 bot taking the first legal swap it sees does *not* always win.
 *Files:* `coin_cascade_models.dart`, `coin_cascade_page.dart`,
 `test/coin_cascade_test.dart`, `arcade_catalog.dart`, `minigames_page.dart`
+
+### Sprites, upgrades and friends
+
+**The villager sprites were wrong in every direction**
+The torso was twice the head's width and bulged past the shoulders; there was
+no neck; the profile had a skin tab where a nose belongs and a hair wedge
+behind it, which together read as a beak.
+*Fix:* `tool/redraw_villagers.py` redraws all 22 sheets from scratch with
+chosen proportions — head 40, shoulders 40, waist 33, profile 23 (0.58 of the
+front). A side view narrower than the front is what stops a character looking
+inflated when they turn.
+*Files:* `tool/redraw_villagers.py`, `assets/self_made_skins/*`
+
+**Palette extraction turned a white-haired skin bright yellow**
+The first redraw ranked each sheet's colours by area and guessed which was
+skin. `aurora_prime` has white hair on a gold shirt, so the "warm, light,
+saturated" test picked the shirt.
+*Fix:* four fixed probe coordinates, verified against all 22 sheets.
+*Files:* `tool/redraw_villagers.py`
+
+**Half the side walk was being thrown away**
+`kSideWalkFrames` skipped columns 0 and 4 because the old art drew those
+neutral poses with front-facing legs on a profile body, and `kSideIdleFrame`
+was 1 for the same reason — so a character standing still stood mid-stride.
+*Fix:* the redraw's walk phase is a true eight-frame loop with proper profile
+contact poses, so both workarounds are gone and the test asserts they stay
+gone.
+*Files:* `adventure_world_screen.dart`, `test/town_map_test.dart`
+
+**The tour card was a 930px banner on a desktop window**
+Pinned 14px from each edge, it covered a quarter of the app it was pointing at.
+*Fix:* capped at 460 and centred, with contents scaling 0.78→1.0 off the
+*shorter* screen edge — a landscape phone has generous width and no height.
+*Files:* `coach_mark.dart`, `test/tutorial_test.dart`
+
+**Adding a friend twice failed with a permission error**
+`friendships` grants `select, insert` and has no UPDATE policy, and a default
+`upsert` resolves a conflict with an UPDATE.
+*Fix:* `ignoreDuplicates`, which is `ON CONFLICT DO NOTHING` and needs only
+INSERT.
+*Files:* `supabase_service.dart`
+
+**There was no way to remove a friend, and no list to remove them from**
+The card showed a code and an input and nothing else, so adding someone was
+indistinguishable from the feature being broken.
+*Fix:* `removeFriend()` (deletes both directions; the policy makes the second
+a no-op unless you own that row), plus a friends list that reloads after any
+add or removal.
+*Files:* `supabase_service.dart`, `profile_screen.dart`
+
+**Fourteen sky gradients shipped and were never shown**
+`assets/map_assets_coins/day-night-cycle/` was referenced by nothing while the
+app painted the same flat green at every hour.
+*Fix:* `DayNightSky` picks one from the device clock, behind the main game —
+dimmed and scrimmed, because a full-strength noon gradient would invalidate
+every contrast number the audit measures.
+*Files:* `day_night_sky.dart`, `main_game_page.dart`, `pubspec.yaml`
+
+### The town, the tour and the settings page
+
+**The sprite redraw traded detail for a grid**
+Dropping to a 26x40 canvas fixed the misaligned pixels and left no room for a
+face, a collar or a shoe.
+*Fix:* 52x81 at 2x — every pixel is still a clean 2x2 block on the grid, with
+four times as many of them to draw with.
+*Files:* `tool/redraw_villagers.py`
+
+**The palette probe rebuilt every skin bald**
+It took the first *opaque* candidate, and opaque is not correct: run against
+sheets an earlier version of the script had generated, the hair probe landed on
+the forehead and all 22 skins were rebuilt with hair the colour of skin. The
+sheets had to be restored from git.
+*Fix:* reject a candidate matching a colour already claimed, so the extraction
+survives being pointed at art it did not generate.
+*Files:* `tool/redraw_villagers.py`
+
+**Nobody in the town ever moved**
+Walk cycles for all four NPC looks shipped in the bundle with nothing
+referencing them.
+*Fix:* short patrols along one axis, pausing at each end and stopping while the
+player is in range — an NPC that wanders can walk into the sea, or away from
+the player trying to reach it.
+*Files:* `town_components.dart`, `town_spot_models.dart`,
+`adventure_world_screen.dart`, `app_assets.dart`,
+`test/town_npc_patrol_test.dart`
+
+**The shop interior looked broken on a wide window**
+The panel hugged the top-right, the stall sat bottom-left, and the middle was
+empty floor.
+*Fix:* both columns centred, panel capped at 460, and floorboards so the
+largest area on screen reads as a floor rather than a void.
+*Files:* `town_interior_screen.dart`
+
+**The coach card pointed at nothing on a desktop window**
+Pinned to the screen edge, so the explanation sat in the top-left while the
+arrow pointed 700px lower.
+*Fix:* anchored to the spotlight, clamped to stay on screen.
+*Files:* `coach_mark.dart`, `test/tutorial_test.dart`
+
+**A town map was running through the settings rows**
+The profile backdrop was tuned up to saturation 1.4 behind a 0.42 scrim, and
+the cards were 72% transparent, so grass and fences slid behind
+"Notifications" and "Sound".
+*Fix:* opaque cards, and a backdrop that is texture rather than a picture.
+*Files:* `profile_screen.dart`
+
+### Crashes
+
+**Walking up to an NPC threw a full-screen red error**
+```
+setState() or markNeedsBuild() called during build.
+This AdventureWorldScreen widget cannot be marked as needing to build
+because the framework is already in the process of building widgets.
+The widget which was currently being built when the offending call was
+made was: LayoutBuilder
+```
+Bonfire ticks its components from inside the game widget's own build — the
+widget sits in a `LayoutBuilder` — so a proximity sensor firing calls back into
+Flutter *during the build phase*, and `setState` there throws. The hazard was
+always present (a shop sensor could trip it too), but it became reproducible
+the moment NPCs started patrolling: an NPC walking *into* the player fires the
+sensor from inside a frame the player did not initiate.
+*Fix:* `_applyAfterFrame` checks the scheduler phase and defers to a
+post-frame callback when a build is in progress. Every sensor callback — spots,
+NPCs and coin pickups — goes through it. Deferring is the correct fix rather
+than a workaround: the state change is a *response* to something the game
+simulated, and the next frame is when it should become visible.
+*Files:* `adventure_world_screen.dart`
+
+**Unit titles ran off the edge of their own card**
+The Academy's unit strip sized each chip to a 146px minimum while its contents
+— icon, gap and a 118px column inside 14px of padding either side — need 178.
+"Stocks and Trading" and "Protecting Your Money" were clipped mid-word.
+*Fix:* a 196px minimum over a 132px text column, and the column is `Flexible`
+so the label scales instead of overflowing if anything ever does constrain the
+chip. The column went 118 -> 132 because the test caught a second route to the
+same visible bug: "Retirement and the 401(k)" needed ~124px even at
+`FittedLabel`'s 62% scale floor, so it was being ellipsised rather than
+scaled. The title
+prefix is now stripped by splitting on `": "` rather than by matching the
+chip's *position* — unit ids are permanent and display order is not, so
+`unit_10` is titled "Unit 1" and a position-based strip left the prefix in
+place whenever the two disagreed.
+*Files:* `lesson_screen.dart`
+
+### The sprites, settled
+
+**Four redraws, and the hand-drawn original was the answer**
+*Fix:* new skins are palette swaps of the shipped template
+(`tool/recolour_villager_skins.py`) rather than procedural drawings, so all 30
+skins are the same art at the same quality. `tool/redraw_villagers.py` is
+deleted — keeping a generator whose output was rejected three times is keeping
+a trap.
+*Files:* `tool/recolour_villager_skins.py`, `assets/self_made_skins/*`
+
+**The profile read as a bird**
+The nose was an L: a small skin patch at eye level and a much wider one below
+jutting two or three big pixels past the hairline.
+*Fix:* `tool/fix_side_heads.py` trims it to a single big pixel, in place on the
+art's own 5px grid. The bar across the top of the head is left alone — against
+the front-facing row it is the brim of the character's cap, and a detector for
+it only recognised it in 6 of 16 frames, which would have put a hat on the same
+head in some frames of a walk cycle and not others.
+*Files:* `tool/fix_side_heads.py`
+
+**The art tool destroyed art on a second run**
+It trimmed one big pixel per pass, so a three-pixel beak needed three runs and
+the run after that ate the nose, leaving a sliver of skin for a face.
+*Fix:* trim to a *target* (`overhang - BIG`) rather than by a fixed amount, so
+one run lands on the final result and every run afterwards finds nothing to do.
+*Files:* `tool/fix_side_heads.py`
+
+**The tutorial card was positioned in fixed pixels**
+14px insets, a 48px gap and a 460px cap mean the card is a different proportion
+of the screen on every device it runs on.
+*Fix:* every number is a fraction of the viewport, clamped — 2.5% side margin,
+42% width, 5% gap. The fraction started at a third and had to rise: at 34% a
+375px phone and an 834px tablet both hit the 300px floor and got an identical
+card, so "proportional" was fixed across most of its range. The test asserts
+the ramp (phone < tablet <= desktop) rather than any pixel count.
+*Files:* `coach_mark.dart`, `test/tutorial_test.dart`
+
+---
+
+### Content wiring and text fit
+
+**Twelve adult-years life events did not compile**
+`life_events_adult.dart` was written against a `FinanceConcept` enum from
+memory rather than from the file, so it used four constants that do not exist
+(`compoundInterest`, `budgeting`, `income`, `investing`) and a `LifeFlag`
+called `homeowner`. 22 analyzer errors.
+*Fix:* mapped onto the real members — `compoundGrowth`, `budgetRule`,
+`incomeVsWealth`, `diversification` and `LifeFlag.ownsHome`. The lesson is
+that an enum with sixteen closely-related members is exactly the kind of thing
+worth reading before writing against.
+*Files:* `life_events_adult.dart`
+
+**A new life-sim flag opened a thread nothing could close**
+`life_chains_test.dart` asserts that every flag which *gates* an event is also
+cleared by one, because otherwise a life carries the thread for sixty years
+while the draw's open-chain boost keeps favouring a beat that has nothing left
+to say. Buying a house set `ownsHome`; nothing ever sold it.
+*Fix:* added `a_downsize` — sell, stay, or rent the spare room — which clears
+the flag on the selling branch. The guard did its job: the missing content was
+a missing *scene*, not a missing line of plumbing.
+*Files:* `life_events_adult.dart`
+
+**"Card debt" failed the contrast audit at 4.26:1**
+The life-sim chip strip painted its label in the same `#FF8FB1` as its 14%
+background wash. `AppTheme.tintedChip` fixes exactly this, but its default
+surface is `deepForest`, and the strip sits on a lighter composite — measured
+against the wrong backdrop it reported the tint as already legible.
+*Fix:* pass the real surface (`on: AppTheme.panel`). The tint keeps its
+meaning — trouble is still pink — and the ink lifts until it clears AA.
+*Files:* `life_sim_page.dart`
+
+**Four new town scenarios charged for every option**
+`town_scenarios_test.dart` refuses an encounter where walking away is not on
+the table, because a scene in which spending is compulsory teaches that
+spending is compulsory.
+*Fix:* each got a free option that is a real money behaviour rather than a
+token "do nothing" — read the labels and buy neither today, pack lunch from
+the cupboard, make the present, read the meter yourself before paying.
+*Files:* `town_scenarios.dart`
+
+**The jar's mood pill was cut off on a small phone**
+"Slipping · last logged 999 days ago" wanted 260px in a 201px pill. Three
+problems in one string: it repeats what the pill already says, a raw day count
+stops meaning anything past a fortnight, and nobody reads 340 as "eleven
+months".
+*Fix:* coarsen the unit as the gap grows — today, yesterday, N days, N weeks,
+N months, "over a year ago" — and drop the redundant prefix.
+*Files:* `money_habits_screen.dart`
+
+**Childhood was the thinnest part of the life sim, and it is the opening**
+Counting eligible events by age put ages 5-15 at 20-23 while every adult year
+sat at 60-70. Not a crash, and easy to miss, because the symptom is "it feels
+samey" rather than an error — but a run plays eighteen turns through childhood
+before it reaches twenty, so the thinnest stretch of the pool was also the
+first ten minutes of the game and the whole of what the 4-12 audience plays.
+*Fix:* `life_events_childhood.dart` — 15 school-years events (first pocket
+money, saving for the thing, a friend who has one, chores, a stall, lost money,
+a broken window, lending to a friend, a card at the shop, birthday money, a
+first account). Ages 5-15 now sit at 23-34, and the guard in
+`life_variety_test.dart` was raised from 3 to 20 so it cannot quietly thin out
+again.
+*Files:* `life_events_childhood.dart`, `life_sim_models.dart`
+
+**The text-fit audit's first run was mostly false positives**
+`flutter_test` substitutes a fallback for anything `google_fonts` would fetch,
+and that fallback is Ahem: every glyph, from `i` to `M`, is exactly one em
+wide. "Retirement and the 401(k)" measured 350px at 14px — 14.0px a character
+with no variation, against 10.7 for an `M` and 3.1 for an `i` in real Pixelify
+Sans. Every width the environment reported was about 1.7x the truth, and
+`didExceedMaxLines` flagged a dozen labels that are fine in the running app.
+*Fix:* the first attempt calibrated around it — re-measure each finding at an
+estimated 0.62em advance and skip `FittedLabel`. That worked and it was the
+wrong fix, because it left every other suite still laying out in the wrong
+face. Bundling the fonts (below) removed the problem at the source, and the
+audit now takes the renderer at its word.
+*Files:* `test/text_fit_test.dart`
+
+**The app downloaded its own typefaces on first launch**
+`google_fonts` fetches a face over HTTP the first time it is used and caches it
+to the device. Until that finishes — and forever, offline — every label renders
+in the platform fallback. That is not an edge case: it is the first launch,
+which is what a store reviewer sees, and it is a child on school wifi with the
+font CDN blocked.
+*Fix:* `tool/fetch_fonts.py` bundles the nine faces the app resolves to. The
+files have to be real TrueType, and all three obvious sources give something
+Flutter cannot read — the `css2` endpoint returns **EOT** with an old user
+agent (it has a `.ttf` in the URL and is not a TrueType file) and **WOFF** with
+a modern one, and `github.com/google/fonts` now ships only a **variable** TTF
+per family, which registers under one name and renders every weight at its
+default instance. So the tool downloads the variable font and cuts static
+instances out of it with `fonttools`. The tell that the first attempt had
+failed was that a hand-registered `FontLoader` still measured every glyph at
+exactly one em: the load had silently fallen back.
+572KB, and `AssetManifest` resolves inside `flutter test` too — so every suite
+in this repo now lays out in the face a player actually sees.
+*Files:* `tool/fetch_fonts.py`, `pubspec.yaml`, `test/bundled_fonts_test.dart`
+
+**`FittedLabel` measured one font and painted another**
+It read `style ?? DefaultTextStyle.of(context).style`, so passing *any* style
+dropped the ambient one — for measurement only, because `Text` itself always
+merges. Every label with a style that did not name a family was measured in the
+platform default and painted in Pixelify Sans or Quicksand.
+The failure is silent and one-directional: when the painted face is wider,
+`needed <= available` comes out true, the widget decides no scaling is needed,
+and the text overflows exactly as if the widget were not there. "Mushroom
+Goomba" ellipsised inside a 114px tile it needed 123px for — a 0.93 scale,
+nowhere near the 62% truncation floor.
+*Fix:* `DefaultTextStyle.of(context).style.merge(style)`, and 1% of slack on
+the computed scale so a label that fits to the exact pixel is not one rounding
+step from overflowing.
+*Files:* `fitted_label.dart`
+
+### Friends, the tutorial, and the town
+
+**Adding a friend failed with 42501, and it is not a code bug**
+Probing the live database directly with the anon key returns the exact error
+the app shows:
+
+    42501 - new row violates row-level security policy for table "friendships"
+
+Note *which* 42501. "permission denied for table" would mean the GRANT is
+missing; this wording means the grant is fine and there is no INSERT **policy**
+that accepts the row. The table exists and SELECT works, so it was created and
+RLS was switched on, and the policies were never applied — and with RLS on and
+no policy, every write is refused. The client side is correct: `stats.id` is
+the Supabase auth uid whenever somebody is signed in, so the row it writes does
+satisfy `with check (user_id = auth.uid())` once that policy exists.
+*Fix:* `supabase/migrations/0002_friendships_rls.sql`, which has to be run in
+the Supabase SQL editor — DDL is not something the anon key can do. The app's
+message for 42501 now says that instead of printing the raw code, because the
+raw code is what a player saw: not their fault, and retrying will never work.
+*Files:* `supabase/migrations/0002_friendships_rls.sql`, `supabase_service.dart`
+
+**The tutorial card was placed from a guess at its own height**
+The coach mark's `top` was computed from `190 * scale` — a constant standing in
+for something that varies with how the copy wraps, whether a Back button is
+showing, and the reader's text scale. Whenever the real card was taller, the
+maths meant to keep it clear of the spotlight put it *over* the spotlight, and
+the clamp meant to keep it on screen let it hang off the bottom. Everything
+else about the placement was already proportional; this one number was not, and
+it was the one that decided where the box went.
+*Fix:* a `SingleChildLayoutDelegate`, which is handed the child's measured size
+before it has to say where the child goes. One layout pass, no second frame, no
+flicker — and with the real height it can also **flip sides** when the
+preferred one genuinely does not fit, which an estimate could not decide.
+`tutorial_test.dart` now walks every step at six viewports asserting the card is
+fully on screen and never overlapping the bar it is describing.
+*Files:* `coach_mark.dart`, `test/tutorial_test.dart`
+
+**The main game had no tutorial of its own**
+The app tour has one step on Life, and Life is the main game: an age button,
+four money boxes, a stat row, a chain-flag strip, four sub-menus and a door to
+the town. "Press the big Age button" is the right depth when you are being
+shown around a tab and nowhere near enough when you are standing in the game.
+The quiet failure is a player who ages up, reads an event, picks an option, and
+never finds the money panel, the town or the career menu — playing the
+simulation as a multiple-choice quiz, which is the one reading of it that
+teaches nothing.
+*Fix:* `kLifeTutorialSteps`, seven steps run over the real widgets through the
+existing `TutorialTargets` registry, started automatically on a player's first
+life and replayable from "How to play" on the Life hub. Deliberately *not* a
+button in the game's own app bar: that bar already carries a name, age, job and
+balance beside two actions, and adding a third squeezed the name column to 58px
+on a 320px phone — "Alex Morgan" needs 96.
+*Files:* `life_tutorial_steps.dart`, `life_sim_page.dart`, `main_game_page.dart`
+
+**The town had no effect on the life it was opened from**
+Walking into a building changed the *account* — gold, XP, literacy points — and
+nothing about the character. So the one part of the app where you physically go
+somewhere to make a money decision had no bearing on the money simulation that
+launched it, and the town read as a side attraction.
+*Fix:* `LifeSimController.applyTownOutcome`. The mapping is deliberately not
+one-to-one: town gold is spending money so it lands on cash, literacy is what
+you understood so it lands on smarts, and XP is having turned up at all, so it
+is the smallest of the three.
+*Files:* `life_sim_controller.dart`, `adventure_world_screen.dart`
+
+**Coin Cascade stopped at level 7**
+About twenty minutes of play, after which `cascadeLevelFor` silently returns
+the last level for ever — so the ladder ended without saying so.
+*Fix:* thirteen levels, and a test that each one differs from the one before it
+on a *rule* dial rather than only on its numbers. A ladder that just raises the
+target is a grind wearing a progression's clothes.
+*Files:* `coin_cascade_models.dart`, `test/coin_cascade_test.dart`
+
+### The side-facing walk, sixth attempt
+
+**The head in profile was three mistakes stacked on each other.** Read back at
+its true resolution the sheet is 8x4 cells of 104x162, and the west row says:
+
+* *The crown is drawn flat.* From the front the head is six pixels wide at the
+  crown; in profile it is **two**. A head seen from the side is at least as
+  deep as it is wide, so reusing the front crown turns it into a spike.
+* *The face is a three-pixel notch, one row proud of the row above it.* That
+  step, under the spike, is what read as a beak.
+* *The head is redrawn differently in every frame* — frame 0's crown spans four
+  columns, frame 2's seven, frame 5's five. A walk cycle bobs a head; it does
+  not reshape it. That was the "shifting pixels".
+
+**Why the five previous attempts failed, which matters more.** Every one of
+them assumed the sheet was a single clean grid — 14x27 logical pixels at 5x,
+anchored at (6, 12) in every cell. Measuring it says otherwise:
+
+* Each frame has *its own* origin. Frames 0 and 4 start at y=12, frames 1/3/5/7
+  at y=10, frames 2 and 6 at y=5, and horizontally at x=6, 12 and 2. None of
+  those differences is a multiple of the block size, so a fixed grid reads
+  frames 1-7 at the wrong phase — coherent enough to *look* at, wrong to
+  *write* to.
+* Vertically the sheet is a clean 5px grid within each frame. **Horizontally it
+  is not.** No phase makes the column groups uniform, so the art was scaled
+  unevenly at some point in its history. Stamping fixed 5x5 blocks therefore
+  lands half a block off — which is precisely the symptom the redraws were
+  supposed to cure.
+
+*Fix:* `tool/redraw_side_profile.py` works from each frame's own measured
+geometry — its vertical grid, its coat colour to find where the torso starts,
+the raw x-range of its own neck to centre on. The head is rendered at 1:1 and
+scaled once, so its blocks are exactly even whatever the sheet around it does.
+Only the head is replaced; the neck row and everything below is untouched,
+which keeps the men's collars and the women's ponytails attached to the bodies
+they were drawn for. East is rebuilt as a per-frame mirror of west, which it
+already was in all 38 sheets.
+
+Two smaller things fell out of it: the women's ponytail root sits outside the
+new head on the frames where the arm swings forward, so the hair at the back of
+the head is drawn out to meet whatever hair the body carries; and the head's
+bottom row is outlined along the back for the men and continues as hair for the
+women, decided per sheet by reading what is underneath.
+
+*The guardrail that was missing before:* the tool is dry by default. It writes
+a magnified before/after to `build/sprite/` and touches nothing until
+`--write`. Every earlier attempt was saved first and looked at afterwards.
+
+### Things only a screenshot could find
+
+`test/screen_render_test.dart` renders every main screen to `build/screens/`
+and asserts nothing. It exists because the three audits that *do* assert —
+contrast, text fit, viewport overflow — can only fail on things they know how
+to describe, and the following are not among them. Every one of these was
+found by opening the PNGs and looking at them.
+
+**A brand-new player was greeted by a frowning jar labelled "Slipping"**
+`JarMood.forDaysSinceActive` maps a gap of five days or more onto "slipping",
+and `HabitDateKeys.daysSince` returns **999** when there is no last-active
+date at all. So somebody who installed the app a minute ago got the lapsed
+face, the lapsed colour, and the sentence "It has been 999 days".
+*Fix:* `jarEverActive`, and a jar that has never moved reads as steady. Not
+started and lapsed are different states and should not wear the same face. The
+copy branches too: "Nothing in the jar yet. Save one habit on Track and log it
+once" rather than a day count for a streak nobody was given a chance to start.
+*Files:* `money_habit_controller.dart`, `money_habits_screen.dart`
+
+**The Academy's reading screens put body text on a pixel tilemap**
+The lesson, quiz and practice screens paint the village map behind their
+content under a translucent scrim. Measured against the real asset that scrim
+was fine on paper: white text over the *brightest* pixel in the map came out at
+4.53:1, which clears WCAG AA. It still read badly, and the numbers say why —
+under the 0.74 scrim the backdrop ranged from **4.53:1 to 12.4:1** depending on
+which tile a given letter happened to land on, and the map's detail sits at
+roughly the scale of a letterform. A contrast ratio describes one pixel against
+one background. It cannot describe a background that changes underneath a word.
+This is also why the audit passed it: text over an image is skipped rather than
+guessed at.
+*Fix:* take the structure out instead of turning the lights down.
+`tool/make_reading_backdrop.py` emits a blurred, slightly desaturated copy of
+the same map; that collapses the spread from 7.9 points to **2.2**, with a
+floor of 6.5:1. Blurring at build time rather than with `ImageFiltered` keeps
+it free at runtime — it is a static image behind a scrolling list. The seven
+screens that paint this map had drifted to four different scrim alphas with
+nothing recording why, so they now share a `MapBackdrop` widget with three
+named strengths.
+*Files:* `map_backdrop.dart`, `tool/make_reading_backdrop.py`,
+`lesson_detail_screen.dart`, `practice_screen.dart`
+
+**"Welcome Back" sat on pale water tiles**
+The launch screen — the first thing anybody sees — laid its wordmark and both
+buttons over the busiest block of the map, at the exact point where the
+screen's own radial glow was *lightening* the background.
+*Fix:* `MapBackdropStyle.hero` keeps the art sharp and vivid through the top
+fifth and deepens to a calm band by the halfway mark, where the wordmark and
+buttons live. Blurring this one would have thrown away the first impression;
+the answer was to move the darkness to where the text is.
+*Files:* `map_backdrop.dart`, `welcome_screen.dart`
+
+**Buddy's tip stopped mid-word**
+Capped at two lines, the longest explainer rendered as "A want is everything
+el…". Truncating body copy is a design; truncating it four characters into a
+word is a bug wearing the design's clothes.
+*Fix:* three lines. The card sizes to its content, so it costs about sixteen
+points of height.
+*Files:* `mentor_tip_card.dart`
+
+**The Academy opened with its selected unit chip cut off**
+The unit strip is grouped by age band, so the first thing in it is a ~174px age
+header and the second is the selected chip at 196px — 6px more than a 390px
+phone has. The one chip that has to be readable was the one being clipped.
+Underneath that, the strip's scroll estimate carried its own hardcoded chip
+width of 156 and kept it when the chip's declared minimum went to 196 to stop
+unit *titles* being clipped. Nothing connected the two, so every jump landed
+40px per chip short of its target — almost half a screen by the end of a
+thirteen-unit strip.
+*Fix:* one `unitChipMinWidth` constant read by the chip, the estimate and the
+test; and the selected chip is scrolled into view on the first frame rather
+than only when tapped.
+*Files:* `lesson_screen.dart`, `test/unit_chip_test.dart`
+
+**The Emerald Case said it sold turtles**
+"Spend 180 gold for a Common, Rare, Epic, Legendary or Mythic **turtle** skin"
+— while the case draws from all 24 skins: four turtles, nineteen villagers and
+a critter. Naming one family made the other twenty look like they were not in
+the pool.
+*Files:* `customize_screen.dart`
+
+## Where to read next
+
+* **`docs/CONGRESSIONAL_APP_CHALLENGE.md`** — the submission write-up: what the
+  app is, how it teaches, what each page does and how it was built. Start here
+  if you want the whole thing in one read.
+* **`docs/PAGES.md`** — every screen in the app: what a player does there, what
+  it teaches, and where its state comes from. Start here if you are working on
+  a screen you have not seen before.
+* **`docs/ARCHITECTURE.md`** — the running log of changes, in order, with the
+  reasoning behind each one.
+* **`docs/ADVENTURE_TOWN.md`**, **`docs/MONEY_HABITS_FEATURE.md`**,
+  **`docs/CHALLENGES.md`**, **`docs/ONBOARDING_AND_RECORDS.md`** — deep dives on
+  individual systems.
 
 ---
 
@@ -1328,7 +1863,7 @@ bot taking the first legal swap it sees does *not* always win.
 flutter analyze && flutter test
 ```
 
-812 tests covering responsive layout at eight viewports (including the Life
+993 tests covering responsive layout at eight viewports (including the Life
 sim itself, Feedback, and the Adventure map-pending screen), the money
 panel at seven widths, the life-event chain wiring, price-chart zoom/pan/scrub,
 chart painters against pathological input, working-order accounting, the Life
@@ -1348,6 +1883,24 @@ rather than logic:
   each surface's declared colour and ink constants still match the art, so a
   change to `tool/build_ui_pack.py` fails the build instead of quietly making
   those constants wrong.
+* **`playtest_test.dart`** opens each of seventeen screens and *presses every
+  control on it*, one at a time, rebuilding between presses. The other suites
+  check that a screen paints; almost every bug reported in this project came
+  from an interaction — a sensor firing during build, a dialog over a scrolling
+  list, a state change on a disposed screen. The town interiors are in the list
+  specifically because they open a scenario dialog on entry, so the first press
+  lands on the dialog rather than on the page underneath.
+* **`text_fit_test.dart`** asks the renderer which single-line labels ran out
+  of room, across 23 screens at the narrowest phone and in landscape. A
+  one-line cap is a promise that the text fits, so a paragraph reporting
+  `didExceedMaxLines` is that promise being broken.
+* **`app_fonts_loaded_test.dart`** guards the thing the three suites above now
+  rest on: that they are measuring Pixelify Sans and Quicksand rather than the
+  test fallback. The fallback is monospaced at exactly the font size, so an `M`
+  and an `i` come out the same width — that is what it checks, per face.
+* **`screen_render_test.dart`** renders each screen to `build/screens/` and
+  asserts nothing at all. The audits catch what they can describe; this is for
+  everything else, and it has earned its place — see the section above.
 * **`savings_jar_test.dart`** renders the coin jar and reads the pixels back —
   gold rises with the fill, the coin line climbs with it, and the mouth curves
   the right way per mood. It exists because the mouth's sign was inverted for

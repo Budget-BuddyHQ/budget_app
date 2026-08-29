@@ -210,6 +210,165 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
         'caught in month nine is a repayment.',
   ),
 
+  BrawlQuestion(
+    category: kBrawlCategoryEarning,
+    question: 'You are offered \$18/hour as a contractor or \$15/hour as an '
+        'employee. What is the catch with the higher number?',
+    options: [
+      'A contractor pays both halves of Social Security and Medicare',
+      'Contractors are paid less often than employees',
+      'Contractor pay is taxed at double the normal rate',
+      'There is no catch — \$18 is simply better',
+    ],
+    correctIndex: 0,
+    explanation:
+        'An employer normally pays half of the 15.3 percent Social Security '
+        'and Medicare bill. A contractor pays all of it, plus their own '
+        'insurance and unpaid time off — so the headline rate has to be '
+        'noticeably higher to come out even.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryEarning,
+    question: 'Your employer matches 50 percent of what you put into a '
+        'retirement plan, up to 6 percent of your pay. You contribute '
+        'nothing. What are you giving up?',
+    options: [
+      'A 50 percent return on the first 6 percent, before any investing',
+      'Nothing — the match is only paid at retirement',
+      'A small tax refund',
+      'Access to the plan for the rest of your career',
+    ],
+    correctIndex: 0,
+    explanation:
+        'A match is the only place anyone reliably offers you 50 cents for a '
+        'dollar. Contributing less than the match is turning down part of '
+        'your own pay.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryEarning,
+    question: 'Two offers: \$52,000 with no benefits, or \$47,000 with health '
+        'cover worth \$5,400 a year. Which pays more?',
+    options: [
+      'The \$47,000 offer, once the benefit is counted',
+      'The \$52,000 offer, because salary is what counts',
+      'They are identical',
+      'Impossible to compare',
+    ],
+    correctIndex: 0,
+    explanation:
+        '\$47,000 plus \$5,400 of cover is \$52,400 of value, and the cover is '
+        'bought with untaxed money. Comparing salaries alone is how people '
+        'take the worse of two offers.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryEarning,
+    question: 'You are paid weekly and your rent is monthly. What catches '
+        'people out?',
+    options: [
+      'Most months have four paydays, but four of them have five',
+      'Weekly pay is taxed more heavily',
+      'Rent must legally be paid on a payday',
+      'Nothing — weekly and monthly always line up',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Fifty-two weeks does not divide into twelve months. Budgeting as if '
+        'every month has four paydays leaves four months a year short, and '
+        'four with an unplanned surplus.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryEarning,
+    question: 'What is a W-4 for?',
+    options: [
+      'Telling your employer how much tax to withhold from each paycheck',
+      'Reporting your income to the IRS at the end of the year',
+      'Claiming unemployment benefits',
+      'Opening a retirement account',
+    ],
+    correctIndex: 0,
+    explanation:
+        'The W-4 sets withholding; the W-2 reports what was actually earned '
+        'and withheld. Getting the W-4 badly wrong means either a large bill '
+        'in April or a year of lending the government money for free.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryEarning,
+    question: 'A raise takes you from \$44,000 to \$46,000 and pushes part of '
+        'your income into a higher tax bracket. What happens?',
+    options: [
+      'Only the amount above the bracket line is taxed at the higher rate',
+      'Your whole income is taxed at the higher rate',
+      'You take home less than before the raise',
+      'The raise is taxed at 100 percent until the next year',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Brackets are marginal. A raise can never leave you with less take-home '
+        'pay, and the belief that it can is the most common tax myth there is.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryEarning,
+    question: 'Your side business made \$3,000 this year. What should you '
+        'expect?',
+    options: [
+      'To owe self-employment tax and income tax on the profit',
+      'Nothing — side income under \$5,000 is tax free',
+      'To be taxed only if you registered a company',
+      'To pay tax on the \$3,000 of revenue, not the profit',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Self-employment income is taxable from the first dollar, on profit '
+        'rather than revenue — so what you spent to earn it matters, and so '
+        'does keeping the receipts.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryEarning,
+    question: 'You are asked for your salary expectation in a first '
+        'interview. What is the most useful thing to have done beforehand?',
+    options: [
+      'Looked up what the role pays at similar employers',
+      'Decided the lowest number you would accept',
+      'Worked out what you need to cover rent',
+      'Nothing — the employer names the number',
+    ],
+    correctIndex: 0,
+    explanation:
+        'What you need and what the job pays are unrelated. Knowing the market '
+        'rate turns the question from a guess into a fact, and several states '
+        'now require the range to be posted.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryEarning,
+    question: 'Overtime rules in the US generally require what?',
+    options: [
+      'Time and a half beyond 40 hours a week for covered workers',
+      'Double pay for any work after 5pm',
+      'Extra pay only for weekend shifts',
+      'Nothing — overtime pay is always voluntary',
+    ],
+    correctIndex: 0,
+    explanation:
+        'The Fair Labor Standards Act sets 1.5x beyond 40 hours for '
+        'non-exempt employees. Whether you are exempt depends on the job, not '
+        'on what the contract calls you.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryEarning,
+    question: 'You are paid \$1,400 a month and your fixed costs are \$1,250. '
+        'What does that leave you exposed to?',
+    options: [
+      'Any single unplanned cost, because \$150 absorbs almost nothing',
+      'Nothing — you are ahead every month',
+      'Higher taxes next year',
+      'A lower credit score automatically',
+    ],
+    correctIndex: 0,
+    explanation:
+        'A 90 percent fixed-cost ratio means one flat tyre is a crisis. The '
+        'point of watching the ratio rather than the balance is that the '
+        'balance looks fine right up until it does not.',
+  ),
   // ================= SCAMS, FEES AND FINE PRINT =================
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
@@ -360,5 +519,165 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
     explanation:
         'A second currency breaks the link to real money. Doing the '
         'conversion anyway is the only way to know what you just spent.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryFinePrint,
+    question: 'A free trial asks for your card and says "cancel any time". '
+        'What actually happens on day 31?',
+    options: [
+      'You are charged automatically unless you cancelled first',
+      'You are emailed to ask whether you want to continue',
+      'The trial simply ends',
+      'The card is charged \$1 as a formality',
+    ],
+    correctIndex: 0,
+    explanation:
+        'The card is there because the default is to charge it. A reminder set '
+        'for two days before the trial ends costs nothing and is the whole '
+        'defence.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryFinePrint,
+    question: 'A store card offers 20 percent off today if you open an '
+        'account. The card charges 29 percent APR. When is this a good deal?',
+    options: [
+      'Only if you clear the balance in full before interest starts',
+      'Always, because 20 percent beats 29 percent',
+      'Only on purchases over \$500',
+      'Never, under any circumstances',
+    ],
+    correctIndex: 0,
+    explanation:
+        'A one-off 20 percent saving against 29 percent a year is fine for a '
+        'week and terrible for a year. The discount is the bait; the interest '
+        'is the business.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryFinePrint,
+    question: 'Buy-now-pay-later splits a \$200 purchase into four payments '
+        'of \$50 with no interest. What is the risk?',
+    options: [
+      'Late fees, and losing track of several overlapping plans at once',
+      'It always damages your credit score',
+      'The retailer can reclaim the item without notice',
+      'There is none — no interest means no risk',
+    ],
+    correctIndex: 0,
+    explanation:
+        'The interest really is zero. The cost shows up as late fees and as '
+        'four or five plans running at the same time, each small enough to '
+        'forget and large enough together to matter.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryFinePrint,
+    question: 'A caller says they are from your bank\'s fraud team and asks '
+        'you to read out the code they just texted you. What is happening?',
+    options: [
+      'They are trying to complete a login or transfer that needs that code',
+      'Standard bank identity verification',
+      'A test of your account security',
+      'Nothing unusual — codes are meant to be shared with staff',
+    ],
+    correctIndex: 0,
+    explanation:
+        'A one-time code proves *you* are doing something. No real bank asks '
+        'for one, and the request itself is the evidence that somebody else is '
+        'already partway into your account.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryFinePrint,
+    question: 'Two boxes of the same cereal: 340g for \$4.00, or 500g for '
+        '\$5.50. Which is cheaper per gram?',
+    options: [
+      'The 500g box, at 1.1 cents a gram against 1.18',
+      'The 340g box',
+      'They are identical',
+      'Impossible to say without the brand',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Unit price is the only honest comparison, and it is printed on the '
+        'shelf label in most shops. Bigger is usually but not always cheaper '
+        'per gram — which is exactly why it is worth checking.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryFinePrint,
+    question: 'An investment promises "guaranteed 12 percent monthly '
+        'returns". What does the word "guaranteed" tell you?',
+    options: [
+      'That it is almost certainly a fraud',
+      'That it is insured by the government',
+      'That the returns are lower risk than a savings account',
+      'That it has been approved by the SEC',
+    ],
+    correctIndex: 0,
+    explanation:
+        'No real investment guarantees a return, and 12 percent a month is '
+        '289 percent a year. Guaranteed high returns is the single most '
+        'reliable marker of a Ponzi scheme.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryFinePrint,
+    question: 'A rent-to-own shop offers a \$600 laptop for \$25 a week over '
+        '18 months. What does it cost?',
+    options: [
+      'About \$1,950 — more than three times the price',
+      'About \$700',
+      '\$600, spread out',
+      'Impossible to work out',
+    ],
+    correctIndex: 0,
+    explanation:
+        '78 weeks at \$25 is \$1,950. Rent-to-own is legal and it is the most '
+        'expensive way to buy anything — the weekly number is small precisely '
+        'so the total is never spoken aloud.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryFinePrint,
+    question: 'Your bank offers "overdraft protection" so payments go through '
+        'when your balance is short. What does it usually cost?',
+    options: [
+      'A flat fee of roughly \$35 for each payment it covers',
+      'Nothing, which is why it is called protection',
+      'Interest of about 5 percent a year',
+      'A one-off charge when you enable it',
+    ],
+    correctIndex: 0,
+    explanation:
+        'It is opt-in, and declining it means the payment is refused instead. '
+        'A declined card is embarrassing for a minute; \$35 for covering \$12 '
+        'is the most expensive borrowing most people ever do.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryFinePrint,
+    question: 'A "0% APR for 12 months" card charges deferred interest. You '
+        'still owe \$100 at month 13. What are you charged interest on?',
+    options: [
+      'The whole original balance, backdated to the purchase date',
+      'The \$100 that is still outstanding',
+      'Nothing, if most of it was paid on time',
+      'A flat late fee only',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Deferred interest is not the same as 0 percent. Missing the deadline '
+        'by a dollar can trigger a year of interest on the full amount, which '
+        'is why the payoff date matters more than the rate.',
+  ),
+  BrawlQuestion(
+    category: kBrawlCategoryFinePrint,
+    question: 'An airline fare is \$39, but checkout shows \$118. What '
+        'happened?',
+    options: [
+      'Seat, bag and service fees were added after the headline price',
+      'The price rose while you were browsing',
+      'Tax is charged at 200 percent on flights',
+      'A booking error',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Unbundling puts the smallest possible number on the advert and moves '
+        'the rest to checkout. The only price worth comparing between sellers '
+        'is the one on the final screen.',
   ),
 ];

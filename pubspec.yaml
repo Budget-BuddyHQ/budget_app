@@ -39,6 +39,19 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    # Pixelify Sans and Quicksand, bundled rather than fetched.
+    #
+    # google_fonts downloads a face on first use and caches it to the device,
+    # which means a first launch with no network renders the whole app in the
+    # platform fallback — the one state a store reviewer or a child on school
+    # wifi is most likely to hit. Dropping the .ttf files into the bundle under
+    # the names the package looks for ({Family}-{Weight}.ttf) makes it load
+    # them from assets and never reach for the network at all.
+    #
+    # 572KB for nine faces, and only the weights the package actually resolves
+    # to: Pixelify Sans has 400/500/600/700 upstream, so the w800 and w900 call
+    # sites in this app already map onto Bold.
+    - assets/fonts/
     - assets/images/logo.png
     - assets/images/
     - assets/images/turtles/
@@ -83,6 +96,7 @@ flutter:
     - assets/own_skins/turtle_mentor/
     - assets/self_made_backgrounds/
     - assets/map_assets_coins/PNG_more_map_tiles/
+    - assets/map_assets_coins/day-night-cycle/
     # Town NPC frames. These are individual 102x116 PNGs per frame (not
     # sprite sheets), so every folder has to be listed on its own —
     # Flutter does not bundle subfolders recursively.
