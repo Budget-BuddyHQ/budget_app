@@ -62,14 +62,13 @@ class HomeScreen extends StatelessWidget {
           backgroundColor: AppTheme.deepForest,
           // No AppBar here on purpose. MainNavigation's `_TopIconBar` (the
           // Learn — Budget Buddy — Profile strip) already sits above every
-          // tab, so this used to duplicate the wordmark; "Level N | Gold"
-          // duplicated the hero card's own chip a few pixels below; and the
-          // leaderboard trophy button duplicated the dedicated
-          // `_LeaderboardPromoCard` further down. Stacking a second ~80px
-          // toolbar on top of the global one under all that duplication was
-          // the actual "too much white space at the top" — removing it
-          // loses no information, since everything it showed already
-          // exists in the body.
+          // tab, so this was duplicating the wordmark. "Level N | Gold"
+          // duplicated the hero card's own chip about 4 pixels below it, and
+          // the trophy button duplicated _LeaderboardPromoCard further down.
+          // stacking a second ~80px toolbar on the global one *on top of*
+          // all that duplication is what "too much white space at the top"
+          // actually was. removing it loses nothing, its all still in the
+          // body somewhere
           bottomNavigationBar: onNavSelected == null
               ? null
               : CustomBottomNav(
@@ -105,8 +104,8 @@ class HomeScreen extends StatelessWidget {
                                   _openAdventureWorld(context),
                             ),
                           ),
-                          // The hero already starts a life (and the town is
-                          // reached from inside one), so a separate "Play
+                          // hero already starts a life (and youp get to the
+                          // town from inside one) so a separate "Play
                           // Life" card underneath was a second button doing
                           // the same job — removed so Home has one obvious
                           // primary action instead of two competing ones.

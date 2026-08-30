@@ -1640,6 +1640,50 @@ the computed scale so a label that fits to the exact pixel is not one rounding
 step from overflowing.
 *Files:* `fitted_label.dart`
 
+### The town becomes the game
+
+**Twelve buildings, not six**
+The first six cover the money decisions a school lesson would list. The second
+six cover the ones a *week* contains: a market with no unit prices, a cafe you
+have been in three times already, a clinic that charges $40 or nine days, a
+library that gives away what other people sell, a pawn shop that prices metal
+rather than meaning, and a park where the free option is the one you have to
+choose on purpose. Four rotating scenes each, so the town now holds 69
+encounters.
+*Files:* `town_spot_models.dart`, `town_scenarios.dart`
+
+**Every building said the same thing at seven as it did at seventy**
+The rotation was keyed on the calendar day, which is right for somebody
+wandering the town on its own and wrong the moment it is part of a run — a life
+plays sixty-odd years inside one afternoon. Walking back into the bank a decade
+later to find the identical conversation is the clearest way to tell a player
+that nothing they do out there matters.
+*Fix:* the character's age is mixed into the draw alongside the day.
+
+**And the age is hashed, not multiplied** — the first version used `age * 17`,
+and the test that samples ages ten years apart found *every* sample landing on
+the same scene. That is not a bad constant, it is arithmetic: a spot with five
+scenes takes the index mod 5, and `10 * m` is divisible by 5 for every m, so no
+linear mix survives a player ageing in round decades. Which is exactly how
+somebody skims a life.
+*Files:* `town_scenarios.dart`, `town_interior_screen.dart`
+
+**The menu could play the whole game without opening the map**
+The library, the clinic, the park and the job board are all *places*, and the
+Life menu had a button for each.
+*Fix, second attempt:* the first one blocked those buttons whenever the town
+was open, and three suites objected within a minute — `life_age_gates_test`
+asserts seeing a doctor is never blocked, `budget_teaching_test` asserts an
+adult with no job can always find one, and the library is the only way to raise
+Smarts on demand. They were right. A doctor you have to walk to is a worse
+simulation, not a more realistic one, and the map is not always open to you
+anyway.
+So the menu keeps every door and **pays less** for using them: reading at home
+is +2 Smarts against the library's +4-and-change through `applyTownOutcome`, an
+afternoon in is +6 Happiness against the park's more. Going in person is
+better; staying in is still allowed. That is also true.
+*Files:* `life_sim_controller.dart`
+
 ### Friends, the tutorial, and the town
 
 **Adding a friend failed with 42501, and it is not a code bug**
@@ -1863,7 +1907,7 @@ the pool.
 flutter analyze && flutter test
 ```
 
-993 tests covering responsive layout at eight viewports (including the Life
+1,000 tests covering responsive layout at eight viewports (including the Life
 sim itself, Feedback, and the Adventure map-pending screen), the money
 panel at seven widths, the life-event chain wiring, price-chart zoom/pan/scrub,
 chart painters against pathological input, working-order accounting, the Life

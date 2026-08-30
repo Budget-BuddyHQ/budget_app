@@ -142,10 +142,9 @@ class CompanyProfile {
   final String symbol;
   final String name;
   final String industry;
-  // Finnhub's free profile2 endpoint does not actually include a long-form
-  // description; kept for forward compatibility if that ever changes, and
-  // callers should treat an empty string as "not available" rather than
-  // treating its absence as an error.
+  // finnhubs free profile2 endpoint doesnt actually give you a long
+  // description. keeping this in case that ever changes. callers should read
+  // an empty string as "not available", not as an error
   final String description;
   final String logoUrl;
   final String website;
@@ -222,10 +221,10 @@ enum ChartRange {
   day5('5D', '30min', 65),
   month1('1M', '1day', 30),
   month3('3M', '1day', 90),
-  // 6M and 5Y added so there is somewhere to go *back* to. Panning left on
-  // a 1D chart cannot reach yesterday — an intraday series only holds one
-  // session — so 'let me look at older prices' is answered by the range
-  // strip, not by the pan gesture, and the strip stopped at a single year.
+  // added 6M and 5Y so theres somewhere to go *back* to. panning left on a
+  // 1D chart cant reach yesterday (intraday series only holds one session)
+  // so "let me see older prices" gets answered by the range strip and not by
+  // the pan gesture — and the strip used to stop at one year
   month6('6M', '1day', 180),
   year1('1Y', '1week', 52),
   year5('5Y', '1week', 260);
@@ -348,8 +347,8 @@ class MarketDataService extends ChangeNotifier {
   // ---------------------------------------------------------------------
   // Server-side proxy
   //
-  // Preferred over calling the vendors directly. Shipping FINNHUB_API_KEY in
-  // the client meant the key sat inside every build for anyone to extract,
+  // preferred over hitting the vendors directly. shipping FINNHUB_API_KEY in
+  // the client meant the key sat inside every build for anyone to pull out,
   // and — more practically — Finnhub's 60 calls/minute is *per key*, so every
   // player shared one quota and rate-limited each other. The edge function in
   // `supabase/functions/market` holds the keys and caches responses, so a

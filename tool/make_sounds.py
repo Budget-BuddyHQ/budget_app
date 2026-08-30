@@ -53,16 +53,16 @@ def _write(name: str, samples: list[float], peak_target: float = 0.86) -> None:
     peak = max(abs(s) for s in samples) or 1.0
     gain = peak_target / peak
 
-    # A hard start or end on a non-zero sample is an audible click, so both
-    # edges get a fade — but they get *different* fades, and that asymmetry is
-    # the point.
+    # starting or ending hard on a non-zero sample = audible click, so both
+    # edges get a fade. but they get *different* fades and thats the whole
+    # point.
     #
-    # A symmetric 10ms fade destroys short percussive sounds: `navigation.wav`
-    # is 55ms long and its peak is in the first millisecond, so a 10ms ramp
-    # was flattening the attack and the file came out at half its requested
-    # level. 1.5ms is enough to remove the discontinuity and short enough that
-    # the transient survives; the tail keeps the full 10ms, where there is
-    # nothing to preserve and a real risk of cutting off mid-cycle.
+    # a symmetric 10ms fade wrecks short percussive sounds. navigation.wav is
+    # 55ms long and its peak is in the first millisecond, so a 10ms ramp was
+    # flattening the attack and the file came out about half as loud as asked
+    # for. 1.5ms is enough to kill the discontinuity and short enough the
+    # transient survives. tail keeps the full 10ms - nothing to preserve back
+    # there and a real risk of chopping off mid-cycle
     fade_in = min(int(RATE * 0.0015), len(samples) // 4)
     fade_out = min(int(RATE * 0.01), len(samples) // 2)
     frames = bytearray()

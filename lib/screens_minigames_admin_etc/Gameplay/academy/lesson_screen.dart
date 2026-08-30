@@ -140,9 +140,10 @@ class _LessonScreenState extends State<LessonScreen> {
 
     final unit = _progressionService.getUnit(lesson.unitId)!;
 
-    // Age warning, not an age lock. The prerequisite chain is what gates the
-    // curriculum; this only makes sure nobody wanders into the 401(k) unit at
-    // twelve and assumes the salary-shaped examples are describing them.
+    // age *warning*, not an age lock. the prerequisite chain is what gates
+    // the curriculum. this is only here so a twelve year old doesnt wander
+    // into the 401(k) unit and think the salary shaped examples are about
+    // them
     if (isAboveReaderStage(
       unit.ageStage,
       _statsController.stats.ageBand.maxPlausibleStage,
@@ -303,8 +304,8 @@ class _LessonScreenState extends State<LessonScreen> {
     final selectedUnit = units[selectedUnitIndex];
     final overallProgress = _progressionService.getProgress();
     final recommendedStage = _statsController.stats.ageBand.recommendedStage;
-    // Warnings use the *top* of the player's age band, not its middle — see
-    // `AgeBand.maxPlausibleStage`.
+    // warnings use the *top* of the age band not the middle, see
+    // AgeBand.maxPlausibleStage
     final warnAboveStage = _statsController.stats.ageBand.maxPlausibleStage;
 
     return Scaffold(
@@ -326,9 +327,10 @@ class _LessonScreenState extends State<LessonScreen> {
                 filterQuality: FilterQuality.none,
               ),
             ),
-            // A vignette instead of a flat dim: darker top/bottom so header
-            // text and the bottom nav stay readable, lighter through the
-            // middle so the hand-composited unit art actually reads instead
+            // vignette rather than a flat dim — darker top and bottom so
+            // the header text and bottom nav stay readable, lighter through
+            // the middle so the hand-composited unit art actually shows up
+            // instead
             // of looking like a flat muted wash.
             Positioned.fill(
               child: DecoratedBox(

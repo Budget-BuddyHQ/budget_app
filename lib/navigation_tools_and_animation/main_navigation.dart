@@ -55,9 +55,9 @@ class _MainNavigationState extends State<MainNavigation> {
     super.initState();
     _currentIndex = widget.initialIndex.clamp(0, AppTabIndex.count - 1).toInt();
     // Music starts here rather than in `main()` so it begins when the player
-    // reaches the app proper — a loop playing under the sign-in screen is
-    // music over a form, which is not what anybody means by ambience.
-    // `startMusic` is idempotent and no-ops when the preference is off.
+    // gets to the app proper. a loop playing under the sign-in screen is
+    // just music over a form, nobody means that by "ambience". startMusic is
+    // idempotent + no-ops if the preference is off
     AppSoundService.startMusic();
   }
 
@@ -100,11 +100,11 @@ class _MainNavigationState extends State<MainNavigation> {
     if (settings == null || !mounted || _touring) {
       return;
     }
-    // A replay request is honoured even for a player who has already seen the
-    // tour — that is the whole point of the button in Profile — and it does
-    // *not* wait on `isInitialized`. That gate exists so the automatic
-    // first-run decision is never made from a pre-read default; an explicit
-    // "show me the tour again" has nothing to read.
+    // a replay request goes through even if youve already seen the tour —
+    // thats the entire point of the button in Profile — and it does *not*
+    // wait on isInitialized. that gate is there so the automatic first-run
+    // decision never gets made off a pre-read default. an explicit "show me
+    // it again" has nothing to read in the first place
     final replay = settings.tutorialReplayRequested;
     if (replay) {
       settings.consumeTutorialReplay();
@@ -166,8 +166,8 @@ class _MainNavigationState extends State<MainNavigation> {
     if (_askedForPersonalDetails || controller == null || !mounted) {
       return;
     }
-    // Never in front of the tour — `_maybeShowTutorial` calls back here once
-    // it's done, so nothing is lost by waiting.
+    // never in front of the tour. _maybeShowTutorial calls back here when
+    // its done so nothing gets lost by waiting
     if (!_tutorialResolved) {
       return;
     }
