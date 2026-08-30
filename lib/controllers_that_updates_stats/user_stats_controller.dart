@@ -1089,9 +1089,9 @@ class UserStatsController extends ChangeNotifier {
           ),
         );
       }
-      // Pull the shares (and their slice of cost basis) out of the live
-      // holding so the resting order can't sell shares that were meanwhile
-      // sold elsewhere. Both come back if the order is cancelled.
+      // pull the shares (and their bit of cost basis) out of the live
+      // holding so a resting order cant sell shares that got sold somewhere
+      // else in the meantime. both come back if you cancel
       final currentCost = costBasis[holdingKey] ?? 0;
       if (owned > 0 && currentCost > 0) {
         reservedCost = (currentCost / owned * quantity).round();
@@ -1239,8 +1239,8 @@ class UserStatsController extends ChangeNotifier {
 
       if (buyFills) {
         if (gold < total) {
-          // Can no longer afford it — drop the resting order rather than
-          // letting it linger unfillable.
+          // cant afford it any more, bin the order rather than leaving it
+          // sat there unfillable
           continue;
         }
         gold -= total;
@@ -1261,8 +1261,8 @@ class UserStatsController extends ChangeNotifier {
           ),
         );
       } else {
-        // Sell fill — the shares and their cost basis were already removed
-        // when the order was placed, so this only credits the gold.
+        // sell fill. shares + cost basis already came out when the order
+        // was placed so this only credits the gold
         gold += total;
         xp += (10 * order.quantity).round();
         literacy += (5 * order.quantity).round();

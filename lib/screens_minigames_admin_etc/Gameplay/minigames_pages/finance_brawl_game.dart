@@ -300,14 +300,14 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
 
   // ---- Weapon modifiers -------------------------------------------------
   //
-  // The game had five upgrades, four of which were flat number bumps, so a
-  // long run felt the same as a short one with bigger digits. These change
-  // *how* you shoot rather than how hard, which is what lets a build become
-  // genuinely overpowered — the surviv.io feel of turning a losing fight
-  // into a lawnmower.
+  // there were five upgrades and four of them were just flat number bumps,
+  // so a long run felt identical to a short one but with bigger digits.
+  // these change *how* you shoot rather than how hard, which is what lets a
+  // build actually go overpowered — that surviv.io thing where a fight you
+  // were losing turns into a lawnmower.
   //
-  // They stack multiplicatively with the flat upgrades on purpose: spread x
-  // splash x pierce is where the power fantasy lives.
+  // they stack multiplicatively with the flat ones on purpose. spread x
+  // splash x pierce is where the whole power fantasy lives
 
   /// Extra coins per shot, fanned around the aim line.
   /// How many times each levelled upgrade has been taken.

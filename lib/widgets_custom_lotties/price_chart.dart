@@ -176,8 +176,8 @@ class _InteractivePriceChartState extends State<InteractivePriceChart> {
   @override
   void didUpdateWidget(covariant InteractivePriceChart oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // A different series (new symbol, new timeframe). An old window would be
-    // meaningless against it and could point past the end.
+    // different series (new symbol, new timeframe). an old window is
+    // meaningless against it and could point off the end
     if (oldWidget.candles.length != widget.candles.length) {
       setState(_resetView);
     }
@@ -220,7 +220,7 @@ class _InteractivePriceChartState extends State<InteractivePriceChart> {
 
   void _panTo(double currentDx, double width) {
     if (!_isZoomed || width <= 0) return;
-    // Content follows the finger: dragging right reveals earlier candles.
+    // content follows the finger. drag right = earlier candles
     final candlesPerPixel = _count / width;
     setState(() {
       _start = (_startAtBegin - (currentDx - _dragOriginDx) * candlesPerPixel)
@@ -256,10 +256,10 @@ class _InteractivePriceChartState extends State<InteractivePriceChart> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // The plotted area stops short of the right edge — the painter keeps
-        // a gutter there for the price labels. Mapping a pointer x onto a
-        // candle index against the *full* width would put the crosshair
-        // progressively ahead of the finger, worst at the right-hand side.
+        // plotted area stops short of the right edge, painter keeps a
+        // gutter there for the price labels. if you map pointer x to a
+        // candle index against the *full* width the crosshair drifts ahead
+        // of your finger, gets worse the further right you go
         final width = (constraints.maxWidth - PriceChart.axisGutter).clamp(
           1.0,
           constraints.maxWidth <= 0 ? 1.0 : constraints.maxWidth,

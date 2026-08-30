@@ -48,11 +48,11 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
 
     setState(() => _openingCase = true);
     // No sound here. Both the ratchet and the reward chime belong to
-    // `_CaseRollDialog`, which owns the reel they have to line up with — see
-    // the note on [_CaseRollDialogState.initState]. Starting the ratchet at
-    // this point instead meant it began before the network round-trip that
-    // decides the result, so on a slow connection a chunk of it had already
-    // played by the time the reel appeared.
+    // _CaseRollDialog, which owns the reel theyve got to line up with (see
+    // the note on _CaseRollDialogState.initState). starting the ratchet here
+    // instead meant it kicked off *before* the network round trip that
+    // decides the result — so on a slow connection a good chunk of it had
+    // already played by the time the reel even showed up
     final result = await context.read<UserStatsController>().openSkinCase();
     if (!mounted) {
       return;
@@ -133,8 +133,8 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final width = constraints.maxWidth;
-                    // Landscape and tablets get a two-column split so the
-                    // preview stays visible while browsing the collection.
+                    // landscape + tablets get a two column split so the
+                    // preview stays on screen while youre browsing
                     final split = width >= 900;
                     final gridWidth = split ? width * 0.55 : width;
 

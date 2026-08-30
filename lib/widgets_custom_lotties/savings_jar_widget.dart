@@ -66,10 +66,10 @@ class SavingsJarWidget extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Ambient glow, tinted by mood rather than by how full it is —
-          // colour answers "how is it going", the coin line answers "how far
-          // have I got". Keeping those on separate channels means a player
-          // who has slipped still sees their progress intact.
+          // ambient glow tinted by mood, not by how full it is. colour
+          // answers "hows it going", the coin line answers "how far have i
+          // got". keeping them on separate channels means someone whos
+          // slipped still sees their progress sat there intact
           DecoratedBox(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -83,10 +83,10 @@ class SavingsJarWidget extends StatelessWidget {
             child: SizedBox(width: size, height: size),
           ),
 
-          // The shelf, drawn as a soft ellipse of shadow rather than the
-          // brown rectangle it used to be — a hard bar under a floating jar
-          // reads as two objects, a shadow reads as one standing on
-          // something.
+          // the shelf. soft ellipse of shadow now instead of the brown
+          // rectangle it was — a hard bar under a floating jar reads as two
+          // separate objects, a shadow reads as one thing stood on
+          // something
           Positioned(
             bottom: size * 0.10,
             child: Container(
@@ -115,9 +115,9 @@ class SavingsJarWidget extends StatelessWidget {
               height: size * 0.78,
               child: CustomPaint(
                 painter: _CoinJarPainter(fill: level, mood: mood),
-                // A semantic label rather than a decorative-only image: the
-                // jar is the screen's headline status, so a screen reader
-                // should get the same answer a glance gives.
+                // semantic label, not decorative-only. the jar IS the
+                // headline status of this screen so a screen reader should
+                // get the same answer a glance does
                 child: Semantics(
                   label:
                       '${stage.label}, ${mood.label}, '

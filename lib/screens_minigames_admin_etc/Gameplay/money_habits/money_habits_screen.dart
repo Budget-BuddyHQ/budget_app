@@ -103,27 +103,27 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
             )
           : null,
       appBar: AppBar(
-        // Default toolbar height, no extra title padding. This screen sits
-        // *below* MainNavigation's global top bar when it's a tab, so a
-        // 70px toolbar plus a 12px title inset stacked a second header's
-        // worth of empty space under the first one — the gap between
-        // "Daily" and the content.
+        // default toolbar height, no extra title padding. this screen sits
+        // *under* MainNavigation's global top bar when its a tab, so 70px
+        // toolbar + 12px title inset stacked a whole second header's worth
+        // of empty space below the first one. thats what that gap between
+        // "Daily" and the content was
         backgroundColor: AppTheme.deepForest,
         foregroundColor: Colors.white,
         elevation: 0,
         titleSpacing: 16,
-        // As a tab there is nothing to go back *to*, so the arrow would be
-        // a dead control.
+        // as a tab theres nothing to go back *to* so the arrow would just
+        // be a dead button
         automaticallyImplyLeading: !asTab,
         title: Text(
           'Money Habits',
           style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
         ),
         bottom: PreferredSize(
-          // isScrollable already lets the tabs scroll off-screen on a narrow
-          // phone, but with no visible thumb there was no hint that "My Jar"
-          // was reachable by swiping — a Scrollbar makes the overflow
-          // discoverable instead of silently there.
+          // isScrollable already lets the tabs run off-screen on a narrow
+          // phone but with no visible thumb theres no hint that "My Jar" is
+          // even reachable by swiping. scrollbar makes the overflow
+          // discoverable instead of just silently being there
           preferredSize: const Size.fromHeight(kTextTabBarHeight),
           // Deliberately NOT thumbVisibility: true here. TabBar does not
           // expose its internal horizontal ScrollController, so a

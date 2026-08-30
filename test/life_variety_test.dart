@@ -43,10 +43,10 @@ int _repeatsIn(List<String> fired) {
 }
 
 void main() {
-  // These thresholds come from actually simulating the game rather than
-  // guessing. Before the fixes they measured: 24.4 average repeats per life,
-  // 41 in the worst run, and a pool that sat flat at ~19 eligible events from
-  // age 32 to 85 — which is what "it gets repetitive after a while" was.
+  // these thresholds come from actually simulating the game, not guessing.
+  // before the fixes: 24.4 average repeats per life, 41 in the worst run, and
+  // a pool sat flat at ~19 eligible events from age 32 all the way to 85.
+  // thats what "it gets repetitive after a while" actually was
   group('event variety across a full life', () {
     late List<List<String>> runs;
 
@@ -116,8 +116,8 @@ void main() {
     );
 
     test('the adult and senior years are not starved', () {
-      // The stretch from 30 onward is over half a playthrough. It used to draw
-      // from the same ~19 events for fifty years.
+      // 30 onwards is over half a playthrough and it used to pull from the
+      // same ~19 events for fifty years
       for (final age in [32, 40, 50, 60, 70, 80]) {
         final count = kLifeEvents.where((e) => e.matches(plain(age))).length;
         expect(

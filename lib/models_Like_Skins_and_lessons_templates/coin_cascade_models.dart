@@ -249,11 +249,11 @@ const List<CascadeLevel> kCascadeLevels = <CascadeLevel>[
 
   // --- Past the first seven -------------------------------------------
   //
-  // The ladder used to stop at 7, which is about twenty minutes of play, and
-  // then repeated its hardest level for ever (see [cascadeLevelFor], which
-  // falls back to the last one). These six do not simply raise the numbers:
-  // each turns one dial the earlier levels left alone, so the thing you have
-  // to think about keeps changing rather than the thing you have to grind.
+  // ladder used to stop at 7 which is like twenty minutes of play, then it
+  // just repeated the hardest level forever (cascadeLevelFor falls back to
+  // the last one). these six dont just crank the numbers up — each one turns
+  // a dial the earlier levels left alone, so what youre thinking about keeps
+  // changing instead of what youre grinding
   CascadeLevel(
     number: 8,
     name: 'Payday',
@@ -428,9 +428,9 @@ class CoinCascadeGame {
         }
       }
       attempts++;
-      // The avoid-a-match spawn can, rarely, paint itself into a corner where
-      // no swap helps. Redealing is simpler and faster than trying to repair
-      // it, and 40 attempts has never been reached in testing.
+      // the avoid-a-match spawn can very occasionally paint itself into a
+      // corner where no swap helps. easier + faster to just redeal than try
+      // and repair it. never seen it get anywhere near 40 attempts
     } while (!hasLegalMove() && attempts < 40);
   }
 
@@ -497,7 +497,7 @@ class CoinCascadeGame {
     scan(true);
     scan(false);
 
-    // Merge overlapping runs into single groups.
+    // merge overlapping runs into one group
     final merged = <Set<Point<int>>>[];
     for (final run in runs) {
       final touching = merged.where((m) => m.intersection(run).isNotEmpty)

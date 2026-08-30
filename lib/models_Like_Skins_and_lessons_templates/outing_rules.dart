@@ -149,7 +149,7 @@ class OutingPermission {
         message: 'You are too unwell to leave the house today.',
       );
     }
-    // 16 and over, nobody's rules apply any more.
+    // 16+, nobodys rules apply any more
     if (age < 16 && age < strictness.freeRoamAge) {
       return OutingPermission._(
         allowed: false,

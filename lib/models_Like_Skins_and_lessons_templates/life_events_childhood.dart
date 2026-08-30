@@ -6,10 +6,10 @@ import 'life_sim_models.dart';
 /// The school years, where money first belongs to you.
 ///
 /// **The gap this closes.** Counting eligible events by age put ages 5 to 15
-/// at 20–23, against 60–70 for every adult year. A run plays eighteen turns
-/// through childhood before it reaches twenty, so the thinnest stretch of the
-/// pool was also the *opening* of the game — the first ten minutes a new
-/// player sees, and the whole of what the 4–12 audience plays.
+/// at 20-23, vs 60-70 for every adult year. a run plays eighteen turns of
+/// childhood before it even reaches twenty, so the thinnest bit of the whole
+/// pool was also the *opening* of the game. first ten minutes anyone sees,
+/// and the entirety of what the 4-12 lot ever play.
 ///
 /// **Why these are shaped differently from the adult pack.** An adult event is
 /// about which system you want to be inside. A child's is about the first time
