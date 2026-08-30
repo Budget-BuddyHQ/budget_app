@@ -34,7 +34,7 @@ void main() {
           kTownScenarios.values.fold<int>(0, (sum, list) => sum + list.length);
       expect(
         total,
-        greaterThanOrEqualTo(36),
+        greaterThanOrEqualTo(66),
         reason: 'only $total encounters exist across the whole town',
       );
     });
@@ -105,6 +105,81 @@ void main() {
           );
         }
       }
+    });
+  });
+
+  group('the town changes as the life does', () {
+    // The ask this answers: "any time passes by for the maps make it so that
+    // the options change too".
+    //
+    // The calendar day alone is right for somebody wandering the town on its
+    // own and wrong the moment it is part of a run: a life plays sixty-odd
+    // years inside one afternoon, so every building said exactly the same
+    // thing at seven as it did at seventy. Walking back into the bank a
+    // decade later to find the identical conversation is the clearest way to
+    // tell a player that nothing they do out here matters.
+    final day = DateTime(2026, 5, 4, 12);
+
+    test('a decade of life changes what a building offers', () {
+      for (final spot in kTownSpots) {
+        final scenes = <String>{
+          for (var age = 6; age <= 66; age += 10)
+            townEncounterFor(spot, now: day, lifeAge: age).prompt,
+        };
+        expect(
+          scenes.length,
+          greaterThan(1),
+          reason:
+              '${spot.id} says the same thing at every age on the same day',
+        );
+      }
+    });
+
+    test('the same age on the same day is the same scene', () {
+      // Still fixed *within* a visit: walking out and back in must not
+      // reroll, or the decision becomes a slot machine and there was no
+      // reason to have walked there.
+      for (final spot in kTownSpots) {
+        expect(
+          townEncounterFor(spot, now: day, lifeAge: 30).prompt,
+          townEncounterFor(spot, now: day, lifeAge: 30).prompt,
+          reason: '${spot.id} rerolled between two identical visits',
+        );
+      }
+    });
+
+    test('no age is passed when nobody is living a life', () {
+      // The town is still a place you can visit on its own, and there it
+      // behaves exactly as it did before — by the day.
+      for (final spot in kTownSpots) {
+        expect(
+          townEncounterFor(spot, now: day).prompt,
+          townEncounterFor(spot, now: day, lifeAge: 0).prompt,
+          reason: '${spot.id} treats "no life" differently from age zero',
+        );
+      }
+    });
+
+    test('ageing a year is not the same as waiting a day', () {
+      // The day and the age are multiplied by different primes so the two
+      // cannot resonate. With the same factor, ageing one year and waiting
+      // one day would land on the same scene and the rotation would have
+      // half the depth it looks like it has.
+      var differs = 0;
+      for (final spot in kTownSpots) {
+        final aged = townEncounterFor(spot, now: day, lifeAge: 21).prompt;
+        final waited = townEncounterFor(
+          spot,
+          now: day.add(const Duration(days: 1)),
+          lifeAge: 20,
+        ).prompt;
+        if (aged != waited) differs++;
+      }
+      expect(
+        differs,
+        greaterThan(kTownSpots.length ~/ 2),
+        reason: 'ageing and waiting land on the same scene almost everywhere',
+      );
     });
   });
 

@@ -96,9 +96,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       );
 
-      // Cloud storage may not be configured. Rather than dead-ending, fall
-      // back to the picked file's own path so the photo still shows on this
-      // device — the picture works either way.
+      // cloud storage might not be set up. instead of dead ending, fall back
+      // to the picked file's own path so the photo still shows on this
+      // device. works either way from the users point of view
       final uploaded = avatarUrl != null && avatarUrl.isNotEmpty;
       final resolvedUrl = uploaded ? avatarUrl : pickedFile.path;
 
@@ -290,10 +290,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 12),
                           // Masked, never the full address.
                           //
-                          // This app is aimed at children, and a profile
-                          // screen is one of the most screenshotted places in
-                          // any app — printing a full email address there puts
-                          // a real contact detail into every screenshot and
+                          // this app is for kids, and a profile screen is
+                          // one of the most screenshotted bits of any app.
+                          // printing a full email there puts a real contact
+                          // detail into every screenshot and
                           // every over-the-shoulder glance. The masked form
                           // still answers the only question this row exists to
                           // answer: which account am I signed into.

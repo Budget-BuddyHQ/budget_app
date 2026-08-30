@@ -5,10 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Colors
-  // Bumped lighter/warmer than the original near-black values (twice now,
-  // per direct feedback the first pass still read too dark) so the app
-  // reads as a lit night scene rather than a cave — still a dark forest
-  // theme, not a light-mode swap.
+  // bumped lighter + warmer than the original near-black (twice now, first
+  // pass still read too dark apparently) so it looks like a lit night scene
+  // instead of a cave. still a dark forest theme, not light mode
   static const Color deepForest = Color(0xFF0F2E20);
   static const Color darkForest = Color(0xFF1B4633);
   static const Color limeAccent = Color(0xFFB7F7D7);
@@ -21,12 +20,12 @@ class AppTheme {
   static const Color panel = Color(0xFF264F3D);
   static const Color panelStrong = Color(0xFF335D48);
   static const Color textPrimary = Color(0xFFF7FFFB);
-  // Lightened from #B9D1C6 after the contrast audit. The old value cleared
-  // AA against the page (9.1:1) but not against the app's *cards*, which are
-  // panels tinted with each screen's accent and run as light as #436452 —
-  // where it measured 4.08:1. Since this is the colour every secondary label
-  // reaches for, one step lighter fixed a whole class of findings at once and
-  // is still visibly muted next to [textPrimary].
+  // lightened from #B9D1C6 after the contrast audit. old value was fine
+  // against the page (9.1:1) but NOT against the cards - those get tinted
+  // with each screen's accent and go as light as #436452, where it came out
+  // 4.08:1. this is the colour basically every secondary label uses so one
+  // step lighter killed a whole pile of findings in one go. still looks
+  // muted next to textPrimary so nothing lost
   static const Color textMuted = Color(0xFFC8DDD3);
 
   // Spacing constants
@@ -37,7 +36,7 @@ class AppTheme {
   static const double spacingXLarge = 24.0;
   static const double spacingXXLarge = 32.0;
 
-  // Border radius — bumped rounder for the "puffy"/bubbled-up look.
+  // border radius. bumped rounder for the puffy / bubbled up look
   static const double radiusSmall = 10.0;
   static const double radiusMedium = 18.0;
   static const double radiusLarge = 24.0;
@@ -287,7 +286,7 @@ class AppTheme {
     );
   }
 
-  // Helper for glass morphism effect
+  // glass morphism helper thing
   static BoxDecoration getGlassDecoration({
     Color borderColor = Colors.white,
     double borderWidth = 1,

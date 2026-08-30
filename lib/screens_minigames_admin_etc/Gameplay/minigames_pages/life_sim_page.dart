@@ -52,10 +52,10 @@ class LifeSimPage extends StatefulWidget {
 
 class _LifeSimPageState extends State<LifeSimPage> {
   // Anchors for the in-game tour. Registered with [TutorialTargets] rather
-  // than positioned by hand, so the spotlight tracks the real widget at
-  // whatever size, text scale and scroll offset the player is at -- a
-  // hardcoded rect is right on one device and points at empty space on every
-  // other one.
+  // rather than positioned by hand, so the spotlight follows the real
+  // widget at whatever size / text scale / scroll offset youp are at. a
+  // hardcoded rect is correct on exactly one device and points at empty
+  // space on all the others
   final GlobalKey _tourMoneyKey = GlobalKey();
   final GlobalKey _tourEventKey = GlobalKey();
   final GlobalKey _tourTownKey = GlobalKey();
@@ -75,7 +75,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
       _life = injected;
       return;
     }
-    // Character creation first, exactly like starting a new BitLife.
+    // character creation first, same as starting a new bitlife
     WidgetsBinding.instance.addPostFrameCallback((_) => _createCharacter());
   }
 
@@ -85,14 +85,14 @@ class _LifeSimPageState extends State<LifeSimPage> {
     );
     if (!mounted) return;
     if (character == null) {
-      // Backed out of creation — leave Life entirely.
+      // backed out of creation, so leave Life altogether
       Navigator.of(context).pop();
       return;
     }
-    // A new life gets a fresh world. Town progress (visited spots, picked-up
-    // coins) is stored per-player rather than per-run, so without this a
-    // second life would start with every building already ticked off and
-    // every coin gone — the town would be a finished checklist for every
+    // new life = fresh world. town progress (visited spots, coins picked
+    // up) is stored per *player* not per run, so without this your second
+    // life starts with every building already ticked and every coin gone.
+    // town would be a finished checklist for every
     // character after the first.
     if (mounted) {
       await context.read<UserStatsController>().resetTownProgress();

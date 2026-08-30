@@ -71,8 +71,8 @@ CLEAR = (0, 0, 0, 0)
 # --------------------------------------------------------------------------
 # 'O' outline   'H' hair   'S' skin   'E' eye   '.' transparent
 #
-# Facing west. Twelve columns wide, and the same twelve columns in every
-# frame -- a head that changes shape between frames is the thing being fixed.
+# facing west. twelve columns wide, and the SAME twelve columns in every
+# frame - a head that changes shape between frames is the whole bug here
 HEAD_TALL = [
     '...OOOOOOO..',   # crown: six deep, not two
     '..OHHHHHHHO.',
@@ -84,8 +84,8 @@ HEAD_TALL = [
     '..OOOSSSOOO.',   # jaw, with the neck emerging under the middle
 ]
 
-# The bob frames have a row less, because their shoulders sit a row higher.
-# The row comes out of the crown rather than the face: a row less hair reads
+# bob frames get a row less because their shoulders sit a row higher. the
+# row comes out of the crown and not the face - a row less hair reads
 # as the head dipping, where moving the eye every fourth frame would be the
 # same flicker this is here to remove.
 HEAD_SHORT = [

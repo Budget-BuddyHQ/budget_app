@@ -91,14 +91,14 @@ def main() -> None:
         variable = fetch(spec['url'])
         for name, weight in spec['weights'].items():
             font = TTFont(io.BytesIO(variable))
-            # `overlap=False`: the instancer's overlap flag rewrites glyph
-            # headers, and these faces are already clean outlines.
+            # overlap=False - the instancer's overlap flag rewrites glyph
+            # headers and these faces already have clean outlines
             instancer.instantiateVariableFont(font, {'wght': weight}, inplace=True)
             path = os.path.join(OUT_DIR, f'{family}-{name}.ttf')
             font.save(path)
             print(f'  {path}  ({os.path.getsize(path) // 1024}KB, wght={weight})')
-        # The OFL requires the licence to travel with the font. Shipping the
-        # faces without it is the one part of this that is not optional.
+        # OFL says the licence has to travel with the font. shipping the
+        # faces without it is the one bit of this thats not optional
         licence = os.path.join(OUT_DIR, f'OFL-{family}.txt')
         request = urllib.request.Request(
             spec['licence'], headers={'User-Agent': 'budget-buddy-build'}

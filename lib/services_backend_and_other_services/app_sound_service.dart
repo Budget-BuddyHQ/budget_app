@@ -18,10 +18,10 @@ enum AppSoundEffect {
   /// The decelerating ratchet while a skin case rolls.
   caseRoll,
 
-  // One per rarity. Rarity reads as harmonic richness plus how long the tail
-  // rings, not as a different melody — so these are the same figure getting
-  // brighter and lasting longer, which is what makes an upgrade *feel* like
-  // one without the player having to read the label.
+  // one per rarity. rarity comes across as harmonic richness + how long the
+  // tail rings, not as a different tune — so its the same figure getting
+  // brighter and hanging around longer. thats what makes an upgrade *feel*
+  // like an upgrade without you having to read the label
   unboxCommon,
   unboxRare,
   unboxEpic,
@@ -97,13 +97,13 @@ class AppSoundService {
   static SharedPreferences? _preferences;
   static bool _playersReady = false;
 
-  // On by default, now that there is something worth hearing.
+  // on by default now theres actually something worth hearing.
   //
-  // This was off because the old bundled effects read as harsh — but there
-  // were no files at all behind the asset paths, so the setting was moot.
-  // `tool/make_sounds.py` now generates the whole set with soft attacks and
-  // exponential decays specifically to avoid that harshness. The toggle in
-  // Profile still turns everything off for anyone who wants silence.
+  // used to be off because the old effects sounded harsh — except there were
+  // no files behind the asset paths at all, so the setting did nothing
+  // anyway. make_sounds.py generates the whole lot now with soft attacks and
+  // exponential decays specifically so it isnt harsh. toggle in Profile
+  // still kills everything if you want silence
   static bool enabled = true;
 
   /// Background music is a separate switch from the effects.
@@ -130,8 +130,8 @@ class AppSoundService {
     if (_music != null) return;
     try {
       final player = AudioPlayer(playerId: 'budget_buddy_music');
-      // Loop, and at a level that sits under speech and effects rather than
-      // competing with them. 0.28 was picked by ear against `tap.wav`.
+      // loop, and quiet enough to sit under speech + effects instead of
+      // fighting them. 0.28 picked by ear against tap.wav
       await player.setReleaseMode(ReleaseMode.loop);
       // Under the effects, which are themselves turned down — see [_volumes].
       await player.setVolume(0.18);

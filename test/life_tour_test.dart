@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:budget_app/controllers_that_updates_stats/life_sim_controller.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_tutorial_steps.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/tutorial_steps.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -109,6 +110,59 @@ void main() {
       final money = life.money;
       life.applyTownOutcome(gold: 500, xp: 50, literacy: 50);
       expect(life.money, money);
+    });
+  });
+
+  group('the menu is the lesser version of the map', () {
+    // The ask: "make it more limited, since I want most of the realistic
+    // simulation at the map". Limited by *payoff*, not by permission -- the
+    // first attempt blocked the menu buttons outright and three separate
+    // suites objected within a minute, correctly: a doctor you have to walk
+    // to is a worse simulation, not a more realistic one, and the map is not
+    // always open to you.
+    LifeSimController adult() =>
+        LifeSimController(random: Random(3), initialAge: 30, startMoney: 900);
+
+    test('every place in the town is still reachable from the menu', () {
+      final life = adult();
+      for (final action in <LifeAction>[
+        LifeAction.library,
+        LifeAction.goOut,
+        LifeAction.doctor,
+        LifeAction.findJob,
+      ]) {
+        expect(
+          life.allows(action),
+          isTrue,
+          reason: '$action is blocked; the menu should cost less, not close',
+        );
+      }
+    });
+
+    test('reading at home is worth less than the library in town', () {
+      // The town's own library scene pays 10 literacy, which
+      // `applyTownOutcome` turns into a larger jump than the menu gives.
+      final menu = adult();
+      final before = menu.smarts;
+      menu.visitLibrary();
+      final fromMenu = menu.smarts - before;
+
+      final town = adult();
+      final townBefore = town.smarts;
+      town.applyTownOutcome(gold: 0, xp: 10, literacy: 10);
+      expect(town.smarts - townBefore, greaterThan(fromMenu));
+    });
+
+    test('the four town actions are declared as such', () {
+      for (final action in <LifeAction>[
+        LifeAction.library,
+        LifeAction.goOut,
+        LifeAction.doctor,
+        LifeAction.findJob,
+      ]) {
+        expect(LifeSimController.hasTownEquivalent(action), isTrue);
+      }
+      expect(LifeSimController.hasTownEquivalent(LifeAction.practise), isFalse);
     });
   });
 }

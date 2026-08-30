@@ -81,10 +81,10 @@ class LifeMoneyPanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              // Net worth is the one number that moves when any of the four
-              // boxes moves, so it earns the headline slot. Rigid, because
-              // this is the figure that must stay readable — the heading
-              // beside it is the part that gives way.
+              // net worth moves whenever any of the four boxes move so it
+              // gets the headline slot. rigid on purpose — this is the
+              // number that has to stay readable, the heading next to it is
+              // the bit thats allowed to give
               Text(
                 '${coinsLabel(life.netWorth)} net',
                 style: GoogleFonts.pixelifySans(
@@ -98,10 +98,10 @@ class LifeMoneyPanel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          // Two per row on a narrow phone, four across when there is room —
-          // measured rather than assumed, because this app has already
-          // shipped panels that shrank their text instead of rewrapping and
-          // ended up showing *less* on a bigger screen.
+          // two per row on a narrow phone, four across when theres room.
+          // measured not assumed, because this app has already shipped
+          // panels that shrank their text instead of rewrapping and ended up
+          // showing *less* on a bigger screen. not doing that again
           LayoutBuilder(
             builder: (context, constraints) {
               final perRow = constraints.maxWidth >= 340 ? 4 : 2;
