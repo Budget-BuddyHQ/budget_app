@@ -50,14 +50,14 @@ class AdventureWorldScreen extends StatefulWidget {
 }
 
 class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
-  // null = still checking, true = map found, false = not there yet.
+  // null = still checking, true = map found, false = not there yet
   bool? _mapReady;
 
-  // Seeded from saved progress in initState — both used to start empty
-  // every time this screen opened, so leaving the town (even just to check
-  // Profile) reset "visit every place" to zero and, worse, let the same
-  // coins be collected for real gold over and over. See
-  // `UserStats.townVisitedSpotIds`/`townCollectedCoinIds`.
+  // seeded from saved progress in initState. both of these used to start
+  // empty every single time the screen opened, so nipping out to Profile and
+  // coming back reset "visit every place" to zero — and worse let you farm
+  // the same coins for real gold over and over. see
+  // UserStats.townVisitedSpotIds / townCollectedCoinIds
   final Set<String> _visited = <String>{};
   final Set<String> _collectedCoinIds = <String>{};
   int _coinsFound = 0;
@@ -134,13 +134,13 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   void _onEnterSpot(TownSpot spot) => _applyAfterFrame(() => _nearby = spot);
 
   void _onExitSpot(TownSpot spot) {
-    // Guarded on identity so leaving spot A doesn't clear the prompt for
-    // spot B when two sensors overlap on adjacent tiles.
+    // guarded on identity so walking out of spot A doesnt wipe the prompt
+    // for spot B when two sensors overlap on next-door tiles
     if (_nearby?.id != spot.id) return;
     _applyAfterFrame(() {
-      // Re-checked inside the callback: by the time the frame ends the player
-      // may already have walked into the next spot, and clearing it then
-      // would blank a prompt that is currently correct.
+      // re-checked inside the callback - by the time the frame ends youp
+      // might already be stood in the next spot, and clearing it then blanks
+      // a prompt thats actually correct right now
       if (_nearby?.id == spot.id) _nearby = null;
     });
   }
@@ -157,7 +157,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   Future<void> _talkTo(TownNpc npc) async {
     if (_sheetOpen) return;
     _sheetOpen = true;
-    // Cycle the line so a second conversation isn't a copy of the first.
+    // cycle the line so talking to them twice isnt just a copy paste
     final seen = _npcLineIndex[npc.id] ?? 0;
     final line = npc.lines[seen % npc.lines.length];
     _npcLineIndex[npc.id] = seen + 1;
@@ -172,10 +172,9 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
 
   Future<void> _collectCoin(String coinId, int value) async {
     if (!mounted || _collectedCoinIds.contains(coinId)) {
-      // Belt and braces: the component itself is only ever built for
-      // not-yet-collected coins (see the `kTownCoins` loop below), but
-      // guarding here too means this method is safe to call regardless of
-      // how it's reached.
+      // belt and braces. the component is only ever built for coins you
+      // havent picked up yet (kTownCoins loop below) but guarding here too
+      // means this is safe to call however you get to it
       return;
     }
     // Same build-phase hazard as the sensors above — a coin is collected by
@@ -211,7 +210,10 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     // room art on top of a modal was doing instead.
     final choice = await Navigator.of(context).push<TownChoice>(
       MaterialPageRoute<TownChoice>(
-        builder: (_) => TownInteriorScreen(spot: spot),
+        builder: (_) => TownInteriorScreen(
+          spot: spot,
+          lifeAge: widget.life?.age,
+        ),
       ),
     );
 

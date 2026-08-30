@@ -88,9 +88,9 @@ class _SpotlightPainter extends CustomPainter {
       canvas.drawRect(full, scrim);
       return;
     }
-    // Even-odd on a path containing both the screen and the cutout is what
-    // makes the hole transparent; drawing the scrim in four rectangles around
-    // the target would leave visible seams at the corners.
+    // even-odd on a path holding both the screen and the cutout is what
+    // makes the hole see-through. drawing the scrim as four rects round the
+    // target leaves visible seams at the corners, tried it
     final path = Path()
       ..addRect(full)
       ..addRRect(
@@ -169,8 +169,8 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
     }
     await Future<void>.delayed(const Duration(milliseconds: 220));
     if (!mounted) return;
-    // A registered widget wins; a step that only names a tab falls back to
-    // the bar's own geometry. Both are measured, neither is hardcoded.
+    // registered widget wins. a step that only names a tab falls back to the
+    // bar's own geometry. both measured, neither hardcoded
     final registered = TutorialTargets.rectFor(_step.id);
     setState(() {
       _hole = registered ??
@@ -205,13 +205,12 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
   // Placement, derived from the viewport
   // ---------------------------------------------------------------------
   //
-  // **Every number below is a fraction of the window, clamped.** The card
-  // used to sit at fixed insets — 14px from each edge, a 48px gap from the
-  // spotlight, a 460px cap — and fixed pixels mean the card is a different
-  // *proportion* of the screen on every device it runs on: sensible on a
-  // phone, a thin strip lost in the middle of a 1440px window, and cramped
-  // on a 320px one. Sizing off the viewport makes it the same thing
-  // everywhere.
+  // **every number below is a fraction of the window, clamped.** the card
+  // used to sit at fixed insets (14px from each edge, 48px gap from the
+  // spotlight, 460px cap) and fixed pixels mean the card ends up a different
+  // *proportion* of the screen on every device — fine on a phone, a thin
+  // strip lost in the middle of a 1440px window, squashed on a 320px one.
+  // sizing off the viewport makes it the same thing everywhere
   //
   // The clamps are what stop proportion becoming absurd at the extremes: 2%
   // of 1440 is a 29px margin (fine) and 2% of 320 is 6px (too tight), so

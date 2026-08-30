@@ -5,10 +5,10 @@ import '../themes_colors/app_theme.dart';
 
 /// The village map behind a screen, at a strength matched to what sits on it.
 ///
-/// **Why this is one widget instead of four `Positioned.fill`s.** Seven
-/// screens paint this map behind their content, each with its own scrim, and
-/// the alphas had drifted to 0.55, 0.74, 0.78 and 0.82 with nothing recording
-/// why. Two of those screens put body text straight onto the result.
+/// **Why one widget instead of four `Positioned.fill`s.** Seven screens
+/// paint this map behind their stuff, each with its own scrim, and the alphas
+/// had drifted to 0.55, 0.74, 0.78 and 0.82 with nothing anywhere saying why.
+/// two of those screens put body text straight on top of the result.
 ///
 /// **What was actually wrong with the reading screens.** Measured against the
 /// real asset, the 0.74 scrim was fine on paper: white text over the
@@ -20,10 +20,10 @@ import '../themes_colors/app_theme.dart';
 /// background that changes underneath a word.
 ///
 /// So [MapBackdropStyle.reading] uses a pre-blurred copy of the same map
-/// (`tool/make_reading_backdrop.py`) rather than a darker scrim. Blurring
-/// collapses that 7.9-point spread to 2.2 and leaves a floor of 6.5:1, and
-/// doing it at build time rather than with `ImageFiltered` keeps it free at
-/// runtime — this is a static image behind a scrolling list.
+/// (`tool/make_reading_backdrop.py`) instead of just a darker scrim. blur
+/// squashes that 7.9 point spread down to 2.2 with a floor of 6.5:1. doing it
+/// at build time instead of `ImageFiltered` = free at runtime, its a static
+/// image sat behind a scrolling list, no reason to refilter it 60x a second
 enum MapBackdropStyle {
   /// For screens whose content sits in its own opaque cards: the map is
   /// decoration and can be seen properly.

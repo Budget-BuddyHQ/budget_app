@@ -48,18 +48,19 @@ import 'support/app_fonts.dart';
 /// `FlutterError.onError` is overridden trips an assertion inside the binding
 /// itself, and the resulting failure describes the harness instead of the app.
 void main() {
-  // Registers the real typefaces up front. `google_fonts` resolves a
-  // bundled face asynchronously on first use, so without this only the
-  // faces touched by the first build are loaded when anything is
-  // measured — see test/support/app_fonts.dart.
+  // registers the real typefaces up front. google_fonts resolves a bundled
+  // face async on first use, so without this only the faces the first build
+  // happened to touch are loaded by the time anything gets measured.
+  // see test/support/app_fonts.dart
   setUpAll(loadAppFonts);
 
   Widget wrap(Widget child) => MultiProvider(
     providers: [
       ChangeNotifierProvider<UserStatsController>(
-        // Never initialised: the service reads through a nullable client, so
-        // an uninitialised Supabase yields signed-out defaults rather than
-        // throwing. That is the state a brand-new player is in.
+        // never initialised on purpose — the service reads through a
+        // nullable client so an uninitialised Supabase just gives you
+        // signed-out defaults instead of throwing. thats the state a
+        // brand new player is in anyway
         create: (_) => UserStatsController(service: SupabaseService.instance),
       ),
       ChangeNotifierProvider<AppSettingsController>(
@@ -82,9 +83,10 @@ void main() {
     child: MaterialApp(
       theme: AppTheme.getLightTheme(),
       home: child,
-      // The named routes the screens actually push. Without them a tap that
-      // navigates fails with "Could not find a generator for route", which
-      // looks like an app bug in the report and is really a gap in the
+      // the named routes the screens actually push. without these a tap
+      // that navigates dies with "Could not find a generator for route",
+      // which looks like an app bug in the report but is really a hole in
+      // the
       // harness — and worse, it masks whatever the destination screen would
       // have done.
       routes: <String, WidgetBuilder>{

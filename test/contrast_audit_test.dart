@@ -113,10 +113,10 @@ Color _composite(Color fg, Color bg) {
 /// alternative — testing every stop — flags a failure for a two-pixel band at
 /// one end of a sweep, which is noise rather than a defect.
 Color? _paintOf(Widget w) {
-  // Kit widgets paint their background from a nine-sliced PNG that sits as a
-  // *sibling* of the text, not an ancestor of it — so the plain walk sees
-  // straight through the art to the page behind and measures against the
-  // wrong thing. These three carry the measured mean of their own art for
+  // kit widgets paint their background from a nine-sliced PNG thats a
+  // *sibling* of the text and not an ancestor, so the plain walk looks
+  // straight through the art to the page behind it and measures the wrong
+  // thing entirely. these three carry the measured mean of their own art for
   // exactly this reason.
   if (w is PixelFrame) return w.style.surface;
   if (w is PixelRibbon) return w.tone.surface;

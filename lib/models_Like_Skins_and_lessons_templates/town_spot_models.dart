@@ -14,7 +14,22 @@ enum TownSpotKind {
   school('School', Icons.school_rounded, Color(0xFFB388FF)),
   job('Job Board', Icons.work_rounded, Color(0xFF4BD2A3)),
   home('Your House', Icons.cottage_rounded, Color(0xFFFF8FB1)),
-  noticeBoard('Notice Board', Icons.push_pin_rounded, Color(0xFFFFB74D));
+  noticeBoard('Notice Board', Icons.push_pin_rounded, Color(0xFFFFB74D)),
+
+  // --- The second six -------------------------------------------------
+  //
+  // The first six cover the money decisions a school lesson would list.
+  // These cover the ones a *week* contains: somewhere to eat, somewhere to
+  // get better without paying, somewhere that charges you for being ill,
+  // somewhere that buys your things back for less than you paid. The town is
+  // meant to be where the realistic simulation happens, and a town with six
+  // buildings is a lesson plan with a map behind it.
+  market('Market Stalls', Icons.storefront_rounded, Color(0xFF9CCC65)),
+  cafe('The Cafe', Icons.local_cafe_rounded, Color(0xFFD4A373)),
+  clinic('Clinic', Icons.local_hospital_rounded, Color(0xFFFF8A80)),
+  library('Library', Icons.menu_book_rounded, Color(0xFF80CBC4)),
+  pawnShop('Pawn Shop', Icons.watch_rounded, Color(0xFFCE93D8)),
+  park('The Park', Icons.park_rounded, Color(0xFF66BB6A));
 
   const TownSpotKind(this.label, this.icon, this.accent);
   final String label;
@@ -251,6 +266,242 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         outcome:
             'Pocketed. Small amounts, tracked, turn into big amounts — that '
             'is the whole trick, written on a scrap of paper.',
+        xp: 10,
+        literacy: 8,
+      ),
+    ],
+  ),
+
+  // --- The second six --------------------------------------------------
+  TownSpot(
+    id: 'spot_market',
+    kind: TownSpotKind.market,
+    title: 'Market Stalls',
+    prompt:
+        'Loose apples are \$2 a bag at one stall and \$3 at the next, where '
+        'they look better. Neither has a price per kilo.',
+    tileX: 27,
+    tileY: 21,
+    choices: [
+      TownChoice(
+        label: 'Take the \$2 bag',
+        outcome:
+            'Cheaper, and you have no idea whether it was better value — '
+            'without a weight there is nothing to compare. That is why shops '
+            'are made to print a unit price.',
+        gold: -2,
+        xp: 5,
+        literacy: 5,
+      ),
+      TownChoice(
+        label: 'Pay \$3 for the better-looking ones',
+        outcome:
+            'Sometimes right. Quality is a real thing to buy — the trap is '
+            'paying for the *display* and calling it quality.',
+        gold: -3,
+        xp: 5,
+      ),
+      TownChoice(
+        label: 'Ask both stalls what the bag weighs',
+        outcome:
+            'The \$3 bag is nearly twice the weight, so it is cheaper per '
+            'apple. One question turned a guess into a number.',
+        gold: -3,
+        xp: 9,
+        literacy: 10,
+      ),
+    ],
+  ),
+  TownSpot(
+    id: 'spot_cafe',
+    kind: TownSpotKind.cafe,
+    title: 'The Cafe',
+    prompt:
+        'A hot chocolate is \$4.50. You have been in three times this week '
+        'already.',
+    tileX: 25,
+    tileY: 29,
+    choices: [
+      TownChoice(
+        label: 'Get one — it is only \$4.50',
+        outcome:
+            'It is only \$4.50, and four times a week is \$936 a year. Small '
+            'repeated spending is the hardest kind to see, because no single '
+            'one of them is the problem.',
+        gold: -5,
+        xp: 4,
+        literacy: 6,
+      ),
+      TownChoice(
+        label: 'Skip it today',
+        outcome:
+            'Nothing dramatic happened. That is what most good money '
+            'decisions look like — a thing you did not do, and no story '
+            'afterwards.',
+        xp: 8,
+        literacy: 6,
+      ),
+      TownChoice(
+        label: 'Work out what the week has cost',
+        outcome:
+            'Three visits is \$13.50 — about what a whole meal costs. '
+            'Counting it is the only way a habit ever becomes a decision.',
+        xp: 10,
+        literacy: 10,
+      ),
+    ],
+  ),
+  TownSpot(
+    id: 'spot_clinic',
+    kind: TownSpotKind.clinic,
+    title: 'Clinic',
+    prompt:
+        'You have had a cough for two weeks. The visit is \$40, or free if '
+        'you wait nine days for the community slot.',
+    tileX: 25,
+    tileY: 15,
+    choices: [
+      TownChoice(
+        label: 'Pay the \$40 and be seen today',
+        outcome:
+            'Money buys time, which is most of what money buys. Nine days of '
+            'a cough for \$40 is a trade only you can price.',
+        gold: -40,
+        xp: 6,
+        literacy: 7,
+      ),
+      TownChoice(
+        label: 'Wait for the free slot',
+        outcome:
+            'You keep the \$40 and cough for another nine days. A perfectly '
+            'good answer — and the reason free options are worth knowing '
+            'about *before* you need one.',
+        xp: 8,
+        literacy: 8,
+      ),
+      TownChoice(
+        label: 'Ask what happens if it gets worse',
+        outcome:
+            'They tell you which symptoms mean come back immediately. The '
+            'cheapest thing in any healthcare system is knowing when the '
+            'cheap option stops being the cheap option.',
+        xp: 10,
+        literacy: 10,
+      ),
+    ],
+  ),
+  TownSpot(
+    id: 'spot_library',
+    kind: TownSpotKind.library,
+    title: 'Library',
+    prompt:
+        'A free course on Saturday mornings: six weeks, three hours each. '
+        'The paid version online is \$180 and you can do it whenever.',
+    tileX: 14,
+    tileY: 24,
+    choices: [
+      TownChoice(
+        label: 'Sign up for the free one',
+        outcome:
+            'Eighteen hours of your Saturdays, and \$180 kept. Free never '
+            'means free — it means paid for in time, which is the currency '
+            'you have most of when you are young.',
+        xp: 10,
+        literacy: 10,
+      ),
+      TownChoice(
+        label: 'Buy the online one',
+        outcome:
+            '\$180 to do it at your own pace. Worth it if your Saturdays are '
+            'already spoken for, and worth nothing if you never open it — '
+            'which is what happens to most of them.',
+        gold: -60,
+        xp: 6,
+        literacy: 7,
+      ),
+      TownChoice(
+        label: 'Borrow the book on it instead',
+        outcome:
+            'Free, slower, and entirely up to you whether it happens. The '
+            'library is the most under-used free thing in any town.',
+        xp: 9,
+        literacy: 9,
+      ),
+    ],
+  ),
+  TownSpot(
+    id: 'spot_pawn',
+    kind: TownSpotKind.pawnShop,
+    title: 'Pawn Shop',
+    prompt:
+        'The console you paid \$300 for last year. They offer \$85 for it, or '
+        '\$60 now as a loan you can buy back for \$80.',
+    tileX: 28,
+    tileY: 34,
+    choices: [
+      TownChoice(
+        label: 'Sell it for \$85',
+        outcome:
+            'A year of use cost you \$215. That is depreciation, and it is why '
+            'almost nothing you buy is an investment.',
+        gold: 85,
+        xp: 7,
+        literacy: 9,
+      ),
+      TownChoice(
+        label: 'Take the \$60 loan',
+        outcome:
+            '\$20 to borrow \$60 for a month is a third of it — an enormous '
+            'rate, and the reason pawn shops exist. Sometimes it is still the '
+            'only door open.',
+        gold: 60,
+        xp: 5,
+        literacy: 10,
+      ),
+      TownChoice(
+        label: 'Keep it and sell it privately',
+        outcome:
+            'Listing it yourself gets nearer \$140, for the cost of a week of '
+            'messages and meeting a stranger. Convenience always has a price '
+            'and it is rarely printed.',
+        xp: 9,
+        literacy: 9,
+      ),
+    ],
+  ),
+  TownSpot(
+    id: 'spot_park',
+    kind: TownSpotKind.park,
+    title: 'The Park',
+    prompt:
+        'An afternoon free. The park costs nothing; the arcade across the '
+        'road is \$12 for the same three hours.',
+    tileX: 21,
+    tileY: 33,
+    choices: [
+      TownChoice(
+        label: 'Stay in the park',
+        outcome:
+            'Three hours, nothing spent, and a good afternoon. Not every '
+            'thing worth doing costs money — a budget with no free days in it '
+            'is a budget nobody keeps.',
+        xp: 9,
+        literacy: 7,
+      ),
+      TownChoice(
+        label: 'Go to the arcade',
+        outcome:
+            'Also a good afternoon, for \$12. Spending on something you '
+            'actually enjoy is what the money is for — as long as it was a '
+            'choice and not a default.',
+        gold: -12,
+        xp: 6,
+      ),
+      TownChoice(
+        label: 'Park now, arcade next week',
+        outcome:
+            'You get both, a week apart, for \$12 instead of \$24. Spacing '
+            'things out is the quietest saving there is.',
         xp: 10,
         literacy: 8,
       ),

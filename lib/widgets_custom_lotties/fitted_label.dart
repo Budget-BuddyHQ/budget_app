@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 
 /// A single-line label that **shrinks to fit instead of truncating**.
 ///
-/// The app had 46 separate `Text(maxLines: 1, overflow: TextOverflow
-/// .ellipsis)` call sites, and on a real phone a lot of them were firing:
-/// "Explore the Town" became "Explore th…", "Pick a money habit" became
-/// "Pick a money ha…", "Current Objective" became "Curren…". An ellipsis is
-/// a reasonable default for *user data* of unknown length (a username, a
-/// company name) but it is the wrong answer for UI chrome the app wrote
-/// itself, where the string is known, short, and load-bearing — a label
-/// that says "Curren…" has failed at the one thing it exists to do.
+/// There were 46 separate `Text(maxLines: 1, overflow: TextOverflow
+/// .ellipsis)` call sites and on an actual phone loads of them were firing.
+/// "Explore the Town" -> "Explore th…", "Pick a money habit" -> "Pick a
+/// money ha…", "Current Objective" -> "Curren…". ellipsis is fine for *user
+/// data* where you dont know the length (a username, a company name) but its
+/// the wrong call for UI text the app wrote itself, where you already know
+/// the string and its short. a label that says "Curren…" has failed at the
+/// one job it had.
 ///
 /// Scaling the whole line down keeps the full phrase at every width. On the
 /// sizes this app actually runs at the shrink is a point or two of font
@@ -34,8 +34,8 @@ class FittedLabel extends StatelessWidget {
   final TextStyle? style;
   final TextAlign? textAlign;
 
-  /// Where the (possibly narrower) scaled line sits in the space it is
-  /// given. Left by default because most labels here head a column.
+  /// where the (maybe narrower) scaled line sits in the space its given.
+  /// left by default since most labels here head a column
   final AlignmentGeometry alignment;
 
   /// How far the text may shrink before truncation is the better trade.

@@ -352,9 +352,9 @@ class UserStats {
   }
 
   // ---------------- Money Habits ----------------
-  // All read/written the same way as everything else above: ad hoc keys
-  // inside `spendingHabits`, no migration. See
-  // docs/MONEY_HABITS_FEATURE.md for the full data-flow reference.
+  // read + written the same way as everything else above, ad hoc keys
+  // inside spendingHabits, no migration. docs/MONEY_HABITS_FEATURE.md has
+  // the full data flow if you need it
 
   /// Independent progression counter driving the savings jar's fill
   /// stage — deliberately separate from [xp] so the jar reacts only to
@@ -551,11 +551,11 @@ class UserStats {
           .toList(growable: false),
       'portfolio_history': portfolioHistory,
       'holdings': holdings,
-      // NOTE: age/gender are deliberately NOT written here. They were briefly
-      // mirrored into `age`/`gender` columns, but those columns live on
-      // `profiles` (the table with `disabled` + `profiles_id_fkey`), not on
-      // `user_stats` — so the upsert failed with "Could not find the 'age'
-      // column of 'user_stats' in the schema cache" and every save silently
+      // NOTE age/gender deliberately NOT written here!! they were mirrored
+      // into age/gender columns for a bit, but those columns live on
+      // `profiles` (the one with disabled + profiles_id_fkey), not on
+      // user_stats. so the upsert died with "Could not find the 'age'
+      // column of 'user_stats' in the schema cache" and every save quietly
       // fell back to cached data. The app reads the bucketed AgeBand /
       // GenderIdentity out of `spending_habits` above regardless, so nothing
       // functional depends on a mirror. If one is wanted again, write it to

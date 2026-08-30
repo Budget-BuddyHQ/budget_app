@@ -169,14 +169,14 @@ class _NineSlice extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // The caps are everything outside the slice, in source pixels.
+        // caps = everything outside the slice, in source pixels
         final capsWide = slice.left + (source.width - slice.right);
         final capsTall = slice.top + (source.height - slice.bottom);
-        // `<=`, not `<`. A destination exactly equal to the caps leaves a
-        // stretchable middle of zero, and the fit maths fails on that just
-        // as it does on a negative one — which is how a 52px-tall button
-        // drawn from art with 52px of vertical caps still asserted after the
-        // first version of this guard.
+        // `<=` not `<`!! a destination exactly equal to the caps leaves a
+        // stretchable middle of zero and the fit maths falls over on that
+        // the same as it does on a negative one. which is exactly how a
+        // 52px tall button drawn from art with 52px of vertical caps STILL
+        // asserted after the first version of this guard
         final tooNarrow =
             constraints.maxWidth.isFinite && constraints.maxWidth <= capsWide;
         final tooShort =
@@ -188,7 +188,7 @@ class _NineSlice extends StatelessWidget {
           fit: BoxFit.fill,
           filterQuality: FilterQuality.none,
           centerSlice: slice,
-          // A missing asset must degrade to something styled rather than to a
+          // a missing asset has to degrade to something styled, not to a
           // broken-image glyph sitting inside the layout.
           errorBuilder: (_, _, _) => fallback(),
         );

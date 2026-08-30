@@ -131,9 +131,12 @@ asked on a feed and asked after a walk are not the same experience.
 What happens inside a building: a prompt and two to four choices, each with an
 outcome line that explains the money idea rather than scoring it.
 
-**Encounters rotate daily.** 38 scenarios across the six buildings — five or
-six each — live in `town_scenarios.dart`, and the town picks by date: fixed
-within a day so the place has a state you can plan around, different tomorrow.
+**Encounters rotate by day *and* by your age.** 69 scenarios across twelve
+buildings live in `town_scenarios.dart`, and the town picks from the date and
+the character's age: fixed within a visit so the place has a state you can plan
+around, different tomorrow and different a decade later. The age is *hashed*
+into the draw rather than multiplied — a linear mix repeats for a player
+ageing in round decades, which is how most people skim a life.
 The per-spot floor is five rather than two, because the rotation is by *day*
 and at two scenes a building repeats itself every other day, which is about how
 often somebody actually plays.

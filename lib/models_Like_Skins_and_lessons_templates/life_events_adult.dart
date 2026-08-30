@@ -6,11 +6,12 @@ import 'life_sim_models.dart';
 /// The years where money decisions get expensive.
 ///
 /// **The gap this closes.** Counting eligible events by age showed the pool
-/// thinning badly after about 45 — the years a run spends the *longest* in
-/// were drawing from the same handful of scenes, so the second half of every
-/// life felt like a rerun of the first. It also skipped most of what actually
-/// happens to an adult's money: insurance, a mortgage, a redundancy, a parent
-/// who needs help, a scam aimed squarely at someone with savings.
+/// thinning out badly after about 45. the years a run spends the *longest*
+/// in were pulling from the same handful of scenes, so the back half of every
+/// life felt like a rerun of the front half. and it skipped most of what
+/// actually happens to an adults money anyway — insurance, a mortgage, being
+/// made redundant, a parent who needs help, a scam aimed right at somebody
+/// with savings.
 ///
 /// **What makes these different from the earlier packs.** A teenager's money
 /// events are about a single purchase. These are about *systems* — the choice

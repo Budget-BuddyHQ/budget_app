@@ -23,9 +23,15 @@ import '../../../models_Like_Skins_and_lessons_templates/town_scenarios.dart';
 ///
 /// Pops with the chosen [TownChoice], or with null if the player leaves.
 class TownInteriorScreen extends StatefulWidget {
-  const TownInteriorScreen({super.key, required this.spot});
+  const TownInteriorScreen({super.key, required this.spot, this.lifeAge});
 
   final TownSpot spot;
+
+  /// The character's age, when this was entered from a run.
+  ///
+  /// Null when the town is being wandered on its own, in which case the
+  /// building rotates on the calendar day alone. See [townEncounterFor].
+  final int? lifeAge;
 
   @override
   State<TownInteriorScreen> createState() => _TownInteriorScreenState();
@@ -58,9 +64,9 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
   Widget build(BuildContext context) {
     final spot = widget.spot;
     return Scaffold(
-      // The floor colour sampled out of the room art's bottom strip, so the
-      // area below the backdrop reads as more floor rather than as the app
-      // background showing through.
+      // floor colour sampled straight out of the room art's bottom strip so
+      // the area under the backdrop reads as more floor and not as the app
+      // background leaking through
       backgroundColor: const Color(0xFF593F21),
       body: Stack(
         fit: StackFit.expand,
@@ -69,11 +75,11 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
           SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                // The Adventure map locks landscape, and this screen is
-                // pushed on top of it, so landscape is the *common* case
-                // here rather than the edge case. Side by side keeps the
-                // room visible next to the decision instead of squashing
-                // both into a short column.
+                // the Adventure map locks landscape and this screen gets
+                // pushed on top of it, so landscape is the *normal* case
+                // here, not the edge case. side by side keeps the room
+                // visible next to the decision instead of squashing them
+                // both into one short column
                 final wide =
                     constraints.maxWidth > constraints.maxHeight * 1.15;
                 final stage = _InteriorStage(
@@ -83,6 +89,7 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
                 );
                 final panel = _DecisionPanel(
                   spot: spot,
+                  lifeAge: widget.lifeAge,
                   busy: _confirming != null,
                   onChoose: _choose,
                   onLeave: () => Navigator.of(context).pop(),
@@ -395,12 +402,14 @@ class _InteriorNpc extends StatelessWidget {
 class _DecisionPanel extends StatelessWidget {
   const _DecisionPanel({
     required this.spot,
+    required this.lifeAge,
     required this.busy,
     required this.onChoose,
     required this.onLeave,
   });
 
   final TownSpot spot;
+  final int? lifeAge;
   final bool busy;
   final ValueChanged<TownChoice> onChoose;
   final VoidCallback onLeave;
@@ -408,9 +417,10 @@ class _DecisionPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Today's encounter, not the spot's built-in one. Each building has
-    // several scenes and rotates them daily — see [townEncounterFor] for why
-    // the choice is fixed within a day rather than rerolled on every visit.
-    final encounter = townEncounterFor(spot);
+    // several scenes and rotates them by day *and* by the character's age —
+    // see [townEncounterFor] for why the choice is fixed within a day rather
+    // than rerolled on every visit, and why a life's years move it too.
+    final encounter = townEncounterFor(spot, lifeAge: lifeAge);
 
     return PixelPanel(
       child: Column(

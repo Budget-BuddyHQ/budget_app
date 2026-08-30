@@ -35,9 +35,9 @@ class LifeSimController extends ChangeNotifier {
     _happiness = origin.startingHappiness;
     _smarts = origin.startingSmarts;
     _looks = 40 + _random.nextInt(35);
-    // Two traits rolled at birth. These are the hidden-modifier layer: they
-    // gate which events can fire, so two runs with identical stats still
-    // diverge.
+    // two traits rolled at birth. hidden modifier layer basically - they
+    // gate which events can fire, so two runs with the same stats still
+    // end up different
     final pool = List<LifeTrait>.from(LifeTrait.values)..shuffle(_random);
     _traits.addAll(pool.take(2));
     _strictness = HouseholdStrictness
@@ -79,12 +79,12 @@ class LifeSimController extends ChangeNotifier {
   // walk to the bank. These two fields are what make leaving the house a
   // *situation* instead of a menu item: one rolled once at birth, one
   // re-rolled every year. See `outing_rules.dart`.
-  // Assigned in the constructor body, NOT via `late final` with a random
-  // initializer. A lazily-initialised random field consumes its number the
-  // first time anything *reads* it, so the whole RNG sequence — every later
-  // event draw, every expense shock — would silently depend on whether the
-  // UI happened to check `outingPermission` this frame. Same seed, same
-  // life, every time is worth more than the one saved line.
+  // assigned in the constructor body, NOT `late final` with a random
+  // initializer!! a lazy random field eats its number the first time
+  // something *reads* it, so the whole rng sequence (every later event draw,
+  // every expense shock) would quietly depend on whether the UI happened to
+  // check outingPermission that frame. took me ages to work out. same seed
+  // same life every time is worth way more than the one saved line
   HouseholdStrictness _strictness = HouseholdStrictness.normal;
   HouseholdStrictness get strictness => _strictness;
 
@@ -223,15 +223,14 @@ class LifeSimController extends ChangeNotifier {
     _money += income;
     _money -= needsBudget + wantsBudget;
 
-    // The paycheck line, every single year there is one.
+    // paycheck line, every single year theres one.
     //
-    // Before this, a year where the budget worked produced *no* money line
-    // at all — the split ran silently and only ever spoke up to complain
-    // about a shortfall or debt interest. So the one mechanic this game
-    // exists to teach was invisible precisely on the years it went well,
-    // and the feed's implicit lesson was "budgeting is a thing that only
-    // appears when you get it wrong". Naming the three numbers each year
-    // is what turns it into a routine the player recognises.
+    // before this a year where the budget actually worked produced no money
+    // line at all. the split ran silently and only ever spoke up to moan
+    // about a shortfall or debt interest — so the one mechanic this whole
+    // game exists to teach was invisible exactly on the years it went well.
+    // feed was basically saying "budgeting only shows up when you mess it
+    // up". naming the three numbers every year is what makes it a routine.
     _setLog(
       _budgetSet
           ? 'Paycheck $income. Needs $needsBudget, wants $wantsBudget, '
@@ -242,7 +241,7 @@ class LifeSimController extends ChangeNotifier {
     );
 
     if (needsBudget < actualNeeds) {
-      // Needs are not optional; the shortfall comes out of you.
+      // needs arent optional, shortfall comes out of youp
       final shortfall = actualNeeds - needsBudget;
       _money -= shortfall;
       _health = _clamp(_health - 4);
@@ -256,7 +255,7 @@ class LifeSimController extends ChangeNotifier {
     }
 
     if (_wantsPct <= 5) {
-      // A budget with no room to live in is one you abandon.
+      // budget with no room to live in = one you abandon
       _happiness = _clamp(_happiness - 4);
     }
 
@@ -427,8 +426,8 @@ class LifeSimController extends ChangeNotifier {
       return;
     }
     _age++;
-    // Re-rolled every year, so whether the town is open changes over a
-    // life rather than being fixed at birth.
+    // re-rolled every year so whether the town is open changes as you go,
+    // not fixed at birth
     _weather = WeatherInfo.roll(_random);
 
     if (!isDependent) {
@@ -776,6 +775,41 @@ class LifeSimController extends ChangeNotifier {
   /// Returns copy aimed at the player rather than a boolean, because "You
   /// are too little for that" *is* the content at age three — being told what
   /// you cannot do yet is how the early years teach that a life has stages.
+  /// Actions the town has a building for.
+  ///
+  /// The library, the clinic and the park are places. So is a job board. The
+  /// menu had a button for each of them, which meant the whole simulation
+  /// could be played from a list without ever opening the map — and the map
+  /// is where this game is supposed to happen.
+  ///
+  /// These are not removed, because the map is not always open to you: a
+  /// seven-year-old, somebody ill, somebody whose family says no on a wet
+  /// Tuesday. When you *can* go, the menu points at the door instead of
+  /// duplicating what is behind it.
+  /// Whether this is something the town has a building for.
+  ///
+  /// The library, the clinic, the park and the job board are all places, and
+  /// the menu had a button for each — so the whole simulation could be played
+  /// from a list without ever opening the map, which is where this game is
+  /// meant to happen.
+  ///
+  /// **Blocking them was the wrong fix**, and the test suite said so within a
+  /// minute: `life_age_gates_test` asserts that seeing a doctor is never
+  /// blocked, `budget_teaching_test` asserts an adult with no job can always
+  /// find one, and the library is the only way to raise Smarts on demand.
+  /// Making somebody walk across a map to be treated, to look for work, or to
+  /// get cleverer is a worse simulation, not a more realistic one — and the
+  /// map is not always open to you anyway (see [outingPermission]).
+  ///
+  /// So the menu keeps every door and pays less for using them. Going in
+  /// person is better; staying in is still allowed. That is also true.
+  static bool hasTownEquivalent(LifeAction action) => const <LifeAction>{
+    LifeAction.library,
+    LifeAction.goOut,
+    LifeAction.doctor,
+    LifeAction.findJob,
+  }.contains(action);
+
   String? gateFor(LifeAction action) {
     if (finished) return 'This life is over';
     final minAge = _minimumAge[action] ?? 0;
@@ -830,8 +864,15 @@ class LifeSimController extends ChangeNotifier {
     if (!isDependent) {
       _money -= 40;
     }
-    _happiness = _clamp(_happiness + 10);
-    _setLog('Had a great time: +10 Happiness.', kind: LifeLogKind.life);
+    // Six, not ten, for the same reason as the library: the park is a place
+    // on the map, and an afternoon booked from a menu is the lesser version
+    // of one you walked to.
+    _happiness = _clamp(_happiness + 6);
+    _setLog(
+      'Had a good afternoon: +6 Happiness. The park in town is better, and '
+      'free.',
+      kind: LifeLogKind.life,
+    );
     notifyListeners();
   }
 
@@ -1061,9 +1102,14 @@ class LifeSimController extends ChangeNotifier {
   /// that costs nothing is itself a small lesson.
   void visitLibrary() {
     if (!allows(LifeAction.library)) return;
-    _smarts = _clamp(_smarts + 4);
+    // Two, not four. The library is a building in the town, and reading about
+    // it from the menu is the version you do without leaving the house —
+    // which is worth something and worth less. Walking there and picking the
+    // free course pays the full amount through [applyTownOutcome].
+    _smarts = _clamp(_smarts + 2);
     _setLog(
-      'Spent an afternoon at the library: +4 Smarts. Cost: nothing.',
+      'Read at home for the afternoon: +2 Smarts. The library in town is '
+      'worth the walk.',
       kind: LifeLogKind.learning,
     );
     notifyListeners();

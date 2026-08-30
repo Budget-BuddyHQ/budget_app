@@ -8,7 +8,7 @@ stick when you have to spend money to learn them.*
 **Built in:** Flutter/Dart, with Supabase for accounts, cloud save and
 leaderboards, and live market data from Finnhub and Twelve Data.
 
-**Scale:** ~72,000 lines of Dart across 118 files, 993 automated tests,
+**Scale:** ~72,000 lines of Dart across 118 files, 1,000 automated tests,
 `flutter analyze` clean.
 
 ---
@@ -130,10 +130,11 @@ A tile map you walk around with six buildings and five people. Walking there is
 the game; the decision is the lesson. The same question asked on a feed and
 asked after a walk are not the same experience.
 
-**How it was built:** Bonfire/Flame over a Tiled map. Encounters rotate
-**daily** — 38 scenes across six buildings, five or six each, picked by date
-and fixed within a day so the place has a state you can plan around and a
-different one tomorrow. Every encounter has at least one option that costs
+**How it was built:** Bonfire/Flame over a Tiled map. Twelve buildings and 69
+scenes, picked from the date *and* the character's age — so a bank visited at
+twenty says something different at thirty, and the town is part of the life
+rather than a side attraction. What you decide out there lands on the
+character's cash, smarts and happiness, not only on the account. Every encounter has at least one option that costs
 nothing, and the test suite refuses to accept one that does not: a scene where
 spending is compulsory teaches the opposite of the point.
 
@@ -194,7 +195,7 @@ setting.
 ### Everything that can be pure Dart is
 The life simulation, the match-3 engine, the quiz banks, the town scenarios and
 the habit model have no Flutter dependency and take an injectable `Random`.
-That is why 993 tests run in under thirty seconds and why the rules can be
+That is why 1,000 tests run in under thirty seconds and why the rules can be
 tested as *rules* rather than through a UI.
 
 ### The art is generated and checked
