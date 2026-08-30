@@ -373,17 +373,19 @@ class _LevelBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chip = AppTheme.tintedChip(const Color(0xFFFFD45C), alpha: 0.14);
+    final chip = AppTheme.tintedChip(const Color(0xFFFFD45C), alpha: 0.18);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: chip.fill,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: const Color(0xFFFFD45C).withValues(alpha: 0.28),
+            // Slightly brighter border and thicker stroke for visibility
+            color: const Color(0xFFFFD45C).withValues(alpha: 0.45),
+            width: 1.5,
           ),
         ),
         child: Row(
@@ -396,34 +398,32 @@ class _LevelBanner extends StatelessWidget {
                     'Level ${level.number} · ${level.name}',
                     style: GoogleFonts.pixelifySans(
                       color: chip.ink,
-                      fontSize: 13,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
                     level.rule,
                     style: GoogleFonts.quicksand(
                       color: AppTheme.textMuted,
-                      fontSize: 11,
-                      height: 1.3,
+                      fontSize: 13,
+                      height: 1.35,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             PopupMenuButton<int>(
               tooltip: 'Pick a level',
-              icon: Icon(Icons.list_rounded, size: 20, color: chip.ink),
+              icon: Icon(Icons.list_rounded, size: 24, color: chip.ink),
               onSelected: onPick,
               itemBuilder: (context) => [
                 for (final l in kCascadeLevels)
                   PopupMenuItem<int>(
                     value: l.number,
-                    // Later levels stay listed but disabled, so the ladder is
-                    // visible from level one — you can see what is coming.
                     enabled: l.number <= unlocked,
                     child: Text(
                       'Level ${l.number} · ${l.name}'
@@ -722,7 +722,7 @@ class _Board extends StatelessWidget {
   }
 }
 
-class _TileView extends StatelessWidget {
+class _TileView extends StatefulWidget {
   const _TileView({
     required this.tile,
     required this.size,
@@ -740,47 +740,64 @@ class _TileView extends StatelessWidget {
   final void Function(Point<int> delta) onSwipe;
 
   @override
+  State<_TileView> createState() => _TileViewState();
+}
+
+class _TileViewState extends State<_TileView> {
+  Offset _dragOffset = Offset.zero;
+  bool _swiped = false;
+
+  @override
   Widget build(BuildContext context) {
-    final chip = AppTheme.tintedChip(tile.kind.color, alpha: 0.26);
+    final chip = AppTheme.tintedChip(widget.tile.kind.color, alpha: 0.26);
 
     return GestureDetector(
-      onTap: onTap,
-      // Swipe as well as tap-tap. Under about eight a drag is the natural
-      // gesture and the two-tap version is a rule to learn; over about twelve
-      // the taps are more precise. Supporting both costs one callback.
-      onPanEnd: (details) {
-        final v = details.velocity.pixelsPerSecond;
-        if (v.distance < 120) return;
-        onSwipe(
-          v.dx.abs() > v.dy.abs()
-              ? Point(v.dx > 0 ? 1 : -1, 0)
-              : Point(0, v.dy > 0 ? 1 : -1),
-        );
+      onTap: widget.onTap,
+      onPanStart: (_) {
+        _dragOffset = Offset.zero;
+        _swiped = false;
+      },
+      onPanUpdate: (details) {
+        if (_swiped) return;
+
+        _dragOffset += details.delta;
+
+        // Trigger swap once dragged past 25% of cell size
+        final threshold = widget.size * 0.25;
+
+        if (_dragOffset.dx.abs() > threshold || _dragOffset.dy.abs() > threshold) {
+          _swiped = true;
+          if (_dragOffset.dx.abs() > _dragOffset.dy.abs()) {
+            widget.onSwipe(Point(_dragOffset.dx > 0 ? 1 : -1, 0));
+          } else {
+            widget.onSwipe(Point(0, _dragOffset.dy > 0 ? 1 : -1));
+          }
+        }
       },
       child: Padding(
-        padding: EdgeInsets.all(size * 0.06),
+        padding: EdgeInsets.all(widget.size * 0.06),
         child: AnimatedScale(
-          scale: clearing ? 1.25 : (selected ? 1.08 : 1.0),
+          scale: widget.clearing ? 1.25 : (widget.selected ? 1.08 : 1.0),
           duration: const Duration(milliseconds: 150),
           curve: Curves.easeOut,
           child: AnimatedOpacity(
-            opacity: clearing ? 0.25 : 1.0,
+            opacity: widget.clearing ? 0.25 : 1.0,
             duration: const Duration(milliseconds: 150),
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: chip.fill,
-                borderRadius: BorderRadius.circular(size * 0.22),
+                borderRadius: BorderRadius.circular(widget.size * 0.22),
                 border: Border.all(
-                  color: selected
+                  color: widget.selected
                       ? Colors.white
-                      : tile.kind.color.withValues(alpha: 0.45),
-                  width: selected ? 2.5 : 1.5,
+                      : widget.tile.kind.color.withValues(alpha: 0.45),
+                  width: widget.selected ? 2.5 : 1.5,
                 ),
               ),
               child: Center(
                 child: Text(
-                  tile.kind.emoji,
-                  style: TextStyle(fontSize: size * 0.44),
+                  widget.tile.kind.emoji,
+                  style: TextStyle(fontSize: widget.size * 0.44),
                 ),
               ),
             ),
@@ -790,7 +807,6 @@ class _TileView extends StatelessWidget {
     );
   }
 }
-
 class _FlashBanner extends StatelessWidget {
   const _FlashBanner({required this.text, required this.colour});
 
