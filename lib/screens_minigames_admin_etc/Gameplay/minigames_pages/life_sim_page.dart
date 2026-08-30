@@ -1608,41 +1608,49 @@ class _BottomMenu extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _MenuButton(
-                    label:
-                        stage == LifeStage.baby ||
-                            stage == LifeStage.child ||
-                            stage == LifeStage.teen
-                        ? 'School'
-                        : 'Career',
-                    icon: Icons.work_rounded,
-                    color: const Color(0xFF58C7FF),
-                    onTap: blocked ? null : onCareer,
+                  Expanded(
+                    child: _MenuButton(
+                      label: stage == LifeStage.baby ||
+                              stage == LifeStage.child ||
+                              stage == LifeStage.teen
+                          ? 'School'
+                          : 'Career',
+                      icon: Icons.work_rounded,
+                      color: const Color(0xFF58C7FF),
+                      onTap: blocked ? null : onCareer,
+                    ),
                   ),
-                  _MenuButton(
-                    label: 'People',
-                    icon: Icons.favorite_rounded,
-                    color: const Color(0xFFFF8FB1),
-                    onTap: blocked ? null : onRelationships,
+                  Expanded(
+                    child: _MenuButton(
+                      label: 'People',
+                      icon: Icons.favorite_rounded,
+                      color: const Color(0xFFFF8FB1),
+                      onTap: blocked ? null : onRelationships,
+                    ),
                   ),
-                  _AgeButton(key: ageKey, onTap: blocked ? null : onAge),
-                  _MenuButton(
-                    label: 'Do',
-                    icon: Icons.self_improvement_rounded,
-                    color: const Color(0xFFB388FF),
-                    onTap: blocked ? null : onActivities,
+                  Expanded(
+                    child: _AgeButton(key: ageKey, onTap: blocked ? null : onAge),
                   ),
-                  _MenuButton(
-                    label: 'Money',
-                    icon: Icons.trending_up_rounded,
-                    color: const Color(0xFF85EFAC),
-                    onTap: blocked ? null : onAssets,
+                  Expanded(
+                    child: _MenuButton(
+                      label: 'Do',
+                      icon: Icons.self_improvement_rounded,
+                      color: const Color(0xFFB388FF),
+                      onTap: blocked ? null : onActivities,
+                    ),
+                  ),
+                  Expanded(
+                    child: _MenuButton(
+                      label: 'Money',
+                      icon: Icons.trending_up_rounded,
+                      color: const Color(0xFF85EFAC),
+                      onTap: blocked ? null : onAssets,
+                    ),
                   ),
                 ],
               ),
-            ),
+            )
           ],
         ),
       ),
@@ -1723,14 +1731,15 @@ class _MenuButton extends StatelessWidget {
     // Five rigid children with `spaceEvenly` overflowed the bar by 3.4px at
     // 320 wide — `spaceEvenly` distributes *leftover* space and does
     // nothing at all when there is none.
-    return Expanded(
+    return Center(
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 192, vertical: 6), 
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, color: enabled ? color : Colors.white24, size: 24),
               const SizedBox(height: 4),
