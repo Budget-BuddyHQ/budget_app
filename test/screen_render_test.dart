@@ -14,7 +14,9 @@ import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/home_s
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/coin_cascade_page.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/money_habits/money_habits_screen.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/finance_concepts.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/lesson.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/money_analyzer.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/lesson_data.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_ending.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_sim_models.dart';
@@ -111,6 +113,8 @@ void main() {
   }
 
   final shotKey = GlobalKey();
+  // Matches the window the bottom-bar bug was reported from.
+  const shotSize = Size(892, 744);
 
   final screens = <String, Widget Function()>{
     'home': () => const HomeScreen(),
@@ -120,6 +124,33 @@ void main() {
     'academy': () => const LessonScreen(),
     'habits_week': () => const MoneyHabitsScreen(),
     'habits_jar': () => const MoneyHabitsScreen(initialTab: 3),
+    // A player a fortnight in with a real, mixed history: turning up, but
+    // pinning far more than they keep and saving almost nothing by it.
+    'habits_coach': () => const MoneyHabitsScreen(
+      initialTab: 4,
+      debugSnapshot: MoneySnapshot(
+        loggedDaysLast14: 9,
+        daysSinceLastLog: 1,
+        longestStreak: 5,
+        pinnedHabits: 7,
+        habitsLoggedLast14: 2,
+        moneySaved: 3,
+        choicesKept: 46,
+        jarXp: 120,
+        lessonsCompleted: 14,
+        lessonsAvailable: 63,
+        conceptAccuracy: {
+          FinanceConcept.needsVsWants: 0.88,
+          FinanceConcept.budgetRule: 0.72,
+          FinanceConcept.interestCost: 0.31,
+        },
+        pastLifeNetWorths: [1200, 1500, 1100],
+        townSpotsVisited: 2,
+        townSpotsAvailable: 12,
+        challengesStarted: 4,
+        challengesFinished: 1,
+      ),
+    ),
     'customize': () => const CustomizeScreen(),
     'profile': () => const ProfileScreen(),
     'life_hub': () => const MainGamePage(),
@@ -179,7 +210,7 @@ void main() {
 
   for (final entry in screens.entries) {
     testWidgets('shoot ${entry.key}', (tester) async {
-      tester.view.physicalSize = const Size(390, 844);
+      tester.view.physicalSize = shotSize;
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 

@@ -1731,12 +1731,20 @@ class _MenuButton extends StatelessWidget {
     // Five rigid children with `spaceEvenly` overflowed the bar by 3.4px at
     // 320 wide — `spaceEvenly` distributes *leftover* space and does
     // nothing at all when there is none.
+    //
+    // horizontal: 4, and it is worth saying why, because it read 192 for a
+    // while and that is what broke the bar. inside an Expanded, 192 a side
+    // wants 384px for a slot that gets about 178 — so the child was handed
+    // zero width. the FittedLabel scaled to nothing and vanished, the Icon
+    // painted outside its box (a Column only reports overflow on its *main*
+    // axis, which is vertical, so nothing errored), and Money got pushed off
+    // the end. icons with no labels and a missing fifth button, no warning.
     return Center(
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 192, vertical: 6), 
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,

@@ -1640,6 +1640,67 @@ the computed scale so a label that fits to the exact pixel is not one rounding
 step from overflowing.
 *Files:* `fitted_label.dart`
 
+### The Life bar had four dead labels and a missing button
+
+**`horizontal: 192` inside an `Expanded`**
+The five slots along the bottom of the life sim each sit in an `Expanded`, so
+each gets about 178px on a normal window. `_MenuButton` asked for 192px of
+padding *a side* — 384px of padding for a 178px slot — so every child was
+handed zero width. The `FittedLabel` scaled to nothing and vanished, the `Icon`
+painted outside its box, and Money got pushed off the end. Four unlabelled
+icons and a missing fifth button.
+**Nothing errored**, and that is the interesting part: a `Column` only reports
+overflow on its *main* axis, which is vertical, so a child too wide for its box
+paints over the edge in silence. `responsive_layout_test` saw no exception
+because there was none to see.
+*Fix:* `horizontal: 4`.
+*Files:* `life_sim_page.dart`
+
+**And the audit that should have caught it was skipping exactly this case**
+`text_fit_test.dart` read `if (available <= 0) continue;` — a label with *no*
+room was treated as uninteresting and waved through. It is the worst case, not
+the boring one.
+*Fix:* zero width is now a finding of its own. Put the 192 back and the suite
+names all four labels; that was checked rather than assumed.
+*Files:* `test/text_fit_test.dart`
+
+### The budget and habit analyser
+
+**The app counted plenty and advised nothing.** Gold, XP, literacy points, jar
+fill, lives played — all of it is a number telling you where you are, and none
+of it tells you which single thing to change. "Here are eleven metrics" is how
+most money apps quietly hand the hard part back to the user.
+
+`money_analyzer.dart` is `MoneySnapshot` in, `MoneyReport` out, with no Flutter
+in it. Every finding has three parts and is useless without all of them:
+
+* **evidence** — a number out of *their* data. "You have 7 habits saved and
+  logged 2 of them in the last fortnight" is arguing with somebody about their
+  own week, which is much harder to shrug off than "consistency is important".
+* **one action**, small enough to do today. A finding ending in "consider
+  reviewing your spending" is decoration.
+* **a concept**, where there is one, so the finding hands off to the lesson
+  that explains it and through that to the lesson's source. The Academy
+  refuses to ship an uncited fact; advice does not get a free pass either.
+
+Five areas are scored **separately** — showing up, money moving, finishing,
+understanding, trying things — because somebody can be extremely consistent and
+save nothing, or save well and understand none of it, and one blended "money
+score" hides the only interesting part.
+
+The rule that matters most is `motion_not_money`: habit points, jar fill and
+streaks are all satisfying and none of them is money. It is entirely possible
+to be a model user of this app and be no better off, and if that is happening
+the analyser has to be the thing that says so.
+
+Two things it deliberately will not do. A brand-new player gets **one** line
+rather than five red zeroes — every rule would fire, all of them would be true
+and none would be useful. And a concept that was never assessed is *absent*,
+not scored zero: telling somebody they are weak at a lesson they have never
+opened is the fastest way to make an analyser worth ignoring.
+*Files:* `money_analyzer.dart`, `money_snapshot_source.dart`,
+`money_habits_screen.dart`, `test/money_analyzer_test.dart`
+
 ### The town becomes the game
 
 **Twelve buildings, not six**
@@ -1907,7 +1968,7 @@ the pool.
 flutter analyze && flutter test
 ```
 
-1,000 tests covering responsive layout at eight viewports (including the Life
+1,039 tests covering responsive layout at eight viewports (including the Life
 sim itself, Feedback, and the Adventure map-pending screen), the money
 panel at seven widths, the life-event chain wiring, price-chart zoom/pan/scrub,
 chart painters against pathological input, working-order accounting, the Life

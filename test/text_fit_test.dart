@@ -164,7 +164,20 @@ void main() {
       if (text.trim().length <= 2) continue;
 
       final available = node.constraints.maxWidth;
-      if (!available.isFinite || available <= 0) continue;
+      // Unbounded is not a finding -- nothing is constraining the text, so
+      // it cannot have been cut off.
+      if (!available.isFinite) continue;
+
+      // Zero *is* a finding, and this used to `continue` past it. That skip
+      // is what let the Life sim's bottom bar ship with `horizontal: 192`
+      // padding inside an `Expanded`: the four menu slots were handed zero
+      // width, every label scaled to nothing and disappeared, and the audit
+      // waved it through as uninteresting. A label with no room at all is
+      // the worst case, not the boring one.
+      if (available <= 0) {
+        found.add('"$text" was given no width at all');
+        continue;
+      }
 
       final painter = TextPainter(
         text: node.text,
@@ -191,6 +204,7 @@ void main() {
     'Money Habits — week': () => const MoneyHabitsScreen(),
     'Money Habits — challenges': () => const MoneyHabitsScreen(initialTab: 2),
     'Money Habits — jar': () => const MoneyHabitsScreen(initialTab: 3),
+    'Money Habits — coach': () => const MoneyHabitsScreen(initialTab: 4),
     'Customize': () => const CustomizeScreen(),
     'Profile': () => const ProfileScreen(),
     'Leaderboard': () => const LeaderboardScreen(),

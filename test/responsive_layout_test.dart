@@ -233,6 +233,7 @@ void main() {
     'Money Habits — My Week': () => const MoneyHabitsScreen(),
     'Money Habits — Challenges': () => const MoneyHabitsScreen(initialTab: 2),
     'Money Habits — My Jar': () => const MoneyHabitsScreen(initialTab: 3),
+    'Money Habits — Coach': () => const MoneyHabitsScreen(initialTab: 4),
     // No map file exists yet, so this exercises the "waiting for the map"
     // fallback screen, not the Bonfire game canvas itself.
     'Adventure (map pending)': () => const AdventureWorldScreen(),
