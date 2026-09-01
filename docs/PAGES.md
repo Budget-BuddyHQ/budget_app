@@ -254,6 +254,22 @@ empty itself at the exact moment the player was being congratulated.
 
 ---
 
+### `_CoachTab` — the budget and habit analyser
+The fifth Money Habits tab. Reads what the player has actually done — habits
+logged, lessons taken, town visited, lives finished — and returns findings
+rather than metrics.
+
+**How it was built:** `money_analyzer.dart` is pure Dart, `MoneySnapshot` in
+and `MoneyReport` out, so the rules can be tested against a player who has
+pinned six habits and logged one — a state that takes a fortnight of real use
+to reach and four lines to describe. `money_snapshot_source.dart` is the only
+part that knows about storage and contains no judgement; the screen decides how
+a finding looks and never what counts as one.
+
+Every finding carries the number out of the player's own data, exactly one
+action, and where there is one, the money idea behind it — which links back to
+the lesson and its citation.
+
 ## Style (Customize)
 
 ### `CustomizeScreen`
