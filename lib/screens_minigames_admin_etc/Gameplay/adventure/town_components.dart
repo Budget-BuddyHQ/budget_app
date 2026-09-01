@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-
 import 'package:bonfire/bonfire.dart';
 import 'package:flutter/material.dart'
     show Colors, Paint, PaintingStyle, StrokeCap;
@@ -7,34 +6,17 @@ import 'package:flutter/material.dart'
 import '../../../constants/app_assets.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_spot_models.dart';
 
-/// The player, with collision actually turned on.
-///
-/// **This is the fix for walking through walls and off the map.** Bonfire's
-/// [SimplePlayer] mixes in `Movement`, `Attackable`, `Vision`,
-/// `PlayerControllerListener` and `MovementByJoystick` — but *not*
-/// `BlockMovementCollision`, and it ships with no hitbox at all. So the
-/// map's `"collider": true` layers were being built into real
-/// `RectangleHitbox`es the whole time and the player simply had nothing to
-/// collide with, and drifted straight through the boundary wall into the
-/// void. Only `PlatformPlayer` gets the mixin by default in this version;
-/// a top-down player has to opt in like this.
-class TownPlayer extends SimplePlayer with BlockMovementCollision {
+class TownPlayer extends SimplePlayer
+    with BlockMovementCollision, PathFinding, TapGesture {
   TownPlayer({
     required super.position,
     required super.size,
     required SimpleDirectionAnimation super.animation,
-    // Forwarded so the caller can tune walk speed against the animation's
-    // frame rate — the two have to move together or the feet slide. See
-    // `kTownWalkSpeed` in adventure_world_screen.dart for the stride maths.
     super.speed,
   });
 
   @override
   Future<void> onLoad() {
-    // A "feet" hitbox rather than one covering the whole sprite: it's
-    // narrower and sits in the bottom third, so the character's head can
-    // pass in front of a wall above them the way top-down RPGs expect,
-    // instead of bumping a full tile early.
     add(
       RectangleHitbox(
         size: Vector2(size.x * 0.55, size.y * 0.35),
@@ -43,11 +25,17 @@ class TownPlayer extends SimplePlayer with BlockMovementCollision {
     );
     return super.onLoad();
   }
+
+  @override
+  void onTap() {}
+
+  @override
+  bool onTapDown(GestureEvent event) {
+    moveAlongThePath([event.worldPosition]);
+    return super.onTapDown(event);
+  }
 }
 
-/// A place you can walk into — store, bank, school, and so on. Uses
-/// Bonfire's [Sensor] mixin so it fires on overlap rather than needing a
-/// tap target, then hands the spot up to Flutter to render the prompt.
 class TownSpotComponent extends GameComponent with Sensor<Player> {
   TownSpotComponent({
     required this.spot,
@@ -56,8 +44,6 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
     required this.isVisited,
   }) {
     final pixels = townTileToPixels(spot.tileX, spot.tileY);
-    // Sized a little over one tile and nudged back by the overhang so the
-    // sensor is centred on its tile rather than hanging off the corner.
     position = Vector2(pixels.dx - 8, pixels.dy - 8);
     size = Vector2.all(32);
   }
@@ -87,8 +73,6 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
     final accent = spot.kind.accent;
     final centre = Offset(size.x / 2, size.y / 2);
 
-    // A soft breathing halo so a spot reads as "interactive" from across
-    // the map, the way a glowing object does in a point-and-click game.
     final wave = (math.sin(_pulse * math.pi) + 1) / 2;
     final haloRadius = 10 + (wave * 3);
 
@@ -111,7 +95,6 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
         ..color = visited ? accent.withValues(alpha: 0.6) : Colors.white,
     );
 
-    // A tick once you've been in, so the map doubles as the checklist.
     if (visited) {
       final tick = Path()
         ..moveTo(centre.dx - 4, centre.dy)
@@ -130,12 +113,6 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
   }
 }
 
-/// A townsperson: a looping idle animation from the real NPC frame sets in
-/// `assets/map_assets_coins/`, plus a sensor that surfaces their dialogue
-/// when you walk up.
-///
-/// Uses `SimpleNpc` rather than a bare component so it sits in Bonfire's
-/// NPC layer and renders/sorts with the rest of the world.
 class TownNpcComponent extends SimpleNpc with Sensor<Player> {
   TownNpcComponent({
     required this.npc,
@@ -146,9 +123,6 @@ class TownNpcComponent extends SimpleNpc with Sensor<Player> {
   }) : _home = Vector2(npc.tileX * 16.0, npc.tileY * 16.0),
        super(
          position: Vector2(npc.tileX * 16.0, npc.tileY * 16.0),
-         // Height-first so the frames keep their 102:116 shape — sizing an
-         // NPC into a square squashes it the same way it squashed the
-         // player (see [TownPlayer]).
          size: Vector2(26 * AppAssets.npcAspectRatio, 26),
          animation: SimpleDirectionAnimation(
            idleRight: idle,
@@ -160,19 +134,9 @@ class TownNpcComponent extends SimpleNpc with Sensor<Player> {
   final void Function(TownNpc npc) onEnter;
   final void Function(TownNpc npc) onExit;
 
-  /// Where this NPC started. The patrol is expressed as an offset from it, so
-  /// an NPC can never drift away from the position the map was authored
-  /// against — which is what "walk anywhere" pathfinding would allow, and is
-  /// the difference between a town that is alive and a town where the person
-  /// you are walking toward has left.
   final Vector2 _home;
 
-  /// Pixels per second. Deliberately slower than the player (60): an NPC that
-  /// matches your speed feels like it is racing you.
   static const double _patrolSpeed = 14;
-
-  /// Seconds spent standing at each end of the beat. A patrol with no pauses
-  /// reads as a machine on rails rather than as someone waiting for a bus.
   static const double _pauseSeconds = 1.6;
 
   double _progress = 0;
@@ -187,9 +151,6 @@ class TownNpcComponent extends SimpleNpc with Sensor<Player> {
     super.update(dt);
     if (npc.patrolTiles <= 0) return;
 
-    // Stop while the player is in range. Walking away mid-sentence is the
-    // single most annoying thing an NPC can do, and it also makes the
-    // proximity sensor flicker on and off.
     if (_talking) {
       _playIdle();
       return;
@@ -239,8 +200,6 @@ class TownNpcComponent extends SimpleNpc with Sensor<Player> {
 
   @override
   void render(Canvas canvas) {
-    // A small "talk to me" pip above the head, so an NPC reads as
-    // interactive rather than scenery.
     canvas.drawCircle(
       Offset(size.x / 2, -5),
       3,
@@ -250,7 +209,6 @@ class TownNpcComponent extends SimpleNpc with Sensor<Player> {
   }
 }
 
-/// A coin lying on the ground. Collected by walking over it.
 class TownCoinComponent extends GameComponent with Sensor<Player> {
   TownCoinComponent({
     required this.value,
@@ -274,8 +232,6 @@ class TownCoinComponent extends GameComponent with Sensor<Player> {
     if (_taken) {
       return;
     }
-    // Guarded because Sensor fires on an interval while overlapping —
-    // without this a coin pays out repeatedly for one walk-over.
     _taken = true;
     onCollect(value);
     removeFromParent();
