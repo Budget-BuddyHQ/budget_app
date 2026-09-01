@@ -2,7 +2,7 @@ import 'package:bonfire/bonfire.dart';
 import 'package:bonfire/map/spritefusion/reader/spritefusion_asset_reader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter/services.dart' show DeviceOrientation, rootBundle;
+import 'package:flutter/services.dart' show DeviceOrientation, LogicalKeyboardKey, rootBundle;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -94,28 +94,6 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   }
 
   /// Applies a state change that a Flame component asked for.
-  ///
-  /// **Every sensor callback has to go through this.** Bonfire ticks its
-  /// components from inside the game widget's own build — the widget sits in a
-  /// `LayoutBuilder` — so a sensor firing calls back into Flutter *during the
-  /// build phase*. Calling `setState` there throws:
-  ///
-  ///     setState() or markNeedsBuild() called during build.
-  ///     This AdventureWorldScreen widget cannot be marked as needing to
-  ///     build because the framework is already in the process of building
-  ///     widgets.
-  ///
-  /// which is a full-screen red error over the map, and it is what a player
-  /// saw the moment they walked up to an NPC.
-  ///
-  /// The hazard was always there — a spot sensor could trip it too — but it
-  /// became reproducible when the NPCs started patrolling, because an NPC
-  /// walking *into* the player fires the sensor from inside a frame the
-  /// player did not initiate.
-  ///
-  /// Deferring to after the frame is the correct fix rather than a
-  /// workaround: the state change is a *response* to something the game
-  /// simulated, and the next frame is exactly when it should be visible.
   void _applyAfterFrame(VoidCallback change) {
     if (!mounted) return;
     final phase = SchedulerBinding.instance.schedulerPhase;
@@ -134,13 +112,8 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   void _onEnterSpot(TownSpot spot) => _applyAfterFrame(() => _nearby = spot);
 
   void _onExitSpot(TownSpot spot) {
-    // guarded on identity so walking out of spot A doesnt wipe the prompt
-    // for spot B when two sensors overlap on next-door tiles
     if (_nearby?.id != spot.id) return;
     _applyAfterFrame(() {
-      // re-checked inside the callback - by the time the frame ends youp
-      // might already be stood in the next spot, and clearing it then blanks
-      // a prompt thats actually correct right now
       if (_nearby?.id == spot.id) _nearby = null;
     });
   }
@@ -157,7 +130,6 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   Future<void> _talkTo(TownNpc npc) async {
     if (_sheetOpen) return;
     _sheetOpen = true;
-    // cycle the line so talking to them twice isnt just a copy paste
     final seen = _npcLineIndex[npc.id] ?? 0;
     final line = npc.lines[seen % npc.lines.length];
     _npcLineIndex[npc.id] = seen + 1;
@@ -172,14 +144,8 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
 
   Future<void> _collectCoin(String coinId, int value) async {
     if (!mounted || _collectedCoinIds.contains(coinId)) {
-      // belt and braces. the component is only ever built for coins you
-      // havent picked up yet (kTownCoins loop below) but guarding here too
-      // means this is safe to call however you get to it
       return;
     }
-    // Same build-phase hazard as the sensors above — a coin is collected by
-    // walking over it, which is a contact callback fired from inside the
-    // game's tick.
     _applyAfterFrame(() {
       _coinsFound += value;
       _collectedCoinIds.add(coinId);
@@ -205,9 +171,6 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     if (_sheetOpen) return;
     _sheetOpen = true;
 
-    // A pushed screen, not a sheet. Entering a building is meant to read as
-    // going somewhere — see [TownInteriorScreen] for what a 96px strip of
-    // room art on top of a modal was doing instead.
     final choice = await Navigator.of(context).push<TownChoice>(
       MaterialPageRoute<TownChoice>(
         builder: (_) => TownInteriorScreen(
@@ -223,9 +186,6 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     }
 
     final controller = context.read<UserStatsController>();
-    // Gold can go negative on a spending choice; clamp so a purchase can
-    // never push the balance below zero (the sheet already shows the cost,
-    // so this only bites a player who is genuinely broke).
     final currentGold = controller.stats.gold;
     final goldDelta = choice.gold < 0 && currentGold + choice.gold < 0
         ? -currentGold
@@ -242,7 +202,6 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
       },
     });
 
-    // The whole point of walking here: the character feels it too.
     widget.life?.applyTownOutcome(
       gold: goldDelta,
       xp: choice.xp,
@@ -263,12 +222,6 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Locked landscape for the whole screen (loading/pending included, not
-    // just once the canvas mounts, so there's no rotation jump mid-screen) —
-    // an open-world map reads far better wide than tall, the way Roblox and
-    // most overworld games default to landscape on a phone/tablet. Restores
-    // the app's normal both-orientations behaviour on the way out via
-    // [OrientationScope]'s own dispose hook.
     return OrientationScope(
       orientations: const [
         DeviceOrientation.landscapeLeft,
@@ -295,127 +248,125 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     final stats = context.read<UserStatsController>().stats;
     final equippedSkin = skinFromId(stats.equippedSkin);
     final body = stats.villagerBody;
-    // The world only has directional walk art for the villager body — a
-    // non-human equipped skin (turtle, critter) falls back to the classic
-    // villager here rather than showing a static image trying to "walk".
+
     final playerSheet = equippedSkin.isHuman
         ? equippedSkin.sheetAsset(body)
         : AppAssets.villagerSheet(null, female: body.isFemale);
 
     return Scaffold(
       backgroundColor: AppTheme.deepForest,
-      body: Stack(
-        children: [
-          BonfireWidget(
-            map: WorldMapBySpritefusion(
-              SpritefusionAssetReader(asset: kAdventureMapAsset),
-            ),
-            player: _buildPlayer(playerSheet),
-            playerControllers: [Joystick(directional: JoystickDirectional())],
-            components: [
-              for (final spot in kTownSpots)
-                TownSpotComponent(
-                  spot: spot,
-                  onEnter: _onEnterSpot,
-                  onExit: _onExitSpot,
-                  isVisited: _visited.contains,
+      body: Focus(
+        autofocus: true,
+        child: Stack(
+          children: [
+            BonfireWidget(
+              map: WorldMapBySpritefusion(
+                SpritefusionAssetReader(asset: kAdventureMapAsset),
+              ),
+              player: _buildPlayer(playerSheet),
+              playerControllers: [
+                Joystick(
+                  directional: JoystickDirectional(),
                 ),
-              for (final npc in kTownNpcs)
-                TownNpcComponent(
-                  npc: npc,
-                  idle: _npcIdleAnimation(npc.look),
-                  walk: _npcWalkAnimation(npc.look),
-                  onEnter: _onEnterNpc,
-                  onExit: _onExitNpc,
-                ),
-              // Already-collected coins are simply never spawned, rather
-              // than spawned-then-hidden — the cleanest way to guarantee a
-              // collected coin can never pay out gold again on this visit.
-              for (final coin in kTownCoins)
-                if (!_collectedCoinIds.contains(_coinId(coin)))
-                  TownCoinComponent(
-                    value: coin.value,
-                    tileX: coin.x,
-                    tileY: coin.y,
-                    onCollect: (value) => _collectCoin(_coinId(coin), value),
-                  ),
-            ],
-            cameraConfig: CameraConfig(
-              zoom: 1.6,
-              // Clamped to the map. Walking to the edge now stops the
-              // *camera* at the boundary instead of letting it drift past
-              // and reveal empty black space beyond the cliffs.
-              //
-              // This was previously `false` on the reasoning that a sliver
-              // of void reads as a real world edge — that was wrong for
-              // this game. The border cliffs already block the player, so
-              // the void was pure visual noise with nothing behind it.
-              moveOnlyMapArea: true,
-            ),
-          ),
-          SafeArea(
-            child: Stack(
-              children: [
-                // A Row rather than two `Positioned`s with a hardcoded
-                // `left: 66` gap between them. That offset was sized around
-                // a circular icon-only back button; the moment it became a
-                // labelled "Go home" pill it was too narrow and the two
-                // overlapped. Laying them out relative to each other means
-                // the objective bar takes whatever is left, whatever the
-                // button's label ends up being.
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  right: 12,
-                  child: Row(
-                    children: [
-                      _AdventureBackButton(
-                        onTap: () => Navigator.of(context).maybePop(),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _ObjectiveBar(
-                          visitedCount: _visited.length,
-                          totalCount: kTownSpots.length,
-                          coinsFound: _coinsFound,
-                        ),
-                      ),
+                Keyboard(
+                  config: KeyboardConfig(
+                    acceptedKeys: [
+                      // WASD Keys
+                      LogicalKeyboardKey.keyW,
+                      LogicalKeyboardKey.keyA,
+                      LogicalKeyboardKey.keyS,
+                      LogicalKeyboardKey.keyD,
+                      // Arrow Keys
+                      LogicalKeyboardKey.arrowUp,
+                      LogicalKeyboardKey.arrowDown,
+                      LogicalKeyboardKey.arrowLeft,
+                      LogicalKeyboardKey.arrowRight,
                     ],
                   ),
                 ),
-                if (_nearby != null)
-                  Positioned(
-                    right: 16,
-                    bottom: 24,
-                    child: _InteractButton(
-                      spot: _nearby!,
-                      visited: _visited.contains(_nearby!.id),
-                      onTap: () => _openSpot(_nearby!),
+              ],
+              components: [
+                for (final spot in kTownSpots)
+                  TownSpotComponent(
+                    spot: spot,
+                    onEnter: _onEnterSpot,
+                    onExit: _onExitSpot,
+                    isVisited: _visited.contains,
+                  ),
+                for (final npc in kTownNpcs)
+                  TownNpcComponent(
+                    npc: npc,
+                    idle: _npcIdleAnimation(npc.look),
+                    walk: _npcWalkAnimation(npc.look),
+                    onEnter: _onEnterNpc,
+                    onExit: _onExitNpc,
+                  ),
+                for (final coin in kTownCoins)
+                  if (!_collectedCoinIds.contains(_coinId(coin)))
+                    TownCoinComponent(
+                      value: coin.value,
+                      tileX: coin.x,
+                      tileY: coin.y,
+                      onCollect: (value) => _collectCoin(_coinId(coin), value),
                     ),
-                  )
-                // A place and a person can overlap; the place wins, since
-                // it's the one that carries the objective.
-                else if (_nearbyNpc != null)
+              ],
+              cameraConfig: CameraConfig(
+                zoom: 1.6,
+                moveOnlyMapArea: true,
+              ),
+            ),
+            SafeArea(
+              child: Stack(
+                children: [
                   Positioned(
-                    right: 16,
-                    bottom: 24,
-                    child: _TalkButton(
-                      npc: _nearbyNpc!,
-                      onTap: () => _talkTo(_nearbyNpc!),
+                    top: 12,
+                    left: 12,
+                    right: 12,
+                    child: Row(
+                      children: [
+                        _AdventureBackButton(
+                          onTap: () => Navigator.of(context).maybePop(),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _ObjectiveBar(
+                            visitedCount: _visited.length,
+                            totalCount: kTownSpots.length,
+                            coinsFound: _coinsFound,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-              ],
+                  if (_nearby != null)
+                    Positioned(
+                      right: 16,
+                      bottom: 24,
+                      child: _InteractButton(
+                        spot: _nearby!,
+                        visited: _visited.contains(_nearby!.id),
+                        onTap: () => _openSpot(_nearby!),
+                      ),
+                    )
+                  else if (_nearbyNpc != null)
+                    Positioned(
+                      right: 16,
+                      bottom: 24,
+                      child: _TalkButton(
+                        npc: _nearbyNpc!,
+                        onTap: () => _talkTo(_nearbyNpc!),
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   TownPlayer _buildPlayer(String sheetAsset) {
-    // Row layout matches AppAssets' villager sheet convention exactly:
-    // 8 columns x 4 rows (south/north/west/east), 104x152 per cell, north
-    // has only 7 real frames. See app_assets.dart for the source of truth.
     Future<SpriteAnimation> row(int rowIndex, int frameCount) =>
         _loadRowAnimation(
           sheetAsset,
@@ -425,8 +376,6 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
         );
     Future<SpriteAnimation> frame(int rowIndex) =>
         _loadRowAnimation(sheetAsset, rowIndex, 1, stepTime: 1);
-    // Side rows skip their front-facing neutral frames — see
-    // [kSideWalkFrames] / [kSideIdleFrame].
     Future<SpriteAnimation> sideRow(int rowIndex) => _loadRowFrames(
       sheetAsset,
       rowIndex,
@@ -441,28 +390,13 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     );
 
     return TownPlayer(
-      // Just outside your own front door (tile 13,31 — the `spot_home`
-      // house is at 13,30), rather than the old town-square spawn at
-      // (25,25). You leave home to go into town and come back to it, so
-      // starting anywhere else made the map read as a level select rather
-      // than a place you live. Verified walkable, reachable, and with two
-      // clear rows overhead so the sprite doesn't clip the house — the
-      // same checks `test/town_map_test.dart` runs on every NPC.
       position: Vector2(
         kTownSpawnTile.x * 16.0,
         kTownSpawnTile.y * 16.0,
       ),
-      // Was `Vector2.all(32)` — a square. The sprite cell is 104x152, so
-      // squeezing it into a square squashed every skin and made the walk
-      // cycle look wrong. Height-first, width derived from the real cell
-      // ratio, keeps the character in proportion.
       size: Vector2(34 * AppAssets.villagerAspectRatio, 34),
       speed: kTownWalkSpeed,
       animation: SimpleDirectionAnimation(
-        // enabledFlipX defaults true, which would mirror one direction to
-        // fake the other — the sheet already has real, distinct west/east
-        // art (verified pixel-wise: row 3 is an exact mirror of row 2), so
-        // that's turned off to avoid double-flipping it.
         enabledFlipX: false,
         idleDown: frame(0),
         runDown: row(0, 8),
@@ -477,9 +411,6 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   }
 }
 
-/// Top-of-screen progress, so the map has a stated goal instead of being a
-/// walking simulator — "visit every place" is the objective the whole
-/// screen is built around.
 class _ObjectiveBar extends StatelessWidget {
   const _ObjectiveBar({
     required this.visitedCount,
@@ -569,8 +500,6 @@ class _ObjectiveBar extends StatelessWidget {
   }
 }
 
-/// The "walk up to something and press A" affordance. Sits bottom-right so
-/// it never overlaps the bottom-left joystick.
 class _InteractButton extends StatelessWidget {
   const _InteractButton({
     required this.spot,
@@ -632,8 +561,6 @@ class _InteractButton extends StatelessWidget {
   }
 }
 
-/// "Talk" affordance for an NPC. Visually quieter than [_InteractButton]
-/// because talking is optional colour, not the objective.
 class _TalkButton extends StatelessWidget {
   const _TalkButton({required this.npc, required this.onTap});
 
@@ -693,8 +620,6 @@ class _TalkButton extends StatelessWidget {
   }
 }
 
-/// NPC speech. One line, one button — deliberately not a decision, so
-/// talking never feels like homework.
 class _NpcDialogueSheet extends StatelessWidget {
   const _NpcDialogueSheet({required this.npc, required this.line});
 
@@ -771,8 +696,6 @@ class _NpcDialogueSheet extends StatelessWidget {
   }
 }
 
-/// The "here's what that actually meant" beat after a choice — the part
-/// that makes a decision a lesson instead of just a stat change.
 class _OutcomeDialog extends StatelessWidget {
   const _OutcomeDialog({
     required this.spot,
@@ -922,16 +845,6 @@ class _RewardPill extends StatelessWidget {
   }
 }
 
-/// The game canvas is a full-bleed [BonfireWidget] with no `AppBar` of its
-/// own, so there was no way out of the map short of the OS back gesture —
-/// this floats a real, always-visible exit above the canvas.
-/// Leaves the town and returns to the life you are living.
-///
-/// Reads as **"Go home"**, not a generic back arrow. The town is somewhere
-/// your character walked *to* from their house, so the way out is going
-/// home — a bare `arrow_back` described the navigation stack rather than
-/// anything happening in the game. Labelled as well as iconed, because a
-/// lone house glyph could just as easily mean "the home screen".
 class _AdventureBackButton extends StatelessWidget {
   const _AdventureBackButton({required this.onTap});
 
@@ -972,11 +885,6 @@ class _AdventureBackButton extends StatelessWidget {
   }
 }
 
-/// Builds a looping idle animation from a folder of individual frame PNGs.
-///
-/// The NPC art is one file per frame rather than a sprite sheet, so this
-/// loads each frame as its own sprite instead of slicing a grid the way
-/// [_loadRowAnimation] does for the villager sheets.
 Future<SpriteAnimation> _npcIdleAnimation(TownNpcLook look) async {
   final paths = switch (look) {
     TownNpcLook.taxer => AppAssets.taxerIdleFrames,
@@ -989,15 +897,9 @@ Future<SpriteAnimation> _npcIdleAnimation(TownNpcLook look) async {
     final image = await _villagerSheetImages.load(path);
     sprites.add(Sprite(image));
   }
-  // Slow on purpose — an idle loop that reads as breathing, not fidgeting.
   return SpriteAnimation.spriteList(sprites, stepTime: 0.28);
 }
 
-/// The walk cycle for a patrolling NPC.
-///
-/// Faster than the idle and slower than the player's: these people are
-/// strolling, and a brisk NPC walk next to a strolling one reads as urgency
-/// nobody explained.
 Future<SpriteAnimation> _npcWalkAnimation(TownNpcLook look) async {
   final paths = switch (look) {
     TownNpcLook.taxer => AppAssets.taxerWalkFrames,
@@ -1013,22 +915,6 @@ Future<SpriteAnimation> _npcWalkAnimation(TownNpcLook look) async {
   return SpriteAnimation.spriteList(sprites, stepTime: 0.16);
 }
 
-/// Walk speed and frame rate, tuned **together** so the feet don't slide.
-///
-/// These are one setting, not two. A walk cycle is 8 frames = 2 footfalls,
-/// so the distance covered in `8 * stepTime` seconds is the character's
-/// stride for two steps. Get that wrong and the character moonwalks —
-/// which is exactly what was happening:
-///
-/// | | speed | stepTime | tiles per footfall |
-/// |---|---|---|---|
-/// | before | 80 (bonfire's `Movement.speedDefault`, never overridden) | 0.12 | **2.40** |
-/// | now | 60 | 0.07 | **1.05** |
-///
-/// The character is 34 units tall on a 16-unit tile grid — about 2.1 tiles.
-/// A person's stride is roughly half their height, so ~1 tile per footfall
-/// is right; 2.4 tiles meant each foot travelled more than the whole
-/// character's height per step and visibly skated across the ground.
 const double kTownWalkSpeed = 60;
 const double kTownWalkStepTime = 0.07;
 
@@ -1048,10 +934,6 @@ Future<SpriteAnimation> _loadRowAnimation(
   return sheet.createAnimation(row: row, stepTime: stepTime, to: frameCount);
 }
 
-/// Frames of a row, by explicit column, in the order given.
-///
-/// Needed because the side-facing rows use a **non-contiguous** subset —
-/// see [kSideWalkFrames].
 Future<SpriteAnimation> _loadRowFrames(
   String sheetAsset,
   int row,
@@ -1069,31 +951,7 @@ Future<SpriteAnimation> _loadRowFrames(
   );
 }
 
-/// The west/east walk cycle, **skipping frames 0 and 4**.
-///
-/// Those two are the neutral/contact poses, and in the side-facing rows the
-/// art draws them with *front-facing* legs — two parallel leg columns with a
-/// gap between them, as if the character were facing the camera. Frames 1-3
-/// and 5-7 are correct profile poses. So twice per cycle the legs snapped
-/// front-on and back, which is what made the side walk look wrong while every
-/// structural measurement of the cycle (legs alternate, halves mirror, feet
-/// planted) came back correct.
-///
-/// **This skip was briefly removed and has been restored.** A procedural
-/// redraw replaced the sheets with art whose frames 0 and 4 were true profile
-/// poses, and all eight frames were re-enabled to match. The hand-drawn
-/// original was then chosen over the redraw — which brings the front-facing
-/// neutral frames back with it, and the skip with them.
-///
-/// Dropping the two costs nothing: what remains is contact-pass-contact for
-/// each leg, a valid six-frame cycle, and it cannot damage the source art.
 const List<int> kSideWalkFrames = <int>[1, 2, 3, 5, 6, 7];
-
-/// Standing still, facing sideways.
-///
-/// Frame 1 rather than frame 0, for the same reason — frame 0 is the
-/// front-facing stance, so an idle character facing west would otherwise
-/// stand with their legs pointing at the camera.
 const int kSideIdleFrame = 1;
 
 class _AdventureMapPendingScreen extends StatelessWidget {
