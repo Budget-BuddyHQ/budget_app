@@ -5,7 +5,11 @@ import 'package:provider/provider.dart';
 import '../../../controllers_that_updates_stats/money_habit_controller.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../custom_made_widgets/habit_challenge_row_item.dart';
+import '../../../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
+import '../../../widgets_custom_lotties/life_money_panel.dart';
+import '../../../models_Like_Skins_and_lessons_templates/money_analyzer.dart';
 import '../../../models_Like_Skins_and_lessons_templates/money_habit_models.dart';
+import '../../../models_Like_Skins_and_lessons_templates/money_snapshot_source.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
@@ -47,6 +51,7 @@ class MoneyHabitsScreen extends StatefulWidget {
     this.activeTabIndex,
     this.onNavSelected,
     this.initialTab = 0,
+    this.debugSnapshot,
   });
 
   /// Set when this is hosted as the "Daily" bottom tab. Left null when it's
@@ -66,6 +71,15 @@ class MoneyHabitsScreen extends StatefulWidget {
   /// obvious home here now.
   final int initialTab;
 
+  /// Stands in for the player's real history on the Coach tab.
+  ///
+  /// Null in the app. The same seam as `LifeSimPage.debugInitialLife`, and
+  /// for the same reason: the states worth looking at — somebody with a
+  /// hundred ticks and no money, somebody who pins six habits a week and logs
+  /// none — take a fortnight of real use to reach, so without a way to hand
+  /// one in, the only version anybody ever sees is the empty one.
+  final MoneySnapshot? debugSnapshot;
+
   @override
   State<MoneyHabitsScreen> createState() => _MoneyHabitsScreenState();
 }
@@ -78,9 +92,9 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 4,
+      length: 5,
       vsync: this,
-      initialIndex: widget.initialTab.clamp(0, 3),
+      initialIndex: widget.initialTab.clamp(0, 4),
     );
   }
 
@@ -171,6 +185,10 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
                   icon: Icon(Icons.savings_rounded, size: 18),
                   text: 'My Jar',
                 ),
+                Tab(
+                  icon: Icon(Icons.insights_rounded, size: 18),
+                  text: 'Coach',
+                ),
               ],
             ),
           ),
@@ -180,11 +198,12 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
         top: false,
         child: TabBarView(
           controller: _tabController,
-          children: const [
-            _TrackTab(),
-            _ActivityTab(),
-            _ChallengesTab(),
-            _JarTab(),
+          children: [
+            const _TrackTab(),
+            const _ActivityTab(),
+            const _ChallengesTab(),
+            const _JarTab(),
+            _CoachTab(snapshot: widget.debugSnapshot),
           ],
         ),
       ),
@@ -2003,6 +2022,350 @@ class _JarNextStep extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+// ==================== Coach ====================
+
+/// The budget and habit analyser, as a screen.
+///
+/// Everything here comes from [analyseMoney]. This file decides how a finding
+/// *looks*; it does not decide what counts as one, which is why the rules can
+/// be tested against a player who has pinned six habits and logged one
+/// without anybody having to build that player in a widget test.
+class _CoachTab extends StatelessWidget {
+  const _CoachTab({this.snapshot});
+
+  /// Overrides the player's real history. See
+  /// [MoneyHabitsScreen.debugSnapshot].
+  final MoneySnapshot? snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final stats = context.watch<UserStatsController>().stats;
+    final report = analyseMoney(snapshot ?? buildMoneySnapshot(stats));
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      children: [
+        _CoachHeader(report: report),
+        const SizedBox(height: 16),
+        if (!report.isNewcomer) ...[
+          _ScoreGrid(scores: report.scores),
+          const SizedBox(height: 18),
+        ],
+        for (final finding in report.findings) ...[
+          _FindingCard(finding: finding),
+          const SizedBox(height: 12),
+        ],
+        const SizedBox(height: 6),
+        Text(
+          // Said out loud, because an app that scores you owes you this.
+          'Everything here is worked out from what you have done in this app '
+          '— habits logged, lessons taken, lives played. Nothing is shared.',
+          style: GoogleFonts.quicksand(
+            color: AppTheme.textMuted,
+            fontSize: 11.5,
+            height: 1.45,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CoachHeader extends StatelessWidget {
+  const _CoachHeader({required this.report});
+
+  final MoneyReport report;
+
+  @override
+  Widget build(BuildContext context) {
+    final weakest = report.weakest;
+    final chip = AppTheme.tintedChip(AppTheme.greenPrimary, alpha: 0.14);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: chip.fill,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(
+          color: AppTheme.greenPrimary.withValues(alpha: 0.28),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.insights_rounded, color: chip.ink, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FittedLabel(
+                  'What your money habits say',
+                  style: GoogleFonts.pixelifySans(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            report.isNewcomer
+                ? 'Give it a few days of real use and this page will have '
+                      'something honest to tell you.'
+                : weakest == null
+                ? 'Nothing stands out yet.'
+                : weakest.weakness,
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.86),
+              height: 1.4,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The five areas, scored separately.
+///
+/// Deliberately not averaged into one number: somebody can be extremely
+/// consistent and save nothing, or save well and understand none of it, and
+/// a single score hides the only interesting part — which of them is weak.
+class _ScoreGrid extends StatelessWidget {
+  const _ScoreGrid({required this.scores});
+
+  final Map<MoneyDimension, int> scores;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (final entry in scores.entries) ...[
+          _ScoreRow(dimension: entry.key, score: entry.value),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _ScoreRow extends StatelessWidget {
+  const _ScoreRow({required this.dimension, required this.score});
+
+  final MoneyDimension dimension;
+  final int score;
+
+  @override
+  Widget build(BuildContext context) {
+    // Red below a third, amber below two thirds, green above. The bands are
+    // wide on purpose — this is meant to point at the weak one, not to be
+    // optimised to 100.
+    final colour = score < 34
+        ? const Color(0xFFFF8474)
+        : score < 67
+        ? AppTheme.warningOrange
+        : AppTheme.greenPrimary;
+    return Row(
+      children: [
+        SizedBox(
+          width: 108,
+          child: FittedLabel(
+            dimension.label,
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.88),
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: score / 100,
+              minHeight: 8,
+              backgroundColor: Colors.white.withValues(alpha: 0.08),
+              valueColor: AlwaysStoppedAnimation<Color>(colour),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 34,
+          child: Text(
+            '$score',
+            textAlign: TextAlign.right,
+            style: GoogleFonts.pixelifySans(
+              color: colour,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One finding: what was noticed, the number behind it, and one thing to do.
+class _FindingCard extends StatelessWidget {
+  const _FindingCard({required this.finding});
+
+  final MoneyFinding finding;
+
+  static (Color, IconData, String) _style(MoneyFindingKind kind) =>
+      switch (kind) {
+        MoneyFindingKind.fix => (
+          const Color(0xFFFF8474),
+          Icons.priority_high_rounded,
+          'Worth fixing',
+        ),
+        MoneyFindingKind.watch => (
+          AppTheme.warningOrange,
+          Icons.visibility_rounded,
+          'Keep an eye on',
+        ),
+        MoneyFindingKind.strength => (
+          AppTheme.greenPrimary,
+          Icons.check_circle_rounded,
+          'Going well',
+        ),
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final (accent, icon, badge) = _style(finding.kind);
+    final chip = AppTheme.tintedChip(accent, alpha: 0.13);
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: chip.fill,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: accent.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: chip.ink, size: 17),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  badge.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.pixelifySans(
+                    color: chip.ink,
+                    fontSize: 10.5,
+                    letterSpacing: 0.6,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            finding.title,
+            style: GoogleFonts.pixelifySans(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          // The evidence, not the advice. A finding that cannot show the
+          // number out of your own data is a slogan.
+          Text(
+            finding.evidence,
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.86),
+              fontSize: 12.5,
+              height: 1.4,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.arrow_forward_rounded,
+                size: 15,
+                color: AppTheme.textMuted,
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  finding.action,
+                  style: GoogleFonts.quicksand(
+                    color: AppTheme.textMuted,
+                    fontSize: 12.5,
+                    height: 1.4,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (finding.concept != null) ...[
+            const SizedBox(height: 10),
+            _ConceptChip(concept: finding.concept!),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The idea behind a finding — the hook into the Academy, and through it to
+/// the lesson's source. The curriculum refuses to ship an uncited fact;
+/// advice does not get a free pass either.
+class _ConceptChip extends StatelessWidget {
+  const _ConceptChip({required this.concept});
+
+  final FinanceConcept concept;
+
+  @override
+  Widget build(BuildContext context) {
+    final chip = AppTheme.tintedChip(concept.accent, alpha: 0.16);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: chip.fill,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: concept.accent.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          LifeEmoji(concept.emoji, size: 12),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              concept.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.quicksand(
+                color: chip.ink,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],
