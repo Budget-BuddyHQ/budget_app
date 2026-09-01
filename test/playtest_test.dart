@@ -171,6 +171,7 @@ void main() {
     'Money Habits — week': () => const MoneyHabitsScreen(),
     'Money Habits — challenges': () => const MoneyHabitsScreen(initialTab: 2),
     'Money Habits — jar': () => const MoneyHabitsScreen(initialTab: 3),
+    'Money Habits — coach': () => const MoneyHabitsScreen(initialTab: 4),
     'Customize': () => const CustomizeScreen(),
     'Profile': () => const ProfileScreen(),
     'Leaderboard': () => const LeaderboardScreen(),

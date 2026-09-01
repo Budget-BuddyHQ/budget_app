@@ -8,7 +8,7 @@ stick when you have to spend money to learn them.*
 **Built in:** Flutter/Dart, with Supabase for accounts, cloud save and
 leaderboards, and live market data from Finnhub and Twelve Data.
 
-**Scale:** ~72,000 lines of Dart across 118 files, 1,000 automated tests,
+**Scale:** ~72,000 lines of Dart across 118 files, 1,039 automated tests,
 `flutter analyze` clean.
 
 ---
@@ -158,7 +158,25 @@ diff rather than a change inside a 1,700-line screen file. Worked examples
 scale to the reader's life stage — a 13-year-old sees allowance-sized numbers
 and an adult sees rent-sized ones, from the same lesson.
 
-### Daily — Money Habits
+### Daily — Money Habits, and the analyser
+
+The analyser is the part that closes the loop. Everything else in the app
+*generates* behaviour; this reads it back and says one useful thing about it.
+
+It scores five areas separately — showing up, money moving, finishing,
+understanding, trying things — and the separation is the design. A blended
+score would hide the case the whole app is most at risk of: somebody who logs
+habits every day, fills the jar, keeps a streak, and has saved no money. Habit
+points are satisfying and they are not money, and if that is what is happening
+the app has to be the thing that says so rather than the thing that celebrates
+it.
+
+Every finding is three parts: the number out of the player's own data, exactly
+one thing to do today, and the money idea behind it, which links to the lesson
+and its source. A finding that cannot show the evidence is a slogan; one that
+ends in "consider reviewing your spending" hands the hard part back.
+
+
 Pin habits, track a week, work through multi-step challenges, and fill a jar.
 
 **How it was built:** the jar is drawn rather than assembled from an asset — a
@@ -195,7 +213,7 @@ setting.
 ### Everything that can be pure Dart is
 The life simulation, the match-3 engine, the quiz banks, the town scenarios and
 the habit model have no Flutter dependency and take an injectable `Random`.
-That is why 1,000 tests run in under thirty seconds and why the rules can be
+That is why 1,039 tests run in under thirty seconds and why the rules can be
 tested as *rules* rather than through a UI.
 
 ### The art is generated and checked
