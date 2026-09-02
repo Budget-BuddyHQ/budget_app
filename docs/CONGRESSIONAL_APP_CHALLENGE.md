@@ -8,7 +8,7 @@ stick when you have to spend money to learn them.*
 **Built in:** Flutter/Dart, with Supabase for accounts, cloud save and
 leaderboards, and live market data from Finnhub and Twelve Data.
 
-**Scale:** ~79,000 lines of Dart across 129 files, 1,091 automated tests,
+**Scale:** ~81,500 lines of Dart across 132 files, 1,196 automated tests,
 `flutter analyze` clean.
 
 ---
@@ -213,7 +213,7 @@ setting.
 ### Everything that can be pure Dart is
 The life simulation, the match-3 engine, the quiz banks, the town scenarios and
 the habit model have no Flutter dependency and take an injectable `Random`.
-That is why 1,091 tests run in under thirty seconds and why the rules can be
+That is why 1,196 tests run in under thirty seconds and why the rules can be
 tested as *rules* rather than through a UI.
 
 ### The art is generated and checked
@@ -255,6 +255,64 @@ third-party copyrighted asset ships.
 
 ## What was hard
 
+**A map that could be seen and not walked.** A second town was drawn and
+exported as a flat 800x800 PNG — no tile grid, no collider flags. Three
+attempts at inferring which tiles were solid from the image alone (edge
+density, colour clustering, per-tile variance) all marked the main promenade
+solid, cutting the town in half.
+
+The fourth stopped guessing. Both maps are drawn from the same spritesheet and
+the *first* map is hand-authored with real collider layers — so it is ground
+truth about which tile ids are walkable. Recovering map 2's tile ids by
+matching each 16px cell against the sheet (70% exact; most of the rest a
+transparent tile composited over a background; 172 by nearest match) and then
+labelling them from map 1's data gave 186 solid ids against 51 open, with only
+two ambiguous. The result is 99.6% one connected space, verified by flood
+fill rather than by looking. **The difference between the three failures and
+the one success was not a cleverer heuristic — it was finding data that
+already knew the answer.**
+
+**Four sprite redraws that could not have worked.** The side-on walk cycle
+looked wrong and every attempt to redraw a frame left it wrong. Measuring the
+sheets said why: each has eight side-facing columns but only *four distinct
+poses* — column 0 is pixel-identical to 4, 1 to 3, 5 to 7 — and columns 5-7
+are not the other half of the stride, they are the same poses drawn 16%
+bulkier (7,820 opaque pixels at 79.5px wide against 6,740 at 65px). So the
+same leg led the whole way round while the body swelled and shrank twice a
+second. Every individual frame was fine; the second half of the cycle was
+simply absent. Generating it as the first half with the **leg band mirrored**
+fixed it in one pass. Four attempts had been aimed at the wrong artefact.
+
+**A repetitive game whose content was not repetitive.** The main game was
+reported as repeating itself. Measured across sixty runs, any two lives share
+only 2-12% of their events — the variety was there. What repeated was the
+prose: a line reading `Turned 12.` printed on three quarters of all years,
+directly beneath a feed header that already said "Age 12", and the paycheck
+line was one fixed sentence making up 15% of every line in the feed. Players
+are reliable at spotting that something is wrong and unreliable at locating
+it, which is an argument for measuring the thing they complain about rather
+than the thing they point at.
+
+**Spending an API budget on what nobody is looking at.** The stock board
+refreshed all sixteen tracked symbols on every tick, sequentially. Against a
+60-call minute that caps the whole board at one update per sixteen seconds,
+and almost every one of those calls fetched a price scrolled off screen.
+Batching four per tick — weighted to the symbols the player holds, rotating
+through the rest — makes what is on screen four times fresher inside the same
+limit. Two non-obvious constraints had to hold: the throttle had to become
+per-symbol rather than one clock for the board, and the batch had to be capped
+*including* pinned symbols, or a player with ten holdings makes 120 calls a
+minute. Both are asserted in `market_batching_test`, because getting them
+wrong produces a rate-limit ban rather than anything visible.
+
+**Making a two-year-old unable to press Invest.** A menu row set its disabled
+state from whether the player held enough coins and never asked their age, so
+a toddler with 150 coins got a lit button that silently did nothing — the
+controller checked the gate correctly and returned. The fix was structural
+rather than three patches: every row must now name the action it performs, and
+the gate is applied to all of them in one expression, so there is no longer a
+place to forget it.
+
 **Making a side-view sprite that does not look inflated.** Four procedural
 redraws, each fixing the previous one's flaw and introducing a new one, before
 the conclusion that the hand-drawn original was the answer and the tooling
@@ -288,6 +346,10 @@ worse than the non-problem.
 |---|---|
 | The curriculum and its sources | `lib/models_.../lesson_data.dart`, `lesson_sources.dart`, `lesson_extras.dart` |
 | The life simulation | `lib/controllers_.../life_sim_controller.dart` |
+| Rebuilding the second map from a PNG | `tool/build_map_two.py` |
+| Snapping town markers to doorways | `tool/place_town_spots.py` |
+| Repairing the walk cycle | `tool/fix_side_walk_cycle.py` |
+| What kind of day the town is having | `lib/models_.../town_conditions.dart` |
 | The match-3 engine | `lib/models_.../coin_cascade_models.dart` |
 | The town | `lib/models_.../town_spot_models.dart`, `town_scenarios.dart` |
 | Colour and legibility | `lib/themes_colors/app_theme.dart` |

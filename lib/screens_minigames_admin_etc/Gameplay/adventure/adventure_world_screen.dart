@@ -1,8 +1,10 @@
+import 'dart:math';
 import 'package:bonfire/bonfire.dart';
 import 'package:bonfire/map/spritefusion/reader/spritefusion_asset_reader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter/services.dart' show DeviceOrientation, LogicalKeyboardKey, rootBundle;
+import 'package:flutter/services.dart'
+    show DeviceOrientation, LogicalKeyboardKey, rootBundle;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -10,6 +12,7 @@ import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../../controllers_that_updates_stats/life_sim_controller.dart';
+import '../../../models_Like_Skins_and_lessons_templates/town_conditions.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_spot_models.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
@@ -67,6 +70,23 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   /// `townEncounterFor`), so walking back in gets you a different
   /// conversation rather than the same one again.
   final Set<String> _visited = <String>{};
+
+  /// What the town is like this visit.
+  ///
+  /// Rolled once in `initState` and held. Rolling it in `build` would change
+  /// the weather every time the player took a step, and rolling it per spot
+  /// would let somebody walk between two buildings and find one on sale and
+  /// the other not, on the same afternoon.
+  late final TownCondition _today = rollTownCondition(Random());
+
+  /// Which of the two towns this visit is in.
+  ///
+  /// Rolled once, alongside the weather, for the same reason: re-rolling in
+  /// `build` would swap the map out from under a player mid-step. Both are
+  /// held for as long as you are inside.
+  late final TownMap _townMap =
+      TownMap.values[Random().nextInt(TownMap.values.length)];
+
   final Set<String> _collectedCoinIds = <String>{};
   int _coinsFound = 0;
   TownSpot? _nearby;
@@ -189,6 +209,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
         builder: (_) => TownInteriorScreen(
           spot: spot,
           lifeAge: widget.life?.age,
+          today: _today,
         ),
       ),
     );
@@ -200,9 +221,14 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
 
     final controller = context.read<UserStatsController>();
     final currentGold = controller.stats.gold;
-    final goldDelta = choice.gold < 0 && currentGold + choice.gold < 0
+    // Today's prices, then the affordability clamp — in that order. Clamping
+    // first would price a purchase against a balance the player never
+    // actually had to cover, and on a cheap day it would refuse a sale they
+    // could afford.
+    final priced = _today.priceFor(choice.gold, spot.kind);
+    final goldDelta = priced < 0 && currentGold + priced < 0
         ? -currentGold
-        : choice.gold;
+        : priced;
 
     setState(() => _visited.add(spot.id));
 
@@ -274,13 +300,11 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
           children: [
             BonfireWidget(
               map: WorldMapBySpritefusion(
-                SpritefusionAssetReader(asset: kAdventureMapAsset),
+                SpritefusionAssetReader(asset: _townMap.asset),
               ),
               player: _buildPlayer(playerSheet),
               playerControllers: [
-                Joystick(
-                  directional: JoystickDirectional(),
-                ),
+                Joystick(directional: JoystickDirectional()),
                 Keyboard(
                   config: KeyboardConfig(
                     acceptedKeys: [
@@ -302,31 +326,37 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
                 for (final spot in kTownSpots)
                   TownSpotComponent(
                     spot: spot,
+                    townMap: _townMap,
                     onEnter: _onEnterSpot,
                     onExit: _onExitSpot,
                     isVisited: _visited.contains,
                   ),
-                for (final npc in kTownNpcs)
-                  TownNpcComponent(
-                    npc: npc,
-                    idle: _npcIdleAnimation(npc.look),
-                    walk: _npcWalkAnimation(npc.look),
-                    onEnter: _onEnterNpc,
-                    onExit: _onExitNpc,
-                  ),
-                for (final coin in kTownCoins)
-                  if (!_collectedCoinIds.contains(_coinId(coin)))
-                    TownCoinComponent(
-                      value: coin.value,
-                      tileX: coin.x,
-                      tileY: coin.y,
-                      onCollect: (value) => _collectCoin(_coinId(coin), value),
+                // NPCs and floor coins were positioned against the village
+                // map by hand and have no second set of coordinates, so on
+                // the market map they would stand inside walls. Left out
+                // there rather than placed badly -- an NPC embedded in a
+                // building is worse than a quieter street.
+                if (_townMap == TownMap.village)
+                  for (final npc in kTownNpcs)
+                    TownNpcComponent(
+                      npc: npc,
+                      idle: _npcIdleAnimation(npc.look),
+                      walk: _npcWalkAnimation(npc.look),
+                      onEnter: _onEnterNpc,
+                      onExit: _onExitNpc,
                     ),
+                if (_townMap == TownMap.village)
+                  for (final coin in kTownCoins)
+                    if (!_collectedCoinIds.contains(_coinId(coin)))
+                      TownCoinComponent(
+                        value: coin.value,
+                        tileX: coin.x,
+                        tileY: coin.y,
+                        onCollect: (value) =>
+                            _collectCoin(_coinId(coin), value),
+                      ),
               ],
-              cameraConfig: CameraConfig(
-                zoom: 1.6,
-                moveOnlyMapArea: true,
-              ),
+              cameraConfig: CameraConfig(zoom: 1.6, moveOnlyMapArea: true),
             ),
             SafeArea(
               child: Stack(
@@ -346,6 +376,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
                             visitedCount: _visited.length,
                             totalCount: kTownSpots.length,
                             coinsFound: _coinsFound,
+                            today: _today,
                           ),
                         ),
                       ],
@@ -403,10 +434,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     );
 
     return TownPlayer(
-      position: Vector2(
-        kTownSpawnTile.x * 16.0,
-        kTownSpawnTile.y * 16.0,
-      ),
+      position: Vector2(kTownSpawnTile.x * 16.0, kTownSpawnTile.y * 16.0),
       size: Vector2(34 * AppAssets.villagerAspectRatio, 34),
       speed: kTownWalkSpeed,
       animation: SimpleDirectionAnimation(
@@ -429,11 +457,16 @@ class _ObjectiveBar extends StatelessWidget {
     required this.visitedCount,
     required this.totalCount,
     required this.coinsFound,
+    required this.today,
   });
 
   final int visitedCount;
   final int totalCount;
   final int coinsFound;
+
+  /// What the town is like this visit. See [TownCondition] for why the map
+  /// had to say this out loud rather than only behave differently.
+  final TownCondition today;
 
   @override
   Widget build(BuildContext context) {
@@ -457,16 +490,19 @@ class _ObjectiveBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.flag_rounded,
-            color: AppTheme.greenPrimary,
+            today.isOrdinary ? Icons.flag_rounded : today.icon,
+            color: today.isOrdinary ? AppTheme.greenPrimary : today.accent,
             size: 18,
           ),
           const SizedBox(width: 8),
           Flexible(
             child: FittedLabel(
-              'Explore the town',
+              // An ordinary day keeps the old label. Announcing "an ordinary
+              // day" would make the ordinary case — which is most of them —
+              // read as an event that failed to happen.
+              today.isOrdinary ? 'Explore the town' : today.label,
               style: GoogleFonts.pixelifySans(
-                color: Colors.white,
+                color: today.isOrdinary ? Colors.white : today.accent,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),
@@ -907,7 +943,14 @@ Future<SpriteAnimation> _npcWalkAnimation(TownNpcLook look) async {
 }
 
 const double kTownWalkSpeed = 60;
-const double kTownWalkStepTime = 0.07;
+
+/// Seconds per frame of the walk cycle.
+///
+/// Was 0.07 — fourteen frames a second, which on a six-frame cycle meant the
+/// whole thing repeated more than twice a second and read as a judder rather
+/// than a stride. 0.11 over four frames is a 0.44s cycle, which is roughly
+/// the cadence of an actual walking person.
+const double kTownWalkStepTime = 0.11;
 
 final _villagerSheetImages = Images(prefix: '');
 
@@ -936,12 +979,31 @@ Future<SpriteAnimation> _loadRowFrames(
     image: image,
     srcSize: Vector2(AppAssets.villagerCellWidth, AppAssets.villagerCellHeight),
   );
-  return SpriteAnimation.spriteList(
-    [for (final c in columns) sheet.getSprite(row, c)],
-    stepTime: stepTime,
-  );
+  return SpriteAnimation.spriteList([
+    for (final c in columns) sheet.getSprite(row, c),
+  ], stepTime: stepTime);
 }
 
+/// The side-on walk cycle.
+///
+/// **What was wrong, and it was not the drawing.** Every villager sheet has
+/// eight side-facing columns but only *four distinct poses* — measured across
+/// all 38 sheets, column 0 was pixel-identical to 4, 1 to 3, and 5 to 7. And
+/// 5-7 were not the other half of the stride, they were the same poses drawn
+/// 16% bulkier (7,820 opaque pixels at 79.5px wide against 6,740 at 65px).
+///
+/// So this cycle used to run slim-pass, slim-up, slim-pass, fat-pass, fat-up,
+/// fat-pass: **the same leg leading the whole way round**, with the body
+/// swelling and shrinking twice a second. That is what "the character is
+/// clanking" was, and it is why redrawing individual frames never fixed it —
+/// the frames were fine, the second half of the cycle was missing.
+///
+/// `tool/fix_side_walk_cycle.py` rebuilds columns 5-7 as copies of 1-2 with
+/// only the *leg band* mirrored, so the torso is pixel-identical between the
+/// halves (no swell, by construction) and the legs alternate (which is the
+/// part that reads as walking). Columns 0 and 4 stay out: they draw
+/// front-facing legs on a profile body, so the walk would snap face-on twice
+/// per cycle.
 const List<int> kSideWalkFrames = <int>[1, 2, 3, 5, 6, 7];
 const int kSideIdleFrame = 1;
 

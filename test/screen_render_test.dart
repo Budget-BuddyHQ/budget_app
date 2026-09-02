@@ -22,6 +22,7 @@ import 'package:budget_app/models_Like_Skins_and_lessons_templates/lesson_data.d
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_ending.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/progression_service.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/town_conditions.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/town_spot_models.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/academy/lesson_detail_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/academy/practice_screen.dart';
@@ -181,6 +182,12 @@ void main() {
     // `responsive_layout_test` covers it properly, with seeded quotes.
     'store': () => TownInteriorScreen(
       spot: kTownSpots.firstWhere((s) => s.kind == TownSpotKind.store),
+    ),
+    // The same shop on a sale day, so the price line gets looked at rather
+    // than only asserted about.
+    'store_sale': () => TownInteriorScreen(
+      spot: kTownSpots.firstWhere((s) => s.kind == TownSpotKind.store),
+      today: townConditionById('sale'),
     ),
     'lesson': () {
       final unit = lessonUnits.first;

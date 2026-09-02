@@ -319,9 +319,13 @@ void main() {
       life.setBudget(needs: 50, wants: 30, savings: 20);
       final before = life.history.length;
       life.ageUp();
+      // Matched on the slices rather than on the opening word: the paycheck
+      // line has several phrasings now (they were one fixed sentence and made
+      // up 15% of every line in the feed). What has to stay true is that the
+      // three numbers are named, not that the sentence begins "Paycheck".
       final line = life.history
           .skip(before)
-          .firstWhere((e) => e.text.startsWith('Paycheck'));
+          .firstWhere((e) => e.text.contains('Needs '));
       expect(line.text, contains('Needs 500'));
       expect(line.text, contains('wants 300'));
       expect(line.text, contains('savings 200'));
@@ -333,7 +337,7 @@ void main() {
       life.ageUp();
       final line = life.history
           .skip(before)
-          .firstWhere((e) => e.text.startsWith('Paycheck'));
+          .firstWhere((e) => e.text.contains('50/30/20'));
       expect(line.text, contains('50/30/20'));
     });
 
