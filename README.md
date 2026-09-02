@@ -1640,6 +1640,210 @@ the computed scale so a label that fits to the exact pixel is not one rounding
 step from overflowing.
 *Files:* `fitted_label.dart`
 
+### The Play hub was five paragraphs deep before it showed a picture
+
+Reported as "that play menu is pretty bad right now, make more picture than
+more card and words", which was exactly right. The hub was a hero card and
+then four stacked full-width rows, each carrying a heading and up to two lines
+of prose, on the screen whose entire job is to make somebody press something.
+
+Ranked, How to play and Past Lives are now a three-up row of picture tiles —
+art you can see, one word, one fact. The prose was not wrong, it was answering
+a question nobody had asked yet: you find out what Ranked is by pressing
+Ranked, and the epilogue explains the scoring at the point it means something.
+
+The hero card is a **place** now rather than a gradient: the town this launch
+rolled behind it, and the player's own chosen character standing in it. That
+last part is doing the real work — somebody who spent gold on a skin had no
+other screen showing it at size, and "the thing I chose is standing in the
+world I am about to enter" beats a sentence describing one.
+
+### Two towns, and the map that could not be played
+
+There is a second town map in the repo that was drawn to be *playable* and
+could not be: its collision data was never in the PNG, and three independent
+heuristics all read the main promenade as solid, which cuts the town in half.
+It had been sitting unused ever since.
+
+A backdrop needs no colliders. `MapVariant` rolls one of the two towns per
+**app launch** — not per build, because a `Random()` inside `build` re-rolls on
+every setState and the background would flicker between two towns, and not per
+screen, because you should not walk out of a Learn screen in one town and into
+a Play screen in another. `debugOverride` pins it, since a screenshot of a
+randomised backdrop is a coin flip.
+
+### The bottom bar's gold slab
+
+Reported as "for the bottom menu, I don't know what is it doing down there",
+which is the correct reaction. The active tab's gold treatment was meant to be
+a pill. It was a `Container` with no width inside an `Expanded`, which hands
+down a *tight* constraint, so it filled the entire fifth of the bar — a ~190px
+block of solid yellow that reads as a rendering fault rather than a selection.
+
+`_HuggingPill` loosens the constraint with a `Center` so the pill sizes to its
+own label. The cap on it is the part doing real work: the active tab is painted
+at 1.16x by a `Transform`, transforms do not participate in layout, and a pill
+that exactly fills its cell paints 16% *outside* it with nothing to catch it.
+Capping at `1 / scale` of the cell means the scaled version lands inside by
+construction, at every width. Same family of bug as the 192px padding, caught
+this time before it shipped.
+
+### The sounds were bare sines
+
+"Make sound more better since right now as a user it's sound pretty bad." My
+first guess was onset clicks, and measuring said no — `_write` already de-clicks
+both edges and the discontinuities are tiny. The problem was the synthesis
+itself: every effect was a sine with integer harmonics, and three things follow
+from that.
+
+**No transient.** Real sounds start with a burst of broadband noise — the
+finger hitting the surface, the hammer hitting the string. Strip it and the ear
+cannot tell what *made* the sound, only what pitch it was. A tap is closer to a
+"tok" than to a note, and `tap.wav` was an 880Hz A with a touch of octave,
+which is a telephone. **No pitch movement**, when almost nothing physical holds
+a dead-flat pitch through its decay. And **integer harmonics only** — 1x, 2x,
+3x is a string or a pipe, while bells and glass, which every reward chime is
+borrowing from, are inharmonic.
+
+`_struck` takes partials at arbitrary ratios, each with its own decay rate
+(upper partials die first, which is why a piano note gets *duller* as it rings
+rather than just quieter), over an optional pitch glide with phase accumulated
+per partial so the glide is not itself a click. Plus a room, because a sound
+with no space around it reads as coming from inside the speaker.
+
+One measurement worth keeping: the first pass turned a 70ms tap into a **0.47s
+file**, because the reverb appends its full tail whether or not anything is
+left to decay. A tap that rings for half a second is a worse sound than the
+beep it replaced, so `_room` now trims back to -54dB off peak. Tap is 0.11s.
+
+### Scams, fees and fine print
+
+The rest of the simulation is about decisions where both options are honest:
+save or spend, rent or buy, index fund or savings account. That is most of
+financial literacy and it is not all of it. The money a fifteen-year-old
+actually loses does not go to a bad investment — it goes to a free trial that
+started charging, a subscription nobody cancelled, a \$35 overdraft fee on a \$4
+coffee, or somebody very friendly who needed gift cards. None of it was in the
+game.
+
+`life_events_traps.dart` adds eleven, written to one rule: **the tell is always
+in the prompt.** Urgency, a stranger who found you, a guaranteed return, a
+payment method that cannot be reversed. A player who reads carefully can spot
+every one, which is the actual transferable skill — and the careful option is
+never free, because making caution costless would misrepresent why people do
+not take it.
+
+Two of them, `t_loot_box` and `t_skin_gamble`, are pointed at this app's own
+machinery. Budget Buddy has a case-opening screen with a ratchet sound on it. A
+game that teaches money to children while running an unexamined loot box would
+be teaching the wrong thing far more effectively than any lesson teaches the
+right one, so the sim names the mechanic and states the house edge.
+
+Swept over 400 runs: every event fires, each in about 40% of lives, 99% of runs
+see at least one.
+
+### The screenshot harness had been photographing undecoded images
+
+Worth its own note, because it wasted an hour and the lesson generalises.
+
+Three picture tiles rendered empty. I blamed the widget, added `SizedBox.expand`
+to fix a real but unrelated bug (a bare `Image` under a `Column`'s *loose* width
+constraint lays out at the source's intrinsic size, so a 16x16 kit icon drew at
+16x16 in a 100px slot), and the next screenshot came back with the tiles still
+empty *and the hero's map gone too*.
+
+The map disappearing was the tell, because nothing I had touched could affect
+it. `tester.pump()` advances a fake clock and drains microtasks; it does not
+run real async work, and decoding an `Image.asset` is real async work. Every
+screenshot had been taken of a tree whose images had resolved their layout and
+never painted a pixel. It stayed hidden for so long because it was not
+consistent — an asset already in `imageCache` from an earlier screen in the
+same file paints immediately, so the map appeared on some runs and not others,
+and that got read as a broken widget rather than a broken harness.
+
+A `runAsync` delay and one more pump before the shutter. The fix also brought
+back the endings-row padlocks and the coin icon, which had been silently
+missing from every screenshot ever taken.
+
+### Money ideas became a mechanic
+
+**Sixteen concepts, and the simulation did not care about any of them.**
+Meeting one produced a chip on a screen and a line in a log. A run played
+identically whether you had met all sixteen or none, which quietly said the
+opposite of every lesson in the app.
+
+`concept_powers.dart` turns each one into a power you can arm for 6-10 years —
+Cushion takes 60% off shocks, Snowball adds 4% to investment growth, Debt Brake
+halves interest, Automatic moves a tenth of your pay to savings before you see
+it. **You can only arm an idea you have actually met in that run**, so the
+route to a strong run goes through understanding, and a player optimising for
+score is optimising for learning without being told to. Two at a time, so it is
+a choice about which.
+
+### Starvation and illness, and three rounds of getting them wrong
+
+The point was to give the emergency fund something to be *for*. The first pass
+gave it a graveyard instead: **average life 35, 86% of runs dead before sixty.**
+
+The cause was not the numbers, it was a missing world. Taking the first option
+every year usually means never getting a job, so *every* adult year was a
+starving year. That is not a simulation of being poor, it is a simulation of
+having nobody around you. There is a scraped-income floor now — rolled 62-98%
+of living costs each year, **rolled and not fixed**, because a flat rate made
+the shortfall identical every year, always under the threshold, and hunger
+mathematically unreachable. Savings absorb the gap before hunger starts, and
+eating again restores health, because a one-way ratchet is a hole you cannot
+climb out of.
+
+Illness got a **distinct job from expense shocks**. The first version priced it
+like a car repair, and six years of disciplined 20% saving came out at a fund
+of zero — the exact opposite of what the emergency fund exists to demonstrate.
+An expense shock takes your money; an illness takes your *health* and lingers
+for years, and where they overlap illness is the smaller number.
+
+Two of the test failures on the way were real bugs rather than noise: a
+dependent child was paying their own medical bills, and `budget_teaching_test`
+was banking **one** year of savings while believing it banked six, because a
+pending event blocks `ageUp`.
+
+### Buying a guitar, and where it can end up
+
+The music ladder already existed and topped out at a sixteen-city tour worth
+£4,200 — a good year, not a life change. `life_events_stardom.dart` adds the
+rest: busking, a viral clip, a label advance, arena years, and an $800,000
+offer for your back catalogue.
+
+It is not a jackpot, because a jackpot teaches nothing. Fame arrives with
+almost no money attached, because being known and being paid are different
+columns. The advance is explicitly a loan against yourself. The catalogue sale
+is the same decision as a redundancy payout at a scale that makes the answer
+feel like it matters. And `stardom_spent_it` is reachable, because it is the
+most common real ending for this story.
+
+**Balancing it took four attempts and the sweep caught every one.** The peak
+and its ending fought over the same window: heavier on the ending and
+`x_stadium_years` never fired, heavier on the peak and `stardom_faded` never
+did. A `maxAge` cap on the peak looked like the fix and made it worse —
+measuring when players actually become famous gave ages 24, 26, 36, 44, 49 and
+63, so a lid at 38 locked out most of the people who got there. And the peak's
+original gates (skill 70, fame 45) sat *above* what the rungs below it can
+deliver, which is not a hard event, it is an absent one.
+
+### Ranked
+
+One life, scored, same rules. Wealth carries most of it on a square root — a
+linear score would make one lucky stardom draw worth more than every other
+decision in the game combined, and a leaderboard that ranks "did you get the
+guitar event" is not ranking anything.
+
+Survival is a **multiplier, not a bonus**, because dying at thirty-five with a
+fortune should not beat retiring at eighty with less, and a multiplier is the
+only shape that makes that trade real. Understanding adds a modest amount per
+idea met: enough to be worth learning something, never enough to replace a
+financial life. No F grade — this is a financial-literacy app for children, and
+a screen that tells a nine-year-old they failed at a life is not worth
+building.
+
 ### The Life bar had four dead labels and a missing button
 
 **`horizontal: 192` inside an `Expanded`**
@@ -1968,7 +2172,7 @@ the pool.
 flutter analyze && flutter test
 ```
 
-1,039 tests covering responsive layout at eight viewports (including the Life
+1,091 tests covering responsive layout at eight viewports (including the Life
 sim itself, Feedback, and the Adventure map-pending screen), the money
 panel at seven widths, the life-event chain wiring, price-chart zoom/pan/scrub,
 chart painters against pathological input, working-order accounting, the Life

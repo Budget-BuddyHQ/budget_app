@@ -338,8 +338,7 @@ class CoinCascadeGame {
   }) : _random = random ?? Random(),
        level = level ?? kCascadeLevels.first,
        moves = moves ?? (level ?? kCascadeLevels.first).moves,
-       savingsGoal =
-           savingsGoal ?? (level ?? kCascadeLevels.first).savingsGoal,
+       savingsGoal = savingsGoal ?? (level ?? kCascadeLevels.first).savingsGoal,
        billCapacity =
            billCapacity ?? (level ?? kCascadeLevels.first).billCapacity {
     _fillBoardWithoutMatches();
@@ -500,7 +499,8 @@ class CoinCascadeGame {
     // merge overlapping runs into one group
     final merged = <Set<Point<int>>>[];
     for (final run in runs) {
-      final touching = merged.where((m) => m.intersection(run).isNotEmpty)
+      final touching = merged
+          .where((m) => m.intersection(run).isNotEmpty)
           .toList();
       if (touching.isEmpty) {
         merged.add({...run});
@@ -621,9 +621,7 @@ class CoinCascadeGame {
           paid += size;
       }
 
-      clears.add(
-        Clear(kind: kind, cells: group.toList(), cascade: cascade),
-      );
+      clears.add(Clear(kind: kind, cells: group.toList(), cascade: cascade));
       for (final cell in group) {
         _grid[cell.y][cell.x] = null;
       }
@@ -766,8 +764,7 @@ class CoinCascadeGame {
   static const int extraMoveCost = 12;
   static const int extraMovesPerPurchase = 5;
 
-  bool get canBuyMoves =>
-      coins >= extraMoveCost && status != CascadeStatus.won;
+  bool get canBuyMoves => coins >= extraMoveCost && status != CascadeStatus.won;
 
   bool buyMoves() {
     if (!canBuyMoves) return false;

@@ -2,6 +2,7 @@ import 'dart:io' show File;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
 import '../../config/dev_preview_flags.dart';
 import '../../constants/app_assets.dart';
+import '../../constants/privacy_policy.dart';
 import '../../controllers_that_updates_stats/app_settings_controller.dart';
 import '../../controllers_that_updates_stats/money_habit_controller.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
@@ -181,6 +183,94 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// (it can be pushed as its own route), because there are no tabs to point
   /// at in that case and a spotlight with nothing under it is worse than a
   /// description.
+  /// Opens the published policy in the device browser.
+  Future<void> _openPrivacyPolicy(BuildContext context) async {
+    HapticFeedback.lightImpact();
+    final uri = Uri.parse(kPrivacyPolicyUrl);
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && context.mounted) {
+      GameToast.show(
+        context,
+        title: 'Could not open the policy',
+        message: kPrivacyPolicyUrl,
+        icon: Icons.link_off_rounded,
+        accent: const Color(0xFFFFC36B),
+      );
+    }
+  }
+
+  /// `3 Sep 2026`. Short because it sits inside a settings row.
+  static String _shortDate(DateTime when) {
+    const months = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final local = when.toLocal();
+    return '${local.day} ${months[local.month - 1]} ${local.year}';
+  }
+
+  /// Deletes the account, after making sure that is what was meant.
+  ///
+  /// **Two steps, and the second one is typed.** This is irreversible and it
+  /// is offered to children, so a single "Are you sure?" is not enough --
+  /// that is one mis-tap away from gone, and tapping the confirming button on
+  /// a dialog is a reflex rather than a decision. Typing the word DELETE is
+  /// the cheapest thing that cannot be done by accident.
+  ///
+  /// The first screen is a plain list of what actually goes, because "your
+  /// data will be deleted" does not tell a player that their skins, their
+  /// past lives and their friends go with it. If somebody is going to lose
+  /// forty hours of progress they should lose it knowing.
+  Future<void> _deleteAccount(BuildContext context) async {
+    HapticFeedback.mediumImpact();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => const _DeleteAccountDialog(),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final controller = context.read<UserStatsController>();
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    // A blocking spinner, because this call is allowed twenty seconds and a
+    // screen that looks idle for twenty seconds gets tapped again.
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final error = await SupabaseService.instance.deleteOwnAccount();
+
+    if (navigator.canPop()) navigator.pop(); // the spinner
+    if (!context.mounted) return;
+
+    if (error != null) {
+      messenger.showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+
+    // Local state has to go too. The rows are gone server-side, and leaving
+    // a cached profile behind would show the next person to open the app a
+    // signed-in account that no longer exists.
+    await controller.signOut();
+    if (!context.mounted) return;
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Your account has been deleted.')),
+    );
+  }
+
   Future<void> _replayTutorial(BuildContext context) async {
     HapticFeedback.lightImpact();
 
@@ -265,20 +355,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 12),
                         const _FriendsCard(),
                         const SizedBox(height: 12),
-                        _SettingsCard(
-                          title: 'Notifications',
-                          subtitle: 'Quest reminders and reward alerts.',
-                          icon: Icons.notifications_active_rounded,
-                          trailing: Switch.adaptive(
-                            value: settings.notificationsEnabled,
-                            activeThumbColor: const Color(0xFF4BD2A3),
-                            onChanged: (value) async {
-                              HapticFeedback.lightImpact();
-                              await settings.setNotificationsEnabled(value);
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 12),
+                        // The Notifications toggle used to live here,
+                        // promising "quest reminders and reward alerts".
+                        //
+                        // It controlled nothing. No notification package is
+                        // wired up, so the switch saved a boolean and no
+                        // reminder has ever been sent. A setting that lies is
+                        // worse than a missing feature anywhere; in an app
+                        // whose users are as young as four, and whose whole
+                        // argument is "check what we tell you", it is not
+                        // defensible at all. The preference itself is kept in
+                        // `AppSettingsController` so the switch can come back
+                        // the day it is real -- see the 2.0 list in
+                        // docs/CAC_SUBMISSION_ANSWERS.md.
                         _SettingsCard(
                           title: 'Sound',
                           subtitle:
@@ -311,12 +400,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 12),
                         _SettingsCard(
                           title: 'Replay Tutorial',
-                          subtitle:
-                              'Take Buddy\'s tour of every page again.',
+                          subtitle: 'Take Buddy\'s tour of every page again.',
                           icon: Icons.school_rounded,
                           onTap: () => _replayTutorial(context),
                           trailing: const Icon(
                             Icons.chevron_right_rounded,
+                            color: Color(0xFFB7F7D7),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Reachable from inside the app, not only from the
+                        // store listing. Play's Families policy wants it here,
+                        // and somebody who agreed at sign-up should be able to
+                        // go back and read what they agreed to.
+                        _SettingsCard(
+                          title: 'Privacy Policy',
+                          subtitle: stats.privacyAcceptedAt == null
+                              ? 'What we store, and what we never collect.'
+                              : 'Accepted '
+                                    '${_shortDate(stats.privacyAcceptedAt!)} '
+                                    '· version ${stats.privacyAcceptedVersion}',
+                          icon: Icons.privacy_tip_rounded,
+                          onTap: () => _openPrivacyPolicy(context),
+                          trailing: const Icon(
+                            Icons.open_in_new_rounded,
+                            size: 18,
                             color: Color(0xFFB7F7D7),
                           ),
                         ),
@@ -428,6 +536,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                 ),
                               ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        // Deliberately a quiet text link and not a red button.
+                        //
+                        // Play requires this to exist and to be reachable
+                        // without leaving the app. It does not require it to
+                        // be the most eye-catching thing on the screen, and
+                        // giving permanent deletion the same visual weight as
+                        // Log Out -- directly under Log Out -- is how a nine
+                        // year old deletes their account by aiming badly. The
+                        // confirmation does the real work; this just declines
+                        // to advertise.
+                        Center(
+                          child: TextButton(
+                            onPressed: () => _deleteAccount(context),
+                            style: TextButton.styleFrom(
+                              foregroundColor: const Color(0xFFFF9B8A),
+                            ),
+                            child: Text(
+                              'Delete my account',
+                              style: GoogleFonts.quicksand(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                decoration: TextDecoration.underline,
+                                decorationColor: const Color(0x66FF9B8A),
+                              ),
                             ),
                           ),
                         ),
@@ -1457,7 +1593,10 @@ class _FriendsCardState extends State<_FriendsCard> {
     _reload(currentUserId);
   }
 
-  Future<void> _removeFriend(String currentUserId, LeaderboardEntry friend) async {
+  Future<void> _removeFriend(
+    String currentUserId,
+    LeaderboardEntry friend,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -1748,6 +1887,147 @@ class _FriendsList extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// The confirm-deletion dialog: what goes, then a typed confirmation.
+class _DeleteAccountDialog extends StatefulWidget {
+  const _DeleteAccountDialog();
+
+  @override
+  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
+}
+
+class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
+  final TextEditingController _typed = TextEditingController();
+
+  /// Matched case-insensitively and trimmed. The point of the word is that it
+  /// cannot be produced by a mis-tap, and that survives lowercase perfectly
+  /// well -- failing somebody for typing "delete" would just be a puzzle.
+  static const String _word = 'DELETE';
+
+  bool get _matches => _typed.text.trim().toUpperCase() == _word;
+
+  @override
+  void initState() {
+    super.initState();
+    _typed.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _typed.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppTheme.panelStrong,
+      title: Text(
+        'Delete your account?',
+        style: GoogleFonts.pixelifySans(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'This cannot be undone. These go straight away:',
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.88),
+              fontWeight: FontWeight.w600,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final line in const <String>[
+            'Your level, coins and every skin you own',
+            'Every life you have played and every ending you found',
+            'Your lessons, quiz scores and streak',
+            'Your friends, and you on theirs',
+          ])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('· ', style: TextStyle(color: Color(0xFFFF9B8A))),
+                  Expanded(
+                    child: Text(
+                      line,
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white.withValues(alpha: 0.78),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 14),
+          Text(
+            'Type $_word to confirm.',
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.88),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _typed,
+            autocorrect: false,
+            enableSuggestions: false,
+            style: GoogleFonts.quicksand(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: _word,
+              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+              enabledBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0x33FFFFFF)),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFFFF9B8A)),
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(
+            'Keep my account',
+            style: GoogleFonts.quicksand(
+              color: const Color(0xFFB7F7D7),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        FilledButton(
+          // Disabled until the word matches, rather than validating on press.
+          // A button that looks pressable and then refuses teaches somebody
+          // to press it harder.
+          onPressed: _matches ? () => Navigator.of(context).pop(true) : null,
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFF55353),
+            disabledBackgroundColor: const Color(0x33F55353),
+          ),
+          child: Text(
+            'Delete forever',
+            style: GoogleFonts.quicksand(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -35,8 +35,35 @@ try:
 except ImportError:  # pragma: no cover
     sys.exit('pip install pillow')
 
-SOURCE = os.path.join('assets', 'self_made_backgrounds', 'map.png')
-TARGET = os.path.join('assets', 'self_made_backgrounds', 'map_soft.png')
+# Both town maps get the same treatment. The second one is the 800x800 export
+# that could not be made *playable* -- its collision data was never in the PNG
+# and three separate heuristics all read the main road as solid -- but there
+# was never anything wrong with the art, and a backdrop needs no colliders.
+# So it earns its place here instead: see `MapBackdrop.variant`.
+PAIRS = (
+    (
+        os.path.join('assets', 'self_made_backgrounds', 'map.png'),
+        os.path.join('assets', 'self_made_backgrounds', 'map_soft.png'),
+    ),
+    (
+        os.path.join('assets', 'images', 'maps', 'map (1).png'),
+        os.path.join('assets', 'self_made_backgrounds', 'map_two_soft.png'),
+    ),
+)
+
+# The second map ships inside a decorative stone frame. Fine in an editor
+# preview, wrong as a full-bleed backdrop: `BoxFit.cover` on a portrait phone
+# scales an 800x800 square to the screen width, so the left and right runs of
+# that frame land right down the edges of the screen and read as a border
+# somebody forgot to remove. 16px is past it on every side.
+FRAME_INSET = {os.path.join('assets', 'images', 'maps', 'map (1).png'): 16}
+
+# Where the cropped-but-unblurred copy goes for each framed source.
+SHARP_OUT = {
+    os.path.join('assets', 'images', 'maps', 'map (1).png'): os.path.join(
+        'assets', 'self_made_backgrounds', 'map_two.png'
+    ),
+}
 
 # Wide enough to erase a tile seam (the source is 561x400 and its tiles are
 # about 16px), narrow enough that the map still reads as a map.
@@ -47,14 +74,29 @@ SATURATION = 0.72
 
 
 def main() -> None:
-    if not os.path.exists(SOURCE):
-        sys.exit(f'{SOURCE} is missing')
-    image = Image.open(SOURCE).convert('RGB')
-    image = image.filter(ImageFilter.GaussianBlur(BLUR_RADIUS))
-    image = ImageEnhance.Color(image).enhance(SATURATION)
-    image.save(TARGET)
-    print(f'{TARGET}  {image.size[0]}x{image.size[1]}  '
-          f'({os.path.getsize(TARGET) // 1024}KB)')
+    for source, target in PAIRS:
+        if not os.path.exists(source):
+            sys.exit(f'{source} is missing')
+        image = Image.open(source).convert('RGB')
+        inset = FRAME_INSET.get(source, 0)
+        if inset:
+            w, h = image.size
+            image = image.crop((inset, inset, w - inset, h - inset))
+            # The cropped-but-sharp copy is an output too, not a by-product:
+            # the decorative and hero backdrop styles both want the art
+            # unblurred, and they want it without the frame just as much.
+            sharp = SHARP_OUT[source]
+            image.save(sharp)
+            print(f'{sharp}  {image.size[0]}x{image.size[1]}  sharp')
+        # The blur is specified against the 561px source, so scale it with the
+        # image -- a fixed 9px radius on the 800px export would leave tile
+        # seams standing, which is the one thing this is for.
+        radius = BLUR_RADIUS * (image.size[0] / 561.0)
+        image = image.filter(ImageFilter.GaussianBlur(radius))
+        image = ImageEnhance.Color(image).enhance(SATURATION)
+        image.save(target)
+        print(f'{target}  {image.size[0]}x{image.size[1]}  '
+              f'blur {radius:.1f}px  ({os.path.getsize(target) // 1024}KB)')
 
 
 if __name__ == '__main__':

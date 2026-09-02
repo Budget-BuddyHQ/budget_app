@@ -10,7 +10,9 @@ import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import '../../../models_Like_Skins_and_lessons_templates/outing_rules.dart';
 import '../../../controllers_that_updates_stats/app_settings_controller.dart';
+import '../../../models_Like_Skins_and_lessons_templates/concept_powers.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_tutorial_steps.dart';
+import '../../../models_Like_Skins_and_lessons_templates/ranked_run.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../onboarding/coach_mark.dart';
 import '../../../widgets_custom_lotties/confetti_burst.dart';
@@ -32,7 +34,20 @@ import '../../../widgets_custom_lotties/pixel_panel.dart';
 /// Owns its own [LifeSimController], so state resets each visit and never
 /// touches the player's saved gold until they retire.
 class LifeSimPage extends StatefulWidget {
-  const LifeSimPage({super.key, this.debugInitialLife});
+  const LifeSimPage({
+    super.key,
+    this.debugInitialLife,
+    this.ranked = false,
+  });
+
+  /// Ranked run: same simulation, scored at the end.
+  ///
+  /// A flag rather than a separate screen, because the *rules* are identical
+  /// -- ranked is not a different game, it is the same one with the question
+  /// narrowed to "how much can you build". Forking the screen would mean two
+  /// copies of the life sim drifting apart, which is a much worse problem
+  /// than one boolean.
+  final bool ranked;
 
   /// Skips character creation and plays this life instead.
   ///
@@ -171,10 +186,16 @@ class _LifeSimPageState extends State<LifeSimPage> {
       icon: Icons.savings_rounded,
       accent: const Color(0xFFE1BB72),
     );
+    // Scored from the controller before it is disposed, for the same reason
+    // the summary is snapshotted above.
+    final score = widget.ranked ? scoreRankedRun(life.rankedResult) : null;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) =>
-            LifeEpilogueScreen(summary: summary, bestsBeaten: bestsBeaten),
+        builder: (_) => LifeEpilogueScreen(
+          summary: summary,
+          bestsBeaten: bestsBeaten,
+          rankedScore: score,
+        ),
       ),
     );
   }
@@ -267,6 +288,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
         },
         onBudget: () => _openBudget(life),
         onConcepts: () => _openConcepts(life),
+        onPowers: () => _openPowers(life),
       ),
     );
   }
@@ -284,6 +306,15 @@ class _LifeSimPageState extends State<LifeSimPage> {
   }
 
   /// The running list of money ideas this life has surfaced.
+  Future<void> _openPowers(LifeSimController life) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _PowersSheet(life: life),
+    );
+  }
+
   Future<void> _openConcepts(LifeSimController life) async {
     await showModalBottomSheet<void>(
       context: context,
@@ -617,7 +648,36 @@ class _HeaderBar extends StatelessWidget {
     if (placeholders.contains(trimmed.toLowerCase())) {
       return 'Age $age · ${stage.label}';
     }
-    return 'Age $age · ${stage.label} · $trimmed';
+    // Job instead of stage, not as well as. "Age 34 · Adult · Shop Assistant"
+    // wanted 180px in the 106px this column gets on a 320px phone — past even
+    // FittedLabel's scaling floor, so it truncated. And the dropped word was
+    // the useless one: a job title says "adult" more precisely than the word
+    // adult does.
+    //
+    // Then trimmed to a character budget rather than left to scale. This slot
+    // is the app bar's title column beside a name, a balance and two buttons;
+    // at 320px it is about 106px wide and even the shortened line came in two
+    // over. A budget in the *string* fits whatever the layout does, which a
+    // scaling floor does not.
+    return 'Age $age · ${_fitJob(trimmed, age)}';
+  }
+
+  /// Shortens a job title to what the header can actually show.
+  ///
+  /// Cuts on a word boundary where there is one, so "Senior Financial
+  /// Wellness Consultant" becomes "Senior Financial…" rather than "Senior
+  /// Financial We…".
+  static String _fitJob(String job, int age) {
+    // The whole line has to come in under about 19 characters at this size
+    // — measured, not guessed: "Age 34 · Shop Assistant" is 23 and lays out
+    // at 108px against the 106 available. The prefix has already spent nine
+    // of them, and the ellipsis costs one more.
+    final budget = 19 - 'Age $age · '.length;
+    if (job.length <= budget) return job;
+    final cut = job.substring(0, budget - 1);
+    final lastSpace = cut.lastIndexOf(' ');
+    final kept = lastSpace > budget ~/ 2 ? cut.substring(0, lastSpace) : cut;
+    return '$kept…';
   }
 
   @override
@@ -665,6 +725,10 @@ class _HeaderBar extends StatelessWidget {
               // there is a real one ("Barista"), it earns its place.
               FittedLabel(
                 _subtitleFor(age: age, stage: stage, job: job),
+                // A lower floor than the default 0.62. This is secondary text
+                // under a name that already has the space it needs, and a
+                // long job title on a narrow phone is better small than cut.
+                minScale: 0.5,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -2045,6 +2109,7 @@ class _LifeMenuSheet extends StatelessWidget {
     required this.onInvest,
     required this.onBudget,
     required this.onConcepts,
+    required this.onPowers,
   });
 
   final _LifeMenu menu;
@@ -2053,6 +2118,7 @@ class _LifeMenuSheet extends StatelessWidget {
   final VoidCallback onInvest;
   final VoidCallback onBudget;
   final VoidCallback onConcepts;
+  final VoidCallback onPowers;
 
   List<_LifeAction> _actions(BuildContext context) {
     void run(void Function() action) {
@@ -2265,6 +2331,33 @@ class _LifeMenuSheet extends StatelessWidget {
                 '${life.netWorth}.',
             icon: Icons.account_balance_wallet_rounded,
             onTap: () => Navigator.of(context).pop(),
+          ),
+          // Directly above the ideas list, because it is what the ideas
+          // list is *for*. Meeting a concept used to end at a chip on a
+          // screen; this is the row that turns it into something.
+          _LifeAction(
+            label: life.activePowers.isEmpty
+                ? 'Use a money idea'
+                : 'Money ideas at work '
+                      '(${life.activePowers.length}/'
+                      '${LifeSimController.maxActivePowers})',
+            detail: life.armablePowers.isEmpty && life.activePowers.isEmpty
+                ? 'Meet an idea first — they show up as your choices raise '
+                      'them.'
+                : life.activePowers.isEmpty
+                ? '${life.armablePowers.length} ready to switch on.'
+                : life.activePowers
+                      .map((a) => a.power.name)
+                      .join(', '),
+            icon: Icons.bolt_rounded,
+            onTap: () {
+              Navigator.of(context).pop();
+              onPowers();
+            },
+            disabledReason:
+                life.armablePowers.isEmpty && life.activePowers.isEmpty
+                ? 'No ideas met yet'
+                : null,
           ),
           _LifeAction(
             label: 'Money ideas you have met',
@@ -3347,6 +3440,274 @@ class _YearFact extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+
+/// Arming a money idea.
+///
+/// The screen half of `concept_powers.dart`. The rule it has to make obvious
+/// is the one the whole design rests on: the list of things you can switch on
+/// *is* the list of ideas you have understood. Somebody looking at an empty
+/// sheet should read it as "go and learn something", not as "this feature is
+/// broken".
+class _PowersSheet extends StatefulWidget {
+  const _PowersSheet({required this.life});
+
+  final LifeSimController life;
+
+  @override
+  State<_PowersSheet> createState() => _PowersSheetState();
+}
+
+class _PowersSheetState extends State<_PowersSheet> {
+  @override
+  Widget build(BuildContext context) {
+    final life = widget.life;
+    final active = life.activePowers;
+    final armable = life.armablePowers;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+      decoration: const BoxDecoration(
+        color: Color(0xFF0A1D17),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.bolt_rounded,
+                    color: Color(0xFFFFD45C),
+                    size: 22,
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: FittedLabel(
+                      'Money ideas at work',
+                      style: GoogleFonts.pixelifySans(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'An idea you understand is worth something. Switch one on and '
+                'it changes how the next few years go. '
+                '${LifeSimController.maxActivePowers} at a time.',
+                style: GoogleFonts.quicksand(
+                  color: AppTheme.textMuted,
+                  fontSize: 12.5,
+                  height: 1.4,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              if (active.isNotEmpty) ...[
+                _PowersHeading(label: 'Running now'),
+                for (final running in active) ...[
+                  _PowerCard(
+                    power: running.power,
+                    yearsLeft: running.yearsLeftAt(life.age),
+                    onArm: null,
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                const SizedBox(height: 6),
+              ],
+
+              _PowersHeading(
+                label: active.isEmpty ? 'Ready to switch on' : 'Also ready',
+              ),
+              if (armable.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Text(
+                    active.isEmpty
+                        ? 'You have not met any money ideas yet. They turn up '
+                              'as your choices raise them — in an event, in '
+                              'the town, or in a lesson.'
+                        : 'Every idea you have met is already running.',
+                    style: GoogleFonts.quicksand(
+                      color: AppTheme.textMuted,
+                      fontSize: 12.5,
+                      height: 1.45,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                )
+              else
+                for (final power in armable) ...[
+                  _PowerCard(
+                    power: power,
+                    yearsLeft: null,
+                    onArm: life.canArmPower
+                        ? () {
+                            if (life.armPower(power.concept)) {
+                              setState(() {});
+                            }
+                          }
+                        : null,
+                  ),
+                  const SizedBox(height: 10),
+                ],
+
+              if (armable.isNotEmpty && !life.canArmPower) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Both slots are full. Wait for one to run out — choosing '
+                  'which idea to lean on is the point.',
+                  style: GoogleFonts.quicksand(
+                    color: AppTheme.warningOrange,
+                    fontSize: 12,
+                    height: 1.4,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PowersHeading extends StatelessWidget {
+  const _PowersHeading({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Text(
+      label.toUpperCase(),
+      style: GoogleFonts.pixelifySans(
+        color: Colors.white.withValues(alpha: 0.5),
+        fontSize: 11,
+        letterSpacing: 0.7,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+  );
+}
+
+class _PowerCard extends StatelessWidget {
+  const _PowerCard({
+    required this.power,
+    required this.yearsLeft,
+    required this.onArm,
+  });
+
+  final ConceptPower power;
+
+  /// Non-null when this one is already running.
+  final int? yearsLeft;
+
+  /// Null when it cannot be armed — either it is running, or both slots are
+  /// full.
+  final VoidCallback? onArm;
+
+  @override
+  Widget build(BuildContext context) {
+    final running = yearsLeft != null;
+    final accent = power.concept.accent;
+    final chip = AppTheme.tintedChip(accent, alpha: running ? 0.2 : 0.12);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: chip.fill,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(
+          color: accent.withValues(alpha: running ? 0.55 : 0.28),
+          width: running ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              LifeEmoji(power.concept.emoji, size: 15),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FittedLabel(
+                  power.name,
+                  style: GoogleFonts.pixelifySans(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                running ? '$yearsLeft yr left' : '${power.years} yr',
+                style: GoogleFonts.pixelifySans(
+                  color: chip.ink,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            power.blurb,
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.86),
+              fontSize: 12.5,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          // Which idea this is. The power is the reward for having met it, so
+          // the name of the idea belongs on the card rather than being
+          // something you have to remember.
+          Text(
+            'From ${power.concept.label}',
+            style: GoogleFonts.quicksand(
+              color: AppTheme.textMuted,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (!running) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: onArm,
+                style: FilledButton.styleFrom(
+                  backgroundColor: accent,
+                  foregroundColor: const Color(0xFF06251A),
+                  disabledBackgroundColor: Colors.white.withValues(alpha: 0.08),
+                  disabledForegroundColor: Colors.white38,
+                  padding: const EdgeInsets.symmetric(vertical: 11),
+                ),
+                child: Text(
+                  onArm == null ? 'Both slots full' : 'Switch it on',
+                  style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
