@@ -2095,6 +2095,7 @@ int townScenarioIndexFor(
   DateTime? now,
   int extraCount = 0,
   int? lifeAge,
+  String? conditionId,
 }) {
   final date = now ?? DateTime.now();
   final total = 1 + extraCount;
@@ -2121,8 +2122,50 @@ int townScenarioIndexFor(
   // `10 * m` is divisible by 5 for *every* m — so no linear mix can survive
   // a player ageing in round decades, which is exactly how somebody skims a
   // life. Hashing the pair breaks the stride.
-  final mix = day * 31 + Object.hash(spotId, lifeAge ?? 0);
+  //
+  // **`Object.hash` cannot be used here**, which is not obvious and cost a
+  // flaky test to find. Dart seeds string hashing per isolate, so
+  // `Object.hash(spotId, age)` returns a *different* number in every process
+  // — meaning the scene a player got for a given day and age changed every
+  // time they reopened the app. There is a test one group below called "the
+  // rotation is stable within a day", and it only ever passed because it
+  // compared two calls inside one process. A stable hash is the whole point
+  // of the mix, so it has to be one this file computes itself.
+  // The age is folded into the hashed *string*, not multiplied into the sum.
+  // Multiplying is what the paragraph above warns against and I put it back
+  // by accident on the first pass at this: `age * 7919` is linear, a spot
+  // with five scenes takes the index mod 5, and every age in the test's
+  // decade-spaced sample landed on the same scene again. Hashing the pair is
+  // the only part that breaks the stride.
+  // The day, the age, and **what kind of day it is**.
+  //
+  // Adding the condition is what makes the town survive being walked around
+  // twice in one sitting. Before it, the index moved with the calendar day
+  // and the character's age and nothing else — so a player who left the town
+  // and came straight back at the same age got the identical conversation in
+  // every building, which is the thing that reads as "the scenes repeat".
+  // The condition is rolled per *visit* (see `TownCondition`), so stepping
+  // outside and back in genuinely re-deals the town while staying fixed for
+  // as long as you are inside it.
+  //
+  // It is thematically right as well as cheap: what the cafe says on a rainy
+  // day and what it says on market day should not be the same sentence.
+  final mix =
+      day * 31 + _stableHash('$spotId:${lifeAge ?? 0}:${conditionId ?? ''}');
   return mix.abs() % total;
+}
+
+/// FNV-1a over the code units. Deterministic across processes, machines and
+/// releases, which `String.hashCode` and [Object.hash] are not.
+int _stableHash(String value) {
+  var hash = 0x811c9dc5;
+  for (var i = 0; i < value.length; i++) {
+    hash ^= value.codeUnitAt(i);
+    // Kept inside 32 bits so the result is identical on the web's doubles and
+    // on native 64-bit ints.
+    hash = (hash * 0x01000193) & 0x7fffffff;
+  }
+  return hash;
 }
 
 /// The prompt and choices [spot] is showing today.
@@ -2130,6 +2173,7 @@ int townScenarioIndexFor(
   TownSpot spot, {
   DateTime? now,
   int? lifeAge,
+  String? conditionId,
 }) {
   final extras = kTownScenarios[spot.id] ?? const <TownScenario>[];
   final index = townScenarioIndexFor(
@@ -2137,6 +2181,7 @@ int townScenarioIndexFor(
     now: now,
     extraCount: extras.length,
     lifeAge: lifeAge,
+    conditionId: conditionId,
   );
   if (index == 0) {
     return (prompt: spot.prompt, choices: spot.choices);

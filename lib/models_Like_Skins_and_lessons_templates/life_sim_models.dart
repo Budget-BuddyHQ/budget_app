@@ -1725,8 +1725,19 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     icon: Icons.newspaper_rounded,
     minAge: 18,
     weight: 0.45,
-    // 24, not 40 — above the reachable fame ceiling, so this never fired.
-    minFame: 24,
+    // 12, not 24, not the original 40.
+    //
+    // This gate has now been wrong twice, and both times for the same reason:
+    // it was set to what "famous enough for a tabloid" sounds like rather
+    // than to anything a player can actually reach. Measured over 300 random
+    // runs the *peak* fame anybody hits is 16, so 24 was as unreachable as 40
+    // — the event existed and no player had ever seen it.
+    //
+    // `life_variety_test` is what catches this: it plays 400 seeds plus one
+    // per skill focus and fails on any event nobody reached. It caught the
+    // 24 only after eleven new events were added to the pool, which diluted
+    // every draw by about 6% and pushed a marginal case over the line.
+    minFame: 12,
     choices: [
       LifeChoice(
         label: 'Get ahead of it',

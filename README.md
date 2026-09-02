@@ -165,6 +165,86 @@ Every bug worth remembering, what caused it, and how it was fixed.
 
 ### Data correctness
 
+**Every year in the feed restated the header above it**
+`'Turned $age.'` printed on every year that drew an event — about three
+quarters of them — directly underneath a feed header that already read
+"Age 12". So the single most common line in the whole log was a restatement of
+the line immediately above it, and a life read as repetitive even though,
+measured over sixty runs, any two lives share only 2-12% of their events. The
+paycheck line was a second offender at 15% of all lines, word for word, and
+"A tight year. You made it work." a third at 6%.
+*Fix:* no filler line at all on a year that had an event; five openers for the
+paycheck line and six for the tight year. The most repeated line dropped from
+6.8% of the feed to 3.2% and distinct lines went from 938 to 1,078.
+*Files:* `life_sim_controller.dart`, `life_feed_texture_test.dart`
+
+**An event no player had ever seen**
+`fame_scandal` was gated at `minFame: 24` when the peak fame reachable in 300
+random runs is 16 — it had already been lowered once from 40, and was still
+above the ceiling both times. What surfaced it was adding eleven new events to
+the pool, which diluted every draw by about 6% and pushed a marginal case over
+the line: a content addition breaking balance somewhere unrelated.
+*Fix:* `minFame: 12`. `life_variety_test` plays 400 seeds plus one per skill
+focus and fails on any event nobody reached, which is the only thing that
+would ever have said so.
+*Files:* `life_sim_models.dart`
+
+**The market board spent its whole rate budget off screen**
+Every tick refreshed all sixteen tracked symbols, sequentially. Against a
+60-call minute that caps the entire board at one update per sixteen seconds,
+and nearly all of it fetched prices that were scrolled out of view.
+*Fix:* a batch of four per tick, weighted to the player's holdings and
+rotating through the rest — 48 calls a minute, a full sweep every 20s, and
+anything being watched refreshing every 5s. Two things had to move with it: the
+throttle from one board-wide clock to one per symbol (or pinned symbols were
+refused by their own throttle five seconds after being fetched), and a cap that
+includes the pinned ones (or ten holdings means 120 calls a minute).
+*Files:* `market_data_service.dart`, `stock_market_page.dart`,
+`market_batching_test.dart`
+
+**A two-year-old could press Invest, and nothing happened**
+Reported as "can you invest when you're 2 years old". The controller was
+correct the whole time — `invest` checks `allows(LifeAction.invest)` and the
+age table has said 16 since it was written. The *menu row* set its
+`disabledReason` from whether you held 100 coins and never asked about age, so
+a toddler with 150 coins got a lit button that took the tap and did nothing,
+because `invest` returned silently. A dead control that looks alive is worse
+than a blocked one that explains itself, and in a game for children it does not
+read as a fault, it reads as being ignored. Gamble and Practise were the same
+mistake without being broken yet: both duplicated the controller's numbers and
+happened to agree with them.
+*Fix:* structural rather than three patches. `_LifeAction` takes a **required**
+`performs` field naming the action it runs, and `_actions` applies `gatedBy` to
+every row it returns in one expression, so there is nowhere left to forget the
+gate. Rows state only their local reason; the age rule is layered on top and
+wins when both apply.
+*Files:* `life_sim_page.dart`, `life_sim_controller.dart`,
+`life_menu_honesty_test.dart`, `life_menu_render_test.dart`
+
+**The sale said cheaper and the button said full price**
+Town conditions applied their discount when *charging* but the choice rows
+printed `choice.gold` straight from the data, so on a sale day the sign read
+"cheaper than usual today" and the row under it still said -8. A discount you
+only discover by watching your balance afterwards is not a lesson about sales,
+it is a game that cannot be trusted to quote a price.
+*Fix:* the row takes `shownGold`, computed with the same `priceFor` the map
+charges with.
+*Files:* `town_interior_screen.dart`, `town_conditions_test.dart`
+
+**Every screenshot was of a tree whose images had never painted**
+Three picture tiles rendered empty. I blamed the widget and "fixed" it; the
+next shot came back with the tiles still empty *and the hero's map gone* —
+which was the tell, because nothing I had touched could affect the map.
+`tester.pump()` advances a fake clock and drains microtasks; decoding an
+`Image.asset` is real async work. It hid for so long because it was not
+consistent: an asset already in `imageCache` from an earlier screen in the same
+file paints immediately, so the map appeared on some runs and not others, and
+that got read as a broken widget rather than a broken harness.
+*Fix:* a `runAsync` delay and one more pump before the shutter. It also brought
+back the endings padlocks and the coin icon, silently missing from every
+screenshot ever taken.
+*Files:* `screen_render_test.dart`
+
 **Every stock chart had an identical shape**
 The card sparklines drew `LiveQuote.miniSeries`, which was
 `[previousClose, open, low, high, current]`. Index 2 is *always* the minimum and
@@ -1640,6 +1720,247 @@ the computed scale so a label that fits to the exact pixel is not one rounding
 step from overflowing.
 *Files:* `fitted_label.dart`
 
+### The second map became playable
+
+`assets/images/maps/map (1).png` had been sitting unused for weeks. It was
+exported as a flat 800x800 PNG — no tile grid, no collider flags — and three
+attempts at inferring collision from the image alone (edge density, colour
+clustering, tile variance) all marked the main promenade solid, which cuts the
+town in half and is worse than not shipping it.
+
+**The fourth attempt stopped guessing.** Both maps are drawn from the same
+8x66 spritesheet, and `map.json` is hand-authored with real collider layers —
+so it is ground truth about which tile ids are solid. `tool/build_map_two.py`
+recovers map 2's tile ids by matching each 16px cell against the sheet (70%
+are an exact match; most of the rest are a transparent tile composited over a
+background, which takes it to 93%; the last 172 fall back to nearest), then
+labels each one using map 1's mapping: **186 solid ids, 51 open, and only two
+that appear in both.**
+
+Result: 237 solid tiles, 2,263 walkable, and **99.6% of the walkable space is
+one connected region spanning the whole map**. Unknown ids default to walkable
+on purpose — the two failure modes are not symmetric, and a town you can walk
+through a bush in is much better than a town cut into quarters.
+
+### The markers were floating in the road
+
+Reported as "make the store near the building", and measured, that was
+generous. Against the collider data the cafe and the clinic were sitting *four
+tiles* from the nearest solid thing and the market and library three — on
+screen, a coloured circle in the middle of a road with no building anywhere
+near it.
+
+`tool/place_town_spots.py` snaps each one to the nearest walkable tile that
+actually touches a **building**, where a building is a connected solid cluster
+of six or more tiles. The size floor matters: trees, fences and bins are solid
+too, and snapping a shop marker to the side of a hedge is a different wrong
+answer rather than a fix. The first run also cheerfully dragged all six NPCs
+onto doorsteps, which is why it now only moves `spot_` ids — a person is not a
+building entrance, and pinning them to walls made the town look like everyone
+was queueing.
+
+### The walking animation, and why four redraws never fixed it
+
+**It was never the drawing.** Each sheet has eight side-facing columns but
+only *four distinct poses* — measured across all 38 sheets, column 0 is
+pixel-identical to 4, 1 to 3, and 5 to 7. And 5-7 are not the other half of
+the stride: they are the same poses drawn 16% bulkier, 7,820 opaque pixels at
+79.5px wide against 6,740 at 65px.
+
+So the cycle ran slim-pass, slim-up, slim-pass, fat-pass, fat-up, fat-pass.
+**The same leg led the whole way round**, while the body swelled and shrank
+twice a second. That is what "the character is clanking" was, and it is why
+redrawing individual frames never helped — every frame was fine on its own,
+and the missing thing was the second half of the cycle.
+
+A stride's second half is the first half with the **legs swapped**, so
+`tool/fix_side_walk_cycle.py` rebuilds columns 5-7 from 1-2 mirroring only the
+leg band. The torso is pixel-identical between halves, so the swell is gone by
+construction; the legs alternate, which is the part that reads as walking.
+Step time went 0.07 to 0.11 as well — fourteen frames a second was a judder
+rather than a stride.
+
+### The market board was spending its whole budget off screen
+
+"Can it change real time so it's quick" — and the answer had two parts, one of
+which was mine to get wrong.
+
+The **first** was the ten-cent coin: at 10 coins to the dollar one coin is
+10p, and most of what a real share does in twenty seconds is smaller than
+that, so the integer price sat perfectly still while the percentage beside it
+moved. The board now displays one decimal (cent resolution) while trades keep
+using whole coins, so nothing about the economy changes.
+
+The **second** was the user's idea and a better one than mine. Every tick
+refreshed all sixteen tracked symbols, sequentially — and against Finnhub's
+60-call minute that caps the entire board at one update per sixteen seconds,
+almost all of it spent on prices scrolled off the screen. Now a tick fetches a
+**batch of four**, weighted to the symbols the player holds and rotating
+through the rest: 48 calls a minute, a full sweep every 20 seconds, and
+anything being watched updating every **5**. Four times fresher for what is in
+front of you.
+
+Two things had to be got right for that to be safe, and neither was obvious.
+The throttle had to move from one clock for the whole board to one per symbol,
+or every pinned symbol was refused five seconds after the batch that fetched
+it. And the batch has to be capped *including* the pinned ones — a player
+holding ten stocks would otherwise pin ten symbols into a five-second tick and
+make 120 calls a minute against a limit of 60. `market_batching_test` does
+that arithmetic, because getting it wrong means a 429 and a dead board rather
+than anything visible on screen.
+
+### The main game was not repeating its events, it was repeating its prose
+
+Reported as the main gameplay feeling repeated. Measured over sixty runs, any
+two lives share only **2-12% of their events** — the variety was already
+there. What repeated was the writing around them:
+
+* `'Turned $age.'` printed on every year that drew an event, about three
+  quarters of them, **directly under a feed header that already said "Age
+  12"**. The single most common line in the log was a restatement of the line
+  immediately above it.
+* The paycheck line was one fixed sentence on every earning year: 15% of every
+  line in the feed, word for word.
+* "A tight year. You made it work." was another 6%.
+
+A player scrolling back through a life saw the same handful of sentences over
+and over and correctly concluded the game was repeating itself, even though
+the decisions were not. The age restatement is gone, the budget line has five
+openers and the tight year six — the *numbers* stay identical every year,
+because that is what makes it a routine and the routine is the lesson, but the
+sentence around them does not.
+
+Measured after: the most repeated line dropped from 6.8% of the feed to 3.2%,
+and distinct lines went from 938 to 1,078. `life_feed_texture_test` holds it,
+with loose thresholds — the point is to catch a *new* line becoming wallpaper,
+not to freeze the current wording.
+
+### An event nobody had ever seen
+
+`life_variety_test` plays 400 seeds plus one per skill focus and fails on any
+event no simulated player reached. It caught `fame_scandal`, gated at
+`minFame: 24` when the peak fame reachable in 300 runs is **16**. That gate had
+already been wrong once — lowered from 40 — and both times for the same
+reason: it was set to what "famous enough for a tabloid" sounds like rather
+than to anything a player can get to.
+
+Worth noting what surfaced it. Adding eleven new events to the pool diluted
+every other draw by about 6%, which pushed a marginal case over the line. A
+content addition can break balance somewhere unrelated, and the sweep is the
+only thing that would ever have said so.
+
+### A two-year-old could press Invest
+
+Reported as a question — "can you invest when you're 2 years old" — and the
+answer was that the button was lit, yes.
+
+The controller was never wrong. `LifeSimController.invest` checks
+`allows(LifeAction.invest)` and the age table has said 16 the whole time. The
+menu row was the problem: it set `disabledReason` from whether you were holding
+100 coins and never asked about age at all. So a toddler with 150 coins got a
+button that looked pressable, took the tap, and did nothing — `invest` returned
+silently. **That is the worst shape a bug can take in a game for children.** It
+does not look like a fault, it looks like the game ignoring you.
+
+Two more rows were wrong in the same family without being broken yet: Gamble
+hardcoded `age < 18` and Practise tested `stage == LifeStage.baby`, both of
+which happened to agree with the controller by coincidence rather than by
+construction.
+
+**The fix is structural, because patching three rows leaves the fourth.**
+`_LifeAction` now takes a **required** `performs` field naming the
+`LifeAction` it runs — nullable, so "this is not a gated action" is an answer
+somebody typed rather than a default they inherited — and `_actions` applies
+`gatedBy` to every row it returns, in one expression. There is no longer a
+place to forget the gate. The row states only its *local* reason ("Not enough
+coins", "You have no job to quit") and the age rule is layered on top, with age
+winning when both apply: telling a nine-year-old they are short of coins, when
+the real answer is that nine-year-olds cannot do this at all, sends them off to
+earn money for something that still will not work.
+
+`life_menu_honesty_test` holds the other half — that for every action, at every
+age, "the controller allows you" and "calling it changes something" are the
+same answer. It is worth being clear that those tests would *not* have caught
+the reported bug, because the controller was correct; the widget test in
+`life_menu_render_test` is the one that does.
+
+### The menu and the map stopped competing
+
+Two complaints, one cause: "half of these options are irrelevant when you're
+going to the map", and the menu and map being a confusing mix.
+
+**The wall of grey.** Activities at age five was eight rows, seven of them
+locked, with the single thing a five-year-old can actually do sitting fourth in
+the list. Nothing overflowed and nothing clipped, so no layout test could see
+it — the screen was technically correct and practically useless. Available
+actions now come first and locked ones sit under a heading at the bottom. They
+are not removed, because at that age being told what you cannot do yet *is* the
+content: it is what makes the early years read as childhood rather than as an
+adult life with less money.
+
+The heading has to be chosen rather than fixed, which I got wrong first time.
+"When you are older" is true of Activities at five, where age is the only thing
+in the way. It is false of Money at five, which locks budgeting because there
+is no job yet and money ideas because none have been met — neither of which
+growing up fixes. A mixed group says "Not yet" instead.
+
+**The duplication.** The library, the clinic, the park and the job board are
+all *places*, and the menu carried a button for each with nothing anywhere
+saying they were the same thing. Two routes to one outcome is fine — the map is
+not always open to you, and making somebody walk across a town to be treated
+would be a worse simulation, not a stricter one. Two routes with no
+acknowledgement that they meet is what read as duplication. Those rows now
+carry an **in town** tag.
+
+### The town says what day it is
+
+The town already reset every visit and rotated its scenes by day and by age, so
+it was never the same twice. It still *read* the same, because nothing on
+screen ever said so — and a place that changes invisibly is indistinguishable
+from a place that does not change.
+
+`town_conditions.dart` adds a line at the top of the map and prices that follow
+it: market day, a sale at the store, a quiet week where the pawn shop pays over
+the odds, a month where prices have gone up, a free day at the clinic, rain
+that fills the cafe. It teaches the thing a static price list cannot — **the
+same item costs different amounts on different days, and noticing is worth
+money** — which is the groundwork for comparison shopping and for inflation,
+neither of which lands as a sentence in a lesson.
+
+Three things that took thought rather than typing:
+
+* **Ordinary days carry more weight than every special day combined.** If every
+  visit were an event, none of them would be one.
+* **Buying and selling move independently.** A good week to sell is not a good
+  week to buy, and one multiplier for both would quietly teach that a shop's
+  prices and its offers rise together.
+* **The quoted price had to become the charged price.** The first pass applied
+  the discount when charging and printed the list price on the button, so the
+  sign said "cheaper than usual today" and the row under it still said -8. A
+  discount you only discover by watching your balance afterwards is not a
+  lesson about sales, it is a game that cannot be trusted to quote a price.
+
+### The password reset email
+
+Plain, because nobody had ever touched it: Supabase's default template is a
+bare `<h2>` and a naked link on a white page, and it goes to the same child
+every other screen here is careful with. `tool/build_auth_emails.py` generates
+four — reset, signup, magic link, email change.
+
+The markup looks like it is from 2004 because email is. Tables, because Outlook
+renders through Word's layout engine. Inline styles, because Gmail strips
+`<style>` blocks in several contexts. No external images, because most clients
+block them until the reader asks. A button wrapped in its own single-cell
+table, because a styled `<a>` arrives in Outlook as blue underlined text.
+
+The one real design decision: the body is **dark-on-light** even though the app
+is a dark forest theme. Dark-mode inversion in Gmail and Outlook mangles
+hand-set dark palettes far more often than light ones. The header band carries
+the brand; the part somebody has to read stays legible everywhere.
+
+They are not bundled — Supabase sends them, so they have to be pasted into the
+dashboard. See `docs/auth_emails/README.md`.
+
 ### The Play hub was five paragraphs deep before it showed a picture
 
 Reported as "that play menu is pretty bad right now, make more picture than
@@ -2172,7 +2493,7 @@ the pool.
 flutter analyze && flutter test
 ```
 
-1,091 tests covering responsive layout at eight viewports (including the Life
+1,196 tests covering responsive layout at eight viewports (including the Life
 sim itself, Feedback, and the Adventure map-pending screen), the money
 panel at seven widths, the life-event chain wiring, price-chart zoom/pan/scrub,
 chart painters against pathological input, working-order accounting, the Life

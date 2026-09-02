@@ -26,6 +26,7 @@ class _TradeQuote {
     required this.company,
     required this.sector,
     required this.currentPrice,
+    required this.livePrice,
     required this.changePercent,
     required this.buyCost,
     required this.sellValue,
@@ -38,7 +39,19 @@ class _TradeQuote {
   final String symbol;
   final String company;
   final String sector;
+
+  /// The price trades settle at, in whole coins.
   final int currentPrice;
+
+  /// The same price without the rounding, for display only.
+  ///
+  /// **Why both.** 10 coins = \$1, so one coin is ten cents — and most of what
+  /// a real share does in twenty seconds is smaller than that. Rounded to
+  /// whole coins the number sat perfectly still while the percentage beside
+  /// it changed, which reads as a broken feed rather than as a quiet market.
+  /// Showing one decimal gives it cent resolution, and the *trades* keep using
+  /// the integer so nothing about the economy moves.
+  final double livePrice;
   final double changePercent;
   final int buyCost;
   final int sellValue;
@@ -167,6 +180,7 @@ _TradeQuote _tradeQuoteFor(LiveQuote quote) {
     company: quote.company,
     sector: style?.sector ?? 'Public company',
     currentPrice: price,
+    livePrice: quote.current * kCoinsPerDollar,
     changePercent: quote.percentChange,
     buyCost: buyCost,
     sellValue: sellValue,
@@ -216,7 +230,26 @@ class _StockMarketPageState extends State<StockMarketPage>
   Future<void> _tick({bool force = false}) async {
     if (!mounted) return;
     final market = context.read<MarketDataService>();
-    await market.refresh(force: force);
+
+    if (force) {
+      // The first fill and the pull-to-refresh: everything, once.
+      await market.refresh(force: true);
+    } else {
+      // Otherwise a small batch, weighted to what the player can see.
+      //
+      // Refreshing all sixteen symbols on a timer spent the whole rate
+      // budget on prices that were scrolled off the screen, and capped the
+      // board at one update every sixteen seconds. Pinning the holdings
+      // means the numbers somebody actually has money in are in every
+      // batch; the rest rotate through underneath.
+      final stats = context.read<UserStatsController>().stats;
+      final owned = <String>{
+        for (final entry in stats.holdings.entries)
+          if (entry.value != 0 && entry.key.startsWith('stock_'))
+            entry.key.substring('stock_'.length),
+      };
+      await market.refreshBatch(pinned: owned);
+    }
     if (!mounted) return;
 
     await market.refreshSeries(
@@ -661,8 +694,7 @@ class _StockMarketPageState extends State<StockMarketPage>
                     ),
                     _PnlTab(
                       portfolioHistory: statsController.realPortfolioHistory,
-                      portfolioHistoryAt:
-                          statsController.portfolioHistoryTimes,
+                      portfolioHistoryAt: statsController.portfolioHistoryTimes,
                       netWorth: totalAssets,
                       totalEarned: totalUnrealised.round(),
                     ),
@@ -916,7 +948,7 @@ class _TrendingPromoCard extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                '${quote.currentPrice}g',
+                '${quote.livePrice.toStringAsFixed(1)}g',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.72),
                   fontSize: 12,
