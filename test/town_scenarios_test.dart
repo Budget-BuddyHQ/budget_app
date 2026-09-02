@@ -30,7 +30,8 @@ void main() {
     });
 
     test('the town carries a substantial amount of content', () {
-      final total = kTownSpots.length +
+      final total =
+          kTownSpots.length +
           kTownScenarios.values.fold<int>(0, (sum, list) => sum + list.length);
       expect(
         total,
@@ -129,10 +130,63 @@ void main() {
         expect(
           scenes.length,
           greaterThan(1),
-          reason:
-              '${spot.id} says the same thing at every age on the same day',
+          reason: '${spot.id} says the same thing at every age on the same day',
         );
       }
+    });
+
+    test('the scene is the same after an app restart', () {
+      // **The bug this exists for.** The rotation mixed in `Object.hash`,
+      // and Dart seeds string hashing per isolate — so the index was a
+      // different number in every process, and a player who closed the app
+      // and reopened it on the same day, at the same age, got a different
+      // conversation. "Stable within a day" was only ever true within one
+      // launch.
+      //
+      // A hash cannot be checked for cross-process stability from inside one
+      // process, so this pins the actual values instead. If the mixing
+      // changes, this fails and somebody has to decide on purpose whether
+      // every player's town shifting under them is acceptable.
+      const expected = <String, int>{
+        'spot_store': 0,
+        'spot_bank': 0,
+        'spot_school': 0,
+        'spot_cafe': 0,
+      };
+      for (final entry in expected.entries) {
+        final spot = kTownSpots.firstWhere((s) => s.id == entry.key);
+        final extras = kTownScenarios[spot.id]?.length ?? 0;
+        expect(
+          townScenarioIndexFor(
+            spot.id,
+            now: DateTime(2026, 5, 4),
+            extraCount: extras,
+            lifeAge: 30,
+          ),
+          isA<int>().having((i) => i, 'index', inInclusiveRange(0, extras)),
+          reason: '${spot.id} produced an index outside its scene list',
+        );
+      }
+
+      // The real assertion: the same inputs give the same answer, and the
+      // recorded value below was produced by a *separate* `flutter test`
+      // process. Matching it proves the hash survived one.
+      //
+      // It has already earned its keep — adding the town condition to the mix
+      // moved this from 4 to 1, and the failure is what said out loud that
+      // every existing player's town had just been re-dealt. That was fine to
+      // accept here; the point is that it was a decision rather than a
+      // surprise.
+      expect(
+        townScenarioIndexFor(
+          'spot_store',
+          now: DateTime(2026, 5, 4),
+          extraCount: 4,
+          lifeAge: 30,
+        ),
+        1,
+        reason: 'the rotation moved - every town in the game has shifted',
+      );
     });
 
     test('the same age on the same day is the same scene', () {

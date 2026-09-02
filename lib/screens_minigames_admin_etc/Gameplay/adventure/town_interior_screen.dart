@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../constants/app_assets.dart';
+import '../../../models_Like_Skins_and_lessons_templates/town_conditions.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_spot_models.dart';
+import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/pixel_frame_animation.dart';
 import '../../../widgets_custom_lotties/pixel_panel.dart';
@@ -23,7 +25,12 @@ import '../../../models_Like_Skins_and_lessons_templates/town_scenarios.dart';
 ///
 /// Pops with the chosen [TownChoice], or with null if the player leaves.
 class TownInteriorScreen extends StatefulWidget {
-  const TownInteriorScreen({super.key, required this.spot, this.lifeAge});
+  const TownInteriorScreen({
+    super.key,
+    required this.spot,
+    this.lifeAge,
+    this.today,
+  });
 
   final TownSpot spot;
 
@@ -32,6 +39,12 @@ class TownInteriorScreen extends StatefulWidget {
   /// Null when the town is being wandered on its own, in which case the
   /// building rotates on the calendar day alone. See [townEncounterFor].
   final int? lifeAge;
+
+  /// What the town is like today, or null when nothing is passing one in
+  /// (the interior is also reachable from tests and from the map-pending
+  /// screen). Only used to print a line — the *prices* are applied by the
+  /// caller, which is the only place that knows the player's balance.
+  final TownCondition? today;
 
   @override
   State<TownInteriorScreen> createState() => _TownInteriorScreenState();
@@ -90,6 +103,7 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
                 final panel = _DecisionPanel(
                   spot: spot,
                   lifeAge: widget.lifeAge,
+                  today: widget.today,
                   busy: _confirming != null,
                   onChoose: _choose,
                   onLeave: () => Navigator.of(context).pop(),
@@ -114,8 +128,7 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 460),
                             child: SingleChildScrollView(
-                              padding:
-                                  const EdgeInsets.fromLTRB(4, 12, 14, 14),
+                              padding: const EdgeInsets.fromLTRB(4, 12, 14, 14),
                               child: panel,
                             ),
                           ),
@@ -153,9 +166,7 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
             child: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(8),
-                child: _LeaveButton(
-                  onTap: () => Navigator.of(context).pop(),
-                ),
+                child: _LeaveButton(onTap: () => Navigator.of(context).pop()),
               ),
             ),
           ),
@@ -403,6 +414,7 @@ class _DecisionPanel extends StatelessWidget {
   const _DecisionPanel({
     required this.spot,
     required this.lifeAge,
+    required this.today,
     required this.busy,
     required this.onChoose,
     required this.onLeave,
@@ -410,6 +422,10 @@ class _DecisionPanel extends StatelessWidget {
 
   final TownSpot spot;
   final int? lifeAge;
+
+  /// Today's conditions, for the price line. Null when nothing passed one.
+  final TownCondition? today;
+
   final bool busy;
   final ValueChanged<TownChoice> onChoose;
   final VoidCallback onLeave;
@@ -420,7 +436,12 @@ class _DecisionPanel extends StatelessWidget {
     // several scenes and rotates them by day *and* by the character's age —
     // see [townEncounterFor] for why the choice is fixed within a day rather
     // than rerolled on every visit, and why a life's years move it too.
-    final encounter = townEncounterFor(spot, lifeAge: lifeAge);
+    final encounter = townEncounterFor(
+      spot,
+      lifeAge: lifeAge,
+      conditionId: today?.id,
+    );
+    final todayHint = today?.hintFor(spot.kind);
 
     return PixelPanel(
       child: Column(
@@ -436,10 +457,45 @@ class _DecisionPanel extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+          // What today does to the prices here, at the point somebody is
+          // about to spend.
+          //
+          // The map banner already says it, and the map banner is the wrong
+          // place for it to matter: by the time a player is choosing whether
+          // to buy lunch they are two screens away from the line telling them
+          // lunch is cheap today. This is the same fact where the decision
+          // actually happens.
+          if (todayHint != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                color: spot.kind.accent.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+              ),
+              child: Row(
+                children: [
+                  Icon(today!.icon, color: spot.kind.accent, size: 14),
+                  const SizedBox(width: 7),
+                  Flexible(
+                    child: Text(
+                      todayHint,
+                      style: GoogleFonts.quicksand(
+                        color: spot.kind.accent,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
           for (final choice in encounter.choices) ...[
             _ChoiceRow(
               choice: choice,
+              shownGold: today?.priceFor(choice.gold, spot.kind) ?? choice.gold,
               accent: spot.kind.accent,
               // Disabled while the sale animation plays, so a second tap
               // cannot queue a second purchase behind the first.
@@ -465,18 +521,29 @@ class _DecisionPanel extends StatelessWidget {
 
 class _ChoiceRow extends StatelessWidget {
   const _ChoiceRow({
+    required this.shownGold,
     required this.choice,
     required this.accent,
     required this.onTap,
   });
 
   final TownChoice choice;
+
+  /// The price after today's conditions — what will actually be charged.
+  ///
+  /// **Not `choice.gold`.** The row used to print the list price while the
+  /// map charged the adjusted one, so on a sale day the sign said "cheaper
+  /// than usual" and the button underneath it still said -8. A discount you
+  /// only find out about by watching your balance afterwards is not a lesson
+  /// about sales, it is a game that cannot be trusted to quote a price.
+  final int shownGold;
+
   final Color accent;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final costs = choice.gold < 0;
+    final costs = shownGold < 0;
     return Opacity(
       opacity: onTap == null ? 0.45 : 1,
       child: Material(
@@ -499,7 +566,7 @@ class _ChoiceRow extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (choice.gold != 0) ...[
+                if (shownGold != 0) ...[
                   const SizedBox(width: 10),
                   // The price is on the label anyway in most of these
                   // prompts ("Buy the $4 bag"), so showing it here is a
@@ -507,7 +574,7 @@ class _ChoiceRow extends StatelessWidget {
                   // *comparison* between options a glance instead of a
                   // read, which is the whole unit-price lesson.
                   Text(
-                    '${costs ? '' : '+'}${choice.gold}',
+                    '${costs ? '' : '+'}$shownGold',
                     style: GoogleFonts.pixelifySans(
                       color: costs ? const Color(0xFFFF8FB1) : accent,
                       fontSize: 14,
@@ -539,11 +606,7 @@ class _LeaveButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         child: const Padding(
           padding: EdgeInsets.all(8),
-          child: Icon(
-            Icons.arrow_back_rounded,
-            color: Colors.white,
-            size: 20,
-          ),
+          child: Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
         ),
       ),
     );
