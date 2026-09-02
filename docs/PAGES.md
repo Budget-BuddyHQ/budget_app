@@ -62,12 +62,31 @@ it still had to go and find everything afterwards.
 ## Home
 
 ### `HomeScreen` — "what should I do right now?"
-The landing tab. A hero card with the player's level and gold, the **current
-objective**, the daily plan, and shortcuts into everything else.
+The landing tab. Its job is to answer one question — what should I do next —
+because an app with seven tabs and no answer to that is a menu, not a game.
 
-Its job is to answer one question — what should I do next — because an app with
-seven tabs and no answer to that is a menu, not a game. `DailyPlanController`
-picks the objective from what the player has and has not done today.
+Top to bottom:
+
+* **The reef** (`ReefScene`, `reef_scene.dart`). Home is an underwater scene
+  rather than a column of cards on a tiled pattern: water graded from teal to
+  deep, light shafts, a sea floor with seaweed, coral and rocks, fish crossing
+  it and bubbles going up through it, all drawn from the underwater art pack
+  in `assets/map_assets_coins/underwater_UI_svgs/`. The hero card is a full
+  reef; the page behind it is the same widget at a darker grade with the
+  bright near floor switched off, so the background is a place without
+  competing with the content on it. The mascot is a turtle, which is the
+  short version of why this and not something else.
+* **The hero** — the player's turtle in that reef, level and gold as HUD pills
+  (the gold figure in `MoneyGlyphs`, the pack's own display numerals, not a
+  text font), and one primary action: Start a Life.
+* **Today** (`_TodayCard`) — the streak, how far through today's plan you are,
+  and the single next quest. Tapping it switches to the Daily tab, where the
+  whole plan lives. `DailyPlanController` builds that plan from what the
+  player has and has not done.
+* **Buddy's tip** — one mentor card.
+* **Level and destinations** — level progress and five tiles into Adventure,
+  Daily, Arcade, Academy and Style.
+* **Leaderboard promo.**
 
 ### `DashboardShell`
 The route `/game` lands on. A thin wrapper that hosts `MainNavigation`; kept
@@ -237,8 +256,13 @@ told an answer you did not expect.
 ## Daily (Money Habits)
 
 ### `MoneyHabitsScreen`
-Four inner tabs:
+Titled **Daily** when it is the tab (which is what the top strip's Daily
+button opens) and **Money Habits** when it is pushed as a route. Six inner
+tabs — index them through `MoneyHabitsTab`, never a literal:
 
+* **Today** — the one that answers "what do I do now": a seven-day streak
+  strip, today's ordered plan (`DailyPlanCard`, fed by `DailyPlanController`),
+  and the daily reflex challenge. Everything below it is the habit tracker.
 * **My Week** — the habits you have pinned and a seven-day tracker.
 * **Find/Create Habits** — the catalogue, plus custom habits.
 * **Challenges** — multi-step paths (Cut the Spending Leaks, Build Your

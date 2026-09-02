@@ -21,10 +21,18 @@ class DailyPlanCard extends StatelessWidget {
     super.key,
     required this.onOpenQuest,
     this.compact = false,
+    this.showStreak = true,
   });
 
   final void Function(DailyQuest quest) onOpenQuest;
   final bool compact;
+
+  /// Whether to show the flame badge.
+  ///
+  /// Off when something directly above already shows the streak — on the
+  /// Daily tab a seven-day strip sits immediately over this card, and the
+  /// badge repeated the same number a centimetre below it.
+  final bool showStreak;
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +86,7 @@ class DailyPlanCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  _StreakBadge(days: plan.streakDays),
+                  if (showStreak) _StreakBadge(days: plan.streakDays),
                 ],
               ),
               const SizedBox(height: 14),
@@ -214,7 +222,7 @@ class _QuestRow extends StatelessWidget {
                       quest.title,
                       style: TextStyle(
                         color: done
-                            ? Colors.white.withValues(alpha: 0.5)
+                            ? Colors.white.withValues(alpha: 0.66)
                             : Colors.white,
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
@@ -222,10 +230,23 @@ class _QuestRow extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    FittedLabel(
+                    // Two lines, not a fitted single one. A quest's detail
+                    // is a sentence ("Save one from Money Habits to start
+                    // your streak"), and FittedLabel is for short
+                    // app-authored *labels* — asked to fit 46 characters
+                    // into the 131px this row leaves at 320px it hit its own
+                    // 62% shrink floor and fell back to an ellipsis, which
+                    // is the failure it exists to prevent. Prose wraps.
+                    Text(
                       quest.detail,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
+                        // 0.55 measured 3.61:1 on this card. Body text has
+                        // to clear 4.5:1 and the audit is what caught it —
+                        // this card had never been mounted, so it had never
+                        // been through the sweep.
+                        color: Colors.white.withValues(alpha: 0.78),
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -247,8 +268,17 @@ class _QuestRow extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFD45C).withValues(alpha: 0.14),
+                    // Opaque, and dark, rather than gold at 14% alpha. A
+                    // translucent gold pill takes its contrast from whatever
+                    // row colour happens to be behind it, and the rows here
+                    // are tinted per quest — the same "+15" measured 3.32:1
+                    // on the mint row and 4.24:1 on the amber one. An opaque
+                    // fill has one contrast ratio instead of five.
+                    color: const Color(0xFF0E2A20),
                     borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: const Color(0xFFFFD45C).withValues(alpha: 0.30),
+                    ),
                   ),
                   child: Text(
                     '+${quest.xpReward}',

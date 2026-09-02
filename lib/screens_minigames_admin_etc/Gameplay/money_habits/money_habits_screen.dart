@@ -16,8 +16,13 @@ import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/habit_progress_grids.dart';
 import '../../../widgets_custom_lotties/savings_jar_widget.dart';
-import '../minigames_pages/react_challenge_screen.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
+import 'today_tab.dart';
+
+// The inner tab indices are part of this screen's API — `initialTab` takes
+// one — so they are re-exported here rather than making every caller import
+// the tab file that happens to define them.
+export 'today_tab.dart' show MoneyHabitsTab;
 
 /// The numbered step badge on the "How this works" card.
 ///
@@ -61,7 +66,8 @@ class MoneyHabitsScreen extends StatefulWidget {
   final int? activeTabIndex;
   final ValueChanged<int>? onNavSelected;
 
-  /// Which of the four inner tabs opens first.
+  /// Which of the inner tabs opens first. See [MoneyHabitsTab] for the
+  /// names — do not pass a literal.
   ///
   /// A test seam, the same shape as `LifeSimPage.debugInitialLife`: the
   /// viewport sweep needs to lay out My Jar and Challenges, and reaching them
@@ -92,9 +98,9 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 5,
+      length: MoneyHabitsTab.count,
       vsync: this,
-      initialIndex: widget.initialTab.clamp(0, 4),
+      initialIndex: widget.initialTab.clamp(0, MoneyHabitsTab.count - 1),
     );
   }
 
@@ -130,7 +136,14 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
         // be a dead button
         automaticallyImplyLeading: !asTab,
         title: Text(
-          'Money Habits',
+          // As a tab this screen *is* Daily — the top strip's Daily button
+          // opens it. Titling it "Money Habits" under a strip that says
+          // "Daily" was the confusion in its purest form: the label you
+          // tapped and the heading you landed on disagreed, and neither
+          // named the plan the tab actually leads with. Pushed as a route it
+          // keeps the old name, because then it really was opened as the
+          // habit tracker.
+          asTab ? 'Daily' : 'Money Habits',
           style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
         ),
         bottom: PreferredSize(
@@ -170,6 +183,10 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
               // one logged them.
               tabs: const [
                 Tab(
+                  icon: Icon(Icons.today_rounded, size: 18),
+                  text: 'Today',
+                ),
+                Tab(
                   icon: Icon(Icons.check_circle_outline_rounded, size: 18),
                   text: 'My Week',
                 ),
@@ -199,6 +216,10 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
         child: TabBarView(
           controller: _tabController,
           children: [
+            TodayTab(
+              onNavSelected: widget.onNavSelected,
+              onOpenInnerTab: (tab) => _tabController.animateTo(tab),
+            ),
             const _TrackTab(),
             const _ActivityTab(),
             const _ChallengesTab(),
@@ -213,54 +234,13 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
 
 // ==================== Track ====================
 
+/// The habit grid: what is pinned, and which of them were logged this week.
+///
+/// The daily-challenge minigame used to lead this tab, which put "Today's
+/// Challenge" at the top of a screen about the *week* and left the Today tab
+/// with nothing to lead with. It lives on Today now — see [DailyChallengeCard].
 class _TrackTab extends StatelessWidget {
   const _TrackTab();
-
-  /// Was Home's "Daily" quick-action button, which opened this game
-  /// directly and bypassed the actual Daily tab entirely — two different
-  /// things both calling themselves "Daily" was the confusing part. Home's
-  /// button now just switches to this tab (see `home_screen.dart`); the
-  /// game itself lives here instead, at the top of the screen its name
-  /// points to.
-  Future<void> _launchDailyChallenge(BuildContext context) async {
-    final userStatsController = context.read<UserStatsController>();
-    final stats = userStatsController.stats;
-    final isCompleted = userStatsController.isTodayChallengeCompleted;
-
-    debugPrint('--- DEBUG CHECK ---');
-    debugPrint('Completed List: ${stats.completedChallengeTasks}');
-
-    // PRINT 2: Check what boolean value is being passed down
-    debugPrint('Is Completed Flag: $isCompleted');
-    debugPrint('-------------------');
-
-    final result = await Navigator.of(context).push<ReactGameCloseResult>(
-      MaterialPageRoute(
-        builder: (_) => ReactChallengeScreen(
-          gameId: 'daily_budget_battle',
-          difficulty: 'normal',
-          playerLevel: stats.level,
-          userId: stats.id,
-          isCompleted: isCompleted, // Passes completion status to the screen
-        ),
-      ),
-    );
-
-    if (!context.mounted || result == null) {
-      return;
-    }
-
-    GameToast.show(
-      context,
-      title: result.status == 'victory'
-          ? 'Daily Challenge Cleared'
-          : 'Challenge Complete',
-      message:
-          '+${result.goldEarned} gold | +${result.xpEarned} XP | ${result.syncState.message}',
-      icon: Icons.workspace_premium_rounded,
-      accent: const Color(0xFFFFD45C),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -270,18 +250,6 @@ class _TrackTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _DailyChallengeCard(
-          isCompleted: false,
-          onPlay: () => _launchDailyChallenge(context),
-          onPlayAgain: () => _launchDailyChallenge(context),
-          onViewResults: () => _launchDailyChallenge(context),
-        ),
-        // The gap below the challenge card used to live *inside* the
-        // "no habits yet" branch below, so it vanished the moment the player
-        // pinned their first habit and the challenge card ended up welded to
-        // the stats row. Spacing between two siblings belongs between them,
-        // not inside a conditional that happens to sit in the middle.
-        const SizedBox(height: 16),
         // Shown only until the first habit is pinned. New users landed on
         // an empty grid with no idea what the tabs did or where to start —
         // this spells the loop out once, then gets out of the way.
@@ -343,195 +311,6 @@ class _TrackTab extends StatelessWidget {
 /// numbered steps with icons, because the previous version gave a first-time
 /// user four unlabelled tabs and an empty grid and expected them to infer
 /// the game from that.
-/// The React Challenge minigame ("daily_budget_battle"), launched from the
-/// tab its name actually refers to instead of a same-named button on Home
-/// that used to skip past this screen entirely.
-class _DailyChallengeCard extends StatelessWidget {
-  const _DailyChallengeCard({
-    required this.onPlay,
-    this.isCompleted = true,
-    this.onPlayAgain,
-    this.onViewResults,
-  });
-
-  final VoidCallback onPlay;
-  final bool isCompleted;
-  final VoidCallback? onPlayAgain;
-  final VoidCallback? onViewResults;
-
-  @override
-  Widget build(BuildContext context) {
-    if (isCompleted) {
-      return Container(
-        padding: const EdgeInsets.all(18),
-        decoration: AppTheme.getPuffyDecoration(
-          accent: const Color(0xFF4CAF50),
-          fillColor: const Color(0xFF1E3320),
-          restAlpha: 0.18,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50).withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.check_circle_rounded,
-                    color: Color(0xFF4CAF50),
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FittedLabel(
-                        "Challenge Completed!",
-                        style: GoogleFonts.pixelifySans(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Great job! You've claimed your gold and XP for today.",
-                        style: GoogleFonts.quicksand(
-                          color: Colors.white.withValues(alpha: 0.78),
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                if (onViewResults != null)
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: onViewResults,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Color(0xFF4CAF50)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'View Results',
-                        style: GoogleFonts.quicksand(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ),
-                if (onViewResults != null && onPlayAgain != null)
-                  const SizedBox(width: 10),
-                if (onPlayAgain != null)
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: onPlayAgain,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4CAF50),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Play Again',
-                        style: GoogleFonts.quicksand(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    return InkWell(
-      onTap: onPlay,
-      borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: AppTheme.getPuffyDecoration(
-          accent: const Color(0xFFFFD45C),
-          fillColor: const Color(0xFF3B301A),
-          restAlpha: 0.18,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFD45C).withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(
-                Icons.bolt_rounded,
-                color: Color(0xFFFFD45C),
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  FittedLabel(
-                    "Today's Challenge",
-                    style: GoogleFonts.pixelifySans(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Test your budgeting reflexes — gold and XP either way.',
-                    style: GoogleFonts.quicksand(
-                      color: Colors.white.withValues(alpha: 0.78),
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: Color(0xFFFFD45C),
-              size: 30,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _HowItWorksCard extends StatelessWidget {
   const _HowItWorksCard();
 

@@ -97,6 +97,13 @@ flutter:
     - assets/self_made_backgrounds/
     - assets/map_assets_coins/PNG_more_map_tiles/
     - assets/map_assets_coins/day-night-cycle/
+    # The underwater set (flat vector PNGs despite the folder name): sand
+    # floor tiles, seaweed, coral, rocks, fish and bubbles. Home is built out
+    # of these — see ReefScene, which also records how much of each 128x128
+    # box is actually drawn, since none of them fill it.
+    #
+    # assets/images/hud_font/ above was already packed from this same set.
+    - assets/map_assets_coins/underwater_UI_svgs/
     # Town NPC frames. These are individual 102x116 PNGs per frame (not
     # sprite sheets), so every folder has to be listed on its own —
     # Flutter does not bundle subfolders recursively.
