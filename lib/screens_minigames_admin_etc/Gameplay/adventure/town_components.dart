@@ -39,16 +39,21 @@ class TownPlayer extends SimplePlayer
 class TownSpotComponent extends GameComponent with Sensor<Player> {
   TownSpotComponent({
     required this.spot,
+    required this.townMap,
     required this.onEnter,
     required this.onExit,
     required this.isVisited,
   }) {
-    final pixels = townTileToPixels(spot.tileX, spot.tileY);
+    // Which town decides where this marker stands. The two maps put their
+    // buildings in entirely different places, so a marker pinned to one set
+    // of coordinates ends up inside a wall on the other.
+    final pixels = townTileToPixels(spot.xOn(townMap), spot.yOn(townMap));
     position = Vector2(pixels.dx - 8, pixels.dy - 8);
     size = Vector2.all(32);
   }
 
   final TownSpot spot;
+  final TownMap townMap;
   final void Function(TownSpot spot) onEnter;
   final void Function(TownSpot spot) onExit;
   final bool Function(String id) isVisited;
@@ -124,10 +129,7 @@ class TownNpcComponent extends SimpleNpc with Sensor<Player> {
        super(
          position: Vector2(npc.tileX * 16.0, npc.tileY * 16.0),
          size: Vector2(26 * AppAssets.npcAspectRatio, 26),
-         animation: SimpleDirectionAnimation(
-           idleRight: idle,
-           runRight: walk,
-         ),
+         animation: SimpleDirectionAnimation(idleRight: idle, runRight: walk),
        );
 
   final TownNpc npc;

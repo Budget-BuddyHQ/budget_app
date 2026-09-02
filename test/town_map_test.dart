@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:bonfire/bonfire.dart' show BlockMovementCollision;
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/town_spot_models.dart';
@@ -106,7 +108,8 @@ void main() {
       expect(
         solid,
         isNotEmpty,
-        reason: 'no collider layers means nothing can block the player, '
+        reason:
+            'no collider layers means nothing can block the player, '
             'however correct the player class is',
       );
     });
@@ -126,7 +129,8 @@ void main() {
       expect(
         gaps,
         isEmpty,
-        reason: 'these perimeter tiles are walkable, so the player can walk '
+        reason:
+            'these perimeter tiles are walkable, so the player can walk '
             'out of the map: $gaps',
       );
     });
@@ -227,7 +231,8 @@ void main() {
       expect(
         blockedV,
         isEmpty,
-        reason: 'something solid is standing on the north-south avenue: '
+        reason:
+            'something solid is standing on the north-south avenue: '
             '$blockedV',
       );
 
@@ -240,7 +245,8 @@ void main() {
       expect(
         blockedH,
         isEmpty,
-        reason: 'something solid is standing on the east-west avenue: '
+        reason:
+            'something solid is standing on the east-west avenue: '
             '$blockedH',
       );
     });
@@ -283,7 +289,8 @@ void main() {
         expect(
           solid.contains((x: spot.tileX, y: spot.tileY)),
           isFalse,
-          reason: '${spot.id} ("${spot.title}") is at '
+          reason:
+              '${spot.id} ("${spot.title}") is at '
               '(${spot.tileX}, ${spot.tileY}), which is a solid tile — the '
               'player can never stand there to trigger it',
         );
@@ -305,7 +312,8 @@ void main() {
           expect(
             choice.outcome.trim(),
             isNotEmpty,
-            reason: '${spot.id} has a choice with no outcome line, so it '
+            reason:
+                '${spot.id} has a choice with no outcome line, so it '
                 'would change stats without ever explaining why',
           );
         }
@@ -320,7 +328,8 @@ void main() {
           expect(
             choice.gold > 0 || choice.xp > 0 || choice.literacy > 0,
             isTrue,
-            reason: '${spot.id} / "${choice.label}" gives no gold, XP or '
+            reason:
+                '${spot.id} / "${choice.label}" gives no gold, XP or '
                 'literacy back',
           );
         }
@@ -397,7 +406,8 @@ void main() {
         expect(
           solid.contains((x: coin.x, y: coin.y)),
           isFalse,
-          reason: 'coin at (${coin.x}, ${coin.y}) is inside a wall and can '
+          reason:
+              'coin at (${coin.x}, ${coin.y}) is inside a wall and can '
               'never be picked up',
         );
       }
@@ -451,6 +461,100 @@ void main() {
         expect(column, inInclusiveRange(0, AppAssets.villagerSheetColumns - 1));
       }
       expect(kSideWalkFrames.toSet().length, kSideWalkFrames.length);
+    });
+
+    /// Reads one villager sheet and returns its raw RGBA bytes.
+    ///
+    /// `dart:ui` rather than the `image` package: decoding a PNG is the only
+    /// thing needed here and it is not worth a dependency the app does not
+    /// otherwise have.
+    Future<(ByteData, int)> loadSheet() async {
+      final bytes = File(
+        'assets/self_made_skins/villager_female_aurora_prime.png',
+      ).readAsBytesSync();
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      final data = await frame.image.toByteData(
+        format: ui.ImageByteFormat.rawRgba,
+      );
+      return (data!, frame.image.width);
+    }
+
+    testWidgets('both halves of the stride are the same size character', (
+      tester,
+    ) async {
+      // **The bug this exists for.** Columns 5-7 used to be the same poses as
+      // 1-3 drawn 16% bulkier — 7,820 opaque pixels at 79.5px wide against
+      // 6,740 at 65px. Animated together the character swelled and shrank
+      // twice a second, which is what got reported as clanking, and no amount
+      // of redrawing an individual frame could fix it because every frame was
+      // fine on its own.
+      //
+      // `tool/fix_side_walk_cycle.py` rebuilds 5-7 from 1-2 with only the leg
+      // band mirrored, so the bodies are identical by construction. This
+      // measures that they still are.
+      late ByteData data;
+      late int stride;
+      await tester.runAsync(() async {
+        final (d, w) = await loadSheet();
+        data = d;
+        stride = w;
+      });
+
+      const cellW = 104;
+      const cellH = 162;
+
+      int opaquePixels(int column, int row) {
+        var count = 0;
+        for (var y = 0; y < cellH; y++) {
+          for (var x = 0; x < cellW; x++) {
+            final px = ((row * cellH + y) * stride + column * cellW + x) * 4;
+            if (data.getUint8(px + 3) > 10) count++;
+          }
+        }
+        return count;
+      }
+
+      for (final row in <int>[2, 3]) {
+        final slim = opaquePixels(1, row);
+        final other = opaquePixels(5, row);
+        expect(
+          (slim - other).abs() / slim,
+          lessThan(0.03),
+          reason:
+              'row $row: the halves of the stride differ by '
+              '${((slim - other).abs() / slim * 100).round()}% in body mass — '
+              'the character will swell as it walks',
+        );
+      }
+    });
+
+    testWidgets('the two halves are not the identical frame', (tester) async {
+      // The other way this can go wrong: making them the same size by making
+      // them the same picture, which removes the swell and the walk with it.
+      late ByteData data;
+      late int stride;
+      await tester.runAsync(() async {
+        final (d, w) = await loadSheet();
+        data = d;
+        stride = w;
+      });
+
+      var differences = 0;
+      for (var y = 112; y < 162; y++) {
+        for (var x = 0; x < 104; x++) {
+          final a = ((2 * 162 + y) * stride + 1 * 104 + x) * 4;
+          final b = ((2 * 162 + y) * stride + 5 * 104 + x) * 4;
+          if (data.getUint32(a) != data.getUint32(b)) differences++;
+        }
+      }
+      expect(
+        differences,
+        greaterThan(50),
+        reason:
+            'the legs are identical in both halves — the character is '
+            'gliding, not walking',
+      );
     });
 
     test('the idle pose is one of the good frames', () {

@@ -34,11 +34,7 @@ import '../../../widgets_custom_lotties/pixel_panel.dart';
 /// Owns its own [LifeSimController], so state resets each visit and never
 /// touches the player's saved gold until they retire.
 class LifeSimPage extends StatefulWidget {
-  const LifeSimPage({
-    super.key,
-    this.debugInitialLife,
-    this.ranked = false,
-  });
+  const LifeSimPage({super.key, this.debugInitialLife, this.ranked = false});
 
   /// Ranked run: same simulation, scored at the end.
   ///
@@ -128,7 +124,11 @@ class _LifeSimPageState extends State<LifeSimPage> {
   @override
   void dispose() {
     for (final id in const <String>[
-      'life_money', 'life_event', 'life_town', 'life_menus', 'life_age',
+      'life_money',
+      'life_event',
+      'life_town',
+      'life_menus',
+      'life_age',
     ]) {
       TutorialTargets.unregister(id);
     }
@@ -1298,11 +1298,7 @@ class _FeedLine extends StatelessWidget {
 /// whose cost is *not* stated in the label stay untagged: the surprise is
 /// often the lesson, and putting a number on it would give the answer away.
 class _EventCard extends StatelessWidget {
-  const _EventCard({
-    super.key,
-    required this.event,
-    required this.onChoose,
-  });
+  const _EventCard({super.key, required this.event, required this.onChoose});
 
   final LifeEvent event;
   final ValueChanged<int> onChoose;
@@ -1470,8 +1466,7 @@ class _EventCard extends StatelessWidget {
                     showPrice: _priceIsAlreadyStated(event.choices[i]),
                     onTap: () => onChoose(i),
                   ),
-                  if (i != event.choices.length - 1)
-                    const SizedBox(height: 8),
+                  if (i != event.choices.length - 1) const SizedBox(height: 8),
                 ],
               ],
             ),
@@ -1675,7 +1670,8 @@ class _BottomMenu extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _MenuButton(
-                      label: stage == LifeStage.baby ||
+                      label:
+                          stage == LifeStage.baby ||
                               stage == LifeStage.child ||
                               stage == LifeStage.teen
                           ? 'School'
@@ -1694,7 +1690,10 @@ class _BottomMenu extends StatelessWidget {
                     ),
                   ),
                   Expanded(
-                    child: _AgeButton(key: ageKey, onTap: blocked ? null : onAge),
+                    child: _AgeButton(
+                      key: ageKey,
+                      onTap: blocked ? null : onAge,
+                    ),
                   ),
                   Expanded(
                     child: _MenuButton(
@@ -1714,7 +1713,7 @@ class _BottomMenu extends StatelessWidget {
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -2079,6 +2078,7 @@ class _LifeAction {
     required this.detail,
     required this.icon,
     required this.onTap,
+    required this.performs,
     this.cost,
     this.disabledReason,
   });
@@ -2088,15 +2088,52 @@ class _LifeAction {
   final IconData icon;
   final VoidCallback onTap;
 
+  /// The controller action this row runs, or null for a row that is not a
+  /// gated action at all — "Net worth", "Quit your job", the ideas list.
+  ///
+  /// **Required, and nullable on purpose.** This started as an optional
+  /// field and the optionality was the bug: the Money menu's "Invest 100
+  /// coins" row set `disabledReason` from whether you held 100 coins and
+  /// never asked about age, so a two-year-old got a live-looking button that
+  /// silently did nothing when pressed. Making it `required` means a new row
+  /// cannot be written without answering the question, and `null` is an
+  /// answer somebody had to type rather than a default they inherited.
+  ///
+  /// The gate itself is applied in one place — see [gatedBy] and its single
+  /// call site — so no row has to remember to apply it.
+  final LifeAction? performs;
+
   /// Coin cost shown as a chip. Null for free actions — and several of the
   /// best actions here are free on purpose.
   final int? cost;
 
   /// When set, the row is greyed out and explains *why* rather than just
-  /// being dead.
+  /// being dead. Local reasons only ("Not enough coins", "You need a job
+  /// first"); the age gate is layered on top by [gatedBy].
   final String? disabledReason;
 
   bool get enabled => disabledReason == null;
+
+  /// This row with [life]'s age rules applied over whatever local reason it
+  /// already had.
+  ///
+  /// The age gate wins when both apply: telling a nine-year-old they are
+  /// short of coins, when the real answer is that nine-year-olds cannot do
+  /// this at all, sends them off to earn money for something that still will
+  /// not work.
+  _LifeAction gatedBy(LifeSimController life) {
+    final gate = performs == null ? null : life.gateFor(performs!);
+    if (gate == null) return this;
+    return _LifeAction(
+      label: label,
+      detail: detail,
+      icon: icon,
+      onTap: onTap,
+      performs: performs,
+      cost: cost,
+      disabledReason: gate,
+    );
+  }
 }
 
 /// A category menu. Closes itself after any action so the player sees the
@@ -2128,17 +2165,26 @@ class _LifeMenuSheet extends StatelessWidget {
 
     final young = life.isDependent;
 
-    // Age rules come from the controller, not from here.
-    //
-    // The menu is a view: duplicating the rules in it meant they were
-    // unenforced everywhere else, and drifted — which is how a three-year-old
-    // ended up able to hit the books, work out at the gym, walk to the
-    // library alone and buy index funds. `gateFor` is the single source of
-    // truth, and a local reason (usually "not enough coins") only applies
-    // once the age gate is clear.
-    String? gate(LifeAction action, [String? alsoBlockedBy]) =>
-        life.gateFor(action) ?? alsoBlockedBy;
+    return [for (final row in _rows(context, run, young)) row.gatedBy(life)];
+  }
 
+  /// The rows themselves, before the age gate.
+  ///
+  /// Split out so [_actions] can apply `gatedBy` to *every* row in one
+  /// expression. Age rules come from the controller and never from here — the
+  /// menu is a view, and duplicating the rules in it meant they went
+  /// unenforced everywhere else and drifted, which is how a three-year-old
+  /// ended up able to hit the books, work out at the gym, walk to the library
+  /// alone and buy index funds.
+  ///
+  /// So a row here only ever states its *local* reason — not enough coins, no
+  /// job to quit — and names what it performs. Nothing in this method calls
+  /// `gateFor`, and nothing in it needs to.
+  List<_LifeAction> _rows(
+    BuildContext context,
+    void Function(void Function()) run,
+    bool young,
+  ) {
     switch (menu) {
       case _LifeMenu.career:
         return [
@@ -2153,11 +2199,10 @@ class _LifeMenuSheet extends StatelessWidget {
                       'to you.',
             icon: Icons.badge_rounded,
             onTap: () => run(life.findJob),
-            disabledReason: life.canJobHunt
-                ? null
-                : life.hasJob
-                ? 'You already have a job'
-                : 'Too young to work',
+            performs: LifeAction.findJob,
+            // Only the "you already have one" half. The age half arrives
+            // from `gatedBy`, which is also where its wording lives.
+            disabledReason: life.hasJob ? 'You already have a job' : null,
           ),
           _LifeAction(
             label: young ? 'Hit the books' : 'Take a course',
@@ -2167,13 +2212,14 @@ class _LifeMenuSheet extends StatelessWidget {
             icon: Icons.menu_book_rounded,
             cost: young ? null : 30,
             onTap: () => run(life.study),
-            disabledReason: gate(LifeAction.study),
+            performs: LifeAction.study,
           ),
           _LifeAction(
             label: 'Work harder',
             detail: 'Extra hours for a shot at a raise. Costs happiness.',
             icon: Icons.trending_up_rounded,
             onTap: () => run(life.workHarder),
+            performs: null,
             disabledReason: life.hasJob ? null : 'You need a job first',
           ),
           _LifeAction(
@@ -2181,6 +2227,7 @@ class _LifeMenuSheet extends StatelessWidget {
             detail: 'Asking is free. Being told no is not fun.',
             icon: Icons.record_voice_over_rounded,
             onTap: () => run(life.askForRaise),
+            performs: null,
             disabledReason: life.hasJob ? null : 'You need a job first',
           ),
           _LifeAction(
@@ -2188,6 +2235,7 @@ class _LifeMenuSheet extends StatelessWidget {
             detail: 'Freedom now, no paycheck next year.',
             icon: Icons.logout_rounded,
             onTap: () => run(life.quitJob),
+            performs: null,
             disabledReason: life.hasJob ? null : 'You have no job to quit',
           ),
         ];
@@ -2204,6 +2252,7 @@ class _LifeMenuSheet extends StatelessWidget {
               detail: 'Costs nothing. +8 Happiness.',
               icon: Icons.emoji_people_rounded,
               onTap: () => run(() => life.spendTimeWith(person)),
+              performs: LifeAction.spendTime,
             ),
             _LifeAction(
               label: 'Buy $person a gift',
@@ -2211,10 +2260,8 @@ class _LifeMenuSheet extends StatelessWidget {
               icon: Icons.card_giftcard_rounded,
               cost: 50,
               onTap: () => run(() => life.giveGift(person)),
-              disabledReason: gate(
-                LifeAction.buyGift,
-                life.money >= 50 ? null : 'Not enough coins',
-              ),
+              performs: LifeAction.buyGift,
+              disabledReason: life.money >= 50 ? null : 'Not enough coins',
             ),
           ],
         ];
@@ -2223,53 +2270,69 @@ class _LifeMenuSheet extends StatelessWidget {
         return [
           _LifeAction(
             label: 'Go out',
-            detail: 'A night out. +10 Happiness.',
+            // Said the wrong number for a long time: `haveFun` gives +6, not
+            // +10. The +10 was the value before the town existed, and when
+            // the menu version was reduced to make walking there worth it,
+            // this label was not.
+            detail:
+                'An afternoon out. +6 Happiness. The park in town is '
+                'better, and free.',
             icon: Icons.celebration_rounded,
             cost: young ? null : 40,
             onTap: () => run(life.haveFun),
-            disabledReason: gate(
-              LifeAction.goOut,
-              young || life.money >= 40 ? null : 'Not enough coins',
-            ),
+            performs: LifeAction.goOut,
+            disabledReason: young || life.money >= 40
+                ? null
+                : 'Not enough coins',
           ),
           _LifeAction(
             label: 'Go to the gym',
             detail: 'Free. +8 Health, +3 Looks.',
             icon: Icons.fitness_center_rounded,
             onTap: () => run(life.exercise),
-            disabledReason: gate(LifeAction.exercise),
+            performs: LifeAction.exercise,
           ),
           _LifeAction(
             label: 'Visit the library',
-            detail: 'Free. +4 Smarts.',
+            // Same again: `visitLibrary` gives +2. Reading at home is the
+            // version you do without leaving the house — worth something,
+            // and worth less than the walk.
+            detail:
+                'Read at home. +2 Smarts. The library in town pays '
+                'double.',
             icon: Icons.local_library_rounded,
             onTap: () => run(life.visitLibrary),
-            disabledReason: gate(LifeAction.library),
+            performs: LifeAction.library,
           ),
           _LifeAction(
             label: 'See a doctor',
+            // Deliberately *not* reduced the way the library and the park
+            // were. Health is load-bearing in the hunger and illness loop --
+            // it is the only reliable way back up from a bad run -- and
+            // making the reachable-from-anywhere version worse would punish
+            // exactly the player who is already in trouble.
             detail: 'A check-up. +12 Health.',
             icon: Icons.medical_services_rounded,
             cost: young ? null : 60,
             onTap: () => run(life.visitDoctor),
-            disabledReason: gate(
-              LifeAction.doctor,
-              young || life.money >= 60 ? null : 'Not enough coins',
-            ),
+            performs: LifeAction.doctor,
+            disabledReason: young || life.money >= 60
+                ? null
+                : 'Not enough coins',
           ),
           _LifeAction(
             label: 'Work a side job',
             detail: 'Earn 40-100 coins. Costs Happiness and Health.',
             icon: Icons.work_history_rounded,
             onTap: () => run(life.workSideJob),
-            disabledReason: gate(LifeAction.sideJob),
+            performs: LifeAction.sideJob,
           ),
           _LifeAction(
             label: 'Volunteer',
             detail: 'No pay at all. +9 Happiness, +2 Smarts.',
             icon: Icons.volunteer_activism_rounded,
             onTap: () => run(life.volunteer),
-            disabledReason: gate(LifeAction.volunteer),
+            performs: LifeAction.volunteer,
           ),
           _LifeAction(
             label: 'Gamble 100 coins',
@@ -2277,18 +2340,15 @@ class _LifeMenuSheet extends StatelessWidget {
             icon: Icons.casino_rounded,
             cost: 100,
             onTap: () => run(life.takeARisk),
-            disabledReason: life.age < 18
-                ? 'You must be 18'
-                : (life.money >= 100 ? null : 'Not enough coins'),
+            performs: LifeAction.gamble,
+            disabledReason: life.money >= 100 ? null : 'Not enough coins',
           ),
           _LifeAction(
             label: 'Practise a skill',
             detail: 'Music, sport, business — the career ladders.',
             icon: Icons.auto_awesome_rounded,
             onTap: onSkills,
-            disabledReason: life.stage == LifeStage.baby
-                ? 'You are too young'
-                : null,
+            performs: LifeAction.practise,
           ),
         ];
 
@@ -2310,6 +2370,7 @@ class _LifeMenuSheet extends StatelessWidget {
               Navigator.of(context).pop();
               onBudget();
             },
+            performs: null,
             disabledReason: life.canBudget
                 ? null
                 : 'You need a paying job first',
@@ -2320,6 +2381,13 @@ class _LifeMenuSheet extends StatelessWidget {
             icon: Icons.savings_rounded,
             cost: 100,
             onTap: onInvest,
+            // This is the row the whole `performs` mechanism exists for. It
+            // used to state only `life.money >= 100` and never ask about age,
+            // so a two-year-old holding 150 coins got a button that looked
+            // live and did nothing when pressed — `invest` checks the gate
+            // itself and returns silently. A dead control that looks alive is
+            // worse than a blocked one that explains itself.
+            performs: LifeAction.invest,
             disabledReason: life.money >= 100 ? null : 'You need 100 coins',
           ),
           _LifeAction(
@@ -2331,6 +2399,7 @@ class _LifeMenuSheet extends StatelessWidget {
                 '${life.netWorth}.',
             icon: Icons.account_balance_wallet_rounded,
             onTap: () => Navigator.of(context).pop(),
+            performs: null,
           ),
           // Directly above the ideas list, because it is what the ideas
           // list is *for*. Meeting a concept used to end at a chip on a
@@ -2346,14 +2415,13 @@ class _LifeMenuSheet extends StatelessWidget {
                       'them.'
                 : life.activePowers.isEmpty
                 ? '${life.armablePowers.length} ready to switch on.'
-                : life.activePowers
-                      .map((a) => a.power.name)
-                      .join(', '),
+                : life.activePowers.map((a) => a.power.name).join(', '),
             icon: Icons.bolt_rounded,
             onTap: () {
               Navigator.of(context).pop();
               onPowers();
             },
+            performs: null,
             disabledReason:
                 life.armablePowers.isEmpty && life.activePowers.isEmpty
                 ? 'No ideas met yet'
@@ -2371,6 +2439,7 @@ class _LifeMenuSheet extends StatelessWidget {
               Navigator.of(context).pop();
               onConcepts();
             },
+            performs: null,
           ),
         ];
     }
@@ -2379,6 +2448,26 @@ class _LifeMenuSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actions = _actions(context);
+    // Stable partition rather than a sort: the order inside each group is
+    // deliberate (Look for work is first in Career because without a job
+    // none of the money systems switch on), and a comparator would scramble
+    // it for no gain.
+    final open = <_LifeAction>[
+      for (final a in actions)
+        if (a.enabled) a,
+    ];
+    final locked = <_LifeAction>[
+      for (final a in actions)
+        if (!a.enabled) a,
+    ];
+    // "When you are older" is only true when age is the *only* thing in the
+    // way. The Money menu at five locks "Set your budget" because there is no
+    // job yet and "Use a money idea" because none have been met — neither of
+    // which growing up fixes on its own, and a heading that says otherwise is
+    // telling a child to wait for something that will not arrive.
+    final onlyAgeLocks = locked.every(
+      (a) => a.performs != null && life.gateFor(a.performs!) != null,
+    );
 
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
@@ -2419,11 +2508,46 @@ class _LifeMenuSheet extends StatelessWidget {
                   ),
                 ),
               )
-            else
-              for (final action in actions) ...[
+            else ...[
+              for (final action in open) ...[
                 _LifeActionRow(action: action, accent: menu.accent),
                 const SizedBox(height: 8),
               ],
+              // Everything you cannot do yet, under one heading, at the
+              // bottom.
+              //
+              // The menu used to interleave them, so a five-year-old opening
+              // Activities met eight rows of which seven were grey — reported
+              // as "half of these options are irrelevant", which is the right
+              // reading of a screen that puts one live button fourth in a
+              // list of locks.
+              //
+              // They are not removed, because at that age being told what you
+              // cannot do *is* the content: it is what makes the early years
+              // read as childhood rather than as an adult life with less
+              // money. But the things you can actually do now come first, and
+              // the rest is a list you scroll to rather than one you wade
+              // through.
+              if (locked.isNotEmpty) ...[
+                if (open.isNotEmpty) const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.only(left: 2, bottom: 8),
+                  child: Text(
+                    onlyAgeLocks ? 'When you are older' : 'Not yet',
+                    style: GoogleFonts.pixelifySans(
+                      color: AppTheme.textMuted,
+                      fontSize: 12,
+                      letterSpacing: 0.8,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                for (final action in locked) ...[
+                  _LifeActionRow(action: action, accent: menu.accent),
+                  const SizedBox(height: 8),
+                ],
+              ],
+            ],
           ],
         ),
       ),
@@ -2459,13 +2583,56 @@ class _LifeActionRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      action.label,
-                      style: GoogleFonts.pixelifySans(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            action.label,
+                            style: GoogleFonts.pixelifySans(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        // Says out loud that the town has a door for this.
+                        //
+                        // Reported as the menu and the map being a confusing
+                        // mix, and they were: the library, the clinic, the
+                        // park and the job board are all *places*, and the
+                        // menu carried a button for each with nothing saying
+                        // they were the same thing. Two routes to one
+                        // outcome is fine — the map is not always open to
+                        // you, and making somebody walk across a town to be
+                        // treated would be a worse game. Two routes with no
+                        // acknowledgement that they meet is what made it
+                        // read as duplication.
+                        if (action.performs != null &&
+                            LifeSimController.hasTownEquivalent(
+                              action.performs!,
+                            )) ...[
+                          const SizedBox(width: 7),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: accent.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              'in town',
+                              style: GoogleFonts.quicksand(
+                                color: accent,
+                                fontSize: 9.5,
+                                letterSpacing: 0.4,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -3356,10 +3523,7 @@ class _ThisYearPanel extends StatelessWidget {
 /// The relationship chip: pink text and a pink heart on a 14% pink wash.
 /// Three shades of one colour, which measured 4.26:1 — see
 /// [AppTheme.tintedChip] for why that keeps happening.
-final _personChip = AppTheme.tintedChip(
-  const Color(0xFFFF8FB1),
-  alpha: 0.14,
-);
+final _personChip = AppTheme.tintedChip(const Color(0xFFFF8FB1), alpha: 0.14);
 
 /// What a [_YearFact] tile actually sits on: a 5% white veil over the slate
 /// panel. Named because two colours in that tile have to be measured against
@@ -3445,7 +3609,6 @@ class _YearFact extends StatelessWidget {
     );
   }
 }
-
 
 /// Arming a money idea.
 ///

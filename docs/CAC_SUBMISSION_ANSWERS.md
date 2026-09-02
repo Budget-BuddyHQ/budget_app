@@ -4,8 +4,8 @@ Drafts for the entry form. Every number here is measured from the repo, not
 estimated. **Read the notes before pasting** — two of these answers are yours
 to make true, not mine.
 
-Counts as of 1 September 2026: 79,000 lines of Dart across 129 files,
-1,091 automated tests, 196 life events, 89 lessons in 13 units, 187 quiz
+Counts as of 2 September 2026: 81,500 lines of Dart across 132 files,
+1,196 automated tests, 196 life events, 89 lessons in 13 units, 187 quiz
 questions, 57 town scenarios, 40 cited sources, 24 skins, 16 finance concepts.
 
 ---

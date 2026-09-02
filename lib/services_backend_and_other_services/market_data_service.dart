@@ -421,14 +421,49 @@ class MarketDataService extends ChangeNotifier {
   /// Finnhub's free tier allows 60 calls/minute and one refresh costs one call
   /// per tracked symbol. A 20s floor lets the board poll live (~3 refreshes a
   /// minute) while staying well inside the limit.
-  static const Duration _minRefreshInterval = Duration(seconds: 20);
+  /// The floor between two fetches **of the same symbol**.
+  ///
+  /// Short on purpose. The rate limit is not enforced here any more — it is
+  /// enforced by [liveBatchSize], which caps how many calls a tick can make
+  /// however many symbols are asked for. This only stops a symbol being
+  /// fetched twice in the same breath by two overlapping ticks.
+  ///
+  /// It used to be 20s and used to be a single clock for the whole board,
+  /// which is why batching alone did not help at first: every pinned symbol
+  /// was refused by its own throttle five seconds after the batch that had
+  /// just fetched it, so the holdings the player was watching still updated
+  /// only once every twenty seconds.
+  static const Duration _minRefreshInterval = Duration(seconds: 4);
 
-  /// How often the Market Board re-polls quotes while it is open.
-  static const Duration livePollInterval = Duration(seconds: 30);
+  /// How often the Market Board asks for a new batch.
+  ///
+  /// **Why this went from 20s to 5s without breaking the rate limit.** The
+  /// board used to refresh *every* tracked symbol on every tick — sixteen
+  /// sequential HTTP calls, which against a 60-call minute caps the whole
+  /// board at one update per sixteen seconds and takes several seconds to
+  /// walk through. Most of those sixteen are scrolled off the screen at any
+  /// moment, so almost all of that budget was being spent on prices nobody
+  /// was looking at.
+  ///
+  /// Now each tick refreshes a small batch instead — see [refreshBatch]. Four
+  /// calls every five seconds is 48 a minute, comfortably inside the limit,
+  /// and the symbols actually in front of the player are in every batch. What
+  /// they are looking at updates twelve times more often than before; what
+  /// they are not rotates through in the background.
+  static const Duration livePollInterval = Duration(seconds: 5);
+
+  /// How many symbols one tick is allowed to fetch.
+  ///
+  /// Four against a 60-call minute at [livePollInterval] leaves headroom for
+  /// the candle and news calls that share the same budget.
+  static const int liveBatchSize = 4;
 
   final http.Client _client;
 
   final Map<String, LiveQuote> _quotes = <String, LiveQuote>{};
+
+  /// When each symbol was last fetched, for the per-symbol throttle.
+  final Map<String, DateTime> _lastFetchPerSymbol = <String, DateTime>{};
 
   final Map<String, TwelveDataQuoteDetails> _details =
       <String, TwelveDataQuoteDetails>{};
@@ -545,11 +580,48 @@ class MarketDataService extends ChangeNotifier {
     return trimmed;
   }
 
-  /// Fetches quotes for every symbol in [kLiveSymbols].
+  /// Where the round-robin has got to, so successive batches walk the list
+  /// rather than re-fetching the same few.
+  int _rotation = 0;
+
+  /// Refreshes a handful of symbols: the ones the player is looking at, plus
+  /// the next few in rotation.
+  ///
+  /// [pinned] are always included — the stocks on screen and the ones they
+  /// own. Everything else takes its turn, so a symbol scrolled out of view
+  /// still updates, just not on every tick.
+  ///
+  /// This is what replaced refreshing all sixteen at once. The old shape
+  /// spent its entire rate budget on prices nobody was watching and made the
+  /// board look frozen; this spends it on the four the player can actually
+  /// see.
+  Future<void> refreshBatch({Iterable<String> pinned = const <String>[]}) {
+    final known = kLiveSymbols.map((s) => s.symbol).toSet();
+    // **Capped, including the pinned ones.** A player holding ten stocks
+    // would otherwise pin ten symbols into every five-second tick — 120 calls
+    // a minute against a limit of 60. The pinned ones get the batch first and
+    // rotate among themselves when there are more of them than seats.
+    final wanted = <String>{};
+    final owned = pinned.where(known.contains).toList();
+    for (var i = 0; wanted.length < liveBatchSize && i < owned.length; i++) {
+      wanted.add(owned[(_rotation + i) % owned.length]);
+    }
+    final rest = kLiveSymbols
+        .map((s) => s.symbol)
+        .where((s) => !wanted.contains(s))
+        .toList();
+    for (var i = 0; wanted.length < liveBatchSize && i < rest.length; i++) {
+      wanted.add(rest[(_rotation + i) % rest.length]);
+    }
+    _rotation = rest.isEmpty ? 0 : (_rotation + liveBatchSize) % rest.length;
+    return refresh(only: wanted);
+  }
+
+  /// Fetches quotes for [only], or for every symbol in [kLiveSymbols].
   ///
   /// Respects [_minRefreshInterval] unless [force] is set. Never throws — all
   /// failures land in [status] so the caller can render an explanation.
-  Future<void> refresh({bool force = false}) async {
+  Future<void> refresh({bool force = false, Set<String>? only}) async {
     final key = _apiKey;
     if (key == null && !usesProxy) {
       _status = LiveMarketStatus.noApiKey;
@@ -557,36 +629,57 @@ class MarketDataService extends ChangeNotifier {
       return;
     }
 
-    final last = _lastFetch;
-    if (!force &&
-        last != null &&
-        DateTime.now().difference(last) < _minRefreshInterval) {
-      return;
-    }
+    // The throttle is per symbol now, not one clock for the whole board.
+    // A single `_lastFetch` meant a four-symbol batch blocked the next
+    // four-symbol batch even though they share no symbols at all.
+    final now = DateTime.now();
+    final targets = <LiveSymbol>[
+      for (final entry in kLiveSymbols)
+        if (only == null || only.contains(entry.symbol))
+          if (force ||
+              _lastFetchPerSymbol[entry.symbol] == null ||
+              now.difference(_lastFetchPerSymbol[entry.symbol]!) >=
+                  _minRefreshInterval)
+            entry,
+    ];
+    if (targets.isEmpty) return;
 
-    _status = LiveMarketStatus.loading;
-    _errorDetail = null;
-    notifyListeners();
+    // Only announce loading on the first fill. A spinner every five seconds
+    // is worse than a slightly stale number — it makes a working board look
+    // like a struggling one.
+    if (_quotes.isEmpty) {
+      _status = LiveMarketStatus.loading;
+      _errorDetail = null;
+      notifyListeners();
+    }
 
     try {
       // Sequential rather than parallel: the free tier throttles by request
       // rate, and six quick sequential calls stay comfortably inside it while
       // a burst of six can trip a 429.
       final fetched = <String, LiveQuote>{};
-      for (final entry in kLiveSymbols) {
+      for (final entry in targets) {
         final quote = await _fetchQuote(entry, key ?? '');
         if (quote != null) {
           fetched[entry.symbol] = quote;
+          _lastFetchPerSymbol[entry.symbol] = DateTime.now();
         }
       }
 
       if (fetched.isEmpty) {
-        _status = LiveMarketStatus.unavailable;
-        _errorDetail ??= 'No quotes returned.';
+        // Only a real failure when nothing at all is cached. A batch that
+        // came back empty while fifteen good quotes are already on screen is
+        // a blip, not an outage, and blanking the board over it would be a
+        // worse lie than the stale price.
+        if (_quotes.isEmpty) {
+          _status = LiveMarketStatus.unavailable;
+          _errorDetail ??= 'No quotes returned.';
+        }
       } else {
-        _quotes
-          ..clear()
-          ..addAll(fetched);
+        // Merged, not replaced. Clearing was safe when every refresh fetched
+        // the whole list; with batches it would delete the fifteen symbols
+        // this tick did not ask for.
+        _quotes.addAll(fetched);
         _lastFetch = DateTime.now();
         _status = LiveMarketStatus.ready;
       }

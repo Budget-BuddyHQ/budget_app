@@ -1887,8 +1887,15 @@ alter view public.leaderboard set (security_invoker = false);
         // is what a player saw for months: it is not their fault, retrying
         // will never work, and somebody has to run
         // `supabase/migrations/0002_friendships_rls.sql`.
-        return 'Friends need one setup step on the server — see '
-            'supabase/migrations/0002_friendships_rls.sql.';
+        //
+        // The message names the *folder* rather than that one file. There are
+        // two un-run migrations now (0003 adds account deletion), the number
+        // will keep going up, and a message pinned to one filename goes stale
+        // the moment another lands — which is worse than vague, because it
+        // sends whoever reads it to run one file and stop.
+        return 'Friends need a setup step on the server that has not been '
+            'run yet — paste supabase/RUN_THIS_IN_SUPABASE.sql into the '
+            'Supabase SQL editor.';
       }
       return 'Could not add that friend right now (${error.code ?? 'error'}).';
     } catch (error) {
