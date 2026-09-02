@@ -352,7 +352,7 @@ void main() {
       await tester.pumpWidget(
         wrap(
           const MoneyHabitsScreen(
-            initialTab: 4,
+            initialTab: MoneyHabitsTab.coach,
             debugSnapshot: MoneySnapshot(
               loggedDaysLast14: 9,
               daysSinceLastLog: 1,
@@ -387,7 +387,7 @@ void main() {
       await tester.pumpWidget(
         wrap(
           const MoneyHabitsScreen(
-            initialTab: 4,
+            initialTab: MoneyHabitsTab.coach,
             debugSnapshot: MoneySnapshot(),
           ),
         ),

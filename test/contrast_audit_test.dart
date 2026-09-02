@@ -388,12 +388,14 @@ void main() {
     'Arcade': () => const MinigamesPage(),
     'Customize': () => const CustomizeScreen(),
     'Academy': () => const LessonScreen(),
-    'Money Habits': () => const MoneyHabitsScreen(),
+    'Money Habits — Today': () => const MoneyHabitsScreen(),
+    'Money Habits — Week': () =>
+        const MoneyHabitsScreen(initialTab: MoneyHabitsTab.week),
     // The rebuilt jar tab: a painted jar on a mood-tinted plinth, a milestone
     // row, two tinted stat cards and a next-step card. Almost all of it is
     // the tinted-chip pattern that produced most of this audit's findings.
-    'Money Habits — Jar': () => const MoneyHabitsScreen(initialTab: 3),
-    'Money Habits — Coach': () => const MoneyHabitsScreen(initialTab: 4),
+    'Money Habits — Jar': () => const MoneyHabitsScreen(initialTab: MoneyHabitsTab.jar),
+    'Money Habits — Coach': () => const MoneyHabitsScreen(initialTab: MoneyHabitsTab.coach),
     'Past Lives': () => const PastLivesScreen(),
     'Life sim': () => LifeSimPage(debugInitialLife: _midLife()),
     'Life epilogue': () => LifeEpilogueScreen(
