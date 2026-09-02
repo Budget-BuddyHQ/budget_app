@@ -230,10 +230,12 @@ void main() {
     // first. My Jar is the one that got rebuilt — a painted jar, a milestone
     // row and two stat cards — so it is the one most likely to overflow a
     // small phone.
-    'Money Habits — My Week': () => const MoneyHabitsScreen(),
-    'Money Habits — Challenges': () => const MoneyHabitsScreen(initialTab: 2),
-    'Money Habits — My Jar': () => const MoneyHabitsScreen(initialTab: 3),
-    'Money Habits — Coach': () => const MoneyHabitsScreen(initialTab: 4),
+    'Money Habits — Today': () => const MoneyHabitsScreen(),
+    'Money Habits — My Week': () =>
+        const MoneyHabitsScreen(initialTab: MoneyHabitsTab.week),
+    'Money Habits — Challenges': () => const MoneyHabitsScreen(initialTab: MoneyHabitsTab.challenges),
+    'Money Habits — My Jar': () => const MoneyHabitsScreen(initialTab: MoneyHabitsTab.jar),
+    'Money Habits — Coach': () => const MoneyHabitsScreen(initialTab: MoneyHabitsTab.coach),
     // No map file exists yet, so this exercises the "waiting for the map"
     // fallback screen, not the Bonfire game canvas itself.
     'Adventure (map pending)': () => const AdventureWorldScreen(),

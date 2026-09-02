@@ -116,8 +116,9 @@ state change is a direct response to a user action:
 
 | From | To | How |
 | --- | --- | --- |
-| Home screen, `_MoneyHabitsPromo` card | `MoneyHabitsScreen` | `Navigator.push(MaterialPageRoute(...))` — same pattern as the existing Adventure/Life promo cards right above/below it in `home_screen.dart` |
-| `MoneyHabitsScreen`'s Track/Activity/Challenges/Jar | (within the same screen) | **Not** separate pushes — a single `TabController(length: 4)` + `TabBar`/`TabBarView`, identical in shape to `StockMarketPage`'s 5-tab Market Board |
+| Home screen, `_TodayCard` | Daily tab | `onNavSelected(AppTabIndex.daily)` — a **tab switch, not a push**. It used to `Navigator.push` a fresh `MoneyHabitsScreen`, which put a second live instance on top of the one already in `MainNavigation`'s `IndexedStack`; each had its own `TabController`, so which inner tab you saw depended on which route you came through. Falls back to the `/daily` named route when Home is mounted without a tab bar |
+| `MoneyHabitsScreen`'s Today/My Week/Find/Challenges/Jar/Coach | (within the same screen) | **Not** separate pushes — a single `TabController(length: MoneyHabitsTab.count)` + `TabBar`/`TabBarView`, identical in shape to `StockMarketPage`'s 5-tab Market Board. Address the tabs by `MoneyHabitsTab.*`; a "Today" tab was inserted at the front and every literal index shifted by one |
+| Today tab, tapping a quest row | the quest's own surface | `onNavSelected` to the Academy/Arcade/Adventure tab, or `onOpenInnerTab(MoneyHabitsTab.week)` for a habit quest, after `DailyPlanController.completeQuest` |
 | Activity tab, tapping a habit card | Habit detail | `showModalBottomSheet` (`_HabitDetailSheet`) — a sheet, not a new screen, since it's a quick adjust-and-save/complete interaction |
 | Profile screen | Impact stats | **Not a navigation** — `_MoneyHabitsProfileCard` is an inline section added directly into `ProfileScreen`'s existing `ListView`, next to `_BadgeShowcase` |
 

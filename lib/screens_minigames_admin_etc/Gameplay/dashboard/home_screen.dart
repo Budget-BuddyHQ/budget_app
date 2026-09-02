@@ -8,9 +8,10 @@ import 'package:provider/provider.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../../config/dev_preview_flags.dart';
 import '../../../controllers_that_updates_stats/app_settings_controller.dart';
-import '../../../controllers_that_updates_stats/money_habit_controller.dart';
+import '../../../controllers_that_updates_stats/daily_plan_controller.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
+import '../../../models_Like_Skins_and_lessons_templates/daily_quest.dart';
 import '../../../constants/app_assets.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
@@ -18,9 +19,10 @@ import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
 import '../../../widgets_custom_lotties/feedback_prompt_sheet.dart';
 import '../../../widgets_custom_lotties/idle_hover_icon.dart';
 import '../../../widgets_custom_lotties/mentor_tip_card.dart';
+import '../../../widgets_custom_lotties/money_glyphs.dart';
 import '../../../widgets_custom_lotties/profile_avatar.dart';
+import '../../../widgets_custom_lotties/reef_scene.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
-import '../money_habits/money_habits_screen.dart';
 import 'leaderboard_screen.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 
@@ -42,6 +44,25 @@ class HomeScreen extends StatelessWidget {
   Future<void> _openAdventureWorld(BuildContext context) async {
     HapticFeedback.mediumImpact();
     await Navigator.of(context).pushNamed('/life');
+  }
+
+  /// Switches to the Daily *tab*; never pushes a copy of it.
+  ///
+  /// Home used to push a fresh `MoneyHabitsScreen`, which put a second live
+  /// instance on top of the one already in `MainNavigation`'s `IndexedStack`
+  /// at [AppTabIndex.daily] — each with its own `TabController`, so which
+  /// inner tab you were looking at depended on which of the two routes you
+  /// arrived through. Where there is no tab bar to drive (Home mounted on
+  /// its own, as the tests do) it falls back to the named route, which lands
+  /// on the same single instance inside `DashboardShell`.
+  void _openDaily(BuildContext context) {
+    HapticFeedback.lightImpact();
+    final selector = onNavSelected;
+    if (selector != null) {
+      selector(AppTabIndex.daily);
+      return;
+    }
+    Navigator.of(context).pushNamed('/daily');
   }
 
   Future<void> _openLeaderboard(BuildContext context) async {
@@ -77,7 +98,7 @@ class HomeScreen extends StatelessWidget {
                 ),
           body: Stack(
             children: [
-              const _DashboardBackdrop(),
+              const Positioned.fill(child: _DashboardBackdrop()),
               SafeArea(
                 top: false,
                 child: LayoutBuilder(
@@ -110,19 +131,13 @@ class HomeScreen extends StatelessWidget {
                           // the same job — removed so Home has one obvious
                           // primary action instead of two competing ones.
                           const SizedBox(height: 10),
-                          _DailyMoneyHabitCard(
-                            onOpen: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const MoneyHabitsScreen(),
-                              ),
-                            ),
-                          ),
+                          _TodayCard(onOpen: () => _openDaily(context)),
                           const SizedBox(height: 10),
                           MentorTipCard(
                             simpleWording: stats.ageBand.prefersSimpleWording,
                           ),
                           const SizedBox(height: 10),
-                          _CurrentObjectiveCard(
+                          _DestinationsCard(
                             stats: stats,
                             compact: compactHeight,
                             // Was a same-named button that opened the
@@ -203,35 +218,33 @@ class _FeedbackPromptTriggerState extends State<_FeedbackPromptTrigger> {
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
-class _DailyMoneyHabitCard extends StatelessWidget {
-  const _DailyMoneyHabitCard({required this.onOpen});
+/// Today's plan, on Home, as one line of consequence rather than a menu.
+///
+/// **What it replaced.** A card headed "Pick a money habit" that opened the
+/// habit tracker by *pushing a second live copy* of the screen already
+/// sitting in the tab stack at [AppTabIndex.daily] — two instances, two
+/// TabControllers, and which inner tab you landed on depended on which of
+/// the two routes you came in through. It also gave the habit tracker a
+/// promo slot on Home while the actual daily plan — an ordered, needs-based,
+/// streak-bearing checklist that `DailyPlanController` had been rebuilding
+/// on every stats change since it was written — had no slot anywhere at all.
+///
+/// So this shows the plan and nothing else: how far through today you are,
+/// and the single next thing. Everything else about today is one tap away on
+/// the tab this opens, which is the point of having a tab.
+class _TodayCard extends StatelessWidget {
+  const _TodayCard({required this.onOpen});
 
   final VoidCallback onOpen;
 
+  static const Color _flame = Color(0xFFFF8A5B);
+
   @override
   Widget build(BuildContext context) {
-    final habits = context.watch<MoneyHabitController>();
-    final saved = habits.savedHabits;
-    final pending = saved
-        .where((habit) => !habits.isSavedToday(habit.id))
-        .toList(growable: false);
-
-    final String title;
-    final String subtitle;
-    final IconData icon;
-    if (saved.isEmpty) {
-      title = 'Pick a money habit';
-      subtitle = 'Choose one to start today\'s streak.';
-      icon = Icons.savings_rounded;
-    } else if (pending.isNotEmpty) {
-      title = 'Today: ${pending.first.title}';
-      subtitle = 'Log it to keep today\'s streak going.';
-      icon = pending.first.icon;
-    } else {
-      title = 'All habits logged today';
-      subtitle = 'Nice — every saved habit is done. Back tomorrow.';
-      icon = Icons.check_circle_rounded;
-    }
+    final plan = context.watch<DailyPlanController>().plan;
+    final streak = plan?.streakDays ?? 0;
+    final next = plan?.nextQuest;
+    final accent = streak > 0 ? _flame : AppTheme.greenPrimary;
 
     return InkWell(
       onTap: onOpen,
@@ -239,66 +252,178 @@ class _DailyMoneyHabitCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: AppTheme.getPuffyDecoration(
-          accent: AppTheme.greenPrimary,
-          fillColor: const Color(0xFF173B2E),
+          accent: accent,
+          fillColor: const Color(0xFF12352C),
           restAlpha: 0.18,
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: AppTheme.greenPrimary.withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(icon, color: AppTheme.greenPrimary, size: 26),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // FittedBox: "Pick a money habit" truncated to "Pick a
-                  // money ha…" at a real ~310px pane width (confirmed
-                  // against a screenshot — narrower than any tested
-                  // viewport). Scaling the whole line down keeps it a
-                  // complete phrase instead of a fragment.
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      title,
-                      maxLines: 1,
-                      style: GoogleFonts.pixelifySans(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: streak > 0 ? 0.16 : 0.08),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: accent.withValues(alpha: 0.34)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.local_fire_department_rounded,
+                        size: 15,
+                        color: accent,
                       ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$streak',
+                        style: GoogleFonts.pixelifySans(
+                          color: accent,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          height: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FittedLabel(
+                    'Today',
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                ),
+                if (plan != null)
                   Text(
-                    subtitle,
-                    style: GoogleFonts.quicksand(
-                      color: Colors.white.withValues(alpha: 0.78),
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      height: 1.3,
+                    '${plan.completedCount}/${plan.quests.length}',
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white.withValues(alpha: 0.72),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                ],
+                const SizedBox(width: 6),
+                Icon(Icons.chevron_right_rounded, color: accent, size: 26),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                minHeight: 8,
+                value: plan?.progress ?? 0,
+                backgroundColor: Colors.white.withValues(alpha: 0.08),
+                valueColor: AlwaysStoppedAnimation<Color>(accent),
               ),
             ),
-            const SizedBox(width: 8),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: AppTheme.greenPrimary,
-              size: 30,
-            ),
+            const SizedBox(height: 12),
+            if (next != null)
+              _NextQuestRow(quest: next)
+            else
+              Text(
+                plan == null
+                    ? 'Working out today\'s plan…'
+                    : 'Everything on today\'s plan is done. Back tomorrow.',
+                style: GoogleFonts.quicksand(
+                  color: Colors.white.withValues(alpha: 0.74),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The one quest Home shows: the first incomplete one.
+///
+/// Only one, on purpose. The whole list lives on the Daily tab; repeating it
+/// here would make Home a second copy of that screen, which is the mistake
+/// this card exists to undo.
+class _NextQuestRow extends StatelessWidget {
+  const _NextQuestRow({required this.quest});
+
+  final DailyQuest quest;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: quest.accent.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(color: quest.accent.withValues(alpha: 0.3)),
+          ),
+          child: IdleHoverIcon(
+            rotationAmplitude: 0.12,
+            child: Icon(quest.icon, color: quest.accent, size: 20),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              FittedLabel(
+                quest.title,
+                style: GoogleFonts.pixelifySans(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              // Two lines rather than a fitted one line, for the same
+              // reason as the quest rows on the Daily tab: this is a
+              // sentence, and FittedLabel is for labels.
+              Text(
+                quest.detail,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.quicksand(
+                  color: Colors.white.withValues(alpha: 0.76),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0E2A20),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: const Color(0xFFFFD45C).withValues(alpha: 0.30),
+            ),
+          ),
+          child: Text(
+            '+${quest.xpReward}',
+            style: GoogleFonts.pixelifySans(
+              color: const Color(0xFFFFD45C),
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -379,51 +504,63 @@ class _LeaderboardPromoCard extends StatelessWidget {
   }
 }
 
+/// The water the whole page sits in.
+///
+/// **What this replaced and why.** It used to be a small repeating icon
+/// pattern dimmed to 28% opacity. The thin gaps between cards exposed it as a
+/// crisp, chopped-off sliver of unrelated icons, which read as visual debris
+/// — the comment that used to live here said as much, and the fix at the
+/// time was to dim it harder, which only made it a grey wash with debris in
+/// it. A tiled pattern behind a column of cards has nothing to say; open
+/// water does, because it is a *place*, and the mascot is a turtle.
+///
+/// Deliberately the [ReefWater.abyss] grade rather than the brighter lagoon
+/// used inside the hero: this is behind body text and buttons for the whole
+/// scroll, and background that competes with foreground is the actual
+/// failure mode here, not background that is too plain.
 class _DashboardBackdrop extends StatelessWidget {
   const _DashboardBackdrop();
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: Image.asset(
-            AppAssets.homeTileBackground,
-            repeat: ImageRepeat.repeat,
-            filterQuality: FilterQuality.none,
-          ),
-        ),
-        // The tile art is a small repeating icon pattern meant as ambient
-        // texture, but the thin gaps between cards used to expose it at
-        // near-full strength — a crisp, chopped-off sliver of icons in every
-        // gap read as visual debris rather than intentional decoration.
-        // A much heavier dim turns it into a soft wash instead.
-        Positioned.fill(
-          child: Container(
-            color: const Color(0xFF0B2419).withValues(alpha: 0.72),
-          ),
-        ),
-        Positioned(
-          top: -60,
-          right: -40,
-          child: _GlowOrb(
-            color: const Color(0xFF85EFAC).withValues(alpha: 0.18),
-            size: 190,
-          ),
-        ),
-        Positioned(
-          top: 320,
-          left: -70,
-          child: _GlowOrb(
-            color: const Color(0xFF58C7FF).withValues(alpha: 0.10),
-            size: 180,
-          ),
-        ),
-      ],
+    return const ReefScene(
+      water: ReefWater.abyss,
+      seed: 11,
+      // **No near floor here, and that is the whole point.** The first
+      // version of this drew the full reef — sand, seaweed, coral — behind
+      // the scroll, and the result was worse than the tiled pattern it
+      // replaced: a bright cream slab and a row of lit-up plants running
+      // straight through the "Current Objective" card, so the busiest thing
+      // on the page was the part nobody is meant to look at. The far
+      // silhouettes stay, because haze at 20% reads as depth and cannot
+      // compete with anything.
+      showFloor: false,
+      // Only sets where the far bank sits now that the near floor is off.
+      // Kept low so most of the silhouette band ends up behind the bottom
+      // nav rather than behind the last card.
+      floorHeight: 68,
+      fishCount: 3,
+      bubbleCount: 11,
+      // Slower than the hero's. Two reefs moving at the same rate on one
+      // screen fight each other; the far one should barely move.
+      period: Duration(seconds: 48),
     );
   }
 }
 
+/// The one card at the top of Home, and the only primary action on it.
+///
+/// **Why it is a diorama rather than a card.** The previous version was a
+/// green gradient rectangle with a pill, a heading, a line of body text and a
+/// button — the same construction as the four cards underneath it, only
+/// bigger, so the page read as five cards of decreasing size rather than as a
+/// screen with a subject. What the top of the app was missing was not more
+/// text; it was somewhere to be. This is a reef with the player's own turtle
+/// in it, and the words sit on top of that.
+///
+/// The scene is not decoration bolted on: [ReefScene] is the same widget the
+/// page backdrop uses, at a brighter water grade and a faster clock, which is
+/// what makes the hero read as *nearer* than the water behind it.
 class _AdventureLaunchHero extends StatelessWidget {
   const _AdventureLaunchHero({
     required this.stats,
@@ -449,151 +586,291 @@ class _AdventureLaunchHero extends StatelessWidget {
               HapticFeedback.lightImpact();
               onOpenAdventure!();
             },
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.all(compact ? 14 : 20),
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1F4D38), Color(0xFF0F2A1E)],
-          ),
           borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
-          border: Border.all(
-            color: const Color(0xFF85EFAC).withValues(alpha: 0.26),
-          ),
           boxShadow: AppTheme.puffyShadow(
-            const Color(0xFF85EFAC),
-            restAlpha: 0.24,
+            const Color(0xFF3FD3C4),
+            restAlpha: 0.22,
             blurRadius: 36,
             spreadRadius: -8,
             offset: const Offset(0, 18),
           ),
         ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final veryTight = constraints.maxHeight < 196;
-            final narrow = constraints.maxWidth < 520;
-            final phone = constraints.maxWidth < 430;
-            return Stack(
-              children: [
-                Align(
-                  alignment: Alignment.topRight,
-                  child: _HeroAvatar(
-                    turtleSkin: turtleSkin,
-                    profileImageUrl: profileImageUrl,
-                    size: veryTight ? 70 : 92,
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.bottomLeft,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: narrow
-                          ? constraints.maxWidth * 0.78
-                          : constraints.maxWidth * 0.58,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final veryTight = constraints.maxHeight < 196;
+              final narrow = constraints.maxWidth < 520;
+              final phone = constraints.maxWidth < 430;
+              // The sea floor has to stay clear of the button, or the CTA
+              // sits in a seaweed bed and neither of them reads.
+              final floor = (constraints.maxHeight * 0.22).clamp(46.0, 78.0);
+
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    child: ReefScene(
+                      seed: 3,
+                      floorHeight: floor,
+                      fishCount: phone ? 3 : 4,
+                      bubbleCount: 7,
+                      period: const Duration(seconds: 26),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
+                  ),
+                  // A scrim that is heavy on the left and gone by the right.
+                  // Body text over open water is the one thing that does not
+                  // survive a fish swimming behind it; the right-hand half
+                  // stays clear so the reef is still visibly a reef.
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              const Color(0xFF06231F).withValues(alpha: 0.72),
+                              const Color(0xFF06231F).withValues(alpha: 0.30),
+                              const Color(0xFF06231F).withValues(alpha: 0),
+                            ],
+                            stops: const [0, 0.46, 0.78],
                           ),
-                          decoration: BoxDecoration(
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusXLarge,
+                          ),
+                          border: Border.all(
                             color: const Color(
-                              0xFF85EFAC,
-                            ).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: const Color(
-                                0xFF85EFAC,
-                              ).withValues(alpha: 0.20),
-                            ),
-                          ),
-                          child: FittedLabel(
-                            'Level ${stats.level}  |  ${stats.gold} Gold',
-                            style: GoogleFonts.pixelifySans(
-                              color: Color(0xFF85EFAC),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
+                              0xFF8FD8D2,
+                            ).withValues(alpha: 0.30),
                           ),
                         ),
-                        SizedBox(height: veryTight ? 6 : 10),
-                        // FittedBox rather than trusting the font sizes
-                        // below to already fit: at a genuinely narrow pane
-                        // (~310px, confirmed against a real screenshot —
-                        // narrower than any viewport this app's tests
-                        // cover, which start at 320px) "Explore the Town"
-                        // at 30px pixelifySans didn't fit the card's own
-                        // title column and silently truncated to
-                        // "Explore th…". FittedBox scales the whole line
-                        // down as one unit so it's always the full phrase,
-                        // just smaller, never a fragment.
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            // Was "Adventure Soon" — stale copy from before
-                            // the town map actually existed. It's real now,
-                            // with places to walk into, so the card says so.
-                            'Explore the Town',
-                            maxLines: 1,
-                            style: GoogleFonts.pixelifySans(
-                              color: Colors.white,
-                              fontSize: veryTight ? 25 : (phone ? 30 : 34),
-                              fontWeight: FontWeight.w700,
-                              height: 1,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.all(compact ? 14 : 20),
+                    child: Stack(
+                      children: [
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: _HeroAvatar(
+                            turtleSkin: turtleSkin,
+                            profileImageUrl: profileImageUrl,
+                            size: veryTight ? 70 : 92,
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.topLeft,
+                          child: _HudReadout(
+                            level: stats.level,
+                            gold: stats.gold,
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.bottomLeft,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: narrow
+                                  ? constraints.maxWidth * 0.78
+                                  : constraints.maxWidth * 0.58,
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // FittedBox rather than trusting the font
+                                // sizes below to already fit: at a genuinely
+                                // narrow pane (~310px, confirmed against a
+                                // real screenshot — narrower than any
+                                // viewport this app's tests cover, which
+                                // start at 320px) "Explore the Town" at 30px
+                                // pixelifySans did not fit the card's own
+                                // title column and silently truncated to
+                                // "Explore th…". FittedBox scales the whole
+                                // line down as one unit so it is always the
+                                // full phrase, just smaller, never a
+                                // fragment.
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    // Was "Adventure Soon" — stale copy from
+                                    // before the town map actually existed.
+                                    // It is real now, with places to walk
+                                    // into, so the card says so.
+                                    'Explore the Town',
+                                    maxLines: 1,
+                                    style: GoogleFonts.pixelifySans(
+                                      color: Colors.white,
+                                      fontSize: veryTight
+                                          ? 25
+                                          : (phone ? 30 : 34),
+                                      fontWeight: FontWeight.w700,
+                                      height: 1,
+                                      shadows: const [
+                                        Shadow(
+                                          color: Color(0xCC06231F),
+                                          blurRadius: 12,
+                                          offset: Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: veryTight ? 5 : 8),
+                                // Always shown. This used to be wrapped in
+                                // `if (!veryTight)`, where veryTight is
+                                // `maxHeight < 196` — and the hero's own
+                                // computed height lands within a couple of
+                                // pixels of 196 on a phone. So a hair more or
+                                // less available height made a whole
+                                // paragraph appear or vanish, which is why a
+                                // *wider* window could show *less* text than
+                                // a narrow one. Content should not blink in
+                                // and out on a 2px threshold.
+                                Text(
+                                  'Walk the town — every shop is a real '
+                                  'money decision.',
+                                  maxLines: 2,
+                                  style: GoogleFonts.quicksand(
+                                    color: Colors.white.withValues(alpha: 0.86),
+                                    height: 1.3,
+                                    fontSize: veryTight ? 12.5 : 13.5,
+                                    fontWeight: FontWeight.w700,
+                                    shadows: const [
+                                      Shadow(
+                                        color: Color(0xCC06231F),
+                                        blurRadius: 10,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: veryTight ? 10 : 16),
+                                _ActionButton(
+                                  label: 'Start a Life',
+                                  accent: const Color(0xFF7BE9D7),
+                                  icon: Icons.explore_rounded,
+                                  compact: phone || veryTight,
+                                  onTap: onOpenAdventure,
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                        SizedBox(height: veryTight ? 5 : 8),
-                        // Always shown. This used to be wrapped in
-                        // `if (!veryTight)`, where veryTight is
-                        // `maxHeight < 196` — and the hero's own computed
-                        // height lands within a couple of pixels of 196 on
-                        // a phone. So a hair more or less available height
-                        // made a whole paragraph appear or vanish, which is
-                        // why a *wider* window could show *less* text than
-                        // a narrow one. Content should not blink in and out
-                        // on a 2px threshold.
-                        //
-                        // Copy shortened instead so it fits two lines
-                        // unaided at any width this app supports, with no
-                        // ellipsis. It also no longer repeats "Start a
-                        // life", which the button directly below already
-                        // says.
-                        Text(
-                          'Walk the town — every shop is a real money '
-                          'decision.',
-                          maxLines: 2,
-                          style: GoogleFonts.quicksand(
-                            color: Colors.white.withValues(alpha: 0.80),
-                            height: 1.3,
-                            fontSize: veryTight ? 12.5 : 13.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        SizedBox(height: veryTight ? 10 : 16),
-                        _ActionButton(
-                          label: 'Start a Life',
-                          accent: const Color(0xFF85EFAC),
-                          icon: Icons.explore_rounded,
-                          compact: phone || veryTight,
-                          onTap: onOpenAdventure,
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
+    );
+  }
+}
+
+/// Level and gold, drawn as a HUD rather than written as a sentence.
+///
+/// This replaced the line `Level 7  |  999999 Gold`, set in a pixel *text*
+/// font inside one pill. Two things were wrong with that: a balance is the
+/// number a player looks for most often on this screen and it carried
+/// exactly the same weight as the word beside it, and the figure gains a
+/// character every order of magnitude, so the pill silently changed width
+/// with the player's balance.
+///
+/// The digits now come from [MoneyGlyphs] — the underwater pack's own bold
+/// italic numerals, which is real display art rather than a typeface with a
+/// pixel name. [MoneyGlyphs.canRender] is checked first because a figure
+/// drawn half in art and half in fallback text looks worse than one drawn
+/// entirely in text.
+class _HudReadout extends StatelessWidget {
+  const _HudReadout({required this.level, required this.gold});
+
+  final int level;
+  final int gold;
+
+  static const Color _gold = Color(0xFFFFD45C);
+
+  @override
+  Widget build(BuildContext context) {
+    final goldText = '$gold';
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _HudPill(
+          accent: const Color(0xFF8FD8D2),
+          child: Text(
+            'LV $level',
+            style: GoogleFonts.pixelifySans(
+              color: const Color(0xFFCFF6F1),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              height: 1,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        _HudPill(
+          accent: _gold,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                AppAssets.kitIconCoin,
+                width: 14,
+                height: 14,
+                filterQuality: FilterQuality.none,
+              ),
+              const SizedBox(width: 6),
+              if (MoneyGlyphs.canRender(goldText))
+                MoneyGlyphs(goldText, height: 18)
+              else
+                Text(
+                  goldText,
+                  style: GoogleFonts.pixelifySans(
+                    color: _gold,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    height: 1,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HudPill extends StatelessWidget {
+  const _HudPill({required this.accent, required this.child});
+
+  final Color accent;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        // Darker than the water behind it on purpose. A translucent pill over
+        // a moving reef is unreadable the moment a fish passes under it.
+        color: const Color(0xFF06231F).withValues(alpha: 0.66),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: accent.withValues(alpha: 0.34)),
+      ),
+      child: child,
     );
   }
 }
@@ -623,8 +900,22 @@ class _HeroAvatar extends StatelessWidget {
   }
 }
 
-class _CurrentObjectiveCard extends StatelessWidget {
-  const _CurrentObjectiveCard({
+/// Where you are, and the five places you can go.
+///
+/// **Why the prose went.** This was "Current Objective", and under that
+/// heading it carried the subtitle `Daily run · Academy · Arcade` and the
+/// sentence *"Enter the adventure, then use a quick practice loop if you
+/// need more gold or literacy points."* — a heading, a list of three of the
+/// five buttons directly beneath it, and a paragraph restating what the
+/// buttons already said, stacked above the buttons themselves. Three ways of
+/// saying the same thing is what makes a screen feel like it is mostly
+/// words. The buttons stayed because they are the only quick route to four
+/// tabs; everything above them that was describing them did not.
+///
+/// It also no longer claims to be the objective. Today's plan is the
+/// objective, and it now has its own card directly above this one.
+class _DestinationsCard extends StatelessWidget {
+  const _DestinationsCard({
     required this.stats,
     required this.compact,
     required this.onPlayNow,
@@ -642,120 +933,105 @@ class _CurrentObjectiveCard extends StatelessWidget {
   final VoidCallback? onOpenAcademy;
   final VoidCallback? onCustomize;
 
+  /// XP in a level, mirroring `UserStats.levelProgress`, which is
+  /// `(xp % 120) / 120`. Written here as the same constant rather than a
+  /// second guess at the curve.
+  static const int _xpPerLevel = 120;
+
   @override
   Widget build(BuildContext context) {
+    final into = stats.xp % _xpPerLevel;
+    final toGo = _xpPerLevel - into;
+
     return _GlassPanel(
       padding: EdgeInsets.all(compact ? 14 : 18),
       radius: 26,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final tight = compact;
-          final decorationWidth = tight ? 58.0 : 92.0;
-          final decorationHeight = tight ? 46.0 : 70.0;
-
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: tight ? 42 : 50,
-                    height: tight ? 42 : 50,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: const Color(0xFF85EFAC).withValues(alpha: 0.26),
+              Container(
+                width: compact ? 42 : 50,
+                height: compact ? 42 : 50,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: const Color(0xFF85EFAC).withValues(alpha: 0.26),
+                  ),
+                ),
+                child: Text(
+                  '${stats.level}',
+                  style: GoogleFonts.pixelifySans(
+                    color: const Color(0xFF85EFAC),
+                    fontSize: compact ? 18 : 21,
+                    fontWeight: FontWeight.w700,
+                    height: 1,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FittedLabel(
+                      'Level ${stats.level}',
+                      style: GoogleFonts.pixelifySans(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    child: const Icon(
-                      Icons.flag_rounded,
-                      color: Color(0xFF85EFAC),
+                    FittedLabel(
+                      '$toGo XP to level ${stats.level + 1}',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.64),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // FittedBox: this row also carries a decorative
-                        // AmbientLottieCard, which eats even more of the
-                        // title's width than the money-habit card above —
-                        // "Current Objective" truncated to "Curren…" at a
-                        // real ~310px pane width.
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Current Objective',
-                            maxLines: 1,
-                            style: GoogleFonts.pixelifySans(
-                              color: Colors.white,
-                              fontSize: 19,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        FittedLabel(
-                          'Daily run · Academy · Arcade',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.64),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  AmbientLottieCard(
-                    motif: AmbientMotif.arcade,
-                    semanticLabel: 'Arcade decoration',
-                    width: decorationWidth,
-                    height: decorationHeight,
-                    padding: EdgeInsets.all(tight ? 4 : 6),
-                    backgroundColor: Colors.white.withValues(alpha: 0.04),
-                    borderColor: Colors.white.withValues(alpha: 0.08),
-                  ),
-                ],
-              ),
-              if (!tight) ...[
-                const SizedBox(height: 14),
-                Text(
-                  'Enter the adventure, then use a quick practice loop if you need more gold or literacy points.',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.74),
-                    height: 1.34,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-              SizedBox(height: tight ? 12 : 14),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: LinearProgressIndicator(
-                  minHeight: tight ? 9 : 12,
-                  value: stats.levelProgress.clamp(0.08, 1.0),
-                  backgroundColor: Colors.white.withValues(alpha: 0.08),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    Color(0xFF85EFAC),
-                  ),
+                  ],
                 ),
               ),
-              SizedBox(height: tight ? 12 : 16),
-              _ObjectiveActionBar(
-                compact: tight,
-                onAdventure: onOpenAdventure,
-                onDaily: onPlayNow,
-                onArcade: onOpenArcade,
-                onAcademy: onOpenAcademy,
-                onCustomize: onCustomize,
+              const SizedBox(width: 12),
+              AmbientLottieCard(
+                motif: AmbientMotif.arcade,
+                semanticLabel: 'Arcade decoration',
+                width: compact ? 58 : 92,
+                height: compact ? 46 : 70,
+                padding: EdgeInsets.all(compact ? 4 : 6),
+                backgroundColor: Colors.white.withValues(alpha: 0.04),
+                borderColor: Colors.white.withValues(alpha: 0.08),
               ),
             ],
-          );
-        },
+          ),
+          SizedBox(height: compact ? 12 : 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: compact ? 9 : 12,
+              // Floored so a freshly levelled bar is still visibly a bar
+              // rather than an empty track.
+              value: stats.levelProgress.clamp(0.04, 1.0),
+              backgroundColor: Colors.white.withValues(alpha: 0.08),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF85EFAC),
+              ),
+            ),
+          ),
+          SizedBox(height: compact ? 12 : 16),
+          _ObjectiveActionBar(
+            compact: compact,
+            onAdventure: onOpenAdventure,
+            onDaily: onPlayNow,
+            onArcade: onOpenArcade,
+            onAcademy: onOpenAcademy,
+            onCustomize: onCustomize,
+          ),
+        ],
       ),
     );
   }
@@ -864,37 +1140,38 @@ class _ObjectiveIconButton extends StatelessWidget {
                 HapticFeedback.lightImpact();
                 onTap!();
               },
+        // Icon above label, not beside it.
+        //
+        // Side by side, the label was dropped whenever the slot fell under
+        // 70px — and five equal slots in this card come out at about 60px on
+        // any phone, so in practice *every phone* got five unlabelled
+        // squares and had to guess which one was Academy. Stacking gives the
+        // label the full slot width instead of what is left after an icon,
+        // so it survives at every size this app runs at.
         child: Container(
-          height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          height: 62,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
           decoration: BoxDecoration(
             color: accent.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: accent.withValues(alpha: 0.22)),
           ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final iconOnly = constraints.maxWidth < 70;
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, color: accent, size: 22),
-                  if (!iconOnly) ...[
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: FittedLabel(
-                        label,
-                        style: GoogleFonts.pixelifySans(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              );
-            },
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: accent, size: 22),
+              const SizedBox(height: 4),
+              FittedLabel(
+                label,
+                alignment: Alignment.center,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.pixelifySans(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1118,34 +1395,6 @@ class _ShineSweep extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _GlowOrb extends StatelessWidget {
-  const _GlowOrb({required this.color, required this.size});
-
-  final Color color;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
-          boxShadow: [
-            BoxShadow(
-              color: color,
-              blurRadius: size * 0.40,
-              spreadRadius: size * 0.06,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

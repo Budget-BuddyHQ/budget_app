@@ -117,8 +117,16 @@ void main() {
   // Matches the window the bottom-bar bug was reported from.
   const shotSize = Size(892, 744);
 
+  // A phone, portrait. The default shot is a desktop-ish window, which is
+  // the shape least like the one most players hold — and Home in particular
+  // now has a picture in it whose sea floor, avatar and title all move with
+  // the available height, so it is worth having both.
+  const phoneSize = Size(390, 844);
+  final sizes = <String, Size>{'home_phone': phoneSize};
+
   final screens = <String, Widget Function()>{
     'home': () => const HomeScreen(),
+    'home_phone': () => const HomeScreen(),
     // With the bottom bar attached, which the bare screens do not show. The
     // active tab's gold treatment is the one thing on it that changes size
     // with the window, so it needs looking at rather than reasoning about.
@@ -127,12 +135,14 @@ void main() {
     'arcade': () => const MinigamesPage(),
     'cascade': () => const CoinCascadePage(),
     'academy': () => const LessonScreen(),
-    'habits_week': () => const MoneyHabitsScreen(),
-    'habits_jar': () => const MoneyHabitsScreen(initialTab: 3),
+    'habits_today': () => const MoneyHabitsScreen(),
+    'habits_week': () =>
+        const MoneyHabitsScreen(initialTab: MoneyHabitsTab.week),
+    'habits_jar': () => const MoneyHabitsScreen(initialTab: MoneyHabitsTab.jar),
     // A player a fortnight in with a real, mixed history: turning up, but
     // pinning far more than they keep and saving almost nothing by it.
     'habits_coach': () => const MoneyHabitsScreen(
-      initialTab: 4,
+      initialTab: MoneyHabitsTab.coach,
       debugSnapshot: MoneySnapshot(
         loggedDaysLast14: 9,
         daysSinceLastLog: 1,
@@ -243,7 +253,7 @@ void main() {
 
   for (final entry in screens.entries) {
     testWidgets('shoot ${entry.key}', (tester) async {
-      tester.view.physicalSize = shotSize;
+      tester.view.physicalSize = sizes[entry.key] ?? shotSize;
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 

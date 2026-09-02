@@ -331,7 +331,7 @@ class DailyPlanBuilder {
       return const DailyQuest(
         id: 'money_habit_pick',
         title: 'Pick a money habit',
-        detail: 'Save one from Money Habits to start your streak',
+        detail: 'Pick one to start your streak',
         surface: QuestSurface.moneyHabit,
         icon: Icons.savings_rounded,
         accent: Color(0xFF4BD2A3),
