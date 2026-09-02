@@ -186,6 +186,18 @@ class AppAssets {
   /// onto it. See [MapBackdropStyle.reading] for the measurements.
   static const String villageMapBackgroundSoft =
       'assets/self_made_backgrounds/map_soft.png';
+
+  /// The second town map, de-framed by `tool/make_reading_backdrop.py`.
+  ///
+  /// This is the 800x800 export that could not be made *playable* — its
+  /// collision data was never in the PNG, and three separate heuristics all
+  /// read the main promenade as solid, which cuts the town in half. None of
+  /// that applies to a backdrop, which needs no colliders, so the art earns
+  /// its place here instead. See [MapBackdrop.variant].
+  static const String villageMapTwoBackground =
+      'assets/self_made_backgrounds/map_two.png';
+  static const String villageMapTwoBackgroundSoft =
+      'assets/self_made_backgrounds/map_two_soft.png';
   static const String homeTileBackground =
       'assets/self_made_backgrounds/home_tile_bg.png';
   static const String profileTileBackground =

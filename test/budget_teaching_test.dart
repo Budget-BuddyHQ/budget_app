@@ -95,7 +95,13 @@ void main() {
     test('a covered shock draws the fund and creates no debt', () {
       final life = _employed(salary: 1000);
       life.setBudget(needs: 50, wants: 30, savings: 20);
-      for (var i = 0; i < 6; i++) {
+      // Answer whatever gets drawn. `ageUp` refuses to advance while an event
+      // is waiting, so a bare loop of six `ageUp`s banks *one* year of savings
+      // and thinks it banked six — which left the fund small enough for a
+      // single unlucky boiler to clear it, and the assertion below failing for
+      // a reason that has nothing to do with what it is testing.
+      for (var i = 0; i < 12 && !life.finished; i++) {
+        if (life.currentEvent != null) life.chooseOption(0);
         life.ageUp();
       }
 

@@ -53,9 +53,7 @@ MoneySnapshot buildMoneySnapshot(UserStats stats) {
 
   // Distinct habits that actually show up, which is the number that means
   // anything next to how many are pinned.
-  final loggedHabits = <String>{
-    for (final day in weekly.values) ...day,
-  }.length;
+  final loggedHabits = <String>{for (final day in weekly.values) ...day}.length;
 
   return MoneySnapshot(
     loggedDaysLast14: loggedDays,
@@ -105,7 +103,9 @@ int _challengesTouched(UserStats stats) {
 int _challengesFinished(UserStats stats) {
   final done = stats.completedChallengeTasks.toSet();
   return habitChallenges
-      .where((c) => c.tasks.isNotEmpty && c.tasks.every((t) => done.contains(t.id)))
+      .where(
+        (c) => c.tasks.isNotEmpty && c.tasks.every((t) => done.contains(t.id)),
+      )
       .length;
 }
 
@@ -146,7 +146,9 @@ int _longestStreak(Set<String> loggedDayKeys) {
   final days = <DateTime>[];
   for (final key in loggedDayKeys) {
     final parsed = DateTime.tryParse(key);
-    if (parsed != null) days.add(DateTime(parsed.year, parsed.month, parsed.day));
+    if (parsed != null) {
+      days.add(DateTime(parsed.year, parsed.month, parsed.day));
+    }
   }
   if (days.isEmpty) return 0;
   days.sort();

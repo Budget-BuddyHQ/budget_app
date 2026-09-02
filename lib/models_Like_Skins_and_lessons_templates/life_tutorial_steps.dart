@@ -39,7 +39,8 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
       'Every choice tells you afterwards what it was called and why.',
       'When the run ends it is recorded, and you start a new one.',
     ],
-    teaches: 'Money decisions are easier to understand after you have lived '
+    teaches:
+        'Money decisions are easier to understand after you have lived '
         'with one.',
     icon: Icons.auto_stories_rounded,
     accent: Color(0xFF85EFAC),
@@ -48,8 +49,7 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
   TutorialStep(
     id: 'life_age',
     title: 'The Age button',
-    tagline:
-        'The middle button at the bottom. Press it and a year goes by.',
+    tagline: 'The middle button at the bottom. Press it and a year goes by.',
     bullets: [
       'A year passes, you get older, and something happens.',
       'Bills, rent and interest are charged as the years pass — whether or '
@@ -72,8 +72,7 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
       'Invested grows on its own; owed grows on its own too, the wrong way.',
       'An empty savings box is not a bug — it is the thing to fix.',
     ],
-    teaches:
-        'Net worth is one number hiding four very different situations.',
+    teaches: 'Net worth is one number hiding four very different situations.',
     icon: Icons.account_balance_wallet_rounded,
     accent: Color(0xFFFFD45C),
     mascot: TutorialMascot.thinking,

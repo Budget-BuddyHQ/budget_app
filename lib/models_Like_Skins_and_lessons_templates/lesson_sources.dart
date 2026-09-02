@@ -230,7 +230,8 @@ const Map<String, LessonSource> kLessonSources = <String, LessonSource>{
   'dol_401k': LessonSource(
     publisher: 'U.S. Department of Labor',
     title: 'What you should know about your retirement plan',
-    url: 'https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/'
+    url:
+        'https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/'
         'resource-center/publications',
   ),
 

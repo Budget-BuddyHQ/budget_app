@@ -8,6 +8,7 @@ import '../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../models_Like_Skins_and_lessons_templates/life_record.dart';
 import '../models_Like_Skins_and_lessons_templates/money_habit_models.dart';
+import '../constants/privacy_policy.dart';
 import '../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import '../services_backend_and_other_services/market_data_service.dart'
     show formatShares;
@@ -299,6 +300,24 @@ class UserStatsController extends ChangeNotifier {
     } catch (error) {
       return _authFailure('Password reset failed: $error');
     }
+  }
+
+  /// Records that this player accepted the current privacy policy.
+  ///
+  /// Written at the moment the account is created, from the checkbox the
+  /// player actually ticked. Stamped with the version *and* the time, because
+  /// "they agreed" is not a useful answer on its own -- the question is always
+  /// which document, on what date.
+  Future<StatsActionResult> recordPrivacyAcceptance() {
+    final nextStats = _stats.copyWith(
+      spendingHabits: <String, dynamic>{
+        ..._stats.spendingHabits,
+        PrivacyKeys.acceptedVersion: kPrivacyPolicyVersion,
+        PrivacyKeys.acceptedAt: DateTime.now().toUtc().toIso8601String(),
+      },
+      updatedAt: DateTime.now().toUtc(),
+    );
+    return _saveStats(nextStats, savingMessage: 'Saving your choices...');
   }
 
   Future<void> signOut() async {
