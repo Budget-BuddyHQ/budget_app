@@ -40,8 +40,7 @@ const List<LifeEvent> kLifeEventsToddler = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Stare at them instead',
-        outcome:
-            'You watched, unimpressed, filing it away. A serious baby.',
+        outcome: 'You watched, unimpressed, filing it away. A serious baby.',
         smarts: 4,
         happiness: 2,
       ),
@@ -63,8 +62,7 @@ const List<LifeEvent> kLifeEventsToddler = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Chew everything in reach',
-        outcome:
-            'The remote never recovered. Neither did one shoe.',
+        outcome: 'The remote never recovered. Neither did one shoe.',
         happiness: 3,
         health: 2,
       ),
@@ -72,8 +70,7 @@ const List<LifeEvent> kLifeEventsToddler = <LifeEvent>[
   ),
   LifeEvent(
     id: 't_peekaboo',
-    prompt:
-        'A grown-up keeps vanishing behind their hands and coming back.',
+    prompt: 'A grown-up keeps vanishing behind their hands and coming back.',
     icon: Icons.visibility_rounded,
     maxAge: 2,
     weight: 1.3,

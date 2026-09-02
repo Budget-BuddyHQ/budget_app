@@ -155,6 +155,12 @@ class _PopNavTile extends StatefulWidget {
   State<_PopNavTile> createState() => _PopNavTileState();
 }
 
+/// How far the active tab is scaled up. Shared with [_HuggingPill], which
+/// needs it to cap the pill so the scaled-up version still lands inside its
+/// cell -- a `Transform` does not affect layout, so this is the only thing
+/// stopping it painting over its neighbour.
+const double _activeScale = 1.16;
+
 class _PopNavTileState extends State<_PopNavTile>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
@@ -218,7 +224,7 @@ class _PopNavTileState extends State<_PopNavTile>
             animation: _controller,
             builder: (context, child) {
               final t = _controller.value.clamp(0.0, 1.0);
-              final scale = 1.0 + (0.16 * t);
+              final scale = 1.0 + ((_activeScale - 1.0) * t);
               return Transform.translate(
                 offset: Offset(0, -6.0 * t),
                 child: Transform.scale(scale: scale, child: child),
@@ -291,68 +297,77 @@ class _PopNavTileState extends State<_PopNavTile>
                       ],
                     ),
                   )
-                : Container(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 2,
-                      vertical: 4,
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: widget.dense ? 6 : 8,
-                      vertical: widget.veryTight ? 6 : (widget.dense ? 8 : 10),
-                    ),
-                    decoration: BoxDecoration(
-                      color: widget.active
-                          ? _activeAccent
-                          : Colors.white.withValues(alpha: 0.04),
-                      borderRadius: BorderRadius.circular(
-                        AppTheme.radiusMedium,
+                : _HuggingPill(
+                    scale: _activeScale,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 2,
+                        vertical: 4,
                       ),
-                      border: Border.all(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: widget.dense ? 10 : 14,
+                        vertical: widget.veryTight
+                            ? 6
+                            : (widget.dense ? 8 : 10),
+                      ),
+                      decoration: BoxDecoration(
                         color: widget.active
-                            ? _deepCharcoal
-                            : Colors.transparent,
-                        width: 3,
+                            ? _activeAccent
+                            : Colors.white.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(
+                          AppTheme.radiusMedium,
+                        ),
+                        border: Border.all(
+                          color: widget.active
+                              ? _deepCharcoal
+                              : Colors.transparent,
+                          width: 3,
+                        ),
+                        boxShadow: widget.active
+                            ? const [
+                                BoxShadow(
+                                  color: _activeAccentDeep,
+                                  offset: Offset(0, 4),
+                                ),
+                              ]
+                            : null,
                       ),
-                      boxShadow: widget.active
-                          ? const [
-                              BoxShadow(
-                                color: _activeAccentDeep,
-                                offset: Offset(0, 4),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          widget.item.icon,
-                          color: widget.active ? _deepCharcoal : Colors.white70,
-                          size: iconSize,
-                        ),
-                        SizedBox(
-                          height: widget.veryTight ? 2 : (widget.dense ? 3 : 4),
-                        ),
-                        SizedBox(
-                          height: labelHeight,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              widget.item.label,
-                              style: GoogleFonts.pixelifySans(
-                                color: widget.active
-                                    ? _deepCharcoal
-                                    : Colors.white70,
-                                fontSize: labelFontSize,
-                                fontWeight: widget.active
-                                    ? FontWeight.w700
-                                    : FontWeight.w600,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            widget.item.icon,
+                            color: widget.active
+                                ? _deepCharcoal
+                                : Colors.white70,
+                            size: iconSize,
+                          ),
+                          SizedBox(
+                            height: widget.veryTight
+                                ? 2
+                                : (widget.dense ? 3 : 4),
+                          ),
+                          SizedBox(
+                            height: labelHeight,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                widget.item.label,
+                                style: GoogleFonts.pixelifySans(
+                                  color: widget.active
+                                      ? _deepCharcoal
+                                      : Colors.white70,
+                                  fontSize: labelFontSize,
+                                  fontWeight: widget.active
+                                      ? FontWeight.w700
+                                      : FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
           ),
@@ -360,4 +375,47 @@ class _PopNavTileState extends State<_PopNavTile>
       ),
     );
   }
+}
+
+/// Sizes a nav pill to its own content instead of to the cell it sits in.
+///
+/// **The bug this fixes.** The tab tiles live in `Expanded`, which hands down
+/// a *tight* width, and a `Container` with no width of its own fills whatever
+/// it is given. So the gold active-tab treatment was not a pill at all — it
+/// was a slab spanning the entire fifth of the bar, and on a wide window that
+/// is a ~190px block of solid yellow. It reads as a rendering fault rather
+/// than as a selection, which is exactly what it got reported as.
+///
+/// A `Center` is enough to loosen the constraint and let the pill hug its
+/// label. The cap is the part that is doing real work: the active tab is
+/// painted at [scale] by a `Transform`, and a transform does not participate
+/// in layout, so a pill that exactly fills its cell paints 16% *outside* it
+/// with nothing to catch it — a `Row` only reports overflow it can measure.
+/// Capping the pill at `1 / scale` of the cell means the scaled-up version
+/// still lands inside, by construction, at every width.
+///
+/// The tap target is unaffected: the `InkWell` is above this, so the whole
+/// cell stays pressable even though only the middle of it is painted.
+class _HuggingPill extends StatelessWidget {
+  const _HuggingPill({required this.child, required this.scale});
+
+  final Widget child;
+
+  /// The `Transform.scale` factor applied to the active tab.
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final cell = constraints.maxWidth;
+      return Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: cell.isFinite ? cell / scale : double.infinity,
+          ),
+          child: child,
+        ),
+      );
+    },
+  );
 }

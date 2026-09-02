@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../models_Like_Skins_and_lessons_templates/life_record.dart';
 import '../models_Like_Skins_and_lessons_templates/money_habit_models.dart';
+import '../constants/privacy_policy.dart';
 import '../models_Like_Skins_and_lessons_templates/player_profile.dart';
 
 /// Where the emailed password-reset link sends the player back to.
@@ -518,6 +519,27 @@ class UserStats {
         : VillagerBody.masculine;
   }
 
+  /// Which privacy policy version this player agreed to, or empty.
+  ///
+  /// Recorded so a policy change can ask again rather than silently holding
+  /// somebody to a document they never saw, and so "did this account accept
+  /// it" has an answer that is not a guess. Stored alongside everything else
+  /// in `spending_habits`, so it syncs and survives a reinstall.
+  String get privacyAcceptedVersion =>
+      spendingHabits[PrivacyKeys.acceptedVersion]?.toString() ?? '';
+
+  /// When that acceptance happened, UTC, or null if never.
+  DateTime? get privacyAcceptedAt {
+    final raw = spendingHabits[PrivacyKeys.acceptedAt]?.toString();
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  /// True when this player has accepted the policy the app is currently
+  /// shipping. A bump to [kPrivacyPolicyVersion] makes this false again.
+  bool get hasAcceptedCurrentPrivacyPolicy =>
+      privacyAcceptedVersion == kPrivacyPolicyVersion;
+
   AgeBand get ageBand => AgeBand.fromId(spendingHabits[ProfileKeys.ageBand]);
 
   GenderIdentity get gender =>
@@ -665,6 +687,14 @@ class SupabaseService {
       userId.substring(0, math.min(8, userId.length)).toUpperCase();
   static const String defaultProfileImageBucket = 'profile_pictures';
   static const Duration _supabaseReadTimeout = Duration(seconds: 6);
+
+  /// Longer than a read, for the one call that cannot be retried blind.
+  ///
+  /// Account deletion touches four tables and an auth row in one
+  /// transaction. Timing that out at six seconds and telling the player it
+  /// failed would be the worst possible lie to tell them, because by then it
+  /// may well have succeeded.
+  static const Duration _supabaseDeleteTimeout = Duration(seconds: 20);
 
 
   static const String schemaSql = '''
@@ -1003,6 +1033,59 @@ alter view public.leaderboard set (security_invoker = false);
   Future<void> updatePassword(String newPassword) async {
     final client = _requireClient();
     await client.auth.updateUser(UserAttributes(password: newPassword));
+  }
+
+  /// Deletes the signed-in account: their rows, then their auth record.
+  ///
+  /// **Why an RPC rather than a pile of `.delete()` calls here.** Removing an
+  /// `auth.users` row needs the service-role key, and a mobile app cannot
+  /// hold one -- anything shipped to a device is readable by whoever has the
+  /// device, and that key is every account in the project rather than just
+  /// this one. So the delete has to run server-side. See
+  /// `supabase/migrations/0003_account_deletion.sql`, which is also where the
+  /// rest of the reasoning lives.
+  ///
+  /// Returns null on success, or a sentence to show the player. It never
+  /// throws: this is called from a screen where the user has already
+  /// confirmed twice, and an unhandled exception there would leave them
+  /// looking at a dialog with no idea whether it worked.
+  Future<String?> deleteOwnAccount() async {
+    if (!_isSupabaseConnected) {
+      return 'You need to be online to delete your account.';
+    }
+    final client = _existingClient;
+    final userId = client?.auth.currentUser?.id;
+    if (client == null || userId == null) {
+      return 'You are not signed in.';
+    }
+    try {
+      await client
+          .rpc<void>('delete_own_account')
+          .timeout(_supabaseDeleteTimeout);
+    } catch (error) {
+      debugPrint('Supabase account deletion failed: $error');
+      // 42883 is undefined_function -- the migration has not been run against
+      // this project yet. Worth its own message, because the fix is one SQL
+      // file and the generic "try again" would send somebody hunting for a
+      // network problem that is not there.
+      final text = error.toString();
+      if (text.contains('42883') || text.contains('delete_own_account')) {
+        return 'Account deletion is not set up on the server yet. '
+            'Email us and we will remove it by hand.';
+      }
+      return 'Could not delete your account. Check your connection and '
+          'try again.';
+    }
+    // Local state goes regardless of what the server said, because the
+    // account it belonged to is gone.
+    await clearCachedUserStats(userId: userId);
+    try {
+      await client.auth.signOut();
+    } catch (_) {
+      // The session is already invalid once the user row is deleted; failing
+      // to sign out of a dead session is not something to report.
+    }
+    return null;
   }
 
   Future<void> signOut({String? userId}) async {
@@ -1764,11 +1847,13 @@ alter view public.leaderboard set (security_invoker = false);
       // already added failed with a permission error rather than doing
       // nothing. `ignoreDuplicates` sends `resolution=ignore-duplicates`,
       // which is `ON CONFLICT DO NOTHING` and needs only INSERT.
-      await client.from(friendshipsTable).upsert(
-        <String, dynamic>{'user_id': currentUserId, 'friend_id': targetId},
-        onConflict: 'user_id,friend_id',
-        ignoreDuplicates: true,
-      );
+      await client
+          .from(friendshipsTable)
+          .upsert(
+            <String, dynamic>{'user_id': currentUserId, 'friend_id': targetId},
+            onConflict: 'user_id,friend_id',
+            ignoreDuplicates: true,
+          );
 
       return 'Added ${match['username'] ?? 'a new friend'}!';
     } on PostgrestException catch (error) {

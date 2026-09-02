@@ -112,7 +112,8 @@ const List<TutorialStep> kTutorialSteps = <TutorialStep>[
   TutorialStep(
     id: 'home',
     title: 'Home',
-    tagline: 'Your dashboard — the middle button, and where every session starts.',
+    tagline:
+        'Your dashboard — the middle button, and where every session starts.',
     bullets: [
       'Start a Life straight from the big card at the top.',
       'Log today\'s money habit without digging through menus.',
@@ -184,7 +185,8 @@ const List<TutorialStep> kTutorialSteps = <TutorialStep>[
       'Finish a lesson to earn literacy points and gold.',
       'Lessons unlock as you go, so the order always makes sense.',
     ],
-    teaches: 'The background a good decision needs, before you have to make it.',
+    teaches:
+        'The background a good decision needs, before you have to make it.',
     icon: Icons.school_rounded,
     accent: Color(0xFFB388FF),
     mascot: TutorialMascot.thinking,
@@ -218,8 +220,7 @@ const List<TutorialStep> kTutorialSteps = <TutorialStep>[
       'Open an Emerald Case for 180 gold to roll a new one.',
       'Duplicates pay some gold back, so a roll is never wasted.',
     ],
-    teaches:
-        'A case is a lesson in odds — check the chances before you spend.',
+    teaches: 'A case is a lesson in odds — check the chances before you spend.',
     icon: Icons.auto_awesome_rounded,
     accent: Color(0xFFFFD45C),
     mascot: TutorialMascot.worried,

@@ -59,7 +59,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   // ================= EARNING AND WORK =================
   BrawlQuestion(
     category: kBrawlCategoryEarning,
-    question: 'Your payslip shows gross pay of \$400 and net pay of \$332. '
+    question:
+        'Your payslip shows gross pay of \$400 and net pay of \$332. '
         'Where did the \$68 go?',
     options: [
       'Withheld for taxes and payroll deductions',
@@ -90,7 +91,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryEarning,
-    question: 'Job A pays \$14/hour with no travel cost. Job B pays '
+    question:
+        'Job A pays \$14/hour with no travel cost. Job B pays '
         '\$16/hour but costs \$6 a day to reach. On a 5-hour shift, which '
         'pays more?',
     options: [
@@ -122,7 +124,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryEarning,
-    question: 'Which of these is part of the value of a job offer besides '
+    question:
+        'Which of these is part of the value of a job offer besides '
         'salary?',
     options: [
       'An employer match on retirement contributions',
@@ -151,7 +154,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryEarning,
-    question: 'You are paid \$15/hour and work 42 hours in a week that '
+    question:
+        'You are paid \$15/hour and work 42 hours in a week that '
         'qualifies for overtime. What is typically true of hours 41 and 42?',
     options: [
       'They are usually paid at 1.5 times the normal rate',
@@ -166,7 +170,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryEarning,
-    question: 'Your income varies month to month from tips. What should you '
+    question:
+        'Your income varies month to month from tips. What should you '
         'budget from?',
     options: [
       'Your lowest recent month',
@@ -181,7 +186,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryEarning,
-    question: 'What is the difference between an employee and an independent '
+    question:
+        'What is the difference between an employee and an independent '
         'contractor for tax purposes?',
     options: [
       'Contractors usually have no tax withheld and owe it themselves',
@@ -212,7 +218,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
 
   BrawlQuestion(
     category: kBrawlCategoryEarning,
-    question: 'You are offered \$18/hour as a contractor or \$15/hour as an '
+    question:
+        'You are offered \$18/hour as a contractor or \$15/hour as an '
         'employee. What is the catch with the higher number?',
     options: [
       'A contractor pays both halves of Social Security and Medicare',
@@ -229,7 +236,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryEarning,
-    question: 'Your employer matches 50 percent of what you put into a '
+    question:
+        'Your employer matches 50 percent of what you put into a '
         'retirement plan, up to 6 percent of your pay. You contribute '
         'nothing. What are you giving up?',
     options: [
@@ -246,7 +254,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryEarning,
-    question: 'Two offers: \$52,000 with no benefits, or \$47,000 with health '
+    question:
+        'Two offers: \$52,000 with no benefits, or \$47,000 with health '
         'cover worth \$5,400 a year. Which pays more?',
     options: [
       'The \$47,000 offer, once the benefit is counted',
@@ -262,7 +271,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryEarning,
-    question: 'You are paid weekly and your rent is monthly. What catches '
+    question:
+        'You are paid weekly and your rent is monthly. What catches '
         'people out?',
     options: [
       'Most months have four paydays, but four of them have five',
@@ -293,7 +303,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryEarning,
-    question: 'A raise takes you from \$44,000 to \$46,000 and pushes part of '
+    question:
+        'A raise takes you from \$44,000 to \$46,000 and pushes part of '
         'your income into a higher tax bracket. What happens?',
     options: [
       'Only the amount above the bracket line is taxed at the higher rate',
@@ -308,7 +319,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryEarning,
-    question: 'Your side business made \$3,000 this year. What should you '
+    question:
+        'Your side business made \$3,000 this year. What should you '
         'expect?',
     options: [
       'To owe self-employment tax and income tax on the profit',
@@ -324,7 +336,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryEarning,
-    question: 'You are asked for your salary expectation in a first '
+    question:
+        'You are asked for your salary expectation in a first '
         'interview. What is the most useful thing to have done beforehand?',
     options: [
       'Looked up what the role pays at similar employers',
@@ -355,7 +368,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryEarning,
-    question: 'You are paid \$1,400 a month and your fixed costs are \$1,250. '
+    question:
+        'You are paid \$1,400 a month and your fixed costs are \$1,250. '
         'What does that leave you exposed to?',
     options: [
       'Any single unplanned cost, because \$150 absorbs almost nothing',
@@ -372,7 +386,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   // ================= SCAMS, FEES AND FINE PRINT =================
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'Someone claiming to be from your bank asks you to pay a fee '
+    question:
+        'Someone claiming to be from your bank asks you to pay a fee '
         'in gift cards. What is this?',
     options: [
       'A scam — no legitimate organisation asks to be paid in gift cards',
@@ -388,7 +403,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'A "free 30-day trial" asks for card details. What usually '
+    question:
+        'A "free 30-day trial" asks for card details. What usually '
         'happens on day 31?',
     options: [
       'You are charged automatically unless you cancel',
@@ -403,7 +419,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'A 400ml bottle costs \$2 and a 1 litre bottle costs \$4.20. '
+    question:
+        'A 400ml bottle costs \$2 and a 1 litre bottle costs \$4.20. '
         'Which is better value?',
     options: [
       'The 1 litre bottle',
@@ -433,7 +450,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'An email from "your streaming service" says your account is '
+    question:
+        'An email from "your streaming service" says your account is '
         'locked and links to a login page. What should you do?',
     options: [
       'Go to the service\'s app or website yourself instead of using the link',
@@ -448,7 +466,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'A shop membership costs \$4/month for 10 percent off. You '
+    question:
+        'A shop membership costs \$4/month for 10 percent off. You '
         'spend about \$15 a month there. Is it worth it?',
     options: [
       'No — you would need to spend \$40 a month to break even',
@@ -477,7 +496,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'A price is cut 20 percent, then raised 20 percent. Compared '
+    question:
+        'A price is cut 20 percent, then raised 20 percent. Compared '
         'with the start, the price is now:',
     options: [
       'Lower than it started',
@@ -492,7 +512,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'How often can you get your credit report for free from the '
+    question:
+        'How often can you get your credit report for free from the '
         'federally authorised site?',
     options: [
       'Regularly, at no cost, from AnnualCreditReport.com',
@@ -507,7 +528,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'A game sells "gems", and items are priced in gems rather than '
+    question:
+        'A game sells "gems", and items are priced in gems rather than '
         'dollars. Why?',
     options: [
       'So you stop converting the cost to real money in your head',
@@ -522,7 +544,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'A free trial asks for your card and says "cancel any time". '
+    question:
+        'A free trial asks for your card and says "cancel any time". '
         'What actually happens on day 31?',
     options: [
       'You are charged automatically unless you cancelled first',
@@ -538,7 +561,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'A store card offers 20 percent off today if you open an '
+    question:
+        'A store card offers 20 percent off today if you open an '
         'account. The card charges 29 percent APR. When is this a good deal?',
     options: [
       'Only if you clear the balance in full before interest starts',
@@ -554,7 +578,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'Buy-now-pay-later splits a \$200 purchase into four payments '
+    question:
+        'Buy-now-pay-later splits a \$200 purchase into four payments '
         'of \$50 with no interest. What is the risk?',
     options: [
       'Late fees, and losing track of several overlapping plans at once',
@@ -570,7 +595,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'A caller says they are from your bank\'s fraud team and asks '
+    question:
+        'A caller says they are from your bank\'s fraud team and asks '
         'you to read out the code they just texted you. What is happening?',
     options: [
       'They are trying to complete a login or transfer that needs that code',
@@ -586,7 +612,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'Two boxes of the same cereal: 340g for \$4.00, or 500g for '
+    question:
+        'Two boxes of the same cereal: 340g for \$4.00, or 500g for '
         '\$5.50. Which is cheaper per gram?',
     options: [
       'The 500g box, at 1.1 cents a gram against 1.18',
@@ -602,7 +629,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'An investment promises "guaranteed 12 percent monthly '
+    question:
+        'An investment promises "guaranteed 12 percent monthly '
         'returns". What does the word "guaranteed" tell you?',
     options: [
       'That it is almost certainly a fraud',
@@ -618,7 +646,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'A rent-to-own shop offers a \$600 laptop for \$25 a week over '
+    question:
+        'A rent-to-own shop offers a \$600 laptop for \$25 a week over '
         '18 months. What does it cost?',
     options: [
       'About \$1,950 — more than three times the price',
@@ -634,7 +663,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'Your bank offers "overdraft protection" so payments go through '
+    question:
+        'Your bank offers "overdraft protection" so payments go through '
         'when your balance is short. What does it usually cost?',
     options: [
       'A flat fee of roughly \$35 for each payment it covers',
@@ -650,7 +680,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'A "0% APR for 12 months" card charges deferred interest. You '
+    question:
+        'A "0% APR for 12 months" card charges deferred interest. You '
         'still owe \$100 at month 13. What are you charged interest on?',
     options: [
       'The whole original balance, backdated to the purchase date',
@@ -666,7 +697,8 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
-    question: 'An airline fare is \$39, but checkout shows \$118. What '
+    question:
+        'An airline fare is \$39, but checkout shows \$118. What '
         'happened?',
     options: [
       'Seat, bag and service fees were added after the headline price',

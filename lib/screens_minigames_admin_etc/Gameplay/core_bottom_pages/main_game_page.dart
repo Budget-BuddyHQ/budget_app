@@ -12,11 +12,15 @@ import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_record.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
+import '../minigames_pages/life_sim_page.dart';
 import '../minigames_pages/past_lives_screen.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/idle_hover_icon.dart';
 import '../../../widgets_custom_lotties/day_night_sky.dart';
+import '../../../widgets_custom_lotties/avatar_sprite.dart';
+import '../../../widgets_custom_lotties/map_backdrop.dart';
+import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 
 /// The "MAIN GAME" pill: a gold wash with a gold label, made legible.
 ///
@@ -47,6 +51,18 @@ class MainGamePage extends StatelessWidget {
   /// The hub cannot draw the tour itself — every step spotlights a widget
   /// that only exists inside a run — so it does what the Profile screen does
   /// for the app tour: it sets the state that makes the next screen show it.
+  /// Starts a ranked run.
+  ///
+  /// Pushed directly rather than through the `/life` route, because the route
+  /// takes no arguments and ranked needs one. Same screen, same rules — see
+  /// `LifeSimPage.ranked`.
+  Future<void> _playRanked(BuildContext context) async {
+    HapticFeedback.mediumImpact();
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const LifeSimPage(ranked: true)),
+    );
+  }
+
   Future<void> _replayLifeTour(BuildContext context) async {
     HapticFeedback.mediumImpact();
     await context.read<AppSettingsController>().requestLifeTourReplay();
@@ -57,6 +73,19 @@ class MainGamePage extends StatelessWidget {
   void _openTab(int tab) {
     HapticFeedback.lightImpact();
     onNavSelected?.call(tab);
+  }
+
+  /// The one fact worth putting on the Past Lives tile.
+  ///
+  /// Before any run is finished this has to be a prompt rather than a stat.
+  /// "0 lives" reads as broken; it is the same reason the card this replaced
+  /// carried an explanation instead of an empty row.
+  static String _pastLivesCaption(LifeRecordBook book) {
+    final lived = book.totalLives;
+    if (lived == 0) return 'Finish one to log it';
+    final longest = book.longest;
+    if (longest == null) return lived == 1 ? '1 life lived' : '$lived lives';
+    return '$lived lived · best ${longest.age}y';
   }
 
   Future<void> _openPastLives(BuildContext context) async {
@@ -127,20 +156,55 @@ class MainGamePage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  _LifeHeroCard(onPlay: () => _playLife(context)),
-                  const SizedBox(height: 18),
-                  // Deliberately here rather than in the game's own app bar.
-                  // That bar already carries the character's name, age, job
-                  // and balance beside two actions, and adding a third
-                  // squeezed the name column to 58px on a 320px phone --
-                  // "Alex Morgan" needs 96. The hub is where somebody goes
-                  // when they want to know what this is, and it is what the
-                  // tour's own closing step tells them.
-                  _HowToPlayRow(onTap: () => _replayLifeTour(context)),
-                  const SizedBox(height: 18),
-                  _PastLivesCard(
-                    book: stats.lifeRecords,
-                    onOpen: () => _openPastLives(context),
+                  _LifeHeroCard(
+                    onPlay: () => _playLife(context),
+                    skin: skinFromId(stats.equippedSkin),
+                  ),
+                  const SizedBox(height: 16),
+                  // Three tiles rather than three full-width rows of prose.
+                  //
+                  // Each of these used to be a card carrying a title and up
+                  // to two lines of explanation, stacked, so the hub was five
+                  // paragraphs deep before it showed a single picture -- for
+                  // a game, on the screen whose whole job is to make you want
+                  // to press something. A tile can carry an image at a size
+                  // you can actually read and one word under it, and one word
+                  // is all any of these three needs.
+                  SizedBox(
+                    height: 132,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _PictureTile(
+                            label: 'Ranked',
+                            caption: 'One life, scored',
+                            accent: const Color(0xFFFFD45C),
+                            art: _TileArt.icon(AppAssets.kitIconTrophy),
+                            onTap: () => _playRanked(context),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _PictureTile(
+                            label: 'How to play',
+                            caption: 'Buddy shows you',
+                            accent: const Color(0xFF69C6FF),
+                            art: _TileArt.image(AppAssets.turtleMentorWave),
+                            onTap: () => _replayLifeTour(context),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _PictureTile(
+                            label: 'Past lives',
+                            caption: _pastLivesCaption(stats.lifeRecords),
+                            accent: const Color(0xFFB388FF),
+                            art: _TileArt.icon(AppAssets.kitIconBook),
+                            onTap: () => _openPastLives(context),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 18),
                   _EndingsCollection(
@@ -148,28 +212,33 @@ class MainGamePage extends StatelessWidget {
                     onPlay: () => _playLife(context),
                   ),
                   const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ShortcutCard(
-                          label: 'Academy',
-                          subtitle: 'Lessons & quizzes',
-                          icon: Icons.school_rounded,
-                          color: const Color(0xFF58C7FF),
-                          onTap: () => _openTab(AppTabIndex.academy),
+                  SizedBox(
+                    height: 118,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _ShortcutCard(
+                            label: 'Academy',
+                            subtitle: 'Lessons & quizzes',
+                            icon: Icons.school_rounded,
+                            color: const Color(0xFF58C7FF),
+                            art: AppAssets.homeTileBackground,
+                            onTap: () => _openTab(AppTabIndex.academy),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: _ShortcutCard(
-                          label: 'Arcade',
-                          subtitle: 'Mini-games',
-                          icon: Icons.sports_esports_rounded,
-                          color: const Color(0xFFFF8FB1),
-                          onTap: () => _openTab(AppTabIndex.minigames),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _ShortcutCard(
+                            label: 'Arcade',
+                            subtitle: 'Mini-games',
+                            icon: Icons.sports_esports_rounded,
+                            color: const Color(0xFFFF8FB1),
+                            art: AppAssets.arcadeTileBackground,
+                            onTap: () => _openTab(AppTabIndex.minigames),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -375,72 +444,22 @@ class _EndingSlot extends StatelessWidget {
   }
 }
 
-/// "How to play" — starts a life with the in-game tour running.
-class _HowToPlayRow extends StatelessWidget {
-  const _HowToPlayRow({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final chip = AppTheme.tintedChip(const Color(0xFF69C6FF), alpha: 0.14);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: chip.fill,
-            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-            border: Border.all(
-              color: const Color(0xFF69C6FF).withValues(alpha: 0.28),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.help_outline_rounded, color: chip.ink, size: 22),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    FittedLabel(
-                      'How to play',
-                      style: GoogleFonts.pixelifySans(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Buddy walks you through a life, in the game itself.',
-                      maxLines: 2,
-                      style: GoogleFonts.quicksand(
-                        color: AppTheme.textMuted,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded, color: chip.ink),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
+/// The hub's one big card, and the app's main call to action.
+///
+/// It used to be a flat green gradient with four paragraphs of text on it,
+/// which is a fair description of a settings page and a poor one of the
+/// entrance to a game. Now the card is a *place*: the session's town map
+/// behind it, and the player's own character standing in it.
+///
+/// The character is the load-bearing half. A player who has spent gold on a
+/// skin has no other screen that shows it at size, and "the thing I chose is
+/// standing in the world I am about to enter" is a far better argument for
+/// pressing the button than a sentence describing one.
 class _LifeHeroCard extends StatelessWidget {
-  const _LifeHeroCard({required this.onPlay});
+  const _LifeHeroCard({required this.onPlay, required this.skin});
 
   final VoidCallback onPlay;
+  final AvatarSkin skin;
 
   @override
   Widget build(BuildContext context) {
@@ -448,14 +467,9 @@ class _LifeHeroCard extends StatelessWidget {
       onTap: onPlay,
       borderRadius: BorderRadius.circular(30),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF2A5F46), Color(0xFF12301F)],
-          ),
           border: Border.all(
             color: const Color(0xFF85EFAC).withValues(alpha: 0.32),
           ),
@@ -464,73 +478,128 @@ class _LifeHeroCard extends StatelessWidget {
             restAlpha: 0.2,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
+            // The town this launch rolled, sharp, because the whole point of
+            // the card is that it looks like somewhere.
+            Positioned.fill(
+              child: Image.asset(
+                MapVariant.current.sharp,
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.none,
+                alignment: Alignment.topCenter,
+              ),
+            ),
+            // Dark enough on the left for the copy, clear on the right where
+            // the character stands. A flat scrim would have had to be dark
+            // enough for the text everywhere, which would have thrown away
+            // the art it was laid over.
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    stops: const <double>[0.0, 0.52, 1.0],
+                    colors: <Color>[
+                      const Color(0xFF0C2418).withValues(alpha: 0.94),
+                      const Color(0xFF0C2418).withValues(alpha: 0.82),
+                      const Color(0xFF0C2418).withValues(alpha: 0.34),
+                    ],
                   ),
-                  decoration: BoxDecoration(
-                    // Gold-on-gold: the 18% wash pulls the pill up towards
-                    // the label and the pair measured 3.48:1. This is the
-                    // "yellow text is hard to see" case, and it is the wash
-                    // that causes it rather than the gold.
-                    color: _mainGameTag.fill,
-                    borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 6,
+              bottom: 0,
+              top: 12,
+              child: IgnorePointer(
+                child: IdleHoverIcon(
+                  idleAmplitude: 2.5,
+                  child: AvatarSprite(skin: skin, size: 108),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          // Gold-on-gold: the 18% wash pulls the pill up towards
+                          // the label and the pair measured 3.48:1. This is the
+                          // "yellow text is hard to see" case, and it is the wash
+                          // that causes it rather than the gold.
+                          color: _mainGameTag.fill,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          'MAIN GAME',
+                          style: GoogleFonts.pixelifySans(
+                            color: _mainGameTag.ink,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    'MAIN GAME',
+                  const SizedBox(height: 14),
+                  Text(
+                    'Play Life',
                     style: GoogleFonts.pixelifySans(
-                      color: _mainGameTag.ink,
-                      fontSize: 11,
+                      color: Colors.white,
+                      fontSize: 40,
+                      height: 1,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Play Life',
-              style: GoogleFonts.pixelifySans(
-                color: Colors.white,
-                fontSize: 40,
-                height: 1,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Grow up year by year, make real money decisions, and shape your '
-              'money, happiness, health, and smarts.',
-              style: GoogleFonts.quicksand(
-                color: Colors.white.withValues(alpha: 0.82),
-                height: 1.4,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: onPlay,
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF85EFAC),
-                foregroundColor: const Color(0xFF06251A),
-                padding: const EdgeInsets.symmetric(
-                  vertical: 15,
-                  horizontal: 22,
-                ),
-              ),
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: Text(
-                'Start your life',
-                style: GoogleFonts.pixelifySans(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
+                  const SizedBox(height: 10),
+                  // Trimmed from a 22-word sentence. The old copy listed all four
+                  // stats by name on the one card nobody needs convincing by --
+                  // they are about to see every one of them on a bar at the bottom
+                  // of the game, labelled.
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 230),
+                    child: Text(
+                      'Grow up a year at a time and decide what to do with '
+                      'the money.',
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white.withValues(alpha: 0.86),
+                        height: 1.4,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  FilledButton.icon(
+                    onPressed: onPlay,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF85EFAC),
+                      foregroundColor: const Color(0xFF06251A),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 15,
+                        horizontal: 22,
+                      ),
+                    ),
+                    icon: const Icon(Icons.play_arrow_rounded),
+                    label: Text(
+                      'Start your life',
+                      style: GoogleFonts.pixelifySans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -546,6 +615,7 @@ class _ShortcutCard extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     required this.color,
+    required this.art,
     required this.onTap,
   });
 
@@ -553,6 +623,11 @@ class _ShortcutCard extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final Color color;
+
+  /// Scene art behind the card. These backgrounds were already in the repo
+  /// and already registered, and nothing was drawing them.
+  final String art;
+
   final VoidCallback onTap;
 
   @override
@@ -561,33 +636,64 @@ class _ShortcutCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(22),
       child: Container(
-        padding: const EdgeInsets.all(18),
+        clipBehavior: Clip.antiAlias,
         decoration: AppTheme.getPuffyDecoration(
           accent: color,
           fillColor: AppTheme.panelStrong,
           restAlpha: 0.14,
           borderRadius: AppTheme.radiusLarge,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: GoogleFonts.pixelifySans(
-                color: Colors.white,
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
+            Image.asset(
+              art,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.none,
+              alignment: Alignment.center,
+            ),
+            // Heavier at the bottom, where the two labels are. The art is
+            // there to say what the place is, not to be read through.
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const <double>[0.0, 0.42, 1.0],
+                  colors: <Color>[
+                    const Color(0xFF0C2418).withValues(alpha: 0.52),
+                    const Color(0xFF0C2418).withValues(alpha: 0.80),
+                    const Color(0xFF0C2418).withValues(alpha: 0.94),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: GoogleFonts.quicksand(
-                color: Colors.white.withValues(alpha: 0.65),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(icon, color: color, size: 26),
+                  const Spacer(),
+                  Text(
+                    label,
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white.withValues(alpha: 0.72),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -597,85 +703,107 @@ class _ShortcutCard extends StatelessWidget {
   }
 }
 
-/// Entry point to [PastLivesScreen], showing enough of the history to be
-/// worth tapping.
+/// What a [_PictureTile] shows: a kit icon, or a piece of scene art.
 ///
-/// Before any life is finished this is a prompt rather than an empty stat
-/// row: a card reading "0 lives · — coins" teaches nothing and looks broken,
-/// while "finish one and it gets recorded" explains what the feature is.
-class _PastLivesCard extends StatelessWidget {
-  const _PastLivesCard({required this.book, required this.onOpen});
+/// Two cases rather than one because they want opposite treatment. A 16px kit
+/// icon has to be scaled up hard and *must* stay nearest-neighbour or it
+/// turns to soup; a mentor illustration is already the right size and wants
+/// to sit whole, not cropped.
+class _TileArt {
+  const _TileArt._(this.asset, this.isIcon);
 
-  final LifeRecordBook book;
-  final VoidCallback onOpen;
+  const _TileArt.icon(String asset) : this._(asset, true);
 
-  static const _gold = Color(0xFFFFD45C);
+  const _TileArt.image(String asset) : this._(asset, false);
+
+  final String asset;
+  final bool isIcon;
+}
+
+/// One square of the hub's three-up row: a picture, a word, and a fact.
+///
+/// This replaces a full-width card carrying a heading plus up to two lines of
+/// explanatory prose. The prose was not wrong, it was just answering a
+/// question nobody had asked yet — you find out what Ranked is by pressing
+/// Ranked, and the epilogue explains the scoring at the point it means
+/// something. What the hub owes you is a way in you can see.
+class _PictureTile extends StatelessWidget {
+  const _PictureTile({
+    required this.label,
+    required this.caption,
+    required this.accent,
+    required this.art,
+    required this.onTap,
+  });
+
+  final String label;
+  final String caption;
+  final Color accent;
+  final _TileArt art;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final richest = book.richest;
-    final longest = book.longest;
-
-    return InkWell(
-      onTap: onOpen,
-      borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: AppTheme.getPuffyDecoration(
-          accent: _gold,
-          fillColor: const Color(0xFF3B301A),
-          restAlpha: 0.16,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: _gold.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: const Icon(
-                Icons.history_edu_rounded,
-                color: _gold,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  FittedLabel(
-                    'Past Lives',
-                    style: GoogleFonts.pixelifySans(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+    final chip = AppTheme.tintedChip(accent, alpha: 0.16);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(8, 12, 8, 10),
+          decoration: BoxDecoration(
+            color: chip.fill,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+            border: Border.all(color: accent.withValues(alpha: 0.42)),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // `SizedBox.expand` is doing real work here, not padding out
+              // the tree. A `Column` hands its children a *loose* width, and
+              // a bare `Image` with no width or height lays out at the
+              // source's intrinsic size under a loose constraint -- so the
+              // 16x16 kit icons drew at 16x16 inside a 100px slot and the
+              // tiles rendered, to the eye, empty. Forcing the box first
+              // gives `BoxFit.contain` something to fit *to*.
+              Expanded(
+                child: IdleHoverIcon(
+                  idleAmplitude: 1.5,
+                  child: SizedBox.expand(
+                    child: Image.asset(
+                      art.asset,
+                      fit: BoxFit.contain,
+                      filterQuality: art.isIcon
+                          ? FilterQuality.none
+                          : FilterQuality.medium,
+                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
                     ),
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    book.isEmpty
-                        ? 'Finish a life and it gets recorded here.'
-                        : '${book.totalLives} lived · best '
-                              '${richest?.netWorth ?? 0} coins · longest '
-                              '${longest?.age ?? 0} years',
-                    maxLines: 2,
-                    style: GoogleFonts.quicksand(
-                      color: Colors.white.withValues(alpha: 0.78),
-                      fontSize: 12.5,
-                      height: 1.3,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
-            const Icon(Icons.chevron_right_rounded, color: _gold, size: 28),
-          ],
+              const SizedBox(height: 8),
+              // Fitted rather than sized: "How to play" is nearly twice the
+              // width of "Ranked" and they share a column width.
+              FittedLabel(
+                label,
+                style: GoogleFonts.pixelifySans(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 1),
+              FittedLabel(
+                caption,
+                style: GoogleFonts.quicksand(
+                  color: chip.ink,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -141,15 +141,22 @@ def _tone(freq: float, dur: float, *, decay=8.0, harmonics=(1.0, 0.0, 0.0)):
 
 
 def _tick(dur=0.045, freq=1400.0, rng=None):
-    """One ratchet click: a noise burst with a short pitched body."""
+    """One ratchet click.
+
+    The noise half is filtered rather than raw now. Unfiltered white noise at
+    this level is the reason the roll used to read as static under the chime
+    instead of as a mechanism -- and there are ninety of these in a four
+    second roll, so whatever this sounds like, it sounds like it ninety times.
+    """
     rng = rng or random
     out = []
+    prev = 0.0
     for i in range(int(RATE * dur)):
         t = i / RATE
         env = math.exp(-60 * t)
-        noise = (rng.random() * 2 - 1) * 0.5
-        body = math.sin(2 * math.pi * freq * t) * 0.5
-        out.append((noise + body) * env)
+        prev += 0.5 * ((rng.random() * 2 - 1) - prev)
+        body = math.sin(2 * math.pi * freq * t) * 0.42
+        out.append((prev * 0.85 + body) * env)
     return out
 
 
@@ -263,17 +270,209 @@ def unbox(rarity: str) -> list[float]:
     }[rarity]
     root, harmonics, decay, steps = spec
 
+    # Rarity now rides the *inharmonic* partials as well as the level of
+    # them. Brighter and longer still reads as rarer, but a legendary now
+    # also rings more like glass and a common more like a soft mallet, which
+    # is a difference you can hear without a comparison to hand.
+    bell = tuple(
+        (ratio, level * harmonics[min(i, len(harmonics) - 1)], dmul)
+        for i, (ratio, level, dmul) in enumerate(_BELL)
+    )
+
     out: list[float] = []
     for i, semitones in enumerate(steps):
         freq = root * (2 ** (semitones / 12))
-        note = _tone(freq, 1.6, decay=decay, harmonics=harmonics)
-        # Arpeggiated rather than struck together: a rising figure reads as
-        # "this is getting better" where a chord just reads as "an event".
+        # A touch of downward glide on the strike, same as the UI sounds.
+        note = _struck(freq, 1.6, decay=decay, partials=bell, glide=-1.2)
         _mix(out, note, int(i * 0.085 * RATE))
+        # Each note gets its own contact noise, quiet and bright.
+        _mix(
+            out,
+            _transient(dur=0.005, cutoff=0.7, level=0.18, seed=i + 3),
+            int(i * 0.085 * RATE),
+        )
+    # More space on the rarer chimes: a longer room is most of why an
+    # expensive-sounding sound sounds expensive.
+    return _room(out, wet=0.10 + 0.05 * len(steps), size=1.0 + 0.25 * len(steps))
+
+
+# ---------------------------------------------------------------------------
+# Struck-body synthesis
+# ---------------------------------------------------------------------------
+#
+# WHY THE FIRST VERSION SOUNDED CHEAP
+# -----------------------------------
+# It was not clicks -- `_write` already de-clicks both edges, and measured,
+# the onset discontinuities are tiny. It was that every effect was a **bare
+# sine with integer harmonics**. Three things follow from that, and together
+# they are the whole difference between "interface" and "beep":
+#
+#   * **No transient.** Real sounds start with a burst of broadband noise --
+#     the finger hitting the surface, the hammer hitting the string. Strip it
+#     and the ear cannot tell what *made* the sound, only what pitch it was.
+#     A tap is closer to a "tok" than to a note, and the old tap.wav was an
+#     880Hz A with a touch of octave on top, which is a telephone.
+#   * **No pitch movement.** Almost nothing in the physical world holds a
+#     dead-flat pitch through its decay. A small downward glide over the
+#     first few milliseconds is what makes a sound read as *struck* rather
+#     than as *generated*.
+#   * **Integer harmonics only.** 1x, 2x, 3x is the spectrum of a string or a
+#     pipe. Bells, glass and plates -- the family every good reward chime is
+#     borrowing from -- are inharmonic, and a partial at a non-integer ratio
+#     is most of what makes a sine sound struck.
+#
+# And all of it was bone dry. A short room tail is not a garnish; a sound
+# with no space around it reads as coming from inside the speaker rather than
+# from the interface, which is the single most reliable "cheap" tell.
+
+
+def _struck(
+    freq: float,
+    dur: float,
+    *,
+    decay: float = 8.0,
+    partials=((1.0, 1.0, 1.0),),
+    glide: float = 0.0,
+    glide_rate: float = 28.0,
+):
+    """A struck body: partials at arbitrary ratios, each decaying at its own
+    rate, over an optional pitch glide.
+
+    `partials` are `(ratio, level, decay_multiplier)`. Ratios need not be
+    integers -- 2.76 and 5.40 are roughly where a struck bell's first two
+    overtones sit, and dropping those in at low level is what turns a sine
+    into something that sounds hit rather than switched on.
+
+    The decay multiplier is the realism cue that costs nothing: in anything
+    physical the upper partials die first, which is why a piano note gets
+    *duller* as it rings rather than just quieter. `dmul` above 1 does that.
+
+    `glide` is in semitones at t=0, decaying toward the target pitch. Phase is
+    accumulated per partial rather than computed from `t`, because a pitch
+    that changes under a `sin(2*pi*f*t)` term jumps the phase every sample and
+    that really would be a click.
+    """
+    n = int(RATE * dur)
+    out = [0.0] * n
+    phases = [0.0] * len(partials)
+    two_pi_over_rate = 2 * math.pi / RATE
+    for i in range(n):
+        t = i / RATE
+        f = freq * (2 ** ((glide / 12.0) * math.exp(-glide_rate * t)))
+        v = 0.0
+        for k, (ratio, level, dmul) in enumerate(partials):
+            phases[k] += two_pi_over_rate * f * ratio
+            v += level * math.sin(phases[k]) * math.exp(-decay * dmul * t)
+        out[i] = v
     return out
 
 
+def _transient(dur=0.007, cutoff=0.42, level=0.5, seed=1):
+    """The noise burst at the very start of a struck sound.
+
+    Lowpassed, because raw white noise reads as static; this wants to read as
+    contact. Very short -- past about 12ms it stops being a transient and
+    starts being a hiss.
+    """
+    rng = random.Random(seed)
+    n = max(1, int(RATE * dur))
+    out = [0.0] * n
+    prev = 0.0
+    for i in range(n):
+        prev += cutoff * ((rng.random() * 2 - 1) - prev)
+        out[i] = prev * level * math.exp(-7.0 * i / n)
+    return out
+
+
+def _room(samples: list[float], wet=0.16, size=1.0, tail=0.40):
+    """A short synthetic space.
+
+    Four early reflections plus two feedback combs. Not a real reverb and not
+    trying to be -- for sounds this short the ear reads early reflections as
+    "this happened somewhere", and that is the entire job. The combs add just
+    enough diffuse tail that the sound stops dead-stopping.
+
+    Prime numbers-ish delay times on purpose: rational ratios between taps
+    build a resonant peak, which is the metallic ring that makes bad reverb
+    sound like a tin can.
+    """
+    if wet <= 0:
+        return list(samples)
+    out = list(samples) + [0.0] * int(RATE * tail * size)
+    for delay, gain in (
+        (0.0117, 0.62),
+        (0.0193, 0.47),
+        (0.0291, 0.35),
+        (0.0413, 0.25),
+    ):
+        d = int(RATE * delay * size)
+        for i, v in enumerate(samples):
+            out[i + d] += v * gain * wet
+    for delay, feedback in ((0.0297, 0.60), (0.0371, 0.55)):
+        d = int(RATE * delay * size)
+        for i in range(d, len(out)):
+            out[i] += out[i - d] * feedback * wet * 0.6
+
+    # Trim back to where the tail actually stops being audible.
+    #
+    # Without this a 70ms tap came out as a 0.47s file, because the reverb
+    # appends its full tail whether or not there is anything left to decay --
+    # and a tap that rings for half a second is a worse sound than the beep
+    # it replaced, not a better one. -54dB off peak is comfortably below
+    # anything you can hear under a UI at these levels.
+    peak = max((abs(v) for v in out), default=0.0)
+    if peak > 0:
+        floor = peak * 0.002
+        last = len(out) - 1
+        while last > len(samples) and abs(out[last]) < floor:
+            last -= 1
+        out = out[: last + int(RATE * 0.004)]
+    return out
+
+
+def _lowpass(samples: list[float], coeff: float) -> list[float]:
+    """One-pole smoothing for one-shot sounds.
+
+    The loop version of this ([_lowpass_circular]) has to prime itself so its
+    response is periodic. A one-shot has no join to protect and genuinely
+    wants to start from silence, so this one is the plain version.
+    """
+    out = [0.0] * len(samples)
+    prev = 0.0
+    for i, v in enumerate(samples):
+        prev += coeff * (v - prev)
+        out[i] = prev
+    return out
+
+
+# Where a struck bell's overtones actually sit, near enough. Used by every
+# reward chime -- see the module note above for why non-integer ratios are
+# the point.
+_BELL = ((1.0, 1.0, 1.0), (2.76, 0.34, 2.1), (5.40, 0.12, 3.4))
+
+# A wooden/plastic "tok" rather than a note: one strong low partial, one
+# quiet inharmonic one that dies almost immediately.
+_WOOD = ((1.0, 1.0, 1.0), (3.9, 0.22, 5.0))
+
+
+def ui_tok(freq, dur, decay, *, glide=-4.0, glide_rate=28.0, wet=0.11,
+           click=0.45, seed=1):
+    """The house UI sound: contact noise, then a short struck body.
+
+    Everything the player triggers dozens of times a session is built from
+    this. The glide defaults downward because a falling pitch reads as
+    something settling into place, where a rising one reads as a question.
+    """
+    body = _struck(freq, dur, decay=decay, partials=_WOOD, glide=glide,
+                   glide_rate=glide_rate)
+    out = _transient(level=click, seed=seed)
+    _mix(out, body, 0)
+    return _room(_lowpass(out, 0.55), wet=wet)
+
+
 def ui_blip(freq: float, dur: float, decay: float, harmonics=(1.0, 0.2, 0.0)):
+    """The original bare-sine blip. Kept because `_tone` still backs the
+    ambient loop's plucks, where a pure tone under a pad is correct."""
     return _tone(freq, dur, decay=decay, harmonics=harmonics)
 
 
@@ -520,31 +719,59 @@ def main() -> None:
     # gameplay feedback sits in the middle, and only the reward sounds are
     # allowed to be an event. A tab switch happens dozens of times a session
     # and a case opens rarely, so they cannot share a level.
-    _write("tap.wav", ui_blip(880, 0.06, 46), peak_target=0.30)
-    # Softer, shorter and an octave down from the old blip, with almost no
-    # upper partial — the brief was "make switching tabs more subtle", and a
-    # dull low thud reads as movement where a bright click reads as an alert.
-    _write(
-        "navigation.wav",
-        ui_blip(392, 0.055, 60, harmonics=(1.0, 0.04, 0.0)),
-        peak_target=0.22,
-    )
-    _write("selection.wav", ui_blip(1046, 0.07, 38), peak_target=0.34)
+    # A "tok", not a note. Low body, hard contact noise, gone in 70ms. See
+    # the struck-body section above for why the 880Hz sine this replaced read
+    # as a telephone.
+    _write("tap.wav", ui_tok(430, 0.07, 42, glide=-5.0, click=0.5, seed=11),
+           peak_target=0.30)
+
+    # The quietest and dullest thing in the app, because it fires on every
+    # single tab switch. Barely any contact noise and a big downward glide:
+    # the brief was "make switching tabs more subtle", and a soft low thump
+    # reads as movement where anything bright reads as an alert.
+    _write("navigation.wav", ui_tok(300, 0.075, 40, glide=-7.0, click=0.16,
+                                    wet=0.08, seed=5),
+           peak_target=0.22)
+
+    # Selection gets to be brighter than tap, because it confirms a choice
+    # rather than acknowledging a touch -- and it glides *up*, which is the
+    # one place in the app a rising pitch is right.
+    _write("selection.wav", ui_tok(720, 0.085, 34, glide=2.5, click=0.34,
+                                   wet=0.14, seed=23),
+           peak_target=0.34)
+
     _write("notification.wav", unbox("common"), peak_target=0.62)
     _write("success.wav", unbox("rare"), peak_target=0.70)
-    _write(
-        "error.wav",
-        ui_blip(196, 0.26, 10, harmonics=(1.0, 0.45, 0.2)),
-        peak_target=0.48,
-    )
-    _write("need_pickup.wav", ui_blip(1318, 0.10, 28), peak_target=0.40)
-    _write(
-        "want_hit.wav",
-        ui_blip(294, 0.18, 15, harmonics=(1.0, 0.4, 0.2)),
-        peak_target=0.46,
-    )
+
+    # Error is a soft falling third, not a buzz. It has to be legible as
+    # "no" without being a telling-off -- a lot of the people using this are
+    # eight, and a harsh error tone is how an app teaches somebody to stop
+    # trying things.
+    err = ui_tok(330, 0.30, 11, glide=-1.0, click=0.10, wet=0.18, seed=31)
+    _mix(err, ui_tok(247, 0.34, 9, glide=-1.0, click=0.0, wet=0.18, seed=32),
+         int(0.075 * RATE))
+    _write("error.wav", err, peak_target=0.46)
+
+    # Picking up a need: bright, immediate, over instantly. This one is in a
+    # fast game loop, so it has almost no tail -- a ringing pickup sound
+    # turns to mud the moment you collect two in a row.
+    _write("need_pickup.wav", ui_tok(880, 0.09, 30, glide=3.0, click=0.30,
+                                     wet=0.07, seed=41),
+           peak_target=0.40)
+
+    # Hitting a want: the opposite shape. Low, dull, and it lands rather
+    # than pings.
+    _write("want_hit.wav", ui_tok(190, 0.20, 14, glide=-6.0, click=0.55,
+                                  wet=0.12, seed=47),
+           peak_target=0.46)
+
     _write("celebration.wav", unbox("legendary"), peak_target=0.80)
-    _write("shutdown.wav", ui_blip(330, 0.32, 8), peak_target=0.40)
+
+    # Shutdown: a long soft fall with real room on it. The only UI sound
+    # allowed to take its time, because it is the last thing you hear.
+    _write("shutdown.wav", ui_tok(330, 0.40, 7, glide=-9.0, glide_rate=3.0,
+                                  click=0.08, wet=0.26, seed=53),
+           peak_target=0.40)
 
     # Case opening. The ratchet runs for four seconds under everything else,
     # so it sits below the chime that resolves it.
