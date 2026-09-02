@@ -9,14 +9,14 @@ import '../../../models_Like_Skins_and_lessons_templates/lesson.dart';
 import '../../../models_Like_Skins_and_lessons_templates/progression_service.dart';
 import '../../../models_Like_Skins_and_lessons_templates/quiz_bank.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
-import '../../../services_backend_and_other_services/app_sound_service.dart';
+//import '../../../services_backend_and_other_services/app_sound_service.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart'
     show UserStats;
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../loading/temporary_loading_screen.dart';
-import '../../../widgets_custom_lotties/game_toast.dart';
+//import '../../../widgets_custom_lotties/game_toast.dart';
 import 'lesson_detail_screen.dart';
 import 'practice_screen.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
@@ -125,23 +125,15 @@ class _LessonScreenState extends State<LessonScreen> {
 
   Future<void> _openLesson(Lesson lesson) async {
     final status = _progressionService.getLessonStatus(lesson.id);
+
+    // If locked, show the custom skip-ahead confirmation dialog
     if (status == LessonStatus.locked) {
-      GameToast.show(
-        context,
-        title: 'Lesson locked',
-        icon: Icons.lock_outline_rounded,
-        accent: const Color(0xFFFFB084),
-        soundEffect: AppSoundEffect.error,
-      );
-      return;
+      final confirm = await _confirmSkipAhead(lesson);
+      if (!confirm || !mounted) return;
     }
 
     final unit = _progressionService.getUnit(lesson.unitId)!;
 
-    // age *warning*, not an age lock. the prerequisite chain is what gates
-    // the curriculum. this is only here so a twelve year old doesnt wander
-    // into the 401(k) unit and think the salary shaped examples are about
-    // them
     if (isAboveReaderStage(
       unit.ageStage,
       _statsController.stats.ageBand.maxPlausibleStage,
@@ -165,6 +157,99 @@ class _LessonScreenState extends State<LessonScreen> {
     }
   }
 
+  
+  /// Prompts the user before opening a locked lesson out of sequence.
+  /// Returns false if the player chooses to go back or dismisses the sheet.
+  Future<bool> _confirmSkipAhead(Lesson lesson) async {
+    final answer = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.panel,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: Color(0x55FFB84D)),
+        ),
+        title: Row(
+          children: [
+            const Icon(
+              Icons.alt_route_rounded,
+              color: Color(0xFFFFB84D),
+              size: 24,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Skipping ahead?',
+                style: GoogleFonts.pixelifySans(
+                  color: const Color(0xFFFFB84D),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Lesson chosen:',
+              style: GoogleFonts.quicksand(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '"${lesson.title}"',
+              style: GoogleFonts.quicksand(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Lessons are cumulative, meaning that they build upon each other. Skipping ahead may mean you lose important background knowledge.',
+              style: GoogleFonts.quicksand(
+                color: Colors.white.withValues(alpha: 0.85),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white.withValues(alpha: 0.7),
+            ),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFFFB84D),
+              foregroundColor: const Color(0xFF3A2400),
+            ),
+            child: Text(
+              'Continue Anyway!',
+              style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+    return answer ?? false;
+  }
+  
   /// Asks before opening a unit written for an older band. Returns false if
   /// the player backs out or dismisses the sheet.
   Future<bool> _confirmAboveAge(LessonUnit unit) async {
