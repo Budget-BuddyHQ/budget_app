@@ -8,6 +8,7 @@ import '../../../models_Like_Skins_and_lessons_templates/quiz_bank.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson_extras.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson_sources.dart';
 import '../../../themes_colors/app_theme.dart';
+import '../../../widgets_custom_lotties/basic_calculator_dialog.dart';
 
 // Shared quiz presentation, used by both the graded lesson/quiz flow in
 // lesson_detail_screen.dart and the repeatable practice runs in
@@ -36,7 +37,9 @@ class QuizQuestionCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Top Header Row with Question Count & Calculator Action
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               'Question $questionNumber of $totalQuestions',
@@ -44,6 +47,48 @@ class QuizQuestionCard extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.62),
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
+              ),
+            ),
+            // Calculator Trigger Button
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (dialogContext) => const BasicCalculatorDialog(),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF85EFAC).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFF85EFAC).withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.calculate_outlined,
+                        color: Color(0xFF85EFAC),
+                        size: 26,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Calculator',
+                        style: GoogleFonts.pixelifySans(
+                          color: const Color(0xFF85EFAC),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
@@ -84,8 +129,6 @@ class QuizQuestionCard extends StatelessWidget {
             accent: const Color(0xFFFFD45C),
             text: question.explanation,
           ),
-          // The misconception is only worth surfacing when they actually fell
-          // for it — after a correct answer it is just noise.
           if (question.misconception != null &&
               selectedOption != question.correctIndex) ...[
             const SizedBox(height: 10),
