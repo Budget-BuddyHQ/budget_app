@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../constants/app_assets.dart';
@@ -24,14 +26,53 @@ import '../themes_colors/app_theme.dart';
 /// squashes that 7.9 point spread down to 2.2 with a floor of 6.5:1. doing it
 /// at build time instead of `ImageFiltered` = free at runtime, its a static
 /// image sat behind a scrolling list, no reason to refilter it 60x a second
+/// Which of the two town maps is behind the screen.
+///
+/// The app had one backdrop on every surface, on every launch, forever, and
+/// a background you have seen four hundred times stops being scenery and
+/// starts being wallpaper. There is a second town map in the repo that was
+/// drawn to be *played* and could not be — its collision data was never in
+/// the PNG, and three separate heuristics all read the main promenade as
+/// solid, which cuts the town in half. A backdrop needs no colliders.
+enum MapVariant {
+  village(AppAssets.villageMapBackground, AppAssets.villageMapBackgroundSoft),
+  market(
+    AppAssets.villageMapTwoBackground,
+    AppAssets.villageMapTwoBackgroundSoft,
+  );
+
+  const MapVariant(this.sharp, this.soft);
+
+  final String sharp;
+  final String soft;
+
+  /// The variant for this launch.
+  ///
+  /// **Rolled once per app run, not per build.** A `Random()` call inside
+  /// `build` would re-roll on every rebuild — every setState, every tab
+  /// switch, every scroll that crosses a repaint boundary — and the backdrop
+  /// would flicker between two towns. Holding it for the session also means
+  /// the whole app agrees with itself: you do not walk from a Learn screen in
+  /// one town into a Play screen in another.
+  static final MapVariant session =
+      MapVariant.values[Random().nextInt(MapVariant.values.length)];
+
+  /// Overrides the session roll. Tests and screenshots need a backdrop they
+  /// can predict; without this, a golden that renders the map is a coin flip.
+  @visibleForTesting
+  static MapVariant? debugOverride;
+
+  static MapVariant get current => debugOverride ?? session;
+}
+
 enum MapBackdropStyle {
   /// For screens whose content sits in its own opaque cards: the map is
   /// decoration and can be seen properly.
-  decorative(AppAssets.villageMapBackground, 0.62),
+  decorative(0.62),
 
   /// For screens with body text laid directly on the backdrop — the lesson,
   /// the quiz, the practice run.
-  reading(AppAssets.villageMapBackgroundSoft, 0.84),
+  reading(0.84),
 
   /// For the welcome screen, where the map is the first thing anybody sees
   /// and blurring it away would be throwing out the app's whole first
@@ -42,35 +83,44 @@ enum MapBackdropStyle {
   /// Before this, "Welcome Back" sat on pale water tiles at the exact point
   /// the screen's own radial glow was *lightening* the background — the one
   /// label on the launch screen that a returning player has to find.
-  hero(AppAssets.villageMapBackground, 0.42);
+  hero(0.42);
 
-  const MapBackdropStyle(this.asset, this.scrim);
+  const MapBackdropStyle(this.scrim);
 
-  final String asset;
   final double scrim;
+
+  /// Reading wants the pre-blurred copy; the other two want the art sharp.
+  String assetFor(MapVariant variant) =>
+      this == MapBackdropStyle.reading ? variant.soft : variant.sharp;
 }
 
 class MapBackdrop extends StatelessWidget {
-  const MapBackdrop({super.key, this.style = MapBackdropStyle.decorative});
+  const MapBackdrop({
+    super.key,
+    this.style = MapBackdropStyle.decorative,
+    this.variant,
+  });
 
   final MapBackdropStyle style;
 
+  /// Which town. Defaults to the one rolled for this launch.
+  final MapVariant? variant;
+
   @override
   Widget build(BuildContext context) {
+    final town = variant ?? MapVariant.current;
     return Positioned.fill(
       child: Stack(
         fit: StackFit.expand,
         children: [
           Image.asset(
-            style.asset,
+            style.assetFor(town),
             fit: BoxFit.cover,
             // `none` on the sharp copy so the pixel art stays pixel art. The
             // soft copy is already blurred, so its filtering is moot.
             filterQuality: FilterQuality.none,
           ),
-          ColoredBox(
-            color: AppTheme.panel.withValues(alpha: style.scrim),
-          ),
+          ColoredBox(color: AppTheme.panel.withValues(alpha: style.scrim)),
           if (style == MapBackdropStyle.hero)
             const DecoratedBox(
               decoration: BoxDecoration(

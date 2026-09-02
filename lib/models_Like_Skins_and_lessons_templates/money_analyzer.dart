@@ -240,7 +240,8 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
           dimension: MoneyDimension.consistency,
           title: 'Nothing to analyse yet',
           evidence: 'No habits saved, no lessons finished, no lives played.',
-          action: 'Save one habit on Track and log it once. Come back after '
+          action:
+              'Save one habit on Track and log it once. Come back after '
               'a few days and this will have something real to say.',
         ),
       ],
@@ -257,7 +258,8 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
         dimension: MoneyDimension.consistency,
         title: 'The streak has gone cold',
         evidence: _gap(snap.daysSinceLastLog),
-        action: 'Log one habit today. One is enough — the streak counts days '
+        action:
+            'Log one habit today. One is enough — the streak counts days '
             'you turned up, not days you were perfect.',
       ),
     );
@@ -268,9 +270,11 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
         kind: MoneyFindingKind.strength,
         dimension: MoneyDimension.consistency,
         title: 'You actually turn up',
-        evidence: '${snap.loggedDaysLast14} of the last 14 days logged, '
+        evidence:
+            '${snap.loggedDaysLast14} of the last 14 days logged, '
             'longest run ${snap.longestStreak}.',
-        action: 'This is the part most people never get to. Protect it before '
+        action:
+            'This is the part most people never get to. Protect it before '
             'you add anything new.',
       ),
     );
@@ -292,9 +296,11 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
           kind: MoneyFindingKind.fix,
           dimension: MoneyDimension.followThrough,
           title: 'More habits pinned than kept',
-          evidence: 'You have ${snap.pinnedHabits} habits saved and logged '
+          evidence:
+              'You have ${snap.pinnedHabits} habits saved and logged '
               '${snap.habitsLoggedLast14} of them in the last fortnight.',
-          action: 'Unpin everything except the two you actually did. A short '
+          action:
+              'Unpin everything except the two you actually did. A short '
               'list you finish beats a long one you avoid opening.',
           concept: FinanceConcept.opportunityCost,
         ),
@@ -309,9 +315,11 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
         kind: MoneyFindingKind.watch,
         dimension: MoneyDimension.followThrough,
         title: 'Challenges get started, not finished',
-        evidence: '${snap.challengesFinished} finished out of '
+        evidence:
+            '${snap.challengesFinished} finished out of '
             '${snap.challengesStarted} started.',
-        action: 'Pick the one you got furthest through and finish only that '
+        action:
+            'Pick the one you got furthest through and finish only that '
             'one before starting another.',
         concept: FinanceConcept.sunkCost,
       ),
@@ -332,9 +340,11 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
         kind: MoneyFindingKind.fix,
         dimension: MoneyDimension.saving,
         title: 'Lots of ticks, almost no money',
-        evidence: '${snap.choicesKept.round()} habits kept, and \$'
+        evidence:
+            '${snap.choicesKept.round()} habits kept, and \$'
             '${snap.moneySaved.toStringAsFixed(0)} saved by them.',
-        action: 'Swap one tracking habit for one that has a number attached — '
+        action:
+            'Swap one tracking habit for one that has a number attached — '
             'skip a bought lunch, cancel one subscription. Ticks feel like '
             'progress; only the number is progress.',
         concept: FinanceConcept.payYourselfFirst,
@@ -347,9 +357,11 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
         kind: MoneyFindingKind.strength,
         dimension: MoneyDimension.saving,
         title: 'These habits are worth real money',
-        evidence: '\$${snap.moneySaved.toStringAsFixed(0)} saved across '
+        evidence:
+            '\$${snap.moneySaved.toStringAsFixed(0)} saved across '
             '${snap.choicesKept.round()} kept choices.',
-        action: 'Give it a job. Money with no name attached gets spent — '
+        action:
+            'Give it a job. Money with no name attached gets spent — '
             'decide now what this is for.',
         concept: FinanceConcept.emergencyFund,
       ),
@@ -361,10 +373,9 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
       ? 0
       : _score(snap.lessonsCompleted, (snap.lessonsAvailable * 0.4).round());
 
-  final weakConcepts = snap.conceptAccuracy.entries
-      .where((entry) => entry.value < 0.6)
-      .toList()
-    ..sort((a, b) => a.value.compareTo(b.value));
+  final weakConcepts =
+      snap.conceptAccuracy.entries.where((entry) => entry.value < 0.6).toList()
+        ..sort((a, b) => a.value.compareTo(b.value));
   if (weakConcepts.isNotEmpty) {
     final worst = weakConcepts.first;
     findings.add(
@@ -373,9 +384,11 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
         kind: MoneyFindingKind.fix,
         dimension: MoneyDimension.learning,
         title: 'One idea keeps catching you out',
-        evidence: 'You are getting ${worst.key.label} right '
+        evidence:
+            'You are getting ${worst.key.label} right '
             '${(worst.value * 100).round()}% of the time — your lowest.',
-        action: 'Redo the ${worst.key.label} lesson. It is the shortest way '
+        action:
+            'Redo the ${worst.key.label} lesson. It is the shortest way '
             'to move every other number on this page.',
         concept: worst.key,
       ),
@@ -387,9 +400,11 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
         kind: MoneyFindingKind.strength,
         dimension: MoneyDimension.learning,
         title: 'The ideas have landed',
-        evidence: '${snap.conceptAccuracy.length} money ideas assessed, none '
+        evidence:
+            '${snap.conceptAccuracy.length} money ideas assessed, none '
             'below 60%.',
-        action: 'Go and use one. Understanding it and doing it are different '
+        action:
+            'Go and use one. Understanding it and doing it are different '
             'skills and only the second one saves money.',
       ),
     );
@@ -407,9 +422,11 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
         kind: MoneyFindingKind.watch,
         dimension: MoneyDimension.exposure,
         title: 'Most of the town is unopened',
-        evidence: '${snap.townSpotsVisited} of ${snap.townSpotsAvailable} '
+        evidence:
+            '${snap.townSpotsVisited} of ${snap.townSpotsAvailable} '
             'places visited.',
-        action: 'Walk into one you have never opened. Each building is a '
+        action:
+            'Walk into one you have never opened. Each building is a '
             'different money decision, and they change as you get older.',
       ),
     );
@@ -427,7 +444,8 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
           dimension: MoneyDimension.exposure,
           title: 'Your last life went better than the one before',
           evidence: 'Net worth $previous, then $newest.',
-          action: 'Whatever you did differently, do it again — and this time '
+          action:
+              'Whatever you did differently, do it again — and this time '
               'notice which decision it was.',
           concept: FinanceConcept.compoundGrowth,
         ),
@@ -439,9 +457,11 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
           kind: MoneyFindingKind.watch,
           dimension: MoneyDimension.exposure,
           title: 'Your lives are not getting richer',
-          evidence: 'Last three finished at '
+          evidence:
+              'Last three finished at '
               '${snap.pastLifeNetWorths.take(3).join(', ')}.',
-          action: 'Next run, open the Money menu in the first ten years '
+          action:
+              'Next run, open the Money menu in the first ten years '
               'instead of the last ten. Almost all of the difference is made '
               'early.',
           concept: FinanceConcept.compoundGrowth,

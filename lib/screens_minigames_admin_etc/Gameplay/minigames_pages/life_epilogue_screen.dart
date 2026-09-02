@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../models_Like_Skins_and_lessons_templates/ranked_run.dart';
+
 import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_record.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart'
@@ -19,6 +21,7 @@ class LifeEpilogueScreen extends StatelessWidget {
     super.key,
     required this.summary,
     this.bestsBeaten = const <LifeBest>{},
+    this.rankedScore,
   });
 
   final LifeSummary summary;
@@ -27,6 +30,11 @@ class LifeEpilogueScreen extends StatelessWidget {
   /// life (nothing to beat yet) and empty when replaying an old screen, so
   /// the banner is genuinely an event rather than decoration.
   final Set<LifeBest> bestsBeaten;
+
+  /// Set only for a ranked run. Normal play is a sandbox and gets no grade —
+  /// scoring somebody who was deliberately finding out what happens if they
+  /// never work would be answering a question they did not ask.
+  final RankedScore? rankedScore;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +60,10 @@ class LifeEpilogueScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
+              if (rankedScore != null) ...[
+                _RankedScoreCard(score: rankedScore!),
+                const SizedBox(height: 16),
+              ],
               _ArchetypeCard(archetype: archetype),
               if (bestsBeaten.isNotEmpty) ...[
                 const SizedBox(height: 16),
@@ -436,4 +448,145 @@ class _GoldRewardCard extends StatelessWidget {
       ),
     );
   }
+}
+
+
+/// The ranked scorecard.
+///
+/// Shows the parts, not just the total. A single number tells you where you
+/// finished; the breakdown tells you which of the three things to do
+/// differently — and the survival row in particular only makes sense once you
+/// can see it is a multiplier rather than an addition.
+class _RankedScoreCard extends StatelessWidget {
+  const _RankedScoreCard({required this.score});
+
+  final RankedScore score;
+
+  static Color _gradeColour(String grade) => switch (grade) {
+    'S' => const Color(0xFFFFD45C),
+    'A' => const Color(0xFF85EFAC),
+    'B' => const Color(0xFF69C6FF),
+    'C' => const Color(0xFFB388FF),
+    'D' => const Color(0xFFF2C66D),
+    _ => const Color(0xFFFF8FB1),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = _gradeColour(score.grade);
+    final chip = AppTheme.tintedChip(accent, alpha: 0.16);
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: chip.fill,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: accent.withValues(alpha: 0.5), width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'RANKED',
+                style: GoogleFonts.pixelifySans(
+                  color: chip.ink,
+                  fontSize: 11,
+                  letterSpacing: 1.4,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                score.grade,
+                style: GoogleFonts.pixelifySans(
+                  color: accent,
+                  fontSize: 34,
+                  height: 1,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '${score.total}',
+              style: GoogleFonts.pixelifySans(
+                color: Colors.white,
+                fontSize: 40,
+                height: 1.1,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            rankedGradeBlurb(score.grade),
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.86),
+              fontSize: 12.5,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 14),
+          _ScoreLine(label: 'Wealth', value: '${score.wealthPoints}'),
+          _ScoreLine(
+            label: 'Understanding',
+            value: '${score.understandingPoints}',
+          ),
+          // Written as a multiplication because that is what it is, and
+          // because seeing "x0.62" next to a big wealth number is the whole
+          // argument for not dying at thirty-five.
+          _ScoreLine(
+            label: 'Still standing',
+            value: '×${score.survivalMultiplier.toStringAsFixed(2)}',
+            highlight: score.survivalMultiplier < 0.9,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScoreLine extends StatelessWidget {
+  const _ScoreLine({
+    required this.label,
+    required this.value,
+    this.highlight = false,
+  });
+
+  final String label;
+  final String value;
+  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: GoogleFonts.quicksand(
+              color: AppTheme.textMuted,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.pixelifySans(
+            color: highlight ? const Color(0xFFFF8474) : Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    ),
+  );
 }

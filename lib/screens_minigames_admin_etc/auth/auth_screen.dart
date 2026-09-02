@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,6 +14,7 @@ import '../../config/turnstile_config.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../constants/app_assets.dart';
+import '../../constants/privacy_policy.dart';
 import '../../services_backend_and_other_services/turnstile_challenge_server.dart';
 import '../../widgets_custom_lotties/custom_button.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
@@ -145,6 +147,25 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  /// Opens the published policy in the device browser.
+  ///
+  /// External rather than a web view on purpose: this is the document the
+  /// store listing links to, and somebody should be able to see the address
+  /// bar while they read it.
+  Future<void> _openPrivacyPolicy() async {
+    final uri = Uri.parse(kPrivacyPolicyUrl);
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && mounted) {
+      GameToast.show(
+        context,
+        title: 'Could not open the policy',
+        message: kPrivacyPolicyUrl,
+        icon: Icons.link_off_rounded,
+        accent: const Color(0xFFFFC36B),
+      );
+    }
+  }
+
   Future<void> _submit() async {
     HapticFeedback.lightImpact();
     final isValid = _formKey.currentState?.validate() ?? false;
@@ -163,7 +184,8 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       GameToast.show(
         context,
         title: 'One quick step',
-        message: 'Please accept the terms to create your account.',
+        message: 'Please read and accept the Privacy Policy to create your '
+            'account.',
         icon: Icons.rule_folder_outlined,
         accent: const Color(0xFFFFC36B),
       );
@@ -243,6 +265,14 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       isNewAccount: !_isLogin,
       captchaToken: _captchaToken,
     );
+
+    // Record the consent against the account it belongs to, as soon as there
+    // is an account to record it against. Before sign-up there is no row to
+    // write to, and after this point the checkbox state is gone -- so this is
+    // the only moment the two exist together.
+    if (result.success && !_isLogin) {
+      await controller.recordPrivacyAcceptance();
+    }
 
     if (!mounted) {
       return;
@@ -696,6 +726,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                                     ),
                                     const SizedBox(height: 16),
                                     _TermsCard(
+                                      onOpenPolicy: _openPrivacyPolicy,
                                       accepted: _acceptedTerms,
                                       onChanged: (value) {
                                         HapticFeedback.lightImpact();
@@ -1051,10 +1082,15 @@ class _PasswordToggleButton extends StatelessWidget {
 }
 
 class _TermsCard extends StatelessWidget {
-  const _TermsCard({required this.accepted, required this.onChanged});
+  const _TermsCard({
+    required this.accepted,
+    required this.onChanged,
+    required this.onOpenPolicy,
+  });
 
   final bool accepted;
   final ValueChanged<bool> onChanged;
+  final VoidCallback onOpenPolicy;
 
   @override
   Widget build(BuildContext context) {
@@ -1078,12 +1114,39 @@ class _TermsCard extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                'I agree to Budget Buddy storing my learning progress and cloud syncing my rewards.',
-                style: GoogleFonts.quicksand(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 12,
-                  height: 1.45,
+              // A link, not a mention. The old copy said "I agree to Budget
+              // Buddy storing my learning progress" with nothing to read and
+              // nothing recorded -- which is not consent, it is a checkbox.
+              // Play wants the policy reachable from the point of agreement,
+              // and somebody agreeing to a document they cannot open has not
+              // agreed to anything.
+              child: Text.rich(
+                TextSpan(
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 12,
+                    height: 1.45,
+                  ),
+                  children: [
+                    const TextSpan(
+                      text: 'I have read and agree to the Budget Buddy ',
+                    ),
+                    TextSpan(
+                      text: 'Privacy Policy',
+                      style: const TextStyle(
+                        color: Color(0xFF85EFAC),
+                        decoration: TextDecoration.underline,
+                        decorationColor: Color(0xFF85EFAC),
+                        fontWeight: FontWeight.w800,
+                      ),
+                      recognizer: TapGestureRecognizer()..onTap = onOpenPolicy,
+                    ),
+                    const TextSpan(
+                      text: ' ($kPrivacyPolicyDate). It explains what is '
+                          'stored, what is never collected, and how to delete '
+                          'your account.',
+                    ),
+                  ],
                 ),
               ),
             ),

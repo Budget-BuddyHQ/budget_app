@@ -2,9 +2,11 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import '../models_Like_Skins_and_lessons_templates/concept_powers.dart';
 import '../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
 import '../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import '../models_Like_Skins_and_lessons_templates/outing_rules.dart';
+import '../models_Like_Skins_and_lessons_templates/ranked_run.dart';
 
 /// The rules engine for **Life**, the main game.
 ///
@@ -122,6 +124,52 @@ class LifeSimController extends ChangeNotifier {
   /// year — the borrowing-costs-extra lesson, made mechanical.
   int _debt = 0;
 
+  // ---- Powers -----------------------------------------------------------
+  //
+  // Money ideas, armed. See `concept_powers.dart` for why these exist at all;
+  // the short version is that meeting sixteen ideas used to change nothing
+  // about the simulation, which quietly contradicted every lesson in the app.
+  final List<ActivePower> _powers = <ActivePower>[];
+
+  /// How many can run at once. Two, so arming one is a choice about which --
+  /// with room for all sixteen there is no decision, and a power that costs
+  /// nothing to hold teaches nothing about opportunity cost.
+  static const int maxActivePowers = 2;
+
+  // ---- Hazards ----------------------------------------------------------
+  //
+  // Hunger is a counter, not a flag: one bad year is a bad year, four in a row
+  // is what kills you. Tracking it as a number is what makes the difference
+  // between "you were briefly broke" and "you have not eaten properly since
+  // you were thirty" something the simulation can tell apart.
+  int _hunger = 0;
+
+  /// Years of illness left to run. Illness is a state you are *in*, not an
+  /// event that happens once -- an illness that resolves the same turn it
+  /// arrives is a bill with a costume on.
+  int _illnessYears = 0;
+  String _illnessName = '';
+
+  /// The point at which not eating starts killing you.
+  ///
+  /// Four consecutive bad years, and any year you can feed yourself takes one
+  /// back off. Nobody starves from a single unlucky turn.
+  static const int starvationThreshold = 4;
+
+  /// How much of the basics an out-of-work adult scrapes together, rolled
+  /// fresh each year between these two.
+  ///
+  /// Not 100%: being out of work has to cost something or the job is
+  /// pointless. Not 0% either, for the reason in [ageUp] -- a world with no
+  /// floor under it killed 86% of runs before sixty.
+  ///
+  /// And *rolled*, not fixed. A flat 82% made hunger unreachable: the gap was
+  /// the same every year, always under the quarter-of-a-year threshold, so
+  /// the counter could never start. Some years you find work and some you do
+  /// not, and it is the bad ones in a row that matter.
+  static const double _scrapedMin = 0.62;
+  static const double _scrapedMax = 0.98;
+
   /// Concepts this life has surfaced, in order first met.
   final List<FinanceConcept> _conceptsMet = <FinanceConcept>[];
 
@@ -142,6 +190,82 @@ class LifeSimController extends ChangeNotifier {
   int get emergencyFund => _emergencyFund;
   int get debt => _debt;
   List<FinanceConcept> get conceptsMet => List.unmodifiable(_conceptsMet);
+
+  /// Powers currently running.
+  List<ActivePower> get activePowers => List.unmodifiable(_powers);
+
+  /// Ideas met this run that are not already armed and could be.
+  List<ConceptPower> get armablePowers => [
+    for (final concept in _conceptsMet)
+      if (powerFor(concept) case final power?)
+        if (!_powers.any((active) => active.power.concept == concept)) power,
+  ];
+
+  bool get canArmPower => _powers.length < maxActivePowers;
+
+  /// 0 = fed, [starvationThreshold] = starving.
+  int get hunger => _hunger;
+  bool get isStarving => _hunger >= starvationThreshold;
+  bool get isIll => _illnessYears > 0;
+  String get illnessName => _illnessName;
+
+  /// The combined strength of every armed power with this effect.
+  ///
+  /// Summed rather than taking the best, so stacking two cost-cutters is
+  /// worth doing -- but clamped, because a player who arms two big ones
+  /// should not end up with free living.
+  double powerStrength(PowerEffect effect) {
+    var total = 0.0;
+    for (final active in _powers) {
+      if (active.effect == effect) total += active.magnitude;
+    }
+    return total > 0.8 ? 0.8 : total;
+  }
+
+  /// Arms the power for [concept], if it has been met and there is room.
+  ///
+  /// Returns false rather than throwing: the UI offers only valid choices,
+  /// and a race between two taps should do nothing rather than crash a run.
+  /// Test seam: meet a concept without having to engineer the event that
+  /// teaches it. Mirrors `debugSet` on the cascade engine.
+  @visibleForTesting
+  void debugTeach(FinanceConcept concept) => _teach(concept);
+
+  /// Test seam: start partway into a hungry stretch.
+  @visibleForTesting
+  void debugSetHunger(int years) {
+    _hunger = years;
+    notifyListeners();
+  }
+
+  bool armPower(FinanceConcept concept) {
+    if (finished || !canArmPower) return false;
+    if (!_conceptsMet.contains(concept)) return false;
+    if (_powers.any((active) => active.power.concept == concept)) return false;
+    final power = powerFor(concept);
+    if (power == null) return false;
+    _powers.add(
+      ActivePower(power: power, expiresAtAge: _age + power.years),
+    );
+    _setLog(
+      '${power.name} is active for ${power.years} years. ${power.blurb}',
+      kind: LifeLogKind.learning,
+    );
+    notifyListeners();
+    return true;
+  }
+
+  void _expirePowers() {
+    final gone = _powers.where((a) => a.expiresAtAge <= _age).toList();
+    if (gone.isEmpty) return;
+    _powers.removeWhere((a) => a.expiresAtAge <= _age);
+    for (final active in gone) {
+      _setLog(
+        '${active.power.name} has run out.',
+        kind: LifeLogKind.learning,
+      );
+    }
+  }
 
   /// True once the character earns — budgeting is meaningless before that,
   /// so the UI only offers it from here.
@@ -212,7 +336,10 @@ class LifeSimController extends ChangeNotifier {
   /// life, which is why 100% austerity is not the "right answer" here);
   /// savings build the fund that makes the next shock survivable.
   void _applyBudget() {
-    final income = _salary;
+    // Worth Asking and Read The Slip both land here -- one because you found
+    // out what the job pays, one because the slip was wrong. Same lever.
+    final income =
+        (_salary * (1 + powerStrength(PowerEffect.betterPay))).round();
     if (income <= 0) return;
 
     final needsBudget = (income * _needsPct / 100).round();
@@ -252,6 +379,30 @@ class LifeSimController extends ChangeNotifier {
         kind: LifeLogKind.shock,
       );
       _teach(FinanceConcept.needsVsWants);
+      // Underfunding needs is not just a happiness hit any more. If there is
+      // no cash left to make it up out of, that is a year you did not eat
+      // properly, and hunger is what carries it forward.
+      if (_money < 0) {
+        _goHungry(shortfall: shortfall);
+      }
+    } else {
+      _eatWell();
+    }
+
+    // Automatic: a slice off the top, before anything can be spent. The whole
+    // point of pay-yourself-first is that it happens without a decision, so
+    // it happens here rather than being offered as one.
+    final autoRate = powerStrength(PowerEffect.autoSave);
+    if (autoRate > 0) {
+      final moved = (income * autoRate).round();
+      if (moved > 0) {
+        _emergencyFund += moved;
+        _money -= moved;
+        _setLog(
+          'Automatic moved $moved into savings before you saw it.',
+          kind: LifeLogKind.money,
+        );
+      }
     }
 
     if (_wantsPct <= 5) {
@@ -267,8 +418,11 @@ class LifeSimController extends ChangeNotifier {
 
     if (_debt > 0) {
       // 18% a year, roughly a credit card. Deliberately visible in the feed
-      // so the cost of carrying it is felt, not hidden.
-      final interest = (_debt * 0.18).round();
+      // so the cost of carrying it is felt, not hidden. Debt Brake and Good
+      // Standing cut the rate rather than the balance -- understanding what
+      // interest is does not make what you borrowed go away.
+      final rate = 0.18 * (1 - powerStrength(PowerEffect.slowerDebt));
+      final interest = (_debt * rate).round();
       _debt += interest;
       final payment = (_money * 0.3).round();
       final paid = payment.clamp(0, _debt);
@@ -287,7 +441,11 @@ class LifeSimController extends ChangeNotifier {
   /// borrows — which is precisely the ladder a real household walks down,
   /// and the moment the fund either proves its worth or is conspicuously
   /// missing.
-  void applyShock(int amount, String reason) {
+  void applyShock(int rawAmount, String reason) {
+    // Cushion and The Other Thing come off the top, before the fund is
+    // touched -- an idea you understood is cheaper than an idea you paid for.
+    final softened = powerStrength(PowerEffect.softenShocks);
+    final amount = (rawAmount * (1 - softened)).round();
     var remaining = amount;
     final fromFund = remaining.clamp(0, _emergencyFund);
     _emergencyFund -= fromFund;
@@ -406,6 +564,23 @@ class LifeSimController extends ChangeNotifier {
   /// as wealth.
   int get netWorth => _money + _investments + _emergencyFund - _debt;
 
+  /// Whether this run ever reached the starvation threshold.
+  ///
+  /// Kept separately from [hunger], which recovers. Ranked scoring needs to
+  /// know that a run once got that close even if it climbed back out — a plan
+  /// that nearly killed you is not a plan that worked.
+  bool get everStarved => _everStarved;
+  bool _everStarved = false;
+
+  /// The finished run, as the ranked scorer takes it.
+  RankedResult get rankedResult => RankedResult(
+    netWorth: netWorth,
+    ageReached: _age,
+    conceptsMet: _conceptsMet.length,
+    died: _dead,
+    everStarved: _everStarved,
+  );
+
   /// Under 18 the family covers everything, so the money layer stays dormant
   /// while childhood events play out.
   bool get isDependent => _age < 18;
@@ -430,21 +605,56 @@ class LifeSimController extends ChangeNotifier {
     // not fixed at birth
     _weather = WeatherInfo.roll(_random);
 
+    _expirePowers();
+
     if (!isDependent) {
       if (_salary > 0) {
         // Earning years run through the budget, so the split the player
         // chose is what actually governs the year.
         _applyBudget();
       } else {
+        // Out of work, but not out of options. Odd jobs, family, whatever
+        // support exists -- something covers most of the basics.
+        //
+        // Without this the first version of hunger killed 86% of runs before
+        // sixty and dropped the average life to 35, because taking the first
+        // option every year often means never getting a job, and every one of
+        // those years was a starving year. That is not a simulation of being
+        // poor, it is a simulation of having no world around you.
+        final share =
+            _scrapedMin + _random.nextDouble() * (_scrapedMax - _scrapedMin);
+        final scraped = (_livingCost() * share).round();
+        _money += scraped;
         _money -= _livingCost();
         if (_money < 0) {
-          // No debt spiral — the shortfall costs happiness instead.
+          // Savings are what stands between a bad year and a hungry one --
+          // which is the entire argument for having any.
+          final fromFund = (-_money).clamp(0, _emergencyFund);
+          _emergencyFund -= fromFund;
+          _money += fromFund;
+        }
+        if (_money < 0) {
           _happiness = _clamp(_happiness - 8);
+          final shortfall = -_money;
           _money = 0;
+          _goHungry(shortfall: shortfall);
+        } else {
+          _eatWell();
         }
       }
-      // Investments compound ~7% a year.
-      _investments = (_investments * 1.07).round();
+      // Investments compound ~7% a year, plus whatever Snowball or Spread Out
+      // are adding.
+      final rate = 1.07 + powerStrength(PowerEffect.fasterGrowth);
+      _investments = (_investments * rate).round();
+    } else {
+      // Somebody else is feeding you.
+      _eatWell();
+    }
+
+    _applyIllness();
+    if (_dead) {
+      notifyListeners();
+      return;
     }
 
     _applyAgeing();
@@ -584,12 +794,165 @@ class LifeSimController extends ChangeNotifier {
   };
 
   int _livingCost() {
-    return switch (stage) {
+    final base = switch (stage) {
       LifeStage.baby || LifeStage.child || LifeStage.teen => 0,
       LifeStage.youngAdult => 110,
       LifeStage.adult => 180,
       LifeStage.senior => 140,
     };
+    // Clear Eyes, The Split, Second Thought and the rest all pull this lever.
+    // Understanding what you actually need is, mechanically, a discount.
+    return (base * (1 - powerStrength(PowerEffect.cheaperLiving))).round();
+  }
+
+  // ---- Hunger -----------------------------------------------------------
+  //
+  // The point of this is not to be cruel. It is that an emergency fund, a
+  // budget and a job are all abstractions until the thing they are protecting
+  // is something you can lose. A run where being broke costs you 8 happiness
+  // and nothing else has no floor, and a simulation with no floor cannot
+  // teach anybody why the floor matters.
+  //
+  // It is deliberately slow: four consecutive bad years before it is fatal,
+  // and any year you can feed yourself resets it. Nobody starves by accident
+  // in one unlucky turn.
+
+  void _eatWell() {
+    if (_hunger == 0) return;
+    _hunger--;
+    // Recovery has to be real, or hunger is a one-way ratchet: every bad year
+    // costs health permanently and the good years in between buy nothing. A
+    // simulation you cannot climb back out of does not teach that the way
+    // out exists.
+    _health = _clamp(_health + 4);
+    if (_hunger == 0) {
+      _setLog('Eating properly again. That was closer than it looked.',
+          kind: LifeLogKind.life);
+    }
+  }
+
+  void _goHungry({required int shortfall}) {
+    // Being a little short is a tight year, not a hungry one. Only a gap big
+    // enough to matter against what a year actually costs starts the counter.
+    final threshold = (_livingCost() * 0.25).round();
+    if (shortfall <= threshold) {
+      _happiness = _clamp(_happiness - 3);
+      _setLog('A tight year. You made it work.', kind: LifeLogKind.money);
+      return;
+    }
+
+    // Walk Away stretches what little there is.
+    final stretched = _random.nextDouble() < powerStrength(
+      PowerEffect.stretchFood,
+    );
+    if (stretched) {
+      _setLog('Money ran out, but you made it stretch.',
+          kind: LifeLogKind.life);
+      return;
+    }
+
+    _hunger++;
+    _health = _clamp(_health - (2 + _hunger));
+    _happiness = _clamp(_happiness - 5);
+
+    if (_hunger >= starvationThreshold) {
+      _everStarved = true;
+      _health = _clamp(_health - 7);
+      _setLog(
+        'A fourth year without enough to eat. Your health is going.',
+        kind: LifeLogKind.shock,
+      );
+      _teach(FinanceConcept.emergencyFund);
+      if (_health <= 4) {
+        _dead = true;
+        _currentEvent = null;
+        _setLog(
+          'You did not survive the winter. There was nothing left to sell '
+          'and nothing coming in.',
+          kind: LifeLogKind.milestone,
+        );
+      }
+      return;
+    }
+
+    _setLog(
+      'You could not cover the basics this year. Meals got smaller.',
+      kind: LifeLogKind.shock,
+    );
+    _teach(FinanceConcept.emergencyFund);
+  }
+
+  // ---- Illness ----------------------------------------------------------
+  //
+  // A state you are in for a while, not a one-off bill. An illness that
+  // resolves the turn it arrives is an expense shock wearing a costume, and
+  // the app already has expense shocks.
+  /// Deliberately cheap next to [_shocks].
+  ///
+  /// The app already has one system that empties your wallet at random, and
+  /// two of them is not twice the lesson -- it is a game where saving cannot
+  /// keep up. The first pass priced illness like a car repair and six years of
+  /// disciplined 20% saving came out at a fund of zero, which is precisely the
+  /// opposite of what the emergency fund is there to demonstrate.
+  ///
+  /// So the two hazards have different jobs: an expense shock takes your
+  /// money, an illness takes your *health* and lingers for years. Where they
+  /// overlap, illness is the smaller number.
+  static const List<({String name, int minCost, int maxCost, int years})>
+      _illnesses = [
+    (name: 'a bad chest infection', minCost: 15, maxCost: 60, years: 1),
+    (name: 'a broken ankle', minCost: 40, maxCost: 130, years: 1),
+    (name: 'something that needed surgery', minCost: 90, maxCost: 240,
+        years: 2),
+    (name: 'a long illness', minCost: 45, maxCost: 160, years: 3),
+    (name: 'burnout', minCost: 0, maxCost: 30, years: 2),
+  ];
+
+  void _applyIllness() {
+    if (finished) return;
+
+    if (_illnessYears > 0) {
+      _illnessYears--;
+      _health = _clamp(_health - 3);
+      if (_illnessYears == 0) {
+        _setLog('Over the worst of $_illnessName.', kind: LifeLogKind.life);
+        _illnessName = '';
+      }
+      return;
+    }
+
+    // Odds climb with age and fall with health -- so the same run is riskier
+    // at seventy than at twenty, and riskier still if you have been hungry.
+    var chance = 2 + (_age ~/ 20) + ((100 - _health) ~/ 20) + _hunger * 2;
+    if (chance > 22) chance = 22;
+    if (_random.nextInt(100) >= chance) return;
+
+    final illness = _illnesses[_random.nextInt(_illnesses.length)];
+    final guard = powerStrength(PowerEffect.healthGuard);
+    final rawCost = illness.minCost +
+        _random.nextInt(illness.maxCost - illness.minCost + 1);
+    final cost = (rawCost * (1 - guard)).round();
+
+    _illnessYears = illness.years;
+    _illnessName = illness.name;
+    _health = _clamp(_health - ((10 + illness.years * 4) * (1 - guard)).round());
+
+    // A dependent does not pay their own medical bills. The same rule that
+    // makes childhood free of living costs has to cover this too, or the
+    // simulation is charging an eight-year-old for a broken ankle -- which is
+    // both wrong and the first thing `life_sim_test` noticed.
+    if (cost > 0 && !isDependent) {
+      applyShock(cost, 'Being treated for ${illness.name}');
+    } else {
+      _setLog(
+        isDependent
+            ? 'You came down with ${illness.name}. Your family sorted the '
+                  'bill.'
+            : 'You came down with ${illness.name}.',
+        kind: LifeLogKind.shock,
+      );
+    }
+    if (guard > 0) _teach(FinanceConcept.insurance);
   }
 
   /// Picks this year's event.

@@ -1721,7 +1721,8 @@ const List<QuizQuestion> _unit13Quiz = <QuizQuestion>[
   QuizQuestion(
     id: 'u13q1',
     skillId: QuizSkills.identityTheft,
-    prompt: 'The FTC site that builds a recovery plan and the official '
+    prompt:
+        'The FTC site that builds a recovery plan and the official '
         'affidavit is:',
     options: [
       'IdentityTheft.gov',

@@ -17,6 +17,7 @@ import 'package:budget_app/screens_minigames_admin_etc/Gameplay/money_habits/mon
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/finance_concepts.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/lesson.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/money_analyzer.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/ranked_run.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/lesson_data.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_ending.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_sim_models.dart';
@@ -118,6 +119,10 @@ void main() {
 
   final screens = <String, Widget Function()>{
     'home': () => const HomeScreen(),
+    // With the bottom bar attached, which the bare screens do not show. The
+    // active tab's gold treatment is the one thing on it that changes size
+    // with the window, so it needs looking at rather than reasoning about.
+    'nav_bar': () => MainGamePage(activeTabIndex: 0, onNavSelected: (_) {}),
     'life': () => LifeSimPage(debugInitialLife: midLife()),
     'arcade': () => const MinigamesPage(),
     'cascade': () => const CoinCascadePage(),
@@ -187,6 +192,34 @@ void main() {
         progressionService: ProgressionService(),
       );
     },
+    'epilogue_ranked': () => LifeEpilogueScreen(
+      rankedScore: scoreRankedRun(
+        const RankedResult(
+          netWorth: 184000,
+          ageReached: 79,
+          conceptsMet: 11,
+          died: false,
+          everStarved: false,
+        ),
+      ),
+      summary: const LifeSummary(
+        name: 'Morgan Reyes',
+        gender: Gender.nonBinary,
+        origin: LifeOrigin.comfortable,
+        job: 'Studio owner',
+        age: 79,
+        yearsLived: 79,
+        died: false,
+        netWorth: 184000,
+        happiness: 71,
+        health: 58,
+        smarts: 88,
+        looks: 54,
+        relationships: ['Sam', 'Ada'],
+        goldReward: 604,
+        archetype: LifeEndingArchetype.legacyBuilder,
+      ),
+    ),
     'epilogue': () => const LifeEpilogueScreen(
       summary: LifeSummary(
         name: 'Alexandria Montgomery-Whitfield',
@@ -218,6 +251,25 @@ void main() {
         RepaintBoundary(key: shotKey, child: wrap(entry.value())),
       );
       await tester.pump(const Duration(milliseconds: 600));
+
+      // Let the images actually decode before the shutter opens.
+      //
+      // `tester.pump()` advances a *fake* clock and drains microtasks. It
+      // does not run real async work, and decoding an `Image.asset` is real
+      // async work -- `rootBundle.load` then `instantiateImageCodec` on the
+      // engine. So every screenshot here was being taken of a tree whose
+      // images had resolved their layout but never painted a pixel.
+      //
+      // It was invisible for a long time because it was not consistent: an
+      // asset already sitting in `imageCache` from an earlier screen in this
+      // same file paints immediately, so the map appeared on some runs and
+      // not others, and *that* got read as a broken widget rather than a
+      // broken harness. `runAsync` gives the real event loop the turns it
+      // needs; the pump after it is the frame that finally paints them.
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 350)),
+      );
+      await tester.pump();
 
       await tester.runAsync(() async {
         final layer =

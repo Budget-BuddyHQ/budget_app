@@ -4,7 +4,9 @@ import 'finance_concepts.dart';
 import 'life_event_chains.dart';
 import 'life_events_adult.dart';
 import 'life_events_childhood.dart';
+import 'life_events_stardom.dart';
 import 'life_events_toddler.dart';
+import 'life_events_traps.dart';
 
 /// Data model for **Life** — the main game: a BitLife-style life simulator.
 /// You are born, age up a year at a time, and your choices move four stats
@@ -315,6 +317,17 @@ enum LifeFlag {
   hasSideHustle,
   hustleGrew,
   soldTheBusiness,
+
+  // ---- Music, and where it can go ----
+  //
+  // A separate thread from the skill system: `LifeSkill.music` says how good
+  // you are, these say how far the *story* has gone. Somebody can be a superb
+  // player who never went viral, and the chain has to be able to tell those
+  // apart. See `life_events_stardom.dart`.
+  playsMusic,
+  wentViral,
+  famousArtist,
+  soldCatalogue,
 
   // ---- Home and vehicle ----
   hasCar,
@@ -3501,4 +3514,6 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ...kLifeEventsToddler,
   ...kLifeEventsChildhood,
   ...kLifeEventsAdult,
+  ...kLifeEventsStardom,
+  ...kLifeEventsTraps,
 ];

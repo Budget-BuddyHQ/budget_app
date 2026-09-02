@@ -112,8 +112,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
   ),
   LifeEvent(
     id: 'chain_pet_old',
-    prompt:
-        'Biscuit is grey around the muzzle now and sleeps most of the day.',
+    prompt: 'Biscuit is grey around the muzzle now and sleeps most of the day.',
     icon: Icons.pets_rounded,
     minAge: 20,
     weight: 1.1,
@@ -342,8 +341,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
   ),
   LifeEvent(
     id: 'chain_index_payoff',
-    prompt:
-        'You check the fund you have not touched in twenty years.',
+    prompt: 'You check the fund you have not touched in twenty years.',
     icon: Icons.auto_graph_rounded,
     minAge: 45,
     weight: 1.3,
@@ -511,8 +509,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
   ),
   LifeEvent(
     id: 'chain_hustle_offer',
-    prompt:
-        'Someone wants to buy the business for four years of its profit.',
+    prompt: 'Someone wants to buy the business for four years of its profit.',
     icon: Icons.store_rounded,
     weight: 1.5,
     minAge: 25,

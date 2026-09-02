@@ -12,6 +12,7 @@ import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../../controllers_that_updates_stats/life_sim_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_spot_models.dart';
 import '../../../themes_colors/app_theme.dart';
+import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/custom_button.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/orientation_scope.dart';
@@ -53,11 +54,18 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   // null = still checking, true = map found, false = not there yet
   bool? _mapReady;
 
-  // seeded from saved progress in initState. both of these used to start
-  // empty every single time the screen opened, so nipping out to Profile and
-  // coming back reset "visit every place" to zero — and worse let you farm
-  // the same coins for real gold over and over. see
-  // UserStats.townVisitedSpotIds / townCollectedCoinIds
+  /// Buildings entered *this visit*.
+  ///
+  /// Starts empty every time you walk into the town, on purpose. It used to
+  /// be seeded from saved progress so the "visit every place" tracker could
+  /// survive a trip to Profile — but that tracker is gone now, and with it the
+  /// reason to remember. What is left is a town where the doors are shut
+  /// forever once you have been through them, which is the opposite of a
+  /// place worth going back to.
+  ///
+  /// The scenes behind those doors change with the day *and* your age (see
+  /// `townEncounterFor`), so walking back in gets you a different
+  /// conversation rather than the same one again.
   final Set<String> _visited = <String>{};
   final Set<String> _collectedCoinIds = <String>{};
   int _coinsFound = 0;
@@ -73,7 +81,12 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   void initState() {
     super.initState();
     final stats = context.read<UserStatsController>().stats;
-    _visited.addAll(stats.townVisitedSpotIds);
+    // Coins stay remembered, and only coins.
+    //
+    // They pay real account gold, and gold buys skins — so a coin that came
+    // back every time you stepped outside would be an unlimited tap on the
+    // economy, which is a different thing from a town that feels alive. The
+    // buildings are what reset; the money on the floor does not.
     _collectedCoinIds.addAll(stats.townCollectedCoinIds);
     _coinsFound = kTownCoins
         .where((coin) => _collectedCoinIds.contains(_coinId(coin)))
@@ -424,61 +437,39 @@ class _ObjectiveBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final done = visitedCount >= totalCount;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        border: Border.all(
-          color: (done ? AppTheme.greenPrimary : Colors.white).withValues(
-            alpha: 0.25,
-          ),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
       ),
+      // No progress bar and no "3/12".
+      //
+      // A completion tracker turns a town into a checklist, and the town is
+      // not a checklist any more: it resets every time you walk in, so there
+      // is no total to be a fraction of. Counting toward a number that gets
+      // wiped on the way out would be actively misleading.
+      //
+      // The label stays, because a player arriving on a tile map still needs
+      // one line telling them what this place is for.
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            done ? Icons.emoji_events_rounded : Icons.flag_rounded,
-            color: done ? const Color(0xFFFFD45C) : AppTheme.greenPrimary,
+            Icons.flag_rounded,
+            color: AppTheme.greenPrimary,
             size: 18,
           ),
           const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  done ? 'Town explored!' : 'Explore the town',
-                  style: GoogleFonts.pixelifySans(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
-                    value: totalCount == 0 ? 0 : visitedCount / totalCount,
-                    minHeight: 5,
-                    backgroundColor: Colors.white24,
-                    valueColor: AlwaysStoppedAnimation(
-                      done ? const Color(0xFFFFD45C) : AppTheme.greenPrimary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            '$visitedCount/$totalCount',
-            style: GoogleFonts.pixelifySans(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
+          Flexible(
+            child: FittedLabel(
+              'Explore the town',
+              style: GoogleFonts.pixelifySans(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           if (coinsFound > 0) ...[

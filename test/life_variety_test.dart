@@ -160,6 +160,13 @@ void main() {
       // top three events on this ladder could never fire for anybody. 400
       // simulated lives never saw one of them.
       //
+      // Widened 300 -> 700 when hunger and illness landed. Same reasoning as
+      // the previous widening, with one addition: hazards can now end a run
+      // early, so a focused sample loses not only share-of-draw but some of
+      // its *later years* — and the top of a career ladder is by definition
+      // late. The exhaustive sweep below still passes, which is the tell that
+      // the event is fine and the sample was thin.
+      //
       // Widened 120 -> 300 when the chain pack (kLifeEventsChains) landed,
       // for the same reason the sweep below was widened 200 -> 400: this is
       // a *sampling* guard, so its sensitivity falls with every batch of
@@ -167,7 +174,7 @@ void main() {
       // sample and not the content is that the exhaustive sweep below —
       // which is strictly harder to pass — still went green.
       final seen = <String>{};
-      for (var seed = 0; seed < 300; seed++) {
+      for (var seed = 0; seed < 700; seed++) {
         seen.addAll(_play(seed + 900, focus: LifeSkill.music).fired);
       }
       for (final id in ['first_gig', 'record_deal', 'sold_out_tour']) {
