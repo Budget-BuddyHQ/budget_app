@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../controllers_that_updates_stats/user_stats_controller.dart';
+import '../../../widgets_custom_lotties/fitted_label.dart';
 
 import '../../../models_Like_Skins_and_lessons_templates/ranked_run.dart';
 
@@ -65,6 +68,22 @@ class LifeEpilogueScreen extends StatelessWidget {
                 const SizedBox(height: 16),
               ],
               _ArchetypeCard(archetype: archetype),
+              const SizedBox(height: 16),
+              // The one place in the app where somebody is deciding whether
+              // to play again.
+              //
+              // The endings collection is the strongest honest reason this
+              // game has to start a second life: it rewards playing
+              // *differently* rather than playing more, which is exactly the
+              // behaviour a financial-literacy game wants. It was sitting on
+              // the Play hub, below the fold, as a row of tiles reading
+              // "Undiscovered" — visible only to somebody who had already
+              // decided to come back.
+              //
+              // Here it is at the moment it can change a decision, naming one
+              // specific ending and how to reach it. No streak, no timer, no
+              // "come back tomorrow": just something worth doing next.
+              const _NextEndingCard(),
               if (bestsBeaten.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 _PersonalBestBanner(bests: bestsBeaten),
@@ -113,12 +132,17 @@ class _PersonalBestBanner extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.workspace_premium_rounded,
-                  color: _gold, size: 20),
+              const Icon(
+                Icons.workspace_premium_rounded,
+                color: _gold,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  bests.length == 1 ? 'New personal best' : 'New personal bests',
+                  bests.length == 1
+                      ? 'New personal best'
+                      : 'New personal bests',
                   style: GoogleFonts.pixelifySans(
                     color: _gold,
                     fontSize: 16,
@@ -450,7 +474,6 @@ class _GoldRewardCard extends StatelessWidget {
   }
 }
 
-
 /// The ranked scorecard.
 ///
 /// Shows the parts, not just the total. A single number tells you where you
@@ -589,4 +612,137 @@ class _ScoreLine extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// One ending you have not found yet, and a nudge towards it.
+///
+/// Reads the collection at build time rather than taking it as an argument,
+/// because it has to reflect the ending *this* run just added — the epilogue
+/// records the ending on the way in, so a card handed a snapshot from before
+/// that would suggest chasing the one you are looking at.
+class _NextEndingCard extends StatelessWidget {
+  const _NextEndingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final stats = context.watch<UserStatsController>().stats;
+    final found = stats.discoveredEndings.toSet();
+    final missing =
+        LifeEndingArchetype.values
+            .where((e) => !found.contains(e.name))
+            .toList()
+          ..sort((a, b) => a.chaseOrder.compareTo(b.chaseOrder));
+
+    final total = LifeEndingArchetype.values.length;
+    final have = total - missing.length;
+
+    if (missing.isEmpty) {
+      return _EndingsPanel(
+        accent: const Color(0xFFE1BB72),
+        icon: Icons.emoji_events_rounded,
+        title: 'Every ending found',
+        body:
+            'All $total of them. There is nothing left to collect — which '
+            'means the next run is just for the score.',
+        progress: 1,
+        label: '$total / $total',
+      );
+    }
+
+    // The most worth chasing, not the first in the enum — see
+    // [LifeEndingHint.chaseOrder]. Deterministic rather than random: a card
+    // that suggests something different every time you glance at it is a slot
+    // machine, and re-reading the same suggestion is how somebody actually
+    // decides to go after it.
+    final next = missing.first;
+
+    return _EndingsPanel(
+      accent: next.color,
+      icon: next.icon,
+      title: 'Still to find: ${next.label}',
+      body: next.howToReach,
+      progress: have / total,
+      label: '$have / $total',
+    );
+  }
+}
+
+class _EndingsPanel extends StatelessWidget {
+  const _EndingsPanel({
+    required this.accent,
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.progress,
+    required this.label,
+  });
+
+  final Color accent;
+  final IconData icon;
+  final String title;
+  final String body;
+  final double progress;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final chip = AppTheme.tintedChip(accent, alpha: 0.14);
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: chip.fill,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: accent.withValues(alpha: 0.42)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: accent, size: 20),
+              const SizedBox(width: 9),
+              Expanded(
+                child: FittedLabel(
+                  title,
+                  style: GoogleFonts.pixelifySans(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                label,
+                style: GoogleFonts.pixelifySans(
+                  color: chip.ink,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            body,
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.86),
+              fontSize: 12.5,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 7,
+              backgroundColor: Colors.black.withValues(alpha: 0.28),
+              valueColor: AlwaysStoppedAnimation<Color>(accent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

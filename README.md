@@ -441,6 +441,33 @@ divide the space instead of two independently-guessed ones.
 
 ### Layout
 
+**The tutorial spotlight claimed to be exact and was a guess, on both axes**
+The overlay could not use a `GlobalKey` to find a nav tab — `MainNavigation`
+keeps every screen alive in an `IndexedStack` and each renders its own bar, so
+one static key per tab attaches to several widgets at once — so it computed
+the tab rectangle from constants of its own: full screen width divided by the
+tab count, 72px tall, flush to the bottom. The real bar is 80-106px tall
+depending on the viewport, inset 10px each side (plus a 4px border, which is
+drawn *inside* the box and insets the child — easy to miss, and worth 3.2px of
+the total error on its own), and lifted 6-12px off the bottom. Wrong size and
+wrong position on both axes, so the highlight drew its box beside the tab it
+was meant to point at rather than around it. Reported three times before it
+was measured instead of eyeballed.
+*Fix:* the geometry now lives once, on `PopNavBar` itself (`barHeight`,
+`bottomGap`, `sideInset`, `tabRect`), and the spotlight (`TutorialTargets.
+navTabRect`) reads it rather than keeping its own copy. Fixing it surfaced a
+second bug: with a *correct* spotlight, the coach card started colliding with
+the real bar it had previously been avoiding a phantom of, because the card
+was free to grow to the full screen height and only placed afterwards. The
+card is now capped to the room actually available beside its target.
+*Lesson:* a comment asserting a derived value is "exact" is not evidence that
+it is — it has to be checked against the real widget, not against its own
+assumptions restated. `nav_geometry_test` renders a real `PopNavBar` at five
+viewports and measures a real tab's `Rect` against the prediction, specifically
+so this class of drift cannot ship silently again.
+*Files:* `pop_navbar.dart`, `coach_mark.dart`, `nav_geometry_test.dart`,
+`tutorial_test.dart`
+
 **Bottom-nav restructure silently sent fresh sign-ins into the game world instead of Home**
 The bottom nav was rebuilt to 5 tabs with Home centred (Life/Learn/Home/Daily/
 Profile), which reassigned `AppTabIndex` — `adventure` became `0`, the slot
@@ -1720,6 +1747,108 @@ the computed scale so a label that fits to the exact pixel is not one rounding
 step from overflowing.
 *Files:* `fitted_label.dart`
 
+### The tutorial spotlight was pointing next to things
+
+Reported three times, and the comment above the code claimed it was "exact
+rather than a guess". It was a guess.
+
+The overlay cannot use a `GlobalKey` to find a nav tab — `MainNavigation` keeps
+every screen alive in an `IndexedStack` and each renders its own bar, so one
+static key per tab attaches to several widgets at once — so it computed the
+rectangle from constants: full screen width divided by the tab count, 72px
+tall, flush to the bottom.
+
+**Every one of those was wrong.** The bar is 80-106px tall depending on the
+viewport, inset 10px each side, and lifted 6-12px off the bottom. Wrong size,
+wrong position, on both axes. The numbers now live on `PopNavBar` itself and
+the spotlight reads them, and `nav_geometry_test` renders a real bar at five
+viewports and measures a real tab against the prediction.
+
+Two things fell out of fixing it. The **4px border** was the last 3.2px of
+error, and it is easy to miss: a `Container`'s border is drawn inside its box
+and insets the child, so the row of tabs starts four pixels further in than the
+padding alone suggests. And with a correct spotlight the card started colliding
+with the *real* bar, which it had been avoiding a phantom of — so the card is
+now capped to the space beside its target rather than free to grow and then be
+placed wherever it fits.
+
+### The Daily strip
+
+One label was doing the damage. **"Find/Create Habits"** was three times the
+width of every other tab and carried a slash in it — a slash in a label is two
+labels that could not agree — and in a strip of six it made the whole row
+scroll for one tab's sake. The page that lists habits and lets you make one is
+"Habits".
+
+The strip is also a pill now rather than a Material underline, which is the
+same shape the bottom bar uses for its active tab: the two places in the app
+that say "you are here" finally say it the same way. All six fit on one line
+without scrolling.
+
+### Two ways to find work
+
+Reported as an idea rather than a bug: the map has a notice **board** with
+cards pinned to it, so the menu should be *going online*. That is a better
+model than the one that was there, and it fixes the duplication complaint at
+the root — the two entries are not the same action listed twice, they are two
+channels a person really uses.
+
+So the menu row is "Search for work online", the board hires you in person, and
+turning up is worth an extra roll on the job market: best of three instead of
+best of two. Both stay available, because both are real, and blocking the menu
+route would punish somebody who cannot get to the map.
+
+The board could not employ anybody before this. It handed out 15 or 40 coins,
+so the one building in the game named after employment was a coin dispenser
+with a career theme, while the only real route to a job was a menu row — which
+is the wrong way round.
+
+### The sounds had no attack, and the level was a lie
+
+"Still meh", and measuring said why. **85% of the energy in a tap was below
+401Hz.** The transient was there and correct — 91% of *its own* energy is above
+2kHz — but it sat about 9dB under the body, and then the whole mix was
+lowpassed a second time. A dull thud with no click on it.
+
+Filtering the body and the transient separately, and raising the contact level
+four to five times, took the first five milliseconds of a tap from **2% to
+23%** high-frequency energy.
+
+Then a second fault surfaced underneath the first. `_write` normalised the
+signal and *afterwards* faded its edges, so a sound whose peak landed inside
+the 1.5ms fade-in came out far quieter than asked for: tap.wav requested a peak
+of 0.30 and wrote 0.168. That fade had already been shortened once, from 10ms,
+for exactly this reason. It is 0.3ms now and the normalisation happens after
+it, so every file lands on its target to within a thousandth.
+
+Effects moved to 44.1kHz as well — 22k caps everything at an 11kHz ceiling,
+which is the octave a click's brightness lives in. The ambient loop stays at
+22k, because it is a low pad with nothing up there to lose and would otherwise
+double to 8MB. `audio_quality_test` measures all of it: peak against intended
+level, zero-crossing rate in the attack as an FFT-free brightness proxy, and
+that nothing starts or ends on a step.
+
+### A reason to play a second life
+
+The endings collection is the strongest honest retention mechanic this app has:
+it rewards playing *differently* rather than playing more, which is exactly the
+behaviour a financial-literacy game wants, and it needs no streak, timer or
+notification to work.
+
+It was sitting on the Play hub, below the fold, as a row of tiles reading
+"Undiscovered" — visible only to somebody who had already decided to come back,
+and telling them there was something to find but nothing at all about how to
+find it. It is on the **epilogue** now, at the moment a player is deciding
+whether to start another run, naming one specific ending and how to reach it.
+
+The ordering needed care. The first version took the first ending missing from
+the enum, which is `goneTooSoon` — so the game's advice to a child who had just
+finished their life was "ignore your health long enough and the run ends
+early". `chaseOrder` is a safety ordering, not a difficulty one: the two
+failure endings are still collectable and still described honestly, they are
+just never what the app suggests while anything else is outstanding. What it
+leads with is the ending the whole curriculum points at.
+
 ### The second map became playable
 
 `assets/images/maps/map (1).png` had been sitting unused for weeks. It was
@@ -2493,7 +2622,7 @@ the pool.
 flutter analyze && flutter test
 ```
 
-1,196 tests covering responsive layout at eight viewports (including the Life
+1,232 tests covering responsive layout at eight viewports (including the Life
 sim itself, Feedback, and the Adventure map-pending screen), the money
 panel at seven widths, the life-event chain wiring, price-chart zoom/pan/scrub,
 chart painters against pathological input, working-order accounting, the Life

@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../ui/widgets/pop_navbar.dart';
+
 import '../../constants/app_assets.dart';
 import '../../models_Like_Skins_and_lessons_templates/tutorial_steps.dart';
 import '../../widgets_custom_lotties/pixel_kit.dart';
@@ -38,22 +40,22 @@ class TutorialTargets {
   /// same GlobalKey") and which took out every Dashboard test when it was
   /// tried.
   ///
-  /// This is exact rather than a guess: the bar spans the full width, the tabs
-  /// divide it evenly, and its height is a constant the bar itself defines.
-  static Rect navTabRect(
-    BuildContext context,
-    int index, {
-    int tabCount = 5,
-    double barHeight = 72,
-  }) {
+  /// **This used to be a guess that called itself exact.** It assumed the bar
+  /// spanned the full screen width, was 72px tall, and sat flush against the
+  /// bottom. The real bar is 80-106px depending on the viewport, inset 14px
+  /// each side, and lifted 6-12px off the bottom — so the spotlight was the
+  /// wrong size *and* offset on both axes, and drew its box next to the tab it
+  /// was pointing at rather than around it.
+  ///
+  /// The numbers now come from [PopNavBar], which is the widget that owns
+  /// them, so there is nothing left here to drift out of step.
+  static Rect navTabRect(BuildContext context, int index, {int tabCount = 5}) {
     final media = MediaQuery.of(context);
-    final width = media.size.width / tabCount;
-    final bottom = media.size.height - media.padding.bottom;
-    return Rect.fromLTWH(
-      width * index,
-      bottom - barHeight,
-      width,
-      barHeight,
+    return PopNavBar.tabRect(
+      media.size,
+      media.padding,
+      index,
+      tabCount: tabCount,
     );
   }
 
@@ -173,7 +175,8 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
     // bar's own geometry. both measured, neither hardcoded
     final registered = TutorialTargets.rectFor(_step.id);
     setState(() {
-      _hole = registered ??
+      _hole =
+          registered ??
           (tab != null && tab < 5
               ? TutorialTargets.navTabRect(context, tab)
               : null);
@@ -229,11 +232,10 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
   /// fixed across most of the range it was supposed to cover. 42% clears the
   /// floor from tablet width up, so the ramp is real: ~300 on a phone, ~350 on
   /// a tablet, 520 on a desktop.
-  static double _cardMaxWidth(Size screen) =>
-      (screen.width * 0.42).clamp(
-        math.min(300.0, screen.width - 2 * _sideInset(screen)),
-        520.0,
-      );
+  static double _cardMaxWidth(Size screen) => (screen.width * 0.42).clamp(
+    math.min(300.0, screen.width - 2 * _sideInset(screen)),
+    520.0,
+  );
 
   /// The gap between the spotlight and the card: 5% of the height, so the two
   /// stay visually linked on a short window and do not crowd on a tall one.
@@ -324,6 +326,8 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
                 inset: _sideInset(screen),
                 maxWidth: _cardMaxWidth(screen),
                 padding: media.padding,
+                reserveBottom:
+                    PopNavBar.barHeight(screen) + PopNavBar.bottomGap(screen),
               ),
               child: _CoachCard(
                 step: _step,
@@ -373,6 +377,7 @@ class _CardPlacement extends SingleChildLayoutDelegate {
     required this.inset,
     required this.maxWidth,
     required this.padding,
+    required this.reserveBottom,
   });
 
   /// The spotlight, or null when this step points at nothing on screen.
@@ -384,14 +389,62 @@ class _CardPlacement extends SingleChildLayoutDelegate {
   final double maxWidth;
   final EdgeInsets padding;
 
+  /// Height at the bottom of the screen the card may never enter.
+  ///
+  /// The bottom bar, always — not only on the steps that point at it. Every
+  /// step avoids its *own* target, which is not the same thing: step six
+  /// spotlights something further up the screen, placed itself neatly clear
+  /// of that, and clipped the nav bar by four pixels on the way. The bar is
+  /// on screen for the whole tour and half the steps talk about it, so it is
+  /// a no-go band rather than an obstacle that appears and disappears.
+  final double reserveBottom;
+
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    final usable = math.max(
+      0.0,
+      constraints.maxHeight -
+          padding.top -
+          padding.bottom -
+          reserveBottom -
+          2 * edge,
+    );
+
+    // **The card is capped to the room beside the spotlight, not to the
+    // screen.**
+    //
+    // It used to be free to grow to the full height and `getPositionForChild`
+    // then had to put it somewhere; when neither side had room, the fallback
+    // dropped it straight on top of the thing it was describing. On a short
+    // landscape phone that is exactly what happened — the bottom bar is 80px
+    // tall and the card wanted 358 of the 390 available, so there was no
+    // "above" to place it in.
+    //
+    // Capping first means the position is always achievable. A card that has
+    // to be shorter is a card with a scrollbar; a card in the wrong place is
+    // a tutorial pointing at itself.
+    final target = hole;
+    if (target == null) {
+      return BoxConstraints(
+        maxWidth: math.min(maxWidth, constraints.maxWidth - 2 * inset),
+        maxHeight: usable,
+      );
+    }
+
+    final top = padding.top + edge;
+    final floor = constraints.maxHeight - padding.bottom - reserveBottom - edge;
+    final spaceAbove = target.top - gap - top;
+    final spaceBelow = floor - (target.bottom + gap);
+
+    // A floor, because a hole covering nearly the whole screen would
+    // otherwise squeeze the card to nothing. At that point some overlap is
+    // unavoidable and a readable card is the better trade.
+    const minimum = 140.0;
+    final available = math.max(spaceAbove, spaceBelow);
+
     return BoxConstraints(
       maxWidth: math.min(maxWidth, constraints.maxWidth - 2 * inset),
-      maxHeight: math.max(
-        0.0,
-        constraints.maxHeight - padding.top - padding.bottom - 2 * edge,
-      ),
+      maxHeight: math.min(usable, math.max(minimum, available)),
     );
   }
 
@@ -399,14 +452,18 @@ class _CardPlacement extends SingleChildLayoutDelegate {
   Offset getPositionForChild(Size size, Size childSize) {
     final left = (size.width - childSize.width) / 2;
     final top = padding.top + edge;
-    final bottom = size.height - padding.bottom - edge - childSize.height;
+    final bottom =
+        size.height - padding.bottom - reserveBottom - edge - childSize.height;
     final lowest = math.max(top, bottom);
 
     final target = hole;
     if (target == null) {
       // Nothing to point at, so the card sits where it is most readable:
       // just off centre, high enough to leave the app visible under it.
-      return Offset(left, ((size.height - childSize.height) / 2).clamp(top, lowest));
+      return Offset(
+        left,
+        ((size.height - childSize.height) / 2).clamp(top, lowest),
+      );
     }
 
     final below = target.bottom + gap;
@@ -426,7 +483,8 @@ class _CardPlacement extends SingleChildLayoutDelegate {
       old.edge != edge ||
       old.inset != inset ||
       old.maxWidth != maxWidth ||
-      old.padding != padding;
+      old.padding != padding ||
+      old.reserveBottom != reserveBottom;
 }
 
 /// A text button that takes only the room its label needs.

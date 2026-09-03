@@ -1008,7 +1008,10 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
       itemSpacing: _itemSpacing,
     );
 
-    _scrollController = AnimationController(vsync: this, duration: _rollDuration);
+    _scrollController = AnimationController(
+      vsync: this,
+      duration: _rollDuration,
+    );
     _scrollAnimation =
         Tween<double>(begin: 0, end: _rollItems * _itemExtent).animate(
           CurvedAnimation(parent: _scrollController, curve: _rollCurve),

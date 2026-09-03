@@ -113,7 +113,8 @@ const List<TownCondition> kTownConditions = <TownCondition>[
   TownCondition(
     id: 'market_day',
     label: 'Market day',
-    note: 'The stalls are out and food is cheaper than usual. Worth doing '
+    note:
+        'The stalls are out and food is cheaper than usual. Worth doing '
         'your shopping now if you can.',
     icon: Icons.storefront_rounded,
     accent: Color(0xFF9CCC65),
@@ -123,7 +124,8 @@ const List<TownCondition> kTownConditions = <TownCondition>[
   TownCondition(
     id: 'sale',
     label: 'Sale at the store',
-    note: 'Everything in the shop is marked down. A sale makes things '
+    note:
+        'Everything in the shop is marked down. A sale makes things '
         'cheaper — it does not make them things you need.',
     icon: Icons.sell_rounded,
     accent: Color(0xFFFFD45C),
@@ -133,7 +135,8 @@ const List<TownCondition> kTownConditions = <TownCondition>[
   TownCondition(
     id: 'quiet_week',
     label: 'A quiet week',
-    note: 'The pawn shop is short of stock and paying over the odds. Selling '
+    note:
+        'The pawn shop is short of stock and paying over the odds. Selling '
         'is worth more today than it will be next week.',
     icon: Icons.watch_rounded,
     accent: Color(0xFFCE93D8),
@@ -143,7 +146,8 @@ const List<TownCondition> kTownConditions = <TownCondition>[
   TownCondition(
     id: 'prices_up',
     label: 'Prices have gone up',
-    note: 'Food and fuel cost more this month than last. Nobody decided it '
+    note:
+        'Food and fuel cost more this month than last. Nobody decided it '
         'and nobody announced it — that is what inflation looks like.',
     icon: Icons.trending_up_rounded,
     accent: Color(0xFFFF8474),
@@ -157,7 +161,8 @@ const List<TownCondition> kTownConditions = <TownCondition>[
   TownCondition(
     id: 'clinic_free',
     label: 'Free check-ups',
-    note: 'The clinic is running a free day. The thing you have been putting '
+    note:
+        'The clinic is running a free day. The thing you have been putting '
         'off because of the cost costs nothing today.',
     icon: Icons.local_hospital_rounded,
     accent: Color(0xFFFF8A80),
@@ -167,7 +172,8 @@ const List<TownCondition> kTownConditions = <TownCondition>[
   TownCondition(
     id: 'rain',
     label: 'Pouring with rain',
-    note: 'The cafe is packed and charging for it. The library is dry, warm '
+    note:
+        'The cafe is packed and charging for it. The library is dry, warm '
         'and still free.',
     icon: Icons.water_drop_rounded,
     accent: Color(0xFF69C6FF),

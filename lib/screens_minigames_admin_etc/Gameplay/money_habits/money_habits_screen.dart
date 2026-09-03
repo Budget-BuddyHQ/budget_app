@@ -42,7 +42,6 @@ final _panelMint = AppTheme.legibleOn(
   AppTheme.panelStrong,
 );
 
-
 /// Entry point for Money Habits: a daily budgeting-habit tracker (skip
 /// eating out, save spare change, wait before a big purchase) with a
 /// savings jar that fills up as habits stick. A pushed, non-tab screen (own
@@ -146,12 +145,15 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
           asTab ? 'Daily' : 'Money Habits',
           style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
         ),
+        // A taller strip than `kTextTabBarHeight`, because these tabs are a
+        // pill with an icon *beside* a word rather than a Material label with
+        // an icon stacked over it. See [_HabitTab].
         bottom: PreferredSize(
           // isScrollable already lets the tabs run off-screen on a narrow
           // phone but with no visible thumb theres no hint that "My Jar" is
           // even reachable by swiping. scrollbar makes the overflow
           // discoverable instead of just silently being there
-          preferredSize: const Size.fromHeight(kTextTabBarHeight),
+          preferredSize: const Size.fromHeight(52),
           // Deliberately NOT thumbVisibility: true here. TabBar does not
           // expose its internal horizontal ScrollController, so a
           // thumbVisibility Scrollbar (which requires a real controller
@@ -172,40 +174,45 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
               controller: _tabController,
               isScrollable: true,
               tabAlignment: TabAlignment.start,
-              indicatorColor: AppTheme.greenPrimary,
-              indicatorWeight: 3,
+              // A filled pill rather than an underline.
+              //
+              // The default 3px underline is a Material convention sitting in
+              // the middle of a pixel-art game, and against six scrollable
+              // tabs it is also the weakest possible "you are here" — a
+              // hairline under one word in a row that scrolls. The pill is the
+              // same shape the bottom bar uses for its active tab, so the two
+              // places in the app that say "this one" now say it the same way.
+              indicator: BoxDecoration(
+                color: AppTheme.greenPrimary.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: AppTheme.greenPrimary.withValues(alpha: 0.55),
+                ),
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              splashBorderRadius: BorderRadius.circular(999),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
               labelColor: Colors.white,
-              unselectedLabelColor: Colors.white54,
+              unselectedLabelColor: Colors.white60,
               labelStyle: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
               // Icon + word rather than a bare word: "Track" and "Activity"
               // are close enough in meaning that the labels alone did not
               // tell a first-time user which one listed habits and which
               // one logged them.
               tabs: const [
-                Tab(
-                  icon: Icon(Icons.today_rounded, size: 18),
-                  text: 'Today',
-                ),
-                Tab(
-                  icon: Icon(Icons.check_circle_outline_rounded, size: 18),
-                  text: 'My Week',
-                ),
-                Tab(
-                  icon: Icon(Icons.search_rounded, size: 18),
-                  text: 'Find/Create Habits',
-                ),
-                Tab(
-                  icon: Icon(Icons.flag_rounded, size: 18),
-                  text: 'Challenges',
-                ),
-                Tab(
-                  icon: Icon(Icons.savings_rounded, size: 18),
-                  text: 'My Jar',
-                ),
-                Tab(
-                  icon: Icon(Icons.insights_rounded, size: 18),
-                  text: 'Coach',
-                ),
+                _HabitTab(Icons.today_rounded, 'Today'),
+                _HabitTab(Icons.check_circle_outline_rounded, 'My Week'),
+                // Was "Find/Create Habits", which was three times the width
+                // of every other tab and carried a slash in it. A slash in a
+                // label is two labels that could not agree, and in a strip of
+                // six it made the whole row scroll for one tab's sake. The
+                // page that lists habits and lets you make one is "Habits".
+                _HabitTab(Icons.search_rounded, 'Habits'),
+                _HabitTab(Icons.flag_rounded, 'Challenges'),
+                _HabitTab(Icons.savings_rounded, 'My Jar'),
+                _HabitTab(Icons.insights_rounded, 'Coach'),
               ],
             ),
           ),
@@ -299,7 +306,7 @@ class _TrackTab extends StatelessWidget {
             ),
         ] else
           Text(
-            'Tap "Find/Create Habits" above to pick your first one.',
+            'Tap "Habits" above to pick your first one.',
             style: GoogleFonts.quicksand(color: AppTheme.textMuted),
           ),
       ],
@@ -321,8 +328,7 @@ class _HowItWorksCard extends StatelessWidget {
         n: 1,
         icon: Icons.search_rounded,
         title: 'Pick a habit',
-        body:
-            'Open "Find/Create Habits" and choose some meaningful, attainable habits.',
+        body: 'Open "Habits" and choose a few that are meaningful and doable.',
       ),
       (
         n: 2,
@@ -351,11 +357,7 @@ class _HowItWorksCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.lightbulb_rounded,
-                color: _panelMint,
-                size: 20,
-              ),
+              Icon(Icons.lightbulb_rounded, color: _panelMint, size: 20),
               const SizedBox(width: 8),
               Flexible(
                 child: FittedLabel(
@@ -404,11 +406,7 @@ class _HowItWorksCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Icon(
-                            step.icon,
-                            size: 15,
-                            color: _panelMint,
-                          ),
+                          Icon(step.icon, size: 15, color: _panelMint),
                           const SizedBox(width: 6),
                           Flexible(
                             child: FittedLabel(
@@ -1503,9 +1501,7 @@ class _JarTab extends StatelessWidget {
                 children: [
                   Expanded(
                     child: FittedLabel(
-                      next == null
-                          ? 'Jar full'
-                          : 'Next: ${next.label}',
+                      next == null ? 'Jar full' : 'Next: ${next.label}',
                       style: GoogleFonts.pixelifySans(
                         color: Colors.white,
                         fontSize: 15,
@@ -1594,10 +1590,7 @@ class _JarTab extends StatelessWidget {
 }
 
 /// Mint that stays readable on the jar card. See [AppTheme.legibleOn].
-final _jarAccent = AppTheme.legibleOn(
-  const Color(0xFFFFD45C),
-  AppTheme.panel,
-);
+final _jarAccent = AppTheme.legibleOn(const Color(0xFFFFD45C), AppTheme.panel);
 
 class _MoodPill extends StatelessWidget {
   const _MoodPill({
@@ -1808,7 +1801,6 @@ class _JarNextStep extends StatelessWidget {
     );
   }
 }
-
 
 // ==================== Coach ====================
 
@@ -2151,4 +2143,30 @@ class _ConceptChip extends StatelessWidget {
       ),
     );
   }
+}
+
+/// One tab in the Daily strip: an icon *beside* a word, inside a pill.
+///
+/// Material's default stacks the icon over the label, which on six scrollable
+/// tabs makes a strip that is tall, narrow-columned and still scrolls. Side by
+/// side is wider per tab and shorter overall, and it lets the selected pill be
+/// a shape rather than a hairline — the same shape the bottom bar uses, so the
+/// two "you are here" markers in the app finally agree.
+class _HabitTab extends StatelessWidget {
+  const _HabitTab(this.icon, this.label);
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Tab(
+    height: 40,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [Icon(icon, size: 16), const SizedBox(width: 7), Text(label)],
+      ),
+    ),
+  );
 }

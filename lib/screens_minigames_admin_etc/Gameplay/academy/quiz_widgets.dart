@@ -61,7 +61,10 @@ class QuizQuestionCard extends StatelessWidget {
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF85EFAC).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
