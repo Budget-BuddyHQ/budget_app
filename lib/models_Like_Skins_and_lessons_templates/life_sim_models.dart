@@ -435,6 +435,7 @@ class LifeEvent {
     this.minAge = 0,
     this.maxAge = 200,
     this.weight = 1.0,
+    this.isWager = false,
     this.requiresSkill,
     this.minSkill = 0,
     this.requiresTrait,
@@ -450,6 +451,20 @@ class LifeEvent {
   final String prompt;
   final IconData icon;
   final List<LifeChoice> choices;
+
+  /// Whether this event asks the player to stake money on an uncertain
+  /// outcome.
+  ///
+  /// Not the same as "mentions gambling". `t_loot_box` and `t_skin_gamble`
+  /// are *about* wagering and are not wagers — their outcomes are scripted,
+  /// they state the real odds, and they exist to show a child what the
+  /// mechanic looks like from the inside. Those stay. This flag is for the
+  /// ones where the game itself takes a stake and rolls.
+  ///
+  /// See `AgeBand.allowsWagering` for why the character's age was not enough
+  /// of a gate on its own.
+  final bool isWager;
+
   final int minAge;
   final int maxAge;
 
@@ -1678,6 +1693,10 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     prompt: 'Someone offers you a "sure thing" on a match.',
     icon: Icons.casino_rounded,
     minAge: 18,
+    // Sports betting, framed as a tip from a mate. Both outcomes are scripted
+    // and the lesson is "it never is" — but the *offer* is still a wager put
+    // in front of the player, so it does not go to under-13 accounts.
+    isWager: true,
     weight: 0.5,
     requiresTrait: LifeTrait.reckless,
     minMoney: 300,

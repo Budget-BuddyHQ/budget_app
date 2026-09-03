@@ -59,6 +59,31 @@ enum AgeBand {
   /// version loses everything.
   bool get prefersSimpleWording => this == AgeBand.under13;
 
+  /// Whether this player may be shown staked wagers.
+  ///
+  /// **The character's age is not the player's age.** Every gambling gate in
+  /// the simulation runs off `LifeSimController.age` — the age of the person
+  /// being played — which is correct for the fiction and useless as a
+  /// safeguard: a four-year-old reaches an eighteen-year-old character in
+  /// about ninety seconds of tapping Age, and was then offered "Gamble 100
+  /// coins. A 42% chance to double it." on the same screen as the library.
+  ///
+  /// This gates on the account instead. `undisclosed` is treated as an adult
+  /// deliberately: the sign-up question is optional and skippable, and the
+  /// alternative — locking content behind answering a personal question — is
+  /// how you teach children to over-share to get features.
+  ///
+  /// **What this does and does not cover.** It hides *wagers*: staking money
+  /// on an uncertain outcome, which is the thing Play's Families policy calls
+  /// simulated gambling. It deliberately does **not** hide the cautionary
+  /// content — `t_loot_box` states the real odds of a 0.6% drop and
+  /// `t_skin_gamble` explains a 5% house cut. Those teach a child what the
+  /// mechanic looks like from the inside before somebody sells them one, and
+  /// they are the most valuable events in the pack for exactly the age group
+  /// this flag protects. Their outcomes are scripted, so nothing is being
+  /// wagered to read them.
+  bool get allowsWagering => this != AgeBand.under13;
+
   /// A single representative number for this bucket, used only where a plain
   /// integer is needed (e.g. mirroring into a numeric database column) — the
   /// app's own logic should keep using the bucket, not this.
