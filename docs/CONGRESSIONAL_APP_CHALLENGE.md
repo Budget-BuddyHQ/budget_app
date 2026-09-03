@@ -8,7 +8,7 @@ stick when you have to spend money to learn them.*
 **Built in:** Flutter/Dart, with Supabase for accounts, cloud save and
 leaderboards, and live market data from Finnhub and Twelve Data.
 
-**Scale:** ~81,500 lines of Dart across 132 files, 1,196 automated tests,
+**Scale:** ~83,000 lines of Dart across 135 files, 1,232 automated tests,
 `flutter analyze` clean.
 
 ---
@@ -213,7 +213,7 @@ setting.
 ### Everything that can be pure Dart is
 The life simulation, the match-3 engine, the quiz banks, the town scenarios and
 the habit model have no Flutter dependency and take an injectable `Random`.
-That is why 1,196 tests run in under thirty seconds and why the rules can be
+That is why 1,232 tests run in under thirty seconds and why the rules can be
 tested as *rules* rather than through a UI.
 
 ### The art is generated and checked
@@ -250,6 +250,27 @@ Three suites exist because three classes of bug kept reaching a player:
 Colour contrast is a build failure. Under-13 accounts are excluded from public
 listings by default. Every fact in the curriculum is attributable. No
 third-party copyrighted asset ships.
+
+---
+
+## Where the submission materials are
+
+| | |
+|---|---|
+| The six written answers | `docs/CAC_SUBMISSION_ANSWERS.md` |
+| What to highlight, against the rubric | same file, plus the published page |
+| Privacy policy and Play data-safety form | `docs/PRIVACY_POLICY.md`, `docs/PLAY_STORE_DATA_SAFETY.md` |
+| Every page and what it does | `docs/PAGES.md` |
+| How the code is organised | `docs/ARCHITECTURE.md` |
+| Keeping the API keys off every device | `docs/SHIPPING_KEYS.md` |
+| Every bug, its cause and its fix | `README.md`, under **Error log** |
+
+**The demo video is the gap.** The official rubric is 30 points in six rows,
+and three of those six are scored from it — the video's own structure, how well
+it explains the code, and how well it explains the impact. The rules say so
+outright: *your entry may be judged in its entirety based on this video.* Three
+minutes maximum, public on YouTube or Vimeo, naming every team member, the app,
+who it is for, and the tools used.
 
 ---
 

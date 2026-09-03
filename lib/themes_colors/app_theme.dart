@@ -405,9 +405,10 @@ class AppTheme {
     final lighter = walk(1);
     final darker = walk(-1);
     if (lighter != null && darker != null) {
-      final upBy = (HSLColor.fromColor(lighter).lightness - hsl.lightness).abs();
-      final downBy =
-          (HSLColor.fromColor(darker).lightness - hsl.lightness).abs();
+      final upBy = (HSLColor.fromColor(lighter).lightness - hsl.lightness)
+          .abs();
+      final downBy = (HSLColor.fromColor(darker).lightness - hsl.lightness)
+          .abs();
       return upBy <= downBy ? lighter : darker;
     }
     if (lighter != null) return lighter;

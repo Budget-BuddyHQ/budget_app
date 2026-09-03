@@ -48,6 +48,76 @@ class PopNavBar extends StatelessWidget {
   final int activeIndex;
   final ValueChanged<int>? onSelected;
 
+  // --- Geometry, published ------------------------------------------
+  //
+  // The tutorial spotlight has to draw a box around one of these tabs, and it
+  // cannot use a `GlobalKey` to find one (see the note below). So it computed
+  // the rectangle from constants of its own: full screen width divided by the
+  // tab count, 72px tall, flush to the bottom of the screen.
+  //
+  // **Every one of those was wrong.** This bar is 80-106px tall depending on
+  // the viewport, inset 10px on each side plus 4px of inner padding, and
+  // lifted 6-12px off the bottom. So the spotlight was offset on both axes and
+  // the wrong size, which is why it kept landing next to the tab it was
+  // pointing at instead of on it — reported three times.
+  //
+  // The numbers now live here, once, and both the bar and the spotlight read
+  // them. `tutorial_test` measures a real rendered tab against [tabRect] so
+  // the two cannot drift apart again.
+
+  /// Denser sizing on small viewports.
+  static bool isDense(Size size) => size.width < 420 || size.height < 560;
+
+  /// Tighter still, for short landscape windows.
+  static bool isVeryTight(Size size) => size.height < 430;
+
+  /// The bar's own height, excluding the gap beneath it.
+  static double barHeight(Size size) =>
+      isVeryTight(size) ? 80.0 : (isDense(size) ? 90.0 : 106.0);
+
+  /// The gap between the bar and the bottom safe area.
+  static double bottomGap(Size size) =>
+      isVeryTight(size) ? 6.0 : (isDense(size) ? 8.0 : 12.0);
+
+  /// The outer `Padding` either side of the bar.
+  static const double outerMargin = 10.0;
+
+  /// The bar's border. Easy to forget and it cost a wrong answer: a
+  /// `Container`'s border is drawn *inside* its box and insets the child, so
+  /// the row of tabs starts four pixels further in than the padding alone
+  /// suggests. Leaving it out put the predicted columns 3.2px off on a
+  /// 430px-wide screen — small, and more than enough to draw a highlight
+  /// straddling two tabs.
+  static const double borderWidth = 4.0;
+
+  /// The container's own horizontal padding, inside the border.
+  static const double innerPadding = 4.0;
+
+  /// Total horizontal inset from the screen edge to the first tab.
+  static const double sideInset = outerMargin + borderWidth + innerPadding;
+
+  /// Where tab [index] of [tabCount] actually sits on screen.
+  ///
+  /// [padding] is the view padding, so the caller passes
+  /// `MediaQuery.of(context).padding`.
+  static Rect tabRect(
+    Size size,
+    EdgeInsets padding,
+    int index, {
+    int tabCount = 5,
+  }) {
+    final barWidth = size.width - sideInset * 2;
+    final tabWidth = barWidth / tabCount;
+    final height = barHeight(size);
+    final bottom = size.height - padding.bottom - bottomGap(size);
+    return Rect.fromLTWH(
+      sideInset + tabWidth * index,
+      bottom - height,
+      tabWidth,
+      height,
+    );
+  }
+
   // NOTE: no GlobalKeys on the tabs.
   //
   // An earlier version keyed each tile so the tutorial could spotlight the
@@ -56,9 +126,8 @@ class PopNavBar extends StatelessWidget {
   // `IndexedStack`, and each renders its own bottom bar, so one static key per
   // tab was attached to seven widgets at once.
   //
-  // The tab rect is derived from layout instead — see
-  // `TutorialTargets.navTabRect`, which is exact because the bar's height and
-  // tab count are both known.
+  // The tab rect is derived from layout instead — see [tabRect] above, and
+  // the geometry note with it for why the first attempt at that was wrong.
 
   void _handleTap(BuildContext context, int index) {
     if (onSelected == null || index == activeIndex) {
@@ -74,30 +143,30 @@ class PopNavBar extends StatelessWidget {
     final screenSize = MediaQuery.sizeOf(context);
     // Widened from 360 — seven tabs need the denser sizing on more phones
     // than the old five-tab bar did.
-    final dense = screenSize.width < 420 || screenSize.height < 560;
-    final veryTight = screenSize.height < 430;
+    final dense = isDense(screenSize);
+    final veryTight = isVeryTight(screenSize);
     // Bumped a few px across the board for a friendlier, easier-to-hit tap
     // target — this bar is used by players well under teen age. Padded
     // further per tier on top of that so the label's own +3px bump (see
     // the label SizedBox below) and Home's larger circular badge both have
     // real slack instead of an exact pixel-for-pixel fit.
-    final barHeight = veryTight ? 80.0 : (dense ? 90.0 : 106.0);
+    final height = barHeight(screenSize);
 
     return SafeArea(
       top: false,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-          10,
+          outerMargin,
           0,
-          10,
-          veryTight ? 6 : (dense ? 8 : 12),
+          outerMargin,
+          bottomGap(screenSize),
         ),
         child: Container(
-          height: barHeight,
+          height: height,
           decoration: BoxDecoration(
             color: _deepCharcoalStrong,
             borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
-            border: Border.all(color: _deepCharcoal, width: 4),
+            border: Border.all(color: _deepCharcoal, width: borderWidth),
             boxShadow: AppTheme.puffyShadow(
               _activeAccent,
               restAlpha: 0.18,
@@ -106,7 +175,7 @@ class PopNavBar extends StatelessWidget {
               offset: const Offset(0, 8),
             ),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(horizontal: innerPadding),
           child: Row(
             children: [
               for (var i = 0; i < items.length; i++)

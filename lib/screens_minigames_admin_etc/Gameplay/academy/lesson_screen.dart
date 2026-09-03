@@ -157,7 +157,6 @@ class _LessonScreenState extends State<LessonScreen> {
     }
   }
 
-  
   /// Prompts the user before opening a locked lesson out of sequence.
   /// Returns false if the player chooses to go back or dismisses the sheet.
   Future<bool> _confirmSkipAhead(Lesson lesson) async {
@@ -249,7 +248,7 @@ class _LessonScreenState extends State<LessonScreen> {
     );
     return answer ?? false;
   }
-  
+
   /// Asks before opening a unit written for an older band. Returns false if
   /// the player backs out or dismisses the sheet.
   Future<bool> _confirmAboveAge(LessonUnit unit) async {

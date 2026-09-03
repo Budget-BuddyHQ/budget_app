@@ -104,8 +104,7 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
       return;
     }
 
-    final adjacent =
-        (current.x - col).abs() + (current.y - row).abs() == 1;
+    final adjacent = (current.x - col).abs() + (current.y - row).abs() == 1;
     if (!adjacent) {
       // Treat a far tap as picking a new tile rather than as an error. On a
       // small phone a mis-tap is common, and a buzz for it teaches the player
@@ -261,7 +260,8 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
                   if (done)
                     _ResultCard(
                       game: _game,
-                      hasNext: _game.status == CascadeStatus.won &&
+                      hasNext:
+                          _game.status == CascadeStatus.won &&
                           _game.level.number < kCascadeLevels.length,
                       onNext: () => _startLevel(_game.level.number + 1),
                       onAgain: _restart,
@@ -765,7 +765,8 @@ class _TileViewState extends State<_TileView> {
         // Trigger swap once dragged past 25% of cell size
         final threshold = widget.size * 0.25;
 
-        if (_dragOffset.dx.abs() > threshold || _dragOffset.dy.abs() > threshold) {
+        if (_dragOffset.dx.abs() > threshold ||
+            _dragOffset.dy.abs() > threshold) {
           _swiped = true;
           if (_dragOffset.dx.abs() > _dragOffset.dy.abs()) {
             widget.onSwipe(Point(_dragOffset.dx > 0 ? 1 : -1, 0));
@@ -807,6 +808,7 @@ class _TileViewState extends State<_TileView> {
     );
   }
 }
+
 class _FlashBanner extends StatelessWidget {
   const _FlashBanner({required this.text, required this.colour});
 
@@ -870,7 +872,8 @@ class _CascadeFooter extends StatelessWidget {
           SizedBox(
             width: 132,
             child: PixelButton(
-              label: '+${CoinCascadeGame.extraMovesPerPurchase} · '
+              label:
+                  '+${CoinCascadeGame.extraMovesPerPurchase} · '
                   '${CoinCascadeGame.extraMoveCost}🪙',
               height: 46,
               onPressed: affordable ? onBuyMoves : null,

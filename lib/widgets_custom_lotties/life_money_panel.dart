@@ -152,7 +152,12 @@ class LifeMoneyPanel extends StatelessWidget {
 
   List<_TileData> _tiles() => <_TileData>[
     _TileData('\u{1F4B5}', 'Cash', life.money, const Color(0xFF85EFAC)),
-    _TileData('\u{1F3E6}', 'Saved', life.emergencyFund, const Color(0xFF69C6FF)),
+    _TileData(
+      '\u{1F3E6}',
+      'Saved',
+      life.emergencyFund,
+      const Color(0xFF69C6FF),
+    ),
     _TileData(
       '\u{1F4C8}',
       'Invested',

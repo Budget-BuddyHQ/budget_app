@@ -70,24 +70,81 @@ void main() {
   });
 
   group('the batch itself', () {
-    test('asks for the cap and no more, with nothing pinned', () async {
+    // `selectBatch` rather than `refreshBatch`: this is about which four
+    // strings come out of a list, and the first version of these tests went
+    // through the fetching path — so they made real HTTP requests, took
+    // seconds each, and failed intermittently in a full run with "Proxy
+    // request failed with 404".
+    test('asks for exactly the cap with nothing pinned', () {
       final service = MarketDataService();
       addTearDown(service.dispose);
-      // With no API key the fetch short-circuits, but the selection has
-      // already happened — this is checking the arithmetic, not the network.
-      await service.refreshBatch();
-      expect(service.status, isNotNull);
+      expect(service.selectBatch().length, MarketDataService.liveBatchSize);
     });
 
-    test('does not throw when handed symbols it does not track', () async {
-      // The board pins whatever the player holds, and a saved portfolio can
-      // name a symbol that has since left `kLiveSymbols`.
+    test('a big portfolio cannot blow the cap', () {
+      // The rate-limit bug this guards: `{...pinned}` first and truncate
+      // second reads as a cap and is not one. Ten holdings at a five-second
+      // tick would be 120 calls a minute against a limit of 60.
       final service = MarketDataService();
       addTearDown(service.dispose);
-      await service.refreshBatch(
+      final everything = kLiveSymbols.map((s) => s.symbol).toList();
+      expect(
+        service.selectBatch(pinned: everything).length,
+        MarketDataService.liveBatchSize,
+      );
+    });
+
+    test('what the player holds comes first', () {
+      final service = MarketDataService();
+      addTearDown(service.dispose);
+      final batch = service.selectBatch(pinned: const <String>['NKE']);
+      expect(
+        batch,
+        contains('NKE'),
+        reason: 'a held symbol was left out of the batch',
+      );
+    });
+
+    test('symbols it does not track are ignored, not crashed on', () {
+      // A saved portfolio can name a symbol that has since left the list.
+      final service = MarketDataService();
+      addTearDown(service.dispose);
+      final batch = service.selectBatch(
         pinned: const <String>['NOPE', 'ALSONOTREAL'],
       );
-      expect(service.status, isNotNull);
+      expect(batch, isNot(contains('NOPE')));
+      expect(batch.length, MarketDataService.liveBatchSize);
+    });
+
+    test('successive batches move through the list', () {
+      // Otherwise the same four refresh forever and the other twelve never
+      // update at all.
+      final service = MarketDataService();
+      addTearDown(service.dispose);
+      final first = service.selectBatch();
+      final second = service.selectBatch();
+      expect(
+        first.intersection(second).length,
+        lessThan(first.length),
+        reason: 'the rotation is standing still',
+      );
+    });
+
+    test('every symbol is reached within one sweep', () {
+      final service = MarketDataService();
+      addTearDown(service.dispose);
+      final seen = <String>{};
+      final sweeps =
+          (kLiveSymbols.length / MarketDataService.liveBatchSize).ceil();
+      for (var i = 0; i < sweeps; i++) {
+        seen.addAll(service.selectBatch());
+      }
+      expect(
+        seen.length,
+        kLiveSymbols.length,
+        reason: '${kLiveSymbols.length - seen.length} symbols never came up '
+            'in a full sweep',
+      );
     });
   });
 }

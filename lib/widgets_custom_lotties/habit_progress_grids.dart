@@ -12,7 +12,6 @@ final _todayMint = AppTheme.legibleOn(
   AppTheme.panelStrong,
 );
 
-
 const List<String> _weekdayLabels = <String>['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 /// The Track tab's 7-day habit grid: one row per saved habit, one column

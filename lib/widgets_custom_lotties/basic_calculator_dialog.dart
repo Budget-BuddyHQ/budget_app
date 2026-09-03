@@ -132,13 +132,33 @@ class _BasicCalculatorDialogState extends State<BasicCalculatorDialog> {
 
     final buttons = [
       ('C', const Color(0xFFFF6B6B), Colors.white, _onClear),
-      ('÷', const Color(0xFFFFB84D), const Color(0xFF3A2400), () => _onOperatorTap('÷')),
-      ('×', const Color(0xFFFFB84D), const Color(0xFF3A2400), () => _onOperatorTap('×')),
-      ('-', const Color(0xFFFFB84D), const Color(0xFF3A2400), () => _onOperatorTap('-')),
+      (
+        '÷',
+        const Color(0xFFFFB84D),
+        const Color(0xFF3A2400),
+        () => _onOperatorTap('÷'),
+      ),
+      (
+        '×',
+        const Color(0xFFFFB84D),
+        const Color(0xFF3A2400),
+        () => _onOperatorTap('×'),
+      ),
+      (
+        '-',
+        const Color(0xFFFFB84D),
+        const Color(0xFF3A2400),
+        () => _onOperatorTap('-'),
+      ),
       ('7', null, null, () => _onNumberTap('7')),
       ('8', null, null, () => _onNumberTap('8')),
       ('9', null, null, () => _onNumberTap('9')),
-      ('+', const Color(0xFFFFB84D), const Color(0xFF3A2400), () => _onOperatorTap('+')),
+      (
+        '+',
+        const Color(0xFFFFB84D),
+        const Color(0xFF3A2400),
+        () => _onOperatorTap('+'),
+      ),
       ('4', null, null, () => _onNumberTap('4')),
       ('5', null, null, () => _onNumberTap('5')),
       ('6', null, null, () => _onNumberTap('6')),
@@ -266,10 +286,10 @@ class _BasicCalculatorDialogState extends State<BasicCalculatorDialog> {
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                        ),
+                              crossAxisCount: 4,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                            ),
                         itemCount: buttons.length,
                         itemBuilder: (context, index) {
                           final btn = buttons[index];

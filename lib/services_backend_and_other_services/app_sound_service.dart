@@ -55,6 +55,7 @@ class AppSoundService {
         AppSoundEffect.unboxEpic: 'audio/unbox_epic.wav',
         AppSoundEffect.unboxLegendary: 'audio/unbox_legendary.wav',
       };
+
   /// Playback level per effect, 0..1.
   ///
   /// A second lever on top of the per-file peaks baked in by

@@ -104,19 +104,14 @@ class MinigamesPage extends StatelessWidget {
       return;
     }
 
-    await controller.recordArcadeRun(
-      gameId: 'coin_cascade',
-      score: game.score,
-    );
+    await controller.recordArcadeRun(gameId: 'coin_cascade', score: game.score);
     if (!context.mounted) {
       return;
     }
 
     GameToast.show(
       context,
-      title: game.status == CascadeStatus.won
-          ? 'Goal reached'
-          : 'Run finished',
+      title: game.status == CascadeStatus.won ? 'Goal reached' : 'Run finished',
       message: game.score > (previousBest ?? 0)
           ? 'New best: ${game.score} · +${game.goldEarned} gold'
           : '${game.score} points · +${game.goldEarned} gold',

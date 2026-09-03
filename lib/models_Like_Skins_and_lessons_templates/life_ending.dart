@@ -87,6 +87,63 @@ enum LifeEndingArchetype {
   };
 }
 
+extension LifeEndingHint on LifeEndingArchetype {
+  /// How somebody would actually reach this ending, in one line.
+  ///
+  /// **Why the endings needed this.** The collection is the strongest reason
+  /// in the app to play a second life — it is the one thing that rewards
+  /// playing *differently* rather than playing more, which is exactly the
+  /// behaviour a financial-literacy game wants. But it was only ever a row of
+  /// locked tiles saying "Undiscovered", which tells a player there is
+  /// something to find and nothing whatsoever about how to find it. A
+  /// collection you cannot make progress towards on purpose is not a
+  /// collection, it is a record of your luck.
+  ///
+  /// These are deliberately a nudge and not a recipe. "Retire with more
+  /// friends than money" is enough to change how somebody plays the next run
+  /// without turning the game into a checklist to execute.
+  /// How worth chasing this ending is, lowest first.
+  ///
+  /// **This is a safety ordering, not a difficulty one.** The epilogue
+  /// suggests the next ending to go for, and the first version simply took
+  /// the first one missing from the enum — which is `goneTooSoon`, so the
+  /// game's advice to a child who had just finished their first life was
+  /// "ignore your health long enough and the run ends early".
+  ///
+  /// The two failure endings are still collectable and still described
+  /// honestly; they are just never the thing the app *suggests* while
+  /// anything else is outstanding. What it leads with is the ending its whole
+  /// curriculum is pointed at: budget, keep a fund, retire with enough.
+  int get chaseOrder => switch (this) {
+    LifeEndingArchetype.comfortableRetiree => 0,
+    LifeEndingArchetype.legacyBuilder => 1,
+    LifeEndingArchetype.brokeButHappy => 2,
+    LifeEndingArchetype.quietLife => 3,
+    LifeEndingArchetype.richButLonely => 4,
+    LifeEndingArchetype.cautionaryTale => 5,
+    LifeEndingArchetype.goneTooSoon => 6,
+  };
+
+  String get howToReach => switch (this) {
+    LifeEndingArchetype.goneTooSoon =>
+      'Ignore your health long enough and the run ends early.',
+    LifeEndingArchetype.cautionaryTale =>
+      'Spend everything, borrow the rest, and never set a budget.',
+    LifeEndingArchetype.richButLonely =>
+      'Chase the money and skip every year that was about people.',
+    LifeEndingArchetype.brokeButHappy =>
+      'Say yes to friends, holidays and the dog. Retire with almost nothing '
+          'and no regrets.',
+    LifeEndingArchetype.legacyBuilder =>
+      'Invest early, hold through a crash, and finish rich, clever and old.',
+    LifeEndingArchetype.comfortableRetiree =>
+      'Set a budget, keep an emergency fund, retire around eighty with '
+          'enough.',
+    LifeEndingArchetype.quietLife =>
+      'Take the steady options. No debt, no drama, no fortune.',
+  };
+}
+
 /// Deterministic, first-match-wins — same shape as [stageForAge] in
 /// lesson.dart. Order matters: more specific/extreme outcomes are checked
 /// before the general fallback.
