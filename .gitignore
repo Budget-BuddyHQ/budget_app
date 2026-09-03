@@ -18,9 +18,7 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
+# VS Code
 #.vscode/
 
 # Flutter/Dart/Pub related
@@ -33,6 +31,19 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Desktop & Mobile Ephemeral Files (Machine-Specific)
+/windows/flutter/ephemeral/
+/macos/Flutter/ephemeral/
+/ios/Flutter/ephemeral/
+
+# Native Generated Config Files
+/macos/Flutter/Flutter-Generated.xcconfig
+/macos/Flutter/flutter_export_environment.sh
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/flutter_export_environment.sh
+/ios/Flutter/flutter_native_integration.env
+/pubspec.lock.backup
+
 # Symbolication related
 app.*.symbols
 
@@ -40,49 +51,14 @@ app.*.symbols
 app.*.map.json
 node_modules
 supabase.env.json
+*.env
+
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile
 /android/app/release
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .claude
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Generated villager frames. Source art lives in assets/own_skins/; the
-# shipped sheets are assets/self_made_skins/. Regenerate with the tool/*.ps1
-# scripts — see tool/README.md.
+# Generated villager frames
 assets/images/humans/
