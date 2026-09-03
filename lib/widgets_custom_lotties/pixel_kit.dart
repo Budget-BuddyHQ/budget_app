@@ -195,7 +195,6 @@ class _NineSlice extends StatelessWidget {
       },
     );
   }
-
 }
 
 /// A nine-sliced pixel panel that stretches to any size without smearing.

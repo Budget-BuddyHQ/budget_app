@@ -728,17 +728,14 @@ class _SourcesCard extends StatelessWidget {
 
   Future<void> _open(BuildContext context, LessonSource source) async {
     final uri = Uri.parse(source.url);
-    final launched = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched && context.mounted) {
       // A device with no browser, or a link the platform refuses. Showing the
       // URL is more useful than a failure toast: it can still be typed or
       // copied, which is the whole point of publishing a citation.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(source.url)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(source.url)));
     }
   }
 
@@ -2831,8 +2828,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Say why a longer loan term costs more overall',
     ],
     keyTerms: {
-      'APR':
-          'the yearly cost of borrowing including fees, not just interest',
+      'APR': 'the yearly cost of borrowing including fees, not just interest',
       'Term': 'how many months you will be making payments',
       'Principal': 'the amount you actually borrowed',
       'Negative equity': 'owing more on the car than the car is worth',
@@ -2882,7 +2878,8 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     ],
     keyTerms: {
       'Lease': 'a contract fixing your rent and your obligations for a term',
-      'Security deposit': 'money held against damage, returnable if you leave the place as you found it',
+      'Security deposit':
+          'money held against damage, returnable if you leave the place as you found it',
       'Joint and several liability':
           'each person on the lease is responsible for all of the rent, not just their share',
     },
@@ -2925,7 +2922,8 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     ],
     keyTerms: {
       'Move-in cost': 'everything due before you get keys',
-      'Utilities': 'power, water, heating, internet — usually separate from rent',
+      'Utilities':
+          'power, water, heating, internet — usually separate from rent',
       'Proration': 'paying part of a month when you move in mid-month',
     },
     takeaway:
@@ -2965,7 +2963,8 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     ],
     keyTerms: {
       'Opportunity cost': 'what the same money could have done instead',
-      'Sunk cost': 'money already spent, which should not drive the next choice',
+      'Sunk cost':
+          'money already spent, which should not drive the next choice',
       'Cash purchase': 'buying outright, owing nothing afterwards',
     },
     takeaway:
@@ -3049,7 +3048,8 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     keyTerms: {
       'Credit freeze': 'a lock stopping new lenders from seeing your file',
       'Fraud alert': 'a flag asking lenders to verify identity before lending',
-      'Credit bureau': 'a company that keeps your credit file — Equifax, Experian, TransUnion',
+      'Credit bureau':
+          'a company that keeps your credit file — Equifax, Experian, TransUnion',
     },
     takeaway:
         'A freeze is free, reversible, and the strongest single thing you can '
@@ -3171,8 +3171,10 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     ],
     keyTerms: {
       'Complaint': 'a formal, recorded report to a regulator',
-      'Debt collector': 'a company pursuing a debt, often bought from someone else',
-      'Validation': 'a collector\'s obligation to prove the debt is really yours',
+      'Debt collector':
+          'a company pursuing a debt, often bought from someone else',
+      'Validation':
+          'a collector\'s obligation to prove the debt is really yours',
     },
     takeaway:
         'Complaining to the company first and the regulator second is not '

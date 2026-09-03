@@ -35,7 +35,19 @@ import wave
 
 OUT = os.path.join("assets", "audio")
 
-RATE = 22050  # plenty for UI effects, and a quarter the size of 44.1k
+# 44.1k, not the 22.05k this used to be.
+#
+# 22k puts the Nyquist ceiling at 11kHz, which removes the entire top octave
+# — the band a click's brightness actually lives in. The files are small
+# either way (a tap is 0.1s), and the one place the old rate was genuinely
+# fine is the ambient pad, which has nothing up there to lose. See
+# `AMBIENT_RATE`.
+RATE = 44100
+
+# The music loop stays at the old rate on purpose: it is 48 seconds of
+# low-frequency pad and plucks, none of it above about 4kHz, and at 44.1k it
+# would be an 8MB asset to carry no extra sound.
+AMBIENT_RATE = 22050
 
 
 def _write(name: str, samples: list[float], peak_target: float = 0.86) -> None:
@@ -50,29 +62,42 @@ def _write(name: str, samples: list[float], peak_target: float = 0.86) -> None:
     """
     if not samples:
         return
-    peak = max(abs(s) for s in samples) or 1.0
-    gain = peak_target / peak
 
-    # starting or ending hard on a non-zero sample = audible click, so both
-    # edges get a fade. but they get *different* fades and thats the whole
-    # point.
+    # Starting or ending hard on a non-zero sample is an audible click, so
+    # both edges get a fade -- but they get *different* fades, and the fade in
+    # has now been wrong twice for the same reason.
     #
-    # a symmetric 10ms fade wrecks short percussive sounds. navigation.wav is
-    # 55ms long and its peak is in the first millisecond, so a 10ms ramp was
-    # flattening the attack and the file came out about half as loud as asked
-    # for. 1.5ms is enough to kill the discontinuity and short enough the
-    # transient survives. tail keeps the full 10ms - nothing to preserve back
-    # there and a real risk of chopping off mid-cycle
-    fade_in = min(int(RATE * 0.0015), len(samples) // 4)
+    # It began at a symmetric 10ms, which flattened the attack of every short
+    # percussive sound: navigation.wav is 55ms long with its peak inside the
+    # first millisecond, so the ramp was still climbing when the loudest
+    # sample went past. That was cut to 1.5ms. Then the contact transients got
+    # four times louder and 1.5ms was too long *again* -- tap.wav asked for a
+    # peak of 0.30 and wrote a file peaking at 0.168, because its peak now
+    # lands about half a millisecond in.
+    #
+    # 0.3ms is thirteen samples at 44.1k. That is more than enough to walk a
+    # waveform up from zero and far too short to shape anything.
+    fade_in = min(int(RATE * 0.0003), len(samples) // 4)
     fade_out = min(int(RATE * 0.01), len(samples) // 2)
-    frames = bytearray()
+
+    faded = [0.0] * len(samples)
     for i, s in enumerate(samples):
-        v = s * gain
+        v = s
         if fade_in > 0 and i < fade_in:
             v *= i / fade_in
         elif fade_out > 0 and i > len(samples) - fade_out:
             v *= (len(samples) - i) / fade_out
-        frames += struct.pack("<h", int(max(-1.0, min(1.0, v)) * 32767))
+        faded[i] = v
+
+    # Normalised *after* the fades, not before. Measuring the peak of the raw
+    # signal and then attenuating part of it is how a file ends up quieter
+    # than the level it was asked for -- which is exactly what happened above.
+    peak = max(abs(v) for v in faded) or 1.0
+    gain = peak_target / peak
+
+    frames = bytearray()
+    for v in faded:
+        frames += struct.pack("<h", int(max(-1.0, min(1.0, v * gain)) * 32767))
 
     path = os.path.join(OUT, name)
     with wave.open(path, "wb") as f:
@@ -367,12 +392,22 @@ def _struck(
     return out
 
 
-def _transient(dur=0.007, cutoff=0.42, level=0.5, seed=1):
+def _transient(dur=0.007, cutoff=0.92, level=0.5, seed=1):
     """The noise burst at the very start of a struck sound.
 
-    Lowpassed, because raw white noise reads as static; this wants to read as
-    contact. Very short -- past about 12ms it stops being a transient and
-    starts being a hiss.
+    **This is where the brightness comes from, and it used to be filtered
+    away.** The first version lowpassed it at a one-pole coefficient of 0.42
+    -- about 1.9kHz -- and then the caller lowpassed the whole mix again. The
+    result measured 85% of its energy below 400Hz: a dull thud with no attack
+    on it, which is precisely what "the sounds are meh" describes.
+
+    A contact transient is broadband. It is the part that tells you something
+    was *hit*, and everything that makes it legible lives between 2kHz and
+    10kHz. So the filtering here is now a gentle tilt rather than a wall, and
+    nothing downstream touches it.
+
+    Still very short: past about 12ms it stops being a transient and starts
+    being a hiss.
     """
     rng = random.Random(seed)
     n = max(1, int(RATE * dur))
@@ -463,11 +498,19 @@ def ui_tok(freq, dur, decay, *, glide=-4.0, glide_rate=28.0, wet=0.11,
     this. The glide defaults downward because a falling pitch reads as
     something settling into place, where a rising one reads as a question.
     """
-    body = _struck(freq, dur, decay=decay, partials=_WOOD, glide=glide,
-                   glide_rate=glide_rate)
+    # The body gets the warmth; the transient keeps its edge.
+    #
+    # This used to lowpass the *sum*, which meant the one bright thing in the
+    # sound was flattened along with the one that wanted flattening. Filtering
+    # them separately is the whole difference between a click and a thud.
+    body = _lowpass(
+        _struck(freq, dur, decay=decay, partials=_WOOD, glide=glide,
+                glide_rate=glide_rate),
+        0.55,
+    )
     out = _transient(level=click, seed=seed)
     _mix(out, body, 0)
-    return _room(_lowpass(out, 0.55), wet=wet)
+    return _room(out, wet=wet)
 
 
 def ui_blip(freq: float, dur: float, decay: float, harmonics=(1.0, 0.2, 0.0)):
@@ -709,6 +752,11 @@ def ambient_loop_stereo(chord_seconds=6.0) -> tuple[list[float], list[float]]:
 
 
 def main() -> None:
+    # Declared up front: `RATE` is rebound at the end of this function for the
+    # ambient loop, and Python needs the declaration before any other use of
+    # the name in the same scope.
+    global RATE
+
     os.makedirs(OUT, exist_ok=True)
     print(f"writing to {OUT}/")
 
@@ -722,21 +770,29 @@ def main() -> None:
     # A "tok", not a note. Low body, hard contact noise, gone in 70ms. See
     # the struck-body section above for why the 880Hz sine this replaced read
     # as a telephone.
-    _write("tap.wav", ui_tok(430, 0.07, 42, glide=-5.0, click=0.5, seed=11),
+    # `click` is the level of the contact noise against the body, and the
+    # numbers below are four to five times what they first were.
+    #
+    # Measured: at the old levels the transient sat about 9dB under the body
+    # and the first five milliseconds of a tap carried 2% of their energy
+    # above 2kHz — inaudible, which is why every one of these read as a dull
+    # thud. The transient was there and correct (91% of *its own* energy is
+    # above 2kHz); it was simply buried. A tap should be mostly click.
+    _write("tap.wav", ui_tok(430, 0.07, 42, glide=-5.0, click=2.4, seed=11),
            peak_target=0.30)
 
     # The quietest and dullest thing in the app, because it fires on every
     # single tab switch. Barely any contact noise and a big downward glide:
     # the brief was "make switching tabs more subtle", and a soft low thump
     # reads as movement where anything bright reads as an alert.
-    _write("navigation.wav", ui_tok(300, 0.075, 40, glide=-7.0, click=0.16,
+    _write("navigation.wav", ui_tok(300, 0.075, 40, glide=-7.0, click=1.0,
                                     wet=0.08, seed=5),
            peak_target=0.22)
 
     # Selection gets to be brighter than tap, because it confirms a choice
     # rather than acknowledging a touch -- and it glides *up*, which is the
     # one place in the app a rising pitch is right.
-    _write("selection.wav", ui_tok(720, 0.085, 34, glide=2.5, click=0.34,
+    _write("selection.wav", ui_tok(720, 0.085, 34, glide=2.5, click=1.8,
                                    wet=0.14, seed=23),
            peak_target=0.34)
 
@@ -747,7 +803,7 @@ def main() -> None:
     # "no" without being a telling-off -- a lot of the people using this are
     # eight, and a harsh error tone is how an app teaches somebody to stop
     # trying things.
-    err = ui_tok(330, 0.30, 11, glide=-1.0, click=0.10, wet=0.18, seed=31)
+    err = ui_tok(330, 0.30, 11, glide=-1.0, click=0.35, wet=0.18, seed=31)
     _mix(err, ui_tok(247, 0.34, 9, glide=-1.0, click=0.0, wet=0.18, seed=32),
          int(0.075 * RATE))
     _write("error.wav", err, peak_target=0.46)
@@ -755,13 +811,13 @@ def main() -> None:
     # Picking up a need: bright, immediate, over instantly. This one is in a
     # fast game loop, so it has almost no tail -- a ringing pickup sound
     # turns to mud the moment you collect two in a row.
-    _write("need_pickup.wav", ui_tok(880, 0.09, 30, glide=3.0, click=0.30,
+    _write("need_pickup.wav", ui_tok(880, 0.09, 30, glide=3.0, click=1.6,
                                      wet=0.07, seed=41),
            peak_target=0.40)
 
     # Hitting a want: the opposite shape. Low, dull, and it lands rather
     # than pings.
-    _write("want_hit.wav", ui_tok(190, 0.20, 14, glide=-6.0, click=0.55,
+    _write("want_hit.wav", ui_tok(190, 0.20, 14, glide=-6.0, click=2.6,
                                   wet=0.12, seed=47),
            peak_target=0.46)
 
@@ -770,7 +826,7 @@ def main() -> None:
     # Shutdown: a long soft fall with real room on it. The only UI sound
     # allowed to take its time, because it is the last thing you hear.
     _write("shutdown.wav", ui_tok(330, 0.40, 7, glide=-9.0, glide_rate=3.0,
-                                  click=0.08, wet=0.26, seed=53),
+                                  click=0.25, wet=0.26, seed=53),
            peak_target=0.40)
 
     # Case opening. The ratchet runs for four seconds under everything else,
@@ -787,8 +843,14 @@ def main() -> None:
     # The quietest thing in the app by a wide margin: it is under everything
     # else for as long as the app is open. Written last because it is also by
     # far the slowest to synthesise.
-    music_l, music_r = ambient_loop_stereo()
-    _write_stereo("ambient_loop.wav", music_l, music_r, peak_target=0.34)
+    # Generated and written at the lower rate -- see AMBIENT_RATE.
+    effects_rate = RATE
+    RATE = AMBIENT_RATE
+    try:
+        music_l, music_r = ambient_loop_stereo()
+        _write_stereo("ambient_loop.wav", music_l, music_r, peak_target=0.34)
+    finally:
+        RATE = effects_rate
 
 
 if __name__ == "__main__":

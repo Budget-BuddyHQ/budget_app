@@ -64,9 +64,7 @@ class SymbolBadge extends StatelessWidget {
     // company's profile. Read through `watch` so a row rebuilds the moment
     // its logo arrives rather than staying a grey glyph until the next
     // scroll.
-    final fetched = context
-        .watch<MarketDataService>()
-        .logoUrlFor(symbol);
+    final fetched = context.watch<MarketDataService>().logoUrlFor(symbol);
 
     Widget fallback() => Container(
       width: size,

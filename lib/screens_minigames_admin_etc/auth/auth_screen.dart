@@ -184,7 +184,8 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       GameToast.show(
         context,
         title: 'One quick step',
-        message: 'Please read and accept the Privacy Policy to create your '
+        message:
+            'Please read and accept the Privacy Policy to create your '
             'account.',
         icon: Icons.rule_folder_outlined,
         accent: const Color(0xFFFFC36B),
@@ -1142,7 +1143,8 @@ class _TermsCard extends StatelessWidget {
                       recognizer: TapGestureRecognizer()..onTap = onOpenPolicy,
                     ),
                     const TextSpan(
-                      text: ' ($kPrivacyPolicyDate). It explains what is '
+                      text:
+                          ' ($kPrivacyPolicyDate). It explains what is '
                           'stored, what is never collected, and how to delete '
                           'your account.',
                     ),

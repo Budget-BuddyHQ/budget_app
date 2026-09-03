@@ -145,6 +145,33 @@ const List<TutorialStep> kTutorialSteps = <TutorialStep>[
     jumpTab: AppTabIndex.adventure,
   ),
   TutorialStep(
+    id: 'town',
+    title: 'The town',
+    tagline:
+        'Inside a life you can walk out into the town. It is the same money '
+        'decisions, met in person rather than picked from a list.',
+    bullets: [
+      'The menus are what you do from where you are sitting — search for '
+          'work online, read at home, book a check-up.',
+      'The town is the same things done in person: a notice board with real '
+          'cards on it, a library, a clinic, a market.',
+      'Turning up is worth more. The job board hires better than a form, and '
+          'the library pays double what reading at home does.',
+      'Prices move with the day. Watch the banner at the top — market day is '
+          'cheaper, and some months everything just costs more.',
+    ],
+    teaches:
+        'There is usually more than one way to get something, and the one '
+        'that costs you a walk is often the one that pays.',
+    icon: Icons.storefront_rounded,
+    accent: Color(0xFF9CCC65),
+    // `thinking`, not `wave` — the enum reserves the wave for the opening and
+    // closing steps so it stays a bookend, and this one is explaining a
+    // mechanic.
+    mascot: TutorialMascot.thinking,
+    jumpTab: AppTabIndex.adventure,
+  ),
+  TutorialStep(
     id: 'arcade',
     title: 'Arcade',
     tagline: 'Short games that drill one money skill each.',

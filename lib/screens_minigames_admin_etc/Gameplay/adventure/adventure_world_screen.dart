@@ -245,6 +245,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
       gold: goldDelta,
       xp: choice.xp,
       literacy: choice.literacy,
+      hires: choice.hires,
     );
 
     if (!mounted) return;

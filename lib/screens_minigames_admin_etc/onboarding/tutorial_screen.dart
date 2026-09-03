@@ -40,7 +40,10 @@ class TutorialScreen extends StatefulWidget {
   static Future<int?> show(BuildContext context) async {
     final settings = context.read<AppSettingsController>();
     final jumpTo = await Navigator.of(context).push<int>(
-      MaterialPageRoute(builder: (_) => const TutorialScreen(), fullscreenDialog: true),
+      MaterialPageRoute(
+        builder: (_) => const TutorialScreen(),
+        fullscreenDialog: true,
+      ),
     );
     await settings.markTutorialSeen();
     return jumpTo;
@@ -184,7 +187,9 @@ class _TourHeader extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: i == step
                           ? accent
-                          : Colors.white.withValues(alpha: i < step ? 0.42 : 0.16),
+                          : Colors.white.withValues(
+                              alpha: i < step ? 0.42 : 0.16,
+                            ),
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -206,8 +211,10 @@ class _TourHeader extends StatelessWidget {
                 },
                 borderRadius: BorderRadius.circular(999),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 7,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.07),
                     borderRadius: BorderRadius.circular(999),
@@ -544,8 +551,7 @@ class _BackButton extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                border:
-                    Border.all(color: Colors.white.withValues(alpha: 0.16)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
               ),
               child: const Icon(
                 Icons.arrow_back_rounded,

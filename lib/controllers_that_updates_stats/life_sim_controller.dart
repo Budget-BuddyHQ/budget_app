@@ -1439,8 +1439,20 @@ class LifeSimController extends ChangeNotifier {
   /// list you can pick from, which is the one place in this game where
   /// studying visibly pays for itself.
   ///
+  /// **Two channels, and they are not the same.** [viaJobBoard] is the town's
+  /// notice board: you walked there, the cards are pinned up, and somebody is
+  /// standing behind the counter. Without it this is the version you do from
+  /// the sofa — a search, a form, and a wait.
+  ///
+  /// Both are real ways people find work and the app should not pretend
+  /// otherwise, so neither is blocked. But turning up in person is better,
+  /// which is also true, and here it is worth one extra roll on the job
+  /// market: the pick keeps the best of three instead of the best of two. On
+  /// a table where Smarts widens what is open to you, that is a meaningful
+  /// nudge without being a different mechanic.
+  ///
   /// Returns false when the character cannot look for work right now.
-  bool findJob() {
+  bool findJob({bool viaJobBoard = false}) {
     if (!canJobHunt || !allows(LifeAction.findJob)) return false;
 
     final open = _jobMarket
@@ -1460,17 +1472,26 @@ class LifeSimController extends ChangeNotifier {
     }
 
     // Bias toward the better end of what is open, so raising Smarts is felt
-    // rather than merely permitted: two rolls, keep the higher.
-    final first = _random.nextInt(open.length);
-    final second = _random.nextInt(open.length);
-    final job = open[first > second ? first : second];
+    // rather than merely permitted: keep the best of several rolls. A third
+    // roll for turning up in person -- see [viaJobBoard].
+    var pick = 0;
+    for (var i = 0; i < (viaJobBoard ? 3 : 2); i++) {
+      final roll = _random.nextInt(open.length);
+      if (roll > pick) pick = roll;
+    }
+    final job = open[pick];
 
     _job = job.title;
     _salary = job.salary;
     _happiness = _clamp(_happiness + 6);
     _setLog(
-      'Hired as a ${job.title} on ${job.salary} a year. Open Money to split '
-      'that before it splits itself.',
+      viaJobBoard
+          ? 'Saw the card on the board in town and asked. Hired as a '
+                '${job.title} on ${job.salary} a year. Open Money to split '
+                'that before it splits itself.'
+          : 'Applied online and got it. Hired as a ${job.title} on '
+                '${job.salary} a year. Open Money to split that before it '
+                'splits itself.',
       kind: LifeLogKind.career,
     );
     _teach(FinanceConcept.budgetRule);
@@ -1557,8 +1578,14 @@ class LifeSimController extends ChangeNotifier {
     required int gold,
     required int xp,
     required int literacy,
+    bool hires = false,
   }) {
     if (finished) return;
+    // The job board actually employing you is the point of it being a job
+    // board. Silently ignored when the character is too young or already
+    // working — `findJob` checks both and returns false, and the town's own
+    // outcome text still lands, so nothing looks broken.
+    if (hires) findJob(viaJobBoard: true);
     _money += gold;
     if (literacy > 0) _smarts = _clamp(_smarts + (literacy / 4).round());
     if (xp > 0) _happiness = _clamp(_happiness + (xp / 5).round());
