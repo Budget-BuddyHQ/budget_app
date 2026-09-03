@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../models_Like_Skins_and_lessons_templates/concept_powers.dart';
 import '../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
 import '../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
+import '../models_Like_Skins_and_lessons_templates/volunteer_places.dart';
 import '../models_Like_Skins_and_lessons_templates/outing_rules.dart';
 import '../models_Like_Skins_and_lessons_templates/ranked_run.dart';
 
@@ -28,6 +29,7 @@ class LifeSimController extends ChangeNotifier {
     this.name = 'Alex Morgan',
     this.gender = Gender.nonBinary,
     this.origin = LifeOrigin.workingClass,
+    this.allowWagering = true,
   }) : _random = random ?? Random(),
        startAge = initialAge,
        _age = initialAge,
@@ -559,6 +561,16 @@ class LifeSimController extends ChangeNotifier {
   String get log => _log;
   int get yearsLived => _age - startAge;
 
+  /// Whether this run may offer staked wagers.
+  ///
+  /// Comes from the signed-in player's `AgeBand`, not from [age]. The
+  /// in-game gates are all keyed on the character, which is right for the
+  /// fiction and no protection at all: a four-year-old taps Age eighteen
+  /// times and the gambling row unlocks. Defaults true so tests and the
+  /// standalone town keep their existing behaviour; the real screen passes
+  /// the account's answer.
+  final bool allowWagering;
+
   LifeStage get stage => LifeStageInfo.forAge(_age);
 
   /// Everything you own minus everything you owe — the "earning vs keeping"
@@ -1045,6 +1057,7 @@ class LifeSimController extends ChangeNotifier {
     }
 
     bool fresh(LifeEvent e) {
+      if (e.isWager && !allowWagering) return false;
       if (!e.matches(ctx)) return false;
       if (!_seen.contains(e.id)) return true;
       if (!e.repeatable) return false;
@@ -1059,7 +1072,10 @@ class LifeSimController extends ChangeNotifier {
     // served its cooldown — and only then to the raw eligible set.
     if (eligible.isEmpty) {
       eligible = kLifeEvents
-          .where((e) => e.matches(ctx) && e.repeatable)
+          .where(
+            (e) =>
+                (!e.isWager || allowWagering) && e.matches(ctx) && e.repeatable,
+          )
           .toList(growable: false);
     }
     if (eligible.isEmpty) {
@@ -1612,14 +1628,28 @@ class LifeSimController extends ChangeNotifier {
   /// Volunteering. No money at all, and deliberately the best happiness
   /// per coin in the game — the counterweight to a menu where every other
   /// good outcome has a price tag.
-  void volunteer() {
+  /// Give your time somewhere specific.
+  ///
+  /// [place] null keeps the old behaviour — the first option open at this
+  /// age — so callers that have not been updated, and tests written against
+  /// the single-button version, still work.
+  ///
+  /// **Why this stopped being one button.** It used to pay a flat +9
+  /// Happiness and +2 Smarts for nothing, every time, forever: the most
+  /// efficient action in the game, involving no decision at all, quietly
+  /// teaching that good things are free. Now each place costs real hours and
+  /// pays differently — see [VolunteerPlace] for what each one is arguing.
+  void volunteer([VolunteerPlace? place]) {
     if (!allows(LifeAction.volunteer)) return;
-    _happiness = _clamp(_happiness + 9);
-    _smarts = _clamp(_smarts + 2);
-    _setLog(
-      'Volunteered locally: +9 Happiness, +2 Smarts. Cost: nothing.',
-      kind: LifeLogKind.life,
-    );
+    final open = volunteerPlacesFor(_age);
+    if (open.isEmpty) return;
+    final chosen = place != null && open.contains(place) ? place : open.first;
+
+    _happiness = _clamp(_happiness + chosen.happiness);
+    _smarts = _clamp(_smarts + chosen.smarts);
+    _health = _clamp(_health + chosen.health);
+    if (chosen.teaches != null) _teach(chosen.teaches!);
+    _setLog(chosen.outcome, kind: LifeLogKind.life);
     notifyListeners();
   }
 
@@ -1627,6 +1657,9 @@ class LifeSimController extends ChangeNotifier {
   /// so it can lose — the log names the odds afterwards, which is the
   /// lesson.
   void takeARisk() {
+    // Belt and braces with the menu, which hides the row entirely. A gate
+    // that only exists in the widget is one refactor away from not existing.
+    if (!allowWagering) return;
     if (!allows(LifeAction.gamble)) return;
     const stake = 100;
     if (_money < stake) return;
