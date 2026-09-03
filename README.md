@@ -439,6 +439,32 @@ floating gold badge and exit button instead of making room for them, so
 divide the space instead of two independently-guessed ones.
 *Files:* `finance_brawl_game.dart`
 
+### Safety
+
+**A four-year-old was being offered a staked bet**
+Every gambling gate in the simulation ran off the *character's* age —
+`LifeAction.gamble` opens at an in-game 18 — which is right for the fiction and
+no safeguard at all. A four-year-old reaches an eighteen-year-old character in
+about ninety seconds of tapping Age, and was then shown "Gamble 100 coins. A
+42% chance to double it." sitting between the library and the doctor.
+`AgeBand.isMinorUnder13` had existed the whole time and was referenced by
+nothing. Disabling the row was not enough either: a greyed row reading "you
+have to be 18" is still an advert, and the 18 it names is the character's.
+*Fix:* `AgeBand.allowsWagering`, read from the signed-in account and passed
+into `LifeSimController`. The menu row is **omitted**, not greyed; wager-tagged
+events are filtered out of the draw; and `takeARisk` refuses independently, so
+the guard does not live only in a widget. `undisclosed` counts as an adult on
+purpose — the sign-up question is optional, and gating features behind
+answering a personal question teaches children to over-share to get them.
+*What is deliberately not hidden:* the cautionary events. `t_loot_box` states
+the real odds of a 0.6% drop and `t_skin_gamble` explains a 5% house cut; their
+outcomes are scripted, nothing is staked to read them, and they are the most
+useful things in the pack for exactly the children this protects. Showing a
+nine-year-old what a loot box does to their money is the job — letting them
+pull the lever is not.
+*Files:* `player_profile.dart`, `life_sim_controller.dart`,
+`life_sim_models.dart`, `life_sim_page.dart`, `age_appropriate_test.dart`
+
 ### Layout
 
 **The tutorial spotlight claimed to be exact and was a guess, on both axes**
@@ -2622,7 +2648,7 @@ the pool.
 flutter analyze && flutter test
 ```
 
-1,232 tests covering responsive layout at eight viewports (including the Life
+1,247 tests covering responsive layout at eight viewports (including the Life
 sim itself, Feedback, and the Adventure map-pending screen), the money
 panel at seven widths, the life-event chain wiring, price-chart zoom/pan/scrub,
 chart painters against pathological input, working-order accounting, the Life

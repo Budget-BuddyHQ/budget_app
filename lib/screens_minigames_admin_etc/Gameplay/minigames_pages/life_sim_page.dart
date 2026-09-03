@@ -13,6 +13,7 @@ import '../../../controllers_that_updates_stats/app_settings_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/concept_powers.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_tutorial_steps.dart';
 import '../../../models_Like_Skins_and_lessons_templates/ranked_run.dart';
+import '../../../models_Like_Skins_and_lessons_templates/volunteer_places.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../onboarding/coach_mark.dart';
 import '../../../widgets_custom_lotties/confetti_burst.dart';
@@ -109,6 +110,11 @@ class _LifeSimPageState extends State<LifeSimPage> {
       await context.read<UserStatsController>().resetTownProgress();
     }
     if (!mounted) return;
+    final allowWagering = context
+        .read<UserStatsController>()
+        .stats
+        .ageBand
+        .allowsWagering;
 
     setState(() {
       _life = LifeSimController(
@@ -116,6 +122,9 @@ class _LifeSimPageState extends State<LifeSimPage> {
         gender: character.gender,
         origin: character.origin,
         startMoney: character.origin.familyMoney,
+        // The *account's* age, not the character's. See
+        // `AgeBand.allowsWagering`.
+        allowWagering: allowWagering,
       );
     });
     _maybeStartFirstTour();
@@ -282,6 +291,10 @@ class _LifeSimPageState extends State<LifeSimPage> {
           Navigator.of(sheetContext).pop();
           _openSkills(life);
         },
+        onVolunteer: () {
+          Navigator.of(sheetContext).pop();
+          _openVolunteer(life);
+        },
         onInvest: () {
           Navigator.of(sheetContext).pop();
           _invest(life);
@@ -369,6 +382,23 @@ class _LifeSimPageState extends State<LifeSimPage> {
   /// Skill practice. Until this existed, `LifeSimController.practise` had no
   /// UI at all — the whole skill/career ladder was unreachable by the player
   /// even though the events gating on it were already in the pool.
+  /// Where to give your time.
+  ///
+  /// A sheet rather than a menu row, because there is a real decision in it
+  /// now — six hours at the food bank against two on a litter pick is a
+  /// trade, and a trade needs its options side by side to be one.
+  Future<void> _openVolunteer(LifeSimController life) async {
+    HapticFeedback.lightImpact();
+    final place = await showModalBottomSheet<VolunteerPlace>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _VolunteerSheet(age: life.age),
+    );
+    if (place == null || !mounted) return;
+    life.volunteer(place);
+  }
+
   Future<void> _openSkills(LifeSimController life) async {
     HapticFeedback.lightImpact();
     await showModalBottomSheet<void>(
@@ -2143,6 +2173,7 @@ class _LifeMenuSheet extends StatelessWidget {
     required this.menu,
     required this.life,
     required this.onSkills,
+    required this.onVolunteer,
     required this.onInvest,
     required this.onBudget,
     required this.onConcepts,
@@ -2152,6 +2183,7 @@ class _LifeMenuSheet extends StatelessWidget {
   final _LifeMenu menu;
   final LifeSimController life;
   final VoidCallback onSkills;
+  final VoidCallback onVolunteer;
   final VoidCallback onInvest;
   final VoidCallback onBudget;
   final VoidCallback onConcepts;
@@ -2338,20 +2370,35 @@ class _LifeMenuSheet extends StatelessWidget {
           ),
           _LifeAction(
             label: 'Volunteer',
-            detail: 'No pay at all. +9 Happiness, +2 Smarts.',
+            // Names the trade rather than the reward. It used to read "+9
+            // Happiness, +2 Smarts" for a flat, free, repeatable button —
+            // which made it the most efficient action in the game and the one
+            // with no decision in it.
+            detail:
+                'Give your time somewhere. Costs hours, pays nothing, '
+                'and is worth it.',
             icon: Icons.volunteer_activism_rounded,
-            onTap: () => run(life.volunteer),
+            onTap: onVolunteer,
             performs: LifeAction.volunteer,
           ),
-          _LifeAction(
-            label: 'Gamble 100 coins',
-            detail: 'A 42% chance to double it. The odds are against you.',
-            icon: Icons.casino_rounded,
-            cost: 100,
-            onTap: () => run(life.takeARisk),
-            performs: LifeAction.gamble,
-            disabledReason: life.money >= 100 ? null : 'Not enough coins',
-          ),
+          // Hidden outright for under-13 accounts, not greyed out.
+          //
+          // A disabled row reading "Gamble 100 coins — you have to be 18" is
+          // still an advert for gambling sitting between the library and the
+          // gym on a four-year-old's screen, and the "18" it names is the
+          // *character's* age, which they reach in about ninety seconds of
+          // tapping. There is nothing here for a young player to be told
+          // about later, so there is nothing to leave a placeholder for.
+          if (life.allowWagering)
+            _LifeAction(
+              label: 'Gamble 100 coins',
+              detail: 'A 42% chance to double it. The odds are against you.',
+              icon: Icons.casino_rounded,
+              cost: 100,
+              onTap: () => run(life.takeARisk),
+              performs: LifeAction.gamble,
+              disabledReason: life.money >= 100 ? null : 'Not enough coins',
+            ),
           _LifeAction(
             label: 'Practise a skill',
             detail: 'Music, sport, business — the career ladders.',
@@ -3884,4 +3931,185 @@ class _PowerCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Choosing where to give your time.
+///
+/// Every row states its **hours** as prominently as its rewards, because the
+/// hours are the price and this whole feature exists to stop volunteering
+/// reading as free. See [VolunteerPlace] for what each option is arguing.
+class _VolunteerSheet extends StatelessWidget {
+  const _VolunteerSheet({required this.age});
+
+  final int age;
+
+  @override
+  Widget build(BuildContext context) {
+    final places = volunteerPlacesFor(age);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+      decoration: const BoxDecoration(
+        color: AppTheme.panelStrong,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXLarge),
+        ),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.volunteer_activism_rounded,
+                  color: Color(0xFFFFD45C),
+                  size: 24,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Where do you want to help?',
+                  style: GoogleFonts.pixelifySans(
+                    color: Colors.white,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'None of these pay. They cost different amounts of your time '
+              'and give back different things.',
+              style: GoogleFonts.quicksand(
+                color: AppTheme.textMuted,
+                fontSize: 12.5,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 14),
+            for (final place in places) ...[
+              _VolunteerRow(place: place),
+              const SizedBox(height: 9),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VolunteerRow extends StatelessWidget {
+  const _VolunteerRow({required this.place});
+
+  final VolunteerPlace place;
+
+  @override
+  Widget build(BuildContext context) {
+    final chip = AppTheme.tintedChip(place.accent, alpha: 0.16);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        onTap: () => Navigator.of(context).pop(place),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppTheme.panel,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+            border: Border.all(color: place.accent.withValues(alpha: 0.32)),
+          ),
+          child: Row(
+            children: [
+              Icon(place.icon, color: place.accent, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FittedLabel(
+                      place.label,
+                      style: GoogleFonts.pixelifySans(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      place.blurb,
+                      style: GoogleFonts.quicksand(
+                        color: AppTheme.textMuted,
+                        fontSize: 11.5,
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        _Tag('${place.hours}h a week', chip.ink, chip.fill),
+                        if (place.happiness != 0)
+                          _Tag(
+                            '${place.happiness > 0 ? '+' : ''}'
+                            '${place.happiness} Happy',
+                            const Color(0xFF85EFAC),
+                            const Color(0x2285EFAC),
+                          ),
+                        if (place.smarts != 0)
+                          _Tag(
+                            '+${place.smarts} Smarts',
+                            const Color(0xFF69C6FF),
+                            const Color(0x2269C6FF),
+                          ),
+                        if (place.health != 0)
+                          _Tag(
+                            '${place.health > 0 ? '+' : ''}'
+                            '${place.health} Health',
+                            place.health > 0
+                                ? const Color(0xFF85EFAC)
+                                : const Color(0xFFFF8474),
+                            place.health > 0
+                                ? const Color(0x2285EFAC)
+                                : const Color(0x22FF8474),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Tag extends StatelessWidget {
+  const _Tag(this.text, this.ink, this.fill);
+
+  final String text;
+  final Color ink;
+  final Color fill;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+    decoration: BoxDecoration(
+      color: fill,
+      borderRadius: BorderRadius.circular(999),
+    ),
+    child: Text(
+      text,
+      style: GoogleFonts.quicksand(
+        color: ink,
+        fontSize: 10,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+  );
 }

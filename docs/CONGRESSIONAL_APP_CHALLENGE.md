@@ -8,7 +8,7 @@ stick when you have to spend money to learn them.*
 **Built in:** Flutter/Dart, with Supabase for accounts, cloud save and
 leaderboards, and live market data from Finnhub and Twelve Data.
 
-**Scale:** ~83,000 lines of Dart across 135 files, 1,232 automated tests,
+**Scale:** ~83,000 lines of Dart across 135 files, 1,247 automated tests,
 `flutter analyze` clean.
 
 ---
@@ -213,7 +213,7 @@ setting.
 ### Everything that can be pure Dart is
 The life simulation, the match-3 engine, the quiz banks, the town scenarios and
 the habit model have no Flutter dependency and take an injectable `Random`.
-That is why 1,232 tests run in under thirty seconds and why the rules can be
+That is why 1,247 tests run in under thirty seconds and why the rules can be
 tested as *rules* rather than through a UI.
 
 ### The art is generated and checked
@@ -292,6 +292,41 @@ two ambiguous. The result is 99.6% one connected space, verified by flood
 fill rather than by looking. **The difference between the three failures and
 the one success was not a cleverer heuristic — it was finding data that
 already knew the answer.**
+
+**Realising the age gate was gating the wrong person.** Every gambling gate in
+the life simulation checked the *character's* age, which opens at eighteen.
+That is correct for the fiction and worthless as a safeguard: the player taps
+Age eighteen times and the gate opens, so a four-year-old account was being
+shown a staked bet with a 42% win chance on the same screen as the library.
+The fix gates on the signed-in account's age band instead, omits the row rather
+than greying it, and filters wager-tagged events out of the draw.
+
+The harder call was where to draw the line. Not "anything mentioning
+gambling" — the two most useful events in the whole content set for a young
+player are the ones that state a loot box's real 0.6% odds and a trading
+site's 5% house cut. Those stay for every age, because showing a child what
+the mechanic does to their money before somebody sells them one is the entire
+point of the app. What is hidden is the part where the game itself takes a
+stake and rolls.
+
+**A tutorial that pointed next to what it was describing, three times in a
+row.** The overlay could not use a `GlobalKey` to find a nav tab —
+`MainNavigation` keeps every screen alive in an `IndexedStack`, so one static
+key per tab would attach to several widgets at once — so an earlier version
+computed the tab's rectangle from constants it invented: full screen width
+divided by tab count, 72px tall, flush to the bottom. A code comment described
+this as "exact rather than a guess."
+
+It was a guess, wrong on both axes. The real bar is 80-106px tall depending on
+viewport, inset 10px each side plus a 4px border (drawn *inside* the box,
+insetting the child by another 4px — easy to miss, and worth over three pixels
+of drift on its own), and lifted 6-12px off the bottom. The fix moved the
+geometry to one place — the widget that actually owns it — and a test now
+renders a real bar at five viewports and measures a real tab against the
+prediction. The general lesson repeats from the map story above: a comment
+asserting a derived value is correct is not evidence that it is, and the
+gap between "this looks right" and "this is right" only closes by measuring
+against the real thing.
 
 **Four sprite redraws that could not have worked.** The side-on walk cycle
 looked wrong and every attempt to redraw a frame left it wrong. Measuring the
