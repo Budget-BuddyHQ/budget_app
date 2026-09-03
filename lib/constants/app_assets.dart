@@ -230,14 +230,11 @@ class AppAssets {
   static const String brawlChestSprite =
       'assets/images/finance_brawl_ui/brawl_vault.png';
 
-  static const String turtleClassic =
-      'assets/images/turtles/classic.png';
-  static const String turtleCoinShell =
-      'assets/images/turtles/coin_shell.png';
+  static const String turtleClassic = 'assets/images/turtles/classic.png';
+  static const String turtleCoinShell = 'assets/images/turtles/coin_shell.png';
   static const String turtleGuildRunner =
       'assets/images/turtles/guild_runner.png';
-  static const String turtleExplorer =
-      'assets/images/turtles/explorer.png';
+  static const String turtleExplorer = 'assets/images/turtles/explorer.png';
 
   // --- Villager sprite sheets -------------------------------------------
   //

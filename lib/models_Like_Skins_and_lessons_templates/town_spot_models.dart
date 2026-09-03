@@ -73,6 +73,7 @@ class TownChoice {
     this.gold = 0,
     this.xp = 0,
     this.literacy = 0,
+    this.hires = false,
   });
 
   final String label;
@@ -81,6 +82,20 @@ class TownChoice {
   final String outcome;
   final int gold;
   final int xp;
+
+  /// Whether taking this actually gets the character a job.
+  ///
+  /// **Why the board needed this.** The town's job board handed out 15 or 40
+  /// coins and nothing else, so the one building in the game named after
+  /// employment could not employ you — it was a coin dispenser with a career
+  /// theme. Meanwhile the only real way to get hired was a menu row, which is
+  /// the wrong way round: the board is the thing a person walks to.
+  ///
+  /// Only meaningful inside a life (the town is also playable on its own),
+  /// and only when the character is old enough and does not already have a
+  /// job — see `LifeSimController.findJob`, which is what this ends up
+  /// calling with `viaJobBoard: true`.
+  final bool hires;
   final int literacy;
 }
 
@@ -248,6 +263,15 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     tileX2: 41,
     tileY2: 32,
     choices: [
+      TownChoice(
+        label: 'Ask about the proper job on the card',
+        outcome:
+            'You asked instead of scrolling. Turning up in person puts you in '
+            'front of somebody, which is most of why it works better.',
+        xp: 10,
+        literacy: 6,
+        hires: true,
+      ),
       TownChoice(
         label: 'Take the quick job (15)',
         outcome:

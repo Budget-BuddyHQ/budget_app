@@ -595,7 +595,21 @@ class MarketDataService extends ChangeNotifier {
   /// spent its entire rate budget on prices nobody was watching and made the
   /// board look frozen; this spends it on the four the player can actually
   /// see.
-  Future<void> refreshBatch({Iterable<String> pinned = const <String>[]}) {
+  Future<void> refreshBatch({Iterable<String> pinned = const <String>[]}) =>
+      refresh(only: selectBatch(pinned: pinned));
+
+  /// Which symbols the next batch will ask for.
+  ///
+  /// Split out from [refreshBatch] so the selection can be tested without a
+  /// network call. It used to be inline, and the tests for it went through
+  /// `refreshBatch` — which meant they made real HTTP requests, took seconds,
+  /// and failed intermittently in a full run with "Proxy request failed with
+  /// 404". A unit test for *which four strings come out of a list* has no
+  /// business touching the internet.
+  ///
+  /// Advances the rotation, so calling it twice gives two different batches —
+  /// which is the behaviour worth testing.
+  Set<String> selectBatch({Iterable<String> pinned = const <String>[]}) {
     final known = kLiveSymbols.map((s) => s.symbol).toSet();
     // **Capped, including the pinned ones.** A player holding ten stocks
     // would otherwise pin ten symbols into every five-second tick — 120 calls
@@ -614,7 +628,7 @@ class MarketDataService extends ChangeNotifier {
       wanted.add(rest[(_rotation + i) % rest.length]);
     }
     _rotation = rest.isEmpty ? 0 : (_rotation + liveBatchSize) % rest.length;
-    return refresh(only: wanted);
+    return wanted;
   }
 
   /// Fetches quotes for [only], or for every symbol in [kLiveSymbols].

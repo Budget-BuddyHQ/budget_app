@@ -191,10 +191,7 @@ class _CoinJarPainter extends CustomPainter {
     // The front face of the glass: a soft sheen and one bright highlight
     // stripe. Two cues are what sells "transparent" — an even tint alone
     // just looks like a coloured shape.
-    canvas.drawRRect(
-      body,
-      Paint()..color = _glass.withValues(alpha: 0.06),
-    );
+    canvas.drawRRect(body, Paint()..color = _glass.withValues(alpha: 0.06));
     final highlight = RRect.fromRectAndRadius(
       Rect.fromLTWH(w * 0.16, bodyTop + h * 0.06, w * 0.09, h * 0.44),
       Radius.circular(w * 0.05),
@@ -430,9 +427,7 @@ class _MilestonePip extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: reached
-                  ? chip.fill
-                  : Colors.white.withValues(alpha: 0.06),
+              color: reached ? chip.fill : Colors.white.withValues(alpha: 0.06),
               border: Border.all(
                 color: current
                     ? AppTheme.greenPrimary

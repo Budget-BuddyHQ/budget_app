@@ -2192,11 +2192,20 @@ class _LifeMenuSheet extends StatelessWidget {
           // and without a salary the budget, the emergency fund and the
           // paycheck line — the whole point of the game — never switch on.
           _LifeAction(
-            label: 'Look for work',
+            // Named for the channel, not the outcome.
+            //
+            // The town has a *notice board* with cards pinned to it, which is
+            // how people actually found work before the internet and still do
+            // in a lot of places. This row is the other way: a search from
+            // wherever you are sitting. Calling them both "Look for work" made
+            // the menu read as a duplicate of the map; naming the channel
+            // makes them two things a person really does, and the town's
+            // version is better because turning up is better.
+            label: 'Search for work online',
             detail: life.hasJob
                 ? 'You already have a job. Quit first to change track.'
-                : 'Apply for an entry-level job. Smarts widens what is open '
-                      'to you.',
+                : 'Apply from home. Smarts widens what is open to you — and '
+                      'the board in town does better than a form.',
             icon: Icons.badge_rounded,
             onTap: () => run(life.findJob),
             performs: LifeAction.findJob,

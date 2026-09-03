@@ -2264,8 +2264,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     var pooledQuestions = <FinanceQuestion>[
       ..._questionBank,
       ..._extraBrawlQuestions,
-    ]
-      ..shuffle(_rand);
+    ]..shuffle(_rand);
     var chosenRawQuestions = pooledQuestions.take(3).toList();
 
     _activeQuizQuestions = chosenRawQuestions.map((q) {
@@ -2498,10 +2497,9 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   /// prize, and it is appended only when fewer than three tracks remain so it
   /// can never crowd out a real upgrade.
   List<BrawlUpgrade> _getUpgradeOptions() {
-    final available = _upgradeTracks()
-        .where((u) => u.level < u.maxLevel)
-        .toList()
-      ..shuffle(_rand);
+    final available =
+        _upgradeTracks().where((u) => u.level < u.maxLevel).toList()
+          ..shuffle(_rand);
 
     if (available.length < 3) {
       available.add(

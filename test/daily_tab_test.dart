@@ -205,7 +205,7 @@ void main() {
       const expected = <int, String>{
         MoneyHabitsTab.today: 'Today',
         MoneyHabitsTab.week: 'My Week',
-        MoneyHabitsTab.find: 'Find/Create Habits',
+        MoneyHabitsTab.find: 'Habits',
         MoneyHabitsTab.challenges: 'Challenges',
         MoneyHabitsTab.jar: 'My Jar',
         MoneyHabitsTab.coach: 'Coach',
@@ -213,12 +213,17 @@ void main() {
       expect(expected.length, MoneyHabitsTab.count);
 
       await pumpAt(tester, const MoneyHabitsScreen(), const Size(430, 932));
-      final bar = tester.widget<TabBar>(find.byType(TabBar));
+
+      // Read off the rendered strip rather than casting `TabBar.tabs`. The
+      // tabs are a small widget of their own now — an icon beside a word in
+      // a pill — so `as Tab` no longer holds, and what this test is actually
+      // about is the label a player reads.
+      final bar = find.byType(TabBar);
       for (final entry in expected.entries) {
         expect(
-          (bar.tabs[entry.key] as Tab).text,
-          entry.value,
-          reason: 'tab ${entry.key} is not ${entry.value}',
+          find.descendant(of: bar, matching: find.text(entry.value)),
+          findsOneWidget,
+          reason: 'tab ${entry.key} is not labelled "${entry.value}"',
         );
       }
     });
