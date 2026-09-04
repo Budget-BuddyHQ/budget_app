@@ -153,6 +153,12 @@ LifeEndingArchetype resolveLifeEnding({
   required int netWorth,
   required int happiness,
   required int smarts,
+
+  /// Average closeness of the people still in your life, 0-100.
+  ///
+  /// Optional with a neutral default so existing callers and tests keep
+  /// working. `resolveLifeEndingFor` passes the real figure.
+  int connection = 50,
 }) {
   if (died && age < 50) {
     return LifeEndingArchetype.goneTooSoon;
@@ -160,7 +166,17 @@ LifeEndingArchetype resolveLifeEnding({
   if (netWorth < 200 && happiness < 40) {
     return LifeEndingArchetype.cautionaryTale;
   }
-  if (netWorth >= 3000 && happiness < 45) {
+  // **Rich but Lonely is about people now.**
+  //
+  // It used to fire on `netWorth >= 3000 && happiness < 45` alone, which made
+  // it reachable by simply overworking and gave an ending named for loneliness
+  // nothing whatsoever to do with anybody else. Relationships were a list of
+  // names that never changed, so there was no other signal to use.
+  //
+  // Now there is. Either being unhappy *or* having let everyone drift away
+  // will do it, because both are real versions of the same ending — and a run
+  // that kept its people close is no longer handed it for working hard.
+  if (netWorth >= 3000 && (happiness < 45 || connection < 30)) {
     return LifeEndingArchetype.richButLonely;
   }
   if (netWorth < 500 && happiness >= 70) {
@@ -218,6 +234,7 @@ class LifeSummary {
       goldReward: life.goldReward,
       conceptsMet: life.conceptsMet.length,
       archetype: resolveLifeEnding(
+        connection: life.connection,
         died: life.dead,
         age: life.age,
         netWorth: life.netWorth,

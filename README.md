@@ -439,6 +439,62 @@ floating gold badge and exit button instead of making room for them, so
 divide the space instead of two independently-guessed ones.
 *Files:* `finance_brawl_game.dart`
 
+### The edge function's cache did not work, and would have rate-limited everyone
+
+Deployed, working, returning real prices — and every request a miss. Eight
+identical calls sent back to back all reported `X-Cache: 0/3 HIT`, while a
+health check immediately afterwards reported `cacheSize: 3`.
+
+That pair is the whole diagnosis: the cache **was** being written and the next
+request never saw it, because Supabase spreads requests across isolates and
+each one starts with an empty `Map`.
+
+Not a small inefficiency. The board polls every two seconds for sixteen
+symbols, so a cache that never hits is **480 vendor calls a minute against a
+Finnhub limit of 60** — the first person to open the Market Board would be
+throttled within seconds and would take everyone else with them. The 2-second
+design assumed a cache that turned out not to exist.
+
+Postgres is the one thing every isolate shares, so that is where it lives now
+(`0004_market_cache.sql`). The in-memory `Map` stays as a free first look; the
+table is the real one. `health` does a live round trip and reports
+`sharedCache: true/false` rather than only whether it is configured, and
+`tool/check_market_proxy.py` fails loudly on false — this is not a thing that
+should be able to hide twice.
+
+### People you can actually lose
+
+Relationships were a `List<String>`. Bare names, every one identical, nothing
+about any of them ever changing — you could press "Spend time with Priya"
+forty times for +8 Happiness each and it meant exactly as much the fortieth
+time as the first.
+
+That left the game unable to say the thing it most needed to. There is an
+ending called **Rich but Lonely**, and nothing in the simulation could make you
+lonely: it fired on `netWorth >= 3000 && happiness < 45`, so it was reachable
+by simply overworking and had no more to do with people than any other ending.
+
+Now each person has a kind, a closeness, and a year you last saw them.
+Closeness falls a few points a year — faster for the relationships that really
+do need maintaining, slowest for family, fastest for a mentor — and time
+together raises it more than twice as far as a gift does, which is the lesson
+this app would want to teach even if it were not also true. Loneliness feeds
+the ending directly: a rich, *happy* life with nobody left in it now lands on
+Rich but Lonely, which it never could before.
+
+The tuning was the delicate part and it is measured rather than asserted. A
+visit is worth +12 against a friend's 3-a-year drift, so seeing somebody every
+four years or so holds steady — deliberately a rhythm rather than an annual
+chore, because with several people and sixty years to fill, an action per
+person per year is book-keeping, not a decision.
+
+Two of the test failures on the way were the tests being wrong rather than the
+code. `ageUp` refuses while an event is pending, so a bare loop of `ageUp()`
+spins on the spot — which is why the first run reported that nobody is ever
+lost after 200 years. And `.single` on the people list threw after eighty years
+of play, because by then the run had *met* people, which is the simulation
+working.
+
 ### Safety
 
 **A four-year-old was being offered a staked bet**
@@ -2648,7 +2704,7 @@ the pool.
 flutter analyze && flutter test
 ```
 
-1,247 tests covering responsive layout at eight viewports (including the Life
+1,271 tests covering responsive layout at eight viewports (including the Life
 sim itself, Feedback, and the Adventure map-pending screen), the money
 panel at seven widths, the life-event chain wiring, price-chart zoom/pan/scrub,
 chart painters against pathological input, working-order accounting, the Life
