@@ -44,6 +44,32 @@ Right now the function is not deployed, which is why the test log says
 the proxy, gets a 404, and quietly falls back to your local keys. That fallback
 is why it works on your machine and would not work for anybody else.
 
+## Current status, checked 3 September 2026
+
+**Secrets: done.** `FINNHUB_API_KEY` and `TWELVE_DATA_API_KEY` are both set on
+the project.
+
+**Function: not deployed.** Probed directly, every operation returns:
+
+```
+404 {"code":"NOT_FOUND","message":"Requested function was not found"}
+```
+
+...and so does every other plausible name (`market-data`, `quotes`, `api`,
+and five more). The project has no edge functions at all.
+
+**These are two separate steps and it is easy to think the first one is both.**
+The Secrets page under Settings → Edge Functions stores environment variables
+*for* functions; it does not create one. The code in
+`supabase/functions/market/index.ts` still has to be pushed before the URL
+exists. Until it is, the app falls back to the keys in `supabase.env.json` —
+which is why the Market Board works on your machine and would not work on
+anybody else's phone.
+
+The public config *is* now baked in (`lib/config/public_supabase_config.dart`),
+so sign-in, friends, profiles and the rest already work on a plain
+`flutter build`. The Market Board is the only thing still waiting.
+
 ## Switching it on
 
 Three commands, once.
@@ -54,11 +80,31 @@ Three commands, once.
 supabase secrets set FINNHUB_API_KEY=xxxx TWELVE_DATA_API_KEY=yyyy
 ```
 
-**2. Deploy the function:**
+**2. Deploy the function.** Two ways; either is fine.
+
+*With the CLI.* There is no `supabase` on the PATH here, so use `npx`. The
+project also has no `config.toml`, so it needs linking first. Your project ref
+is `cwqjduingvevagrxbwts` — it is the subdomain of your Supabase URL, and it is
+public:
 
 ```bash
-supabase functions deploy market
+npx supabase login
+npx supabase link --project-ref cwqjduingvevagrxbwts
+npx supabase functions deploy market --no-verify-jwt
 ```
+
+`login` opens a browser. `link` will ask for the database password.
+
+*From the dashboard, if the CLI is being difficult.* Edge Functions → Deploy a
+new function → via editor. Name it exactly **`market`**, delete the sample
+code, and paste all of `supabase/functions/market/index.ts`. It has no imports
+and no dependencies, so it pastes as a single file with nothing to bundle.
+Then turn **off** "Verify JWT with legacy secret" in the function's settings —
+same reason as `--no-verify-jwt` below.
+
+`--no-verify-jwt` is deliberate: the app sends the anon key as a bearer token
+and Supabase would otherwise require a *user* JWT, so the Market Board would
+401 for anybody not signed in.
 
 **3. Check it answers.** Replace the URL and anon key with yours:
 
@@ -66,27 +112,51 @@ supabase functions deploy market
 curl -H "Authorization: Bearer YOUR_ANON_KEY" "https://YOUR-PROJECT.supabase.co/functions/v1/market?op=quote&symbol=AAPL"
 ```
 
-A price comes back and you are done. The "Proxy request failed with 404" line
-disappears from the logs, and every user of the app now shares your keys
-without ever holding one.
+A price comes back and you are done. Worth checking the batch endpoint too,
+since that is what the board actually calls now:
+
+```bash
+curl -s -H "Authorization: Bearer YOUR_ANON_KEY" "https://YOUR-PROJECT.supabase.co/functions/v1/market?op=quotes&symbols=AAPL,MSFT,NKE" | head -c 300
+```
+
+The response header `X-Cache` reads `n/3 HIT` — run it twice and the second
+should be `3/3 HIT`, which is the caching doing its job.
+
+Once that answers, the "Proxy request failed with 404" line disappears from the
+logs and every user of the app shares your keys without ever holding one.
 
 ## Building the release
 
-Only the two public values go in, via `--dart-define`:
+Nothing special:
 
 ```bash
-flutter build appbundle --release --dart-define SUPABASE_URL=https://YOUR-PROJECT.supabase.co --dart-define SUPABASE_ANON_KEY=YOUR_ANON_KEY
+flutter build appbundle --release
 ```
 
-`--dart-define-from-file` is tidier if you keep them in a JSON file:
+The project URL and anon key are compiled in from
+`lib/config/public_supabase_config.dart`, which is committed on purpose — see
+the file's own header for why those two are safe and the market keys are not.
+That was the point of generating it: a build that is only correct when
+somebody remembers a long `--dart-define` line is a build that eventually goes
+out wrong, and it did.
+
+To point a build at a *different* project, override them — an environment
+variable or a `--dart-define` both beat the committed defaults:
 
 ```bash
-flutter build appbundle --release --dart-define-from-file=supabase.env.json
+flutter build appbundle --release --dart-define SUPABASE_URL=... --dart-define SUPABASE_ANON_KEY=...
 ```
 
-`supabase.env.json` is gitignored and should stay that way — not because the
-anon key is secret, but because that file is also where the market keys sit
-during local development, and the habit is worth keeping.
+**Do not** use `--dart-define-from-file=supabase.env.json` for a release. That
+file also holds `FINNHUB_API_KEY` and `TWELVE_DATA_API_KEY`, and passing it
+whole bakes both into the binary — which is the exact thing this whole document
+exists to prevent.
+
+Regenerate the committed defaults after changing projects:
+
+```bash
+python tool/write_public_config.py
+```
 
 ## How to tell it worked
 
@@ -99,7 +169,12 @@ strings build/app/outputs/bundle/release/app-release.aab | grep -i -E "finnhub|t
 ```
 
 Nothing should come back except possibly a URL. If your key appears, the build
-picked up the market keys from `supabase.env.json` and you have shipped them.
+was given `supabase.env.json` whole and you have shipped them — rotate both
+keys in the vendor dashboards, because an uploaded AAB cannot be unshipped.
+
+`public_config_test.dart` checks the committed defaults hold exactly
+`SUPABASE_URL` and `SUPABASE_ANON_KEY` and nothing else, so the common version
+of this mistake fails in CI rather than in the store.
 
 **The app is using the proxy.** Open the Market Board with the device offline
 from your dev machine — on someone else's phone is the real test. Prices load,
@@ -111,12 +186,17 @@ Worth knowing before release. Finnhub's free tier is 60 calls a minute **for
 the account**, not per user. Through the proxy that is now shared by everyone
 using the app at once, so ten simultaneous players are ten times the traffic.
 
-The board already helps here — it fetches four symbols per tick rather than
-sixteen (see `MarketDataService.selectBatch`), which cut its own usage by three
-quarters. But if the app gets real traffic, the next step is caching *inside*
-the edge function: one fetch per symbol per interval, served to every caller,
-instead of one per caller. That is a change to `index.ts` alone and needs no
-app release.
+**This is already handled, and it is what makes the board feel live.** The
+function caches each symbol's quote for 12 seconds and serves every caller from
+that cache, so a hundred simultaneous players cost the same vendor calls as
+one. The `quotes` operation returns all sixteen symbols in a single request,
+which also collapses sixteen edge invocations into one — those are billed per
+invocation, so it matters.
+
+That decoupling is the reason the board can poll every **2 seconds**. Without
+it, sixteen symbols against a 60-call minute caps a full refresh at one every
+sixteen seconds; with it, the app's poll rate and the vendor's limit are no
+longer the same number.
 
 ## The other keys
 
