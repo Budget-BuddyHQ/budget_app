@@ -24,7 +24,23 @@ void main() {
       expect(MarketDataService.liveBatchSize, lessThanOrEqualTo(6));
     });
 
-    test('the polling cadence stays inside 60 calls a minute', () {
+    test('the proxy cadence is fast enough to read as live', () {
+      // The whole point of caching in the edge function: the board's poll
+      // rate stops being the same constraint as Finnhub's call limit.
+      expect(
+        MarketDataService.proxyPollInterval.inSeconds,
+        lessThanOrEqualTo(3),
+        reason: 'behind a cache there is no reason to be slower than this',
+      );
+      expect(
+        MarketDataService.proxyPollInterval.inSeconds,
+        greaterThanOrEqualTo(1),
+        reason: 'sub-second polling is battery cost with nothing to show '
+            'for it — the cache only refreshes every 12s upstream',
+      );
+    });
+
+    test('the direct cadence still respects the vendor limit', () {
       final ticksPerMinute =
           60 / MarketDataService.livePollInterval.inSeconds;
       final callsPerMinute =
