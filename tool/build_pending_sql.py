@@ -44,6 +44,12 @@ HEADER = """-- ============================================================
 --    seeing on the Profile screen.
 --  * "Delete my account" fails with 42883 (undefined_function). Google Play
 --    requires that route to actually work, so this one blocks release.
+--  * The Market Board caches nothing. The edge function is deployed and
+--    working, but its cache lives in memory and Supabase spreads requests
+--    across isolates -- measured, eight identical calls in a row all missed.
+--    The board polls every two seconds for sixteen symbols, so with no
+--    shared cache that is 480 calls a minute against a Finnhub limit of 60:
+--    the first person to open the board gets everyone throttled.
 --
 --  GENERATED FILE — do not edit.
 --  Source: supabase/migrations/*.sql, joined by tool/build_pending_sql.py
