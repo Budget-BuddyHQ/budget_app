@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../models_Like_Skins_and_lessons_templates/concept_powers.dart';
 import '../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
 import '../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
+import '../models_Like_Skins_and_lessons_templates/relationship.dart';
 import '../models_Like_Skins_and_lessons_templates/volunteer_places.dart';
 import '../models_Like_Skins_and_lessons_templates/outing_rules.dart';
 import '../models_Like_Skins_and_lessons_templates/ranked_run.dart';
@@ -232,6 +233,30 @@ class LifeSimController extends ChangeNotifier {
   /// teaches it. Mirrors `debugSet` on the cascade engine.
   @visibleForTesting
   void debugTeach(FinanceConcept concept) => _teach(concept);
+
+  /// Adds somebody to this life, for tests.
+  ///
+  /// Events add people as a side effect of a choice, which makes reaching a
+  /// specific relationship state from a test a matter of replaying a run until
+  /// the right event happens to fire. This is the seam that avoids that, in
+  /// the same spirit as [debugTeach].
+  @visibleForTesting
+  void debugAddPerson(
+    String name, {
+    RelationshipKind kind = RelationshipKind.friend,
+    int? closeness,
+  }) {
+    if (_personNamed(name) != null) return;
+    _people.add(
+      Relationship(
+        name: name,
+        kind: kind,
+        closeness: closeness ?? kStartingCloseness,
+        metAtAge: _age,
+        lastSeenAge: _age,
+      ),
+    );
+  }
 
   /// Test seam: start partway into a hungry stretch.
   @visibleForTesting
@@ -479,7 +504,7 @@ class LifeSimController extends ChangeNotifier {
     notifyListeners();
   }
 
-  final List<String> _relationships = <String>[];
+  final List<Relationship> _people = <Relationship>[];
 
   LifeEvent? _currentEvent;
   String _log = '';
@@ -556,7 +581,71 @@ class LifeSimController extends ChangeNotifier {
   /// True when the run is over for any reason — retired or died.
   bool get finished => _retired || _dead;
 
-  List<String> get relationships => List.unmodifiable(_relationships);
+  /// Names only, for the epilogue and anything else that just wants a list.
+  List<String> get relationships =>
+      _people.where((p) => p.isPresent).map((p) => p.name).toList();
+
+  /// The people themselves, closest first, including anyone drifted away —
+  /// losing touch is a thing that happened in this life, and hiding the row
+  /// would hide it.
+  List<Relationship> get people {
+    final sorted = [..._people]
+      ..sort((a, b) => b.closeness.compareTo(a.closeness));
+    return List.unmodifiable(sorted);
+  }
+
+  /// Average closeness across everybody still present, 0 when nobody is.
+  ///
+  /// This is what makes "Rich but Lonely" mean something. The ending used to
+  /// fire on a happiness threshold alone, which made it reachable by
+  /// overworking and gave it nothing to do with people.
+  int get connection {
+    final present = _people.where((p) => p.isPresent).toList();
+    if (present.isEmpty) return 0;
+    final total = present.fold<int>(0, (sum, p) => sum + p.closeness);
+    return (total / present.length).round();
+  }
+
+  Relationship? _personNamed(String name) {
+    for (final person in _people) {
+      if (person.name == name) return person;
+    }
+    return null;
+  }
+
+  void _updatePerson(String name, Relationship updated) {
+    final index = _people.indexWhere((p) => p.name == name);
+    if (index >= 0) _people[index] = updated;
+  }
+
+  /// Which kind of relationship a newly-met name is.
+  ///
+  /// Guessed from the name itself, because events add people as bare strings
+  /// and rewriting all 196 of them to carry a kind would be a large change
+  /// for a small gain. "Grandma Lucille" is family; anybody else met before
+  /// you can walk to school is family too; the rest are friends.
+  RelationshipKind _kindFor(String name) {
+    const familyWords = <String>[
+      'mum',
+      'mom',
+      'dad',
+      'gran',
+      'grandma',
+      'grandad',
+      'grandpa',
+      'nan',
+      'aunt',
+      'uncle',
+      'sister',
+      'brother',
+      'cousin',
+    ];
+    final lower = name.toLowerCase();
+    if (familyWords.any(lower.contains)) return RelationshipKind.family;
+    if (_age <= 5) return RelationshipKind.family;
+    return RelationshipKind.friend;
+  }
+
   LifeEvent? get currentEvent => _currentEvent;
   String get log => _log;
   int get yearsLived => _age - startAge;
@@ -678,6 +767,7 @@ class LifeSimController extends ChangeNotifier {
       return;
     }
 
+    _driftRelationships();
     _maybeFinancialShock();
 
     // Milestones give the feed texture on years with no event.
@@ -722,6 +812,45 @@ class LifeSimController extends ChangeNotifier {
       'Pay for the year, $income.',
     ];
     return lines[_random.nextInt(lines.length)];
+  }
+
+  /// A year passing on every relationship you did not maintain.
+  ///
+  /// **Why this exists.** Without it, people were a list of names that never
+  /// changed, and the game had no way to make a run feel lonely — which left
+  /// the "Rich but Lonely" ending firing on a happiness threshold and having
+  /// nothing to do with anybody.
+  ///
+  /// Drift is deliberately slow: three points a year, scaled by how much
+  /// maintaining that kind of relationship really takes. A run has to neglect
+  /// somebody for most of a decade to lose them, which is about right — and
+  /// a sixty-year life spent entirely on work can still end alone, which is
+  /// the point.
+  ///
+  /// A visit does not freeze the year it happens in — `_age` has already
+  /// advanced by the time this runs — it buys a *buffer*. Time together is
+  /// worth +12 against a friend's 3-a-year drift, so seeing somebody roughly
+  /// every four years holds the relationship steady. That rhythm is
+  /// deliberate: with several people and sixty years to fill, demanding an
+  /// action every single year for each of them would be book-keeping rather
+  /// than a decision.
+  void _driftRelationships() {
+    if (_people.isEmpty) return;
+    for (var i = 0; i < _people.length; i++) {
+      final person = _people[i];
+      if (person.lastSeenAge == _age) continue;
+      final loss = (kBaseYearlyDrift * person.kind.driftRate).round();
+      _people[i] = person.copyWith(
+        closeness: (person.closeness - loss).clamp(0, 100),
+      );
+    }
+
+    // Loneliness is felt, not just recorded. A small yearly cost once the
+    // people around you have faded, so the stat and the story agree.
+    final present = _people.where((p) => p.isPresent).length;
+    if (present == 0 && _people.isNotEmpty) {
+      _happiness = _clamp(_happiness - 2);
+    }
   }
 
   /// Filler for a year where nothing was drawn.
@@ -1151,8 +1280,16 @@ class LifeSimController extends ChangeNotifier {
       _traits.add(revealed);
     }
     final person = choice.addRelationship;
-    if (person != null && !_relationships.contains(person)) {
-      _relationships.add(person);
+    if (person != null && _personNamed(person) == null) {
+      _people.add(
+        Relationship(
+          name: person,
+          kind: _kindFor(person),
+          closeness: kStartingCloseness,
+          metAtAge: _age,
+          lastSeenAge: _age,
+        ),
+      );
     }
     // Cleared before set, so an ending that does both — pays off the card
     // *and* records that it was paid off — lands in the right order even if
@@ -1690,7 +1827,20 @@ class LifeSimController extends ChangeNotifier {
   /// per coin spent — which is the point.
   void spendTimeWith(String person) {
     if (finished) return;
+    final existing = _personNamed(person);
     _happiness = _clamp(_happiness + 8);
+    if (existing != null) {
+      // Time is the thing that actually repairs a relationship, and it moves
+      // closeness more than twice as far as a gift does. That comparison is
+      // the whole reason both actions are in the menu.
+      _updatePerson(
+        person,
+        existing.copyWith(
+          closeness: (existing.closeness + 12).clamp(0, 100),
+          lastSeenAge: _age,
+        ),
+      );
+    }
     _setLog(
       'Spent the day with $person: +8 Happiness. Cost: nothing.',
       kind: LifeLogKind.people,
@@ -1710,6 +1860,16 @@ class LifeSimController extends ChangeNotifier {
     }
     _money -= cost;
     _happiness = _clamp(_happiness + 5);
+    final existing = _personNamed(person);
+    if (existing != null) {
+      _updatePerson(
+        person,
+        existing.copyWith(
+          closeness: (existing.closeness + 5).clamp(0, 100),
+          lastSeenAge: _age,
+        ),
+      );
+    }
     _setLog(
       'Bought $person a gift: +5 Happiness, -$cost coins.',
       kind: LifeLogKind.people,

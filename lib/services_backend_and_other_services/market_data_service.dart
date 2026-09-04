@@ -435,7 +435,20 @@ class MarketDataService extends ChangeNotifier {
   /// only once every twenty seconds.
   static const Duration _minRefreshInterval = Duration(seconds: 4);
 
-  /// How often the Market Board asks for a new batch.
+  /// How often the Market Board asks for a new batch **through the proxy**.
+  ///
+  /// Two seconds, for all sixteen symbols at once. That is possible because
+  /// the edge function caches vendor responses for twelve seconds, so the
+  /// board's poll rate and Finnhub's 60-call minute are no longer the same
+  /// constraint: the app asks this often, and the vendor is asked at most
+  /// five times a minute per symbol.
+  ///
+  /// It also collapses sixteen HTTP calls into one, which is what makes the
+  /// board feel live rather than merely poll often — sixteen sequential
+  /// requests took several seconds to walk through on their own.
+  static const Duration proxyPollInterval = Duration(seconds: 2);
+
+  /// How often the board polls when there is no proxy in front of it.
   ///
   /// **Why this went from 20s to 5s without breaking the rate limit.** The
   /// board used to refresh *every* tracked symbol on every tick — sixteen
@@ -450,6 +463,11 @@ class MarketDataService extends ChangeNotifier {
   /// and the symbols actually in front of the player are in every batch. What
   /// they are looking at updates twelve times more often than before; what
   /// they are not rotates through in the background.
+  ///
+  /// Without a cache to hide behind, every request is a vendor call and the
+  /// 60-call minute is the hard ceiling again — so this stays slow and
+  /// batched. This is the local-development path; a released build has the
+  /// proxy.
   static const Duration livePollInterval = Duration(seconds: 5);
 
   /// How many symbols one tick is allowed to fetch.
@@ -671,12 +689,22 @@ class MarketDataService extends ChangeNotifier {
       // Sequential rather than parallel: the free tier throttles by request
       // rate, and six quick sequential calls stay comfortably inside it while
       // a burst of six can trip a 429.
-      final fetched = <String, LiveQuote>{};
-      for (final entry in targets) {
-        final quote = await _fetchQuote(entry, key ?? '');
-        if (quote != null) {
-          fetched[entry.symbol] = quote;
-          _lastFetchPerSymbol[entry.symbol] = DateTime.now();
+      // One request for the lot where there is a proxy, falling back to
+      // one-at-a-time only when there is not.
+      var fetched = <String, LiveQuote>{};
+      final batched = usesProxy ? await _fetchAllQuotes(targets) : null;
+      if (batched != null) {
+        fetched = batched;
+        for (final symbol in fetched.keys) {
+          _lastFetchPerSymbol[symbol] = DateTime.now();
+        }
+      } else {
+        for (final entry in targets) {
+          final quote = await _fetchQuote(entry, key ?? '');
+          if (quote != null) {
+            fetched[entry.symbol] = quote;
+            _lastFetchPerSymbol[entry.symbol] = DateTime.now();
+          }
         }
       }
 
@@ -704,6 +732,64 @@ class MarketDataService extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  /// Every tracked symbol in one request, via the proxy's `quotes` op.
+  ///
+  /// Returns null when there is no proxy — the caller falls back to fetching
+  /// one at a time, which is the only thing that works against Finnhub
+  /// directly.
+  ///
+  /// **Partial results are kept.** A symbol the function could not reach
+  /// comes back as null in the map and is simply left out; the rest are
+  /// merged. Blanking fifteen good prices because a sixteenth timed out
+  /// would be a worse board than a slightly stale one.
+  Future<Map<String, LiveQuote>?> _fetchAllQuotes(
+    List<LiveSymbol> wanted,
+  ) async {
+    final uri = _proxyUri({
+      'op': 'quotes',
+      'symbols': wanted.map((e) => e.symbol).join(','),
+    });
+    if (uri == null) return null;
+
+    try {
+      final response = await _client
+          .get(uri, headers: _proxyHeaders)
+          .timeout(_timeout);
+      if (response.statusCode != 200) return null;
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map) return null;
+      final quotes = decoded['quotes'];
+      if (quotes is! Map) return null;
+
+      final byName = <String, LiveSymbol>{
+        for (final entry in wanted) entry.symbol: entry,
+      };
+      final out = <String, LiveQuote>{};
+      for (final pair in quotes.entries) {
+        final entry = byName[pair.key.toString()];
+        final body = pair.value;
+        if (entry == null || body is! Map) continue;
+        out[entry.symbol] = LiveQuote(
+          symbol: entry.symbol,
+          company: entry.company,
+          current: _readDouble(body['c']),
+          change: _readDouble(body['d']),
+          percentChange: _readDouble(body['dp']),
+          high: _readDouble(body['h']),
+          low: _readDouble(body['l']),
+          open: _readDouble(body['o']),
+          previousClose: _readDouble(body['pc']),
+          fetchedAt: DateTime.now(),
+        );
+      }
+      return out;
+    } catch (error) {
+      debugPrint('Batched quote fetch failed: $error');
+      return null;
+    }
   }
 
   Future<LiveQuote?> _fetchQuote(LiveSymbol entry, String apiKey) async {

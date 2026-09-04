@@ -13,6 +13,7 @@ import '../../../controllers_that_updates_stats/app_settings_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/concept_powers.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_tutorial_steps.dart';
 import '../../../models_Like_Skins_and_lessons_templates/ranked_run.dart';
+import '../../../models_Like_Skins_and_lessons_templates/relationship.dart';
 import '../../../models_Like_Skins_and_lessons_templates/volunteer_places.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../onboarding/coach_mark.dart';
@@ -295,6 +296,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
           Navigator.of(sheetContext).pop();
           _openVolunteer(life);
         },
+        onPerson: (person) => _openPerson(life, person),
         onInvest: () {
           Navigator.of(sheetContext).pop();
           _invest(life);
@@ -382,6 +384,22 @@ class _LifeSimPageState extends State<LifeSimPage> {
   /// Skill practice. Until this existed, `LifeSimController.practise` had no
   /// UI at all — the whole skill/career ladder was unreachable by the player
   /// even though the events gating on it were already in the pool.
+  /// One person, and what you can do about them.
+  ///
+  /// A screen of its own rather than two rows in a list, because the thing
+  /// worth showing is the *relationship* — how close you are, how long since
+  /// you saw them, and which way it is heading. None of that fits on a menu
+  /// row, and without it the two actions are just two buttons.
+  Future<void> _openPerson(LifeSimController life, Relationship person) async {
+    HapticFeedback.lightImpact();
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _PersonSheet(life: life, person: person),
+    );
+  }
+
   /// Where to give your time.
   ///
   /// A sheet rather than a menu row, because there is a real decision in it
@@ -2174,6 +2192,7 @@ class _LifeMenuSheet extends StatelessWidget {
     required this.life,
     required this.onSkills,
     required this.onVolunteer,
+    required this.onPerson,
     required this.onInvest,
     required this.onBudget,
     required this.onConcepts,
@@ -2184,6 +2203,7 @@ class _LifeMenuSheet extends StatelessWidget {
   final LifeSimController life;
   final VoidCallback onSkills;
   final VoidCallback onVolunteer;
+  final void Function(Relationship person) onPerson;
   final VoidCallback onInvest;
   final VoidCallback onBudget;
   final VoidCallback onConcepts;
@@ -2282,29 +2302,31 @@ class _LifeMenuSheet extends StatelessWidget {
         ];
 
       case _LifeMenu.relationships:
-        final people = life.relationships;
+        final people = life.people;
         if (people.isEmpty) {
           return const [];
         }
         return [
-          for (final person in people) ...[
+          // One row per person, saying where the relationship actually
+          // stands. It used to be two identical rows each — "Spend time
+          // with X" and "Buy X a gift" — with nothing about X anywhere, so
+          // four people meant eight rows that all read the same and none of
+          // which told you that one of them had not been seen in a decade.
+          for (final person in people)
             _LifeAction(
-              label: 'Spend time with $person',
-              detail: 'Costs nothing. +8 Happiness.',
-              icon: Icons.emoji_people_rounded,
-              onTap: () => run(() => life.spendTimeWith(person)),
-              performs: LifeAction.spendTime,
+              label: person.name,
+              detail: person.isPresent
+                  ? '${person.kind.label} · ${person.status}'
+                        '${person.lastSeenAge == null ? '' : ' · last saw '
+                                  'them at ${person.lastSeenAge}'}'
+                  : 'You lost touch. ${person.kind.label} once.',
+              icon: person.kind.icon,
+              onTap: () {
+                Navigator.of(context).pop();
+                onPerson(person);
+              },
+              performs: null,
             ),
-            _LifeAction(
-              label: 'Buy $person a gift',
-              detail: 'Costs coins, and gives less happiness than time does.',
-              icon: Icons.card_giftcard_rounded,
-              cost: 50,
-              onTap: () => run(() => life.giveGift(person)),
-              performs: LifeAction.buyGift,
-              disabledReason: life.money >= 50 ? null : 'Not enough coins',
-            ),
-          ],
         ];
 
       case _LifeMenu.activities:
@@ -4112,4 +4134,274 @@ class _Tag extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// One person: where the relationship stands, and the two things you can do.
+///
+/// **Why closeness is a bar and a word, not a number.** "Drifting" is what a
+/// nine-year-old needs to read; the bar is what makes the change visible when
+/// they come back a year later. A bare `34` would do neither.
+///
+/// Stateful because both actions change the person underneath it, and the
+/// sheet has to redraw rather than sit on a stale copy.
+class _PersonSheet extends StatefulWidget {
+  const _PersonSheet({required this.life, required this.person});
+
+  final LifeSimController life;
+  final Relationship person;
+
+  @override
+  State<_PersonSheet> createState() => _PersonSheetState();
+}
+
+class _PersonSheetState extends State<_PersonSheet> {
+  late Relationship _person = widget.person;
+
+  void _refresh() {
+    for (final p in widget.life.people) {
+      if (p.name == _person.name) {
+        setState(() => _person = p);
+        return;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final life = widget.life;
+    final person = _person;
+    final chip = AppTheme.tintedChip(person.kind.accent, alpha: 0.16);
+    final years = life.age - person.metAtAge;
+    final lastSeen = person.lastSeenAge;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+      decoration: const BoxDecoration(
+        color: AppTheme.panelStrong,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXLarge),
+        ),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(person.kind.icon, color: person.kind.accent, size: 26),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FittedLabel(
+                        person.name,
+                        style: GoogleFonts.pixelifySans(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        years <= 0
+                            ? '${person.kind.label} - you just met'
+                            : '${person.kind.label} - $years '
+                                  'year${years == 1 ? '' : 's'}',
+                        style: GoogleFonts.quicksand(
+                          color: AppTheme.textMuted,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: chip.fill,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    person.status,
+                    style: GoogleFonts.pixelifySans(
+                      color: person.statusColour,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: person.closeness / 100,
+                minHeight: 9,
+                backgroundColor: Colors.black.withValues(alpha: 0.3),
+                valueColor: AlwaysStoppedAnimation<Color>(person.statusColour),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              person.isPresent
+                  ? 'Closeness fades a little every year you do not see them. '
+                        'Time brings it back faster than anything you can buy.'
+                  : 'You lost touch. It is not too late, but it takes more '
+                        'than a present.',
+              style: GoogleFonts.quicksand(
+                color: AppTheme.textMuted,
+                fontSize: 12,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (lastSeen != null && lastSeen < life.age) ...[
+              const SizedBox(height: 6),
+              Text(
+                life.age - lastSeen == 1
+                    ? 'Last saw them a year ago.'
+                    : 'Last saw them ${life.age - lastSeen} years ago.',
+                style: GoogleFonts.quicksand(
+                  color: person.statusColour,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            _PersonAction(
+              label: 'Spend the day together',
+              detail:
+                  'Free. +8 Happiness, and the biggest lift to how close you '
+                  'are.',
+              icon: Icons.emoji_people_rounded,
+              accent: const Color(0xFF85EFAC),
+              onTap: () {
+                life.spendTimeWith(person.name);
+                _refresh();
+              },
+            ),
+            const SizedBox(height: 9),
+            _PersonAction(
+              label: 'Buy them a gift',
+              detail:
+                  'Costs 50 coins and moves things less than a day together '
+                  'does. That comparison is the point.',
+              icon: Icons.card_giftcard_rounded,
+              accent: const Color(0xFFFFD45C),
+              cost: 50,
+              disabledReason: life.money >= 50 ? null : 'Not enough coins',
+              onTap: () {
+                life.giveGift(person.name);
+                _refresh();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PersonAction extends StatelessWidget {
+  const _PersonAction({
+    required this.label,
+    required this.detail,
+    required this.icon,
+    required this.accent,
+    required this.onTap,
+    this.cost,
+    this.disabledReason,
+  });
+
+  final String label;
+  final String detail;
+  final IconData icon;
+  final Color accent;
+  final VoidCallback onTap;
+  final int? cost;
+  final String? disabledReason;
+
+  @override
+  Widget build(BuildContext context) {
+    final blocked = disabledReason != null;
+    return Opacity(
+      opacity: blocked ? 0.45 : 1,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+          onTap: blocked ? null : onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppTheme.panel,
+              borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+              border: Border.all(color: accent.withValues(alpha: 0.32)),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: accent, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FittedLabel(
+                        label,
+                        style: GoogleFonts.pixelifySans(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        blocked ? disabledReason! : detail,
+                        style: GoogleFonts.quicksand(
+                          color: blocked
+                              ? const Color(0xFFF2C66D)
+                              : AppTheme.textMuted,
+                          fontSize: 11.5,
+                          height: 1.35,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (cost != null) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0x22FFD45C),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '-$cost',
+                      style: GoogleFonts.pixelifySans(
+                        color: const Color(0xFFFFD45C),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
