@@ -211,8 +211,14 @@ class _StockMarketPageState extends State<StockMarketPage>
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _tick(force: true));
+    // Two seconds behind the cached proxy, five without one. The proxy makes
+    // the difference: it holds vendor responses for twelve seconds, so the
+    // board's poll rate stops being the same thing as Finnhub's call limit.
+    final market = context.read<MarketDataService>();
     _livePoll = Timer.periodic(
-      MarketDataService.livePollInterval,
+      market.usesProxy
+          ? MarketDataService.proxyPollInterval
+          : MarketDataService.livePollInterval,
       (_) => _tick(),
     );
   }
@@ -248,7 +254,15 @@ class _StockMarketPageState extends State<StockMarketPage>
           if (entry.value != 0 && entry.key.startsWith('stock_'))
             entry.key.substring('stock_'.length),
       };
-      await market.refreshBatch(pinned: owned);
+      // Behind the proxy, one request returns everything and costs one edge
+      // invocation, so there is nothing to gain by asking for a subset.
+      // Without it, every symbol is a vendor call and the batch cap is the
+      // only thing keeping the board inside the rate limit.
+      if (market.usesProxy) {
+        await market.refresh();
+      } else {
+        await market.refreshBatch(pinned: owned);
+      }
     }
     if (!mounted) return;
 

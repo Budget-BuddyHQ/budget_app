@@ -1,16 +1,23 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'public_supabase_config.dart';
 import 'runtime_env_defines.dart';
 
 Map<String, dynamic>? _cachedJsonEnv;
 
-/// Looks a key up across all three sources, most-specific first.
+/// Looks a key up across every source, most-specific first.
 ///
-/// Order matters: `--dart-define` beats the local JSON file so a key baked
-/// into a build always wins over a stale `supabase.env.json` sitting in a
-/// checkout. The JSON file stays last as a developer convenience for
-/// `flutter run` on desktop.
+/// Order matters. An environment variable beats a `--dart-define`, which beats
+/// a stale `supabase.env.json` sitting in a checkout, which beats the
+/// committed public defaults. The defaults are deliberately **last**: they are
+/// what makes a plain `flutter build` produce a working app, and being last
+/// means any of the other three can still point a build at a different
+/// project without touching them.
+///
+/// Only `SUPABASE_URL` and `SUPABASE_ANON_KEY` have defaults — see
+/// `public_supabase_config.dart` for why those two are safe to commit and
+/// why the market API keys are not.
 String? readRuntimeEnv(String key) {
   final envValue = Platform.environment[key];
   final normalizedEnv = _normalize(envValue);
@@ -27,10 +34,11 @@ String? readRuntimeEnv(String key) {
 
   final jsonValue = _jsonEnv[key];
   if (jsonValue is String) {
-    return _normalize(jsonValue);
+    final normalized = _normalize(jsonValue);
+    if (normalized != null) return normalized;
   }
 
-  return null;
+  return _normalize(kPublicSupabaseConfig[key]);
 }
 
 Map<String, dynamic> get _jsonEnv {
