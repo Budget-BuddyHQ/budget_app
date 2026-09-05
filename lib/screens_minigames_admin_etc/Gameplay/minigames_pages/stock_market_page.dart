@@ -1333,26 +1333,61 @@ class _PortfolioTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final holdings =
-        quotes
-            .map((quote) {
-              final owned = stats.holdings['stock_${quote.symbol}'] ?? 0.0;
-              final basis = stats.costBasis['stock_${quote.symbol}'] ?? 0;
-              return (
-                quote: quote,
-                ownedLots: owned,
-                metrics: _holdingMetrics(
-                  ownedLots: owned,
-                  costBasis: basis,
-                  currentPrice: quote.currentPrice,
-                ),
-              );
-            })
-            .where((h) => h.ownedLots != 0)
-            .toList()
-          ..sort(
-            (a, b) => b.metrics.currentValue.compareTo(a.metrics.currentValue),
+    // 1. Map existing quotes by symbol for fast lookup
+    final quoteMap = {for (final q in quotes) q.symbol: q};
+
+    // 2. Identify all non-zero stock holdings from stats.holdings
+    final holdings = <({
+      _TradeQuote quote,
+      double ownedLots,
+      ({
+        double averageCost,
+        double currentValue,
+        double totalProfitLoss,
+        double profitLossPercent,
+      }) metrics,
+    })>[];
+
+    stats.holdings.forEach((key, owned) {
+      if (!key.startsWith('stock_') || owned == 0) return;
+      final symbol = key.substring('stock_'.length);
+
+      final fallbackPrice = (stats.costBasis[key] ?? 10) / kCoinsPerDollar;
+
+      // Fetch quote from market quotes list, or construct a dynamic fallback quote
+      final quote = quoteMap[symbol] ??
+          _tradeQuoteFor(
+            LiveQuote(
+              symbol: symbol,
+              company: symbol,
+              current: fallbackPrice,
+              change: 0.0,
+              percentChange: 0.0,
+              high: fallbackPrice,
+              low: fallbackPrice,
+              open: fallbackPrice,
+              previousClose: fallbackPrice,
+              fetchedAt: DateTime.now(),
+            ),
           );
+
+      final basis = stats.costBasis[key] ?? 0;
+
+      holdings.add((
+        quote: quote,
+        ownedLots: owned,
+        metrics: _holdingMetrics(
+          ownedLots: owned,
+          costBasis: basis,
+          currentPrice: quote.currentPrice,
+        ),
+      ));
+    });
+
+    // 3. Sort by highest holding value
+    holdings.sort(
+      (a, b) => b.metrics.currentValue.compareTo(a.metrics.currentValue),
+    );
 
     final totalProfitLoss = holdings.fold<double>(
       0,
@@ -1362,10 +1397,6 @@ class _PortfolioTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
-        // The trending logo strip lives on Trade primarily, but Assets is
-        // the default tab — surfacing it here too means the brand logos are
-        // the first "graphic, not text" thing every player sees, and
-        // tapping one hops straight into a trade ticket.
         if (quotes.isNotEmpty) ...[
           _TrendingPromoStrip(quotes: quotes, onTap: (_) => onGoToTrade()),
           const SizedBox(height: 18),
@@ -1597,7 +1628,12 @@ class _AllocationBar extends StatelessWidget {
     final raw = <({String label, int value, Color color})>[
       (label: 'Cash', value: cash, color: const Color(0xFFE1BB72)),
       for (final quote in holdings)
-        (label: quote.symbol, value: valueOf(quote), color: quote.accent),
+        (
+          label: quote.symbol,
+          // Ensure non-zero positions evaluate to at least 1 so small/fractional values are visible
+          value: math.max(1, valueOf(quote)),
+          color: quote.accent,
+        ),
     ].where((s) => s.value > 0).toList();
 
     // A stock's own accent can collide with another slice's — Cash and AAPL
