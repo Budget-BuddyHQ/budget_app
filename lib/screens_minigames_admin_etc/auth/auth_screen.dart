@@ -48,6 +48,21 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   bool _acceptedTerms = false;
   bool _isConfiguringTurnstile = false;
   String? _captchaToken;
+
+  /// Set when Turnstile tells us it cannot produce a token here at all —
+  /// a render failure, an error callback, or the script never loading.
+  ///
+  /// **Why this matters more than it looks.** Before it existed, "no token"
+  /// and "no token *yet*" were the same state, so the app waited forever and
+  /// answered every sign-in attempt with "Still checking". A misconfigured
+  /// widget, a Cloudflare outage or a captive-portal wifi all became a
+  /// permanent lockout with no way past it.
+  ///
+  /// The captcha is not the security boundary — Supabase enforces it
+  /// server-side, and rejects a request with a missing or bad token itself.
+  /// So when the challenge is broken the right move is to *try anyway* and
+  /// let the server answer, rather than refuse locally on the client's guess.
+  bool _captchaUnavailable = false;
   WebViewController? _turnstileController;
 
   bool get _isLogin => _mode == AuthMode.login;
@@ -95,15 +110,30 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     let widgetId;
 
     function onTurnstileLoad() {
-      widgetId = turnstile.render('#turnstile-widget', {
-        sitekey: '$turnstileSiteKey',
-        size: 'invisible',
-        theme: 'dark',
-        callback: onSuccess,
-        'expired-callback': onExpired,
-        'error-callback': onExpired
-      });
-      turnstile.execute(widgetId);
+      // 'flexible', not 'invisible'.
+      //
+      // Cloudflare removed 'invisible' as a *size* -- it is a property of the
+      // widget in the Turnstile dashboard now. Passing it made render() throw
+      //   Invalid value for parameter "size", expected "compact",
+      //   "flexible", or "normal", got "invisible"
+      // so widgetId was never assigned, execute() never ran, no callback ever
+      // fired, and the app blocked every sign-in with "Still checking".
+      // Nobody could log in, on any platform.
+      try {
+        widgetId = turnstile.render('#turnstile-widget', {
+          sitekey: '$turnstileSiteKey',
+          size: 'flexible',
+          theme: 'dark',
+          callback: onSuccess,
+          'expired-callback': onExpired,
+          'error-callback': onFailed
+        });
+      } catch (e) {
+        // Tell Dart, rather than dying silently inside a WebView nobody can
+        // see. This is exactly how the bug above stayed hidden.
+        StatusChannel.postMessage('render-failed: ' + e);
+        return;
+      }
     }
 
     function onSuccess(token) {
@@ -112,6 +142,13 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 
     function onExpired() {
       TokenChannel.postMessage('');
+    }
+
+    // Distinct from expiry. Expiry means "fetch another one"; a failure means
+    // the challenge cannot be completed here at all, and the app has to stop
+    // waiting for a token that is never going to arrive.
+    function onFailed(code) {
+      StatusChannel.postMessage('error: ' + code);
     }
   </script>
 </body>
@@ -235,8 +272,11 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
         setState(() {
           _captchaToken = token;
         });
-      } else {
-        debugPrint('Turnstile submit blocked: captcha token is null.');
+      } else if (!_captchaUnavailable) {
+        // Still working on it -- ask them to wait. This is the only case
+        // where waiting is the right advice, because a token really is on
+        // its way.
+        debugPrint('Turnstile: no token yet, asking the user to wait.');
         GameToast.show(
           context,
           title: 'Still checking',
@@ -245,6 +285,20 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           accent: const Color(0xFFFFC36B),
         );
         return;
+      } else {
+        // The challenge is broken, so go without a token and let Supabase
+        // decide.
+        //
+        // Refusing here was a permanent lockout: "Still checking" forever,
+        // with no way past it and nothing on screen explaining why. And it
+        // protected nothing — Supabase enforces captcha server-side, so a
+        // request with no token is rejected *there* if the project requires
+        // one. All the client block did was replace a clear server error with
+        // an inaccurate client one.
+        debugPrint(
+          'Turnstile unavailable; continuing without a token and letting '
+          'the server decide.',
+        );
       }
     }
 
@@ -335,7 +389,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       if (!mounted) {
         return;
       }
-      if (token == null || token.isEmpty) {
+      if ((token == null || token.isEmpty) && !_captchaUnavailable) {
         GameToast.show(
           context,
           title: 'Still checking',
@@ -419,8 +473,21 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           },
           onWebResourceError: (error) {
             debugPrint('Turnstile WebView error: ${error.description}');
+            // The challenge HTML is served from a local origin, so a resource
+            // error here means the Cloudflare script could not be reached —
+            // no network, a blocked domain, a captive portal. Whatever the
+            // cause, no token is coming and the sign-in must not hang on one.
+            if (mounted) setState(() => _captchaUnavailable = true);
           },
         ),
+      )
+      ..addJavaScriptChannel(
+        'StatusChannel',
+        onMessageReceived: (JavaScriptMessage message) {
+          if (!mounted) return;
+          debugPrint('Turnstile status: ${message.message}');
+          setState(() => _captchaUnavailable = true);
+        },
       )
       ..addJavaScriptChannel(
         'TokenChannel',
@@ -436,6 +503,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           );
           setState(() {
             _captchaToken = token.isEmpty ? null : token;
+            if (token.isNotEmpty) _captchaUnavailable = false;
           });
         },
       );
@@ -452,6 +520,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       await _loadTurnstile(controller);
     } catch (error) {
       debugPrint('Turnstile load failed: $error');
+      if (mounted) setState(() => _captchaUnavailable = true);
     } finally {
       _isConfiguringTurnstile = false;
     }
@@ -460,6 +529,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   void _resetTurnstile() {
     setState(() {
       _captchaToken = null;
+      _captchaUnavailable = false;
     });
     final controller = _turnstileController;
     if (controller != null) {
@@ -1176,15 +1246,22 @@ class _HiddenTurnstileView extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return IgnorePointer(
-      child: SizedBox(
-        height: 76,
-        width: double.infinity,
-        child: Transform.translate(
-          offset: const Offset(-10000, -10000),
-          child: WebViewWidget(controller: controller!),
-        ),
-      ),
+    // **On screen, and touchable.**
+    //
+    // This used to be wrapped in an `IgnorePointer` and shoved ten thousand
+    // pixels off the top-left corner, which was fine while the widget was
+    // configured `size: 'invisible'` and completed itself. It stopped being
+    // fine the moment that parameter became invalid: Cloudflare now renders a
+    // real widget, and a real widget that is off-screen and cannot be tapped
+    // is a challenge nobody can ever pass.
+    //
+    // Managed widgets still usually resolve on their own in a second or two,
+    // so most people will see a box that ticks itself. The ones who get an
+    // interactive challenge can now actually complete it.
+    return SizedBox(
+      height: 76,
+      width: double.infinity,
+      child: WebViewWidget(controller: controller!),
     );
   }
 }

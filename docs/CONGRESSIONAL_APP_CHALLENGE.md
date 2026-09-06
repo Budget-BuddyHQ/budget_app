@@ -8,7 +8,7 @@ stick when you have to spend money to learn them.*
 **Built in:** Flutter/Dart, with Supabase for accounts, cloud save and
 leaderboards, and live market data from Finnhub and Twelve Data.
 
-**Scale:** ~83,000 lines of Dart across 135 files, 1,247 automated tests,
+**Scale:** ~83,300 lines of Dart across 135 files, 1,280 automated tests,
 `flutter analyze` clean.
 
 ---
@@ -213,7 +213,7 @@ setting.
 ### Everything that can be pure Dart is
 The life simulation, the match-3 engine, the quiz banks, the town scenarios and
 the habit model have no Flutter dependency and take an injectable `Random`.
-That is why 1,247 tests run in under thirty seconds and why the rules can be
+That is why 1,280 tests run in under thirty seconds and why the rules can be
 tested as *rules* rather than through a UI.
 
 ### The art is generated and checked
@@ -308,6 +308,30 @@ site's 5% house cut. Those stay for every age, because showing a child what
 the mechanic does to their money before somebody sells them one is the entire
 point of the app. What is hidden is the part where the game itself takes a
 stake and rolls.
+
+**Sign-in stopped working for everybody, and the log said why in one line.**
+Cloudflare removed `invisible` as a valid *size* for a Turnstile widget — it
+is a dashboard property now — so `turnstile.render()` threw, no callback ever
+fired, and the app answered every attempt with "Still checking" forever. Not a
+device problem: equally broken everywhere, and it had been since the day the
+parameter changed.
+
+The instructive part is what the same log *also* said. It carried a refused
+connection to `localhost`, which looks exactly like a local server that failed
+to start — and the project has one. It is a red herring; `localhost` is only
+the origin the challenge HTML is served under so the domain allow-list
+matches, and that error appears whether or not sign-in works. Two further
+faults sat underneath, either of which would have kept it broken after fixing
+the first: the challenge WebView was translated ten thousand pixels off-screen
+and wrapped so it could not be tapped, and there was no failure path at all —
+"no token" and "no token *yet*" were the same state, so a broken widget or a
+Cloudflare outage became a permanent lockout.
+
+The last of those is the one worth stating as a principle: **a security check
+that fails closed on its own health check is an outage with extra steps.**
+Supabase enforces the captcha server-side regardless, so refusing on the
+client protected nothing and only replaced a clear server error with an
+inaccurate local one.
 
 **A tutorial that pointed next to what it was describing, three times in a
 row.** The overlay could not use a `GlobalKey` to find a nav tab —
