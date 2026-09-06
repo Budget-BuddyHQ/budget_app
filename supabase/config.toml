@@ -49,13 +49,17 @@ site_url = "https://budget-buddyhq.github.io/budget_app/password-reset.html"
 # people to the page above instead: the page's whole job is to redirect to it,
 # and a future flow (magic link, email change) may want it directly.
 #
-# `http://localhost:5960` is the Flutter web dev server. Keep it for `flutter
-# run -d chrome`; a deployed web build needs its real origin adding here.
+# **No loopback entries.** There used to be `http://localhost:5960` here for
+# the Flutter web dev server, and nothing sends it any more —
+# `passwordResetRedirectUrl` is the hosted page on every platform now. An
+# unused allow-list entry is not harmless: it is a documented-looking
+# invitation to point a real email at an address that resolves on exactly one
+# machine, which is the mistake this whole file exists because of.
+#
+# A deployed web build needs its real origin adding here, not a loopback one.
 additional_redirect_urls = [
   "budgetbuddy://password-reset",
   "https://budget-buddyhq.github.io/budget_app/password-reset.html",
-  "http://localhost:5960",
-  "http://localhost:5960/",
 ]
 
 # An hour. Long enough that a child who asks for a reset, goes to find a
