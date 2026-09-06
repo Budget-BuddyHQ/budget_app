@@ -502,7 +502,7 @@ class _EmptyLeaderboardState extends StatelessWidget {
       child: Text(
         showingFriends
             ? 'No friends yet — add one from your Profile using their friend code, and ask them to add yours back.'
-            : 'Once more players save stats to Supabase, rankings will appear here automatically.',
+            : 'Once more players start saving scores, rankings will appear here automatically.',
         style: const TextStyle(
           color: Colors.white,
           height: 1.5,
