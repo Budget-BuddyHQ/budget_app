@@ -12,20 +12,61 @@ import '../models_Like_Skins_and_lessons_templates/money_habit_models.dart';
 import '../constants/privacy_policy.dart';
 import '../models_Like_Skins_and_lessons_templates/player_profile.dart';
 
+/// The hosted page the emailed password-reset link lands on.
+///
+/// GitHub Pages, `/docs` on `main` — the same publishing setup that serves
+/// [kPrivacyPolicyUrl]. The page itself (`docs/password-reset.html`) forwards
+/// straight on to [passwordResetDeepLink], carrying the auth payload with it.
+///
+/// **This is also what the project's Site URL should be set to.** See the
+/// long note on [passwordResetRedirectUrl] for why that is the load-bearing
+/// half of the fix rather than a nicety.
+const String passwordResetLandingUrl =
+    'https://budget-buddyhq.github.io/budget_app/password-reset.html';
+
+/// The custom scheme the OS hands back to this app.
+///
+/// Declared natively as well — Android: an intent-filter in
+/// AndroidManifest.xml; iOS: CFBundleURLTypes in Info.plist — or the OS has
+/// no idea who owns `budgetbuddy://` and the link does nothing at all.
+const String passwordResetDeepLink = 'budgetbuddy://password-reset';
+
 /// Where the emailed password-reset link sends the player back to.
 ///
-/// **This must also be allowlisted** in the Supabase dashboard under
-/// Authentication → URL Configuration → Redirect URLs, otherwise Supabase
-/// ignores it and falls back to the project's Site URL — the app then never
-/// receives the recovery session and the reset silently dead-ends.
+/// **Why this is an https page rather than the app's own scheme.**
 ///
-/// Web runs on the dev server's origin. Mobile needs a custom scheme, which
-/// also has to be declared natively (Android: an intent-filter in
-/// AndroidManifest.xml; iOS: CFBundleURLTypes in Info.plist) before the OS
-/// will hand the link back to the app.
+/// It used to be `budgetbuddy://password-reset` directly, and the reset email
+/// arrived pointing at `http://localhost:3000` — "This site can't be reached".
+/// The app was not at fault: this constant was right, the intent-filter was
+/// right, and `main.dart` handled the recovery session correctly. Supabase
+/// checks `redirect_to` against the project's Site URL and Redirect
+/// allow-list, and when the value is not on that list it does not report an
+/// error — it *substitutes the Site URL*, which on a new project is the
+/// `localhost:3000` placeholder. One missing allow-list entry, and the
+/// symptom is a broken app rather than a broken setting.
+///
+/// Pointing at a page that is *also* the Site URL removes that failure mode
+/// entirely: the allow-listed value and the fallback value are the same page,
+/// so getting the dashboard wrong can no longer produce a dead link.
+///
+/// It is also more reliable in the place it actually runs. The mail is opened
+/// in Gmail's WebView or an in-app Safari, and those handle a **302 to a
+/// custom scheme** poorly — several refuse it outright, which looks exactly
+/// like the bug above and is not fixable from the dashboard. Landing on an
+/// ordinary https page first and letting *that* invoke the scheme is the path
+/// browsers actually permit, and it leaves somewhere to explain the two cases
+/// a deep link cannot: the app is not installed, or the link has expired.
+///
+/// The cost is one extra hop. That is worth paying for a flow whose failure
+/// mode is "nobody can get back into their account".
+///
+/// Web still returns to its own origin, because on web the app *is* the page
+/// and bouncing it through a redirect to a mobile scheme would be nonsense.
+/// The localhost value is a dev-server address and correct only in dev; a
+/// deployed web build needs its real origin here.
 const String passwordResetRedirectUrl = kIsWeb
     ? 'http://localhost:5960/'
-    : 'budgetbuddy://password-reset';
+    : passwordResetLandingUrl;
 
 @immutable
 class LedgerTransaction {
@@ -498,6 +539,52 @@ class UserStats {
         .toList(growable: false);
   }
 
+  /// Highest Coin Cascade level the player has cleared.
+  ///
+  /// Was session-scoped — a field on the screen's State, gone the moment the
+  /// page was popped. The comment defending that said persisting it would
+  /// hand a returning player level 7 with no idea what the earlier rules
+  /// were, which is a real concern and the wrong fix for it: the level picker
+  /// still opens on the ladder, so an unlocked level is somewhere you *may*
+  /// go rather than where you are put. What the session scope actually did
+  /// was make thirteen levels of progress evaporate every time somebody left
+  /// the arcade, which is most of "I don't know what to work for in that
+  /// game".
+  ///
+  /// 0 means nothing cleared yet, so level 1 is the only one open.
+  int get cascadeClearedThrough => _readInt(spendingHabits['cascade_cleared']);
+
+  /// Town encounters that have already paid out, by `townEncounterFor().id`.
+  ///
+  /// **The same hole as [townCollectedCoinIds], one layer up.** Coins were
+  /// de-duplicated because each pickup paid real gold and stepping outside
+  /// respawned them. The buildings had exactly that problem and nobody had
+  /// noticed, because it is one indirection further away: `_openSpot` calls
+  /// `applyChallengePayload` with the chosen option's gold, XP and literacy
+  /// every single time, with no memory at all.
+  ///
+  /// Worse, the anti-repetition work made it *easier*. Today's scene is keyed
+  /// partly on `TownCondition`, which is rolled fresh on every entry to the
+  /// town — so leaving and coming back re-deals every building. That is
+  /// exactly right for keeping the town interesting and exactly wrong for the
+  /// economy: it turned "walk out, walk back in" into a fresh set of twelve
+  /// paying conversations, repeatable for as long as somebody could be
+  /// bothered.
+  ///
+  /// Keyed on the **encounter**, not the building. Keying on the building
+  /// would mean one visit locks a shop out for good, which throws away the
+  /// rotation; keying on the encounter means each distinct conversation pays
+  /// once and the town still has somewhere new to take you tomorrow.
+  List<String> get townResolvedSceneIds {
+    final raw = spendingHabits['town_resolved_scenes'];
+    if (raw is! List) return const <String>[];
+    return raw
+        .map((entry) => entry.toString().trim())
+        .where((entry) => entry.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+  }
+
   String get profileImageUrl {
     final value = spendingHabits['profile_image_url']?.toString().trim();
     if (value == null || value.isEmpty) {
@@ -654,6 +741,11 @@ class LeaderboardEntry {
     required this.gold,
     required this.isCurrentUser,
     this.profileImageUrl = '',
+    this.equippedSkin = '',
+    this.personalityType = '',
+    this.lessonsCompleted = 0,
+    this.dailyStreak = 0,
+    this.updatedAt,
   });
 
   final String id;
@@ -664,6 +756,34 @@ class LeaderboardEntry {
   final int gold;
   final bool isCurrentUser;
   final String profileImageUrl;
+
+  // --- The extras behind FriendProfileScreen ----------------------------
+  //
+  // **All of these default to empty and none of them are required**, and that
+  // is the important part rather than a Dart nicety. They come from columns
+  // added to the `leaderboard` view by `0005_leaderboard_profile.sql`, and
+  // this project has a history of migrations sitting un-run for weeks — the
+  // friends feature itself shipped ahead of `0002` and spent that time
+  // showing players a Postgres error code.
+  //
+  // So the friend profile is built to be *worth opening* on the columns that
+  // already exist, and to quietly gain three more sections when the migration
+  // lands. A feature that degrades is one that can ship on either side of a
+  // deploy; a feature that requires the migration is one more thing that can
+  // be broken by forgetting.
+
+  /// Their equipped skin id, for drawing their villager rather than a letter.
+  final String equippedSkin;
+
+  /// "Saver", "Spender", … — the app's own read on how they play.
+  final String personalityType;
+
+  final int lessonsCompleted;
+  final int dailyStreak;
+
+  /// Last time their row was written, which is the closest thing to "last
+  /// seen" this schema has. Null when the view does not expose it.
+  final DateTime? updatedAt;
 
   String get scoreLabel => '$literacyPoints LP';
 }
@@ -1702,20 +1822,11 @@ alter view public.leaderboard set (security_invoker = false);
           .asMap()
           .entries
           .map(
-            (entry) => LeaderboardEntry(
-              id: (entry.value['id'] ?? '').toString(),
-              rank: entry.key + 1,
-              username: (entry.value['username'] ?? 'Finance Wizard')
-                  .toString(),
-              literacyPoints: _readInt(entry.value['literacy_points']),
-              xp: _readInt(entry.value['xp']),
-              gold: _readInt(entry.value['gold']),
+            (entry) => _leaderboardEntryFrom(
+              entry.value,
+              entry.key,
               isCurrentUser:
                   currentUserId != null && currentUserId == entry.value['id'],
-              // Present once the leaderboard view exposes it (see the SQL
-              // in this file's schema comment); empty string until then.
-              profileImageUrl: (entry.value['profile_image_url'] ?? '')
-                  .toString(),
             ),
           )
           .toList(growable: false);
@@ -1810,17 +1921,10 @@ alter view public.leaderboard set (security_invoker = false);
           .asMap()
           .entries
           .map(
-            (entry) => LeaderboardEntry(
-              id: (entry.value['id'] ?? '').toString(),
-              rank: entry.key + 1,
-              username: (entry.value['username'] ?? 'Finance Wizard')
-                  .toString(),
-              literacyPoints: _readInt(entry.value['literacy_points']),
-              xp: _readInt(entry.value['xp']),
-              gold: _readInt(entry.value['gold']),
+            (entry) => _leaderboardEntryFrom(
+              entry.value,
+              entry.key,
               isCurrentUser: false,
-              profileImageUrl: (entry.value['profile_image_url'] ?? '')
-                  .toString(),
             ),
           )
           .toList(growable: false);
@@ -2105,6 +2209,40 @@ double _readDouble(dynamic value) {
     return double.tryParse(value) ?? 0;
   }
   return 0;
+}
+
+/// One leaderboard row, whichever query produced it.
+///
+/// Factored out because the global board and the friends board built this
+/// identically in two places, and the friend profile needs five more fields —
+/// which would have been five more chances for the two copies to drift.
+///
+/// Everything past the original six is read defensively. The columns arrive
+/// with `0005_leaderboard_profile.sql`, and until that migration is run the
+/// keys are simply absent: `null` reads back as an empty string, a zero or a
+/// null date, and the profile screen hides those sections. See the note on
+/// [LeaderboardEntry] for why "works before the migration" is a requirement
+/// here rather than a courtesy.
+LeaderboardEntry _leaderboardEntryFrom(
+  Map<String, dynamic> row,
+  int index, {
+  required bool isCurrentUser,
+}) {
+  return LeaderboardEntry(
+    id: (row['id'] ?? '').toString(),
+    rank: index + 1,
+    username: (row['username'] ?? 'Finance Wizard').toString(),
+    literacyPoints: _readInt(row['literacy_points']),
+    xp: _readInt(row['xp']),
+    gold: _readInt(row['gold']),
+    isCurrentUser: isCurrentUser,
+    profileImageUrl: (row['profile_image_url'] ?? '').toString(),
+    equippedSkin: (row['equipped_skin'] ?? '').toString(),
+    personalityType: (row['personality_type'] ?? '').toString(),
+    lessonsCompleted: _readInt(row['lessons_completed']),
+    dailyStreak: _readInt(row['daily_streak']),
+    updatedAt: DateTime.tryParse((row['updated_at'] ?? '').toString()),
+  );
 }
 
 int _readInt(dynamic value) {

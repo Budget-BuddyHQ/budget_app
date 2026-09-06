@@ -66,7 +66,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
     final xpEarned = 12 + bonusXp;
     final goldEarned = 50 + (hasQuiz ? _correctCount * 5 : 0);
 
-    final result = await context
+    await context
         .read<UserStatsController>()
         .completeLessonProgress(
           lessonId: widget.lesson.id,
@@ -107,12 +107,22 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
 
     final String rewardsText = '+$xpEarned XP, +$goldEarned Gold';
 
+    // No sync status on the end of this.
+    //
+    // `result.message` is `SyncState.message` — "Added to your account.",
+    // and before that "Saved to Supabase." A reward toast is the one moment
+    // the player is being told what they just earned, and ending it with a
+    // note about which server the row landed on is both noise and a detail
+    // no ten-year-old asked about. Where a save genuinely *fails* it is worth
+    // saying, and that is `CloudSyncBanner`'s job — a persistent warning on
+    // the Profile screen rather than a clause in a 2-second popup that is
+    // there whether anything went wrong or not.
     GameToast.show(
       context,
       title: 'Lesson complete',
       message: hasQuiz
-          ? 'Scored $_correctCount/${quiz.length}. Earned $rewardsText! ${result.message}'
-          : '${widget.lesson.title} saved. Earned $rewardsText! ${result.message}',
+          ? 'Scored $_correctCount/${quiz.length}. Earned $rewardsText!'
+          : '${widget.lesson.title} saved. Earned $rewardsText!',
       icon: Icons.school_rounded,
       accent: const Color(0xFF2F9E68),
       soundEffect: AppSoundEffect.celebration,

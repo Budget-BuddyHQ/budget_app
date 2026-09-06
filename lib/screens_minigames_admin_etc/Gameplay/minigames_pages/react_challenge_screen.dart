@@ -260,7 +260,9 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
       GameToast.show(
         context,
         title: status == 'victory' ? 'Victory!' : 'Battle complete',
-        message: '+$goldEarned gold • +$xpEarned XP • ${actionResult.message}',
+        // The cloud status has its own pill on this screen (`_cloudMessage`)
+        // and does not need to be in the reward line as well.
+        message: '+$goldEarned gold • +$xpEarned XP',
         icon: status == 'victory'
             ? Icons.workspace_premium_rounded
             : Icons.flag_rounded,

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum AppSoundEffect {
@@ -61,34 +64,54 @@ class AppSoundService {
   /// A second lever on top of the per-file peaks baked in by
   /// `tool/make_sounds.py`, and worth having separately: the file levels are
   /// the *mix* — how these sounds sit against each other — while this is the
-  /// app's overall loudness, which is the thing that turned out to be wrong
-  /// ("the sound is kind of high right now"). Changing one number here is
-  /// also something that can happen without regenerating sixteen files.
+  /// app's overall loudness.
   ///
-  /// Navigation is deliberately the quietest: it fires on every tab switch,
-  /// dozens of times a session, and anything that frequent has to be texture
-  /// rather than an announcement.
+  /// **These are all about 30% down from where they were**, against a music
+  /// loop that went up by nearly the same factor (see [_musicVolume]). The
+  /// brief was "the background sound louder and the other sounds toned down
+  /// a bit", and the two halves of that have to move together: turning the
+  /// loop up on its own would just make the app louder, and turning the
+  /// effects down on its own would make it quieter. What actually changes is
+  /// the *ratio* — the loop stops being something you have to listen for
+  /// under a layer of clicks.
+  ///
+  /// The order within the table is unchanged, because it was right: it is
+  /// the frequency each sound fires at, inverted. Navigation is the quietest
+  /// because it goes off on every tab switch, dozens of times a session, and
+  /// anything that frequent has to be texture rather than an announcement.
+  /// A legendary unbox is the loudest because most players will never hear
+  /// one.
   static const Map<AppSoundEffect, double> _volumes = <AppSoundEffect, double>{
-    AppSoundEffect.navigation: 0.22,
-    AppSoundEffect.tap: 0.34,
-    AppSoundEffect.selection: 0.34,
-    AppSoundEffect.needPickup: 0.42,
-    AppSoundEffect.wantHit: 0.46,
-    AppSoundEffect.error: 0.46,
-    AppSoundEffect.shutdown: 0.42,
-    AppSoundEffect.notification: 0.55,
-    AppSoundEffect.success: 0.58,
-    AppSoundEffect.celebration: 0.66,
-    AppSoundEffect.caseRoll: 0.50,
-    AppSoundEffect.unboxCommon: 0.58,
-    AppSoundEffect.unboxRare: 0.62,
-    AppSoundEffect.unboxEpic: 0.66,
-    AppSoundEffect.unboxLegendary: 0.70,
+    AppSoundEffect.navigation: 0.15,
+    AppSoundEffect.tap: 0.24,
+    AppSoundEffect.selection: 0.24,
+    AppSoundEffect.needPickup: 0.30,
+    AppSoundEffect.wantHit: 0.32,
+    AppSoundEffect.error: 0.32,
+    AppSoundEffect.shutdown: 0.30,
+    AppSoundEffect.notification: 0.38,
+    AppSoundEffect.success: 0.40,
+    AppSoundEffect.celebration: 0.46,
+    AppSoundEffect.caseRoll: 0.36,
+    AppSoundEffect.unboxCommon: 0.40,
+    AppSoundEffect.unboxRare: 0.43,
+    AppSoundEffect.unboxEpic: 0.46,
+    AppSoundEffect.unboxLegendary: 0.50,
   };
+
+  /// The ambient loop's level.
+  ///
+  /// Was 0.18, which put it about 5dB under the quietest *effect* in the
+  /// table above — so on a phone, with the app's own clicks over the top, it
+  /// was inaudible in practice and read as "the music is not playing". It is
+  /// still the quietest thing in the app by design, because it is under
+  /// everything else for minutes at a time rather than for 60ms, but it is
+  /// now within reach of the effects instead of beneath them.
+  static const double _musicVolume = 0.34;
 
   /// Anything not listed above. Middle of the range rather than full, so a
   /// newly added effect is quiet by default and gets turned up on purpose.
-  static const double _defaultVolume = 0.5;
+  static const double _defaultVolume = 0.4;
 
   static final Map<AppSoundEffect, AudioPlayer> _players =
       <AppSoundEffect, AudioPlayer>{};
@@ -147,6 +170,24 @@ class AppSoundService {
   static SharedPreferences? _preferences;
   static bool _playersReady = false;
 
+  /// The one in-flight [initialize] call.
+  ///
+  /// **This is a fix, not tidying.** The old code set `_playersReady = true`
+  /// as its *first* statement and then spent a dozen `await`s applying the
+  /// audio context and the player mode to sixteen players. Any `play()` that
+  /// arrived during that window saw the flag, skipped initialisation, and
+  /// used a player that had not been configured yet — which means a player
+  /// still on the package's default `AndroidAudioFocus.gain`. That is the
+  /// exact "sole source of audio" default the context above exists to avoid,
+  /// and one player holding it will silence every other sound in the app
+  /// (and the user's own music) until something rebuilds it. The
+  /// focus-stealing bug could come back through a race even though the value
+  /// it depends on never changed.
+  ///
+  /// Holding the future means every caller awaits the *same* setup and
+  /// nobody proceeds on a half-built player.
+  static Future<void>? _initFuture;
+
   // on by default now theres actually something worth hearing.
   //
   // used to be off because the old effects sounded harsh — except there were
@@ -176,6 +217,13 @@ class AppSoundService {
   @visibleForTesting
   static AudioContext get debugMusicAudioContext => _musicAudioContext;
 
+  /// The mix, for the regression test. See [_volumes] and [_musicVolume].
+  @visibleForTesting
+  static Map<AppSoundEffect, double> get debugEffectVolumes => _volumes;
+
+  @visibleForTesting
+  static double get debugMusicVolume => _musicVolume;
+
   static AudioPlayer? _music;
   static bool _musicWanted = false;
 
@@ -183,13 +231,44 @@ class AppSoundService {
 
   /// Starts the ambient loop, or does nothing if it is already running.
   ///
-  /// Idempotent on purpose — this is called from screen entry points, and a
-  /// tab switch that restarted the track from the top would be worse than
-  /// no music at all.
+  /// **"Already running" used to mean "the object exists", and that was the
+  /// bug behind "the sound sometimes just would not play and I had to toggle
+  /// the music button off and on".** The guard was `if (_music != null)
+  /// return;`. An `AudioPlayer` that exists and an `AudioPlayer` that is
+  /// playing are not the same thing: the OS can stop it while the app is
+  /// backgrounded, an interruption can leave it paused, and `play()` can fail
+  /// after the object is already assigned. In every one of those cases the
+  /// field stayed non-null forever, so every later call to this — and it is
+  /// called from a lot of screen entry points — returned immediately and the
+  /// loop never came back.
+  ///
+  /// The only code path in the whole app that could recover was
+  /// [setMusicEnabled], because it *disposes* the player on the way down and
+  /// builds a new one on the way up. Which is precisely the off-and-on-again
+  /// the player had to do by hand, and it is the reason that workaround
+  /// worked when nothing else did.
+  ///
+  /// So the guard now asks the player what state it is in, and a player that
+  /// exists but is not playing gets resumed or replaced.
   static Future<void> startMusic() async {
     _musicWanted = true;
     if (!musicEnabled || !enabled) return;
-    if (_music != null) return;
+
+    final existing = _music;
+    if (existing != null) {
+      if (existing.state == PlayerState.playing) return;
+      // Present but not playing. Try the cheap recovery first — resuming a
+      // paused player keeps its position, which matters for a 48-second loop
+      // somebody has been half-hearing for ten minutes.
+      try {
+        await existing.resume();
+        if (existing.state == PlayerState.playing) return;
+      } catch (error) {
+        debugPrint('Music resume failed, rebuilding: $error');
+      }
+      await _disposeMusic();
+    }
+
     try {
       final player = AudioPlayer(playerId: 'budget_buddy_music');
       if (!kIsWeb) {
@@ -199,11 +278,8 @@ class AppSoundService {
           debugPrint('Music audio context not applied: $error');
         }
       }
-      // loop, and quiet enough to sit under speech + effects instead of
-      // fighting them. 0.28 picked by ear against tap.wav
       await player.setReleaseMode(ReleaseMode.loop);
-      // Under the effects, which are themselves turned down — see [_volumes].
-      await player.setVolume(0.18);
+      await player.setVolume(_musicVolume);
       await player.play(AssetSource(_musicAsset));
       _music = player;
     } catch (error) {
@@ -218,6 +294,10 @@ class AppSoundService {
   }
 
   static Future<void> _disposeMusic() async {
+    // Deliberately does *not* clear `_musicWanted`. This is the teardown half
+    // of several different intentions — muting, rebuilding a stalled player,
+    // switching music off — and only one of them means "nobody wants music
+    // any more". That one is [stopMusic], which clears the flag itself.
     final player = _music;
     _music = null;
     if (player == null) return;
@@ -234,13 +314,19 @@ class AppSoundService {
     _preferences ??= await SharedPreferences.getInstance();
     await _preferences!.setBool(_musicEnabledKey, value);
     if (value) {
-      if (_musicWanted) await startMusic();
+      // Unconditional, because switching the toggle on *is* the request —
+      // `startMusic` sets `_musicWanted` itself. The old `if (_musicWanted)`
+      // guard meant flipping the switch on did nothing at all unless some
+      // screen had already asked for music earlier in the session.
+      await startMusic();
     } else {
       await _disposeMusic();
     }
   }
 
-  static Future<void> initialize() async {
+  static Future<void> initialize() => _initFuture ??= _initialize();
+
+  static Future<void> _initialize() async {
     _preferences ??= await SharedPreferences.getInstance();
     // `?? enabled` rather than `?? false`. Hardcoding the fallback here is
     // what made the field default above meaningless: a fresh install has no
@@ -254,11 +340,6 @@ class AppSoundService {
       return;
     }
 
-    if (_playersReady) {
-      return;
-    }
-
-    _playersReady = true;
     for (final effect in AppSoundEffect.values) {
       _players[effect] = AudioPlayer(playerId: 'budget_buddy_${effect.name}');
     }
@@ -272,17 +353,77 @@ class AppSoundService {
       debugPrint('Global audio context not applied: $error');
     }
 
-    for (final player in _players.values) {
+    for (final effect in _players.keys.toList()) {
+      await _configurePlayer(_players[effect]!);
+    }
+
+    _attachLifecycleObserver();
+
+    // Last, not first. See [_initFuture].
+    _playersReady = true;
+  }
+
+  static Future<void> _configurePlayer(AudioPlayer player) async {
+    try {
+      await player.setReleaseMode(ReleaseMode.stop);
+      if (!kIsWeb) {
+        await player.setAudioContext(_uiAudioContext);
+        await player.setPlayerMode(PlayerMode.lowLatency);
+      }
+    } catch (error) {
+      debugPrint('Audio player setup fallback: $error');
+    }
+  }
+
+  static _AudioLifecycleObserver? _lifecycleObserver;
+
+  /// Watches for the app coming back to the foreground.
+  ///
+  /// Nothing in `audioplayers` reacts to the Android lifecycle — the plugin
+  /// only hears about the engine detaching. Meanwhile the low-latency path is
+  /// a `SoundPool`, whose loaded samples the system is free to reclaim while
+  /// the app is in the background. When that happens `SoundPool.play()`
+  /// returns 0 and plays nothing, and it does not throw — so the
+  /// try/catch in [play] never fires and the effect is simply silent from
+  /// then on, for the rest of the process.
+  ///
+  /// That is unprovable from Dart, which is why the recovery is
+  /// unconditional: on every resume the effect players are rebuilt (cheap —
+  /// they are empty objects until something plays) and the music is asked to
+  /// confirm it is actually still running.
+  static void _attachLifecycleObserver() {
+    if (_lifecycleObserver != null) return;
+    final binding = WidgetsBinding.instance;
+    final observer = _AudioLifecycleObserver();
+    binding.addObserver(observer);
+    _lifecycleObserver = observer;
+  }
+
+  /// Rebuilds the effect players and restarts the loop after a resume.
+  static Future<void> handleAppResumed() async {
+    if (!_playersReady) return;
+    for (final effect in _players.keys.toList()) {
+      await _rebuildPlayer(effect);
+    }
+    if (_musicWanted) {
+      await startMusic();
+    }
+  }
+
+  /// Throws away one effect's player and builds a configured replacement.
+  static Future<void> _rebuildPlayer(AppSoundEffect effect) async {
+    final old = _players.remove(effect);
+    if (old != null) {
       try {
-        await player.setReleaseMode(ReleaseMode.stop);
-        if (!kIsWeb) {
-          await player.setAudioContext(_uiAudioContext);
-          await player.setPlayerMode(PlayerMode.lowLatency);
-        }
+        await old.stop();
+        await old.dispose();
       } catch (error) {
-        debugPrint('Audio player setup fallback: $error');
+        debugPrint('Could not dispose ${effect.name}: $error');
       }
     }
+    final player = AudioPlayer(playerId: 'budget_buddy_${effect.name}');
+    await _configurePlayer(player);
+    _players[effect] = player;
   }
 
   static Future<void> setEnabled(bool value) async {
@@ -303,9 +444,8 @@ class AppSoundService {
       return;
     }
 
-    if (!_playersReady) {
-      await initialize();
-    }
+    // Awaits the single in-flight setup rather than racing past a flag.
+    await initialize();
 
     final now = DateTime.now();
     if (_lastPlayedAt != null &&
@@ -318,20 +458,40 @@ class AppSoundService {
     _lastEffect = effect;
 
     final assetPath = _assetPaths[effect];
-    final player = _players[effect];
-
-    if (assetPath != null && player != null) {
-      try {
-        await player.stop();
-        await player.setVolume(_volumes[effect] ?? _defaultVolume);
-        await player.play(AssetSource(assetPath));
-        return;
-      } catch (error) {
-        debugPrint('Asset sound fallback for ${effect.name}: $error');
-      }
+    if (assetPath == null) {
+      return _playSystemFallback(effect);
     }
 
+    if (await _tryPlay(effect, assetPath)) return;
+
+    // One heal-and-retry before giving up.
+    //
+    // Previously a failure here was permanent: the error was printed, the
+    // system click played instead, and the broken player stayed in the map
+    // for the life of the process — so one transient fault meant that effect
+    // was gone until the app was restarted. Rebuilding costs a few
+    // milliseconds and only happens on a path that has already failed.
+    await _rebuildPlayer(effect);
+    if (await _tryPlay(effect, assetPath)) return;
+
     await _playSystemFallback(effect);
+  }
+
+  static Future<bool> _tryPlay(AppSoundEffect effect, String assetPath) async {
+    final player = _players[effect];
+    if (player == null) return false;
+    try {
+      await player.stop();
+      // Set before playing, not after: in low-latency mode the volume is only
+      // handed to the platform when the stream starts, so a `setVolume` after
+      // `play` applies from the *next* one onward.
+      await player.setVolume(_volumes[effect] ?? _defaultVolume);
+      await player.play(AssetSource(assetPath));
+      return true;
+    } catch (error) {
+      debugPrint('Asset sound failed for ${effect.name}: $error');
+      return false;
+    }
   }
 
   /// Cuts an effect off part-way through.
@@ -374,6 +534,19 @@ class AppSoundService {
         // single system click in its place would fire once and read as a
         // misfire rather than as a shortened version of the same thing.
         return;
+    }
+  }
+}
+
+/// Rebuilds the audio players when the app comes back to the foreground.
+///
+/// See [AppSoundService._attachLifecycleObserver] for why this is needed and
+/// why the recovery is unconditional rather than conditional on some check.
+class _AudioLifecycleObserver with WidgetsBindingObserver {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(AppSoundService.handleAppResumed());
     }
   }
 }

@@ -69,7 +69,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
         .toSet()
         .difference(missedSkills);
 
-    final result = await controller.recordPracticeSession(
+    await controller.recordPracticeSession(
       unitId: widget.unit.id,
       correct: _correct,
       total: _questions.length,
@@ -85,7 +85,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
     GameToast.show(
       context,
       title: 'Practice saved',
-      message: '$_correct/${_questions.length} correct. ${result.message}',
+      // Sync status deliberately dropped — see the note on the lesson
+      // toast in `lesson_detail_screen.dart`.
+      message: '$_correct/${_questions.length} correct.',
       icon: Icons.fitness_center_rounded,
       accent: const Color(0xFF69C6FF),
       soundEffect: AppSoundEffect.celebration,

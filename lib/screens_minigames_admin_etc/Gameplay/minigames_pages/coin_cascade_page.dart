@@ -4,7 +4,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/coin_cascade_models.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
 import '../../../themes_colors/app_theme.dart';
@@ -21,8 +23,51 @@ import '../../../widgets_custom_lotties/pixel_kit.dart';
 /// The engine ([CoinCascadeGame]) is pure Dart and separately tested. This
 /// file is the presentation: it drives the cascade one step at a time so the
 /// board can be watched falling rather than teleporting to its final state.
+///
+/// **What the run is worth is paid here**, not by the caller. See
+/// [CascadeCloseResult] for the bug that made that necessary.
+
+/// What a finished session was worth, handed back to the arcade hub.
+///
+/// **The bug this exists to close.** The page used to pop the
+/// `CoinCascadeGame` itself, and `MinigamesPage._openCoinCascade` announced
+/// "+N gold" in a toast — then called `recordArcadeRun`, whose own
+/// documentation says in as many words that it *must not touch gold or XP*.
+/// Nothing anywhere called `applyChallengePayload`. So the game computed a
+/// payout, printed it twice — once on the result card, once in the toast —
+/// and paid none of it, for every run anybody had ever played.
+///
+/// That is the literal answer to "I don't even know what to work for in that
+/// game". There was nothing to work for, and the game had been telling
+/// players there was.
+class CascadeCloseResult {
+  const CascadeCloseResult({
+    required this.game,
+    required this.goldEarned,
+    required this.xpEarned,
+    required this.literacyEarned,
+    required this.isRush,
+    required this.isNewRushBest,
+  });
+
+  final CoinCascadeGame game;
+  final int goldEarned;
+  final int xpEarned;
+  final int literacyEarned;
+  final bool isRush;
+  final bool isNewRushBest;
+}
+
 class CoinCascadePage extends StatefulWidget {
-  const CoinCascadePage({super.key});
+  const CoinCascadePage({super.key, this.debugInitialGame});
+
+  /// A board to open on instead of a fresh level 1.
+  ///
+  /// Same shape as `LifeSimPage.debugInitialLife`, and there for the same
+  /// reason: the interesting states of this screen are the ones at the *end*
+  /// of a run, and there is no way to reach them from a render test without
+  /// playing a game that has randomness in it.
+  final CoinCascadeGame? debugInitialGame;
 
   @override
   State<CoinCascadePage> createState() => _CoinCascadePageState();
@@ -48,33 +93,128 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
 
   bool _finished = false;
 
-  /// Highest level cleared this session.
+  /// Highest level the player has ever cleared, loaded from their save.
   ///
-  /// Session-scoped rather than saved, deliberately: a run is a few minutes
-  /// and the ladder is seven levels, so persisting it would mostly mean a
-  /// returning player is handed level 7 and no idea what the earlier rules
-  /// were. The rules *are* the curriculum, in order.
-  int _unlocked = 1;
+  /// The old comment defending a session-scoped version argued that
+  /// persisting it would hand a returning player level 7 with no idea what
+  /// the earlier rules were. That worry is real and this is not the thing
+  /// that causes it: the picker still opens on the ladder in order, so an
+  /// unlocked level is somewhere you *may* go rather than where you are put.
+  /// What the session scope actually did was delete thirteen levels of
+  /// progress every time somebody left the arcade.
+  int _clearedThrough = 0;
+
+  /// The next level that is playable. Always at least 1.
+  int get _unlocked => (_clearedThrough + 1).clamp(1, kCascadeLevels.length);
+
+  // --- Payday Rush ------------------------------------------------------
+  //
+  // Two timers rather than one. They are genuinely different clocks: the
+  // countdown is the run's length and ticks once a second for the display,
+  // and the bill schedule fires every few seconds regardless of what the
+  // display is doing. Deriving one from the other would tie how often the
+  // month arrives to how often the number on screen changes, which is the
+  // kind of coupling that turns a UI tweak into a difficulty change.
+  Timer? _rushTicker;
+  Timer? _rushBills;
+  int _rushSecondsLeft = 0;
+
+  bool get _isRush => _game.level.mode == CascadeMode.rush;
+
+  /// Totals for the run that just ended, so the result card can show them.
+  int _awardedGold = 0;
+  int _awardedXp = 0;
+  int _awardedLiteracy = 0;
+  bool _newRushBest = false;
+
+  /// True between the run ending and the payout coming back.
+  ///
+  /// `_award` writes to the account, which is a network call. The card is on
+  /// screen before it returns, and drawing zeros in that window would be a
+  /// worse lie than the one this whole change is fixing: a player would see
+  /// "+0 gold" and a note telling them replays pay less, on a level they had
+  /// just cleared for the first time.
+  bool _awardPending = false;
 
   @override
   void initState() {
     super.initState();
-    _game = CoinCascadeGame(level: kCascadeLevels.first);
+    _clearedThrough = context
+        .read<UserStatsController>()
+        .stats
+        .cascadeClearedThrough;
+    _game =
+        widget.debugInitialGame ?? CoinCascadeGame(level: kCascadeLevels.first);
+    _finished = _game.status != CascadeStatus.playing;
   }
 
   void _startLevel(int number) {
+    _stopRushClocks();
     setState(() {
       _finished = false;
       _selected = null;
       _clearing = const {};
       _flash = null;
+      _awardedGold = 0;
+      _awardedXp = 0;
+      _awardedLiteracy = 0;
+      _newRushBest = false;
+      _awardPending = false;
       _game = CoinCascadeGame(level: cascadeLevelFor(number));
     });
+  }
+
+  void _startRush() {
+    _stopRushClocks();
+    setState(() {
+      _finished = false;
+      _selected = null;
+      _clearing = const {};
+      _flash = null;
+      _awardedGold = 0;
+      _awardedXp = 0;
+      _awardedLiteracy = 0;
+      _newRushBest = false;
+      _awardPending = false;
+      _game = CoinCascadeGame(level: kCascadeRush);
+      _rushSecondsLeft = kCascadeRush.seconds;
+    });
+
+    _rushTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _rushSecondsLeft--);
+      if (_rushSecondsLeft <= 0) _endRush();
+    });
+    _rushBills = Timer.periodic(kRushBillInterval, (_) {
+      if (!mounted || _finished) return;
+      setState(_game.dropScheduledBill);
+      // A bill can push the run past its capacity, which ends it — the same
+      // loss condition as the ladder, arriving on a clock instead of a turn.
+      _checkFinished();
+    });
+  }
+
+  void _stopRushClocks() {
+    _rushTicker?.cancel();
+    _rushTicker = null;
+    _rushBills?.cancel();
+    _rushBills = null;
+  }
+
+  /// The clock ran out. Not a loss — a Rush is scored, not passed.
+  void _endRush() {
+    _stopRushClocks();
+    if (_finished) return;
+    _finished = true;
+    AppSoundService.play(AppSoundEffect.celebration);
+    unawaited(_award());
+    setState(() {});
   }
 
   @override
   void dispose() {
     _flashTimer?.cancel();
+    _stopRushClocks();
     super.dispose();
   }
 
@@ -180,7 +320,8 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
   void _checkFinished() {
     if (_finished || _game.status == CascadeStatus.playing) return;
     _finished = true;
-    if (_game.status == CascadeStatus.won) _recordWin();
+    _stopRushClocks();
+    unawaited(_award());
     AppSoundService.play(
       _game.status == CascadeStatus.won
           ? AppSoundEffect.celebration
@@ -194,19 +335,90 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
     });
   }
 
-  void _restart() => _startLevel(_game.level.number);
+  void _restart() => _isRush ? _startRush() : _startLevel(_game.level.number);
 
-  /// Called when a level is beaten: unlock the next one.
-  void _recordWin() {
-    final next = _game.level.number + 1;
-    if (next > _unlocked && next <= kCascadeLevels.length) {
-      _unlocked = next;
+  /// Pays out the run, and saves the ladder progress it earned.
+  ///
+  /// **Why the split between a first clear and a replay.** Level 1 takes
+  /// about ninety seconds and can be cleared over and over; paying it in full
+  /// every time would make grinding the easiest level the fastest way to earn
+  /// in the whole app, which teaches the opposite of everything else here.
+  /// Paying a replay *nothing* is the other failure — it turns "play the bit
+  /// you enjoy" into a waste of time, and the ladder is meant to be
+  /// replayable.
+  ///
+  /// So a first clear pays properly and a replay pays a token. It is the same
+  /// rule the town uses for encounters that have already been resolved, and
+  /// for the same reason: reward the progress, not the repetition.
+  ///
+  /// Literacy points are first-clear only, with no token version. They are
+  /// the app's measure of *what you have learned*, and each level teaches one
+  /// specific twist — bills arriving faster, wants costing double. Replaying
+  /// a level you have solved does not teach you its rule a second time.
+  Future<void> _award() async {
+    setState(() => _awardPending = true);
+    final controller = context.read<UserStatsController>();
+    final game = _game;
+    final report = game.report;
+
+    final CascadePayout payout;
+    var newBest = false;
+
+    if (_isRush) {
+      final previousBest = controller.stats.bestArcadeScore(
+        'coin_cascade_rush',
+      );
+      newBest = game.savings > (previousBest ?? 0);
+      payout = cascadePayoutFor(game, newRushBest: newBest);
+      await controller.recordArcadeRun(
+        gameId: 'coin_cascade_rush',
+        score: game.savings,
+      );
+    } else {
+      final firstClear =
+          game.status == CascadeStatus.won &&
+          game.level.number > _clearedThrough;
+      payout = cascadePayoutFor(game, firstClear: firstClear);
+      if (firstClear) {
+        _clearedThrough = game.level.number;
+      }
+      await controller.recordArcadeRun(
+        gameId: 'coin_cascade',
+        score: game.score,
+      );
     }
+
+    // One payload for the money and the progress together, so a player who
+    // closes the app mid-save cannot end up with the gold and not the unlock
+    // or the other way round.
+    await controller.applyChallengePayload(<String, dynamic>{
+      'gold_earned': payout.gold,
+      'xp_earned': payout.xp,
+      'literacy_points_earned': payout.literacy,
+      'title': 'Coin Cascade',
+      'description': _isRush
+          ? 'Payday Rush: ${report.savesPercent}% of the board went to '
+                'savings.'
+          : 'Coin Cascade level ${game.level.number}.',
+      'spending_habits': <String, dynamic>{'cascade_cleared': _clearedThrough},
+    });
+
+    if (!mounted) return;
+    setState(() {
+      _awardedGold = payout.gold;
+      _awardedXp = payout.xp;
+      _awardedLiteracy = payout.literacy;
+      _newRushBest = newBest;
+      _awardPending = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final done = _game.status != CascadeStatus.playing;
+    // `_finished` as well as the status: a Rush ends on the clock, and the
+    // clock is not something the engine knows about, so its status is still
+    // `playing` when the run is over.
+    final done = _finished || _game.status != CascadeStatus.playing;
 
     return Scaffold(
       backgroundColor: AppTheme.deepForest,
@@ -233,7 +445,9 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
             _LevelBanner(
               level: _game.level,
               unlocked: _unlocked,
+              secondsLeft: _isRush ? _rushSecondsLeft : null,
               onPick: _startLevel,
+              onRush: _startRush,
             ),
             Expanded(
               child: Stack(
@@ -260,12 +474,27 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
                   if (done)
                     _ResultCard(
                       game: _game,
+                      gold: _awardedGold,
+                      xp: _awardedXp,
+                      literacy: _awardedLiteracy,
+                      awardPending: _awardPending,
+                      isNewRushBest: _newRushBest,
                       hasNext:
+                          !_isRush &&
                           _game.status == CascadeStatus.won &&
                           _game.level.number < kCascadeLevels.length,
                       onNext: () => _startLevel(_game.level.number + 1),
                       onAgain: _restart,
-                      onLeave: () => Navigator.of(context).pop(_game),
+                      onLeave: () => Navigator.of(context).pop(
+                        CascadeCloseResult(
+                          game: _game,
+                          goldEarned: _awardedGold,
+                          xpEarned: _awardedXp,
+                          literacyEarned: _awardedLiteracy,
+                          isRush: _isRush,
+                          isNewRushBest: _newRushBest,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -364,12 +593,18 @@ class _LevelBanner extends StatelessWidget {
   const _LevelBanner({
     required this.level,
     required this.unlocked,
+    required this.secondsLeft,
     required this.onPick,
+    required this.onRush,
   });
 
   final CascadeLevel level;
   final int unlocked;
+
+  /// Null outside Payday Rush.
+  final int? secondsLeft;
   final ValueChanged<int> onPick;
+  final VoidCallback onRush;
 
   @override
   Widget build(BuildContext context) {
@@ -395,7 +630,9 @@ class _LevelBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   FittedLabel(
-                    'Level ${level.number} · ${level.name}',
+                    level.mode == CascadeMode.rush
+                        ? level.name
+                        : 'Level ${level.number} · ${level.name}',
                     style: GoogleFonts.pixelifySans(
                       color: chip.ink,
                       fontSize: 16,
@@ -416,11 +653,35 @@ class _LevelBanner extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
+            // The clock, where the level number would otherwise be. It is the
+            // only number that matters in a Rush and it belongs next to the
+            // rule that explains it, not buried in the meters above.
+            if (secondsLeft != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Text(
+                  '0:${secondsLeft!.clamp(0, 999).toString().padLeft(2, '0')}',
+                  style: GoogleFonts.pixelifySans(
+                    color: secondsLeft! <= 10 ? AppTheme.errorRed : chip.ink,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             PopupMenuButton<int>(
               tooltip: 'Pick a level',
               icon: Icon(Icons.list_rounded, size: 24, color: chip.ink),
-              onSelected: onPick,
+              // -1 is Payday Rush. A sentinel rather than a second menu,
+              // because a mode is a thing you pick from the same list as a
+              // level — the alternative was a second control on a banner that
+              // already has to fit on a phone.
+              onSelected: (value) => value == -1 ? onRush() : onPick(value),
               itemBuilder: (context) => [
+                PopupMenuItem<int>(
+                  value: -1,
+                  child: Text('⏱  ${kCascadeRush.name}  ·  90s'),
+                ),
+                const PopupMenuDivider(),
                 for (final l in kCascadeLevels)
                   PopupMenuItem<int>(
                     value: l.number,
@@ -888,6 +1149,11 @@ class _CascadeFooter extends StatelessWidget {
 class _ResultCard extends StatelessWidget {
   const _ResultCard({
     required this.game,
+    required this.gold,
+    required this.xp,
+    required this.literacy,
+    required this.awardPending,
+    required this.isNewRushBest,
     required this.hasNext,
     required this.onNext,
     required this.onAgain,
@@ -896,8 +1162,25 @@ class _ResultCard extends StatelessWidget {
 
   final CoinCascadeGame game;
 
-  /// False on the last level and on any loss, so "Next" never offers a level
-  /// that does not exist or one the player has not earned.
+  /// What was actually paid into the account.
+  ///
+  /// **Not `game.goldEarned`.** That getter is the engine's own idea of what
+  /// a run is worth, and it is what this card used to print — while nothing
+  /// anywhere paid it. These come back from `_award`, after the payload has
+  /// been applied, so the number on the card is the number in the wallet.
+  final int gold;
+  final int xp;
+  final int literacy;
+
+  /// True while the payout is still being written. See
+  /// `_CoinCascadePageState._awardPending`.
+  final bool awardPending;
+
+  final bool isNewRushBest;
+
+  /// False on the last level, on any loss, and in Payday Rush, so "Next"
+  /// never offers a level that does not exist or one the player has not
+  /// earned.
   final bool hasNext;
   final VoidCallback onNext;
   final VoidCallback onAgain;
@@ -906,84 +1189,241 @@ class _ResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final won = game.status == CascadeStatus.won;
+    final rush = game.isTimed;
+    final report = game.report;
+    final style = PixelFrameStyle.slate;
+
+    final String title;
+    final String blurb;
+    if (rush) {
+      title = isNewRushBest ? 'New best!' : 'Time is up';
+      blurb = game.bills >= game.billCapacity
+          ? 'The bills buried you with ${game.savings} saved. They arrive '
+                'whether or not you are ready — that is the whole mode.'
+          : 'You banked ${game.savings} in ninety seconds.';
+    } else if (won) {
+      title = 'Goal reached!';
+      blurb =
+          'You covered your needs and still put ${game.savings} into savings.';
+    } else {
+      title = 'Out of moves';
+      blurb = game.bills >= game.billCapacity
+          ? 'The bills got ahead of you. Next time, clear needs before wants.'
+          : 'You saved ${game.savings} of ${game.savingsGoal}. Coins buy '
+                'extra moves — spend them earlier.';
+    }
 
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: PixelFrame(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                won ? 'Goal reached!' : 'Out of moves',
-                style: GoogleFonts.pixelifySans(
-                  color: PixelFrameStyle.slate.accent,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                won
-                    ? 'You covered your needs and still put '
-                          '${game.savings} into savings.'
-                    : game.bills >= game.billCapacity
-                    ? 'The bills got ahead of you. Next time, clear needs '
-                          'before wants.'
-                    : 'You saved ${game.savings} of ${game.savingsGoal}. '
-                          'Coins buy extra moves — spend them earlier.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.quicksand(
-                  color: PixelFrameStyle.slate.inkMuted,
-                  height: 1.4,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                '+${game.goldEarned} gold',
-                style: GoogleFonts.pixelifySans(
-                  color: PixelFrameStyle.slate.accent,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: PixelButton(
-                      // The primary action after a win is the next level, not
-                      // a replay — a player who just cleared something wants
-                      // the new rule, not the one they have solved.
-                      label: hasNext ? 'Next' : 'Again',
-                      onPressed: hasNext ? onNext : onAgain,
-                    ),
+        child: SingleChildScrollView(
+          child: PixelFrame(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.pixelifySans(
+                    color: style.accent,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: PixelButton(
-                      label: 'Done',
-                      tone: PixelButtonTone.danger,
-                      onPressed: onLeave,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  blurb,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.quicksand(
+                    color: style.inkMuted,
+                    height: 1.4,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+
+                // The run, read back as a budget.
+                //
+                // This is the part that makes Coin Cascade *teach* rather than
+                // merely encode. The mechanics were always 50/30/20; nothing
+                // ever said so, so whether a player learned anything depended
+                // on them noticing the pattern unprompted.
+                const SizedBox(height: 16),
+                _BudgetSplit(report: report),
+                const SizedBox(height: 10),
+                Text(
+                  report.headline,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.quicksand(
+                    color: style.ink,
+                    fontSize: 13.5,
+                    height: 1.4,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                for (final line in report.detail) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    line,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.quicksand(
+                      color: style.inkMuted,
+                      fontSize: 12,
+                      height: 1.4,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
-              ),
-              if (hasNext) ...[
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: onAgain,
-                  style: TextButton.styleFrom(
-                    foregroundColor: PixelFrameStyle.slate.inkMuted,
-                  ),
-                  child: const Text('Replay this level'),
+
+                const SizedBox(height: 14),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 12,
+                  children: [
+                    for (final reward in <String>[
+                      if (gold > 0) '+$gold gold',
+                      if (xp > 0) '+$xp XP',
+                      if (literacy > 0) '+$literacy LP',
+                    ])
+                      Text(
+                        reward,
+                        style: GoogleFonts.pixelifySans(
+                          color: style.accent,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                  ],
                 ),
+                if (!rush && won && literacy == 0) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Replay pay — you had cleared this level already. '
+                    'The next one pays in full.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.quicksand(
+                      color: style.inkMuted,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: PixelButton(
+                        // The primary action after a win is the next level, not
+                        // a replay — a player who just cleared something wants
+                        // the new rule, not the one they have solved.
+                        label: hasNext ? 'Next' : 'Again',
+                        onPressed: hasNext ? onNext : onAgain,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: PixelButton(
+                        label: 'Done',
+                        tone: PixelButtonTone.danger,
+                        onPressed: onLeave,
+                      ),
+                    ),
+                  ],
+                ),
+                if (hasNext) ...[
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: onAgain,
+                    style: TextButton.styleFrom(
+                      foregroundColor: style.inkMuted,
+                    ),
+                    child: const Text('Replay this level'),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Three bars: needs, wants, savings, as a share of the run.
+///
+/// Widths before numbers, because a proportion is a *shape* and the shape is
+/// the part worth remembering. The percentages sit on the labels for anyone
+/// who wants them, and the bars use the tile colours the player has been
+/// looking at for the last two minutes — so the connection between "the pink
+/// ones" and "wants" is made by the picture rather than by a sentence.
+class _BudgetSplit extends StatelessWidget {
+  const _BudgetSplit({required this.report});
+
+  final CascadeReport report;
+
+  @override
+  Widget build(BuildContext context) {
+    if (report.allocated == 0) return const SizedBox.shrink();
+
+    return Column(
+      children: [
+        for (final part in <({String label, int percent, Color colour})>[
+          (
+            label: 'Needs',
+            percent: report.needsPercent,
+            colour: TileKind.need.color,
+          ),
+          (
+            label: 'Wants',
+            percent: report.wantsPercent,
+            colour: TileKind.want.color,
+          ),
+          (
+            label: 'Savings',
+            percent: report.savesPercent,
+            colour: TileKind.save.color,
+          ),
+        ])
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 62,
+                  child: Text(
+                    part.label,
+                    style: GoogleFonts.quicksand(
+                      color: PixelFrameStyle.slate.inkMuted,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: part.percent / 100,
+                      minHeight: 10,
+                      backgroundColor: Colors.white.withValues(alpha: 0.08),
+                      valueColor: AlwaysStoppedAnimation<Color>(part.colour),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 42,
+                  child: Text(
+                    '${part.percent}%',
+                    textAlign: TextAlign.right,
+                    style: GoogleFonts.quicksand(
+                      color: PixelFrameStyle.slate.ink,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }
