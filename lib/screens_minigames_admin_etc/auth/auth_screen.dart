@@ -16,6 +16,7 @@ import '../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../constants/app_assets.dart';
 import '../../constants/privacy_policy.dart';
 import '../../services_backend_and_other_services/turnstile_challenge_server.dart';
+import 'windows_turnstile_view.dart';
 import '../../widgets_custom_lotties/custom_button.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
 import '../Gameplay/dashboard/dashboard_shell.dart';
@@ -67,6 +68,11 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 
   bool get _isLogin => _mode == AuthMode.login;
   bool get _isTurnstileConfigured => turnstileSiteKey != 'YOUR_SITE_KEY';
+  /// Platforms `webview_flutter` can render the challenge on.
+  ///
+  /// Windows is **not** in this list and never will be: `webview_flutter` is
+  /// federated across Android, iOS and macOS only. Windows gets the same
+  /// experience through WebView2 instead — see [_usesWindowsWebView].
   bool get _supportsEmbeddedWebView {
     if (kIsWeb) {
       return false;
@@ -77,8 +83,32 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
         defaultTargetPlatform == TargetPlatform.macOS;
   }
 
+  /// Windows, with WebView2 available.
+  ///
+  /// Turns false only when `WindowsTurnstileView` reports that WebView2 could
+  /// not be initialised, at which point [_usesExternalSecurityCheck] takes
+  /// over and the old browser detour comes back. Losing the embedded widget
+  /// is much better than losing sign-in.
+  bool get _usesWindowsWebView =>
+      !kIsWeb &&
+      defaultTargetPlatform == TargetPlatform.windows &&
+      !_windowsWebViewFailed;
+
+  bool _windowsWebViewFailed = false;
+
+  /// Bumped to demand a fresh Windows challenge. Turnstile tokens are
+  /// single-use, so every submit needs a new one.
+  int _windowsChallengeToken = 0;
+
+  /// The browser detour. Now only reached when WebView2 is unusable.
   bool get _usesExternalSecurityCheck =>
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
+      !kIsWeb &&
+      defaultTargetPlatform == TargetPlatform.windows &&
+      _windowsWebViewFailed;
+
+  /// Any in-app challenge, on any platform.
+  bool get _hasEmbeddedChallenge =>
+      _supportsEmbeddedWebView || _usesWindowsWebView;
 
   String get _turnstileHtml =>
       '''
@@ -155,6 +185,27 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 </html>
 ''';
 
+  /// The challenge as served to the in-app WebView2 view.
+  ///
+  /// Same page as everywhere else, with the token posted back to the loopback
+  /// server rather than handed to a JavaScript channel — WebView2's bridge is
+  /// `window.chrome.webview.postMessage`, and shimming the two named channels
+  /// onto it would be a second delivery path to keep working. The server is
+  /// already there, already receives tokens, and is already tested.
+  ///
+  /// Failures post to `/status` for the same reason: a widget that fails to
+  /// render has to be able to say so, or the app waits forever for a token
+  /// that is never coming. That was the original sign-in outage.
+  String get _embeddedWindowsTurnstileHtml => _turnstileHtml
+      .replaceFirst(
+        'TokenChannel.postMessage(token);',
+        "fetch('/token', { method: 'POST', body: token });",
+      )
+      .replaceAll(
+        RegExp(r"StatusChannel\.postMessage\(([^;]+)\);"),
+        "fetch('/status', { method: 'POST', body: \$1 });",
+      );
+
   String get _externalTurnstileHtml => _turnstileHtml.replaceFirst(
     'TokenChannel.postMessage(token);',
     "fetch('/token', { method: 'POST', body: token }).then(function () { document.body.innerHTML = '<p style=\"color:#0f5132;font:16px system-ui;text-align:center;margin-top:40px;\">Security check complete. You can return to Budget Buddy.</p>'; });",
@@ -168,7 +219,17 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 700),
     )..forward();
-    if (!_usesExternalSecurityCheck) {
+    // A render failure inside the WebView2 view arrives over the loopback
+    // server rather than a JavaScript channel, so it is wired here. Without
+    // it, a broken widget is indistinguishable from a slow one and the app
+    // waits forever — which is exactly the outage this whole flow already
+    // had once.
+    _turnstileServer.onStatus = (detail) {
+      debugPrint('Windows Turnstile status: $detail');
+      if (mounted) setState(() => _captchaUnavailable = true);
+    };
+
+    if (_supportsEmbeddedWebView) {
       unawaited(_configureTurnstile());
     }
   }
@@ -241,7 +302,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       return;
     }
 
-    if (!_supportsEmbeddedWebView && !_usesExternalSecurityCheck) {
+    if (!_hasEmbeddedChallenge && !_usesExternalSecurityCheck) {
       GameToast.show(
         context,
         title: 'Security check unavailable',
@@ -530,6 +591,10 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     setState(() {
       _captchaToken = null;
       _captchaUnavailable = false;
+      // Windows re-arms by rebuilding with a new token; the WebView2 view
+      // watches this in `didUpdateWidget`. Nothing happens on the other
+      // platforms, where the counter is simply never read.
+      _windowsChallengeToken++;
     });
     final controller = _turnstileController;
     if (controller != null) {
@@ -542,6 +607,31 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       _turnstileHtml,
       baseUrl: turnstileChallengeHost,
     );
+  }
+
+  /// A token from the in-app WebView2 challenge.
+  ///
+  /// Null means the challenge finished without producing one — expired, or a
+  /// `/status` report unblocked the wait. Either way the app must stop
+  /// treating "waiting" as the answer.
+  void _onWindowsToken(String? token) {
+    if (!mounted) return;
+    setState(() {
+      _captchaToken = (token == null || token.isEmpty) ? null : token;
+      if (_captchaToken != null) _captchaUnavailable = false;
+    });
+  }
+
+  /// WebView2 could not be initialised on this machine.
+  ///
+  /// Almost always a missing WebView2 runtime, which is rare on Windows 10
+  /// and 11 but not impossible on a stripped or offline image. Falling back
+  /// restores the browser detour, which is worse than the embedded widget and
+  /// far better than a player who cannot sign in at all.
+  void _onWindowsWebViewFailed() {
+    if (!mounted || _windowsWebViewFailed) return;
+    debugPrint('WebView2 unusable; reverting to the browser security check.');
+    setState(() => _windowsWebViewFailed = true);
   }
 
   Future<String?> _requestExternalSecurityToken() async {
@@ -807,11 +897,29 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                                       },
                                     ),
                                   ],
-                                  _HiddenTurnstileView(
-                                    controller: _turnstileController,
-                                    isConfigured: _isTurnstileConfigured,
-                                    isSupported: _supportsEmbeddedWebView,
-                                  ),
+                                  if (_usesWindowsWebView &&
+                                      _isTurnstileConfigured)
+                                    WindowsTurnstileView(
+                                      server: _turnstileServer,
+                                      html: _embeddedWindowsTurnstileHtml,
+                                      reloadToken: _windowsChallengeToken,
+                                      onToken: _onWindowsToken,
+                                      onUnavailable: () {
+                                        if (mounted) {
+                                          setState(
+                                            () => _captchaUnavailable = true,
+                                          );
+                                        }
+                                      },
+                                      onNeedsBrowserFallback:
+                                          _onWindowsWebViewFailed,
+                                    )
+                                  else
+                                    _HiddenTurnstileView(
+                                      controller: _turnstileController,
+                                      isConfigured: _isTurnstileConfigured,
+                                      isSupported: _supportsEmbeddedWebView,
+                                    ),
                                 ],
                               ),
                             ),

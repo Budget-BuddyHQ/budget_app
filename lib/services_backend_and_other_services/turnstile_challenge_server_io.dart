@@ -4,6 +4,17 @@ import 'dart:io';
 
 class TurnstileChallengeServer {
   HttpServer? _server;
+
+  /// Called when the challenge page reports it cannot be completed.
+  ///
+  /// **Why the server needs to carry this at all.** The browser flow only
+  /// ever needed a token: a player who could not finish the captcha simply
+  /// closed the tab, and the two-minute timeout handled it. The embedded
+  /// WebView2 view has no tab to close — the widget just sits there — so a
+  /// render failure has to reach Dart, or the app waits for a token that is
+  /// never coming. That exact state was the original sign-in outage: "no
+  /// token" and "no token *yet*" being indistinguishable.
+  void Function(String detail)? onStatus;
   String? _html;
   Uri? _entryUri;
   Completer<String?>? _tokenCompleter;
@@ -63,6 +74,21 @@ class TurnstileChallengeServer {
   }
 
   Future<void> _handleRequest(HttpRequest request) async {
+    if (request.uri.path == '/status') {
+      final detail = await utf8.decoder.bind(request).join();
+      onStatus?.call(detail.trim());
+      // Unblock anyone waiting: there is no token coming, and a caller
+      // holding `waitForToken` would otherwise sit on it for two minutes.
+      if (!(_tokenCompleter?.isCompleted ?? true)) {
+        _tokenCompleter?.complete(null);
+      }
+      request.response
+        ..headers.contentType = ContentType.text
+        ..write('ok');
+      await request.response.close();
+      return;
+    }
+
     if (request.uri.path == '/token') {
       final token = await utf8.decoder.bind(request).join();
       if (!(_tokenCompleter?.isCompleted ?? true)) {
