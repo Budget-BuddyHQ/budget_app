@@ -1,3 +1,4 @@
+import 'town_age_bands.dart';
 import 'town_spot_models.dart';
 
 /// Extra encounters for the Adventure town's six buildings.
@@ -2168,14 +2169,43 @@ int _stableHash(String value) {
   return hash;
 }
 
-/// The prompt and choices [spot] is showing today.
-({String prompt, List<TownChoice> choices}) townEncounterFor(
+/// The extra scenarios [spot] may offer a character of [lifeAge].
+///
+/// Filtered through [townScenarioMinAge], so what a building has to say
+/// genuinely changes as the character grows up rather than only *which* of a
+/// fixed set it picks. See `town_age_bands.dart` for why a six-year-old was
+/// being asked how they planned to cover the rent.
+///
+/// **A missing or zero age means no life is in progress**, and then nothing
+/// is filtered. The town is still somewhere a player can walk around on its
+/// own, and there it has no character whose age could gate anything — the
+/// existing contract that `lifeAge: null` and `lifeAge: 0` behave identically
+/// is load-bearing and tested. It costs nothing either: `OutingPermission`
+/// refuses to let anyone under six leave the house, so a real life never asks
+/// this question with an age below that.
+List<TownScenario> townScenariosFor(TownSpot spot, {int? lifeAge}) {
+  final extras = kTownScenarios[spot.id] ?? const <TownScenario>[];
+  if (lifeAge == null || lifeAge <= 0) return extras;
+  return extras
+      .where((scenario) => lifeAge >= townScenarioMinAge(scenario.id))
+      .toList(growable: false);
+}
+
+/// The encounter [spot] is showing today.
+///
+/// `id` identifies the *conversation*, not the building, and it is what stops
+/// the town being a gold tap: `AdventureWorldScreen` records the ids it has
+/// already paid out for, so walking out and straight back in re-deals the
+/// scenes without re-arming the rewards. The spot's built-in encounter is
+/// index 0 and has no scenario id of its own, so it gets one derived from the
+/// spot.
+({String id, String prompt, List<TownChoice> choices}) townEncounterFor(
   TownSpot spot, {
   DateTime? now,
   int? lifeAge,
   String? conditionId,
 }) {
-  final extras = kTownScenarios[spot.id] ?? const <TownScenario>[];
+  final extras = townScenariosFor(spot, lifeAge: lifeAge);
   final index = townScenarioIndexFor(
     spot.id,
     now: now,
@@ -2184,8 +2214,12 @@ int _stableHash(String value) {
     conditionId: conditionId,
   );
   if (index == 0) {
-    return (prompt: spot.prompt, choices: spot.choices);
+    return (id: '${spot.id}_base', prompt: spot.prompt, choices: spot.choices);
   }
   final scenario = extras[index - 1];
-  return (prompt: scenario.prompt, choices: scenario.choices);
+  return (
+    id: scenario.id,
+    prompt: scenario.prompt,
+    choices: scenario.choices,
+  );
 }

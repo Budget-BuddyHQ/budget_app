@@ -33,6 +33,7 @@ import '../admin/admin_screen.dart';
 import '../auth/auth_screen.dart';
 import '../onboarding/tutorial_screen.dart';
 import 'feedback_screen.dart';
+import 'friend_profile_screen.dart';
 import 'personal_details_sheet.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -110,7 +111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           avatarUrl: avatarUrl,
         );
       }
-      final result = await controller.updateProfilePhoto(resolvedUrl);
+      await controller.updateProfilePhoto(resolvedUrl);
       if (!context.mounted) {
         return;
       }
@@ -119,7 +120,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         context,
         title: uploaded ? 'Photo updated' : 'Photo set on this device',
         message: uploaded
-            ? result.syncState.message
+            ? 'It will show up on your profile and the leaderboard.'
             : 'Cloud storage is unavailable, so it is saved locally only.',
         icon: Icons.camera_alt_rounded,
         accent: uploaded ? const Color(0xFF4BD2A3) : const Color(0xFFFFB084),
@@ -1503,6 +1504,47 @@ class _FriendsCardState extends State<_FriendsCard> {
     _reload(currentUserId);
   }
 
+  /// Opens the friend's profile.
+  ///
+  /// The removal is handed down as a callback rather than duplicated there,
+  /// so both routes into it — the row's icon and the profile's button — run
+  /// the same confirm, the same call and the same reload. The profile pops
+  /// itself before invoking this, so the toast and the refresh land on the
+  /// list that is actually on screen.
+  Future<void> _openFriend(String currentUserId, LeaderboardEntry friend) {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => FriendProfileScreen(
+          friend: friend,
+          onRemove: () => _removeFriendConfirmed(currentUserId, friend),
+        ),
+      ),
+    );
+  }
+
+  /// The removal itself, with no confirm of its own.
+  ///
+  /// Split out because the two callers disagree about where the confirm
+  /// belongs: the list row has to ask before it deletes, and the profile
+  /// screen has already asked by the time it calls this. Leaving the dialog
+  /// inside would have meant confirming twice from the profile.
+  Future<bool> _removeFriendConfirmed(
+    String currentUserId,
+    LeaderboardEntry friend,
+  ) async {
+    final ok = await SupabaseService.instance.removeFriend(
+      currentUserId: currentUserId,
+      friendId: friend.id,
+    );
+    if (!mounted) return ok;
+    GameToast.show(
+      context,
+      message: ok ? 'Removed ${friend.username}.' : 'Could not remove them.',
+    );
+    _reload(currentUserId);
+    return ok;
+  }
+
   Future<void> _removeFriend(
     String currentUserId,
     LeaderboardEntry friend,
@@ -1537,17 +1579,7 @@ class _FriendsCardState extends State<_FriendsCard> {
       ),
     );
     if (confirmed != true || !mounted) return;
-
-    final ok = await SupabaseService.instance.removeFriend(
-      currentUserId: currentUserId,
-      friendId: friend.id,
-    );
-    if (!mounted) return;
-    GameToast.show(
-      context,
-      message: ok ? 'Removed ${friend.username}.' : 'Could not remove them.',
-    );
-    _reload(currentUserId);
+    await _removeFriendConfirmed(currentUserId, friend);
   }
 
   @override
@@ -1674,6 +1706,7 @@ class _FriendsCardState extends State<_FriendsCard> {
           _FriendsList(
             future: _friends,
             onRemove: (friend) => _removeFriend(currentUserId, friend),
+            onOpen: (friend) => _openFriend(currentUserId, friend),
           ),
         ],
       ),
@@ -1688,10 +1721,19 @@ class _FriendsCardState extends State<_FriendsCard> {
 /// apart from a broken one. The empty state explains the two-sided part
 /// rather than leaving a blank space to interpret.
 class _FriendsList extends StatelessWidget {
-  const _FriendsList({required this.future, required this.onRemove});
+  const _FriendsList({
+    required this.future,
+    required this.onRemove,
+    required this.onOpen,
+  });
 
   final Future<List<LeaderboardEntry>>? future;
   final ValueChanged<LeaderboardEntry> onRemove;
+
+  /// Opens [FriendProfileScreen]. The row used to be inert, which made the
+  /// list a contact list rather than a way of finding out how you are doing
+  /// against somebody.
+  final ValueChanged<LeaderboardEntry> onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -1736,50 +1778,77 @@ class _FriendsList extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.white.withValues(alpha: 0.08),
-                      backgroundImage: friend.profileImageUrl.isEmpty
-                          ? null
-                          : NetworkImage(friend.profileImageUrl),
-                      child: friend.profileImageUrl.isEmpty
-                          ? Text(
-                              friend.username.isEmpty
-                                  ? '?'
-                                  : friend.username.characters.first
-                                        .toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 10),
+                    // The avatar and the name are one tap target; the remove
+                    // button stays outside it, so a tap meant for the profile
+                    // can never delete somebody by accident.
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            friend.username,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.quicksand(
-                              color: AppTheme.textPrimary,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13,
-                            ),
+                      child: InkWell(
+                        onTap: () => onOpen(friend),
+                        borderRadius: BorderRadius.circular(
+                          AppTheme.radiusMedium,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundColor: Colors.white.withValues(
+                                  alpha: 0.08,
+                                ),
+                                backgroundImage:
+                                    friend.profileImageUrl.isEmpty
+                                    ? null
+                                    : NetworkImage(friend.profileImageUrl),
+                                child: friend.profileImageUrl.isEmpty
+                                    ? Text(
+                                        friend.username.isEmpty
+                                            ? '?'
+                                            : friend.username.characters.first
+                                                  .toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      friend.username,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.quicksand(
+                                        color: AppTheme.textPrimary,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${friend.literacyPoints} literacy · '
+                                      '${friend.gold} gold',
+                                      style: GoogleFonts.quicksand(
+                                        color: AppTheme.textMuted,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 18,
+                                color: Colors.white.withValues(alpha: 0.4),
+                              ),
+                            ],
                           ),
-                          Text(
-                            '${friend.literacyPoints} literacy · '
-                            '${friend.gold} gold',
-                            style: GoogleFonts.quicksand(
-                              color: AppTheme.textMuted,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                     IconButton(

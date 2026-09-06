@@ -86,35 +86,58 @@ class MinigamesPage extends StatelessWidget {
           : result.status == 'victory'
           ? 'Arcade streak extended'
           : 'Run saved',
-      message:
-          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+      message: '+${result.goldEarned} gold • +${result.xpEarned} XP',
       icon: Icons.bolt_rounded,
       accent: const Color(0xFF6CB6DA),
     );
   }
 
   Future<void> _openCoinCascade(BuildContext context) async {
-    final controller = context.read<UserStatsController>();
-    final previousBest = controller.stats.bestArcadeScore('coin_cascade');
+    final previousBest = context
+        .read<UserStatsController>()
+        .stats
+        .bestArcadeScore('coin_cascade');
 
-    final game = await Navigator.of(context).push<CoinCascadeGame>(
+    // **The page now pays the run itself**, and records it, and returns what
+    // it paid.
+    //
+    // This function used to do the recording and print "+N gold" from
+    // `game.goldEarned` — a number the engine computed and nothing ever
+    // credited, because the only call here was `recordArcadeRun`, whose own
+    // documentation says it must not touch gold or XP. Moving the payout into
+    // the page is not tidying: the page is the only place that knows whether
+    // a level was a first clear or a replay, and whether the run was a Rush,
+    // both of which change what it is worth.
+    final result = await Navigator.of(context).push<CascadeCloseResult>(
       FadePageRoute(builder: (_) => const CoinCascadePage()),
     );
-    if (!context.mounted || game == null) {
+    if (!context.mounted || result == null) {
       return;
     }
 
-    await controller.recordArcadeRun(gameId: 'coin_cascade', score: game.score);
-    if (!context.mounted) {
-      return;
+    final game = result.game;
+    final beatBest = result.isRush
+        ? result.isNewRushBest
+        : game.score > (previousBest ?? 0);
+    if (beatBest) {
+      ConfettiBurst.show(context);
     }
 
     GameToast.show(
       context,
-      title: game.status == CascadeStatus.won ? 'Goal reached' : 'Run finished',
-      message: game.score > (previousBest ?? 0)
-          ? 'New best: ${game.score} · +${game.goldEarned} gold'
-          : '${game.score} points · +${game.goldEarned} gold',
+      title: result.isRush
+          ? (result.isNewRushBest ? 'New Payday Rush best!' : 'Rush finished')
+          : game.status == CascadeStatus.won
+          ? 'Goal reached'
+          : 'Run finished',
+      message: <String>[
+        if (result.isRush)
+          '${game.savings} saved'
+        else
+          '${game.score} points',
+        if (result.goldEarned > 0) '+${result.goldEarned} gold',
+        if (result.xpEarned > 0) '+${result.xpEarned} XP',
+      ].join(' · '),
       icon: Icons.grid_view_rounded,
       accent: const Color(0xFF69C6FF),
     );
@@ -155,8 +178,7 @@ class MinigamesPage extends StatelessWidget {
     GameToast.show(
       context,
       title: isNewHighScore ? 'New high score!' : 'Horde cleared',
-      message:
-          '+${result.goldEarned} gold • +${result.xpEarned} XP • ${result.syncState.message}',
+      message: '+${result.goldEarned} gold • +${result.xpEarned} XP',
       icon: Icons.gavel_rounded,
       accent: const Color(0xFFE1BB72),
     );

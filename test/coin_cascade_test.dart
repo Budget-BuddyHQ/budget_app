@@ -523,9 +523,13 @@ void main() {
         ..savings = 0
         ..score = 1000
         ..coins = 0;
+      // `CoinCascadeGame.goldEarned` used to be the thing under test here,
+      // and it was a getter nothing ever paid — see `cascade_teaching_test`.
+      // The rule it encoded was right, so it moved into `cascadePayoutFor`
+      // where the screen actually reads it.
       expect(
-        saver.goldEarned,
-        greaterThan(scorer.goldEarned),
+        cascadePayoutFor(saver).gold,
+        greaterThan(cascadePayoutFor(scorer).gold),
         reason:
             'a player who chased score out-earned one who reached the goal, '
             'so the payout is teaching the opposite of the game',

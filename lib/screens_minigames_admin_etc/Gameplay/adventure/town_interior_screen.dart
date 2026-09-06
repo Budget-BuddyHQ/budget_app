@@ -30,9 +30,24 @@ class TownInteriorScreen extends StatefulWidget {
     required this.spot,
     this.lifeAge,
     this.today,
+    this.settled = false,
   });
 
   final TownSpot spot;
+
+  /// Whether this exact encounter has already paid out.
+  ///
+  /// The decision is still offered — reading it and choosing *is* the lesson,
+  /// and a locked door teaches nothing. What is withheld is the money, and
+  /// this is what lets the screen say so **before** the choice rather than
+  /// after it. Being quietly paid nothing is how a game loses trust; being
+  /// told "you already settled this, come back tomorrow" is a rule.
+  ///
+  /// Computed by the caller, which owns the saved ledger. It has to be
+  /// derived from the same `townEncounterFor(spot, lifeAge:, conditionId:)`
+  /// this screen calls below, or the two will disagree about which
+  /// conversation is on.
+  final bool settled;
 
   /// The character's age, when this was entered from a run.
   ///
@@ -104,6 +119,7 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
                   spot: spot,
                   lifeAge: widget.lifeAge,
                   today: widget.today,
+                  settled: widget.settled,
                   busy: _confirming != null,
                   onChoose: _choose,
                   onLeave: () => Navigator.of(context).pop(),
@@ -415,6 +431,7 @@ class _DecisionPanel extends StatelessWidget {
     required this.spot,
     required this.lifeAge,
     required this.today,
+    required this.settled,
     required this.busy,
     required this.onChoose,
     required this.onLeave,
@@ -422,6 +439,9 @@ class _DecisionPanel extends StatelessWidget {
 
   final TownSpot spot;
   final int? lifeAge;
+
+  /// See [TownInteriorScreen.settled].
+  final bool settled;
 
   /// Today's conditions, for the price line. Null when nothing passed one.
   final TownCondition? today;
@@ -491,11 +511,55 @@ class _DecisionPanel extends StatelessWidget {
               ),
             ),
           ],
+          // Said before the choice, not after it.
+          //
+          // The alternative — let somebody pick, then hand them nothing — is
+          // the shape of a bug even when it is the intended rule, and it is
+          // the version a player would reasonably describe as the game having
+          // stopped paying out. A stated rule is a rule; a silent one is a
+          // fault.
+          if (settled) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.check_circle_outline_rounded,
+                    color: Colors.white70,
+                    size: 15,
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      'You already settled this one. Nothing to earn or '
+                      'spend here — come back when something has changed.',
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white70,
+                        fontSize: 11.5,
+                        height: 1.35,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
           for (final choice in encounter.choices) ...[
             _ChoiceRow(
               choice: choice,
-              shownGold: today?.priceFor(choice.gold, spot.kind) ?? choice.gold,
+              // Nothing is charged or paid on a settled encounter, so the
+              // price pill would be quoting a number that will not happen.
+              shownGold: settled
+                  ? 0
+                  : today?.priceFor(choice.gold, spot.kind) ?? choice.gold,
               accent: spot.kind.accent,
               // Disabled while the sale animation plays, so a second tap
               // cannot queue a second purchase behind the first.

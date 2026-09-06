@@ -165,23 +165,68 @@ def _tone(freq: float, dur: float, *, decay=8.0, harmonics=(1.0, 0.0, 0.0)):
     return out
 
 
-def _tick(dur=0.045, freq=1400.0, rng=None):
-    """One ratchet click.
+def _tick(dur=0.030, freq=430.0, rng=None, seed=0, body=1.0, ring=1.0):
+    """One ratchet detent -- a pawl dropping into a notch.
 
-    The noise half is filtered rather than raw now. Unfiltered white noise at
-    this level is the reason the roll used to read as static under the chime
-    instead of as a mechanism -- and there are ninety of these in a four
-    second roll, so whatever this sounds like, it sounds like it ninety times.
+    **Why this was rewritten.** The first version was 45ms of `exp(-60t)`
+    over *filtered noise at 0.85 plus a sine at 1200-1660Hz*, and both halves
+    of that were wrong in the same direction:
+
+    * **Noise was the loudest component.** A click's noise is the *contact* --
+      three milliseconds of it, then it is gone. Carrying it for 45ms at the
+      top of the mix is not a mechanism, it is static with a pitch behind it,
+      and there are seventy-two of them in a row.
+    * **1200-1660Hz is where a phone speaker is harshest** and where a small
+      driver has no body to put under it. That band is the reason the roll
+      read as thin and shrill rather than as something heavy turning.
+    * **45ms is longer than the gap between the early ticks.** At the top of
+      the roll the tiles cross about 12ms apart, so every tick was still
+      ringing when the next two arrived -- the deceleration, which is the
+      entire effect, was smeared into a buzz for its first second.
+
+    So: a third of the length, the noise cut to a genuine 3ms contact burst,
+    and the tone moved down two octaves into a struck body with inharmonic
+    partners on it. A detent has three parts and this now has all three --
+    the **click** of contact, the **tok** of the body it happened in, and a
+    short **thump** underneath that a phone can actually reproduce.
+
+    `body` and `ring` let the caller make the last few ticks heavier and
+    longer without changing their pitch: at the end of a roll the wheel is
+    barely moving and each notch it drops into should sound like it took
+    effort.
     """
     rng = rng or random
-    out = []
-    prev = 0.0
-    for i in range(int(RATE * dur)):
-        t = i / RATE
-        env = math.exp(-60 * t)
-        prev += 0.5 * ((rng.random() * 2 - 1) - prev)
-        body = math.sin(2 * math.pi * freq * t) * 0.42
-        out.append((prev * 0.85 + body) * env)
+    # +/-1.5% per tick. Seventy-two identical detents is a loop; a real
+    # ratchet has seventy-two slightly different notches in it, and the ear
+    # hears the difference as a mechanism rather than as a sample being
+    # retriggered.
+    freq = freq * (1.0 + (rng.random() - 0.5) * 0.03)
+
+    # Fast enough to be gone before the next tick even at the top of the
+    # roll, slow enough to have a body. 130 gives tau ~ 7.7ms.
+    decay = 130.0 / max(0.35, ring)
+
+    out = _struck(
+        freq,
+        dur,
+        decay=decay,
+        # 2.74 and 4.91 are roughly where a small struck bar's first two
+        # inharmonic partials sit. They are what stop this being a beep.
+        partials=((1.0, 1.0, 1.0), (2.74, 0.30, 2.3), (4.91, 0.11, 3.4)),
+        # A struck object's pitch falls as the strike energy leaves it.
+        glide=-1.4,
+        glide_rate=90.0,
+    )
+    out = [v * 0.62 * body for v in out]
+
+    # The thump. Barely a pitch -- three cycles of something low, which is
+    # what gives a click weight on a speaker too small to reproduce the
+    # body's fundamental properly.
+    _mix(out, [v * 0.30 * body for v in _struck(freq * 0.27, 0.018, decay=190.0)], 0)
+
+    # The contact. Short, bright, and *quieter than the body* -- the inverse
+    # of the old balance. This is the only part that should read as noise.
+    _mix(out, _transient(dur=0.0032, cutoff=0.86, level=0.34, seed=seed), 0)
     return out
 
 
@@ -259,28 +304,125 @@ def _tick_times(items: int, seconds: float) -> list[float]:
     return times
 
 
+def _spin_bed(times: list[float], seconds: float) -> list[float]:
+    """The low rumble under the fast part of the roll.
+
+    At the top of the roll the tiles cross about twelve milliseconds apart,
+    which is faster than the ear resolves as separate events -- it hears a
+    texture. Leaving that texture to be made *out of the ticks themselves* is
+    what turned the first second into a buzz: the individual detents were
+    fighting to be heard at exactly the moment none of them can be.
+
+    So the fast stretch gets its own bed instead, and the ticks stop having to
+    carry it. Filtered noise, level tracking the reel's actual speed, and
+    entirely gone by the time the ticks are far enough apart to be counted --
+    which is the moment the deceleration becomes the thing you are listening
+    to. It is felt rather than heard, and taking it out makes the roll sound
+    cheap again, which is the test for whether a bed is doing its job.
+    """
+    rng = random.Random(19)
+    n = int(RATE * seconds) + 1
+    out = [0.0] * n
+
+    # Instantaneous tick rate, sampled from the gaps and held between them.
+    # Normalised against the fastest gap so the bed is at full level exactly
+    # where the roll is fastest, whatever the curve happens to be.
+    gaps = [max(1e-4, times[i + 1] - times[i]) for i in range(len(times) - 1)]
+    fastest = min(gaps)
+
+    prev1 = 0.0
+    prev2 = 0.0
+    k = 0
+    for i in range(n):
+        t = i / RATE
+        while k < len(gaps) - 1 and times[k + 1] <= t:
+            k += 1
+        speed = fastest / gaps[k]  # 1.0 at the fastest point, ->0 as it slows
+        # Squared, so the bed disappears well before the ticks do rather than
+        # trailing them all the way down.
+        level = speed * speed
+
+        # Two one-pole lowpasses in series: about 400Hz, which is rumble
+        # rather than hiss. A single pole leaves enough top on it to read as
+        # tape noise.
+        white = rng.random() * 2 - 1
+        prev1 += 0.055 * (white - prev1)
+        prev2 += 0.055 * (prev1 - prev2)
+        # 1.1, not the 3.6 the first pass used. Measured, 3.6 put the bed
+        # at a peak of 0.65 against a tick's 0.74 and made it 75% of the
+        # energy in the opening third of a second -- which is not a bed, it
+        # is a noise wash with ticks somewhere behind it. At 1.1 it is about
+        # a third of the opening level: audible as weight, inaudible as a
+        # sound of its own, which is the whole brief.
+        out[i] = prev2 * level * 1.1
+    return out
+
+
 def case_roll(
     seconds: float = CASE_ROLL_SECONDS,
     items: int = CASE_ROLL_ITEMS,
 ) -> list[float]:
-    """The case ratchet: one tick per tile, decelerating with the reel.
+    """The case ratchet: one detent per tile, decelerating with the reel.
 
     The deceleration is what makes this an unboxing rather than a rattle. The
-    ear extrapolates where the ticks are heading, so the last two — landing
-    the better part of a second apart — feel like a decision being made.
+    ear extrapolates where the ticks are heading, so the last two -- landing
+    the better part of a second apart -- feel like a decision being made.
+
+    Three things carry that, and the first version only had one of them:
+
+    * the **rhythm**, inverted from the reel's own easing curve so the ticks
+      and the tiles are the same event (see `_tick_times`);
+    * the **bed** under the fast stretch, so the opening reads as a wheel
+      spinning rather than as a burst of static (see `_spin_bed`);
+    * the **weight**, which climbs. The last few detents are lower, heavier
+      and ring longer, because by then the wheel is barely turning and each
+      notch is a candidate for being the answer.
     """
     rng = random.Random(7)
     out: list[float] = []
     times = _tick_times(items, seconds)
+    last = max(1, len(times) - 1)
+
     for i, t in enumerate(times):
-        # Pitch drifts up as it slows, which reads as tension. The last few
-        # ticks are also the loudest, because by then each one is a candidate
-        # for being the result.
-        progress = i / max(1, len(times) - 1)
-        freq = 1200 + 460 * progress
-        gain = 0.7 + 0.3 * progress
-        tick = [v * gain for v in _tick(freq=freq, rng=rng)]
-        _mix(out, tick, int(t * RATE))
+        progress = i / last
+
+        # Pitch *falls* across the roll rather than rising.
+        #
+        # The old version climbed 1200 -> 1660Hz on the theory that rising
+        # pitch reads as tension. It does, in a sound that is *speeding up*.
+        # Here the wheel is slowing down, and rising pitch under falling
+        # tempo is the combination that made the end sound frantic instead of
+        # final. Something heavy losing momentum gets lower, not higher.
+        freq = 520.0 - 150.0 * progress
+
+        # The last eight detents are the ones the player is actually
+        # listening to. `tail` ramps 0 -> 1 across them and nothing before.
+        tail = max(0.0, (i - (len(times) - 9)) / 8.0)
+
+        gain = 0.55 + 0.45 * progress
+        tick = _tick(
+            dur=0.030 + 0.045 * tail,
+            freq=freq,
+            rng=rng,
+            seed=i,
+            body=1.0 + 0.35 * tail,
+            ring=1.0 + 2.2 * tail,
+        )
+        _mix(out, [v * gain for v in tick], int(t * RATE))
+
+    _mix(out, _spin_bed(times, seconds), 0)
+
+    # **No room on this one**, unlike every other sound in the file, and not
+    # for the reason it looks like. A reverb tail is what makes a single
+    # struck sound feel expensive -- but here there are seventy-two of them,
+    # and at the top of the roll they land twelve milliseconds apart. Any
+    # tail long enough to hear would fill the gaps between them, and the gaps
+    # *are* the effect: what the player is listening to is how far apart the
+    # ticks are getting. Smearing them together to make each one sound nicer
+    # would cost the only thing this sound is for.
+    #
+    # It also keeps the render inside the reel's 4.2 seconds, which
+    # `case_roll_sync_test.dart` measures.
     return out
 
 

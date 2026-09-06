@@ -13,6 +13,7 @@ import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../../controllers_that_updates_stats/life_sim_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_conditions.dart';
+import '../../../models_Like_Skins_and_lessons_templates/town_scenarios.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_spot_models.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
@@ -88,6 +89,21 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
       TownMap.values[Random().nextInt(TownMap.values.length)];
 
   final Set<String> _collectedCoinIds = <String>{};
+
+  /// Encounters that have already paid out, by `townEncounterFor().id`.
+  ///
+  /// Persisted, for exactly the reason the coins are (see
+  /// [UserStats.townResolvedSceneIds]): every option in every building calls
+  /// `applyChallengePayload` with real gold, and nothing remembered that it
+  /// had. Walking out of the town and back in re-rolls `TownCondition`, which
+  /// re-deals all twelve buildings — so the loop was: leave, re-enter, take
+  /// twelve paying choices, repeat. Unbounded, and for doing the same thing
+  /// each time, which is the complaint word for word.
+  ///
+  /// The [_visited] set above is deliberately *not* this. That one is
+  /// per-visit and only tracks which doors have been opened this trip; this
+  /// one is per-player and outlives the app.
+  final Set<String> _resolvedScenes = <String>{};
   int _coinsFound = 0;
   TownSpot? _nearby;
   TownNpc? _nearbyNpc;
@@ -108,6 +124,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     // economy, which is a different thing from a town that feels alive. The
     // buildings are what reset; the money on the floor does not.
     _collectedCoinIds.addAll(stats.townCollectedCoinIds);
+    _resolvedScenes.addAll(stats.townResolvedSceneIds);
     _coinsFound = kTownCoins
         .where((coin) => _collectedCoinIds.contains(_coinId(coin)))
         .fold(0, (sum, coin) => sum + coin.value);
@@ -204,12 +221,25 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     if (_sheetOpen) return;
     _sheetOpen = true;
 
+    // Which conversation this building is having, resolved here as well as
+    // inside the interior screen. Both calls pass the same spot, age and
+    // condition, and `townEncounterFor` is pure — so they agree, and this is
+    // the only place that can check the id against the saved ledger before
+    // the screen opens.
+    final encounter = townEncounterFor(
+      spot,
+      lifeAge: widget.life?.age,
+      conditionId: _today.id,
+    );
+    final settled = _resolvedScenes.contains(encounter.id);
+
     final choice = await Navigator.of(context).push<TownChoice>(
       MaterialPageRoute<TownChoice>(
         builder: (_) => TownInteriorScreen(
           spot: spot,
           lifeAge: widget.life?.age,
           today: _today,
+          settled: settled,
         ),
       ),
     );
@@ -226,25 +256,46 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     // actually had to cover, and on a cheap day it would refuse a sale they
     // could afford.
     final priced = _today.priceFor(choice.gold, spot.kind);
-    final goldDelta = priced < 0 && currentGold + priced < 0
+    final affordable = priced < 0 && currentGold + priced < 0
         ? -currentGold
         : priced;
 
-    setState(() => _visited.add(spot.id));
+    // A settled encounter is free in **both** directions.
+    //
+    // Zeroing only the income would be worse than doing nothing: the shop
+    // would still take money for a purchase it no longer rewards, so
+    // re-reading a scene you had already worked through would cost you. The
+    // rule is that a conversation you have already had does not move your
+    // money at all.
+    final goldDelta = settled ? 0 : affordable;
+    final xpDelta = settled ? 0 : choice.xp;
+    final literacyDelta = settled ? 0 : choice.literacy;
+
+    setState(() {
+      _visited.add(spot.id);
+      if (!settled) _resolvedScenes.add(encounter.id);
+    });
 
     await controller.applyChallengePayload(<String, dynamic>{
       'gold_earned': goldDelta,
-      'xp_earned': choice.xp,
-      'literacy_points_earned': choice.literacy,
+      'xp_earned': xpDelta,
+      'literacy_points_earned': literacyDelta,
       'spending_habits': <String, dynamic>{
         'town_visited_spots': _visited.toList(),
+        'town_resolved_scenes': _resolvedScenes.toList(),
       },
     });
 
     widget.life?.applyTownOutcome(
       gold: goldDelta,
-      xp: choice.xp,
-      literacy: choice.literacy,
+      xp: xpDelta,
+      literacy: literacyDelta,
+      // Getting hired is a state change, not a payout, and it is allowed
+      // through on a settled encounter — the job board saying "you already
+      // read this notice" and then refusing to employ somebody who is now old
+      // enough would be a bug wearing an anti-farming rule as a disguise.
+      // `LifeSimController.findJob` has its own guard against being hired
+      // twice.
       hires: choice.hires,
     );
 
@@ -255,6 +306,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
         spot: spot,
         choice: choice,
         goldApplied: goldDelta,
+        settled: settled,
         allVisited: _visited.length >= kTownSpots.length,
       ),
     );
@@ -729,12 +781,16 @@ class _OutcomeDialog extends StatelessWidget {
     required this.spot,
     required this.choice,
     required this.goldApplied,
+    required this.settled,
     required this.allVisited,
   });
 
   final TownSpot spot;
   final TownChoice choice;
   final int goldApplied;
+
+  /// Whether this encounter had already paid out before this visit.
+  final bool settled;
   final bool allVisited;
 
   @override
@@ -774,29 +830,43 @@ class _OutcomeDialog extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              if (goldApplied != 0)
-                _RewardPill(
-                  label: '${goldApplied > 0 ? '+' : ''}$goldApplied gold',
-                  color: goldApplied > 0
-                      ? AppTheme.greenPrimary
-                      : AppTheme.errorRed,
-                ),
-              if (choice.xp > 0)
-                _RewardPill(
-                  label: '+${choice.xp} XP',
-                  color: const Color(0xFF69C6FF),
-                ),
-              if (choice.literacy > 0)
-                _RewardPill(
-                  label: '+${choice.literacy} LP',
-                  color: const Color(0xFFB388FF),
-                ),
-            ],
-          ),
+          // The outcome text above is shown either way — it is the lesson,
+          // and it is worth re-reading. Only the reward pills change, and on
+          // a settled encounter they are replaced by the reason rather than
+          // just missing.
+          if (settled)
+            Text(
+              'No coins this time — you had already worked this one out.',
+              style: GoogleFonts.quicksand(
+                color: Colors.white54,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+              ),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (goldApplied != 0)
+                  _RewardPill(
+                    label: '${goldApplied > 0 ? '+' : ''}$goldApplied gold',
+                    color: goldApplied > 0
+                        ? AppTheme.greenPrimary
+                        : AppTheme.errorRed,
+                  ),
+                if (choice.xp > 0)
+                  _RewardPill(
+                    label: '+${choice.xp} XP',
+                    color: const Color(0xFF69C6FF),
+                  ),
+                if (choice.literacy > 0)
+                  _RewardPill(
+                    label: '+${choice.literacy} LP',
+                    color: const Color(0xFFB388FF),
+                  ),
+              ],
+            ),
           if (allVisited) ...[
             const SizedBox(height: 16),
             Container(

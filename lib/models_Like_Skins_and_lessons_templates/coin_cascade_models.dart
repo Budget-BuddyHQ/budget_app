@@ -129,6 +129,139 @@ class CascadeOutcome {
       clears.isEmpty ? 0 : clears.map((c) => c.cascade).reduce(max) + 1;
 }
 
+/// How a run is shaped.
+///
+/// **Why a second mode at all.** The ladder is thirteen levels of "spend a
+/// fixed budget of moves well", which is the right shape for the lesson and
+/// the wrong shape for somebody who has ten spare minutes and has already
+/// beaten it. Reported as: *"sure it's satisfying but I don't even know what
+/// to work for in that game."*
+///
+/// [rush] answers that without touching the ladder, and it changes the
+/// *pressure* rather than the numbers. In the ladder your scarce resource is
+/// moves, so the game rewards looking at the board; in Payday Rush your
+/// scarce resource is time and bills arrive on a clock whether you are ready
+/// or not, so it rewards covering needs fast. Those are two genuinely
+/// different money skills — planning a budget, and dealing with a month that
+/// does not wait for you.
+enum CascadeMode {
+  /// The level ladder. A fixed move budget, a savings goal, no clock.
+  ladder,
+
+  /// Payday Rush. A clock, unlimited moves, and bills that arrive on time
+  /// rather than on turns. Ends when the clock does; savings are the score.
+  rush,
+}
+
+/// What a finished run actually did, in budget terms.
+///
+/// **This is the answer to "how is this teaching them financial literacy".**
+/// The mechanics have always encoded 50/30/20 — needs clear your bills, wants
+/// score well and raise them, savings are the only thing that wins — but the
+/// game never *said so*, at any point, to anybody. A player could beat all
+/// thirteen levels and never learn that the thing they had got good at had a
+/// name, which makes the teaching entirely dependent on somebody happening to
+/// notice it.
+///
+/// So this reads the player's own run back to them as an allocation. The rule
+/// the app follows everywhere else applies here too: **never say a number is
+/// good or bad, show what it did.** No grade, no score out of ten. What you
+/// spent your board on, what that split is called, and what it cost you —
+/// which is a fact about their own game rather than a claim about budgeting
+/// they have to take on trust.
+@immutable
+class CascadeReport {
+  const CascadeReport({
+    required this.needs,
+    required this.wants,
+    required this.saves,
+    required this.coins,
+    required this.billsPaid,
+    required this.billsTaken,
+  });
+
+  /// Tiles cleared of each kind across the whole run.
+  final int needs;
+  final int wants;
+  final int saves;
+
+  /// Coins are **not** part of the split below.
+  ///
+  /// A coin is income, not an allocation — in this game it buys extra moves,
+  /// which is the board's version of money you have not decided about yet.
+  /// Folding it into the percentages would make a lucky coin run look like a
+  /// budgeting choice.
+  final int coins;
+
+  final int billsPaid;
+  final int billsTaken;
+
+  /// The three things a budget is actually divided between.
+  int get allocated => needs + wants + saves;
+
+  double get needsShare => allocated == 0 ? 0 : needs / allocated;
+  double get wantsShare => allocated == 0 ? 0 : wants / allocated;
+  double get savesShare => allocated == 0 ? 0 : saves / allocated;
+
+  int get needsPercent => (needsShare * 100).round();
+  int get wantsPercent => (wantsShare * 100).round();
+  int get savesPercent => (savesShare * 100).round();
+
+  /// One sentence naming the shape of the run.
+  ///
+  /// Ordered by which observation is most worth making, not by severity —
+  /// there is nothing here to be severe about. A run close to 50/30/20 is
+  /// told so, because the whole point is that the player arrived there by
+  /// playing rather than by being taught the numbers.
+  String get headline {
+    if (allocated == 0) return 'Not enough of a run to read.';
+    if (savesPercent >= 20 && wantsPercent <= 30) {
+      return 'That is roughly a 50/30/20 budget, and you played it '
+          'rather than read it.';
+    }
+    if (savesPercent < 10) return 'Almost nothing went to savings this run.';
+    if (wantsPercent > 40) return 'Wants took $wantsPercent% of your board.';
+    if (needsPercent > 60) return 'Most of your run went on covering needs.';
+    // No adjective on the fallback. Every other branch names something
+    // specific that happened; this one has nothing to point at, and reaching
+    // for a word like "cautious" would be the app grading a run it has
+    // nothing to say about.
+    return 'You put $savesPercent% away and spent $wantsPercent% on wants.';
+  }
+
+  /// The consequence, in the run's own numbers.
+  ///
+  /// Every sentence points at something that happened on the board the player
+  /// just watched, because that is the difference between a lesson and a
+  /// slogan. "Wants raise your bills" is a rule; "your wants added 7 bills and
+  /// your needs cleared 11" is what happened.
+  List<String> get detail {
+    if (allocated == 0) {
+      return const <String>[
+        'Play a few more moves and this will have something to say.',
+      ];
+    }
+    final parts = <String>[
+      'The 50/30/20 rule splits money the same way: about half on things you '
+          'have to pay for, a third on things you want, a fifth put away.',
+    ];
+    if (billsTaken > 0) {
+      parts.add(
+        'Your wants added $billsTaken ${billsTaken == 1 ? 'bill' : 'bills'}. '
+        'Clearing needs paid off $billsPaid. That gap is the reason a budget '
+        'has a wants column rather than no wants at all.',
+      );
+    }
+    if (coins > 0) {
+      parts.add(
+        'You also matched $coins in coins — income, which buys moves rather '
+        'than counting as a choice.',
+      );
+    }
+    return parts;
+  }
+}
+
 /// One stage of the run.
 ///
 /// **Why levels rather than one endless board.** A single tuning — 25 moves,
@@ -155,10 +288,18 @@ class CascadeLevel {
     this.billInterval = 4,
     this.wantsCostMultiplier = 1,
     this.coinValue = 1,
+    this.mode = CascadeMode.ladder,
+    this.seconds = 0,
   });
 
   final int number;
   final String name;
+
+  /// Turn-based ladder, or the timed Payday Rush. See [CascadeMode].
+  final CascadeMode mode;
+
+  /// Clock length for [CascadeMode.rush]. Zero for every ladder level.
+  final int seconds;
 
   /// One line, shown before the level starts. If a rule cannot be stated in
   /// one line it is too complicated for a game a seven-year-old plays.
@@ -314,6 +455,41 @@ const List<CascadeLevel> kCascadeLevels = <CascadeLevel>[
   ),
 ];
 
+/// Payday Rush.
+///
+/// Ninety seconds, deliberately. It has to be something somebody does while
+/// waiting for a bus, and a five-minute timed mode is the ladder with anxiety
+/// added rather than a different game.
+///
+/// `billCapacity` is generous next to the ladder levels, because losing a
+/// timed run early is a far worse experience than losing a turn-based one:
+/// there is no move you could have thought harder about, and the clock is
+/// still going.
+const CascadeLevel kCascadeRush = CascadeLevel(
+  number: 0,
+  name: 'Payday Rush',
+  rule: '90 seconds. Bills land on the clock. Save everything you can.',
+  mode: CascadeMode.rush,
+  seconds: 90,
+  // Unreachable on purpose: there is no winning a Rush, only a score. The
+  // engine's win check compares against this and never fires.
+  savingsGoal: 1 << 30,
+  moves: 1 << 30,
+  billCapacity: 16,
+  // Bills are delivered by the clock here, so the move-based interval is
+  // never consulted — see `CoinCascadeGame._afterCascade`.
+  billInterval: 1 << 30,
+  coinValue: 2,
+);
+
+/// Seconds between scheduled bills in [CascadeMode.rush].
+///
+/// Four gives roughly 22 bills across a 90-second run against a capacity of
+/// 16, so a player who never clears a need is out at about the two-thirds
+/// mark — late enough to have had a game, early enough that ignoring bills is
+/// unmistakably the thing that ended it.
+const Duration kRushBillInterval = Duration(seconds: 4);
+
 CascadeLevel cascadeLevelFor(int number) => kCascadeLevels.firstWhere(
   (level) => level.number == number,
   orElse: () => kCascadeLevels.last,
@@ -374,6 +550,32 @@ class CoinCascadeGame {
   /// Moves since a bill was last dropped in.
   int _sinceBill = 0;
 
+  /// Tiles cleared across the whole run, by kind.
+  ///
+  /// The engine already knew all of this a swap at a time — `CascadeOutcome`
+  /// reports it and the screen throws it away after drawing a banner. Keeping
+  /// the totals is what lets [report] tell a player what their run was
+  /// *shaped* like, which is the thing the game had never once said out loud.
+  int needsCleared = 0;
+  int wantsCleared = 0;
+  int savesCleared = 0;
+  int coinsCleared = 0;
+  int billsClearedTotal = 0;
+  int billsAddedTotal = 0;
+
+  /// The run, read back as a budget. See [CascadeReport].
+  CascadeReport get report => CascadeReport(
+    needs: needsCleared,
+    wants: wantsCleared,
+    saves: savesCleared,
+    coins: coinsCleared,
+    billsPaid: billsClearedTotal,
+    billsTaken: billsAddedTotal,
+  );
+
+  /// True in Payday Rush, where the clock ends the run rather than the moves.
+  bool get isTimed => level.mode == CascadeMode.rush;
+
   /// How often bills arrive, from the level. Frequent enough that ignoring
   /// them loses, rare enough that a player who covers needs stays ahead.
   int get billInterval => level.billInterval;
@@ -381,6 +583,16 @@ class CoinCascadeGame {
   bool get isSettled => _findMatches().isEmpty;
 
   CascadeStatus get status {
+    // A Rush is never won and never runs out of moves — it runs out of
+    // *time*, which only the screen knows about, and it is scored on savings
+    // rather than passed or failed. Going under on bills still ends it: the
+    // one way to lose a timed run is to let the bills win, which is the
+    // lesson the clock exists to teach.
+    if (isTimed) {
+      return bills >= billCapacity
+          ? CascadeStatus.lost
+          : CascadeStatus.playing;
+    }
     if (savings >= savingsGoal) return CascadeStatus.won;
     if (bills >= billCapacity) return CascadeStatus.lost;
     if (movesLeft <= 0) return CascadeStatus.lost;
@@ -400,6 +612,12 @@ class CoinCascadeGame {
     savings = 0;
     bills = 0;
     _sinceBill = 0;
+    needsCleared = 0;
+    wantsCleared = 0;
+    savesCleared = 0;
+    coinsCleared = 0;
+    billsClearedTotal = 0;
+    billsAddedTotal = 0;
     _fillBoardWithoutMatches();
   }
 
@@ -565,8 +783,13 @@ class CoinCascadeGame {
       return false;
     }
 
-    movesLeft--;
-    _sinceBill++;
+    // A Rush has no move budget — its cost is the second that just passed —
+    // so decrementing here would tick a counter nothing reads and, worse,
+    // would eventually underflow past the 1<<30 the level declares.
+    if (!isTimed) {
+      movesLeft--;
+      _sinceBill++;
+    }
     return true;
   }
 
@@ -606,18 +829,24 @@ class CoinCascadeGame {
       switch (kind) {
         case TileKind.coin:
           gainedCoins += size * level.coinValue;
+          coinsCleared += size;
         case TileKind.save:
           gainedSavings += size;
+          savesCleared += size;
         case TileKind.need:
           // Needs pay bills down. Covering what you must comes before
           // anything else, and the board rewards it that way.
           paid += size;
+          needsCleared += size;
         case TileKind.want:
           // Wants score best and cost you. One added bill per three tiles —
           // enough to feel, not enough to make wants a trap.
           gainedScore += size * 6;
           added += (size ~/ 3) * level.wantsCostMultiplier;
+          wantsCleared += size;
         case TileKind.bill:
+          // Cleared bills are defence, not an allocation, so they count
+          // towards what was paid off and not towards the 50/30/20 split.
           paid += size;
       }
 
@@ -630,6 +859,8 @@ class CoinCascadeGame {
     score += gainedScore;
     coins += gainedCoins;
     savings += gainedSavings;
+    billsClearedTotal += paid;
+    billsAddedTotal += added;
     bills = (bills - paid + added).clamp(0, billCapacity);
 
     _applyGravity();
@@ -668,13 +899,33 @@ class CoinCascadeGame {
 
   /// Bill delivery and the dead-board check, once a chain has finished.
   void _afterCascade() {
-    if (_sinceBill >= billInterval) {
+    // In a Rush the clock delivers bills (see [dropScheduledBill]); leaving
+    // the move-based path on as well would double the rate and make the mode
+    // unwinnable for reasons no player could see.
+    if (!isTimed && _sinceBill >= billInterval) {
       _sinceBill = 0;
       _dropBill();
     }
     if (!hasLegalMove()) {
       _reshuffle();
     }
+  }
+
+  /// Delivers a bill because time passed rather than because a move did.
+  ///
+  /// Payday Rush's whole point: the month arrives whether or not you were
+  /// ready, and the board keeps filling while you are still deciding. Driven
+  /// by the screen's timer, because the engine has no clock of its own and
+  /// should not grow one — a model that reads `DateTime.now()` is a model
+  /// that cannot be tested.
+  ///
+  /// No-op outside [CascadeMode.rush] and once the run is over, so a timer
+  /// that fires one last tick during the closing animation cannot end a run
+  /// the player had already survived.
+  void dropScheduledBill() {
+    if (!isTimed || status != CascadeStatus.playing) return;
+    _dropBill();
+    if (!hasLegalMove()) _reshuffle();
   }
 
   /// Turns one random non-bill tile into a bill.
@@ -786,10 +1037,86 @@ class CoinCascadeGame {
     _grid[row][col] = Tile(kind, id);
   }
 
-  /// Gold awarded for the run, for `recordArcadeRun`.
+}
+
+/// What a finished run pays.
+@immutable
+class CascadePayout {
+  const CascadePayout({
+    required this.gold,
+    required this.xp,
+    required this.literacy,
+  });
+
+  final int gold;
+  final int xp;
+
+  /// Literacy points — the app's measure of *what you have learned*.
   ///
-  /// Savings dominate on purpose: the score rewards playing well, but the
-  /// payout rewards playing *toward the goal*, and those are the same thing
-  /// only if the payout says so.
-  int get goldEarned => (savings * 4) + (score ~/ 40) + (coins ~/ 2);
+  /// Zero for anything repeatable, and that is the whole design of this
+  /// field. Each ladder level teaches one specific twist (bills arriving
+  /// faster, wants costing double); replaying a level you have already
+  /// cleared does not teach you its rule a second time, so it does not pay
+  /// the currency that means "learned something". Gold and XP still come, at
+  /// a lower rate, because the game should still be worth playing for fun.
+  ///
+  /// It is the same rule the Adventure town uses for encounters that have
+  /// already been resolved: reward the progress, not the repetition.
+  final int literacy;
+}
+
+/// What [game] is worth, given what the player had already done.
+///
+/// **Why this is a function here and not a few lines in the screen.** The
+/// payout used to be `CoinCascadeGame.goldEarned` — a getter on the engine
+/// that computed a number the result card printed, the arcade toast printed
+/// again, and nothing ever credited to anybody. The only call either screen
+/// made was `recordArcadeRun`, which is a scoreboard write and is documented
+/// as not touching gold or XP.
+///
+/// Putting the rules back in the model, as a pure function over the run plus
+/// the two facts the engine cannot know, means they can be *tested* — and the
+/// thing that went wrong was not the arithmetic, it was that nothing
+/// connected the arithmetic to an account. A tested formula in one place is
+/// harder to leave unwired than a getter that reads like it is already doing
+/// the job.
+///
+/// [firstClear] — a win on a level higher than any cleared before.
+/// [newRushBest] — a Payday Rush that beat the player's saved best.
+CascadePayout cascadePayoutFor(
+  CoinCascadeGame game, {
+  bool firstClear = false,
+  bool newRushBest = false,
+}) {
+  if (game.isTimed) {
+    // Savings are the Rush score, so savings are what it pays. Score barely
+    // contributes: chasing points instead of the piggy bank is precisely the
+    // habit the mode exists to punish.
+    return CascadePayout(
+      gold: game.savings * 3 + game.score ~/ 60,
+      xp: 4 + game.savings ~/ 2,
+      literacy: newRushBest ? 6 : 0,
+    );
+  }
+
+  final level = game.level;
+  if (game.status != CascadeStatus.won) {
+    // A lost run still pays for what it managed, at a low rate. Nothing at
+    // all would make a near-miss on level 12 worth less than walking away
+    // from level 1, which is the wrong lesson about trying something hard.
+    return CascadePayout(gold: game.savings, xp: 2, literacy: 0);
+  }
+  if (!firstClear) {
+    return CascadePayout(gold: 8 + level.number * 2, xp: 3, literacy: 0);
+  }
+
+  // Moves left over and savings past the goal both mean "you had room to
+  // spare", which is the thing worth paying for in a game about budgeting.
+  final spare = game.movesLeft.clamp(0, 20);
+  final overshoot = (game.savings - level.savingsGoal).clamp(0, 40);
+  return CascadePayout(
+    gold: 40 + level.number * 10 + spare * 2 + overshoot,
+    xp: 10 + level.number * 3,
+    literacy: 8 + level.number,
+  );
 }
