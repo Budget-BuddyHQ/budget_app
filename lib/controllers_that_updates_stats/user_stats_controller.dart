@@ -176,7 +176,7 @@ class UserStatsController extends ChangeNotifier {
         final user = response.user;
         if (user == null) {
           return _authFailure(
-            'Supabase did not return a user for this sign-up.',
+            'That sign-up did not complete. Please try again.',
           );
         }
 
@@ -211,7 +211,7 @@ class UserStatsController extends ChangeNotifier {
       );
       final user = response.user;
       if (user == null) {
-        return _authFailure('Supabase did not return a user for this sign-in.');
+        return _authFailure('That sign-in did not complete. Please try again.');
       }
 
         await client.auth.signOut();
