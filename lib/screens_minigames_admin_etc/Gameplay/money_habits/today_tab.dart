@@ -111,9 +111,7 @@ class TodayTab extends StatelessWidget {
       title: result.status == 'victory'
           ? 'Daily Challenge Cleared'
           : 'Challenge Complete',
-      message:
-          '+${result.goldEarned} gold | +${result.xpEarned} XP | '
-          '${result.syncState.message}',
+      message: '+${result.goldEarned} gold | +${result.xpEarned} XP',
       icon: Icons.workspace_premium_rounded,
       accent: const Color(0xFFFFD45C),
     );

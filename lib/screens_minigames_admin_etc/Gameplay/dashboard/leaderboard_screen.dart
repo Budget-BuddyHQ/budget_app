@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
+import '../../profile/friend_profile_screen.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 
@@ -180,6 +181,20 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                           byGold: _byGold,
                           currentUserProfileImageUrl:
                               currentUser.profileImageUrl,
+                          onOpen: leader.isCurrentUser
+                              ? null
+                              : () => Navigator.of(context).push<void>(
+                                  MaterialPageRoute<void>(
+                                    // View-only: adding and removing friends
+                                    // belongs to the Friends card in Profile,
+                                    // and the global board lists people who
+                                    // are not friends at all.
+                                    builder: (_) => FriendProfileScreen(
+                                      friend: leader,
+                                      onRemove: null,
+                                    ),
+                                  ),
+                                ),
                         ),
                       ),
                     ),
@@ -797,11 +812,17 @@ class _LeaderboardRow extends StatelessWidget {
     required this.leader,
     required this.byGold,
     required this.currentUserProfileImageUrl,
+    required this.onOpen,
   });
 
   final LeaderboardEntry leader;
   final bool byGold;
   final String currentUserProfileImageUrl;
+
+  /// Opens the player's profile. Null for your own row — there is a whole
+  /// Profile tab for that, and a screen comparing you to yourself is a row of
+  /// dead-level bars.
+  final VoidCallback? onOpen;
 
   Widget _initialAvatar() {
     final initial = leader.username.isNotEmpty
@@ -825,97 +846,101 @@ class _LeaderboardRow extends StatelessWidget {
         ? const Color(0xFFF4D06F)
         : AppTheme.greenPrimary;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: AppTheme.getPuffyDecoration(
-        accent: rowAccent,
-        borderRadius: 18,
-        restAlpha: leader.isCurrentUser ? 0.22 : 0.08,
-        borderOpacity: leader.isCurrentUser ? 0.45 : 0.12,
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 26,
-            child: Text(
-              '#${leader.rank}',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontWeight: FontWeight.bold,
+    return InkWell(
+      onTap: onOpen,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: AppTheme.getPuffyDecoration(
+          accent: rowAccent,
+          borderRadius: 18,
+          restAlpha: leader.isCurrentUser ? 0.22 : 0.08,
+          borderOpacity: leader.isCurrentUser ? 0.45 : 0.12,
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 26,
+              child: Text(
+                '#${leader.rank}',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 10),
-          Container(
-            width: 38,
-            height: 38,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color(0xFF1E4D3D),
-            ),
-            child: ClipOval(
-              child: Builder(
-                builder: (context) {
-                  // Every row shows its own avatar from the leaderboard
-                  // view; the signed-in user falls back to their local
-                  // profile image, everyone else to an initial.
-                  final url = leader.profileImageUrl.isNotEmpty
-                      ? leader.profileImageUrl
-                      : (leader.isCurrentUser
-                            ? currentUserProfileImageUrl
-                            : '');
-                  if (url.isNotEmpty) {
-                    return Image.network(
-                      url,
-                      fit: BoxFit.cover,
-                      width: 38,
-                      height: 38,
-                      errorBuilder: (_, _, _) => _initialAvatar(),
-                    );
-                  }
-                  return _initialAvatar();
-                },
+            const SizedBox(width: 10),
+            Container(
+              width: 38,
+              height: 38,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFF1E4D3D),
+              ),
+              child: ClipOval(
+                child: Builder(
+                  builder: (context) {
+                    // Every row shows its own avatar from the leaderboard
+                    // view; the signed-in user falls back to their local
+                    // profile image, everyone else to an initial.
+                    final url = leader.profileImageUrl.isNotEmpty
+                        ? leader.profileImageUrl
+                        : (leader.isCurrentUser
+                              ? currentUserProfileImageUrl
+                              : '');
+                    if (url.isNotEmpty) {
+                      return Image.network(
+                        url,
+                        fit: BoxFit.cover,
+                        width: 38,
+                        height: 38,
+                        errorBuilder: (_, _, _) => _initialAvatar(),
+                      );
+                    }
+                    return _initialAvatar();
+                  },
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  leader.username,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: leader.isCurrentUser
-                        ? const Color(0xFFF4D06F)
-                        : Colors.white,
-                    fontWeight: FontWeight.w600,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    leader.username,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: leader.isCurrentUser
+                          ? const Color(0xFFF4D06F)
+                          : Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  byGold
-                      ? '${leader.literacyPoints} LP • ${leader.xp} XP'
-                      : '${leader.xp} XP • ${leader.gold} gold',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(height: 2),
+                  Text(
+                    byGold
+                        ? '${leader.literacyPoints} LP • ${leader.xp} XP'
+                        : '${leader.xp} XP • ${leader.gold} gold',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.55),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Text(
-            byGold ? '${leader.gold}g' : leader.scoreLabel,
-            style: TextStyle(color: rowAccent, fontWeight: FontWeight.bold),
-          ),
-        ],
+            Text(
+              byGold ? '${leader.gold}g' : leader.scoreLabel,
+              style: TextStyle(color: rowAccent, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
       ),
     );
   }

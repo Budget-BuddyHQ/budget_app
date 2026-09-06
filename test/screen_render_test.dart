@@ -14,6 +14,7 @@ import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/home_s
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/coin_cascade_page.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/money_habits/money_habits_screen.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/coin_cascade_models.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/finance_concepts.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/lesson.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/money_analyzer.dart';
@@ -33,6 +34,7 @@ import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/leader
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/finance_brawl_game.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/life_epilogue_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/past_lives_screen.dart';
+import 'package:budget_app/screens_minigames_admin_etc/profile/friend_profile_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/profile_screen.dart';
 import 'package:budget_app/services_backend_and_other_services/market_data_service.dart';
 import 'package:budget_app/services_backend_and_other_services/supabase_service.dart';
@@ -105,6 +107,29 @@ void main() {
     ),
   );
 
+  /// A Coin Cascade run played to a finish by a dumb bot.
+  ///
+  /// Takes the first legal swap it can find every turn, which is exactly the
+  /// player the report is most interesting for: no plan, so the split comes
+  /// out wherever the board sends it.
+  CoinCascadeGame finishedRun() {
+    final game = CoinCascadeGame(random: Random(9), level: kCascadeLevels[3]);
+    var guard = 0;
+    while (game.status == CascadeStatus.playing && guard++ < 400) {
+      var moved = false;
+      for (var row = 0; row < game.rows && !moved; row++) {
+        for (var col = 0; col < game.columns - 1 && !moved; col++) {
+          if (game.trySwap(col, row, col + 1, row)) {
+            game.resolveAll();
+            moved = true;
+          }
+        }
+      }
+      if (!moved) break;
+    }
+    return game;
+  }
+
   LifeSimController midLife() {
     final life = LifeSimController(random: Random(24), initialAge: 0);
     while (life.age < 34 && !life.finished) {
@@ -135,6 +160,10 @@ void main() {
     'life': () => LifeSimPage(debugInitialLife: midLife()),
     'arcade': () => const MinigamesPage(),
     'cascade': () => const CoinCascadePage(),
+    // The end-of-run card, which is where the budget read-out lives. Driven
+    // to a real finished state rather than mocked, so the percentages on it
+    // are percentages the engine actually produced.
+    'cascade_result': () => CoinCascadePage(debugInitialGame: finishedRun()),
     'academy': () => const LessonScreen(),
     'habits_today': () => const MoneyHabitsScreen(),
     'habits_week': () =>
@@ -176,6 +205,25 @@ void main() {
     // webview and there is no `WebViewPlatform` in a unit test.
     'past_lives': () => const PastLivesScreen(),
     'leaderboard': () => const LeaderboardScreen(),
+    // A friend who is comfortably ahead on literacy and behind on gold, so
+    // both directions of the comparison sentence get drawn.
+    'friend_profile': () => FriendProfileScreen(
+      friend: LeaderboardEntry(
+        id: 'f1',
+        rank: 1,
+        username: 'Prince',
+        literacyPoints: 6325,
+        xp: 4100,
+        gold: 8645956,
+        isCurrentUser: false,
+        equippedSkin: 'villager',
+        personalityType: 'Saver',
+        lessonsCompleted: 23,
+        dailyStreak: 6,
+        updatedAt: DateTime.now().subtract(const Duration(days: 2)),
+      ),
+      onRemove: () async => true,
+    ),
     'brawl': () => const FinanceBrawlScreen(),
     // The Market Board is deliberately absent: it reaches for a platform
     // channel on mount and throws MissingPluginException in this harness.
