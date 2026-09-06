@@ -161,9 +161,313 @@ equivalent of a website's layout breaking out of its container.
 
 ## Error log
 
-Every bug worth remembering, what caused it, and how it was fixed.
+Every bug worth remembering — but written as the route to the answer rather
+than the answer.
+
+**Why it is written this way.** A log that says "cause X, fix Y" is a
+description of a bug from *after* you understand it, and by then it is
+obvious. None of these were obvious. The useful half is almost always the
+part that gets edited out: the first theory, why it was reasonable, and the
+specific observation that killed it. Several entries below are only in here
+because the wrong answer was the interesting one — four redraws of a walk
+cycle aimed at the frames when the fault was in the *pairing*; a TTL raised
+on a cache that was never being read; a red-herring `ERR_CONNECTION_REFUSED`
+that would have cost a day. So each entry runs in the order it happened:
+what was seen, what was assumed, what the measurement said, and what the
+assumption cost.
+
+The habit these entries keep arriving at is **measure before theorising**.
+Most of the time here was spent on faults where the code read perfectly and
+a number said otherwise.
 
 ### Data correctness
+
+**Sounds cut each other off, and the app was doing it to itself**
+Reported as "the sound would randomly cut off if I switched tabs or play
+another sound".
+
+*First thought, and it was wrong.* The obvious reading of "cut off" is that
+something is calling `stop()`, and `AppSoundService.play()` does contain
+`await player.stop()` right before it plays. That looked like the whole
+answer for about a minute. It is not: that `stop` is on `_players[effect]` —
+the player belonging to *that one effect* — and every effect owns a separate
+player. Retriggering a tap stops the previous tap, which is what you want. It
+cannot touch the music, and a navigation sound cannot touch a reward chime.
+So the cutoff was coming from outside the Dart code entirely, which is
+exactly why nothing in this file looked wrong.
+
+*What settled it was the device log the user had already pasted, read again
+with a different question in mind.* Not "what threw an error" — nothing did —
+but "what is the OS being told to do", and there it was, repeating once per
+sound:
+
+    I/AudioManager: dispatching onAudioFocusChange(-1)
+
+`-1` is `AUDIOFOCUS_LOSS`. The app was not losing audio focus to a phone call
+or another app. It was losing focus **to itself**, over and over.
+
+*The cause is a default.* `audioplayers` sets `audioFocus:
+AndroidAudioFocus.gain` on every player unless told otherwise, and its own
+documentation describes `gain` as: *"your application is now the sole source
+of audio that the user is listening to."* This app builds one player per
+effect — sixteen of them, plus the music loop — and each one separately
+declared itself the sole source of audio. Reading the plugin's Kotlin
+confirmed the last link: on `AUDIOFOCUS_LOSS` the handler calls `pause()` on
+whichever player just lost. So playing any sound paused the one before it. A
+tab change played the navigation click, which paused the music. A reward
+chime paused the coin ratchet underneath it. "Randomly" was not random at
+all — it was every single time two sounds overlapped, and the only reason it
+looked intermittent is that most sounds are short enough to finish first.
+
+*Fix:* an explicit `AudioContext` on every player with `audioFocus:
+AndroidAudioFocus.none`, which requests no focus at all — the Kotlin skips
+the request and grants playback directly, so there is nothing to revoke. The
+effects also declare `sonification` / `assistanceSonification`, which is
+Android's own name for short interface feedback, and the music keeps
+`music` / `media`. On iOS both use the `ambient` category, the one documented
+as *"Interrupts nonmixable app's audio = No"* — the audioplayers default
+there is `playback`, which interrupts, so it was the same bug waiting on the
+other platform.
+
+*A detail that only shows up if you read the plugin:* the context has to be
+set **before** `setPlayerMode(lowLatency)`. Low-latency mode builds a
+`SoundPoolPlayer`, and its constructor reads the player's context at
+construction time; set it afterwards and the pool is built with the wrong
+attributes and then torn down and rebuilt. Same end state, twice the work,
+and it would have been invisible either way.
+
+*The wider bug nobody reported:* `gain` also silenced whatever the *player's
+own music app* was playing, every time they changed tabs. Nobody complained
+about that, and it was arguably the worse behaviour of the two.
+
+*Why the test is a value test.* `audio_focus_test.dart` asserts the enum
+values directly rather than testing behaviour, which normally would be a
+weak test. Here it is the right one: nothing breaks when these flip back. The
+app builds, the suite passes, the sounds play fine on a desktop, and it is
+wrong only on a physical phone — the least likely place to catch it before
+release. So the values are pinned where a code review can see them.
+*Files:* `app_sound_service.dart`, `audio_focus_test.dart`
+
+**"Saved to Supabase" was shown to nine-year-olds**
+The toast after a minigame read `+20 gold • +5 XP • Saved to Supabase.` Not a
+crash, and it survived a long time because it is technically accurate — which
+is the trap. Supabase is the name of a company this project rents a database
+from. A child finishing a minigame cannot act on that word, cannot verify it,
+and has no reason to know it; what they want to know is whether the thing
+they just earned is *theirs now*.
+*Fix at the source rather than the call site.* The string lives on
+`SyncState.message` and is interpolated by six different screens, so fixing
+the toast alone would have left the same word in Profile, Customize and Money
+Habits. The sync messages are now written in player language — "Added to your
+account", "Saved on this device — it will reach your account shortly" — and
+the same pass caught the leaderboard empty-state and two auth failures that
+also named the vendor.
+*Deliberately not changed:* the friends setup message still says "paste
+supabase/RUN_THIS_IN_SUPABASE.sql into the Supabase SQL editor", because the
+audience for *that* one is the developer, and it needs to name the thing.
+*Files:* `supabase_service.dart`, `user_stats_controller.dart`,
+`leaderboard_screen.dart`
+
+**A release build shipped with no Supabase configuration at all**
+It worked on the laptop and did nothing on a phone: sign-in silently failed,
+friends never loaded, the Market Board had no proxy. The only key source that
+survives onto a device is `--dart-define`, and everything else in the chain —
+`Platform.environment`, and reading `supabase.env.json` off disk — quietly
+resolves to nothing there. On a desktop `flutter run` the JSON file happens to
+sit in the working directory, so every local test passed.
+*What was tried first:* the build command. Adding the defines by hand fixed it,
+which felt like the answer and was not — a build that is only correct when
+somebody remembers a long command line is a build that eventually goes out
+wrong, and it already had.
+*Fix:* `tool/write_public_config.py` generates a committed
+`public_supabase_config.dart` holding the two values that are public by design
+— the project URL and the anon key — as the lowest-priority source, so a plain
+`flutter build` works and a `--dart-define` still overrides it.
+*The part that needed care:* the same file must never gain the market API
+keys, which are recoverable from an APK with `strings`. The generator uses a
+**whitelist** and refuses anything matching FINNHUB / TWELVE / SERVICE_ROLE /
+SECRET / PASSWORD, and `public_config_test` asserts the map holds exactly two
+keys — a blacklist would only catch the names somebody thought of.
+*Files:* `write_public_config.py`, `runtime_env_io.dart`,
+`runtime_env_stub.dart`, `public_config_test.dart`
+
+**The edge function's cache never hit, and would have rate-limited every user**
+Deployed, working, returning real prices — and eight identical requests sent
+back to back all reported `X-Cache: 0/3 HIT`, while a health check immediately
+afterwards reported `cacheSize: 3`. Written every time, read never: Supabase
+spreads requests across isolates and each one starts with an empty `Map`.
+Not a small inefficiency. The board polls every two seconds for sixteen
+symbols, so a cache that never hits is **480 vendor calls a minute against a
+Finnhub limit of 60** — the first person to open the Market Board would be
+throttled and would take everyone else with them.
+*What was tried first:* raising the TTL, on the assumption the entries were
+expiring too fast. It changed nothing, which was the useful result — a TTL
+cannot matter if the lookup never finds anything, and that ruled out the whole
+category before more time went into it.
+*Fix:* the cache moved to Postgres, which is the one thing every isolate
+shares. The `Map` stays as a free first look. `health` now does a live round
+trip and reports `sharedCache: true/false` rather than only whether it is
+configured, and `tool/check_market_proxy.py` fails loudly on false.
+*Files:* `0004_market_cache.sql`, `functions/market/index.ts`,
+`check_market_proxy.py`
+
+**The town's scene rotation changed every time the app restarted**
+Found as a flaky test that passed alone and failed in a full run. The cause was
+`Object.hash` in the rotation mix: Dart seeds string hashing **per isolate**,
+so the index was a different number in every process. A player who closed the
+app and reopened it on the same day, at the same age, got a different
+conversation in every building — and there is a test one group below called
+"the rotation is stable within a day" that only ever passed because it compared
+two calls inside one process.
+*What was tried first:* re-running it, twice, and looking for shared state
+between test files. Both reasonable and both wrong; the give-away was that the
+failure moved between runs of the *same* code, which is not what an ordering
+bug does.
+*Fix:* FNV-1a computed in the file, and a pinned recorded value so a change to
+the mixing fails loudly. It earned its keep immediately — adding the town
+condition to the mix moved it from 4 to 1, and the failure is what said out
+loud that every existing player's town had just been re-dealt.
+*Files:* `town_scenarios.dart`, `town_scenarios_test.dart`
+
+**Two menu rows advertised numbers the game does not pay**
+"Visit the library — Free. +4 Smarts." pays +2. "Go out — +10 Happiness."
+pays +6. When the menu versions were reduced so that walking to the real
+building in town was worth doing, the controller changed and the labels did
+not.
+*Fix:* both corrected, and `life_menu_render_test` now pins them against the
+controller. A game about money that quotes the wrong price is a specific kind
+of bad.
+*Note:* the finder had to match the whole row rather than the number —
+"Volunteer" also says "+2 Smarts", so a bare match passes with the library row
+still wrong.
+*Files:* `life_sim_page.dart`, `life_menu_render_test.dart`
+
+**Market tests made real HTTP calls**
+`market_batching_test` went through `refreshBatch`, which fetches. So the suite
+made live network requests, took seconds per test, and failed intermittently in
+full runs with `Proxy request failed with 404` — while passing every time in
+isolation. It also pushed the whole suite from 31s to 59s.
+*Fix:* the symbol selection is now `selectBatch`, separate from the fetching,
+and the tests exercise that. A unit test for *which four strings come out of a
+list* has no business touching the internet.
+*Files:* `market_data_service.dart`, `market_batching_test.dart`
+
+**Town markers were floating in the middle of the road**
+Reported as "make the store near the building". Measured against the collider
+data, the cafe and the clinic were **four tiles** from the nearest solid thing
+and the market and library three — on screen, a coloured circle in an empty
+road with no building anywhere near it.
+*Fix:* `tool/place_town_spots.py` snaps each to the nearest walkable tile
+touching a *building*, where a building is a connected solid cluster of six or
+more — trees and fences are solid too, and snapping a shop marker to a hedge
+is a different wrong answer rather than a fix.
+*What went wrong on the first run:* it dragged all six NPCs onto doorsteps as
+well, because they match the same shape in the same file. A person is not a
+building entrance, and the town looked like everybody was queueing. It now
+only moves `spot_` ids.
+*Files:* `place_town_spots.py`, `town_spot_models.dart`, `town_layout_test.dart`
+
+**The walk cycle had no second half, which is why four redraws never fixed it**
+Every villager sheet has eight side-facing columns and only **four distinct
+poses** — measured across all 38, column 0 is pixel-identical to 4, 1 to 3, and
+5 to 7. And 5-7 are not the other half of the stride: they are the same poses
+drawn 16% bulkier, 7,820 opaque pixels at 79.5px wide against 6,740 at 65px.
+So the cycle ran slim-pass, slim-up, slim-pass, fat-pass, fat-up, fat-pass —
+the same leg leading the whole way while the body swelled and shrank twice a
+second.
+*What was tried first, four times:* redrawing individual frames. Every one of
+them was aimed at a frame, and every frame was fine on its own — the fault only
+exists in the *pairing*. The measurement that ended it took a minute: bounding
+box and opaque-pixel count per column, averaged over every sheet.
+*Fix:* `tool/fix_side_walk_cycle.py` rebuilds 5-7 from 1-2 with only the leg
+band mirrored, so the torso is identical between halves by construction and the
+legs alternate. Step time 0.07 to 0.11 as well — fourteen frames a second was a
+judder, not a stride.
+*Files:* `fix_side_walk_cycle.py`, `adventure_world_screen.dart`,
+`town_map_test.dart`
+
+**The sound effects had no attack, and were quieter than they asked to be**
+Reported as "still meh". Measured, **85% of the energy in a tap was below
+401Hz** — a dull thud with no click on it. The transient existed and was
+correct (91% of *its own* energy above 2kHz); it sat about 9dB under the body,
+and then the whole mix was lowpassed a second time on top.
+*What was tried first:* onset clicks. The theory was a discontinuity at sample
+zero, and measuring said no — `_write` already de-clicks both edges and the
+first-sample jumps are tiny. That was worth doing anyway, because it ruled out
+the entire "the waveform is wrong" family in one step and pointed at balance
+instead.
+Then a second fault surfaced underneath the first: `_write` normalised the
+signal and *afterwards* faded its edges, so a sound whose peak landed inside
+the 1.5ms fade-in came out far quieter than asked — tap.wav requested a peak of
+0.30 and wrote 0.168. That fade had already been shortened once, from 10ms, for
+exactly this reason.
+*Fix:* body and transient filtered separately, contact levels raised four to
+five times, fade cut to 0.3ms and the normalisation moved *after* it. The first
+five milliseconds of a tap went from 2% to 23% high-frequency energy, and every
+file now lands on its target level to within a thousandth.
+*Files:* `make_sounds.py`, `audio_quality_test.dart`
+
+**Nobody could sign in, on any platform**
+Reported as "it just says please try again later and still checking". The
+device log had the whole answer in one line:
+
+    Uncaught TurnstileError: [Cloudflare Turnstile] Invalid value for
+    parameter "size", expected "compact", "flexible", or "normal",
+    got "invisible".
+
+Cloudflare removed `invisible` as a **size** — it is a property of the widget
+in their dashboard now — so `turnstile.render()` threw, `widgetId` was never
+assigned, `turnstile.execute()` never ran, no callback ever fired, and the app
+answered every attempt with "Still checking" forever. This had nothing to do
+with the phone; it was equally broken everywhere, and had been since Cloudflare
+changed the parameter.
+
+*The first instinct was wrong.* The log also carried
+`Turnstile WebView error: net::ERR_CONNECTION_REFUSED` and
+`Turnstile page started: http://localhost/`, which reads like a local server
+that failed to start — and there is a `turnstile_challenge_server_io.dart` in
+the project, so that looked like the thread to pull. It is not: `localhost` is
+only the *base origin* the challenge HTML is served under so it matches the
+domain allow-list, and the refused connection is a red herring that appears
+whether or not sign-in works. Chasing it would have meant rewriting the
+challenge server to fix a widget parameter.
+
+*Two more faults were sitting underneath, and either would have kept it broken
+after fixing the first.* The WebView was wrapped in an `IgnorePointer` and
+translated `-10000, -10000` — fine while the widget completed itself
+invisibly, fatal the moment Cloudflare started rendering a real one, because a
+challenge nobody can see or tap cannot be passed. And there was no failure
+path at all: "no token" and "no token *yet*" were the same state, so a broken
+widget, a Cloudflare outage or hotel wifi all became a permanent lockout.
+
+*Fix:* `size: 'flexible'`; the widget on screen and touchable; a `StatusChannel`
+so a render exception reaches Dart instead of dying inside a WebView nobody can
+see; and, when the challenge reports itself unusable, the sign-in **proceeds
+without a token and lets the server answer**. That last one is the important
+change — Supabase enforces captcha server-side, so refusing on the client
+protected nothing and only replaced a clear server error with an inaccurate
+local one.
+*Lesson:* a security control that fails closed on its own health check is an
+outage with extra steps. And a WebView with no channel back to the app is a
+place bugs go to hide — this one was invisible until a device log was read
+line by line.
+*Files:* `auth_screen.dart`, `auth_captcha_test.dart`
+
+**`user_123` sent to a uuid column on every cold start**
+`invalid input syntax for type uuid: "user_123"` (22P02), in the log before
+sign-in every single time. `UserStatsController` starts each session with a
+local placeholder id so there is somewhere to keep progress before anybody
+signs in, and the friends queries were handing it straight to Postgres, where
+those columns reference `auth.users` and are `uuid`. Not an empty result — a
+syntax error.
+*Fix:* `SupabaseService.isRealUserId`, checked before any query that takes a
+user id. Signed out now returns an empty list instead of asking.
+*Note:* the friend **code** is the first eight characters of a uuid, so
+"looks like part of a uuid" is not good enough — the check is the full shape,
+and the test includes a partial one specifically because that is the near-miss
+that would come back.
+*Files:* `supabase_service.dart`, `auth_captcha_test.dart`
+
 
 **Every year in the feed restated the header above it**
 `'Turned $age.'` printed on every year that drew an event — about three
@@ -203,8 +507,10 @@ includes the pinned ones (or ten holdings means 120 calls a minute).
 `market_batching_test.dart`
 
 **A two-year-old could press Invest, and nothing happened**
-Reported as "can you invest when you're 2 years old". The controller was
-correct the whole time — `invest` checks `allows(LifeAction.invest)` and the
+Reported as "can you invest when you're 2 years old", which sounds like a
+question and was really a bug report.
+*The first place looked was the age table, and it was innocent.* The
+controller was correct the whole time — `invest` checks `allows(LifeAction.invest)` and the
 age table has said 16 since it was written. The *menu row* set its
 `disabledReason` from whether you held 100 coins and never asked about age, so
 a toddler with 150 coins got a lit button that took the tap and did nothing,
@@ -213,11 +519,20 @@ than a blocked one that explains itself, and in a game for children it does not
 read as a fault, it reads as being ignored. Gamble and Practise were the same
 mistake without being broken yet: both duplicated the controller's numbers and
 happened to agree with them.
-*Fix:* structural rather than three patches. `_LifeAction` takes a **required**
-`performs` field naming the action it runs, and `_actions` applies `gatedBy` to
-every row it returns in one expression, so there is nowhere left to forget the
-gate. Rows state only their local reason; the age rule is layered on top and
-wins when both apply.
+*The decision that mattered was refusing to fix it three times.* The
+smallest change is to add an age check to the Invest row, and it would have
+worked. But the same reading had already turned up Gamble and Practise
+duplicating the controller's numbers and merely *happening* to agree with
+them — three rows with three private copies of a rule that lives somewhere
+else. Patching one leaves two time bombs and a pattern that invites a fourth.
+*Fix:* structural rather than three patches. `_LifeAction` takes a
+**required** `performs` field naming the action it runs, and `_actions`
+applies `gatedBy` to every row it returns in one expression, so there is
+nowhere left to forget the gate — a new row cannot be added without declaring
+what it runs, and declaring it is what gates it. Rows state only their local
+reason; the age rule is layered on top and wins when both apply.
+*Lesson:* when the same bug is possible in three places, the fix is to remove
+the possibility, not to visit the three places.
 *Files:* `life_sim_page.dart`, `life_sim_controller.dart`,
 `life_menu_honesty_test.dart`, `life_menu_render_test.dart`
 
@@ -271,10 +586,20 @@ a LIVE badge showing the last update time. The refresh floor dropped 60s → 20s
 which stays inside Finnhub's 60 calls/minute.
 
 **Stock search only matched our 16 hard-coded symbols**
-Searching "WDC" or "NVO" returned "No stocks match" even though they are real.
-The search filtered an in-memory list.
-*Fix:* call Finnhub's free `/api/v1/search`, debounced 350 ms, with a generation
-counter so a slow earlier response cannot overwrite a newer one.
+Searching "WDC" or "NVO" returned "No stocks match" even though both are
+real companies. The search was filtering the in-memory list of the sixteen
+symbols the board already tracked, so it could only ever "find" what was
+already on screen. That is worse than a limitation: "No stocks match" reads
+as a statement about the market, and it was really a statement about our
+array.
+*Fix:* Finnhub's free `/api/v1/search`, debounced 350 ms.
+*The bug that was headed off while writing it:* typing fires a request per
+keystroke and the responses do not come back in order, so without a guard
+typing "NVO" can leave you looking at the results for "NV" because the
+shorter query answered second. A generation counter — increment on send,
+discard any response that is not the current generation — went in at the
+start rather than after somebody reported flickering results, because this
+one is easy to predict and nearly impossible to reproduce on demand.
 
 **Finnhub historical candles return HTTP 403**
 `/stock/candle` was moved behind a paid plan. Verified live.
@@ -290,22 +615,56 @@ is not enough).
 ### Crashes
 
 **Market Board crashed at narrow widths**
-`Unsupported operation: Infinity or NaN` from inside fl_chart's axis/grid
-interval math (upstream issues #1739, #774). No configuration avoids it.
-*Fix:* removed fl_chart entirely and replaced it with our own `CustomPainter`
-widgets (`MiniSparkline`, `PriceChart`) that map values straight onto the canvas
-with no interval solver. 8 regression tests cover NaN, Infinity, empty, single
-point, zero width and zero height.
+`Unsupported operation: Infinity or NaN`, and the stack trace pointed into
+fl_chart's axis and grid interval maths rather than into any of this
+project's code.
+
+*The first assumption was that this was our data*, because that is nearly
+always true — a chart blowing up on NaN usually means somebody fed it a NaN.
+So the input series got checked first: finite, non-empty, sane. That is when
+the crash became interesting rather than routine, because it meant the
+division producing the infinity was happening *inside* the library, on
+inputs that were fine.
+
+*The second attempt was configuration.* fl_chart exposes interval, min, max
+and reserved-size knobs, and several combinations were tried on the theory
+that pinning the interval would stop it solving for one. Every combination
+still crashed at some width. Upstream issues #1739 and #774 describe the
+same failure and are open — at that point the honest read was that no
+configuration avoids it, and that continuing to hunt for one was going to
+cost days and end where it started.
+
+*Fix:* fl_chart was removed entirely, replaced by two `CustomPainter`
+widgets — `MiniSparkline` and `PriceChart` — that map values straight onto
+the canvas. The reason this is a real fix and not a lateral move is that the
+crash came from an *interval solver*, and drawing points directly does not
+need one; the whole class of bug is gone rather than avoided. Eight
+regression tests cover NaN, Infinity, empty, single point, zero width and
+zero height, because those are the inputs that would have found it the first
+time.
+*Lesson:* when a dependency crashes on valid input and the upstream issue is
+open, the cost of removing it is usually lower than it feels, and the cost of
+waiting on a fix is unbounded.
 
 **Profile crashed with no Supabase keys configured** (`Assertion failed: You
 must initialize the supabase instance before calling Supabase.instance`)
-Four call sites reached into `Supabase.instance.client` directly instead of
+*Reported as "Profile crashes", which is the misleading part* — it made
+this look like a Profile bug, and the first place looked at was Profile's
+build method. It is not a Profile bug. Four call sites reached into
+`Supabase.instance.client` directly instead of
 through `SupabaseService`'s safe accessors, so on a phone/device with no
 `supabase.env.json` — no keys, `Supabase.initialize()` never runs — the very
 first thing that touched `Supabase.instance` threw, taking out whichever
 screen (or tab, since all tabs mount at once in an `IndexedStack`) hit it
 first. Profile hit it on every load; Admin would have hit it the moment its
 `State` was constructed, before even reaching its own "not connected" check.
+*What made it look like one screen's problem:* Profile happened to be the tab
+that touched it first, and did so on every load. The real shape of the fault
+is "any of four screens, whichever mounts first" — and because a nav shell
+built on `IndexedStack` mounts all seven tabs at once, "whichever mounts
+first" is not something the user controls or could have reported accurately.
+Fixing only the screen named in the report would have moved the crash rather
+than removed it.
 *Fix:* `SupabaseService.currentUser` (already existed, just wasn't used
 everywhere) and a new `SupabaseService.client` getter — both return `null`
 instead of throwing when Supabase was never initialized, same pattern as
@@ -360,10 +719,20 @@ Leaving the screen — even to check Profile — reset "visit every place" to
 zero, and every coin reappeared and could be re-collected for real gold
 (`_collectCoin` already called `applyChallengePayload({'gold_earned':
 value})` with nothing stopping it firing twice for the same coin).
+*The bug report was only the first half.* "Progress doesn't save" is a
+persistence bug and reads as a small one. But writing the fix meant reading
+`_collectCoin`, and that call pays real gold through
+`applyChallengePayload` with nothing recording that the coin had already been
+taken — so the same missing persistence that lost your progress also let a
+player leave the screen, come back, and collect every coin again. Unlimited
+gold, reachable by accident, no cheating required. The economy bug was
+strictly more serious than the one that got reported, and fixing the reported
+symptom on its own would have left it in place.
 *Fix:* `UserStats.townVisitedSpotIds`/`townCollectedCoinIds` (same
 ad-hoc-jsonb pattern as every other saved list in this app) persist both;
 the coin-spawning loop now skips any already-collected coin id entirely
-rather than spawning and hiding it.
+rather than spawning and hiding it — a hidden coin is still a collectable
+target, which would have been the same bug with extra steps.
 *Files:* `supabase_service.dart`, `adventure_world_screen.dart`
 
 **The walking animation's "accordion legs" — actually fixed this time**
@@ -387,13 +756,32 @@ truncated to fragments ("Explore th…", etc.) at a genuine ~310px pane
 width — narrower than any viewport this app's test suite covers (smallest
 tested is 320px). Each was a fixed-size `Text(maxLines: 1, overflow:
 ellipsis)` that didn't fit the real available width at that size.
+*The part worth keeping is why the test suite missed all three.* Every one
+of them is a plain `Text(maxLines: 1, overflow: ellipsis)`, which by design
+never throws and never reports an overflow — it truncates, silently, and a
+passing layout test cannot tell the difference between "this fits" and "this
+was quietly cut to a fragment". The suite was not weak here; it was measuring
+the wrong property, and running it more often would never have found this. A
+screenshot did, in seconds.
+*The second reason it was missed:* the real pane was about **310px** wide and
+the narrowest viewport in the sweep is 320px. Close enough to look covered,
+and not covered.
 *Fix:* wrapped each in `FittedBox(fit: BoxFit.scaleDown)`, the same pattern
 already used successfully elsewhere (`PopNavBar` labels, the leaderboard
 wordmark) — scales the whole line down as one unit instead of truncating a
 fragment.
+*Where it led:* this is the entry that produced the later text-fit audit,
+which measures rendered text against its box rather than trusting that "no
+exception" means "no problem".
 *Files:* `home_screen.dart`
 
 **The player could walk around *inside* the hill**
+*The instinct was to add colliders to the hill, and that instinct is what
+made this take longer than it should have* — the hill already had some. Rows
+34 and 37 were solid, which is exactly why the map "looked" walled and why
+reading the layer casually confirmed it. The fault was not missing
+collision, it was **partial** collision, and partial collision is invisible
+unless you check every row.
 The town map's southern boundary — the wide tan band across map rows 34–37 —
 lives in the `terrain` layer, which is `collider: false` because that same
 layer also holds walkable dirt paths. Rows 34 and 37 were already solid, but
@@ -404,10 +792,17 @@ the band.
 `"collider": true`, inserted adjacent to `terrain` so draw order is
 unchanged. The highest-value coin was at (27, 36) — now inside a wall — and
 moved to (47, 32).
-*Guard:* the regression test flood-fills from the spawn tile rather than
-checking the band tile-by-tile, because a per-tile check would still pass if
-a later map edit opened a route *around* the ends. It also asserts >600
-tiles stay reachable, so it can't pass by walling the player into a closet.
+*Guard, and this is the part worth copying.* The obvious regression test is
+"assert rows 34-36 are solid", and it would be nearly useless: it pins the
+exact hole that was just fixed and says nothing about the next one. A later
+map edit that opened a route *around* the end of the band would pass it
+cleanly. So the test flood-fills from the spawn tile and asserts the interior
+is unreachable — it tests the property that actually matters (can the player
+get in) rather than the implementation that currently provides it.
+It also asserts that **>600 tiles stay reachable**, because a flood-fill test
+on its own has a degenerate solution: wall the player into a closet and
+nothing is reachable, including the bug. Both halves are needed or the test
+can be satisfied by making the game worse.
 *Files:* `assets/images/maps/map.json`, `town_spot_models.dart`,
 `test/town_map_test.dart`
 
@@ -498,6 +893,10 @@ working.
 ### Safety
 
 **A four-year-old was being offered a staked bet**
+*Every gate here was working exactly as designed, which is what makes this
+the most serious entry in the log.* Nothing threw, no test failed, and the
+code read correctly: gambling opens at 18. The bug is in what that 18 refers
+to.
 Every gambling gate in the simulation ran off the *character's* age —
 `LifeAction.gamble` opens at an in-game 18 — which is right for the fiction and
 no safeguard at all. A four-year-old reaches an eighteen-year-old character in
@@ -506,10 +905,18 @@ about ninety seconds of tapping Age, and was then shown "Gamble 100 coins. A
 `AgeBand.isMinorUnder13` had existed the whole time and was referenced by
 nothing. Disabling the row was not enough either: a greyed row reading "you
 have to be 18" is still an advert, and the 18 it names is the character's.
+*The second wrong answer was disabling the row*, which was tried in
+thinking before it was tried in code and does not survive contact with the
+actual reader. A greyed row saying "you have to be 18" is still an
+advertisement for gambling, it still sits between the library and the doctor,
+and the 18 it quotes is the *character's* age — which the child can reach in
+ninety seconds. It teaches the wrong lesson more politely.
 *Fix:* `AgeBand.allowsWagering`, read from the signed-in account and passed
 into `LifeSimController`. The menu row is **omitted**, not greyed; wager-tagged
 events are filtered out of the draw; and `takeARisk` refuses independently, so
-the guard does not live only in a widget. `undisclosed` counts as an adult on
+the guard does not live only in a widget — a guard that exists only in the UI
+is one refactor away from being gone, and this is not a rule to leave in a
+widget's hands. `undisclosed` counts as an adult on
 purpose — the sign-up question is optional, and gating features behind
 answering a personal question teaches children to over-share to get them.
 *What is deliberately not hidden:* the cautionary events. `t_loot_box` states
@@ -570,6 +977,13 @@ default parameter or bare literal elsewhere that assumed the old values.
 The nav labels were bumped a few px for readability, but the bar's fixed
 height wasn't bumped with them — every screen using the bottom nav threw
 "overflowed by 3.0 pixels on the bottom."
+*What was tried first:* shrinking things inside the bar — a smaller icon, then
+tighter vertical padding, then wrapping the label in a `FittedBox`. Each one
+cleared the warning and each one made the bar slightly worse to read, which
+should have been the clue: three pixels is not a layout that is too big for
+its box, it is a box that was never told the contents changed. The `FittedBox`
+was the worst of them, because it *hides* the problem by scaling the text down
+on exactly the phones where it is already smallest.
 *Fix:* `barHeight` raised alongside the label size.
 *Files:* `pop_navbar.dart`
 
@@ -580,6 +994,11 @@ layouts, the Current Objective shop/arcade icon was hidden behind `if (!tight)`,
 and profile badges used roomy desktop-ish tiles. On phone-shaped windows this
 made the UI feel oversized, caused the `Enter World` button to overflow, and
 made achievement labels like `Completionist` truncate too aggressively.
+*What was tried first:* widening the breakpoint, twice. Both times a different
+screen started reporting the same symptom, because the four decisions were
+independent and each one had its own idea of "compact" — moving one threshold
+just relocated the problem. The fix only stuck once the *rule* changed from
+"is this narrow" to "is this small", height included.
 *Fix:* compact sizing now considers height, the turtle and shop visuals scale
 instead of disappearing, the home hero/CTA and Academy metric pills use tighter
 phone spacing, and the badge grid uses denser columns with fixed text bands and
@@ -793,9 +1212,22 @@ backend entirely. Only visible in the console.
 bucketed `AgeBand`/`GenderIdentity` from `spending_habits`, and the mirror
 was only ever for human readability in the table editor. If it's wanted
 again it has to be a separate write to `profiles`.
+*Why this went unnoticed, which is the real story.* Nothing looked broken.
+The app showed correct, current progress on every screen, because the local
+cache was being written before the upload and the UI reads the cache. The
+`try/catch` around the upsert did exactly what it was designed to do —
+degrade gracefully to cached data — and in doing so it turned a total backend
+outage into a clean-looking app. The only evidence anywhere was a
+`PostgrestException` in the console.
+*The mistake underneath was a wrong assumption about where a column lived.*
+`age` and `gender` had been added in the Supabase dashboard, and they really
+did exist — on **`profiles`**, the table with `disabled` and
+`profiles_id_fkey`, not on `user_stats`. Adding the write felt safe precisely
+because the columns had been seen. Two tables, one mental model.
 *Lesson:* a `try/catch` that degrades gracefully will also hide a schema
-mismatch forever. Worth checking the console after any change to
-`toStorageMap`.
+mismatch forever, and the better the fallback, the longer it hides it. The
+error path here was too good at its job. Worth checking the console after any
+change to `toStorageMap`.
 *Files:* `supabase_service.dart`
 
 **Two allocation slices drew in the identical colour**
@@ -961,23 +1393,46 @@ events award.
 *Files:* `life_sim_controller.dart`, `life_sim_page.dart`, `budget_teaching_test.dart`
 
 **The responsive sweep had been measuring the wrong screen for months**
-`LifeSimPage` pushes character creation in a post-frame callback, so pumping it
-at eight viewports only ever measured the creation screen. The feed — money
+*Found by accident, and only because the numbers were too good.* The Life feed
+is the densest screen in the app — money panel, stat meters, event card, chain
+chips — and it had never once failed a layout sweep at 320px, while simpler
+screens failed regularly. That is the kind of clean result worth distrusting:
+it is more likely that the test is not reaching the screen than that the
+hardest screen is the safest one.
+It was not reaching the screen. `LifeSimPage` pushes character creation in a
+post-frame callback, so pumping it at eight viewports only ever measured the
+creation screen. The feed — money
 panel, stat meters, event card, chain chips — had no viewport coverage while
 the report said it had eight viewports' worth.
-*Fix:* a `debugInitialLife` seam that skips creation. It immediately found two
-real 320px overflows: the bottom menu bar (five rigid children with
-`spaceEvenly`, which distributes leftover space and does nothing when there is
-none) and the header inside `AppBar.title`.
+*Fix:* a `debugInitialLife` seam that skips creation. It immediately found
+two real 320px overflows, which is the proof the seam was the problem and not
+a change of subject: the bottom menu bar (five rigid children with
+`spaceEvenly`, which distributes leftover space and does nothing whatsoever
+when there is none — it is not a fitting strategy, and it had been standing in
+for one) and the header inside `AppBar.title`.
+*Lesson:* a test that reports coverage it does not have is worse than no test,
+because it also spends the budget that would have bought a real one. Worth
+asking of any suite: what would it look like if this were passing for the
+wrong reason?
 *Files:* `life_sim_page.dart`, `responsive_layout_test.dart`
 
 **A four-step storyline was unreachable across 2,000 simulated lives**
-Chain events have to win a weighted roll against ~120 standalone events once
-per beat, so `chain_index_payoff` — the payoff for holding an index fund
-through a crash — never fired.
-*Fix:* `_openChainBoost`, a 4x draw multiplier for any event with an unmet
-prerequisite already satisfied, applied in the draw rather than baked into each
-event's weight so future chains inherit it.
+Nothing was wrong with the chain. Each of its four events was correct, its
+prerequisites were satisfiable, and any one of them would fire if drawn. The
+fault was arithmetic several layers away: a chain event has to win a weighted
+roll against ~120 standalone events *once per beat*, four times in the right
+order, and the compound probability of that is indistinguishable from zero.
+`chain_index_payoff` — the payoff for holding an index fund through a crash,
+and one of the better teaching moments in the game — had never once fired.
+*Why it took a simulation to find:* the failure produces no error, no log
+line, and no missing content. It produces a game that simply never tells you
+that story, which no amount of playing can distinguish from not having been
+lucky yet.
+*Fix:* `_openChainBoost`, a 4x draw multiplier for any event whose unmet
+prerequisite has already been satisfied — applied **in the draw** rather than
+baked into each event's weight, so a chain written next year inherits it
+without anybody remembering this entry. Tuning the four weights by hand would
+have fixed this chain and left the next one to be found the same way.
 *Files:* `life_sim_controller.dart`, `life_chains_test.dart`
 
 **The most-repeated line in the game was the one that never varied**
@@ -1103,20 +1558,37 @@ second has to survive a narrow screen.
 *Files:* `finance_brawl_game.dart`
 
 **A three-year-old could study, go to the gym, and buy index funds**
-Age rules lived in the Life sim's *menu builder*, which is a view, so each
-option's gate was whatever that call site happened to remember — and five of
-them remembered nothing. The section was commented "Always-available
+*The root cause is an architectural one and it produced this bug twice* —
+see the two-year-old Invest entry above, which is the same fault found again
+from a different direction. Age rules lived in the Life sim's *menu builder*,
+which is a view, so each option's gate was whatever that call site happened
+to remember — and five of them remembered nothing. The section was commented "Always-available
 activities". At age 3 the menu offered Hit the books, Go to the gym, Visit the
 library alone, Go out (free while young) and Invest 100 coins.
+*The comment above the section is the tell.* It read "Always-available
+activities", and it was accurate about the code and wrong about the world:
+somebody wrote down the assumption, it stopped being true, and the comment
+stayed. Buying index funds sat under it.
 *Fix:* a `LifeAction` enum plus `LifeSimController.gateFor`, one table in the
 controller. Every action method guards on `allows(...)` so the rule holds no
 matter who calls, and the menu asks the controller what to grey out. Seeing a
-doctor deliberately has no age floor — a parent takes a small child. An existing
-test failed correctly: a helper named `_adult()` was 15 and was investing.
+doctor deliberately has **no** age floor — a parent takes a small child, and a
+blanket "children cannot do things" rule would have been the lazy version of
+this fix.
+*The best moment in this one:* an existing test failed, and it was right to.
+A helper named `_adult()` was 15 years old and was investing. The test had
+been documenting the bug as correct behaviour for as long as it had existed,
+which is a reminder that a green suite is only as good as the assumptions
+baked into its fixtures.
 *Files:* `life_sim_controller.dart`, `life_sim_models.dart`, `life_sim_page.dart`,
 `life_age_gates_test.dart`
 
 **The Brawl progress bar rendered as a brown stick — three separate causes**
+*Each fix revealed the next one, which is why this took three passes rather
+than one.* The symptom never fully cleared until all three were done, so for
+two of those passes the evidence said "still broken" and gave no credit for
+progress — the trap being to conclude the previous fix was wrong and revert
+it. Keeping each change and re-measuring was what got through it.
 1. *Transparent padding.* Flutter fits an image to its **file** bounds, not the
    art inside them. `bar_fill_green` was a 64x64 file holding 24 rows of colour,
    so a 6px-tall box painted a 2px hairline; `bar_base` was 48 wide with art
@@ -1215,16 +1687,30 @@ resolves to a real lesson, ids are unique, each lesson is filed under the unit
 it claims, and each unit opens off the previous one.
 
 **Life got repetitive after about age thirty — measured, not guessed**
-The complaint was that runs felt samey past a point. Simulating 400 full lives
-found three causes at once: `_drawEvent()` had **no memory**, so the same beat
+The complaint was that runs felt samey past a point. That is a *feeling*, and
+the tempting response to a feeling is to write more content and hope — which
+would have been expensive, unverifiable, and, as it turns out, only about a
+third of the answer.
+So it got measured instead: simulate 400 full lives, count what actually
+comes out. Three separate causes, only one of which was the one that would
+have been guessed: `_drawEvent()` had **no memory**, so the same beat
 could fire repeatedly (`phone_breaks` and `crypto_tip` each landed eight times
 in a single life, and 24 of the ~40 events in an average run were reruns); the
 eligible pool sat **flat at ~19 events from age 32 to 85**, so half a
 playthrough drew from one small set; and three events had never fired in any
 run at all.
 *Fix:* `LifeEvent.repeatable` (default false) plus a six-year cooldown on the
-ones that genuinely recur; 27 new adult/senior events, taking the 40+ pool from
-19 to 31. Average repeats per life fell 24.4 → 9.8.
+ones that genuinely recur; 27 new adult/senior events, taking the 40+ pool
+from 19 to 31. Average repeats per life fell 24.4 → 9.8.
+*The ordering matters:* the repeat memory was the cheap fix and did most of
+the work, and writing 27 events without it would have made the pool bigger
+while still letting `phone_breaks` fire eight times in one life. The content
+was necessary too, but it was the second-most-important cause and the one
+that looks most like progress.
+*Default `false` was deliberate.* Making events non-repeatable unless marked
+otherwise means a new event written six months from now is safe by default,
+and the author has to opt in to the behaviour that caused this. The opposite
+default would put this bug back one careless addition at a time.
 *Files:* `life_sim_models.dart`, `life_sim_controller.dart`,
 `test/life_variety_test.dart`
 
@@ -1234,16 +1720,37 @@ produced music fame — so the top three events on that track could never fire
 for anybody. `sold_out_tour` needed fame 35 against a reachable ceiling of 30.
 The simulation above is what exposed it; no amount of playtesting would
 reliably have.
-*Fix:* first_gig now grants 12, and the two ceilings dropped to reachable
-values. A test plays 120 lives as a committed musician and asserts the whole
-ladder completes.
+*This one is only in the log because of how it was found.* Nobody reported
+it and nobody could have: the failure mode of an unreachable event is that
+nothing happens, and "nothing happened" is indistinguishable from bad luck in
+a game built on random draws. A player who never got a record deal would
+assume they had not played well enough. It was the 400-life simulation
+written for the repetition bug that surfaced it, as a by-product — the
+top three music events had fired **zero** times across every run.
+*Fix:* first_gig now grants 12 fame instead of 4, and the two ceilings
+dropped to reachable values. A test plays 120 lives as a committed musician
+and asserts the whole ladder completes, so the next balance change that
+strands the top of a track fails out loud instead of silently.
+*Lesson:* content that gates on a number needs a reachability check, not
+playtesting. Playtesting samples the same distribution the bug hides in.
 
 **A test suite that reported clean while screens were crashing**
-`responsive_layout_test.dart` collected every exception and then filtered to
-messages containing `overflowed by`, discarding the rest. A screen could fail
-to lay out entirely and the sweep still passed.
-*Fix:* it asserts on all exceptions now. That immediately surfaced seven real
-failures — see the two below, both of which had been shipping.
+The worst entry in this log, because for months the evidence pointed the
+wrong way: the sweep was green, so the screens were fine.
+`responsive_layout_test.dart` collected every exception thrown during a
+layout pass and then filtered to the ones whose message contained
+`overflowed by`, discarding everything else. The filter was not unreasonable
+when written — the suite exists to catch overflow — but "discard the
+exceptions I am not interested in" and "assert there were no others" are
+very different tests, and only one of them was happening. A screen could
+throw a null-check error and fail to lay out at all, and the sweep would
+report clean.
+*Fix:* it asserts on all exceptions now. That immediately surfaced **seven**
+real failures — see the two below, both of which had been shipping in the
+app while the suite said everything was fine.
+*Lesson:* be suspicious of a test that filters what it collects. The
+discarded set needs an assertion of its own, or it is a blind spot that grows
+quietly and reports success while it does.
 *Files:* `test/responsive_layout_test.dart`
 
 **Market Board: `Null check operator used on a null value` when narrowing the window**
@@ -1800,33 +2307,53 @@ to the device. Until that finishes — and forever, offline — every label rend
 in the platform fallback. That is not an edge case: it is the first launch,
 which is what a store reviewer sees, and it is a child on school wifi with the
 font CDN blocked.
-*Fix:* `tool/fetch_fonts.py` bundles the nine faces the app resolves to. The
-files have to be real TrueType, and all three obvious sources give something
-Flutter cannot read — the `css2` endpoint returns **EOT** with an old user
+*Nobody reported this, and nobody would have.* It self-corrects within a
+few seconds of a working connection and then never recurs on that device, so
+by the time anyone looks the app is already right — the only people who see
+it are the ones whose first impression it is, which is precisely the store
+reviewer and the child on locked-down school wifi.
+*Fix:* `tool/fetch_fonts.py` bundles the nine faces the app resolves to.
+*Three sources were tried and all three failed*, each in a way that looks
+like success. The files have to be real TrueType, and all three obvious
+sources give something Flutter cannot read — the `css2` endpoint returns **EOT** with an old user
 agent (it has a `.ttf` in the URL and is not a TrueType file) and **WOFF** with
 a modern one, and `github.com/google/fonts` now ships only a **variable** TTF
 per family, which registers under one name and renders every weight at its
 default instance. So the tool downloads the variable font and cuts static
-instances out of it with `fonttools`. The tell that the first attempt had
-failed was that a hand-registered `FontLoader` still measured every glyph at
-exactly one em: the load had silently fallen back.
+instances out of it with `fonttools`.
+*The diagnostic that ended it.* Every failed attempt looked fine — files
+downloaded, sizes plausible, no errors. The tell was a hand-registered
+`FontLoader` still measuring every glyph at **exactly one em**, which is the
+signature of a font that failed to parse and fell back silently rather than
+throwing. One em across the board is not a plausible measurement of real
+type; it is what you get when nothing is loaded. After that, every attempt
+was checked by measuring glyphs rather than by looking at the file.
 572KB, and `AssetManifest` resolves inside `flutter test` too — so every suite
 in this repo now lays out in the face a player actually sees.
 *Files:* `tool/fetch_fonts.py`, `pubspec.yaml`, `test/bundled_fonts_test.dart`
 
 **`FittedLabel` measured one font and painted another**
+A one-character bug — `??` where `.merge` was needed — in a widget whose whole
+purpose is to stop text overflowing.
 It read `style ?? DefaultTextStyle.of(context).style`, so passing *any* style
 dropped the ambient one — for measurement only, because `Text` itself always
 merges. Every label with a style that did not name a family was measured in the
 platform default and painted in Pixelify Sans or Quicksand.
-The failure is silent and one-directional: when the painted face is wider,
+*What makes this one nasty is the direction of the failure.* It is silent
+and one-directional: when the painted face is wider than the measured one,
 `needed <= available` comes out true, the widget decides no scaling is needed,
-and the text overflows exactly as if the widget were not there. "Mushroom
+and the text overflows exactly as if the widget were not there. So the
+protective widget fails open, on the specific screens where it is most needed,
+and every place it was used read as evidence the problem was handled. "Mushroom
 Goomba" ellipsised inside a 114px tile it needed 123px for — a 0.93 scale,
 nowhere near the 62% truncation floor.
-*Fix:* `DefaultTextStyle.of(context).style.merge(style)`, and 1% of slack on
-the computed scale so a label that fits to the exact pixel is not one rounding
-step from overflowing.
+*Fix:* `DefaultTextStyle.of(context).style.merge(style)` — matching what
+`Text` itself does, which is the standard this should have been held to from
+the start — plus 1% of slack on the computed scale, so a label that fits to
+the exact pixel is not one rounding step away from overflowing.
+*Lesson:* any widget that *measures* text has to resolve its style exactly
+the way the widget that *paints* it does, or the two drift and the measurement
+is confidently wrong.
 *Files:* `fitted_label.dart`
 
 ### The tutorial spotlight was pointing next to things
@@ -2389,6 +2916,18 @@ icons and a missing fifth button.
 overflow on its *main* axis, which is vertical, so a child too wide for its box
 paints over the edge in silence. `responsive_layout_test` saw no exception
 because there was none to see.
+*What was tried first, and it wasted the most time of anything here:* the
+symptom was missing labels, so the search went straight to the labels. Font
+size down, `maxLines`, `overflow: TextOverflow.visible`, then swapping
+`FittedLabel` for a plain `Text` to rule the widget out. None of it changed
+anything, which in hindsight was the answer — a label given **zero** width
+renders identically however it is styled, and four different styling attempts
+producing four identical results is the shape of a constraint problem, not a
+text problem. Then the `Expanded` itself came under suspicion and `Flexible`,
+`SizedBox` and an explicit `width` all got tried on the row, still with the
+padding untouched. The padding was only noticed by printing the constraints
+each child was actually handed, which said `w=0.0` and ended the search in
+about a second.
 *Fix:* `horizontal: 4`.
 *Files:* `life_sim_page.dart`
 
@@ -2704,7 +3243,7 @@ the pool.
 flutter analyze && flutter test
 ```
 
-1,271 tests covering responsive layout at eight viewports (including the Life
+1,280 tests covering responsive layout at eight viewports (including the Life
 sim itself, Feedback, and the Adventure map-pending screen), the money
 panel at seven widths, the life-event chain wiring, price-chart zoom/pan/scrub,
 chart painters against pathological input, working-order accounting, the Life

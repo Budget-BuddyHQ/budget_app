@@ -93,6 +93,55 @@ class AppSoundService {
   static final Map<AppSoundEffect, AudioPlayer> _players =
       <AppSoundEffect, AudioPlayer>{};
 
+  /// The audio session every player in this app uses.
+  ///
+  /// **This is the fix for sounds cutting each other off.** `audioplayers`
+  /// defaults to `AndroidAudioFocus.gain`, which in Android's own words means
+  /// "your application is now the sole source of audio that the user is
+  /// listening to" — and every player requests it separately. So sixteen
+  /// effect players plus the music loop spent their time revoking each
+  /// other: the device log showed `onAudioFocusChange(-1)` — AUDIOFOCUS_LOSS
+  /// — on essentially every sound, which is a tab switch killing the music,
+  /// or a reward chime killing the ratchet under it.
+  ///
+  /// A UI click has no business taking audio focus at all. `none` requests
+  /// none, so nothing here can stop anything else — including the player's own
+  /// music from another app, which `gain` was also silencing every time
+  /// somebody changed tabs.
+  ///
+  /// `sonification` / `assistanceSonification` is what Android calls exactly
+  /// this: short interface feedback rather than media. It also routes
+  /// correctly on a call and respects the silent switch.
+  static final AudioContext _uiAudioContext = AudioContext(
+    android: const AudioContextAndroid(
+      isSpeakerphoneOn: false,
+      stayAwake: false,
+      contentType: AndroidContentType.sonification,
+      usageType: AndroidUsageType.assistanceSonification,
+      audioFocus: AndroidAudioFocus.none,
+    ),
+    // `ambient` mixes with other audio by default and honours the ring/silent
+    // switch. It also cannot take `mixWithOthers` explicitly — the platform
+    // interface asserts against it, because for this category it is implied.
+    iOS: AudioContextIOS(category: AVAudioSessionCategory.ambient),
+  );
+
+  /// The music loop's session.
+  ///
+  /// Same refusal to take focus, for the same reason, but declared as media
+  /// rather than sonification because that is what it is — a device that
+  /// routes UI beeps and background music differently should be allowed to.
+  static final AudioContext _musicAudioContext = AudioContext(
+    android: const AudioContextAndroid(
+      isSpeakerphoneOn: false,
+      stayAwake: false,
+      contentType: AndroidContentType.music,
+      usageType: AndroidUsageType.media,
+      audioFocus: AndroidAudioFocus.none,
+    ),
+    iOS: AudioContextIOS(category: AVAudioSessionCategory.ambient),
+  );
+
   static DateTime? _lastPlayedAt;
   static AppSoundEffect? _lastEffect;
   static SharedPreferences? _preferences;
@@ -115,6 +164,18 @@ class AppSoundService {
   /// single toggle would give them.
   static bool musicEnabled = true;
 
+  /// The two sessions, for the regression test.
+  ///
+  /// The fix here is a *value*, not a behaviour — nothing about the code stops
+  /// working if `audioFocus` goes back to `gain`, it just quietly starts
+  /// cutting sounds off on a real phone again, which is invisible on a
+  /// desktop and invisible in review. So the values are asserted directly.
+  @visibleForTesting
+  static AudioContext get debugUiAudioContext => _uiAudioContext;
+
+  @visibleForTesting
+  static AudioContext get debugMusicAudioContext => _musicAudioContext;
+
   static AudioPlayer? _music;
   static bool _musicWanted = false;
 
@@ -131,6 +192,13 @@ class AppSoundService {
     if (_music != null) return;
     try {
       final player = AudioPlayer(playerId: 'budget_buddy_music');
+      if (!kIsWeb) {
+        try {
+          await player.setAudioContext(_musicAudioContext);
+        } catch (error) {
+          debugPrint('Music audio context not applied: $error');
+        }
+      }
       // loop, and quiet enough to sit under speech + effects instead of
       // fighting them. 0.28 picked by ear against tap.wav
       await player.setReleaseMode(ReleaseMode.loop);
@@ -195,10 +263,20 @@ class AppSoundService {
       _players[effect] = AudioPlayer(playerId: 'budget_buddy_${effect.name}');
     }
 
+    // Set globally as well as per player: a player created later (or by a
+    // package that makes its own) inherits this rather than the focus-grabbing
+    // default.
+    try {
+      await AudioPlayer.global.setAudioContext(_uiAudioContext);
+    } catch (error) {
+      debugPrint('Global audio context not applied: $error');
+    }
+
     for (final player in _players.values) {
       try {
         await player.setReleaseMode(ReleaseMode.stop);
         if (!kIsWeb) {
+          await player.setAudioContext(_uiAudioContext);
           await player.setPlayerMode(PlayerMode.lowLatency);
         }
       } catch (error) {

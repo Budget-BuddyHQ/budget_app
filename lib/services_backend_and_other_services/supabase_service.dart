@@ -1477,7 +1477,7 @@ alter view public.leaderboard set (security_invoker = false);
       return const SyncState(
         synced: true,
         usedCache: true,
-        message: 'Newer stats already saved.',
+        message: 'Your account is already up to date.',
       );
     }
 
@@ -1500,14 +1500,14 @@ alter view public.leaderboard set (security_invoker = false);
       return const SyncState(
         synced: true,
         usedCache: false,
-        message: 'Saved to Supabase.',
+        message: 'Added to your account.',
       );
     } catch (error) {
       debugPrint('Supabase upsert failed, keeping cached data: $error');
       return const SyncState(
         synced: false,
         usedCache: true,
-        message: 'Saved locally. Cloud sync will resume automatically.',
+        message: 'Saved on this device — it will reach your account shortly.',
       );
     }
   }
@@ -1733,11 +1733,32 @@ alter view public.leaderboard set (security_invoker = false);
   /// each other's code. Offline or with no friends yet, returns an empty
   /// list rather than falling back to cached data — there's no local cache
   /// of *other* users' stats to fall back to.
+  /// Whether [id] is a real Supabase auth id rather than the local
+  /// placeholder.
+  ///
+  /// `UserStatsController` starts every session as `'user_123'` — a local
+  /// stand-in so the app has somewhere to keep progress before anybody signs
+  /// in. Postgres columns that reference `auth.users` are `uuid`, so handing
+  /// it that string is not an empty result, it is a **22P02 syntax error**:
+  ///
+  ///     invalid input syntax for type uuid: "user_123"
+  ///
+  /// which was firing on every cold start and filling the device log.
+  static bool isRealUserId(String? id) {
+    if (id == null || id.isEmpty || id == 'user_123') return false;
+    return RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
+      r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    ).hasMatch(id);
+  }
+
   Future<List<LeaderboardEntry>> fetchFriendsLeaderboard({
     required String currentUserId,
     bool byGold = false,
   }) async {
-    if (!_isSupabaseConnected) {
+    // Signed out: there are no friends to fetch, and asking would be a
+    // guaranteed 22P02 rather than an empty list.
+    if (!_isSupabaseConnected || !isRealUserId(currentUserId)) {
       return const <LeaderboardEntry>[];
     }
     try {
@@ -1821,7 +1842,7 @@ alter view public.leaderboard set (security_invoker = false);
     required String currentUserId,
     required String friendId,
   }) async {
-    if (!_isSupabaseConnected) return false;
+    if (!_isSupabaseConnected || !isRealUserId(currentUserId)) return false;
     try {
       final client = Supabase.instance.client;
       await client
@@ -1856,6 +1877,9 @@ alter view public.leaderboard set (security_invoker = false);
     }
     if (!_isSupabaseConnected) {
       return 'Connect to the internet to add friends.';
+    }
+    if (!isRealUserId(currentUserId)) {
+      return 'Sign in first, then you can add friends.';
     }
     // A friend code is the first 8 hex characters of the user's uuid, so
     // resolving one is a uuid *prefix* match. This used to be written as
