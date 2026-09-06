@@ -52,3 +52,84 @@ python tool/build_auth_emails.py
 
 Edit the copy in `TEMPLATES` at the bottom of that script, not in the HTML —
 the HTML is output.
+
+---
+
+## The two settings that are not in these files
+
+The templates control what the mail *says*. Two things about it are decided
+elsewhere, and both of them were wrong in the build people were using.
+
+### 1. Where the reset link goes ("This site can't be reached")
+
+The reset mail arrived with `redirect_to=http://localhost:3000`, and tapping
+it on a phone produced `ERR_CONNECTION_REFUSED`. Nothing in the app was
+broken. `passwordResetRedirectUrl`, the Android intent-filter and the
+recovery handling in `main.dart` were all correct and had been for weeks.
+
+Supabase validates `redirect_to` against **Site URL + the Redirect allow-list**,
+and when the value is not on that list it does not return an error — it
+**substitutes the Site URL**. A new project's Site URL is `http://localhost:3000`,
+a dev-server address that exists on nobody's phone. So the symptom of one
+missing allow-list entry is an app that looks broken.
+
+The fix has three parts, and all three are now in the repository:
+
+| Part | Where |
+|---|---|
+| A real page for the link to land on | `docs/password-reset.html` |
+| Site URL + allow-list, as code | `supabase/config.toml` |
+| The app sending people to that page | `passwordResetRedirectUrl` in `supabase_service.dart` |
+
+Apply the middle one with:
+
+```bash
+supabase link --project-ref cwqjduingvevagrxbwts
+supabase config push
+```
+
+or by hand in **Authentication → URL Configuration**:
+
+* **Site URL** — `https://budget-buddyhq.github.io/budget_app/password-reset.html`
+* **Redirect URLs** — add `budgetbuddy://password-reset`, the page URL above,
+  and `http://localhost:5960` for web dev.
+
+`test/auth_redirect_test.dart` checks the Dart constant, the config file, the
+landing page and the Android manifest still agree. Change one and it fails,
+rather than the link quietly dying again.
+
+**The page is doing real work, not decoration.** A `302` from Supabase
+straight to a `budgetbuddy://` URL is refused by several in-app browsers —
+Gmail's WebView in particular — which produces exactly the same dead link with
+a correct dashboard. Landing on an ordinary https page and letting *that*
+invoke the scheme is the path browsers actually allow, and it gives the two
+cases a deep link cannot express somewhere to be said: the app is not
+installed, and the link has expired.
+
+### 2. Who the mail is from ("Supabase Auth")
+
+The From line reads `Supabase Auth <noreply@mail.app.supabase.io>`. To a
+parent looking at their child's inbox that is an unrecognised sender with an
+unrecognised domain asking them to click a password link — which is a
+description of a phishing email. It is also a strong spam signal.
+
+**This cannot be changed without custom SMTP.** With Supabase's built-in
+mailer the From header is fixed; there is no dashboard field for it. The
+built-in mailer is also rate-limited to a few messages an hour and is
+documented as not for production, so this is worth doing regardless.
+
+1. Create a provider account. Resend is the shortest path (free tier, and it
+   sends from `onboarding@resend.dev` before you have verified any domain, so
+   you can see the change land today). Postmark, SES and SendGrid are the same
+   shape.
+2. Store the key as a secret — never in a file in this repo:
+   ```bash
+   supabase secrets set SMTP_PASSWORD=re_your_key_here
+   ```
+3. Uncomment the `[auth.email.smtp]` block in `supabase/config.toml`, set
+   `sender_name = "Budget Buddy"` and `admin_email` to an address on a domain
+   you have verified with the provider, and `supabase config push`.
+
+Until a domain is verified, leave `admin_email` on the provider's sandbox
+sender. Sending from an unverified domain is worse than the Supabase default:
+it fails SPF/DKIM and goes to spam rather than to the inbox.

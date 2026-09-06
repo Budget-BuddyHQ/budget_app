@@ -1475,6 +1475,12 @@ class UserStatsController extends ChangeNotifier {
           ..._stats.spendingHabits,
           'town_visited_spots': const <String>[],
           'town_collected_coins': const <String>[],
+          // The encounters that have already paid out, cleared for the same
+          // reason as the coins: a new character has not had any of these
+          // conversations yet, and inheriting a town where every building is
+          // spent would make the second life poorer than the first for no
+          // reason the player could see.
+          'town_resolved_scenes': const <String>[],
         },
         updatedAt: DateTime.now().toUtc(),
       ),

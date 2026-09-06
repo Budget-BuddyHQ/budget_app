@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -191,6 +192,106 @@ void main() {
           reason: '$name has grown a click it should not have',
         );
       }
+    });
+  });
+
+  group('the case ratchet is a mechanism, not static', () {
+    /// Zero crossings per second over an arbitrary window.
+    ///
+    /// Same cheap stand-in for brightness as [attackBrightness] above, but
+    /// pointed at the middle of a long file rather than at its onset. For a
+    /// sound built out of one repeated element it tracks that element's
+    /// pitch: a body around 400Hz crosses zero about 800 times a second, and
+    /// broadband noise crosses it many thousands.
+    double brightnessBetween(String name, double from, double to) {
+      final wav = load(name);
+      final lo = (wav.rate * from).round();
+      final hi = (wav.rate * to).round().clamp(0, wav.samples.length);
+      var crossings = 0;
+      for (var i = lo + 1; i < hi; i++) {
+        if ((wav.samples[i - 1] < 0) != (wav.samples[i] < 0)) crossings++;
+      }
+      return crossings / ((hi - lo) / wav.rate);
+    }
+
+    double rmsBetween(String name, double from, double to) {
+      final wav = load(name);
+      final lo = (wav.rate * from).round();
+      final hi = (wav.rate * to).round().clamp(0, wav.samples.length);
+      var sum = 0.0;
+      for (var i = lo; i < hi; i++) {
+        sum += wav.samples[i] * wav.samples[i];
+      }
+      return math.sqrt(sum / (hi - lo));
+    }
+
+    test('the roll is a struck body, not a burst of noise', () {
+      // Reported simply as "the rolling sound is pretty bad", and measuring
+      // it says why. The old tick was 45ms of decaying *noise at 0.85* with a
+      // 1200-1660Hz sine at 0.42 under it — noise was the loudest component,
+      // and it ran for the whole tick rather than for the three milliseconds
+      // a contact actually lasts. Measured over the whole file that read as
+      // 4,602 zero crossings a second. It was static with a pitch in it,
+      // seventy-two times.
+      //
+      // The rewrite inverts that balance: a 3ms contact burst *under* a
+      // struck body two octaves lower. Same file now measures about 590.
+      expect(
+        brightnessBetween('case_roll.wav', 0, 4.2),
+        lessThan(1500),
+        reason:
+            'the ratchet is noise-led again — the contact burst has grown '
+            'past the body it is supposed to be sitting on',
+      );
+    });
+
+    test('the opening is a wheel spinning, not a shriek', () {
+      // The first half-second is the densest part of the roll: tiles cross
+      // the marker about 10ms apart, faster than the ear separates them. The
+      // old file measured 9,872 crossings a second through there, which is
+      // the single worst-sounding stretch of the whole app.
+      expect(
+        brightnessBetween('case_roll.wav', 0, 0.5),
+        lessThan(2000),
+        reason: 'the fast stretch is back to being a noise wash',
+      );
+    });
+
+    test('the pitch falls as the reel slows, rather than rising', () {
+      // The old version climbed 1200 -> 1660Hz on the theory that rising
+      // pitch reads as tension. It does — in something speeding up. Under a
+      // *decelerating* rhythm it reads as frantic, which is the opposite of
+      // what the last few ticks are for. Something heavy losing momentum
+      // gets lower.
+      expect(
+        brightnessBetween('case_roll.wav', 2.0, 3.0),
+        lessThan(brightnessBetween('case_roll.wav', 0, 0.5)),
+        reason: 'the ratchet gets brighter as it slows down',
+      );
+    });
+
+    test('the shape is dense, then empty, then one heavy landing', () {
+      // The structure the whole effect depends on, expressed as three
+      // numbers. If a future change smears the gaps shut — a reverb tail, a
+      // longer tick, a bed that does not decay — this is what catches it,
+      // because the gap is the part the player is actually listening to.
+      final head = rmsBetween('case_roll.wav', 0, 0.3);
+      final gap = rmsBetween('case_roll.wav', 3.4, 4.1);
+      final landing = rmsBetween('case_roll.wav', 4.2, 4.27);
+
+      expect(head, greaterThan(0.02), reason: 'the fast stretch has no body');
+      expect(
+        gap,
+        lessThan(head * 0.1),
+        reason:
+            'the second before the last tick is not silent, so the final '
+            'detent has nothing to land against',
+      );
+      expect(
+        landing,
+        greaterThan(head),
+        reason: 'the last detent is no longer the heaviest thing in the roll',
+      );
     });
   });
 

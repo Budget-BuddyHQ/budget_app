@@ -88,7 +88,12 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
     GameToast.show(
       context,
       title: result.success ? '${skin.name} equipped' : 'Unable to equip',
-      message: result.message,
+      // On success `result.message` is the sync status, which is not what
+      // "equipped" needs a second line about. On failure it is a real reason
+      // ("That skin is still locked") and worth keeping.
+      message: result.success
+          ? 'Your look is updated everywhere.'
+          : result.message,
       icon: result.success
           ? Icons.check_circle_rounded
           : Icons.info_outline_rounded,
@@ -1057,8 +1062,12 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
     GameToast.show(
       context,
       title: widget.result.isNewUnlock ? 'New skin unlocked' : 'Duplicate pull',
-      message:
-          '${widget.result.skin.name} • ${widget.result.syncState.message}',
+      // Was "Villager • Saved to Supabase." The refund is the thing a player
+      // wants from a duplicate and it was being crowded out by a sync note.
+      message: widget.result.isNewUnlock
+          ? widget.result.skin.name
+          : '${widget.result.skin.name} • '
+                '${_getRefundAmount(widget.result.skin.rarity)} gold refunded',
       icon: Icons.auto_awesome_rounded,
       accent: widget.result.skin.accent,
     );

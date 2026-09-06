@@ -61,9 +61,10 @@ class _PersonalDetailsSheetState extends State<PersonalDetailsSheet> {
     }
     setState(() => _saving = true);
 
-    final result = await context
-        .read<UserStatsController>()
-        .updatePersonalDetails(ageBand: _ageBand, gender: _gender);
+    await context.read<UserStatsController>().updatePersonalDetails(
+      ageBand: _ageBand,
+      gender: _gender,
+    );
 
     if (!mounted) {
       return;
@@ -73,7 +74,10 @@ class _PersonalDetailsSheetState extends State<PersonalDetailsSheet> {
     GameToast.show(
       context,
       title: 'Profile saved',
-      message: result.message,
+      // `result.message` here is the sync status, not a description of what
+      // was saved. See the note on the lesson toast in
+      // `lesson_detail_screen.dart`.
+      message: 'Your details are up to date.',
       icon: Icons.person_rounded,
       accent: const Color(0xFF85EFAC),
     );
