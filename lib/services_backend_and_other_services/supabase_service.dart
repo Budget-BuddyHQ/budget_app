@@ -60,13 +60,25 @@ const String passwordResetDeepLink = 'budgetbuddy://password-reset';
 /// The cost is one extra hop. That is worth paying for a flow whose failure
 /// mode is "nobody can get back into their account".
 ///
-/// Web still returns to its own origin, because on web the app *is* the page
-/// and bouncing it through a redirect to a mobile scheme would be nonsense.
-/// The localhost value is a dev-server address and correct only in dev; a
-/// deployed web build needs its real origin here.
-const String passwordResetRedirectUrl = kIsWeb
-    ? 'http://localhost:5960/'
-    : passwordResetLandingUrl;
+/// **No `localhost` branch, on any platform.** There used to be one for web —
+/// `http://localhost:5960/`, the Flutter dev server. It is the same class of
+/// mistake as the `localhost:3000` Site URL that started all of this: an
+/// address that resolves on exactly one machine, in one terminal, while a
+/// dev server happens to be running on one particular port. Everywhere else
+/// it is a connection error, and the person hitting it has no way to tell
+/// that from a broken app.
+///
+/// A reset link is emailed. Emails get opened on phones, on other people's
+/// computers, and days later. There is no situation in which the correct
+/// destination for one is a loopback address.
+///
+/// **When a web build is deployed**, this needs to become that build's real
+/// origin for `kIsWeb` — on web the app *is* the page, and the PKCE verifier
+/// is held in that origin's storage, so a redirect anywhere else cannot
+/// complete the exchange. Until such a build exists, sending everyone to the
+/// landing page is both honest and the only thing that works: it explains
+/// that the link has to be opened on the device that asked for it.
+const String passwordResetRedirectUrl = passwordResetLandingUrl;
 
 @immutable
 class LedgerTransaction {
