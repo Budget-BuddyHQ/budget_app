@@ -12,6 +12,9 @@ import '../constants/privacy_policy.dart';
 import '../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import '../services_backend_and_other_services/market_data_service.dart'
     show formatShares;
+import '../models_Like_Skins_and_lessons_templates/review_schedule.dart';
+import '../models_Like_Skins_and_lessons_templates/knowledge_tracing.dart';
+import '../models_Like_Skins_and_lessons_templates/money_snapshot_source.dart';
 import '../services_backend_and_other_services/supabase_service.dart';
 
 @immutable
@@ -1437,6 +1440,39 @@ class UserStatsController extends ChangeNotifier {
       };
     }
 
+    // Feed the spaced-repetition scheduler.
+    //
+    // This is the only place in the app that knows both *how well* an
+    // assessment went and *when*, which are exactly the two inputs the
+    // scheduler needs. Recording accuracy without a date — which is what
+    // happened before — makes a quiz score a photograph of one afternoon:
+    // there is no way to work out whether the player is about to forget it.
+    //
+    // Only assessment nodes count. Reading a lesson is not a test of recall,
+    // and treating it as one would push the interval out on the strength of
+    // somebody scrolling to the bottom of a page.
+    var reviewSchedule = ReviewSchedule.fromMap(_stats.reviewScheduleMap);
+    var knowledge = KnowledgeState.fromMap(_stats.knowledgeMap);
+    if (quizTotal != null && quizTotal > 0) {
+      final concept = conceptForLesson(lessonId);
+      if (concept != null) {
+        reviewSchedule = reviewSchedule.withReview(
+          concept,
+          (quizCorrect ?? 0) / quizTotal,
+          on: now,
+        );
+
+        // The same result, read a second way.
+        //
+        // The scheduler asks "when should this come back". Knowledge tracing
+        // asks "does this person actually know it" — which is a different
+        // question, because on four-option questions a quarter of blind
+        // answers are correct and a raw score cannot tell a lucky 2/4 from a
+        // real one. Feeding both from one grading keeps them consistent.
+        knowledge = knowledge.observeQuiz(concept, quizCorrect ?? 0, quizTotal);
+      }
+    }
+
     final weakSkills = _stats.weakSkills.toSet();
     if (quizTotal != null) {
       // Skills answered correctly this run clear; freshly missed ones stick
@@ -1456,6 +1492,8 @@ class UserStatsController extends ChangeNotifier {
         'last_completed_lesson': lessonId,
         'quiz_scores': quizScores,
         'weak_skills': weakSkills.toList(growable: false),
+        'review_schedule': reviewSchedule.toMap(),
+        'knowledge': knowledge.toMap(),
       },
       transactions: <LedgerTransaction>[
         LedgerTransaction(

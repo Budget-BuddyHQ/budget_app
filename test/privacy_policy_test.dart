@@ -78,19 +78,28 @@ void main() {
   });
 
   group('the link the store will check', () {
-    test('is https and points at this repository', () {
+    test('is https and reachable, not a private-repo Pages URL', () {
       final uri = Uri.parse(kPrivacyPolicyUrl);
       expect(uri.scheme, 'https', reason: 'Play requires a secure URL');
-      expect(uri.host, 'budget-buddyhq.github.io');
-      expect(uri.path, endsWith('/privacy-policy.html'));
+      // Play *checks* this link. It pointed at GitHub Pages for a private
+      // repository, which returns 404 on every request — a dead privacy
+      // policy is a store rejection, not a cosmetic bug.
+      expect(
+        uri.host,
+        isNot(contains('github.io')),
+        reason: 'GitHub Pages does not publish this private repository',
+      );
     });
 
-    test('the filename matches what the generator writes', () {
-      // If the generator's output name and the URL ever disagree, the link
-      // 404s the moment Pages rebuilds — and nothing in the app would notice.
+    test('the route matches one the pages function actually serves', () {
+      final leaf = Uri.parse(kPrivacyPolicyUrl).pathSegments.last;
+      final fn = File('supabase/functions/pages/index.ts');
+      expect(fn.existsSync(), isTrue);
       expect(
-        Uri.parse(kPrivacyPolicyUrl).pathSegments.last,
-        'privacy-policy.html',
+        fn.readAsStringSync(),
+        contains('case "$leaf":'),
+        reason: 'kPrivacyPolicyUrl ends in /$leaf, which the pages function '
+            'has no route for',
       );
     });
   });

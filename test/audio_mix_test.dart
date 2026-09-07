@@ -19,9 +19,22 @@ import 'package:budget_app/services_backend_and_other_services/app_sound_service
 /// be testing a no-op. What can be pinned is the *shape of the code that got
 /// it wrong*, which is what these do.
 void main() {
+  /// The service's source, with line endings normalised to `\n`.
+  ///
+  /// **The normalisation is the point, not tidiness.** This file is checked
+  /// out with CRLF endings on Windows, so every `\n` in it is really `\r\n`.
+  /// A single-line `contains` is unaffected, which is why most of the checks
+  /// below passed — but any pattern spanning a line break can never match,
+  /// and `indexOf` answers -1 rather than failing in a way that points at the
+  /// cause. The "_playersReady is set last" test was reporting the ordering
+  /// bug it was written to catch, on a file where the ordering was correct.
+  ///
+  /// A test that only works on one line-ending convention is worse than no
+  /// test: it fails on a machine where the code is fine, and the obvious
+  /// reading of the failure is that the code is broken.
   String serviceSource() => File(
     'lib/services_backend_and_other_services/app_sound_service.dart',
-  ).readAsStringSync();
+  ).readAsStringSync().replaceAll('\r\n', '\n');
 
   group('the mix', () {
     test('the loop is audible against the effects, not underneath them', () {

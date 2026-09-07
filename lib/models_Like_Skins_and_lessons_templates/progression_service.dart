@@ -182,4 +182,35 @@ class ProgressionService extends ChangeNotifier {
   int get completedCount => _completedLessons.length;
 
   int get totalCount => lessons.length;
+
+  /// Teaching lessons only — no quizzes, no unit tests.
+  ///
+  /// **Why this exists.** The Academy had two "lesson" counts on screen that
+  /// disagreed, and both were right about different things: the sourcing card
+  /// said "63 lessons and N questions" (teaching nodes, because the questions
+  /// are counted separately in the same sentence), and Your Learning Stats
+  /// said "Lessons done: X/89" (every node, including 13 quizzes and 13 unit
+  /// tests). A player reading both sees the app disagree with itself about
+  /// how big its own curriculum is, which costs more credibility than either
+  /// number is worth.
+  ///
+  /// Fixed by naming rather than by forcing them equal — the two totals
+  /// measure genuinely different things and both are worth having. What was
+  /// wrong was calling both of them "lessons". [totalCount] stays whole-path
+  /// (it is what the progress bar and unlock rules run on, where a quiz is
+  /// absolutely a step you have to complete); these two are the ones a
+  /// *player-facing* lesson count should use.
+  ///
+  /// Both sides move together on purpose. Changing only the denominator
+  /// would let a player who has finished quizzes see 71/63.
+  int get teachingTotal =>
+      lessons.where((l) => l.type == LessonNodeType.lesson).length;
+
+  int get teachingCompleted => lessons
+      .where(
+        (l) =>
+            l.type == LessonNodeType.lesson &&
+            _completedLessons.contains(l.id),
+      )
+      .length;
 }

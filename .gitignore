@@ -63,3 +63,4 @@ supabase.env.json
 
 # Generated villager frames
 assets/images/humans/
+docs

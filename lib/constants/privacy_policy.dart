@@ -23,7 +23,7 @@ library;
 /// To turn it on: repository Settings -> Pages -> Source: `main`, folder
 /// `/docs`. The URL below is what that produces.
 const String kPrivacyPolicyUrl =
-    'https://budget-buddyhq.github.io/budget_app/privacy-policy.html';
+    'https://cwqjduingvevagrxbwts.supabase.co/functions/v1/pages/privacy-policy';
 
 /// The version a player is agreeing to when they tick the box.
 ///

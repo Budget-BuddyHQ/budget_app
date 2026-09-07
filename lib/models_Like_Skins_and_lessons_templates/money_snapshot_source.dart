@@ -74,7 +74,25 @@ MoneySnapshot buildMoneySnapshot(UserStats stats) {
     townSpotsAvailable: _townSpots,
     challengesStarted: _challengesTouched(stats),
     challengesFinished: _challengesFinished(stats),
+    cascadeRuns: stats.cascadeRuns,
+    cascadeLevelsCleared: stats.cascadeClearedThrough,
+    cascadeWantsShare: _cascadeShare(stats, stats.cascadeWantsTotal),
+    cascadeSavesShare: _cascadeShare(stats, stats.cascadeSavesTotal),
+    distinctEndings: stats.lifeRecords.endingsSeen.length,
   );
+}
+
+/// One kind's share of everything a player has ever allocated in Coin Cascade.
+///
+/// Coins are deliberately not in the denominator, matching `CascadeReport`:
+/// a coin is income, not an allocation, and folding it in would make a lucky
+/// run look like a budgeting decision.
+double _cascadeShare(UserStats stats, int part) {
+  final allocated =
+      stats.cascadeNeedsTotal + stats.cascadeWantsTotal +
+      stats.cascadeSavesTotal;
+  if (allocated <= 0) return 0;
+  return part / allocated;
 }
 
 int get _totalLessons =>
@@ -164,4 +182,23 @@ int _longestStreak(Set<String> loggedDayKeys) {
     }
   }
   return best;
+}
+
+/// Which big idea a lesson or quiz node belongs to.
+///
+/// The reverse of [kUnitConcepts]: nodes are not tagged with a concept, only
+/// units are, so this walks the units to find the one owning [nodeId]. Used
+/// by the spaced-repetition scheduler, which needs to know what a quiz
+/// result was *about* before it can schedule the next review of it.
+///
+/// Linear over ~89 nodes and called once per finished lesson, so building an
+/// index would be a cache that can go stale in exchange for microseconds
+/// nobody will ever measure.
+FinanceConcept? conceptForLesson(String nodeId) {
+  for (final unit in lessonUnits) {
+    for (final lesson in unit.lessons) {
+      if (lesson.id == nodeId) return kUnitConcepts[unit.id];
+    }
+  }
+  return null;
 }

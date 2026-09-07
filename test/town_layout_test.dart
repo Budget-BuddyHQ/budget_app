@@ -17,6 +17,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// silently untrue: every marker is walkable, reachable, and *beside a
 /// building*. `tool/place_town_spots.py` is what fixes a failure here.
 void main() {
+  _buildingAssignment();
+
   /// One parsed map: its size and the set of solid tiles.
   ({int width, int height, Set<(int, int)> solid}) loadMap(String name) {
     final raw = File('assets/images/maps/$name').readAsStringSync();
@@ -205,5 +207,127 @@ void main() {
             '${(best / free.length * 100).round()}% of the walkable space',
       );
     });
+  });
+}
+
+/// Every marker gets its own building — on both maps.
+///
+/// **Why "next to a building" was not enough.** `place_town_spots.py` snapped
+/// all twelve markers to a walkable tile touching a solid cluster, and it
+/// worked: measured, every one of the 24 positions sat exactly one tile from
+/// a building. The town still looked wrong, and the report was "I'm having a
+/// cafe in the middle of the road".
+///
+/// Nothing stopped two markers snapping to the *same* building. On the second
+/// map nine of twelve shared, with the bank, the notice board and the market
+/// stalls all on one house — so walking up to a building told you nothing
+/// about what was inside it, and a marker on the far wall of a house you had
+/// mentally assigned to something else reads exactly like a marker floating
+/// in a road.
+///
+/// `tool/assign_town_buildings.py` solves it as an assignment problem instead
+/// of twelve independent snaps. This holds the result.
+void _buildingAssignment() {
+  group('every town marker has its own building', () {
+    for (final map in TownMap.values) {
+      test('on ${map.name}', () async {
+        final data = jsonDecode(
+          await File('assets/images/maps/${map.asset.split('/').last}')
+              .readAsString(),
+        ) as Map<String, dynamic>;
+
+        final solid = <({int x, int y})>{};
+        for (final layer in data['layers'] as List) {
+          if (layer['collider'] != true) continue;
+          for (final tile in layer['tiles'] as List) {
+            solid.add((
+              x: int.parse(tile['x'].toString()),
+              y: int.parse(tile['y'].toString()),
+            ));
+          }
+        }
+
+        // Flood-fill the solid tiles into buildings. Six tiles is the floor
+        // that separates a house from a tree — snapping a shop marker to a
+        // hedge is a different wrong answer, not a fix.
+        final seen = <({int x, int y})>{};
+        final owner = <({int x, int y}), int>{};
+        var next = 0;
+        for (final start in solid) {
+          if (!seen.add(start)) continue;
+          final queue = <({int x, int y})>[start];
+          final group = <({int x, int y})>[];
+          while (queue.isNotEmpty) {
+            final cell = queue.removeLast();
+            group.add(cell);
+            for (final d in const [(1, 0), (-1, 0), (0, 1), (0, -1)]) {
+              final n = (x: cell.x + d.$1, y: cell.y + d.$2);
+              if (solid.contains(n) && seen.add(n)) queue.add(n);
+            }
+          }
+          if (group.length >= 6) {
+            for (final cell in group) {
+              owner[cell] = next;
+            }
+            next++;
+          }
+        }
+
+        // Which buildings each marker touches. A doorstep can belong to two
+        // buildings at once, so "the first one I find" is not an assignment —
+        // an earlier version of this test did that and failed on a placement
+        // that was actually correct.
+        final touches = <String, Set<int>>{};
+        for (final spot in kTownSpots) {
+          final x = spot.xOn(map);
+          final y = spot.yOn(map);
+          final found = <int>{};
+          for (final d in const [(1, 0), (-1, 0), (0, 1), (0, -1)]) {
+            final id = owner[(x: x + d.$1, y: y + d.$2)];
+            if (id != null) found.add(id);
+          }
+          expect(
+            found,
+            isNotEmpty,
+            reason:
+                '${spot.id} at ($x,$y) on ${map.name} touches no building — '
+                'that is the marker-in-a-road bug',
+          );
+          touches[spot.id] = found;
+        }
+
+        // The real property: can every marker be given a building of its
+        // own? That is a bipartite matching, and asserting it directly means
+        // the test passes for *any* valid placement rather than only the one
+        // the tool happened to produce.
+        final matchedBy = <int, String>{};
+        bool augment(String spotId, Set<int> seen) {
+          for (final building in touches[spotId]!) {
+            if (!seen.add(building)) continue;
+            final holder = matchedBy[building];
+            if (holder == null || augment(holder, seen)) {
+              matchedBy[building] = spotId;
+              return true;
+            }
+          }
+          return false;
+        }
+
+        final unmatched = <String>[];
+        for (final spot in kTownSpots) {
+          if (!augment(spot.id, <int>{})) unmatched.add(spot.id);
+        }
+
+        expect(
+          unmatched,
+          isEmpty,
+          reason:
+              'on ${map.name} these markers cannot be given a building of '
+              'their own: $unmatched. Two different places sharing one house '
+              'is why the town read as random. Re-run '
+              'tool/assign_town_buildings.py --write',
+        );
+      });
+    }
   });
 }
