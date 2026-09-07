@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../themes_colors/app_theme.dart';
+import '../../../widgets_custom_lotties/age_scaled_note.dart';
 import '../../../widgets_custom_lotties/map_backdrop.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson_extras.dart';
@@ -260,6 +261,16 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                         lessonTitle: widget.lesson.title,
                         estimatedMinutes: widget.lesson.estimatedMinutes,
                       ),
+                      // `_quiz` is already `ageAppropriateQuestions(...)`, so
+                      // two players on the same lesson are answering
+                      // different questions. Saying so is the difference
+                      // between a system that works and one anybody can see
+                      // working.
+                      if (quiz.isNotEmpty)
+                        const AgeScaledNote(
+                          what: 'Questions',
+                          margin: EdgeInsets.only(top: 12),
+                        ),
                       const SizedBox(height: 24),
                       if (quiz.isEmpty && content.objectives.isNotEmpty) ...[
                         _ObjectivesCard(objectives: content.objectives),

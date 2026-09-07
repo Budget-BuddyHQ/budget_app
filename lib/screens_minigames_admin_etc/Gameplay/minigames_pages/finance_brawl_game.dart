@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'dart:ui' as ui;
+import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../../models_Like_Skins_and_lessons_templates/brawl_enemies.dart';
 import '../../../models_Like_Skins_and_lessons_templates/reading_grade.dart';
 import '../../../models_Like_Skins_and_lessons_templates/player_profile.dart';
@@ -12,6 +13,7 @@ import 'package:provider/provider.dart';
 
 import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
+import '../../../widgets_custom_lotties/age_scaled_note.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/money_glyphs.dart';
@@ -146,11 +148,47 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   ui.Image? _bossImage;
   ui.Image? _chestImage;
 
+  /// One sprite per archetype, keyed by `BrawlEnemy.id`.
+  ///
+  /// Loaded as a map rather than ten fields because the roster is meant to
+  /// grow — a new archetype should need a builder in
+  /// `tool/make_brawl_enemies.py` and nothing here. Any id that fails to load
+  /// simply stays absent and falls back to the old three-sprite path, so a
+  /// missing file costs one enemy its portrait rather than the whole game.
+  final Map<String, ui.Image> _enemySprites = <String, ui.Image>{};
+
   /// The player's own uploaded profile picture, drawn inside the player token.
   /// Null until it loads, or permanently null when they haven't uploaded one —
-  /// the painter falls back to a letter in that case.
+  /// in which case the equipped skin below is drawn instead.
   ui.Image? _profileImage;
   String? _profileImageUrlLoaded;
+
+  /// The equipped skin's artwork, and the cell of it to draw.
+  ///
+  /// # Why the Brawl grew twenty-four fighters without any new art
+  ///
+  /// Asked for *"more different characters in Finance Brawl"*. The Brawl
+  /// already knew which skin was equipped — it had `equippedSkinId` threaded
+  /// all the way into the painter — and used it to draw **the first letter of
+  /// the id**. Every one of the twenty-four skins the player can win from the
+  /// case rendered as a capital letter in a green circle: "C" for Classic
+  /// Turtle, "M" for Mushroom Goomba, "V" for every single villager.
+  ///
+  /// So the roster was already bought and paid for. Drawing the sprite the
+  /// player already owns turns the whole customise screen into a character
+  /// select, which is a far better answer than five more bespoke fighters —
+  /// and it means winning a skin now changes something you look at while you
+  /// play, not just a portrait on the profile page.
+  ///
+  /// # Why a source rectangle rather than a second image
+  ///
+  /// Villagers live in a packed 8x4 sheet and turtles are loose PNGs, which
+  /// is the split [AvatarSprite] hides for the widget tree. A canvas has no
+  /// such helper, so the cell is carried alongside the image: null means
+  /// "draw the whole thing".
+  ui.Image? _skinImage;
+  Rect? _skinCell;
+  String? _skinKeyLoaded;
 
   // 3. Add the loading helper method:
   Future<void> _loadbrawlTreeSprite() async {
@@ -228,6 +266,70 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       setState(() {
         _bossImage = fi.image;
       });
+    }
+  }
+
+  /// Loads the equipped skin's artwork for the player token.
+  ///
+  /// Keyed on skin **and body** because a villager's masculine and feminine
+  /// sheets are different files — reloading on skin alone would leave a
+  /// player who switched body fighting as the old one until they left the
+  /// screen. Failure is silent and falls back to the letter, exactly as a
+  /// missing profile picture does: a skin that will not decode must not take
+  /// the game down mid-wave.
+  Future<void> _loadSkinSprite(String skinId, VillagerBody body) async {
+    final key = '$skinId/${body.id}';
+    if (key == _skinKeyLoaded) {
+      return;
+    }
+    _skinKeyLoaded = key;
+
+    final skin = budgetBuddySkins.firstWhere(
+      (candidate) => candidate.id == skinId,
+      orElse: () => budgetBuddySkins.first,
+    );
+    final frame = skin.canvasFrame(body);
+    if (frame.asset.isEmpty) {
+      return;
+    }
+
+    try {
+      final ByteData data = await rootBundle.load(frame.asset);
+      final ui.Codec codec = await ui.instantiateImageCodec(
+        data.buffer.asUint8List(),
+      );
+      final ui.FrameInfo fi = await codec.getNextFrame();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _skinImage = fi.image;
+        _skinCell = frame.cell;
+      });
+    } catch (_) {
+      // Leave the key set: a sheet that failed once will fail again, and
+      // retrying it every frame would be a load storm inside the game loop.
+    }
+  }
+
+  /// Loads the per-archetype sprites drawn by `tool/make_brawl_enemies.py`.
+  Future<void> _loadEnemySprites() async {
+    for (final enemy in kBrawlEnemies) {
+      try {
+        final ByteData data = await rootBundle.load(
+          AppAssets.brawlEnemySprite(enemy.id),
+        );
+        final ui.Codec codec = await ui.instantiateImageCodec(
+          data.buffer.asUint8List(),
+        );
+        final ui.FrameInfo fi = await codec.getNextFrame();
+        if (!mounted) {
+          return;
+        }
+        setState(() => _enemySprites[enemy.id] = fi.image);
+      } catch (_) {
+        // Falls back to the generic sprite for that archetype only.
+      }
     }
   }
 
@@ -1605,6 +1707,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     _loadbrawlEnemyTwoSprite();
     _loadbrawlBossSprite();
     _loadbrawlChestSprite();
+    _loadEnemySprites();
 
     const Offset playerStartPos = Offset(800, 800);
     const double minTreeRockDistance =
@@ -2128,6 +2231,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
           drainRate: baseDrain * archetype.drainScale,
           rewardGold: archetype.goldReward,
           isEnemyTwo: archetype.isElite,
+          archetypeId: archetype.id,
         ),
       );
     }
@@ -2648,6 +2752,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     final controller = context.watch<UserStatsController>();
     final equippedSkinId = controller.stats.equippedSkin;
     _loadProfileImage(controller.stats.profileImageUrl);
+    _loadSkinSprite(equippedSkinId, controller.stats.villagerBody);
 
     return Focus(
       focusNode: _keyboardFocusNode,
@@ -2719,7 +2824,10 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                       rockImage: _rockImage,
                       dollarImage: _dollarImage,
                       profileImage: _profileImage,
+                      skinImage: _skinImage,
+                      skinCell: _skinCell,
                       enemyOneImage: _enemyOneImage,
+                      enemySprites: _enemySprites,
                       enemyTwoImage: _enemyTwoImage,
                       bossImage: _bossImage,
                       chestImage: _chestImage,
@@ -3033,6 +3141,14 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                       fontWeight: FontWeight.w700,
                     ),
                   ),
+                  // The checkpoint pulls from `ageAppropriateQuestions`, so
+                  // an eight-year-old and an adult are answering different
+                  // questions here. That was true and unsaid, which is the
+                  // same as untrue -- see `AgeScaledNote`.
+                  const AgeScaledNote(
+                    what: 'Questions',
+                    margin: EdgeInsets.only(top: 7),
+                  ),
                   const SizedBox(height: 16),
                   // Same fault as the Academy's quiz prompt: a question
                   // whose content is often a number, in a font whose 5 and 8
@@ -3170,27 +3286,52 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                       color: _lastEnemySeen!.color.withValues(alpha: 0.4),
                     ),
                   ),
-                  child: Column(
+                  // The thing they just fought, next to the sentence about
+                  // it. The card named an archetype the player had no way to
+                  // pick out of the fight, because ten archetypes shared
+                  // three sprites; now that each one has a face, showing it
+                  // here is what ties "Payday Loan" to the small fast thing
+                  // that just drained half their balance.
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        _lastEnemySeen!.name.toUpperCase(),
-                        style: GoogleFonts.pixelifySans(
-                          color: _lastEnemySeen!.color,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                        ),
+                      Image.asset(
+                        AppAssets.brawlEnemySprite(_lastEnemySeen!.id),
+                        width: 44,
+                        height: 44,
+                        filterQuality: FilterQuality.none,
+                        // A missing sprite must not put a broken-image icon
+                        // on the one screen in the game that is read.
+                        errorBuilder: (context, error, stack) =>
+                            const SizedBox.shrink(),
                       ),
-                      const SizedBox(height: 5),
-                      Text(
-                        _lastEnemySeen!.lesson,
-                        style: AppTheme.numeric(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          height: 1.4,
+                      const SizedBox(width: 11),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _lastEnemySeen!.name.toUpperCase(),
+                              style: GoogleFonts.pixelifySans(
+                                color: _lastEnemySeen!.color,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              _lastEnemySeen!.lesson,
+                              style: AppTheme.numeric(
+                                color: Colors.white.withValues(alpha: 0.85),
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -3867,6 +4008,7 @@ class _FinancialLiability {
     required this.rewardGold,
     this.isBoss = false,
     this.isEnemyTwo = true,
+    this.archetypeId = '',
   });
 
   String name;
@@ -3880,6 +4022,15 @@ class _FinancialLiability {
   int rewardGold;
   bool isBoss;
   bool isEnemyTwo;
+
+  /// Which archetype this is, from `brawl_enemies.dart`.
+  ///
+  /// The mob used to carry only `isBoss` / `isEnemyTwo`, which is two bits —
+  /// enough to choose between three sprites and no more. Ten archetypes went
+  /// in and three pictures came out, so a student loan and an overdraft fee
+  /// were the same object on screen. Empty for the systemic-risk boss, which
+  /// is not an archetype and keeps its own art.
+  String archetypeId;
 }
 
 class _CoinProjectile {
@@ -3953,7 +4104,10 @@ class _BrawlPainter extends CustomPainter {
     this.rockImage,
     this.dollarImage,
     this.profileImage,
+    this.skinImage,
+    this.skinCell,
     this.enemyOneImage,
+    this.enemySprites = const <String, ui.Image>{},
     this.enemyTwoImage,
     this.bossImage,
     this.chestImage,
@@ -3985,7 +4139,14 @@ class _BrawlPainter extends CustomPainter {
 
   /// The player's uploaded avatar, or null to fall back to a letter.
   final ui.Image? profileImage;
+
+  /// The equipped skin's sheet or still, and the cell of it to draw.
+  final ui.Image? skinImage;
+  final Rect? skinCell;
   final ui.Image? enemyOneImage;
+
+  /// Per-archetype artwork, keyed by `BrawlEnemy.id`.
+  final Map<String, ui.Image> enemySprites;
   final ui.Image? enemyTwoImage;
   final ui.Image? bossImage;
   final ui.Image? chestImage;
@@ -4136,15 +4297,21 @@ class _BrawlPainter extends CustomPainter {
       ..sort((a, b) => (b.isBoss ? 1 : 0).compareTo(a.isBoss ? 1 : 0));
 
     for (final mob in sortedLiabilities) {
-      // 1. Select the correct sprite based on enemy hierarchy
-      ui.Image? spriteToDraw;
+      // 1. The archetype's own sprite, falling back to the old three.
+      //
+      // The fallback is kept rather than deleted: a sprite that fails to
+      // decode should cost that one enemy its portrait, not leave an
+      // invisible thing draining the player's balance.
+      ui.Image? spriteToDraw = enemySprites[mob.archetypeId];
 
-      if (mob.isBoss) {
-        spriteToDraw = bossImage;
-      } else if (mob.isEnemyTwo) {
-        spriteToDraw = enemyTwoImage;
-      } else {
-        spriteToDraw = enemyOneImage;
+      if (spriteToDraw == null) {
+        if (mob.isBoss) {
+          spriteToDraw = bossImage;
+        } else if (mob.isEnemyTwo) {
+          spriteToDraw = enemyTwoImage;
+        } else {
+          spriteToDraw = enemyOneImage;
+        }
       }
 
       // 2. Render Sprite or Fallback Circle
@@ -4298,10 +4465,12 @@ class _BrawlPainter extends CustomPainter {
         ..style = PaintingStyle.stroke,
     );
 
-    // The player token used to draw the first letter of the equipped skin id,
-    // which is why it read as a flat "C" — the skin happened to start with one.
-    // If they have uploaded a profile picture, draw that instead, clipped to
-    // the same circle so it sits inside the existing ring.
+    // Who the player actually is on screen.
+    //
+    // In order: their own profile picture, then the skin they have equipped,
+    // and only then the old first-letter-of-the-id fallback. The token used
+    // to be that letter for everybody, which is why it read as a flat "C" —
+    // `classic_turtle` happens to start with one.
     final avatar = profileImage;
     if (avatar != null) {
       canvas.save();
@@ -4318,6 +4487,40 @@ class _BrawlPainter extends CustomPainter {
         filterQuality: FilterQuality.medium,
       );
       canvas.restore();
+    } else if (skinImage != null) {
+      // The equipped skin, drawn as the fighter.
+      //
+      // Deliberately taller than the ring rather than clipped inside it: a
+      // character whose head clears the token reads as somebody standing
+      // there, where one trimmed to a circle reads as another portrait. The
+      // ring stays as the hit indicator it always was.
+      //
+      // `drawImageRect` rather than `paintImage` because villagers are one
+      // cell of a packed sheet — `paintImage` has no source rectangle, so it
+      // would draw all thirty-two frames squeezed into the token.
+      final src =
+          skinCell ??
+          Rect.fromLTWH(
+            0,
+            0,
+            skinImage!.width.toDouble(),
+            skinImage!.height.toDouble(),
+          );
+      final dstHeight = playerRadius * 2.5;
+      // Villager cells are 104x162; a square destination would squash them.
+      final dstWidth = dstHeight * (src.width / src.height);
+      canvas.drawImageRect(
+        skinImage!,
+        src,
+        Rect.fromCenter(
+          // Lifted so the feet land near the bottom of the ring rather than
+          // the middle of it.
+          center: playerPos.translate(0, -dstHeight * 0.12),
+          width: dstWidth,
+          height: dstHeight,
+        ),
+        Paint()..filterQuality = FilterQuality.none,
+      );
     } else {
       final textPainter = TextPainter(
         text: TextSpan(

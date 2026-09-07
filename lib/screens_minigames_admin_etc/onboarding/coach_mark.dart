@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../ui/widgets/pop_navbar.dart';
 
 import '../../constants/app_assets.dart';
+import '../../widgets_custom_lotties/mentor_image.dart';
 import '../../models_Like_Skins_and_lessons_templates/tutorial_steps.dart';
 import '../../widgets_custom_lotties/pixel_kit.dart';
 
@@ -540,14 +541,14 @@ class _CoachCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Buddy, in the pose the step asks for. The mentor is what
-              // makes the tour feel like being shown around rather than
-              // being read a manual.
-              Image.asset(
-                step.mascot.asset,
-                width: 64 * scale,
-                height: 64 * scale,
-                filterQuality: FilterQuality.none,
+              // Buddy, in the pose the step asks for, wearing the skin the
+              // player has equipped. The mentor is what makes the tour feel
+              // like being shown around rather than being read a manual —
+              // and being shown around by the turtle you picked is better
+              // still. See [MentorImage].
+              MentorImage(
+                pose: step.mascot,
+                size: 64 * scale,
                 errorBuilder: (_, _, _) => SizedBox(width: 64 * scale),
               ),
               SizedBox(width: 12 * scale),

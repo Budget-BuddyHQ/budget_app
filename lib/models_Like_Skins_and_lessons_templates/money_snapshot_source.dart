@@ -67,8 +67,19 @@ MoneySnapshot buildMoneySnapshot(UserStats stats) {
     lessonsCompleted: stats.completedLessons.length,
     lessonsAvailable: _totalLessons,
     conceptAccuracy: _conceptAccuracy(stats),
+    // Graded runs only.
+    //
+    // **This is the fix for "I bombed that one on purpose".** Players wreck a
+    // life deliberately to reach an unusual ending or to farm quick gold, and
+    // the analyser was reading those as evidence they were getting worse with
+    // money — then telling them so. A coach that cannot tell a deliberate
+    // choice from a failure is one nobody listens to twice.
+    //
+    // Ungraded runs still appear in Past Lives and still count for endings.
+    // They are only withheld from the history the *reasoning* runs on.
     pastLifeNetWorths: [
-      for (final record in stats.lifeRecords.newestFirst) record.netWorth,
+      for (final record in stats.lifeRecords.newestFirst)
+        if (record.graded) record.netWorth,
     ],
     townSpotsVisited: stats.townVisitedSpotIds.length,
     townSpotsAvailable: _townSpots,

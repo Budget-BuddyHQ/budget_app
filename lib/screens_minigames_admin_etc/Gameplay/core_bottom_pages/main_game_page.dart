@@ -189,7 +189,13 @@ class MainGamePage extends StatelessWidget {
                             label: 'How to play',
                             caption: 'Buddy shows you',
                             accent: const Color(0xFF69C6FF),
-                            art: _TileArt.image(AppAssets.turtleMentorWave),
+                            // Waving in whichever turtle they have on.
+                            art: _TileArt.image(
+                              AppAssets.turtleMentorPose(
+                                'wave',
+                                stats.equippedSkin,
+                              ),
+                            ),
                             onTap: () => _replayLifeTour(context),
                           ),
                         ),

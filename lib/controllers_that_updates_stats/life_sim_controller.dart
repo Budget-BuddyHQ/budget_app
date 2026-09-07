@@ -9,6 +9,7 @@ import '../models_Like_Skins_and_lessons_templates/relationship.dart';
 import '../models_Like_Skins_and_lessons_templates/volunteer_places.dart';
 import '../models_Like_Skins_and_lessons_templates/outing_rules.dart';
 import '../models_Like_Skins_and_lessons_templates/ranked_run.dart';
+import '../models_Like_Skins_and_lessons_templates/reading_grade.dart';
 
 /// The rules engine for **Life**, the main game.
 ///
@@ -31,6 +32,7 @@ class LifeSimController extends ChangeNotifier {
     this.gender = Gender.nonBinary,
     this.origin = LifeOrigin.workingClass,
     this.allowWagering = true,
+    this.plainWordsOnly = false,
   }) : _random = random ?? Random(),
        startAge = initialAge,
        _age = initialAge,
@@ -435,15 +437,61 @@ class LifeSimController extends ChangeNotifier {
       }
     }
 
+    // Wants buy happiness. They did not, and that was a real bug.
+    //
+    // `wantsBudget` was subtracted from cash and produced **nothing** —
+    // no happiness, no stat, no line. The only other thing `_wantsPct` did
+    // was *penalise* a player who set it at or below 5%. So there was no
+    // winning move: spend 30% of every paycheck and watch it vanish for no
+    // return, or spend nothing and be docked happiness for it.
+    //
+    // That is also why a tester asked "what is the 50/30/20 thing?" — the
+    // wants third of it did not do anything, so there was nothing to learn
+    // from it. A budget only teaches if each category visibly buys what it
+    // is for: needs keep you well, savings build the fund, wants make the
+    // life worth living.
+    //
+    // Scaled against 30 rather than flat, so choosing your own split is a
+    // real trade rather than a cosmetic one — and capped, because you cannot
+    // buy your way to a happy life at 90% wants and no savings.
+    if (wantsBudget > 0) {
+      final wantsShare = _wantsPct / 30.0;
+      final joy = (3 * wantsShare).round().clamp(0, 6);
+      if (joy > 0) _happiness = _clamp(_happiness + joy);
+    }
+
     if (_wantsPct <= 5) {
       // budget with no room to live in = one you abandon
       _happiness = _clamp(_happiness - 4);
     }
 
-    _emergencyFund += savingsBudget;
-    _money -= savingsBudget;
+    // Save only what there is left to save.
+    //
+    // This used to move the full `savingsBudget` and then clamp a negative
+    // balance back to zero — which **destroys money**. A player who was
+    // short that year had the shortfall silently deleted from their cash
+    // instead of it becoming something they owed, so the ledger simply
+    // stopped adding up. Reported as "he doesn't get all the money he gets
+    // from the jobs he does", which is exactly what it looks like from
+    // outside: numbers that do not reconcile.
+    //
+    // You cannot put aside money you do not have. Whatever is actually
+    // there goes to savings; anything beyond it becomes debt, which the
+    // game already models and already charges interest on.
+    final canSave = savingsBudget.clamp(0, _money < 0 ? 0 : _money);
+    if (canSave > 0) {
+      _emergencyFund += canSave;
+      _money -= canSave;
+    }
     if (_money < 0) {
+      // Owed, not vanished.
+      _debt += -_money;
       _money = 0;
+      _setLog(
+        'You came up short this year, so ${_debt}g is now owed rather than '
+        'quietly disappearing.',
+        kind: LifeLogKind.shock,
+      );
     }
 
     if (_debt > 0) {
@@ -660,6 +708,24 @@ class LifeSimController extends ChangeNotifier {
   /// the account's answer.
   final bool allowWagering;
 
+  /// Whether this player needs grown-up financial vocabulary kept back.
+  ///
+  /// **The bug this closes.** Life events gate on `minAge`, which is the
+  /// *character's* age — so a ten-year-old whose character reached thirty was
+  /// being offered mortgages, down payments and vesting schedules. Reported
+  /// exactly that way: *"my little brother is getting confused by the options
+  /// in the main game as a 10 year old since we are talking about loans and
+  /// down payments and he doesn't know what that is."*
+  ///
+  /// This is the same character-age-versus-account-age mistake the wagering
+  /// gate was built to fix, arriving again through a different door. The
+  /// character's age decides what is *plausible*; the player's age decides
+  /// what is *readable*, and only one of those was being checked.
+  ///
+  /// Set from `AgeBand.prefersSimpleWording`, so it follows the account
+  /// rather than the story.
+  final bool plainWordsOnly;
+
   LifeStage get stage => LifeStageInfo.forAge(_age);
 
   /// Everything you own minus everything you owe — the "earning vs keeping"
@@ -705,6 +771,10 @@ class LifeSimController extends ChangeNotifier {
       return;
     }
     _age++;
+    // A new year is a fresh allowance for every on-demand action. See
+    // `_yield` — without this, the diminishing return would be permanent
+    // rather than annual, and a long life would end with nothing left to do.
+    _takenThisYear.clear();
     // re-rolled every year so whether the town is open changes as you go,
     // not fixed at birth
     _weather = WeatherInfo.roll(_random);
@@ -1187,6 +1257,9 @@ class LifeSimController extends ChangeNotifier {
 
     bool fresh(LifeEvent e) {
       if (e.isWager && !allowWagering) return false;
+      // Grown-up instruments, kept back from young *players* — not from
+      // grown-up characters. See [plainWordsOnly].
+      if (plainWordsOnly && mentionsAdultTopic(e.prompt)) return false;
       if (!e.matches(ctx)) return false;
       if (!_seen.contains(e.id)) return true;
       if (!e.repeatable) return false;
@@ -1203,7 +1276,13 @@ class LifeSimController extends ChangeNotifier {
       eligible = kLifeEvents
           .where(
             (e) =>
-                (!e.isWager || allowWagering) && e.matches(ctx) && e.repeatable,
+                (!e.isWager || allowWagering) &&
+                // The fallback has to apply the same filter. Without this a
+                // long life exhausts the fresh pool and quietly reopens the
+                // door that was just closed — which is how age gates leak.
+                !(plainWordsOnly && mentionsAdultTopic(e.prompt)) &&
+                e.matches(ctx) &&
+                e.repeatable,
           )
           .toList(growable: false);
     }
@@ -1367,12 +1446,35 @@ class LifeSimController extends ChangeNotifier {
   ///
   /// So the menu keeps every door and pays less for using them. Going in
   /// person is better; staying in is still allowed. That is also true.
-  static bool hasTownEquivalent(LifeAction action) => const <LifeAction>{
-    LifeAction.library,
-    LifeAction.goOut,
-    LifeAction.doctor,
-    LifeAction.findJob,
-  }.contains(action);
+  static bool hasTownEquivalent(LifeAction action) =>
+      townBonusFor(action) != null;
+
+  /// What walking there actually gets you, in the player's own terms.
+  ///
+  /// **Why this is a sentence and not just a badge.** The menu row and the
+  /// town building do the same job with different numbers, and the difference
+  /// lived only in prose inside the row's `detail` field and in the
+  /// controller's feed lines. So the badge read "in town" and answered none
+  /// of the questions a player actually has: is it better, by how much, and
+  /// is it worth the walk?
+  ///
+  /// Reported three separate times as the menu and the map duplicating each
+  /// other. They are not duplicates — one is the quick version and one pays
+  /// more — but nothing on screen said so, which makes them duplicates as far
+  /// as anybody using the app is concerned.
+  ///
+  /// Blocking the menu versions outright was tried and reverted:
+  /// `life_age_gates_test` and `budget_teaching_test` assert that a doctor, a
+  /// job and the library stay reachable without a walk, and they are right to.
+  /// A child who cannot reach a doctor because they have not found the
+  /// building is a worse outcome than a little overlap.
+  static String? townBonusFor(LifeAction action) => switch (action) {
+    LifeAction.library => 'The library in town pays double',
+    LifeAction.goOut => 'The park in town is free',
+    LifeAction.doctor => 'The clinic in town has a money puzzle',
+    LifeAction.findJob => 'The job board in town hires on the spot',
+    _ => null,
+  };
 
   /// Why [action] is unavailable, or null when it is allowed.
   ///
@@ -1402,6 +1504,67 @@ class LifeSimController extends ChangeNotifier {
   }
 
   bool allows(LifeAction action) => gateFor(action) == null;
+
+  /// How many times each action has been taken in the current year.
+  final Map<LifeAction, int> _takenThisYear = <LifeAction, int>{};
+
+  /// How much of an action's effect still lands, given how often it has
+  /// already been used this year.
+  ///
+  /// **The exploit this closes.** Reported as *"they can spam the gym"*, and
+  /// it was true of every on-demand action: `exercise()` gave +8 Health and
+  /// +3 Looks with no per-year limit at all, so a player could sit on one
+  /// year and tap it until both stats were maxed. Same for studying,
+  /// volunteering and the library. Any game where the optimal move is to
+  /// press one button repeatedly has stopped being a game about choices,
+  /// and this one is *supposed* to be about trade-offs between them.
+  ///
+  /// Diminishing rather than a hard cap, on purpose. A hard "once per year"
+  /// reads as the game refusing you and invites save-scumming the year; a
+  /// fading return reads as the truth it actually models — the first
+  /// workout of a year changes you, the fifth barely registers.
+  ///
+  /// 100%, 50%, 25%, then nothing. The fourth attempt says so out loud
+  /// rather than silently doing nothing, because a button that appears to
+  /// work and does not is the worse failure — that exact bug is already in
+  /// this log twice.
+  double _yield(LifeAction action) {
+    final taken = _takenThisYear[action] ?? 0;
+    return switch (taken) {
+      0 => 1.0,
+      1 => 0.5,
+      2 => 0.25,
+      _ => 0.0,
+    };
+  }
+
+  /// Records a use and reports whether it did anything.
+  ///
+  /// Callers that get `false` should tell the player why rather than
+  /// quietly no-op.
+  bool _spend(LifeAction action) {
+    final rate = _yield(action);
+    _takenThisYear[action] = (_takenThisYear[action] ?? 0) + 1;
+    if (rate <= 0) {
+      _setLog(
+        'You have already done that as much as one year has room for. '
+        'Age up and it will matter again.',
+        kind: LifeLogKind.life,
+      );
+      notifyListeners();
+      return false;
+    }
+    return true;
+  }
+
+  /// Scales a stat gain by this year's remaining yield, never below 1 when
+  /// the action still counts — a "+0 Health" message reads as broken.
+  int _scaled(LifeAction action, int amount) {
+    final rate = _yield(action);
+    if (rate >= 1) return amount;
+    final scaled = (amount * rate).round();
+    return scaled < 1 ? 1 : scaled;
+  }
 
   // --- Activities ---
 
@@ -1467,10 +1630,17 @@ class LifeSimController extends ChangeNotifier {
   /// Work out — better health and looks, a little tiring.
   void exercise() {
     if (!allows(LifeAction.exercise)) return;
-    _health = _clamp(_health + 8);
-    _looks = _clamp(_looks + 3);
+    final health = _scaled(LifeAction.exercise, 8);
+    final looks = _scaled(LifeAction.exercise, 3);
+    if (!_spend(LifeAction.exercise)) return;
+
+    _health = _clamp(_health + health);
+    _looks = _clamp(_looks + looks);
     _happiness = _clamp(_happiness - 1);
-    _setLog('Worked out: +8 Health, +3 Looks.', kind: LifeLogKind.health);
+    _setLog(
+      'Worked out: +$health Health, +$looks Looks.',
+      kind: LifeLogKind.health,
+    );
     notifyListeners();
   }
 
