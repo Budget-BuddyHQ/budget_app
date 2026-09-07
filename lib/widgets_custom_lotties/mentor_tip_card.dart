@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../constants/app_assets.dart';
 import '../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
+import '../models_Like_Skins_and_lessons_templates/tutorial_steps.dart';
+import 'mentor_image.dart';
 import '../themes_colors/app_theme.dart';
 import 'fitted_label.dart';
 import 'idle_hover_icon.dart';
@@ -51,9 +53,10 @@ class MentorTipCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final concept = _todaysConcept();
     final worried = _risk.contains(concept);
-    final pose = worried
-        ? AppAssets.turtleMentorWorried
-        : AppAssets.turtleMentorThinking;
+    // Wearing the skin the player equipped -- the daily tip is the guide's
+    // most-seen appearance, so it is the one that most needed to stop being
+    // a different turtle from the one on their profile. See [MentorImage].
+    final pose = worried ? TutorialMascot.worried : TutorialMascot.thinking;
 
     return InkWell(
       onTap: () {
@@ -74,7 +77,7 @@ class MentorTipCard extends StatelessWidget {
             IdleHoverIcon(
               idleAmplitude: 3,
               pulseAmplitude: 0.03,
-              child: Image.asset(pose, width: 60, height: 60),
+              child: MentorImage(pose: pose, size: 60),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -162,9 +165,7 @@ class _MentorTipSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pose = worried
-        ? AppAssets.turtleMentorWorried
-        : AppAssets.turtleMentorIdle;
+    final pose = worried ? TutorialMascot.worried : TutorialMascot.idle;
 
     return SafeArea(
       child: Container(
@@ -182,7 +183,7 @@ class _MentorTipSheet extends StatelessWidget {
           children: [
             Row(
               children: [
-                Image.asset(pose, width: 56, height: 56),
+                MentorImage(pose: pose, size: 56),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(

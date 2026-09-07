@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../constants/app_assets.dart';
+import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_conditions.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_spot_models.dart';
 import '../../../themes_colors/app_theme.dart';
@@ -601,7 +603,19 @@ class _ChallengePanelState extends State<_ChallengePanel> {
               width: double.infinity,
               child: PixelButton(
                 label: _correct ? 'Take the reward' : 'Got it',
-                onPressed: () => widget.onFinish(_asChoice()),
+                onPressed: () {
+                  // A correct answer counts toward the town missions that
+                  // ask you to prove a skill rather than visit a place —
+                  // see `town_missions.dart`. Counted only when right, and
+                  // only once per panel, because the whole point of those
+                  // missions is that they cannot be walked into.
+                  if (_correct) {
+                    context
+                        .read<UserStatsController>()
+                        .recordChallengeSolved();
+                  }
+                  widget.onFinish(_asChoice());
+                },
               ),
             ),
           ] else

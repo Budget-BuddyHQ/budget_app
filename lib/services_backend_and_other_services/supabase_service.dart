@@ -625,6 +625,27 @@ class UserStats {
   /// Coin Cascade never uses the word budget while it is being played, which
   /// is what makes the split it produces worth checking a quiz score against.
   int get cascadeRuns => _readInt(spendingHabits['cascade_runs']);
+
+  /// Town money puzzles answered correctly, ever.
+  ///
+  /// Feeds the NPC missions that ask you to prove a skill rather than to
+  /// visit a place — see `town_missions.dart`. Counted here rather than per
+  /// life because a mission that resets every time you start a new character
+  /// is one nobody would ever finish.
+  int get challengesSolved => _readInt(spendingHabits['challenges_solved']);
+
+  /// Missions finished, by id.
+  ///
+  /// The whole file `town_missions.dart` was written and then referenced by
+  /// nothing at all — 346 lines of orphaned code, while NPCs carried on
+  /// reciting canned lines. This is the state it needed and never had.
+  Set<String> get completedMissionIds {
+    final raw = spendingHabits['completed_missions'];
+    if (raw is List) {
+      return raw.map((e) => e.toString()).toSet();
+    }
+    return const <String>{};
+  }
   int get cascadeNeedsTotal => _readInt(spendingHabits['cascade_needs_total']);
   int get cascadeWantsTotal => _readInt(spendingHabits['cascade_wants_total']);
   int get cascadeSavesTotal => _readInt(spendingHabits['cascade_saves_total']);

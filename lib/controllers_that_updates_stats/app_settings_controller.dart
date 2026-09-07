@@ -10,6 +10,8 @@ class AppSettingsController extends ChangeNotifier {
       'budget_buddy_last_feedback_prompt';
   static const String _launchCountKey = 'budget_buddy_launch_count';
   static const String _tutorialSeenKey = 'budget_buddy_tutorial_seen';
+  static const String _plainWordsNoticeKey =
+      'budget_buddy_plain_words_notice_seen';
   static const String _lifeTourSeenKey = 'budget_buddy_life_tour_seen';
 
   /// How long to wait before asking again after the prompt is shown —
@@ -110,6 +112,8 @@ class AppSettingsController extends ChangeNotifier {
     await _preferences?.setInt(_launchCountKey, _launchCount);
 
     _tutorialSeen = _preferences?.getBool(_tutorialSeenKey) ?? false;
+    _plainWordsNoticeSeen =
+        _preferences?.getBool(_plainWordsNoticeKey) ?? false;
     _lifeTourSeen = _preferences?.getBool(_lifeTourSeenKey) ?? false;
 
     _initialized = true;
@@ -140,6 +144,24 @@ class AppSettingsController extends ChangeNotifier {
   /// rebuild does not restart it.
   void consumeTutorialReplay() {
     _replayRequested = false;
+  }
+
+  bool _plainWordsNoticeSeen = false;
+
+  /// Whether a young player has been told that grown-up money is held back.
+  ///
+  /// Shown once per device rather than once per life. A child starting their
+  /// fourth character does not need telling a fourth time, and a notice that
+  /// repeats stops being read — which is how the tutorial-overflow entry in
+  /// the error log started.
+  bool get hasSeenPlainWordsNotice => _plainWordsNoticeSeen;
+
+  Future<void> markPlainWordsNoticeSeen() async {
+    if (_plainWordsNoticeSeen) return;
+    _plainWordsNoticeSeen = true;
+    notifyListeners();
+    _preferences ??= await SharedPreferences.getInstance();
+    await _preferences?.setBool(_plainWordsNoticeKey, true);
   }
 
   /// Records that the tour is done with — finished or skipped, same result.

@@ -11,6 +11,7 @@ import '../../widgets_custom_lotties/fitted_label.dart';
 import '../../models_Like_Skins_and_lessons_templates/knowledge_tracing.dart';
 import '../../models_Like_Skins_and_lessons_templates/review_schedule.dart';
 import '../../widgets_custom_lotties/life_money_panel.dart';
+import '../../widgets_custom_lotties/age_scaled_note.dart';
 
 /// The budget and habit analyser, as a screen.
 ///
@@ -35,6 +36,10 @@ class CoachReportView extends StatelessWidget {
       children: [
         _CoachHeader(report: report),
         const SizedBox(height: 16),
+        const AgeScaledNote(
+          what: 'Findings',
+          margin: EdgeInsets.only(bottom: 12),
+        ),
         _DiagnosisCard(knowledge: KnowledgeState.fromMap(stats.knowledgeMap)),
         _ReviewCard(schedule: ReviewSchedule.fromMap(stats.reviewScheduleMap)),
         if (!report.isNewcomer) ...[

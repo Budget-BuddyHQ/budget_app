@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import '../../../themes_colors/app_theme.dart';
+import '../../../widgets_custom_lotties/age_scaled_note.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_seed.dart';
 
@@ -343,6 +344,18 @@ class _LifeCharacterSheetState extends State<LifeCharacterSheet> {
               ),
             ),
 
+            // Said at the door to every run.
+            //
+            // The report was *"my little brother is getting confused by the
+            // options in the main game as a 10 year old since we are talking
+            // about loans and down payments and he doesn't know what that
+            // is"*. The events and the money words are both filtered by band
+            // -- and a ten-year-old who has just been handed a simpler game
+            // has no way to tell that from a game with less in it.
+            const AgeScaledNote(
+              what: 'Events and money words',
+              margin: EdgeInsets.only(top: 14),
+            ),
             const SizedBox(height: 14),
             OutlinedButton.icon(
               onPressed: _reroll,

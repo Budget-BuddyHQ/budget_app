@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:bonfire/bonfire.dart';
 import 'package:flutter/material.dart'
-    show Colors, Paint, PaintingStyle, StrokeCap;
+    show Colors, Paint, PaintingStyle, Radius, RRect, Rect, StrokeCap;
 
 import '../../../constants/app_assets.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_spot_models.dart';
@@ -64,6 +64,7 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
     required this.onEnter,
     required this.onExit,
     required this.isVisited,
+    this.isLocked = false,
   }) {
     // Which town decides where this marker stands. The two maps put their
     // buildings in entirely different places, so a marker pinned to one set
@@ -74,6 +75,14 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
   }
 
   final TownSpot spot;
+
+  /// Whether this building wants a lesson finished first.
+  ///
+  /// Drawn differently rather than hidden. A missing marker reads as a town
+  /// with holes in it; a locked one reads as somewhere to come back to, which
+  /// is the whole point — the lock exists to send somebody to a lesson, not
+  /// to keep them out of a building. See `town_unlocks.dart`.
+  final bool isLocked;
   final TownMap townMap;
   final void Function(TownSpot spot) onEnter;
   final void Function(TownSpot spot) onExit;
@@ -105,7 +114,10 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
     canvas.drawCircle(
       centre,
       haloRadius + 4,
-      Paint()..color = accent.withValues(alpha: visited ? 0.10 : 0.22),
+      Paint()
+        ..color = accent.withValues(
+          alpha: isLocked ? 0.08 : (visited ? 0.10 : 0.22),
+        ),
     );
     canvas.drawCircle(
       centre,
@@ -120,6 +132,36 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
         ..strokeWidth = 2
         ..color = visited ? accent.withValues(alpha: 0.6) : Colors.white,
     );
+
+    if (isLocked) {
+      // A padlock, drawn rather than hidden. A missing marker reads as a town
+      // with holes in it; a locked one reads as somewhere to come back to.
+      final body = Rect.fromCenter(
+        center: Offset(centre.dx, centre.dy + 1.5),
+        width: 8,
+        height: 6.5,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(body, const Radius.circular(1.5)),
+        Paint()..color = Colors.white,
+      );
+      canvas.drawArc(
+        Rect.fromCenter(
+          center: Offset(centre.dx, centre.dy - 2),
+          width: 5.5,
+          height: 6,
+        ),
+        math.pi,
+        math.pi,
+        false,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.8
+          ..color = Colors.white,
+      );
+      super.render(canvas);
+      return;
+    }
 
     if (visited) {
       final tick = Path()

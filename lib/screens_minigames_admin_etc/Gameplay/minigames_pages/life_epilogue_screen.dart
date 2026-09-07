@@ -14,6 +14,9 @@ import '../../../widgets_custom_lotties/custom_button.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../widgets_custom_lotties/pixel_kit.dart';
+import '../../../models_Like_Skins_and_lessons_templates/life_seed.dart';
+import 'package:flutter/services.dart';
+import '../../../widgets_custom_lotties/game_toast.dart';
 
 /// The recap shown when a [LifeSummary] life ends — replaces what used to be
 /// a silent `Navigator.pop()` straight back to Home. Purely presentational;
@@ -25,9 +28,22 @@ class LifeEpilogueScreen extends StatelessWidget {
     required this.summary,
     this.bestsBeaten = const <LifeBest>{},
     this.rankedScore,
+    this.seed,
+    this.graded = true,
   });
 
   final LifeSummary summary;
+
+  /// The seed this life was rolled from.
+  ///
+  /// Shown here because this is the moment somebody wants it: the run just
+  /// ended, and "I want to try that start again differently" is the most
+  /// common thought a player has. Typing it back into the character sheet
+  /// restores the same family and the same town.
+  final LifeSeed? seed;
+
+  /// Whether this run counted. See `LifeRecord.graded`.
+  final bool graded;
 
   /// Personal bests this run beat, from `recordLifeRun`. Empty for a first
   /// life (nothing to beat yet) and empty when replaying an old screen, so
@@ -65,6 +81,18 @@ class LifeEpilogueScreen extends StatelessWidget {
               const SizedBox(height: 18),
               if (rankedScore != null) ...[
                 _RankedScoreCard(score: rankedScore!),
+                const SizedBox(height: 16),
+              ],
+              // The seed, offered at the moment somebody wants it.
+              //
+              // A run has just ended and the most common next thought is "I
+              // want that start again, played differently". Typing this back
+              // into the character sheet restores the same family and the
+              // same town — which is also what makes the randomised origin
+              // fair rather than merely imposed: you can prove what a seed
+              // deals you, and try it twice.
+              if (seed != null) ...[
+                _SeedCard(seed: seed!, graded: graded),
                 const SizedBox(height: 16),
               ],
               _ArchetypeCard(archetype: archetype),
@@ -740,6 +768,81 @@ class _EndingsPanel extends StatelessWidget {
               backgroundColor: Colors.black.withValues(alpha: 0.28),
               valueColor: AlwaysStoppedAnimation<Color>(accent),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+/// The seed this life was rolled from, ready to copy.
+class _SeedCard extends StatelessWidget {
+  const _SeedCard({required this.seed, required this.graded});
+
+  final LifeSeed seed;
+  final bool graded;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.casino_rounded,
+            size: 20,
+            color: AppTheme.textMuted.withValues(alpha: 0.9),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Seed ${seed.display}',
+                  style: AppTheme.numeric(
+                    color: AppTheme.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  graded
+                      ? 'Type it in on a new life to play this start again.'
+                      : 'This run was not graded, so your coach did not '
+                            'count it.',
+                  style: AppTheme.numeric(
+                    color: AppTheme.textMuted,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Copy seed',
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: seed.display));
+              HapticFeedback.selectionClick();
+              GameToast.show(
+                context,
+                title: 'Seed copied',
+                message: seed.display,
+                icon: Icons.copy_rounded,
+                accent: AppTheme.greenPrimary,
+              );
+            },
+            icon: const Icon(Icons.copy_rounded, size: 18),
+            color: AppTheme.textMuted,
           ),
         ],
       ),

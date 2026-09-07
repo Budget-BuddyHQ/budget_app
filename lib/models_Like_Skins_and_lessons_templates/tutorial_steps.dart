@@ -30,6 +30,22 @@ enum TutorialMascot {
     TutorialMascot.thinking => AppAssets.turtleMentorThinking,
     TutorialMascot.worried => AppAssets.turtleMentorWorried,
   };
+
+  /// The name of this pose, as the art files spell it.
+  String get poseId => switch (this) {
+    TutorialMascot.wave => 'wave',
+    TutorialMascot.idle => 'idle',
+    TutorialMascot.thinking => 'thinking',
+    TutorialMascot.worried => 'worried',
+  };
+
+  /// This pose, worn by whoever the player has equipped.
+  ///
+  /// Falls back to the classic turtle for any skin without its own guide set
+  /// — see [AppAssets.mentorSkinIds]. [asset] is kept as the unskinned form
+  /// for the places that have no account to read from.
+  String assetFor(String skinId) =>
+      AppAssets.turtleMentorPose(poseId, skinId);
 }
 
 /// One screen of the guided tour.
