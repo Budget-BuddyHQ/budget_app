@@ -1189,7 +1189,7 @@ class _StatMeter extends StatelessWidget {
               const SizedBox(width: 5),
               Text(
                 '$value',
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.numeric(
                   color: chip.ink,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -1243,7 +1243,7 @@ class _AgeHeader extends StatelessWidget {
           const SizedBox(width: 7),
           Text(
             'Age $age',
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.numeric(
               color: const Color(0xFF85EFAC),
               fontWeight: FontWeight.w700,
               fontSize: 15,
@@ -1605,7 +1605,7 @@ class _ChoiceRow extends StatelessWidget {
                 const SizedBox(width: 10),
                 Text(
                   '${choice.money > 0 ? '+' : ''}${choice.money}',
-                  style: GoogleFonts.pixelifySans(
+                  style: AppTheme.numeric(
                     color: choice.money < 0
                         ? const Color(0xFFFF8FB1)
                         : const Color(0xFF85EFAC),
@@ -2075,7 +2075,7 @@ class _SkillRow extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             '$level',
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.numeric(
               color: accent,
               fontWeight: FontWeight.w700,
               fontSize: 15,
@@ -2740,7 +2740,7 @@ class _LifeActionRow extends StatelessWidget {
                   ),
                   child: Text(
                     '-${action.cost}',
-                    style: GoogleFonts.pixelifySans(
+                    style: AppTheme.numeric(
                       color: const Color(0xFFFFD45C),
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -2902,7 +2902,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
                 ),
                 Text(
                   '$_total%',
-                  style: GoogleFonts.pixelifySans(
+                  style: AppTheme.numeric(
                     color: _balanced
                         ? const Color(0xFF4BD2A3)
                         : const Color(0xFFFF8FB1),
@@ -2998,7 +2998,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
                     ),
                     child: Text(
                       'Use 50/30/20',
-                      style: GoogleFonts.pixelifySans(
+                      style: AppTheme.numeric(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
                       ),
@@ -3165,7 +3165,7 @@ class _BudgetRow extends StatelessWidget {
             child: Text(
               '$value%',
               textAlign: TextAlign.center,
-              style: GoogleFonts.pixelifySans(
+              style: AppTheme.numeric(
                 color: colour,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -3402,7 +3402,7 @@ class _ConceptsSheet extends StatelessWidget {
               ),
               Text(
                 '${concepts.length}/${FinanceConcept.values.length}',
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.numeric(
                   color: const Color(0xFF85EFAC),
                   fontWeight: FontWeight.w700,
                 ),
@@ -4389,7 +4389,7 @@ class _PersonAction extends StatelessWidget {
                     ),
                     child: Text(
                       '-$cost',
-                      style: GoogleFonts.pixelifySans(
+                      style: AppTheme.numeric(
                         color: const Color(0xFFFFD45C),
                         fontSize: 12,
                         fontWeight: FontWeight.w700,

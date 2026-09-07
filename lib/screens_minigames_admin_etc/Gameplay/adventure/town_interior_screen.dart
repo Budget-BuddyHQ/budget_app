@@ -925,7 +925,7 @@ class _ChoiceRow extends StatelessWidget {
                   // read, which is the whole unit-price lesson.
                   Text(
                     '${costs ? '' : '+'}$shownGold',
-                    style: GoogleFonts.pixelifySans(
+                    style: AppTheme.numeric(
                       color: costs ? const Color(0xFFFF8FB1) : accent,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,

@@ -87,7 +87,7 @@ class LifeMoneyPanel extends StatelessWidget {
               // the bit thats allowed to give
               Text(
                 '${coinsLabel(life.netWorth)} net',
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.numeric(
                   color: life.netWorth < 0
                       ? const Color(0xFFFF8FB1)
                       : Colors.white,
@@ -252,10 +252,12 @@ class _MoneyTile extends StatelessWidget {
               ),
             ],
           ),
+          // Cash, saved, invested, owed — every one a number the
+          // player is meant to compare against another.
           const SizedBox(height: 2),
           FittedLabel(
             value,
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.numeric(
               // The figure is the tile's point, so it keeps the accent — but
               // measured against the wash it actually sits on rather than
               // against the panel behind it.
@@ -516,7 +518,7 @@ class _ConceptsStrip extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   '${metSet.length}/${all.length}',
-                  style: GoogleFonts.pixelifySans(
+                  style: AppTheme.numeric(
                     color: const Color(0xFFE9C46A),
                     fontSize: 12,
                     fontWeight: FontWeight.w700,

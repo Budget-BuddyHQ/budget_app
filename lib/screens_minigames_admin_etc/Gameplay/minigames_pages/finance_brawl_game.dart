@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:math';
 import 'dart:ui' as ui;
+import '../../../models_Like_Skins_and_lessons_templates/brawl_enemies.dart';
+import '../../../models_Like_Skins_and_lessons_templates/reading_grade.dart';
+import '../../../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +17,7 @@ import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/money_glyphs.dart';
 import '../../../widgets_custom_lotties/pixel_kit.dart';
 import '../../../models_Like_Skins_and_lessons_templates/brawl_questions_extra.dart';
+import '../../../themes_colors/app_theme.dart';
 
 class FinanceBrawlCloseResult {
   const FinanceBrawlCloseResult({
@@ -2068,6 +2072,12 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     }
   }
 
+  /// The most recent archetype spawned, so the wave-end card can say what it
+  /// was. Shown after the fight rather than during it: a sentence about
+  /// payday loans lands the moment one has just drained your balance, and is
+  /// noise while it is doing it.
+  BrawlEnemy? _lastEnemySeen;
+
   void _spawnLiability() {
     if (!mounted) return;
 
@@ -2085,45 +2095,42 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     // Incremental Health and Damage scaling per wave
     double scaleFactor = pow(1.12, _wave - 1).toDouble();
 
-    List<String> debtNames = [
-      "Credit Card Debt",
-      "Payday Loan",
-      "Medical Bill",
-      "Auto Loan",
-    ];
-    String name = debtNames[_rand.nextInt(debtNames.length)];
+    // The roster used to be four names sharing one stat block, plus a single
+    // real variant at wave 3. Four labels on one enemy teaches that a payday
+    // loan and an auto loan are the same thing, which is both false and the
+    // opposite of the point. See `brawl_enemies.dart`: each archetype's
+    // *behaviour* is the lesson.
+    final archetype = pickEnemy(_wave, _rand.nextDouble());
+    _lastEnemySeen = archetype;
 
-    Color color = const Color(0xFFE25C5C);
-    double hp = (40.0 + (_wave * 10)) * scaleFactor;
-    double speed = 85.0 + _rand.nextInt(30);
-    double radius = 30.0;
-    int gold = 5;
+    final baseHp = (40.0 + (_wave * 10)) * scaleFactor;
+    final baseDrain = (450.0 + (_wave * 50.0)) * scaleFactor;
 
-    bool isEnemyTwo = false;
+    // Swarms share one spawn point so they arrive together and read as a
+    // group -- subscription creep is only a lesson if you see five of them at
+    // once.
+    for (var i = 0; i < archetype.swarmCount; i++) {
+      final spread = archetype.swarmCount == 1 ? 0.0 : (i - 2) * 34.0;
+      final hp = baseHp * archetype.hpScale;
 
-    if (_wave >= 3 && _rand.nextDouble() > 0.6) {
-      name = "Subprime Mortgage";
-      color = const Color(0xFFA65CE2); // Purple tint matching your new palette!
-      hp *= 1.8;
-      radius = 30.0;
-      gold = 12;
-      isEnemyTwo = true;
+      _liabilities.add(
+        _FinancialLiability(
+          name: archetype.name,
+          pos: Offset(
+            (x + spread).clamp(20.0, _mapWidth - 20.0),
+            (y + spread * 0.5).clamp(20.0, _mapHeight - 20.0),
+          ),
+          principalRemaining: hp,
+          maxPrincipal: hp,
+          speed: (85.0 + _rand.nextInt(30)) * archetype.speedScale,
+          radius: archetype.radius,
+          color: archetype.color,
+          drainRate: baseDrain * archetype.drainScale,
+          rewardGold: archetype.goldReward,
+          isEnemyTwo: archetype.isElite,
+        ),
+      );
     }
-
-    _liabilities.add(
-      _FinancialLiability(
-        name: name,
-        pos: Offset(x, y),
-        principalRemaining: hp,
-        maxPrincipal: hp,
-        speed: speed,
-        radius: radius,
-        color: color,
-        drainRate: (450.0 + (_wave * 50.0)) * scaleFactor,
-        rewardGold: gold,
-        isEnemyTwo: isEnemyTwo,
-      ),
-    );
   }
 
   void _spawnMarketCrashBoss() {
@@ -2270,10 +2277,31 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     // `brawl_questions_extra.dart` — earning/work and scams/fees/fine print,
     // the two areas an under-21 player actually meets first and the two the
     // original bank was thinnest on.
-    var pooledQuestions = <FinanceQuestion>[
-      ..._questionBank,
-      ..._extraBrawlQuestions,
-    ]..shuffle(_rand);
+    //
+    // **Filtered by age, which it was not.** The Academy was routed and this
+    // was not, so a player who set their age to "8 or under" was asked "What
+    // is a CD Ladder strategy?" — correct answer: "staggering multiple CD
+    // maturity dates to keep liquidity while earning higher rates". Every
+    // test passed, because nothing tested the game that kept its own bank.
+    final band = context.read<UserStatsController>().stats.ageBand;
+    final all = <FinanceQuestion>[..._questionBank, ..._extraBrawlQuestions];
+
+    var pooledQuestions = all.where((q) {
+      if (readingGrade(q.question) > band.maxReadingGrade) return false;
+      // A topic check as well as a grade. "What is a CD Ladder?" is four
+      // words and scores as easy prose; it is still meaningless to an
+      // eight-year-old, and the grade alone cannot see that.
+      if (band.blocksAdultTopics && mentionsAdultTopic(q.question)) {
+        return false;
+      }
+      return true;
+    }).toList();
+
+    // Never leave the player staring at a checkpoint with nothing in it. A
+    // question slightly too hard beats a gate that cannot be passed.
+    if (pooledQuestions.length < 3) pooledQuestions = all;
+
+    pooledQuestions = pooledQuestions..shuffle(_rand);
     var chosenRawQuestions = pooledQuestions.take(3).toList();
 
     _activeQuizQuestions = chosenRawQuestions.map((q) {
@@ -2891,7 +2919,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
           const SizedBox(width: 7),
           FittedLabel(
             '$_goldAccumulated',
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.numeric(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -2999,20 +3027,23 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                 children: [
                   Text(
                     "LITERACY CHECKPOINT (${_quizQuestionIndex + 1}/3)",
-                    style: GoogleFonts.pixelifySans(
+                    style: AppTheme.numeric(
                       color: _brawlBlue,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 16),
+                  // Same fault as the Academy's quiz prompt: a question
+                  // whose content is often a number, in a font whose 5 and 8
+                  // differ by a few pixel columns. See `AppTheme.numeric`.
                   Text(
                     q.question,
-                    style: GoogleFonts.pixelifySans(
+                    style: AppTheme.numeric(
                       color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      height: 1.1,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -3117,6 +3148,55 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                   fontWeight: FontWeight.w800,
                 ),
               ),
+              // What you just fought, and why it behaved that way.
+              //
+              // Shown **here** rather than mid-fight on purpose. A sentence
+              // about payday loans lands the moment one has finished draining
+              // half your balance, and is noise while it is doing it. This is
+              // also the only pause in the game, so it is the only place a
+              // player will actually read.
+              if (_lastEnemySeen != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 11,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _lastEnemySeen!.color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _lastEnemySeen!.color.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _lastEnemySeen!.name.toUpperCase(),
+                        style: GoogleFonts.pixelifySans(
+                          color: _lastEnemySeen!.color,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        _lastEnemySeen!.lesson,
+                        style: AppTheme.numeric(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               // Three cards side by side needs real width. Below ~520px
               // each card gets barely 150px, which broke words mid-syllable
@@ -3224,7 +3304,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                   child: Text(
                     "GOLD BANKED: +$_goldAccumulated",
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.pixelifySans(
+                    style: AppTheme.numeric(
                       color: _brawlGold,
                       fontSize: 17,
                       fontWeight: FontWeight.w700,

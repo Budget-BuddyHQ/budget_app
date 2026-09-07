@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../themes_colors/app_theme.dart';
 
 // Persistent state variables so calculations remain saved when closed
 String _savedDisplay = '0';
@@ -103,10 +104,12 @@ class _BasicCalculatorDialogState extends State<BasicCalculatorDialog> {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
+            // The keypad. Same reason as the display above: pressing
+            // what you believe is 5 and getting 8 is the whole failure.
         child: Center(
           child: Text(
             label,
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.numeric(
               color: textColor ?? Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -265,13 +268,18 @@ class _BasicCalculatorDialogState extends State<BasicCalculatorDialog> {
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
+                            // A calculator, in a font whose 5 and 8
+                            // differ by a few pixel columns. This dialog
+                            // opens from inside a maths quiz — a tool for
+                            // getting the arithmetic right cannot be the
+                            // place the digits stop being readable.
                               ),
                             Text(
                               _display,
                               textAlign: TextAlign.right,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.pixelifySans(
+                              style: AppTheme.numeric(
                                 color: Colors.white,
                                 fontSize: 24,
                                 fontWeight: FontWeight.w700,

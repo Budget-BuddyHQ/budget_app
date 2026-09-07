@@ -233,28 +233,54 @@ class _FilterPanel extends StatelessWidget {
         accent: AppTheme.greenPrimary,
         restAlpha: 0.14,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _FilterLabel('SHOW'),
-          const SizedBox(height: 6),
-          _SegmentedRow(
-            leftLabel: 'Global',
-            rightLabel: 'Friends',
-            activeIsRight: showFriends,
-            onChanged: onFriendsChanged,
-          ),
-          const SizedBox(height: 14),
-          _FilterLabel('RANK BY'),
-          const SizedBox(height: 6),
-          _SegmentedRow(
-            leftLabel: 'Finance Wizards',
-            rightLabel: 'Most Gold',
-            activeIsRight: byGold,
-            onChanged: onMetricChanged,
-            rightAccent: const Color(0xFFF4D06F),
-          ),
-        ],
+      // Side by side wherever there is room.
+      //
+      // Reported as "it looks a little cramped up there". The two filters
+      // stacked at full width on every viewport, so on a desktop window they
+      // took four rows and about 140px of the space above the podium — which
+      // is the thing anybody opened this screen to look at. Two segmented
+      // controls of two options each do not need a full window's width, and
+      // the podium was paying for it.
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final show = _FilterGroup(
+            label: 'SHOW',
+            child: _SegmentedRow(
+              leftLabel: 'Global',
+              rightLabel: 'Friends',
+              activeIsRight: showFriends,
+              onChanged: onFriendsChanged,
+            ),
+          );
+          final rankBy = _FilterGroup(
+            label: 'RANK BY',
+            child: _SegmentedRow(
+              leftLabel: 'Finance Wizards',
+              rightLabel: 'Most Gold',
+              activeIsRight: byGold,
+              onChanged: onMetricChanged,
+              rightAccent: const Color(0xFFF4D06F),
+            ),
+          );
+
+          // 460 is where "Finance Wizards" and "Most Gold" still read at a
+          // sane size in half the width. Below it they stack, which is the
+          // old layout and correct for a phone.
+          if (constraints.maxWidth < 460) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [show, const SizedBox(height: 12), rankBy],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: show),
+              const SizedBox(width: 14),
+              Expanded(child: rankBy),
+            ],
+          );
+        },
       ),
     );
   }
@@ -744,7 +770,7 @@ class _PodiumPlace extends StatelessWidget {
                 ),
                 child: Text(
                   '#$rank',
-                  style: GoogleFonts.pixelifySans(
+                  style: AppTheme.numeric(
                     color: const Color(0xFF0E2A1F),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -957,6 +983,32 @@ class _LeaderboardRow extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+
+/// A filter label over its control.
+///
+/// Extracted so the panel can lay the two groups out in a row or a column
+/// without duplicating the label-and-spacing pair — the version that stacked
+/// them inline could only ever be a column.
+class _FilterGroup extends StatelessWidget {
+  const _FilterGroup({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _FilterLabel(label),
+        const SizedBox(height: 6),
+        child,
+      ],
     );
   }
 }
