@@ -10,7 +10,27 @@ import 'lesson.dart' show AgeStage, stageForAge;
 /// Age bracket rather than an exact birthday: it is enough to tailor lesson
 /// examples and it keeps the app from storing a date of birth for minors.
 enum AgeBand {
-  under13('under_13', '12 or under'),
+  /// Roughly 4 to 8. Reading, not just protecting.
+  ///
+  /// **Why this had to be split off.** There was one `under13` bucket, and
+  /// the comment on `prefersSimpleWording` said the quiet part out loud: *"the
+  /// bucket spans roughly 4-12, so there is no single honest age for it"*. A
+  /// four-year-old and a twelve-year-old were served identical questions, and
+  /// measured with `tool/measure_question_reading_level.py` the bank actually
+  /// ranges from grade -2.4 to 18.4 — the content to tell them apart was
+  /// already written and nothing was routing it.
+  ///
+  /// Everything protective still applies to both halves. What changes is what
+  /// gets *taught*.
+  under9('under_9', '8 or under'),
+
+  /// Roughly 9 to 12.
+  ///
+  /// Keeps the original `under_13` id on purpose. Every account created
+  /// before the split is stored with that string, and this is the half of the
+  /// old bucket most of them are in — so existing players land here with no
+  /// migration, no lost data, and no one silently re-aged to four.
+  age9to12('under_13', '9 to 12'),
   teen13to15('13_15', '13 to 15'),
   teen16to17('16_17', '16 to 17'),
   adult18plus('18_plus', '18 or older'),
@@ -37,14 +57,17 @@ enum AgeBand {
   /// A 13-year-old budgeting an allowance and a 19-year-old budgeting rent need
   /// the same concepts but very different numbers to take them seriously.
   LifeStage get lifeStage => switch (this) {
-    AgeBand.under13 || AgeBand.teen13to15 => LifeStage.allowance,
+    AgeBand.under9 ||
+    AgeBand.age9to12 ||
+    AgeBand.teen13to15 => LifeStage.allowance,
     AgeBand.teen16to17 => LifeStage.firstJob,
     AgeBand.adult18plus => LifeStage.independent,
     AgeBand.undisclosed => LifeStage.firstJob,
   };
 
   /// Under-13 accounts get the conservative default: no leaderboard presence.
-  bool get isMinorUnder13 => this == AgeBand.under13;
+  bool get isMinorUnder13 =>
+      this == AgeBand.under9 || this == AgeBand.age9to12;
 
   /// Whether money explainers should use the simplest wording (see
   /// `FinanceConcept.explainerFor`).
@@ -57,7 +80,8 @@ enum AgeBand {
   /// whole under-13 bucket the answer is yes. A 12-year-old reading the
   /// simpler version loses very little; an 6-year-old reading the adult
   /// version loses everything.
-  bool get prefersSimpleWording => this == AgeBand.under13;
+  bool get prefersSimpleWording =>
+      this == AgeBand.under9 || this == AgeBand.age9to12;
 
   /// Whether this player may be shown staked wagers.
   ///
@@ -82,13 +106,15 @@ enum AgeBand {
   /// they are the most valuable events in the pack for exactly the age group
   /// this flag protects. Their outcomes are scripted, so nothing is being
   /// wagered to read them.
-  bool get allowsWagering => this != AgeBand.under13;
+  bool get allowsWagering =>
+      this != AgeBand.under9 && this != AgeBand.age9to12;
 
   /// A single representative number for this bucket, used only where a plain
   /// integer is needed (e.g. mirroring into a numeric database column) — the
   /// app's own logic should keep using the bucket, not this.
   int get representativeAge => switch (this) {
-    AgeBand.under13 => 12,
+    AgeBand.under9 => 7,
+    AgeBand.age9to12 => 11,
     AgeBand.teen13to15 => 14,
     AgeBand.teen16to17 => 16,
     AgeBand.adult18plus => 19,
@@ -112,7 +138,8 @@ enum AgeBand {
   /// their age. Bands are ranges, and a warning should only fire when the
   /// whole range sits below the unit.
   AgeStage? get maxPlausibleStage => switch (this) {
-    AgeBand.under13 => AgeStage.middleSchool,
+    AgeBand.under9 => AgeStage.middleSchool,
+    AgeBand.age9to12 => AgeStage.middleSchool,
     AgeBand.teen13to15 => AgeStage.highSchool,
     AgeBand.teen16to17 => AgeStage.highSchool,
     // Open-ended: this player could be any age at all, so nothing is above them.
@@ -188,4 +215,94 @@ class ProfileKeys {
   static const String villagerBody = 'villager_body';
   static const String displayPronoun = 'display_pronoun';
   static const String onboardingComplete = 'personal_details_complete';
+}
+
+
+/// Which questions a band should actually be asked.
+///
+/// **The feature this whole split exists for.** One bank of 177 questions
+/// measured at Flesch-Kincaid grades -2.4 to 18.4 was being served
+/// identically to every player, so a six-year-old met "Diversification
+/// reduces risk by:" (grade 18.4) and an adult met "You do the dishes every
+/// day and get \$1 each time" (grade 1.2). Both are good questions. Neither
+/// was reaching the person it was written for.
+///
+/// The window is generous at the top on purpose. A reader is stretched by
+/// material a little above them and stopped by material far above, so each
+/// band gets everything it can comfortably read plus roughly two grades of
+/// reach. The floor matters more than the ceiling: nothing is more
+/// discouraging than being handed something years below you, and nothing is
+/// less useful than being handed something years above.
+extension AgeBandReading on AgeBand {
+  /// Highest reading grade to serve this band.
+  double get maxReadingGrade => switch (this) {
+    AgeBand.under9 => 3.5,
+    AgeBand.age9to12 => 6.5,
+    AgeBand.teen13to15 => 9.5,
+    AgeBand.teen16to17 => 12.0,
+    AgeBand.adult18plus => 99.0,
+    // Somebody who declined to say gets the middle of the range rather than
+    // the easiest or the hardest. Guessing young is patronising; guessing
+    // old locks them out.
+    AgeBand.undisclosed => 9.5,
+  };
+
+  /// Lowest reading grade to serve, so nobody is fed years-below material.
+  ///
+  /// Zero for the youngest band — there is nothing below them — and it never
+  /// rises so high that a band has too few questions to draw from.
+  double get minReadingGrade => switch (this) {
+    AgeBand.under9 => -99.0,
+    AgeBand.age9to12 => 1.0,
+    AgeBand.teen13to15 => 3.0,
+    AgeBand.teen16to17 => 5.0,
+    AgeBand.adult18plus => 6.0,
+    AgeBand.undisclosed => 1.0,
+  };
+
+  /// Whether to withhold questions naming adult financial instruments.
+  ///
+  /// A separate switch from [maxReadingGrade] because the two catch different
+  /// things. Reading grade measures sentence and word length, so a short
+  /// question about a complicated instrument scores as easy — "What is a CD
+  /// Ladder?" is four words and grade 2.9. It was served to an eight-year-old
+  /// for exactly that reason.
+  ///
+  /// On for everyone below 13. A thirteen-year-old meeting the word "mortgage"
+  /// is fine and probably overdue; an eight-year-old meeting "liquidity" is
+  /// being asked a question from someone else's life.
+  bool get blocksAdultTopics =>
+      this == AgeBand.under9 || this == AgeBand.age9to12;
+
+  /// Whether this player may open a randomised reward case.
+  ///
+  /// **This is the loot box question, and it was ungated.**
+  /// `openSkinCase()` charges 180 gold and returns a weighted-random skin
+  /// from four rarity tiers. That is a loot box by any definition, and there
+  /// was no age check anywhere on the path to it — a four-year-old could
+  /// spend earned currency on a randomised rarity pull.
+  ///
+  /// Google Play's Families policy requires that content accessible to
+  /// children be appropriate for children, and its developer programme policy
+  /// requires loot box odds be disclosed before purchase. The second is now
+  /// done for everybody (see `skinCaseRarityOdds`, surfaced in the UI). The
+  /// first is this: under-13s do not get the random pull at all.
+  ///
+  /// **They are not locked out of skins.** They buy the one they want, for
+  /// the same gold, through `buySkinDirectly`. The reward is identical; what
+  /// is removed is the gamble — which is the part that does not belong in
+  /// front of an eight-year-old, and which they were never going to
+  /// understand as a cost anyway.
+  bool get allowsRandomisedRewards =>
+      this != AgeBand.under9 && this != AgeBand.age9to12;
+
+  /// What to tell the player about why the questions changed.
+  String get readingBlurb => switch (this) {
+    AgeBand.under9 => 'Short questions with small numbers.',
+    AgeBand.age9to12 => 'Everyday money, in plain words.',
+    AgeBand.teen13to15 => 'First jobs, saving and what things really cost.',
+    AgeBand.teen16to17 => 'Pay slips, credit and longer-term choices.',
+    AgeBand.adult18plus => 'The full set, including tax and investing.',
+    AgeBand.undisclosed => 'A general mix. Set your age to sharpen it.',
+  };
 }

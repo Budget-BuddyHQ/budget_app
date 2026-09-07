@@ -355,25 +355,39 @@ class _TopIconBar extends StatelessWidget {
               ),
               // Expanded on both sides keeps the wordmark optically centred
               // no matter how wide the two side groups end up.
+              // The wordmark disappears rather than shrinking to nothing.
+              //
+              // Reported as "when the resolution is small the title becomes
+              // unseeable", and `FittedBox(scaleDown)` is why: with the two
+              // side groups taking their space first, the middle can be left
+              // with forty pixels, and scaleDown will happily render a
+              // seventeen-point wordmark at six. A wordmark that small is not
+              // branding, it is a smudge — and the icons either side already
+              // identify the app.
+              //
+              // So it is measured instead. Above the threshold it renders at
+              // full size; below it, nothing, and the buttons get the room.
               Expanded(
                 child: Center(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Budget Buddy',
-                          maxLines: 1,
-                          style: GoogleFonts.pixelifySans(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.3,
-                          ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Measured, not guessed: 'Budget Buddy' at 17pt in
+                      // Pixelify is ~118px, and below that FittedBox starts
+                      // shrinking it rather than fitting it.
+                      if (constraints.maxWidth < 118) {
+                        return const SizedBox.shrink();
+                      }
+                      return Text(
+                        'Budget Buddy',
+                        maxLines: 1,
+                        style: GoogleFonts.pixelifySans(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ),
               ),

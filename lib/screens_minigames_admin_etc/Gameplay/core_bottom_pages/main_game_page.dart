@@ -137,7 +137,7 @@ class MainGamePage extends StatelessWidget {
                       const SizedBox(width: 7),
                       Text(
                         'Level ${stats.level}',
-                        style: GoogleFonts.pixelifySans(
+                        style: AppTheme.numeric(
                           color: const Color(0xFFFFD45C),
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
@@ -308,7 +308,7 @@ class _EndingsCollection extends StatelessWidget {
               ),
               Text(
                 '$found / ${all.length}',
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.numeric(
                   color: const Color(0xFFFFD45C),
                   fontWeight: FontWeight.w700,
                 ),

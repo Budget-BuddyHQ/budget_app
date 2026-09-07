@@ -186,13 +186,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// Opens the published policy in the device browser.
   Future<void> _openPrivacyPolicy(BuildContext context) async {
     HapticFeedback.lightImpact();
-    final uri = Uri.parse(kPrivacyPolicyUrl);
+    final uri = Uri.parse("https://budget-buddy-website-one.vercel.app/policy");
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened && context.mounted) {
       GameToast.show(
         context,
         title: 'Could not open the policy',
-        message: kPrivacyPolicyUrl,
+        message: "https://budget-buddy-website-one.vercel.app/policy",
         icon: Icons.link_off_rounded,
         accent: const Color(0xFFFFC36B),
       );
@@ -715,6 +715,10 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
       title: badge.label,
       subtitle: badge.detail,
       accent: badge.color,
+      // Celebrate as whoever the player actually chose to be. This was
+      // hardcoded to the turtle, so unlocking a badge showed a character 23
+      // of the 24 skins had nothing to do with.
+      skin: skinFromId(stats.equippedSkin),
     );
 
     // Only clear the "New" marker after they've actually watched it, so an
@@ -846,7 +850,7 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
               ),
               Text(
                 '$earned / ${badges.length}',
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.numeric(
                   color: const Color(0xFFFFD45C),
                   fontWeight: FontWeight.w700,
                 ),
@@ -1113,10 +1117,11 @@ class _InsightMetric extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+                  // A profile stat value.
               children: [
                 Text(
                   value,
-                  style: GoogleFonts.pixelifySans(
+                  style: AppTheme.numeric(
                     color: Colors.white,
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
@@ -1422,10 +1427,11 @@ class _MoneyStatColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+          // A profile stat value.
       children: [
         Text(
           value,
-          style: GoogleFonts.pixelifySans(
+          style: AppTheme.numeric(
             color: Colors.white,
             fontWeight: FontWeight.w700,
           ),
@@ -1640,10 +1646,13 @@ class _FriendsCardState extends State<_FriendsCard> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(8),
+                    // The friend code. Alphanumeric, and somebody has
+                    // to read it aloud or type it in — an ambiguous 5 here
+                    // means a friend request that silently goes nowhere.
                   ),
                   child: Text(
                     friendCode,
-                    style: GoogleFonts.pixelifySans(
+                    style: AppTheme.numeric(
                       color: Color(0xFF85EFAC),
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.2,
@@ -1707,6 +1716,7 @@ class _FriendsCardState extends State<_FriendsCard> {
             future: _friends,
             onRemove: (friend) => _removeFriend(currentUserId, friend),
             onOpen: (friend) => _openFriend(currentUserId, friend),
+            currentUserId: currentUserId,
           ),
         ],
       ),
@@ -1725,10 +1735,18 @@ class _FriendsList extends StatelessWidget {
     required this.future,
     required this.onRemove,
     required this.onOpen,
+    required this.currentUserId,
   });
 
   final Future<List<LeaderboardEntry>>? future;
   final ValueChanged<LeaderboardEntry> onRemove;
+
+  /// The signed-in player's id, so their own row can be marked.
+  ///
+  /// The friends board includes you now — that is what makes it a ranking
+  /// rather than a list of other people. An unmarked row carrying your own
+  /// name among five others is a puzzle rather than information.
+  final String currentUserId;
 
   /// Opens [FriendProfileScreen]. The row used to be inert, which made the
   /// list a contact list rather than a way of finding out how you are doing
@@ -1819,15 +1837,53 @@ class _FriendsList extends StatelessWidget {
                                   crossAxisAlignment:
                                       CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      friend.username,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.quicksand(
-                                        color: AppTheme.textPrimary,
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 13,
-                                      ),
+                                    // "(you)" on your own row.
+                                    //
+                                    // The friends board includes the signed-in
+                                    // player now, which is what makes it a
+                                    // ranking rather than a list of other
+                                    // people — but an unmarked row of your own
+                                    // name among five others is a puzzle, not
+                                    // information.
+                                    Row(
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            friend.username,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.quicksand(
+                                              color: AppTheme.textPrimary,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                        if (friend.id == currentUserId) ...[
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 6,
+                                                  vertical: 1,
+                                                ),
+                                            decoration: BoxDecoration(
+                                              color: AppTheme.greenPrimary
+                                                  .withValues(alpha: 0.18),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            child: Text(
+                                              'you',
+                                              style: GoogleFonts.quicksand(
+                                                color: AppTheme.greenPrimary,
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 10,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
                                     ),
                                     Text(
                                       '${friend.literacyPoints} literacy · '

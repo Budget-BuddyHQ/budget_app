@@ -817,7 +817,7 @@ class _LevelBanner extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 4),
                 child: Text(
                   '0:${secondsLeft!.clamp(0, 999).toString().padLeft(2, '0')}',
-                  style: GoogleFonts.pixelifySans(
+                  style: AppTheme.numeric(
                     color: secondsLeft! <= 10 ? AppTheme.errorRed : chip.ink,
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
@@ -1041,7 +1041,7 @@ class _Pip extends StatelessWidget {
             Flexible(
               child: FittedLabel(
                 '$label $value',
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.numeric(
                   color: chip.ink,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,

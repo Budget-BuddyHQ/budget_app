@@ -386,7 +386,7 @@ class _HowItWorksCard extends StatelessWidget {
                   ),
                   child: Text(
                     '${step.n}',
-                    style: GoogleFonts.pixelifySans(
+                    style: AppTheme.numeric(
                       // Mint on a mint wash over a mint-lit panel: the step
                       // numbers measured 2.39:1, which on a "how this works"
                       // explainer is the one place you cannot afford it.

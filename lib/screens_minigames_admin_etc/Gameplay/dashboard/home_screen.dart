@@ -299,7 +299,7 @@ class _TodayCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         '$streak',
-                        style: GoogleFonts.pixelifySans(
+                        style: AppTheme.numeric(
                           color: accent,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -323,7 +323,7 @@ class _TodayCard extends StatelessWidget {
                 if (plan != null)
                   Text(
                     '${plan.completedCount}/${plan.quests.length}',
-                    style: GoogleFonts.pixelifySans(
+                    style: AppTheme.numeric(
                       color: Colors.white.withValues(alpha: 0.72),
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -433,7 +433,7 @@ class _NextQuestRow extends StatelessWidget {
           ),
           child: Text(
             '+${quest.xpReward}',
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.numeric(
               color: const Color(0xFFFFD45C),
               fontWeight: FontWeight.w700,
               fontSize: 12,
@@ -829,7 +829,7 @@ class _HudReadout extends StatelessWidget {
           accent: const Color(0xFF8FD8D2),
           child: Text(
             'LV $level',
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.numeric(
               color: const Color(0xFFCFF6F1),
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -982,7 +982,7 @@ class _DestinationsCard extends StatelessWidget {
                 ),
                 child: Text(
                   '${stats.level}',
-                  style: GoogleFonts.pixelifySans(
+                  style: AppTheme.numeric(
                     color: const Color(0xFF85EFAC),
                     fontSize: compact ? 18 : 21,
                     fontWeight: FontWeight.w700,
@@ -997,7 +997,7 @@ class _DestinationsCard extends StatelessWidget {
                   children: [
                     FittedLabel(
                       'Level ${stats.level}',
-                      style: GoogleFonts.pixelifySans(
+                      style: AppTheme.numeric(
                         color: Colors.white,
                         fontSize: 19,
                         fontWeight: FontWeight.w700,

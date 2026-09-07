@@ -107,13 +107,27 @@ class QuizQuestionCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
+        // **The question a tester could not answer.**
+        //
+        // This rendered in Pixelify Sans, whose 5 has a closed top counter —
+        // rows 3 to 9 of that glyph are pixel-identical to the 8's. Shown
+        // *"you get $1 each time, after 5 days, how much have you earned?"*,
+        // a tester read the 5 as an 8, looked for $8, and found options of
+        // $1 / $3 / $5 / $10. There was no answer to the question in front
+        // of them, and nothing about the app looked broken.
+        //
+        // Measured with `tool/check_digit_legibility.py`: **18 of Pixelify's
+        // 45 digit pairs differ in under 18% of their inked pixels.**
+        // Quicksand scores 0 of 45. A quiz prompt is the last place in this
+        // app that can afford an ambiguous numeral — it is frequently the
+        // entire content of the question.
         Text(
           question.prompt,
-          style: GoogleFonts.pixelifySans(
+          style: AppTheme.numeric(
             color: const Color(0xFFF7FFFB),
-            fontSize: 22,
+            fontSize: 21,
             fontWeight: FontWeight.w700,
-            height: 1.3,
+            height: 1.35,
           ),
         ),
         const SizedBox(height: 18),
@@ -333,7 +347,7 @@ class QuizResultsCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 '$correct / $total correct',
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.numeric(
                   color: const Color(0xFFF7FFFB),
                   fontSize: 25,
                   fontWeight: FontWeight.w700,

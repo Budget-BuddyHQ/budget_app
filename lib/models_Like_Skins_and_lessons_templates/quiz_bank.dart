@@ -14,6 +14,9 @@
 ///     wrong answer so the review screen can address it directly.
 library;
 
+import 'player_profile.dart';
+import 'question_reading_levels.dart';
+
 /// How demanding a question is. Practice sets lead with [core]; unit tests mix
 /// in [stretch] items that need two ideas combined.
 enum QuizDifficulty { core, stretch }
@@ -3451,3 +3454,74 @@ const List<QuizQuestion> _investingSourcedPractice = <QuizQuestion>[
         'protected from loss.',
   ),
 ];
+
+/// Questions from [source] that suit [band], hardest-appropriate first.
+///
+/// # The problem
+///
+/// One bank of 177 questions was served identically to everybody. Measured
+/// with `tool/measure_question_reading_level.py`, it spans Flesch-Kincaid
+/// grades **-2.4 to 18.4** — so a six-year-old was being shown
+/// *"Diversification reduces risk by:"* (grade 18.4) and an adult was being
+/// shown *"You do the dishes every day and get $1 each time"* (grade 1.2).
+/// Both are good questions. Neither was reaching the person it was written
+/// for, and the content to tell them apart already existed.
+///
+/// # Why a reading grade rather than a hand-applied difficulty tag
+///
+/// Only 35 of 177 questions carried a `QuizDifficulty`, so 142 were
+/// undifferentiated by anything. Tagging the rest by eye would be slow,
+/// inconsistent between sittings, and unreviewable — three people would
+/// produce three different answers and none could show their working.
+/// A measurement can be re-run, argued with, and checked.
+///
+/// # What this deliberately does not claim
+///
+/// Reading difficulty is **not** conceptual difficulty. "What is a Roth IRA?"
+/// is eight plain words and hopeless for a nine-year-old. The grade is one
+/// input; the unit a question belongs to is the other, and the Academy
+/// already gates units by age. This narrows *within* what a player has
+/// already been allowed to reach rather than deciding what they may reach.
+///
+/// # Never returns nothing
+///
+/// A band with a narrow window on a small node could filter everything away,
+/// and a quiz with no questions is a worse outcome than a quiz that is
+/// slightly too hard. If the window empties the list, the unfiltered set
+/// comes back — silently, because the player wanted a quiz and should get
+/// one.
+List<QuizQuestion> ageAppropriateQuestions(
+  List<QuizQuestion> source,
+  AgeBand band,
+) {
+  if (source.isEmpty) return source;
+
+  final fitted = <QuizQuestion>[];
+  for (final question in source) {
+    // A question with no measured grade is kept rather than dropped. The
+    // lookup is generated from the bank, so a missing entry means somebody
+    // added a question and did not re-run the tool — and losing content
+    // because a build step was skipped is the wrong failure.
+    final grade = kQuestionReadingGrade[question.id];
+    if (grade == null) {
+      fitted.add(question);
+      continue;
+    }
+    if (grade <= band.maxReadingGrade && grade >= band.minReadingGrade) {
+      fitted.add(question);
+    }
+  }
+
+  return fitted.isEmpty ? source : fitted;
+}
+
+/// How many questions each band can actually be served, across the whole bank.
+///
+/// Exposed for `test/age_routing_test.dart`, which asserts no band is starved
+/// — a band with three questions to its name is a band that repeats itself
+/// within one sitting, and repetition is what the spaced-repetition work
+/// exists to avoid.
+Map<AgeBand, int> get questionsPerBand => <AgeBand, int>{
+  for (final band in AgeBand.values)
+    band: ageAppropriateQuestions(allQuizQuestions.toList(), band).length,
+};

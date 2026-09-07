@@ -271,7 +271,7 @@ class _LifeRecapCard extends StatelessWidget {
         children: [
           Text(
             '${summary.name} · ${summary.job}',
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.numeric(
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -537,7 +537,7 @@ class _RankedScoreCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               '${score.total}',
-              style: GoogleFonts.pixelifySans(
+              style: AppTheme.numeric(
                 color: Colors.white,
                 fontSize: 40,
                 height: 1.1,
