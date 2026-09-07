@@ -3044,6 +3044,8 @@ class _PnlTab extends StatelessWidget {
         ? 0.0
         : portfolioHistory.last - portfolioHistory.first;
 
+    final baseline = portfolioHistory.isNotEmpty ? portfolioHistory.first : 0.0;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
@@ -3108,7 +3110,11 @@ class _PnlTab extends StatelessWidget {
                   // squeezed into 150px is a smear — being able to zoom into
                   // the last twenty is the only way to read a recent trade.
                   child: InteractivePriceChart(
-                    candles: _flatCandles(portfolioHistory, portfolioHistoryAt),
+                    candles: _flatCandles(
+                      portfolioHistory,
+                      times: portfolioHistoryAt,
+                      basePrice: baseline,
+                    ),
                     mode: ChartMode.line,
                     accent: curveColor,
                   ),
@@ -3154,34 +3160,34 @@ class _PnlTab extends StatelessWidget {
 
 /// Wraps a plain value series as flat-bodied candles so it can be drawn by
 /// [PriceChart], which gives it a price axis and a current-value tag.
-/// Turns a plain value series into candles the chart can draw.
 ///
-/// [times] are the real recording times where they exist. They are paired
-/// from the **end**, because a save that predates timestamps has values with
-/// no times and the newest points are the ones that have them — aligning from
-/// the front would put yesterday's clock on today's balance.
-///
-/// Without real times this falls back to one-minute spacing, which is what it
-/// always did. That fallback is a lie the chart used to tell everywhere: the
-/// x-axis showed invented times, and the visible span could never exceed one
-/// minute per point regardless of how long the player had been trading.
-List<Candle> _flatCandles(List<double> values, [List<DateTime>? times]) {
+/// Passing [basePrice] sets each candle's open price to the initial snapshot value,
+/// allowing the chart tooltip to accurately calculate gains and percent changes 
+/// since tracking began.
+List<Candle> _flatCandles(
+  List<double> values, {
+  List<DateTime>? times,
+  double? basePrice,
+}) {
   final stamps = times ?? const <DateTime>[];
   final offset = values.length - stamps.length;
   final now = DateTime.now();
+  final startingPrice = basePrice ?? (values.isNotEmpty ? values.first : 0.0);
+
   return [
     for (var i = 0; i < values.length; i++)
       Candle(
         time: (i - offset) >= 0 && (i - offset) < stamps.length
             ? stamps[i - offset].toLocal()
             : now.subtract(Duration(minutes: values.length - i)),
-        open: values[i],
-        high: values[i],
-        low: values[i],
+        open: startingPrice,
+        high: math.max(startingPrice, values[i]),
+        low: math.min(startingPrice, values[i]),
         close: values[i],
       ),
   ];
 }
+
 
 class _EquityCurveEmpty extends StatelessWidget {
   const _EquityCurveEmpty({required this.netWorth});
