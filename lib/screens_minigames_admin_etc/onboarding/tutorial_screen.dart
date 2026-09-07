@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/app_assets.dart';
 import '../../controllers_that_updates_stats/app_settings_controller.dart';
+import '../../widgets_custom_lotties/mentor_image.dart';
 import '../../models_Like_Skins_and_lessons_templates/tutorial_steps.dart';
 import '../../services_backend_and_other_services/app_sound_service.dart';
 import '../../themes_colors/app_theme.dart';
@@ -269,11 +270,9 @@ class _TourPage extends StatelessWidget {
               idleAmplitude: 4,
               pulseAmplitude: 0.02,
               period: const Duration(seconds: 4),
-              child: Image.asset(
-                step.mascot.asset,
-                width: 132,
-                height: 132,
-                filterQuality: FilterQuality.none,
+              child: MentorImage(
+                pose: step.mascot,
+                size: 132,
                 errorBuilder: (_, _, _) =>
                     Icon(step.icon, size: 96, color: step.accent),
               ),

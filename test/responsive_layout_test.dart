@@ -22,6 +22,7 @@ import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/money_habits/money_habits_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/feedback_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/coach/coach_screen.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/leak_patrol_page.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/profile_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/leaderboard_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/past_lives_screen.dart';
@@ -216,6 +217,9 @@ void main() {
     // The board fits itself to whatever space it gets, which is exactly the
     // kind of claim that needs the landscape and small-phone entries.
     'Coin Cascade': () => const CoinCascadePage(),
+    // A new screen missing from this sweep is a recurring bug in this repo —
+    // the Coach shipped without coverage for exactly this reason.
+    'Leak Patrol': () => const LeakPatrolPage(),
     'Market Board': () => const StockMarketPage(),
     'Feedback': () => const FeedbackScreen(),
     // The three screens this sweep never covered. Profile and the

@@ -27,9 +27,31 @@ class LifeRecord {
     required this.conceptsMet,
     required this.goldEarned,
     required this.finishedAt,
+    this.graded = true,
   });
 
-  factory LifeRecord.fromSummary(LifeSummary summary, {DateTime? finishedAt}) {
+  /// Whether this run counts toward the coach's reading of the player.
+  ///
+  /// **Why a run can opt out.** Players deliberately wreck a life to reach an
+  /// unusual ending, or blitz one for quick gold. The coach reads
+  /// `pastLifeNetWorths` and concluded from those that somebody was getting
+  /// *worse* with money — which is a false reading of a deliberate choice,
+  /// and exactly the sort of thing that makes a player stop trusting it.
+  ///
+  /// Ungraded runs still pay out, still unlock endings, and still appear in
+  /// Past Lives. They are simply excluded from the history the analyser
+  /// reasons over. See `money_snapshot_source.dart`.
+  ///
+  /// **Defaults to true, and old records parse as true.** Every life recorded
+  /// before this existed was played normally, so treating a missing key as
+  /// "graded" preserves them exactly.
+  final bool graded;
+
+  factory LifeRecord.fromSummary(
+    LifeSummary summary, {
+    DateTime? finishedAt,
+    bool graded = true,
+  }) {
     return LifeRecord(
       endingId: summary.archetype.name,
       name: summary.name,
@@ -40,6 +62,7 @@ class LifeRecord {
       conceptsMet: summary.conceptsMet,
       goldEarned: summary.goldReward,
       finishedAt: finishedAt ?? DateTime.now().toUtc(),
+      graded: graded,
     );
   }
 
@@ -68,6 +91,10 @@ class LifeRecord {
       finishedAt:
           DateTime.tryParse('${json['at']}')?.toUtc() ??
           DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+      // A missing key reads as graded. Every life recorded before this
+      // existed was played normally, so the absent case has to mean "counts"
+      // or the split would silently erase the coach's entire history.
+      graded: json['graded'] != false,
     );
   }
 
@@ -107,6 +134,7 @@ class LifeRecord {
     'concepts': conceptsMet,
     'gold': goldEarned,
     'at': finishedAt.toUtc().toIso8601String(),
+    'graded': graded,
   };
 }
 

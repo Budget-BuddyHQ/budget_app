@@ -18,6 +18,7 @@ import '../../../widgets_custom_lotties/symbol_badge.dart';
 import 'order_ticket_page.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../themes_colors/app_theme.dart';
+import '../../../widgets_custom_lotties/age_scaled_note.dart';
 
 /// Real, tradeable stock: a [LiveQuote] plus the display/trade dressing
 /// (icon, accent, thesis, bid-ask spread) that Finnhub doesn't provide.
@@ -505,6 +506,9 @@ class _StockMarketPageState extends State<StockMarketPage>
     return Consumer2<UserStatsController, MarketDataService>(
       builder: (context, statsController, market, _) {
         final stats = statsController.stats;
+        // Whether this player needs the plain-English version of the board.
+        // See the tab list below — this screen had no age awareness at all.
+        final plainWords = stats.ageBand.prefersSimpleWording;
         final quotes = market.quotes
             .map(_tradeQuoteFor)
             .toList(growable: false);
@@ -611,6 +615,19 @@ class _StockMarketPageState extends State<StockMarketPage>
                   style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
                 ),
                 actions: [
+                  if (plainWords)
+                    // Says out loud that this board is the simplified one.
+                    // Age scaling nobody can see is indistinguishable from
+                    // age scaling that does not exist.
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Center(
+                        child: AgeScaledNote(
+                          what: 'Words',
+                          debugBand: stats.ageBand,
+                        ),
+                      ),
+                    ),
                   _LiveBadge(
                     loading: market.status == LiveMarketStatus.loading,
                     lastFetch: market.lastFetch,
@@ -632,12 +649,27 @@ class _StockMarketPageState extends State<StockMarketPage>
                   labelStyle: GoogleFonts.pixelifySans(
                     fontWeight: FontWeight.w700,
                   ),
-                  tabs: const [
-                    Tab(text: 'Assets'),
-                    Tab(text: 'Trade'),
-                    Tab(text: 'Orders'),
-                    Tab(text: 'P&L'),
-                    Tab(text: 'Analytics'),
+                  // Plain words for younger readers.
+                  //
+                  // Asked directly: *"how are we presenting the market board
+                  // to younger people?"* — and the honest answer was
+                  // "identically to everyone". This screen had **no age
+                  // awareness at all**: a six-year-old and an adult both got
+                  // Assets / Orders / P&L / Analytics, which is the
+                  // vocabulary of a trading terminal.
+                  //
+                  // The tabs are renamed rather than removed. Hiding Orders
+                  // and Analytics from a child would leave a board that
+                  // cannot teach what a limit order is; calling P&L
+                  // "Win or lose" teaches exactly the same thing in words
+                  // they already have. The maths behind every tab is
+                  // unchanged.
+                  tabs: [
+                    Tab(text: plainWords ? 'What you own' : 'Assets'),
+                    Tab(text: plainWords ? 'Buy or sell' : 'Trade'),
+                    Tab(text: plainWords ? 'Waiting' : 'Orders'),
+                    Tab(text: plainWords ? 'Win or lose' : 'P&L'),
+                    Tab(text: plainWords ? 'Patterns' : 'Analytics'),
                   ],
                 ),
               ),

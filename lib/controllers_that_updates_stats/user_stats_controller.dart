@@ -409,9 +409,12 @@ class UserStatsController extends ChangeNotifier {
   /// Deliberately separate from [recordLifeEnding]: that one owns the
   /// "outcomes discovered" collection and is idempotent per ending, while
   /// every run belongs in the history even when its ending is a repeat.
-  Future<Set<LifeBest>> recordLifeRun(LifeSummary summary) async {
+  Future<Set<LifeBest>> recordLifeRun(
+    LifeSummary summary, {
+    bool graded = true,
+  }) async {
     final book = _stats.lifeRecords;
-    final record = LifeRecord.fromSummary(summary);
+    final record = LifeRecord.fromSummary(summary, graded: graded);
     // Judged against the book as it stands, so this must happen before add.
     final beaten = book.bestsBeaten(record);
 
@@ -1637,6 +1640,52 @@ class UserStatsController extends ChangeNotifier {
   /// Available to everyone. An adult who would rather buy the one they want
   /// than gamble for it should be able to, and an app about money has no
   /// business making the gamble the only route.
+  /// Marks an NPC mission finished and pays it.
+  ///
+  /// Idempotent: claiming twice pays once. The claim button is driven by a
+  /// progress check that stays true after completion, so without this a
+  /// player could stand in front of the same person and collect repeatedly —
+  /// which is the town-farming bug this project has already fixed twice, in
+  /// the coins and then in the building encounters.
+  Future<StatsActionResult> completeMission(
+    String missionId, {
+    required int gold,
+    required int literacy,
+  }) async {
+    final done = _stats.completedMissionIds;
+    if (done.contains(missionId)) {
+      return const StatsActionResult(
+        success: false,
+        message: 'Already finished.',
+        syncState: SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'No changes saved.',
+        ),
+      );
+    }
+
+    return applyChallengePayload(<String, dynamic>{
+      'gold_earned': gold,
+      'xp_earned': literacy * 2,
+      'literacy_points_earned': literacy,
+      'title': 'Mission complete',
+      'description': 'Finished a job for somebody in town.',
+      'spending_habits': <String, dynamic>{
+        'completed_missions': <String>[...done, missionId],
+      },
+    });
+  }
+
+  /// Records a correctly answered town puzzle.
+  Future<void> recordChallengeSolved() async {
+    await applyChallengePayload(<String, dynamic>{
+      'spending_habits': <String, dynamic>{
+        'challenges_solved': _stats.challengesSolved + 1,
+      },
+    });
+  }
+
   Future<SkinCaseResult> buySkinDirectly(String skinId) async {
     const skinCost = 180;
     final skin = skinFromId(skinId);

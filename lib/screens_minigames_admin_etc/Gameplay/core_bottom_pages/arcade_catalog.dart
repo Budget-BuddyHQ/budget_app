@@ -96,6 +96,17 @@ const List<ArcadeGame> _allArcadeGames = <ArcadeGame>[
     scoreLabel: 'Best score',
   ),
   ArcadeGame(
+    id: 'leak_patrol',
+    title: 'Leak Patrol',
+    tagline: 'Tap the money leaving. Leave the money you owe.',
+    teaches: 'Spotting fees and traps',
+    accent: Color(0xFFD98CFF),
+    icon: Icons.water_drop_rounded,
+    difficulty: ArcadeDifficulty.easy,
+    length: ArcadeLength.quick,
+    scoreLabel: 'Best saved',
+  ),
+  ArcadeGame(
     id: 'react_challenge',
     title: 'React Challenge',
     tagline: 'Snap decisions on everyday money calls.',
@@ -111,6 +122,7 @@ const List<ArcadeGame> _allArcadeGames = <ArcadeGame>[
 /// Add or remove IDs here to control which games appear in the app.
 const Set<String> activeArcadeGameIds = <String>{
   'coin_cascade',
+  'leak_patrol',
   'finance_brawl',
   'market_board',
 };

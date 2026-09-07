@@ -221,8 +221,19 @@ void main() {
   testWidgets('the town doors are marked as such', (tester) async {
     // Two routes to one outcome is fine — the map is not always open to you.
     // Two routes with nothing saying they meet is what read as duplication.
+    //
+    // The badge used to say only "in town", which answers none of the
+    // questions a player has: is it better, by how much, worth the walk? It
+    // now says *better* in town and the row states what the walk is worth, so
+    // this checks both halves — a badge with no explanation beside it is the
+    // state that got reported three separate times.
     await openMenu(tester, 30, 'Activities');
-    expect(find.text('in town'), findsWidgets);
+    expect(find.text('better in town'), findsWidgets);
+    expect(
+      find.textContaining('in town'),
+      findsWidgets,
+      reason: 'the row no longer says what walking there gets you',
+    );
 
     for (final action in LifeAction.values) {
       final marked = LifeSimController.hasTownEquivalent(action);

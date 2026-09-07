@@ -28,6 +28,7 @@ import '../../../widgets_custom_lotties/life_money_panel.dart';
 import '../../../widgets_custom_lotties/money_glyphs.dart';
 import '../../../widgets_custom_lotties/pixel_kit.dart';
 import '../../../widgets_custom_lotties/pixel_panel.dart';
+import '../../../models_Like_Skins_and_lessons_templates/life_seed.dart';
 
 /// **Life** — the main game, in the BitLife format: a scrolling life feed up
 /// top, a fixed bottom menu, and a big central Age button that advances time
@@ -92,6 +93,17 @@ class _LifeSimPageState extends State<LifeSimPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _createCharacter());
   }
 
+  /// Whether the current run counts toward the coach's reading.
+  ///
+  /// Chosen once, on the character sheet. Players deliberately wreck a life
+  /// for an unusual ending or for quick gold, and the analyser was reading
+  /// those as them getting worse with money.
+  bool _graded = true;
+
+  /// The seed this life was rolled from, shown on the epilogue so a player
+  /// can replay the same start.
+  LifeSeed? _seed;
+
   Future<void> _createCharacter() async {
     final character = await Navigator.of(context).push<LifeCharacter>(
       MaterialPageRoute(builder: (_) => const LifeCharacterSheet()),
@@ -111,13 +123,14 @@ class _LifeSimPageState extends State<LifeSimPage> {
       await context.read<UserStatsController>().resetTownProgress();
     }
     if (!mounted) return;
-    final allowWagering = context
-        .read<UserStatsController>()
-        .stats
-        .ageBand
-        .allowsWagering;
+    final band = context.read<UserStatsController>().stats.ageBand;
+    final allowWagering = band.allowsWagering;
+    final plainWords = band.prefersSimpleWording;
 
     setState(() {
+      // Whether this run counts, chosen on the character sheet.
+      _graded = character.graded;
+      _seed = character.seed;
       _life = LifeSimController(
         name: character.name,
         gender: character.gender,
@@ -126,9 +139,15 @@ class _LifeSimPageState extends State<LifeSimPage> {
         // The *account's* age, not the character's. See
         // `AgeBand.allowsWagering`.
         allowWagering: allowWagering,
+        // Also the account's age. A ten-year-old whose character reaches
+        // thirty was being offered mortgages and down payments, because
+        // events gate on the character's age and nothing was checking who
+        // was actually reading them.
+        plainWordsOnly: plainWords,
       );
     });
     _maybeStartFirstTour();
+    _maybeShowPlainWordsNotice(plainWords);
   }
 
   @override
@@ -185,7 +204,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
     // ...and files the run itself, which is what Past Lives and the
     // personal bests are built from. Must come after the gold award above
     // so the record's reward figure matches what was actually paid out.
-    final bestsBeaten = await controller.recordLifeRun(summary);
+    final bestsBeaten = await controller.recordLifeRun(summary, graded: _graded);
     if (!mounted) return;
     GameToast.show(
       context,
@@ -205,6 +224,8 @@ class _LifeSimPageState extends State<LifeSimPage> {
           summary: summary,
           bestsBeaten: bestsBeaten,
           rankedScore: score,
+          seed: _seed,
+          graded: _graded,
         ),
       ),
     );
@@ -273,6 +294,38 @@ class _LifeSimPageState extends State<LifeSimPage> {
   /// route: a tour that spotlights the money panel while the player is still
   /// picking a name is pointing at widgets that do not exist yet, and the
   /// overlay would centre every card and explain nothing.
+  /// Tells a young player, once, that some grown-up money is being held back.
+  ///
+  /// **Why say it at all rather than filter silently.** The filter
+  /// (`LifeSimController.plainWordsOnly`) keeps mortgages, vesting schedules
+  /// and down payments out of a ten-year-old's game, which is right — but a
+  /// child who has watched an older sibling play will notice things missing
+  /// and conclude the app is broken, or that they are being punished for
+  /// something. Naming it turns a gap into a promise: *this grows with you.*
+  ///
+  /// It also does the thing the whole age-banding feature was asked to do out
+  /// loud — *"make sure this is explicitly mentioned for everyone
+  /// everywhere"* — at the one moment it is concretely true.
+  void _maybeShowPlainWordsNotice(bool plainWords) {
+    if (!plainWords || !mounted) return;
+    final settings = context.read<AppSettingsController>();
+    if (settings.hasSeenPlainWordsNotice) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      settings.markPlainWordsNoticeSeen();
+      GameToast.show(
+        context,
+        title: 'This life is set for your age',
+        message:
+            'Grown-up money — mortgages, loans, tax forms — is kept out for '
+            'now. It turns up as you get older, and nothing here is missing.',
+        icon: Icons.shield_moon_rounded,
+        accent: const Color(0xFF58C7FF),
+      );
+    });
+  }
+
   void _maybeStartFirstTour() {
     if (!mounted || _tourRunning) return;
     final settings = context.read<AppSettingsController>();
@@ -2700,7 +2753,7 @@ class _LifeActionRow extends StatelessWidget {
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
-                              'in town',
+                              'better in town',
                               style: GoogleFonts.quicksand(
                                 color: accent,
                                 fontSize: 9.5,
@@ -2713,6 +2766,28 @@ class _LifeActionRow extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 2),
+                    // What the walk is worth, said in the row rather than
+                    // left in a comment.
+                    //
+                    // The badge used to read "in town" and stop there, which
+                    // answers none of the questions a player has. Reported
+                    // three times as the menu and the map duplicating each
+                    // other — they never were duplicates, one just pays more,
+                    // and nothing on screen said which.
+                    if (action.enabled &&
+                        action.performs != null &&
+                        LifeSimController.townBonusFor(action.performs!) !=
+                            null) ...[
+                      Text(
+                        LifeSimController.townBonusFor(action.performs!)!,
+                        style: AppTheme.numeric(
+                          color: accent.withValues(alpha: 0.95),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                    ],
                     Text(
                       action.disabledReason ?? action.detail,
                       style: GoogleFonts.quicksand(

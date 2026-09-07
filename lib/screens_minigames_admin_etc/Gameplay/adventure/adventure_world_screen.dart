@@ -22,6 +22,9 @@ import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/orientation_scope.dart';
 import 'town_components.dart';
 import 'town_interior_screen.dart';
+import '../../../models_Like_Skins_and_lessons_templates/npc_encounters.dart';
+import '../../../models_Like_Skins_and_lessons_templates/town_missions.dart';
+import '../../../models_Like_Skins_and_lessons_templates/town_unlocks.dart';
 
 /// Where the exported map (Sprite Fusion JSON — see the README next to it)
 /// is expected to live. `SpritefusionAssetReader` is hardcoded to read from
@@ -94,6 +97,25 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
       : townMapForLife(widget.life!.name, widget.life!.origin.name);
 
   final Set<String> _collectedCoinIds = <String>{};
+
+  /// Lessons finished, read once when the map is built.
+  ///
+  /// Cached rather than read per marker: the Bonfire component list is
+  /// constructed inside `build`, and hitting the controller twelve times
+  /// there would be twelve identical reads on every frame the map rebuilds.
+  late final Set<String> _completedLessons = context
+      .read<UserStatsController>()
+      .stats
+      .completedLessons
+      .toSet();
+
+  /// Which encounter each person last ran, so the same one never repeats
+  /// back to back — a pickpocket twice running reads as a bug, not a town.
+  final Map<String, String> _lastEncounterId = <String, String>{};
+
+  /// Separate from the town's other randomness on purpose: an encounter roll
+  /// must not shift which scene a building is showing.
+  final Random _encounterRandom = Random();
 
   /// Encounters that have already paid out, by `townEncounterFor().id`.
   ///
@@ -182,9 +204,45 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     });
   }
 
+  /// Talking to somebody, which can now go three ways.
+  ///
+  /// **It used to go one way.** `_talkTo` picked the next canned line and
+  /// showed it, which is what "the NPCs still just give out dialogue" was
+  /// describing. A line cannot be acted on, so seven people saying sensible
+  /// things about money were seven posters you walked up to.
+  ///
+  /// Now: an **encounter** if one rolls (a pickpocket, a scam, honest work,
+  /// somebody handing your wallet back), otherwise a **mission** if this
+  /// person has one outstanding, otherwise the conversation — which is still
+  /// the common case, because a town where every stranger robs you is
+  /// exhausting and would make the pickpocket routine rather than a shock.
   Future<void> _talkTo(TownNpc npc) async {
     if (_sheetOpen) return;
     _sheetOpen = true;
+
+    final controller = context.read<UserStatsController>();
+    final age = widget.life?.age ?? 12;
+
+    final encounter = encounterFor(
+      npc.id,
+      age: age,
+      roll: _encounterRandom.nextDouble(),
+      lastActionId: _lastEncounterId[npc.id],
+    );
+
+    if (encounter != null) {
+      _lastEncounterId[npc.id] = encounter.id;
+      await _runEncounter(npc, encounter);
+      _sheetOpen = false;
+      return;
+    }
+
+    final mission = nextMissionFor(
+      npc.id,
+      age: age,
+      completed: controller.stats.completedMissionIds,
+    );
+
     final seen = _npcLineIndex[npc.id] ?? 0;
     final line = npc.lines[seen % npc.lines.length];
     _npcLineIndex[npc.id] = seen + 1;
@@ -192,9 +250,89 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => _NpcDialogueSheet(npc: npc, line: line),
+      builder: (_) => _NpcDialogueSheet(
+        npc: npc,
+        line: line,
+        mission: mission,
+        progress: mission == null
+            ? 0
+            : missionProgress(
+                mission,
+                coinsSaved: widget.life?.emergencyFund ?? 0,
+                placesVisited: _visited.length,
+                challengesSolved: controller.stats.challengesSolved,
+                age: age,
+                lessonsFinished: controller.stats.completedLessons.length,
+              ),
+        canClaim: mission != null &&
+            missionComplete(
+              mission,
+              coinsSaved: widget.life?.emergencyFund ?? 0,
+              placesVisited: _visited.length,
+              challengesSolved: controller.stats.challengesSolved,
+              age: age,
+              lessonsFinished: controller.stats.completedLessons.length,
+            ),
+        onClaim: mission == null ? null : () => _claimMission(mission),
+      ),
     );
     _sheetOpen = false;
+  }
+
+  /// Applies an encounter's outcome.
+  ///
+  /// Losses come out of *carried* cash only and are capped — see
+  /// `NpcAction.resolveGold`. Being robbed into debt would be a punishment
+  /// the player had no way to refuse, and this is played by four-year-olds.
+  Future<void> _runEncounter(TownNpc npc, NpcAction action) async {
+    final accepted = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isDismissible: isDeclinable(action.kind),
+      enableDrag: isDeclinable(action.kind),
+      builder: (_) => _NpcEncounterSheet(npc: npc, action: action),
+    );
+    if (!mounted) return;
+
+    final tookIt = accepted ?? !isDeclinable(action.kind);
+    if (!tookIt) return;
+
+    final carried = widget.life?.money ?? 0;
+    final delta = action.resolveGold(carried);
+    if (delta == 0) return;
+
+    widget.life?.applyTownOutcome(gold: delta, xp: 2, literacy: 1);
+    await context.read<UserStatsController>().applyChallengePayload(
+      <String, dynamic>{
+        'gold_earned': delta > 0 ? delta : 0,
+        'xp_earned': 2,
+        'literacy_points_earned': 1,
+      },
+    );
+  }
+
+  /// Pays out a finished mission.
+  Future<void> _claimMission(TownMission mission) async {
+    Navigator.of(context).pop();
+    final controller = context.read<UserStatsController>();
+    await controller.completeMission(
+      mission.id,
+      gold: mission.rewardGold,
+      literacy: mission.rewardLiteracy,
+    );
+    widget.life?.applyTownOutcome(
+      gold: mission.rewardGold,
+      xp: mission.rewardLiteracy * 2,
+      literacy: mission.rewardLiteracy,
+    );
+    if (!mounted) return;
+    GameToast.show(
+      context,
+      title: mission.title,
+      message: mission.onSuccess,
+      icon: Icons.verified_rounded,
+      accent: AppTheme.greenPrimary,
+    );
   }
 
   Future<void> _collectCoin(String coinId, int value) async {
@@ -225,6 +363,34 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   Future<void> _openSpot(TownSpot spot) async {
     if (_sheetOpen) return;
     _sheetOpen = true;
+
+    // Some doors want the lesson first.
+    //
+    // The Academy used to sit off to one side as a reading section that
+    // nothing depended on — a player could finish the whole town, every
+    // minigame and a dozen lives without opening a single lesson. Reading was
+    // optional in the only sense that matters: the game did not care.
+    //
+    // Four of the twelve buildings now want the unit that explains them. The
+    // lock **names the unit**, because a door that is simply shut teaches
+    // nothing and reads as a bug — the point is to send somebody to a lesson,
+    // not to keep them out of a building.
+    final completed = context.read<UserStatsController>().stats.completedLessons
+        .toSet();
+    if (!isSpotUnlocked(spot.kind, completed)) {
+      final unlock = unlockFor(spot.kind)!;
+      await showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _LockedSpotSheet(
+          spot: spot,
+          unlock: unlock,
+          progress: unlockProgress(spot.kind, completed),
+        ),
+      );
+      _sheetOpen = false;
+      return;
+    }
 
     // Which conversation this building is having, resolved here as well as
     // inside the interior screen. Both calls pass the same spot, age and
@@ -346,9 +512,23 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     final equippedSkin = skinFromId(stats.equippedSkin);
     final body = stats.villagerBody;
 
+    // Who you actually are in town.
+    //
+    // This used to read `: AppAssets.villagerSheet(null, ...)` — so **every
+    // non-villager skin walked the town as the default blue villager**. All
+    // four turtles and the Goomba. A player could win Guild Runner, a
+    // 1-in-1,000 legendary, see it on their profile, in the customise grid
+    // and in Finance Brawl, then walk in here as a stranger. Nothing threw:
+    // the fallback loaded a real sheet, just not theirs.
+    //
+    // Those skins are stills, and Bonfire wants a packed grid, so
+    // `tool/make_town_sheets.py` packs them into the villager layout — which
+    // is why nothing else in this file had to change. The villager fallback
+    // stays for anything with neither.
     final playerSheet = equippedSkin.isHuman
         ? equippedSkin.sheetAsset(body)
-        : AppAssets.villagerSheet(null, female: body.isFemale);
+        : (AppAssets.townSheet(equippedSkin.id) ??
+              AppAssets.villagerSheet(null, female: body.isFemale));
 
     return Scaffold(
       backgroundColor: AppTheme.deepForest,
@@ -388,6 +568,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
                     onEnter: _onEnterSpot,
                     onExit: _onExitSpot,
                     isVisited: _visited.contains,
+                    isLocked: !isSpotUnlocked(spot.kind, _completedLessons),
                   ),
                 // NPCs and floor coins were positioned against the village
                 // map by hand and have no second set of coordinates, so on
@@ -711,10 +892,30 @@ class _TalkButton extends StatelessWidget {
 }
 
 class _NpcDialogueSheet extends StatelessWidget {
-  const _NpcDialogueSheet({required this.npc, required this.line});
+  const _NpcDialogueSheet({
+    required this.npc,
+    required this.line,
+    this.mission,
+    this.progress = 0,
+    this.canClaim = false,
+    this.onClaim,
+  });
 
   final TownNpc npc;
   final String line;
+
+  /// A job this person is offering, or has already given you.
+  ///
+  /// `town_missions.dart` was written and then imported by nothing — 346
+  /// lines of orphaned code while these people carried on reciting canned
+  /// lines. This is the wiring it never had.
+  final TownMission? mission;
+
+  /// How far along that job is, 0..1.
+  final double progress;
+
+  final bool canClaim;
+  final VoidCallback? onClaim;
 
   @override
   Widget build(BuildContext context) {
@@ -765,6 +966,13 @@ class _NpcDialogueSheet extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
+          if (mission != null)
+            _MissionBlock(
+              mission: mission!,
+              progress: progress,
+              canClaim: canClaim,
+              onClaim: onClaim,
+            ),
           const SizedBox(height: 18),
           SizedBox(
             width: double.infinity,
@@ -1139,6 +1347,358 @@ class _AdventureMapPendingScreen extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+
+/// A mission, shown under whatever the person just said.
+class _MissionBlock extends StatelessWidget {
+  const _MissionBlock({
+    required this.mission,
+    required this.progress,
+    required this.canClaim,
+    required this.onClaim,
+  });
+
+  final TownMission mission;
+  final double progress;
+  final bool canClaim;
+  final VoidCallback? onClaim;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = canClaim
+        ? AppTheme.greenPrimary
+        : const Color(0xFFFFD45C);
+
+    return Container(
+      margin: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                canClaim ? Icons.verified_rounded : Icons.flag_rounded,
+                size: 17,
+                color: accent,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  mission.title,
+                  style: GoogleFonts.pixelifySans(
+                    color: accent,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            canClaim ? mission.onSuccess : mission.brief,
+            style: AppTheme.numeric(
+              color: Colors.white.withValues(alpha: 0.86),
+              fontSize: 12.5,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 7,
+              backgroundColor: Colors.white.withValues(alpha: 0.10),
+              valueColor: AlwaysStoppedAnimation<Color>(accent),
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (canClaim)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onClaim,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.greenPrimary,
+                  foregroundColor: const Color(0xFF06251A),
+                ),
+                icon: const Icon(Icons.check_rounded),
+                label: Text(
+                  'Collect ${mission.rewardGold} gold',
+                  style: GoogleFonts.pixelifySans(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            )
+          else
+            Text(
+              'Reward: ${mission.rewardGold} gold, '
+              '${mission.rewardLiteracy} literacy.',
+              style: AppTheme.numeric(
+                color: AppTheme.textMuted,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Something a person does to you, rather than says at you.
+///
+/// Reported twice: *"the NPCs still just give out dialogue, we want action —
+/// like that NPC stealing from you and running away with your money."*
+///
+/// Two shapes. A pickpocket or somebody handing your wallet back is a thing
+/// that **happens** — one button, and the sheet cannot be dismissed, because
+/// offering a "decline" on being robbed would be a lie about the moment. A
+/// scam or a job offer is a thing you **choose**, and gets two buttons.
+class _NpcEncounterSheet extends StatelessWidget {
+  const _NpcEncounterSheet({required this.npc, required this.action});
+
+  final TownNpc npc;
+  final NpcAction action;
+
+  Color get _accent => switch (action.kind) {
+    NpcActionKind.pickpocket => const Color(0xFFFF8474),
+    NpcActionKind.scam => const Color(0xFFFFB084),
+    NpcActionKind.hustle => AppTheme.greenPrimary,
+    NpcActionKind.fairDeal => const Color(0xFF58C7FF),
+    NpcActionKind.kindness => const Color(0xFF85EFAC),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final choosable = isDeclinable(action.kind);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+      decoration: BoxDecoration(
+        color: AppTheme.panelStrong,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXLarge),
+        ),
+        border: Border.all(color: _accent.withValues(alpha: 0.4), width: 1.5),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            npc.name.toUpperCase(),
+            style: GoogleFonts.pixelifySans(
+              color: _accent,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            action.headline,
+            style: GoogleFonts.pixelifySans(
+              color: Colors.white,
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            action.detail,
+            style: AppTheme.numeric(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 13.5,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 18),
+          if (choosable)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text(
+                      action.declineLabel,
+                      style: GoogleFonts.pixelifySans(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    style: FilledButton.styleFrom(backgroundColor: _accent),
+                    child: Text(
+                      action.acceptLabel,
+                      style: GoogleFonts.pixelifySans(
+                        color: const Color(0xFF06251A),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: FilledButton.styleFrom(backgroundColor: _accent),
+                child: Text(
+                  action.acceptLabel,
+                  style: GoogleFonts.pixelifySans(
+                    color: const Color(0xFF06251A),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          const SizedBox(height: 12),
+          // The lesson, shown before the choice as well as after.
+          //
+          // A scam you only understand *after* it has taken your money is a
+          // punishment; the point is to be recognisable in advance. Naming
+          // the tell up front is what makes this teaching rather than a trap.
+          Text(
+            choosable ? action.outcomeDeclined : action.outcomeAccepted,
+            style: AppTheme.numeric(
+              color: AppTheme.textMuted,
+              fontSize: 11.5,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A door that wants a lesson first.
+///
+/// **Why this is a signpost and not a wall.** The Academy used to be a
+/// reading section nothing depended on — a player could finish the whole
+/// town, every minigame and a dozen lives without opening one lesson. Locking
+/// four buildings is the answer to "why would I read that?", but only if the
+/// lock says where to go. A door that is simply shut teaches nothing and
+/// reads as a bug.
+class _LockedSpotSheet extends StatelessWidget {
+  const _LockedSpotSheet({
+    required this.spot,
+    required this.unlock,
+    required this.progress,
+  });
+
+  final TownSpot spot;
+  final TownUnlock unlock;
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = spot.kind.accent;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+      decoration: const BoxDecoration(
+        color: AppTheme.panelStrong,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXLarge),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lock_rounded, color: accent, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FittedLabel(
+                  spot.title,
+                  style: GoogleFonts.pixelifySans(
+                    color: Colors.white,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            unlock.why,
+            style: AppTheme.numeric(
+              color: Colors.white.withValues(alpha: 0.86),
+              fontSize: 13.5,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Finish ${unlock.unitName} in the Academy',
+            style: GoogleFonts.pixelifySans(
+              color: accent,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              backgroundColor: Colors.white.withValues(alpha: 0.10),
+              valueColor: AlwaysStoppedAnimation<Color>(accent),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${(progress * 100).round()}% of that unit read',
+            style: AppTheme.numeric(
+              color: AppTheme.textMuted,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: FilledButton.styleFrom(
+                backgroundColor: accent,
+                foregroundColor: const Color(0xFF06251A),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: Text(
+                'Got it',
+                style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

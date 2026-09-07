@@ -11,7 +11,6 @@ import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
 import '../../config/dev_preview_flags.dart';
 import '../../constants/app_assets.dart';
-import '../../constants/privacy_policy.dart';
 import '../../controllers_that_updates_stats/app_settings_controller.dart';
 import '../../controllers_that_updates_stats/money_habit_controller.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
@@ -22,6 +21,7 @@ import '../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../services_backend_and_other_services/supabase_service.dart';
 import '../../themes_colors/app_theme.dart';
+import '../../widgets_custom_lotties/age_scaling_card.dart';
 import '../../widgets_custom_lotties/cloud_sync_banner.dart';
 import '../../widgets_custom_lotties/achievement_celebration.dart';
 import '../../widgets_custom_lotties/custom_bottom_nav.dart';
@@ -396,6 +396,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
+                        // Directly above "About You", which is where the age
+                        // is set. Reported twice as *"I'm still not seeing the
+                        // age separated for the app"* -- and the age band was
+                        // by then deciding six separate things, stated to the
+                        // player in one sentence at sign-up they saw once.
+                        // A setting whose effects are invisible reads as a
+                        // setting that does nothing.
+                        AgeScalingCard(
+                          onChangeAge: () =>
+                              _editPersonalDetails(context, stats),
+                        ),
+                        const SizedBox(height: 12),
                         _SettingsCard(
                           title: 'About You',
                           subtitle: _personalDetailsSummary(stats),
@@ -715,10 +727,9 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
       title: badge.label,
       subtitle: badge.detail,
       accent: badge.color,
-      // Celebrate as whoever the player actually chose to be. This was
-      // hardcoded to the turtle, so unlocking a badge showed a character 23
-      // of the 24 skins had nothing to do with.
-      skin: skinFromId(stats.equippedSkin),
+      // Keep the achievement celebration on the classic turtle sprite so it
+      // matches the app's standard celebratory animation instead of showing
+      // the player's currently equipped skin.
     );
 
     // Only clear the "New" marker after they've actually watched it, so an
@@ -1117,7 +1128,7 @@ class _InsightMetric extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-                  // A profile stat value.
+              // A profile stat value.
               children: [
                 Text(
                   value,
@@ -1427,7 +1438,7 @@ class _MoneyStatColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-          // A profile stat value.
+      // A profile stat value.
       children: [
         Text(
           value,
@@ -1814,8 +1825,7 @@ class _FriendsList extends StatelessWidget {
                                 backgroundColor: Colors.white.withValues(
                                   alpha: 0.08,
                                 ),
-                                backgroundImage:
-                                    friend.profileImageUrl.isEmpty
+                                backgroundImage: friend.profileImageUrl.isEmpty
                                     ? null
                                     : NetworkImage(friend.profileImageUrl),
                                 child: friend.profileImageUrl.isEmpty
@@ -1834,8 +1844,7 @@ class _FriendsList extends StatelessWidget {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     // "(you)" on your own row.
                                     //
@@ -1862,11 +1871,10 @@ class _FriendsList extends StatelessWidget {
                                         if (friend.id == currentUserId) ...[
                                           const SizedBox(width: 6),
                                           Container(
-                                            padding:
-                                                const EdgeInsets.symmetric(
-                                                  horizontal: 6,
-                                                  vertical: 1,
-                                                ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 1,
+                                            ),
                                             decoration: BoxDecoration(
                                               color: AppTheme.greenPrimary
                                                   .withValues(alpha: 0.18),

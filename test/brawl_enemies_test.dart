@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:budget_app/constants/app_assets.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/brawl_enemies.dart';
 
 /// The Finance Brawl roster.
@@ -179,6 +183,64 @@ void main() {
         seen.length,
         greaterThan(2),
         reason: 'wave 3 keeps spawning the same one or two enemies',
+      );
+    });
+  });
+
+  group('every archetype has its own face', () {
+    // Ten archetypes rendered from three images, chosen by `isBoss` /
+    // `isEnemyTwo`. Two bits cannot tell ten things apart, so a student loan
+    // and an overdraft fee were the same object on screen — which undoes the
+    // rule the whole roster is built on, because a player cannot learn "that
+    // one is dangerous" from something they cannot pick out.
+    //
+    // Drawn by `tool/make_brawl_enemies.py`. Re-run it after adding an
+    // archetype.
+    File spriteFor(BrawlEnemy enemy) =>
+        File(AppAssets.brawlEnemySprite(enemy.id));
+
+    test('a sprite exists for every archetype', () {
+      for (final enemy in kBrawlEnemies) {
+        final file = spriteFor(enemy);
+        expect(
+          file.existsSync(),
+          isTrue,
+          reason:
+              '${enemy.name} has no sprite at ${file.path}. '
+              'Run: python tool/make_brawl_enemies.py',
+        );
+      }
+    });
+
+    test('no two archetypes share artwork', () {
+      // The generator builds each sprite from its archetype's own colour, so
+      // a duplicate here means a builder was copied and not edited — which
+      // would put the roster straight back where it started.
+      final byDigest = <String, String>{};
+      for (final enemy in kBrawlEnemies) {
+        final file = spriteFor(enemy);
+        if (!file.existsSync()) continue;
+        final digest = base64Encode(file.readAsBytesSync());
+        expect(
+          byDigest.containsKey(digest),
+          isFalse,
+          reason:
+              '${enemy.name} is pixel-identical to ${byDigest[digest]}',
+        );
+        byDigest[digest] = enemy.name;
+      }
+    });
+
+    test('the sprite folder is declared in pubspec', () {
+      // Flutter asset directories are not recursive: `assets/images/` does
+      // not carry `assets/images/finance_brawl_ui/enemies/` with it, and a
+      // missing line here fails only at runtime, in release, as ten enemies
+      // silently reverting to the old shared art.
+      final pubspec = File('pubspec.yaml').readAsStringSync();
+      expect(
+        pubspec.contains('assets/images/finance_brawl_ui/enemies/'),
+        isTrue,
+        reason: 'the per-archetype sprites will not ship',
       );
     });
   });
