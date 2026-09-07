@@ -431,7 +431,7 @@ class _RemoveButton extends StatelessWidget {
             ),
             title: Text(
               'Remove $username?',
-              style: GoogleFonts.pixelifySans(color: AppTheme.textPrimary),
+              style: AppTheme.numeric(color: AppTheme.textPrimary),
             ),
             content: Text(
               'They will drop off your friends leaderboard. You can add them '

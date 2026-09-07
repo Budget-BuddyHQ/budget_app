@@ -46,7 +46,16 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   final List<QuizQuestion> _missed = <QuizQuestion>[];
 
   /// Assessment questions for this node, empty for reading lessons.
-  late final List<QuizQuestion> _quiz = quizFor(widget.lesson.id);
+  ///
+  /// Filtered to the player's age band. The bank spans Flesch-Kincaid reading
+  /// grades -2.4 to 18.4 and was previously served identically to everybody,
+  /// so a six-year-old met questions written for an adult and vice versa.
+  /// See [ageAppropriateQuestions] — it never returns an empty list, because
+  /// a quiz that is slightly too hard beats a quiz with nothing in it.
+  late final List<QuizQuestion> _quiz = ageAppropriateQuestions(
+    quizFor(widget.lesson.id),
+    context.read<UserStatsController>().stats.ageBand,
+  );
 
   Future<void> _completeLesson({List<QuizQuestion> quiz = const []}) async {
     if (_isSaving) {

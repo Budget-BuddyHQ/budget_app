@@ -17,6 +17,7 @@ import '../../../widgets_custom_lotties/price_chart.dart';
 import '../../../widgets_custom_lotties/symbol_badge.dart';
 import 'order_ticket_page.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
+import '../../../themes_colors/app_theme.dart';
 
 /// Real, tradeable stock: a [LiveQuote] plus the display/trade dressing
 /// (icon, accent, thesis, bid-ask spread) that Finnhub doesn't provide.
@@ -984,7 +985,7 @@ class _TrendingPromoCard extends StatelessWidget {
                     child: Text(
                       '${quote.changePercent.abs().toStringAsFixed(1)}%',
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.pixelifySans(
+                      style: AppTheme.numeric(
                         color: changeColor,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -1292,7 +1293,7 @@ class _SearchResultRow extends StatelessWidget {
                 ),
                 child: Text(
                   '${formatShares(ownedLots)} sh',
-                  style: GoogleFonts.pixelifySans(
+                  style: AppTheme.numeric(
                     color: Color(0xFF58C7FF),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -1487,7 +1488,7 @@ class _HoldingRow extends StatelessWidget {
               children: [
                 Text(
                   '${quote.symbol} • ${formatShares(ownedLots)} sh',
-                  style: GoogleFonts.pixelifySans(
+                  style: AppTheme.numeric(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1522,7 +1523,7 @@ class _HoldingRow extends StatelessWidget {
             children: [
               Text(
                 '${metrics.currentValue.round()}g',
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.numeric(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1705,7 +1706,7 @@ class _AllocationBar extends StatelessWidget {
                       children: [
                         Text(
                           '${segments.length}',
-                          style: GoogleFonts.pixelifySans(
+                          style: AppTheme.numeric(
                             color: Colors.white,
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
@@ -1757,7 +1758,7 @@ class _AllocationBar extends StatelessWidget {
                             ),
                             Text(
                               '${((s.value / total) * 100).toStringAsFixed(0)}%',
-                              style: GoogleFonts.pixelifySans(
+                              style: AppTheme.numeric(
                                 color: s.color,
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
@@ -2124,7 +2125,7 @@ class _StockCardState extends State<_StockCard> {
                       children: [
                         Text(
                           '${quote.symbol} • ${quote.company}',
-                          style: GoogleFonts.pixelifySans(
+                          style: AppTheme.numeric(
                             color: Colors.white,
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
@@ -2215,7 +2216,7 @@ class _StockCardState extends State<_StockCard> {
                       const SizedBox(height: 2),
                       Text(
                         '${averageCost.toStringAsFixed(1)}g / share',
-                        style: GoogleFonts.pixelifySans(
+                        style: AppTheme.numeric(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
                         ),
@@ -2236,7 +2237,7 @@ class _StockCardState extends State<_StockCard> {
                       const SizedBox(height: 2),
                       Text(
                         '$plSign${totalProfitLoss.round()}g ($plSign${profitLossPercent.toStringAsFixed(1)}%)',
-                        style: GoogleFonts.pixelifySans(
+                        style: AppTheme.numeric(
                           color: plColor,
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
@@ -2520,7 +2521,7 @@ class _StockSparklineState extends State<_StockSparkline> {
               Text(
                 '${changePercent >= 0 ? '+' : ''}'
                 '${changePercent.toStringAsFixed(2)}%',
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.numeric(
                   color: lineColor,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -2873,7 +2874,7 @@ class _WorkingOrderRow extends StatelessWidget {
                     Text(
                       '${order.symbol} • ${order.isBuy ? 'Buy' : 'Sell'} '
                       '${order.quantity}',
-                      style: GoogleFonts.pixelifySans(
+                      style: AppTheme.numeric(
                         color: sideColor,
                         fontWeight: FontWeight.w700,
                       ),
@@ -3063,7 +3064,7 @@ class _PnlTab extends StatelessWidget {
             children: [
               Text(
                 '${positive ? '+' : ''}${coinLabel(totalEarned)}',
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.numeric(
                   color: color,
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
@@ -3274,7 +3275,7 @@ class _LiveBadge extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               'LIVE $label',
-              style: GoogleFonts.pixelifySans(
+              style: AppTheme.numeric(
                 color: Color(0xFF00C287),
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
@@ -3613,7 +3614,7 @@ class _PositionBar extends StatelessWidget {
           Text(
             '$sign${coinLabel(pl)} ($sign'
             '${entry.metrics.profitLossPercent.toStringAsFixed(1)}%)',
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.numeric(
               color: color,
               fontWeight: FontWeight.w700,
             ),

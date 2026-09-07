@@ -822,7 +822,7 @@ class _NativeBudgetBattleChallengeState
               Expanded(
                 child: Text(
                   'Question ${_questionIndex + 1} of ${_questions.length}',
-                  style: GoogleFonts.pixelifySans(
+                  style: AppTheme.numeric(
                     color: const Color(0xFF85EFAC),
                     fontWeight: FontWeight.w700,
                   ),
@@ -830,7 +830,7 @@ class _NativeBudgetBattleChallengeState
               ),
               Text(
                 'Score $_correctAnswers',
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.numeric(
                   color: Colors.white70,
                   fontWeight: FontWeight.w700,
                 ),
@@ -950,7 +950,7 @@ class _NativeBudgetBattleChallengeState
               Expanded(
                 child: Text(
                   'Q${index + 1}: ${question.prompt}',
-                  style: GoogleFonts.pixelifySans(
+                  style: AppTheme.numeric(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
                     fontSize: 14,

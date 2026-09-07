@@ -20,6 +20,8 @@ import 'windows_turnstile_view.dart';
 import '../../widgets_custom_lotties/custom_button.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
 import '../Gameplay/dashboard/dashboard_shell.dart';
+import '../../models_Like_Skins_and_lessons_templates/player_profile.dart';
+import '../../themes_colors/app_theme.dart';
 
 enum AuthMode { login, signUp }
 
@@ -38,6 +40,24 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
+
+  /// The age band chosen during sign-up.
+  ///
+  /// **Why this is asked here and not later.** It was only settable in
+  /// Profile, buried behind a personal-details sheet, so almost nobody ever
+  /// set it — which meant almost every account was `undisclosed` and the app
+  /// had no idea who it was teaching. It routes which questions you are
+  /// served out of a bank that spans reading grades -2.4 to 18.4, so an
+  /// unanswered question here is the difference between a six-year-old
+  /// meeting "Diversification reduces risk by:" and meeting something they
+  /// can read.
+  ///
+  /// Defaults to null so the player has to choose, and "Rather not say"
+  /// remains one of the choices — a required field with an honest opt-out
+  /// gets answered far more often than an optional one buried two screens
+  /// away, and gating the app behind a personal question would teach children
+  /// to over-share to get features.
+  AgeBand? _ageBand;
   final TurnstileChallengeServer _turnstileServer = TurnstileChallengeServer();
 
   late AuthMode _mode;
@@ -387,6 +407,13 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     // write to, and after this point the checkbox state is gone -- so this is
     // the only moment the two exist together.
     if (result.success && !_isLogin) {
+      // Straight after sign-up, for the same reason consent is recorded
+      // here: before this point there is no row to write to, and after it
+      // the form state is gone.
+      final band = _ageBand;
+      if (band != null) {
+        await controller.updatePersonalDetails(ageBand: band);
+      }
       await controller.recordPrivacyAcceptance();
     }
 
@@ -800,6 +827,12 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                                         }
                                         return null;
                                       },
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _AgeBandField(
+                                      selected: _ageBand,
+                                      onChanged: (band) =>
+                                          setState(() => _ageBand = band),
                                     ),
                                     const SizedBox(height: 16),
                                   ],
@@ -1370,6 +1403,106 @@ class _HiddenTurnstileView extends StatelessWidget {
       height: 76,
       width: double.infinity,
       child: WebViewWidget(controller: controller!),
+    );
+  }
+}
+
+
+/// "How old are you?", asked once, during sign-up.
+///
+/// A row of chips rather than a dropdown or a date picker. A date of birth is
+/// more precise, more personal, and more work to answer — and the app only
+/// ever needs the band, so asking for the exact day would be collecting data
+/// it has no use for. Chips also let a four-year-old's grown-up tap the right
+/// one without reading a menu.
+class _AgeBandField extends StatelessWidget {
+  const _AgeBandField({required this.selected, required this.onChanged});
+
+  final AgeBand? selected;
+  final ValueChanged<AgeBand> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'How old are you?',
+          style: GoogleFonts.pixelifySans(
+            color: AppTheme.textPrimary,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          // Says what it is for. A personal question with no stated purpose
+          // reads as data collection; the same question with a reason reads
+          // as setup.
+          'It picks the questions you get — nothing else, and nobody sees it.',
+          style: AppTheme.numeric(
+            color: AppTheme.textMuted,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+            height: 1.35,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final band in AgeBand.values)
+              _AgeChip(
+                band: band,
+                isSelected: band == selected,
+                onTap: () => onChanged(band),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _AgeChip extends StatelessWidget {
+  const _AgeChip({
+    required this.band,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final AgeBand band;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = isSelected
+        ? AppTheme.greenPrimary
+        : Colors.white.withValues(alpha: 0.22);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: isSelected ? 0.18 : 0.06),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: accent, width: isSelected ? 1.8 : 1),
+          ),
+          child: Text(
+            band.label,
+            style: AppTheme.numeric(
+              color: isSelected ? AppTheme.greenPrimary : AppTheme.textMuted,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -509,7 +509,7 @@ class _StorePanel extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'Wallet: $gold gold',
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.numeric(
                   color: const Color(0xFFFFD45C),
                   fontWeight: FontWeight.w700,
                 ),
@@ -742,7 +742,7 @@ class _SkinCollection extends StatelessWidget {
               ),
               child: Text(
                 '$owned / $total',
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.numeric(
                   color: Color(0xFF85EFAC),
                   fontSize: 12,
                   fontWeight: FontWeight.w700,

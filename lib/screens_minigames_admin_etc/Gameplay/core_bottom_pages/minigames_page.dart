@@ -400,7 +400,7 @@ class _GoldPill extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             '$gold',
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.numeric(
               color: const Color(0xFFFFD45C),
               fontWeight: FontWeight.w700,
             ),

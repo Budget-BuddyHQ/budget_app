@@ -190,7 +190,7 @@ class _ScoreRow extends StatelessWidget {
           child: Text(
             '$score',
             textAlign: TextAlign.right,
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.numeric(
               color: colour,
               fontSize: 13,
               fontWeight: FontWeight.w700,

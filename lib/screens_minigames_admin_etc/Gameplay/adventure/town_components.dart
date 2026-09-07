@@ -29,10 +29,31 @@ class TownPlayer extends SimplePlayer
   @override
   void onTap() {}
 
+  /// Tap anywhere to walk there.
+  ///
+  /// **This used to be `onTapDown`, which could never fire usefully.**
+  /// Bonfire's `TapGesture` gates `onTapDown` behind
+  /// `containsPoint(tapEvent.worldPosition)` — the tap has to land *inside
+  /// the player component itself*. So a tap anywhere else on the map was
+  /// ignored, and a tap on the player passed its own position to
+  /// `moveAlongThePath`, which is a walk to where you already are. Tap-to-move
+  /// looked implemented, read as implemented, and did nothing at all; the town
+  /// was joystick-and-keyboard only.
+  ///
+  /// `onTapDownScreen` is the callback that fires for taps anywhere on the
+  /// screen, which is what "tap and go" needs. It arrives in *screen* space,
+  /// so it has to be converted before pathfinding — feeding screen
+  /// coordinates to `moveAlongThePath` would send the player to the wrong
+  /// tile on any map that is scrolled, which is every map after the first
+  /// step.
+  ///
+  /// The joystick and WASD/arrow input are untouched. This is an addition for
+  /// desktop and for anybody who would rather not drive a thumbstick.
   @override
-  bool onTapDown(GestureEvent event) {
-    moveAlongThePath([event.worldPosition]);
-    return super.onTapDown(event);
+  void onTapDownScreen(GestureEvent event) {
+    final target = gameRef.screenToWorld(event.screenPosition);
+    moveAlongThePath([target]);
+    super.onTapDownScreen(event);
   }
 }
 
@@ -121,13 +142,16 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
 class TownNpcComponent extends SimpleNpc with Sensor<Player> {
   TownNpcComponent({
     required this.npc,
+    // Which town this is. NPCs stand somewhere different on the second map,
+    // and used not to be drawn there at all — see `TownNpc.tileX2`.
+    required TownMap map,
     required Future<SpriteAnimation> idle,
     required Future<SpriteAnimation> walk,
     required this.onEnter,
     required this.onExit,
-  }) : _home = Vector2(npc.tileX * 16.0, npc.tileY * 16.0),
+  }) : _home = Vector2(npc.xOn(map) * 16.0, npc.yOn(map) * 16.0),
        super(
-         position: Vector2(npc.tileX * 16.0, npc.tileY * 16.0),
+         position: Vector2(npc.xOn(map) * 16.0, npc.yOn(map) * 16.0),
          size: Vector2(26 * AppAssets.npcAspectRatio, 26),
          animation: SimpleDirectionAnimation(idleRight: idle, runRight: walk),
        );

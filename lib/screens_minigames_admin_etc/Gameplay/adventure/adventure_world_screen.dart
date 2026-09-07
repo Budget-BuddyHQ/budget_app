@@ -85,8 +85,13 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   /// Rolled once, alongside the weather, for the same reason: re-rolling in
   /// `build` would swap the map out from under a player mid-step. Both are
   /// held for as long as you are inside.
-  late final TownMap _townMap =
-      TownMap.values[Random().nextInt(TownMap.values.length)];
+  /// The town this life lives in. See [townMapForLife].
+  ///
+  /// Was a per-visit random roll, which meant walking out of the village and
+  /// back in could land you in the market town instead — inside a single run.
+  late final TownMap _townMap = widget.life == null
+      ? TownMap.village
+      : townMapForLife(widget.life!.name, widget.life!.origin.name);
 
   final Set<String> _collectedCoinIds = <String>{};
 
@@ -389,17 +394,19 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
                 // the market map they would stand inside walls. Left out
                 // there rather than placed badly -- an NPC embedded in a
                 // building is worse than a quieter street.
-                if (_townMap == TownMap.village)
-                  for (final npc in kTownNpcs)
-                    TownNpcComponent(
-                      npc: npc,
-                      idle: _npcIdleAnimation(npc.look),
-                      walk: _npcWalkAnimation(npc.look),
-                      onEnter: _onEnterNpc,
-                      onExit: _onExitNpc,
-                    ),
-                if (_townMap == TownMap.village)
-                  for (final coin in kTownCoins)
+                // Both maps have people now. This used to be gated to
+                // the village because the NPCs had no second position, so
+                // half of all visits were to an empty town.
+                for (final npc in kTownNpcs)
+                  TownNpcComponent(
+                    npc: npc,
+                    map: _townMap,
+                    idle: _npcIdleAnimation(npc.look),
+                    walk: _npcWalkAnimation(npc.look),
+                    onEnter: _onEnterNpc,
+                    onExit: _onExitNpc,
+                  ),
+                for (final coin in townCoinsFor(_townMap))
                     if (!_collectedCoinIds.contains(_coinId(coin)))
                       TownCoinComponent(
                         value: coin.value,
@@ -570,7 +577,7 @@ class _ObjectiveBar extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               '$coinsFound',
-              style: GoogleFonts.pixelifySans(
+              style: AppTheme.numeric(
                 color: const Color(0xFFFFD45C),
                 fontSize: 13,
                 fontWeight: FontWeight.w700,

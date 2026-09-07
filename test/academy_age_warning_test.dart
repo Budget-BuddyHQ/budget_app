@@ -48,7 +48,7 @@ void main() {
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.reset);
 
-    final controller = _controllerForBand(AgeBand.under13);
+    final controller = _controllerForBand(AgeBand.age9to12);
     addTearDown(controller.dispose);
     await tester.pumpWidget(_academyFor(controller));
     await tester.pump();
@@ -96,7 +96,7 @@ void main() {
     // Regression guard: using `recommendedStage` here told a player who chose
     // "18 or older" that the 21+ unit was above their age.
     expect(AgeBand.adult18plus.maxPlausibleStage, AgeStage.adult);
-    expect(AgeBand.under13.maxPlausibleStage, AgeStage.middleSchool);
+    expect(AgeBand.age9to12.maxPlausibleStage, AgeStage.middleSchool);
     expect(AgeBand.teen16to17.maxPlausibleStage, AgeStage.highSchool);
     expect(AgeBand.undisclosed.maxPlausibleStage, isNull);
 
@@ -115,7 +115,7 @@ void main() {
   test('the curriculum actually contains units above a 12-year-old', () {
     // Guards the widget tests above: if every unit were middle-school, they
     // would pass by finding nothing rather than by the logic working.
-    final reader = AgeBand.under13.recommendedStage;
+    final reader = AgeBand.age9to12.recommendedStage;
     expect(
       lessonUnits.where((u) => isAboveReaderStage(u.ageStage, reader)).length,
       greaterThan(0),
