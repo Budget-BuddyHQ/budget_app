@@ -7,6 +7,7 @@ import 'package:budget_app/screens_minigames_admin_etc/Gameplay/money_habits/mon
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/tutorial_steps.dart';
 import 'package:budget_app/screens_minigames_admin_etc/onboarding/coach_mark.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/personal_details_sheet.dart';
+import 'package:budget_app/screens_minigames_admin_etc/coach/coach_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -265,6 +266,10 @@ class _MainNavigationState extends State<MainNavigation> {
                 activeTabIndex: AppTabIndex.profile,
                 onNavSelected: _selectTab,
               ),
+              CoachScreen(
+                activeTabIndex: AppTabIndex.coach,
+                onNavSelected: _selectTab,
+              ),
             ],
           ),
         ),
@@ -381,6 +386,18 @@ class _TopIconBar extends StatelessWidget {
                   TutorialTargets.register('leaderboard', key);
                   return _LeaderboardIconButton(key: key, compact: narrow);
                 },
+              ),
+              SizedBox(width: narrow ? 6 : 8),
+              // Left of Profile on purpose. The strip reads
+              // Daily - wordmark - Leaderboard - Coach - Profile, so the two
+              // things about *you specifically* sit together at the end.
+              _TopIconButton(
+                label: 'Coach',
+                icon: Icons.insights_rounded,
+                active: currentIndex == AppTabIndex.coach,
+                compact: narrow,
+                tourId: 'coach',
+                onTap: () => onSelected(AppTabIndex.coach),
               ),
               SizedBox(width: narrow ? 6 : 8),
               _TopIconButton(

@@ -107,6 +107,11 @@ class MoneySnapshot {
     this.townSpotsAvailable = 0,
     this.challengesStarted = 0,
     this.challengesFinished = 0,
+    this.cascadeRuns = 0,
+    this.cascadeLevelsCleared = 0,
+    this.cascadeWantsShare = 0,
+    this.cascadeSavesShare = 0,
+    this.distinctEndings = 0,
   });
 
   /// The sentinel the habit store uses when nothing has ever been logged.
@@ -143,6 +148,35 @@ class MoneySnapshot {
 
   final int challengesStarted;
   final int challengesFinished;
+
+  /// Coin Cascade runs finished, and how the board was actually divided.
+  ///
+  /// **Why an arcade game feeds the coach at all.** Coin Cascade is the one
+  /// place in this app where a player allocates money under pressure without
+  /// being asked to. Nothing on that screen says "budget" while it is being
+  /// played — needs clear bills, wants raise them, savings win — so the split
+  /// that comes out is behaviour rather than an answer to a question about
+  /// behaviour. That makes it the most honest number the app holds, and the
+  /// only one worth checking a quiz score against.
+  ///
+  /// Shares are 0..1, averaged over finished runs.
+  final int cascadeRuns;
+  final int cascadeLevelsCleared;
+  final double cascadeWantsShare;
+  final double cascadeSavesShare;
+
+  /// Enough runs to talk about a pattern rather than an off day.
+  bool get hasCascadeHistory => cascadeRuns >= 2;
+
+  /// How many different life endings have been reached.
+  ///
+  /// **Why the analyser needs to know.** Net worth is the obvious measure of
+  /// a life and it is not the only one somebody plays for. A player working
+  /// through the endings deliberately gets poorer runs on purpose — and being
+  /// told "your lives are not getting richer" for doing the thing the game
+  /// rewards is the fastest way to teach somebody that the coach is not
+  /// paying attention.
+  final int distinctEndings;
 
   bool get hasEverLogged => daysSinceLastLog < neverLogged;
 
@@ -451,23 +485,188 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
         ),
       );
     } else if (snap.pastLifeNetWorths.length >= 3) {
+      // Are they collecting endings rather than chasing money?
+      //
+      // Three or more distinct endings across a handful of lives is not
+      // somebody failing to get rich — it is somebody exploring the game on
+      // purpose, and poorer runs are the *cost* of that rather than a
+      // mistake. Scolding them for it would be the coach reading a number
+      // without reading the player.
+      final exploring =
+          snap.distinctEndings >= 3 &&
+          snap.distinctEndings >= snap.pastLifeNetWorths.length - 1;
+
+      findings.add(
+        exploring
+            ? MoneyFinding(
+                id: 'lives_exploring',
+                kind: MoneyFindingKind.strength,
+                dimension: MoneyDimension.exposure,
+                title: 'You are playing for the endings, not the money',
+                evidence:
+                    '${snap.distinctEndings} different endings across '
+                    '${snap.pastLifeNetWorths.length} lives.',
+                action:
+                    'Worth knowing what it costs: the runs that reach an '
+                    'unusual ending finish poorer, and that is a real '
+                    'trade rather than a mistake. Try one run where you '
+                    'chase an ending *and* open the Money menu early — the '
+                    'two are not opposites.',
+                concept: FinanceConcept.opportunityCost,
+              )
+            : MoneyFinding(
+                id: 'lives_flat',
+                kind: MoneyFindingKind.watch,
+                dimension: MoneyDimension.exposure,
+                title: 'Your lives are not getting richer',
+                evidence:
+                    'Last three finished at '
+                    '${snap.pastLifeNetWorths.take(3).join(', ')}.',
+                action:
+                    'Next run, open the Money menu in the first ten years '
+                    'instead of the last ten. Almost all of the difference '
+                    'is made early.',
+                concept: FinanceConcept.compoundGrowth,
+              ),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // Cross-domain rules.
+  //
+  // Everything above reads one area and reports on it. These read *two* and
+  // report on the gap, which is where the findings a player cannot get from
+  // looking at their own screens live. They are added last so that when two
+  // rules describe the same behaviour, the specific cross-domain one is the
+  // later, more interesting sentence rather than a duplicate of a simpler
+  // one above it.
+  // ---------------------------------------------------------------------
+
+  // Knowing it and doing it are different, and only one of them is a skill.
+  //
+  // This is the finding this whole section exists for. A player who scores
+  // well on needs-versus-wants and then spends over a third of an unlabelled
+  // board on wants has not failed to learn the definition — they have learnt
+  // *only* the definition. No single screen in this app can see that: the
+  // Academy sees a good score, the arcade sees a finished run, and the gap
+  // between them is invisible to both.
+  final splitKnowledge = <FinanceConcept>[
+    FinanceConcept.needsVsWants,
+    FinanceConcept.budgetRule,
+  ].map((c) => snap.conceptAccuracy[c]).whereType<double>().toList();
+  final bestSplitScore = splitKnowledge.isEmpty
+      ? null
+      : splitKnowledge.reduce((a, b) => a > b ? a : b);
+
+  if (snap.hasCascadeHistory) {
+    final wantsPct = (snap.cascadeWantsShare * 100).round();
+    final savesPct = (snap.cascadeSavesShare * 100).round();
+
+    if (bestSplitScore != null &&
+        bestSplitScore >= 0.8 &&
+        snap.cascadeWantsShare >= 0.35) {
       findings.add(
         MoneyFinding(
-          id: 'lives_flat',
-          kind: MoneyFindingKind.watch,
-          dimension: MoneyDimension.exposure,
-          title: 'Your lives are not getting richer',
+          id: 'knows_split_plays_otherwise',
+          kind: MoneyFindingKind.fix,
+          dimension: MoneyDimension.learning,
+          title: 'You can define the rule and you do not play it',
           evidence:
-              'Last three finished at '
-              '${snap.pastLifeNetWorths.take(3).join(', ')}.',
+              'You score ${(bestSplitScore * 100).round()}% on needs versus '
+              'wants, and across ${snap.cascadeRuns} Coin Cascade runs '
+              'wants took $wantsPct% of your board.',
           action:
-              'Next run, open the Money menu in the first ten years '
-              'instead of the last ten. Almost all of the difference is made '
-              'early.',
-          concept: FinanceConcept.compoundGrowth,
+              'Next run, decide before you start that wants stay under a '
+              'third — then watch the bills counter instead of the score. '
+              'The rule is not the hard part; spending it is.',
+          concept: FinanceConcept.budgetRule,
+        ),
+      );
+    } else if (bestSplitScore == null && snap.cascadeLevelsCleared >= 3) {
+      findings.add(
+        MoneyFinding(
+          id: 'plays_split_never_read_it',
+          kind: MoneyFindingKind.watch,
+          dimension: MoneyDimension.learning,
+          title: 'You are good at this without knowing what it is called',
+          evidence:
+              'Cleared ${snap.cascadeLevelsCleared} Coin Cascade levels, '
+              'and have never been assessed on the rule underneath them.',
+          action:
+              'Coin Cascade is 50/30/20 with the labels taken off. Take the '
+              'Budgeting unit and you will recognise every part of it.',
+          concept: FinanceConcept.budgetRule,
+        ),
+      );
+    } else if (snap.cascadeSavesShare >= 0.2 &&
+        snap.cascadeWantsShare <= 0.3) {
+      findings.add(
+        MoneyFinding(
+          id: 'split_healthy',
+          kind: MoneyFindingKind.strength,
+          dimension: MoneyDimension.saving,
+          title: 'You budget like this when nothing is asking you to',
+          evidence:
+              'Across ${snap.cascadeRuns} runs: $savesPct% to savings, '
+              '$wantsPct% to wants.',
+          action:
+              'That is a 50/30/20 split, arrived at by playing rather than '
+              'by being told. It is the habit worth protecting.',
+          concept: FinanceConcept.budgetRule,
         ),
       );
     }
+
+    // The same shape showing up in two independent systems.
+    //
+    // One high-wants arcade run is a bad afternoon. High wants *and* lives
+    // that are not getting richer is the same decision being made twice, in
+    // two places built by different rules, and that is worth saying out loud
+    // because neither screen can say it alone.
+    if (snap.cascadeWantsShare >= 0.4 &&
+        snap.pastLifeNetWorths.length >= 3 &&
+        snap.pastLifeNetWorths.first <= snap.pastLifeNetWorths[2]) {
+      findings.add(
+        MoneyFinding(
+          id: 'wants_pattern_across_games',
+          kind: MoneyFindingKind.fix,
+          dimension: MoneyDimension.saving,
+          title: 'The same habit is showing up in two different games',
+          evidence:
+              'Wants took $wantsPct% of your Coin Cascade boards, and your '
+              'last three lives finished at '
+              '${snap.pastLifeNetWorths.take(3).join(', ')}.',
+          action:
+              'These two games share no code and no rules. When a pattern '
+              'appears in both, it is coming from you rather than from the '
+              'game — which is the useful kind of bad news.',
+          concept: FinanceConcept.opportunityCost,
+        ),
+      );
+    }
+  }
+
+  // Reading without practising, which is the opposite failure and just as
+  // real. Someone can finish half the Academy and never make one decision.
+  if (snap.lessonsCompleted >= 4 &&
+      snap.cascadeRuns == 0 &&
+      snap.pastLifeNetWorths.isEmpty) {
+    findings.add(
+      MoneyFinding(
+        id: 'reads_never_plays',
+        kind: MoneyFindingKind.watch,
+        dimension: MoneyDimension.exposure,
+        title: 'You have read more than you have decided',
+        evidence:
+            '${snap.lessonsCompleted} lessons finished, no lives played and '
+            'no Coin Cascade runs.',
+        action:
+            'Play one life. The lessons will stop being facts and start '
+            'being things you wish you had done earlier.',
+        concept: FinanceConcept.opportunityCost,
+      ),
+    );
   }
 
   // Worst first. Within a kind, keep the order the rules produced them in,

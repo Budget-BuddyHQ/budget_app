@@ -26,7 +26,11 @@ class CurriculumSourcesCard extends StatelessWidget {
 
   final bool compact;
 
-  static int get _lessonCount => lessonUnits
+  /// Teaching lessons, matching `LessonProgression.teachingTotal`.
+  ///
+  /// Public so `curriculum_counts_test.dart` can hold the two player-facing
+  /// lesson counts to one definition — they disagreed on screen once.
+  static int get lessonCount => lessonUnits
       .expand((unit) => unit.lessons)
       .where((lesson) => lesson.type == LessonNodeType.lesson)
       .length;
@@ -75,7 +79,7 @@ class CurriculumSourcesCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '$_lessonCount lessons and $_questionCount questions, checked '
+            '$lessonCount lessons and $_questionCount questions, checked '
             'against the agencies that publish the rules — not against a '
             'bank that sells the products.',
             style: GoogleFonts.quicksand(

@@ -49,17 +49,89 @@ void main() {
       );
     });
 
-    test('the landing page exists where the constant says it does', () {
-      // The URL is a GitHub Pages address: /docs on main is published at
-      // https://budget-buddyhq.github.io/budget_app/<file>. So the last path
-      // segment of the constant has to be a real file in docs/.
-      final fileName = Uri.parse(passwordResetLandingUrl).pathSegments.last;
+    test('the landing page is served by something that exists', () {
+      // This test used to assert that the last path segment of the URL was a
+      // real file in docs/, on the theory that GitHub Pages published docs/
+      // on main. Every part of that was true and the URL 404'd anyway: the
+      // repository is private, and Pages does not serve private repositories
+      // on a free plan. "The file is in the repo" and "the file is being
+      // served" are different claims, and only the first was being checked.
+      //
+      // The page is now baked into a Supabase edge function, so the check
+      // that is actually worth making is that the function exists and its
+      // route matches the constant.
+      final leaf = Uri.parse(passwordResetLandingUrl).pathSegments.last;
+      final fn = File('supabase/functions/pages/index.ts');
       expect(
-        File('docs/$fileName').existsSync(),
+        fn.existsSync(),
         isTrue,
+        reason: 'the pages edge function is missing — run '
+            'tool/build_pages_function.py',
+      );
+      expect(
+        fn.readAsStringSync(),
+        contains('case "$leaf":'),
         reason:
-            'passwordResetLandingUrl points at docs/$fileName, which is not '
-            'in the repository — the reset link will 404',
+            'passwordResetLandingUrl ends in /$leaf, but the pages function '
+            'has no route for it — the reset link will 404',
+      );
+    });
+
+    test('the baked copy has not drifted from the source page', () {
+      // The function embeds the HTML rather than fetching it, so editing
+      // docs/password-reset.html and forgetting to regenerate would leave
+      // the deployed page silently stale. Nothing else would catch that.
+      final source = read('docs/password-reset.html');
+      final baked = read('supabase/functions/pages/index.ts');
+      final marker = source.contains('id="open"')
+          ? 'id="open"'
+          : passwordResetDeepLink;
+      expect(
+        baked,
+        contains(marker),
+        reason: 'supabase/functions/pages/index.ts is out of date — run '
+            'python tool/build_pages_function.py',
+      );
+    });
+
+    test('the embedded HTML cannot break out of its template literal', () {
+      // The function holds both pages as TypeScript template literals. Three
+      // sequences can end or escape one: a backslash, a backtick, and `${`.
+      // Both pages already contain backticks in their comments, so this is
+      // not hypothetical — if the generator's escaping regressed, the file
+      // would stop parsing and the failure would land at *deploy* time, on
+      // the server, in the one flow whose failure mode is "nobody can get
+      // back into their account".
+      //
+      // Exactly four unescaped backticks: an opening and closing delimiter
+      // for each of the two constants. Any other number means the HTML
+      // terminated a literal early.
+      final ts = read('supabase/functions/pages/index.ts');
+      final unescaped = RegExp(r'(?<!\\)`').allMatches(ts).length;
+      expect(
+        unescaped,
+        4,
+        reason:
+            'supabase/functions/pages/index.ts has $unescaped unescaped '
+            'backticks, not 4 — an embedded page is breaking out of its '
+            'template literal and the function will not parse',
+      );
+      expect(
+        RegExp(r'(?<!\\)\$\{').allMatches(ts).length,
+        0,
+        reason: 'an embedded page contains an unescaped \${, which the '
+            'runtime would try to interpolate',
+      );
+    });
+
+    test('the reset page is not on a host that cannot serve it', () {
+      // The specific mistake this replaced, pinned so it cannot come back.
+      expect(
+        passwordResetLandingUrl,
+        isNot(contains('github.io')),
+        reason:
+            'GitHub Pages does not serve this repository — it is private, '
+            'and a free plan does not publish private repos. This URL 404s.',
       );
     });
 

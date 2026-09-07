@@ -550,6 +550,53 @@ class _HallOfFameStage extends StatelessWidget {
     final second = top3.length > 1 ? top3[1] : null;
     final third = top3.length > 2 ? top3[2] : null;
 
+    // Only build plinths for people who exist.
+    //
+    // Every place used to be drawn regardless, so a board with two players
+    // showed a real winner beside an empty stand with a dash under it. That
+    // reads as "third place failed to load", not as "there are two of you" —
+    // and on a friends board, which is small by nature, it was the common
+    // case rather than an edge one.
+    final places = <Widget>[
+      if (second != null)
+        Expanded(
+          child: _PodiumPlace(
+            entry: second,
+            rank: 2,
+            standHeight: 64,
+            medalColor: const Color(0xFFC0C0C0),
+            avatarSize: 52,
+            byGold: byGold,
+            currentUserProfileImageUrl: currentUserProfileImageUrl,
+          ),
+        ),
+      if (first != null)
+        Expanded(
+          child: _PodiumPlace(
+            entry: first,
+            rank: 1,
+            standHeight: 96,
+            medalColor: const Color(0xFFF4D06F),
+            avatarSize: 66,
+            crowned: true,
+            byGold: byGold,
+            currentUserProfileImageUrl: currentUserProfileImageUrl,
+          ),
+        ),
+      if (third != null)
+        Expanded(
+          child: _PodiumPlace(
+            entry: third,
+            rank: 3,
+            standHeight: 48,
+            medalColor: const Color(0xFFCD7F32),
+            avatarSize: 46,
+            byGold: byGold,
+            currentUserProfileImageUrl: currentUserProfileImageUrl,
+          ),
+        ),
+    ];
+
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
       decoration: BoxDecoration(
@@ -574,42 +621,10 @@ class _HallOfFameStage extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Expanded(
-            child: _PodiumPlace(
-              entry: second,
-              rank: 2,
-              standHeight: 64,
-              medalColor: const Color(0xFFC0C0C0),
-              avatarSize: 52,
-              byGold: byGold,
-              currentUserProfileImageUrl: currentUserProfileImageUrl,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: _PodiumPlace(
-              entry: first,
-              rank: 1,
-              standHeight: 96,
-              medalColor: const Color(0xFFF4D06F),
-              avatarSize: 66,
-              crowned: true,
-              byGold: byGold,
-              currentUserProfileImageUrl: currentUserProfileImageUrl,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: _PodiumPlace(
-              entry: third,
-              rank: 3,
-              standHeight: 48,
-              medalColor: const Color(0xFFCD7F32),
-              avatarSize: 46,
-              byGold: byGold,
-              currentUserProfileImageUrl: currentUserProfileImageUrl,
-            ),
-          ),
+          for (var i = 0; i < places.length; i++) ...[
+            if (i > 0) const SizedBox(width: 6),
+            places[i],
+          ],
         ],
       ),
     );

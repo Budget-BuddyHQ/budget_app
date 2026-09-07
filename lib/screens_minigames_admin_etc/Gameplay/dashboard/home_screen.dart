@@ -16,6 +16,7 @@ import '../../../constants/app_assets.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
+import '../../../widgets_custom_lotties/coach_spot.dart';
 import '../../../widgets_custom_lotties/feedback_prompt_sheet.dart';
 import '../../../widgets_custom_lotties/idle_hover_icon.dart';
 import '../../../widgets_custom_lotties/mentor_tip_card.dart';
@@ -132,6 +133,22 @@ class HomeScreen extends StatelessWidget {
                           // primary action instead of two competing ones.
                           const SizedBox(height: 10),
                           _TodayCard(onOpen: () => _openDaily(context)),
+                          // The coach, on the screen everybody lands on.
+                          //
+                          // Above the mentor tip on purpose. `MentorTipCard`
+                          // is general advice that is true for everyone;
+                          // this is one sentence about *this* player's own
+                          // numbers, and when both are on screen the
+                          // specific one has to come first or it reads as a
+                          // footnote to the generic one.
+                          //
+                          // Renders nothing at all for a new account — see
+                          // `MoneyReport.isNewcomer`. A coach with no
+                          // history to read should be quiet rather than
+                          // encouraging.
+                          const CoachSpot(
+                            margin: EdgeInsets.only(top: 10),
+                          ),
                           const SizedBox(height: 10),
                           MentorTipCard(
                             simpleWording: stats.ageBand.prefersSimpleWording,

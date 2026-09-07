@@ -400,7 +400,25 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
           ? 'Payday Rush: ${report.savesPercent}% of the board went to '
                 'savings.'
           : 'Coin Cascade level ${game.level.number}.',
-      'spending_habits': <String, dynamic>{'cascade_cleared': _clearedThrough},
+      'spending_habits': <String, dynamic>{
+        'cascade_cleared': _clearedThrough,
+        // Feed the coach. This board is the only place in the app where a
+        // player allocates money under pressure without being told that is
+        // what they are doing — nothing on screen says "budget" while it is
+        // being played — so the split it produces is behaviour rather than an
+        // answer about behaviour. `money_analyzer.dart` checks it against
+        // their quiz scores, which is a comparison neither the Academy nor
+        // the arcade can make on its own.
+        //
+        // Totals, not an average: see `UserStats.cascadeRuns`.
+        'cascade_runs': controller.stats.cascadeRuns + 1,
+        'cascade_needs_total':
+            controller.stats.cascadeNeedsTotal + report.needs,
+        'cascade_wants_total':
+            controller.stats.cascadeWantsTotal + report.wants,
+        'cascade_saves_total':
+            controller.stats.cascadeSavesTotal + report.saves,
+      },
     });
 
     if (!mounted) return;
@@ -529,7 +547,7 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Match three',
+                'How Coin Cascade works',
                 style: GoogleFonts.pixelifySans(
                   color: PixelFrameStyle.slate.accent,
                   fontSize: 20,
@@ -537,28 +555,108 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
                 ),
               ),
               const SizedBox(height: 10),
-              for (final kind in TileKind.values)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(kind.emoji, style: const TextStyle(fontSize: 18)),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _helpFor(kind),
-                          style: GoogleFonts.quicksand(
-                            color: PixelFrameStyle.slate.inkMuted,
-                            height: 1.35,
-                            fontWeight: FontWeight.w600,
+                      _HelpSection(
+                        title: 'What you are trying to do',
+                        lines: const <String>[
+                          'Fill the savings bar before you run out of moves. '
+                              'That is the only way to win a level.',
+                          'While you do it, do not let Bills owed reach the '
+                              'number on the right of it. If it does, the '
+                              'level ends.',
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'The five tiles',
+                        style: GoogleFonts.pixelifySans(
+                          color: PixelFrameStyle.slate.accent,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      for (final kind in TileKind.values)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                kind.emoji,
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _helpFor(kind),
+                                  style: GoogleFonts.quicksand(
+                                    color: PixelFrameStyle.slate.inkMuted,
+                                    height: 1.35,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                      const SizedBox(height: 4),
+                      // The question that was actually asked. Where bills
+                      // come from is the whole game and it was nowhere on
+                      // screen.
+                      _HelpSection(
+                        title: 'Where bills come from',
+                        lines: const <String>[
+                          'On a timer. A bill arrives every few moves whether '
+                              'you are ready or not — the level banner says '
+                              'how often.',
+                          'From your own wants. Every want you match scores '
+                              'well and adds bills on top of the scheduled '
+                              'ones.',
+                          'Matching needs is the only thing that pays them '
+                              'down.',
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _HelpSection(
+                        title: 'What a level is',
+                        lines: const <String>[
+                          'Each level adds one new pressure, not just bigger '
+                              'numbers: bills arrive faster, or wants cost '
+                              'double, or the moves run short enough that '
+                              'coins stop being optional.',
+                          'Clear one and the next unlocks. The banner at the '
+                              'top always names the rule you are playing.',
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // Said last on purpose. Naming the lesson first would
+                      // turn a game into a worksheet; naming it after the
+                      // rules lets a player recognise something they have
+                      // already been doing.
+                      _HelpSection(
+                        title: 'What it is really teaching',
+                        lines: const <String>[
+                          'This is the 50/30/20 rule with the labels taken '
+                              'off. Needs are what you have to cover, wants '
+                              'are optional and cost you later, savings are '
+                              'the only thing that gets you anywhere.',
+                          'Nothing on the board says the word budget while '
+                              'you play. The split you end up with is a habit '
+                              'rather than an answer — which is why your '
+                              'coach reads it.',
+                        ],
                       ),
                     ],
                   ),
                 ),
-              const SizedBox(height: 4),
+              ),
+              const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
                 child: PixelButton(
@@ -578,8 +676,66 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
     TileKind.want => 'Wants score big — and add to what you owe.',
     TileKind.save => 'Savings are how you win. Fill the goal bar.',
     TileKind.coin => 'Coins buy extra moves when you run low.',
-    TileKind.bill => 'Bills turn up on their own. Clear them or they pile up.',
+    TileKind.bill =>
+      'Bills sit on the board. Matching three clears them off it.',
   };
+}
+
+/// A titled block of plain sentences in the help sheet.
+///
+/// Extracted because the help now has four of them and a screen that explains
+/// rules badly is the fault being fixed — a copy-pasted `Column` per section
+/// is how the wording drifts apart later.
+class _HelpSection extends StatelessWidget {
+  const _HelpSection({required this.title, required this.lines});
+
+  final String title;
+  final List<String> lines;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.pixelifySans(
+            color: PixelFrameStyle.slate.accent,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 6),
+        for (final line in lines)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '\u2022  ',
+                  style: GoogleFonts.quicksand(
+                    color: PixelFrameStyle.slate.accent,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    line,
+                    style: GoogleFonts.quicksand(
+                      color: PixelFrameStyle.slate.inkMuted,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 /// Score, goal, bills and moves.
