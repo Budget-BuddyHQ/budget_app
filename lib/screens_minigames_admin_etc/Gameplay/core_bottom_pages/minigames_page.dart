@@ -15,6 +15,7 @@ import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/hover_lift.dart';
 import '../../../models_Like_Skins_and_lessons_templates/coin_cascade_models.dart';
 import '../minigames_pages/coin_cascade_page.dart';
+import '../minigames_pages/leak_patrol_page.dart';
 import '../minigames_pages/finance_brawl_game.dart';
 import '../minigames_pages/react_challenge_screen.dart';
 import '../minigames_pages/stock_market_page.dart';
@@ -44,7 +45,22 @@ class MinigamesPage extends StatelessWidget {
         await _openFinanceBrawl(context);
       case 'coin_cascade':
         await _openCoinCascade(context);
+      case 'leak_patrol':
+        await _openLeakPatrol(context);
     }
+  }
+
+  /// Leak Patrol pays itself.
+  ///
+  /// Unlike the older games it does not hand a result back for the hub to
+  /// announce — it applies its own payload when the round ends, which is the
+  /// pattern Coin Cascade had to be moved to after the hub announced gold
+  /// that nothing had actually paid. Nothing to reconcile here means nothing
+  /// to get out of step.
+  Future<void> _openLeakPatrol(BuildContext context) async {
+    await Navigator.of(
+      context,
+    ).push(FadePageRoute(builder: (_) => const LeakPatrolPage()));
   }
 
   Future<void> _openReactChallenge(BuildContext context) async {

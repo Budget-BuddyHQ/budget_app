@@ -129,6 +129,38 @@ class AvatarSkin {
   String sheetAsset(VillagerBody body) =>
       AppAssets.villagerSheet(humanVariantId, female: body.isFemale);
 
+  /// The one frame a raw `Canvas` should draw for this skin.
+  ///
+  /// # Why this is not just [previewAsset]
+  ///
+  /// The widget tree has [AvatarSprite], which hides the fact that villagers
+  /// are one cell of a packed 8x4 sheet while turtles and critters are loose
+  /// stills. A `Canvas` has no such helper: `drawImageRect` needs to be told
+  /// which rectangle of the loaded image is the character, and handing it a
+  /// whole villager sheet draws all thirty-two frames squashed into the
+  /// destination — which is what the Finance Brawl would have done.
+  ///
+  /// So the split is answered once, here, and every canvas that wants to draw
+  /// a player gets the same answer. [cell] of null means "the whole image".
+  ///
+  /// The frame is south-facing and first in its row deliberately — the only
+  /// pose that reads as a character facing the player rather than one caught
+  /// mid-stride.
+  ({String asset, Rect? cell}) canvasFrame(VillagerBody body) {
+    if (!isHuman) {
+      return (asset: previewAsset, cell: null);
+    }
+    return (
+      asset: sheetAsset(body),
+      cell: Rect.fromLTWH(
+        0,
+        AppAssets.villagerRow('south') * AppAssets.villagerCellHeight,
+        AppAssets.villagerCellWidth,
+        AppAssets.villagerCellHeight,
+      ),
+    );
+  }
+
   /// Walk-cycle frames for [direction], for skins that still use loose frames.
   /// Villagers return empty — they animate from their sheet instead.
   List<String> walkFrames(String direction) {

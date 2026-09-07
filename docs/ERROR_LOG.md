@@ -1231,6 +1231,503 @@ lives is somebody exploring on purpose, and the finding becomes a *strength*
 that names the trade honestly — the unusual endings do finish poorer, and that
 is a cost rather than a mistake — instead of advice they did not need.
 
+### 34. The paycheck that paid nothing
+
+**Symptom.** From a tester, playing: *"I got my paycheck and it didn't give me
+any [money]"*, and separately *"he basically doesn't get all the money he gets
+from the jobs that he does."*
+
+**The arithmetic, in `_applyBudget`.** On the default 50/30/20 split, a salary
+of 100 does this:
+
+```
+_money += 100                       // paid
+_money -= needsBudget + wantsBudget  // -80
+_emergencyFund += savingsBudget      // -20, moved to the fund
+                                     // net cash change: 0
+```
+
+**Payday leaves your cash exactly unchanged.** The coin counter — the number
+players actually watch — does not move on the one turn the game says "you were
+paid". Everything is allocated; nothing is discretionary.
+
+That much is arguably the design. Two things underneath it were not.
+
+**Bug one: the wants budget bought nothing.** `wantsBudget` was subtracted
+every year and produced **no happiness, no stat, no feed line** — the money
+simply disappeared. The only other use of `_wantsPct` anywhere was a *penalty*
+for setting it at or below 5%. So there was no winning move: spend 30% of
+every paycheck and get nothing back, or spend nothing and be docked happiness.
+
+It also explains a second report from the same session — *"what is the 50/30/20
+thing, bro?"* The wants third of the rule did not do anything, so there was
+nothing to learn from it. A budget only teaches if each category visibly buys
+what it is for: needs keep you well, savings build the fund, wants make the
+life worth living. Wants now pay happiness scaled against the 30% baseline and
+capped, so choosing your own split is a real trade rather than a cosmetic one.
+
+**Bug two: money was being destroyed.**
+
+```dart
+_emergencyFund += savingsBudget;
+_money -= savingsBudget;
+if (_money < 0) {
+  _money = 0;      // <- the shortfall is deleted
+}
+```
+
+A player who could not cover the savings transfer had the difference silently
+erased instead of it becoming something they owed. The ledger stopped
+reconciling, which is exactly what "doesn't get all the money from his jobs"
+looks like from outside — and the game already models debt and already charges
+interest on it, so there was a correct home for that number all along. Now the
+fund takes only what is actually there and any remainder becomes debt, with a
+feed line saying so.
+
+**Verified by.** `life_economy_test.dart`: cash + savings − debt never falls on
+a paid year, savings never exceed what existed, a high-wants budget is happier
+than a low-wants one, and wants cannot buy a whole life.
+
+**A confound in my own test, worth recording.** The wants comparison passed
+alone and failed in a full run. Not flakiness in the code — the controller's
+`Random()` is unseeded, and the events rolled during `ageUp` move happiness by
+more than any budget does, so two controllers were being compared while living
+two *different lives*. Seeding both sides identically makes the budget the only
+difference. A comparison test that does not control its confounds is measuring
+the confound.
+
+### 35. The gym could be tapped until the bar filled
+
+**Symptom.** *"They can spam like gym to gain happiness which we do not want."*
+
+**Root cause.** `exercise()` gave +8 Health and +3 Looks with **no per-year
+limit of any kind**, and neither did any other on-demand action. A player could
+sit on one year and tap until both stats maxed. Any game whose optimal move is
+pressing one button repeatedly has stopped being about choices, and this one is
+supposed to be about the trade-offs between them.
+
+**Fix.** A general `_yield` / `_spend` pair rather than a patch on the gym:
+100%, 50%, 25%, then nothing, reset every year in `ageUp`. Applying it once
+covers every action that grows a stat, so the next one written inherits it.
+
+**Diminishing rather than a hard cap, deliberately.** A hard "once per year"
+reads as the game refusing you and invites ageing up purely to reset the
+counter; a fading return reads as the thing it actually models — the first
+workout of a year changes you, the fifth barely registers. And the fourth
+attempt *says so* rather than silently doing nothing, because a button that
+looks like it worked and did not is the worse failure. That exact bug appears
+twice already in this log.
+
+### 36. Three hundred lines of missions that nothing imported
+
+**Symptom.** *"The NPCs still just give out dialogue, we want action from the
+NPC — like that NPC stealing from you and running away with your money, and
+side quests."* Asked twice, in two separate messages.
+
+**Root cause.** `town_missions.dart` had been written — 346 lines, six
+missions, `npcId` values matching the real roster exactly — and a repo-wide
+search for `TownMission`, `kTownMissions`, `missionsFor` and `MissionGoal`
+returned **zero hits outside the file itself**. It compiled as an orphan while
+`_talkTo` carried on doing the one thing it had always done: pick the next
+canned line and show it.
+
+So the honest answer to "you said you did this" was that the *model* existed
+and the *feature* did not. Writing the data and never wiring it is the same
+failure as writing a getter with no callers — `MoneyReport.headline` did
+exactly that two entries ago.
+
+**Fix, in two halves.**
+
+`_talkTo` now goes three ways: an **encounter** if one rolls, otherwise a
+**mission** if this person has one outstanding, otherwise the conversation.
+Missions needed state that had never existed — `completedMissionIds` and a
+`challengesSolved` counter — plus `completeMission`, which is idempotent
+because the claim button is driven by a progress check that stays true after
+completion. Without that guard a player could stand in front of one person and
+collect repeatedly, which is the town-farming bug this project has already
+fixed twice: once in the coins, once in the building encounters.
+
+`npc_encounters.dart` is the other half — things people **do** to you. A
+pickpocket, a "guaranteed returns" scam, honest work, a fair split, and
+somebody handing your wallet back.
+
+**Every design decision in it is a safety decision, because this is played by
+four-year-olds.**
+
+* Losses are a **percentage of carried cash with a hard cap**. A flat 200 is
+  nothing to a teenager with 4,000 and the end of a run for a six-year-old
+  with 40; the same encounter has to mean the same thing to both.
+* Nothing can take more than is there. **Being robbed into debt** would be a
+  punishment with no way to decline it.
+* Savings are never touched, and the outcome line says so — which is what
+  makes the pickpocket a lesson about where you keep money rather than a tax.
+* The **scam names its own tell before you choose**, not after. A scam you only
+  understand once it has taken your money is a punishment; the point is that
+  it is recognisable in advance.
+* One encounter is simply somebody being **kind**, unconditionally. A town
+  where every stranger is a threat teaches suspicion, which is not financial
+  literacy — it is just a worse way to live.
+* Roughly one visit in three, never the same one twice running. An encounter
+  every time makes the pickpocket routine rather than a shock.
+* The scam and the pickpocket have age floors, so the youngest players meet
+  only the work and the kindness.
+
+**Verified by.** 18 tests, mostly on the losses: a broke player cannot be
+robbed, no loss exceeds carried cash at any balance from 0 to 100,000, caps
+hold, and young players never meet the scam. Plus one that every mission is
+completable *and* does not complete itself for free.
+
+**A test caught thin writing, not a bug.** One decline line read "They find
+somebody else." — 24 characters, naming no lesson, against a rule the file's
+own header sets: both outcomes teach. The right response was to write a better
+line, not to lower the threshold.
+
+### 37. A ten-year-old was being offered a mortgage
+
+**Symptom.** *"My little brother is getting confused by the options in the main
+game as a 10 year old since we are talking about loans and down payments and he
+doesn't know what that is."*
+
+**Root cause — the same mistake, for the third time.** `LifeEvent` gates on
+`minAge`, which is the **character's** age. A ten-year-old whose character
+reaches thirty gets mortgage offers, down payments and vesting schedules,
+because the character being thirty is exactly when those events are meant to
+fire.
+
+This is the character-age-versus-account-age confusion that entry 11 fixed for
+wagering and entry 32 fixed for quiz questions, arriving a third time through a
+door neither of them covered. The character's age decides what is
+**plausible**; the player's age decides what is **readable**, and only one of
+those was ever being checked.
+
+**Fix.** `LifeSimController.plainWordsOnly`, set from
+`AgeBand.prefersSimpleWording`, filters events whose prompt names an adult
+instrument — reusing `mentionsAdultTopic` from entry 32 rather than writing a
+second list to drift from the first.
+
+**The fallback pool needed it too.** When the fresh event pool runs dry late in
+a long life, the draw falls back to anything repeatable. Filtering only the
+first pass would have meant the gate held for thirty years and then quietly
+opened, which is precisely how age gates leak.
+
+**And a disclaimer, because filtering silently is its own problem.** A child
+who has watched an older sibling play will notice things missing and conclude
+the app is broken, or that they are being punished. Shown once per device:
+*"Grown-up money is kept out for now. It turns up as you get older, and nothing
+here is missing."* Once per device rather than per life — a notice that repeats
+stops being read, which is how the tutorial-overflow entry started.
+
+### 38. Leak Patrol, and a skin that had never animated
+
+**Two things at once.** The arcade had allocation (Coin Cascade) and recall
+under pressure (Finance Brawl), and nothing for the way most people actually
+lose money — **small charges nobody looked at**. And the Mushroom Goomba was
+in the skin catalogue, buyable, equippable, with an 8-frame walk cycle reached
+only by `AvatarSkin.walkFrames`, a method with **zero callers anywhere**. The
+sprite existed and had never animated once.
+
+**The one rule: tap the leaks, leave the real charges.**
+
+That distinction is the whole game, and it is what stops this being "tap
+everything fast". Rent is not a leak. A bill you agreed to is not a leak.
+Somebody who taps every hole is not being vigilant, they are being
+indiscriminate — and cancelling your own electricity is its own kind of
+mistake. **Tapping a legitimate charge costs you**, which is what forces a
+player to read before acting.
+
+Three design decisions that had to be got right, all of them tested:
+
+* **Real charges outnumber leaks.** If leaks were the common case, spraying
+  taps would be the winning strategy and the game would teach the opposite of
+  its own point. There is a test asserting the balance holds.
+* **The most expensive tap on the board is stopping your own savings
+  transfer.** A wrong tap has to cost at least as much as a right one is
+  worth, or careless play still wins.
+* **A timer, not lives.** A fail-on-mistake game punishes the exact hesitation
+  this is trying to train. A clock rewards accuracy under mild pressure and
+  lets a careful player finish.
+
+**It is also the first minigame that scales with the player.** Coin Cascade,
+React Challenge and the Market Board still have no age awareness at all — only
+Finance Brawl and the life sim did, and only for their questions. Here the
+round length, the pop rate and how long each item stays readable all move with
+the band, because a game that outruns a six-year-old's *reading* is testing
+reflexes rather than judgement. The intro says so out loud, since age scaling
+is otherwise invisible and a child who has watched somebody older play will
+notice the difference.
+
+**Accuracy deliberately ignores misses.** Not tapping something is only
+sometimes a decision, and counting every un-tapped hole would make doing
+nothing look like perfect play. Payout is never negative either — a player who
+ends up worse off for having played stops playing, and this is already the
+least fun habit in the app to teach.
+
+**Verified by.** 18 model tests plus two that actually play it: the round
+starts, things spawn, the clock ends it and offers another. A minigame that
+compiles and never spawns anything is a shape of bug that has shipped here
+before. It is also in the layout sweep from the first commit — the Coach
+shipped without that coverage for exactly this reason.
+
+### 39. "In town" answered none of the questions a player has
+
+**Symptom.** Reported three separate times as the menu and the map duplicating
+each other.
+
+**They were never duplicates.** `hasTownEquivalent` badges four rows — the
+library, going out, the doctor, the job board — and the town versions really
+do pay more. The menu library gives +2 Smarts; the town one pays double. The
+menu park costs money; the town one is free.
+
+**All of that lived in prose.** It was in the row's `detail` string and in the
+controller's feed lines, and the badge on the row said "in town" and stopped.
+So the screen answered none of the questions somebody actually has looking at
+it: is it better, by how much, and is it worth the walk? Two routes to one
+outcome is fine — the map is not always open to you. Two routes with nothing
+saying how they differ is what reads as duplication, and it read that way to
+three separate reports.
+
+**Fix.** `townBonusFor` returns the sentence, the badge says *better* in town,
+and the row prints what the walk is worth: *"The library in town pays double."*
+
+**What was deliberately not done.** Blocking the menu versions was tried in an
+earlier round and reverted, because `life_age_gates_test` and
+`budget_teaching_test` assert that a doctor, a job and the library stay
+reachable without a walk. They are right to: a child who cannot reach a doctor
+because they have not found the building is a worse outcome than a little
+overlap. The fix is telling the truth about the difference, not removing one
+side of it.
+
+### Twenty-four skins, drawn as a letter
+
+**The report.** *"I want more different characters in Finance Brawl."*
+
+**What I expected to be doing.** Designing new fighters — new art, new stats,
+a select screen. I went to see where the player is drawn so I would know what
+a new one had to look like.
+
+**What was actually there.** `finance_brawl_game.dart` already knew which skin
+was equipped. `equippedSkinId` was threaded through the whole widget tree and
+into the painter's constructor. And this is what it did with it:
+
+```dart
+text: equippedSkinId.isNotEmpty
+    ? equippedSkinId.characters.first.toUpperCase()
+    : '\$',
+```
+
+The first letter of the id, in a green circle. `classic_turtle` renders as
+"C" — which is why the token read as a flat "C" and not as anything. Every
+villager skin, which is most of the roster, renders as "V". Twenty-four skins,
+three distinct letters.
+
+**So the fighters were already bought.** The case, the rarity tiers, the
+customise grid, the art — all of it exists and all of it was reaching the
+Brawl as a string.
+
+**Why it was not a two-line fix.** Villager art is one cell of a packed 8x4
+sheet and turtles are loose PNGs. The widget tree hides that split behind
+`AvatarSprite`; a `Canvas` has nothing equivalent, and `paintImage` — which
+the file uses everywhere — **has no source rectangle**. Drawing a villager
+with it would have squeezed all thirty-two frames into the token. So the split
+is answered once in `AvatarSkin.canvasFrame`, and the draw is
+`canvas.drawImageRect`.
+
+**What it cost.** Nothing that reads as a bug. The letter was deliberate code
+with a deliberate fallback; nothing throws, nothing logs, and every test
+passed. It is only wrong if you know that twenty-four sprites exist somewhere
+else in the same app.
+
+**Files.** `avatar_skin.dart` (+`canvasFrame`), `finance_brawl_game.dart`,
+`test/brawl_fighter_test.dart`.
+
+---
+
+### Ten debts, three faces
+
+**Found while** wiring the above.
+
+`brawl_enemies.dart` is ten archetypes with a comment at the top explaining
+the rule they are built on: **the behaviour is the lesson.** A payday loan is
+small and fast and drains four times harder than anything else *because that
+is what a payday loan is*. A student loan has 3.2x health and moves at 0.42x
+*because it is not an emergency*.
+
+The renderer:
+
+```dart
+if (mob.isBoss) {
+  spriteToDraw = bossImage;
+} else if (mob.isEnemyTwo) {
+  spriteToDraw = enemyTwoImage;
+} else {
+  spriteToDraw = enemyOneImage;
+}
+```
+
+Two bits. Ten archetypes went in and three pictures came out, and
+`isEnemyTwo` was being set from `isElite`, so the split was not even by type —
+it was elite / not elite.
+
+**Why that undoes the rule.** A player cannot learn "that one is dangerous"
+from a thing they cannot pick out of a crowd. The stats were doing the
+teaching and the art was actively working against it.
+
+**Fix.** `tool/make_brawl_enemies.py` draws one 32x32 sprite per archetype and
+**parses the colours out of the Dart roster**, so a sprite cannot disagree
+with the health bar above it. The mob now carries `archetypeId`; the three old
+images stay as a fallback, so a sprite that fails to decode costs one enemy
+its portrait rather than leaving an invisible thing draining the balance.
+
+**One wrong turn worth keeping.** The first payday loan had a `%` badge drawn
+clear of the dial. The outline pass gives every disconnected shape its own
+border, so it rendered as debris stuck to the sprite. Caught by looking at the
+contact sheet, which is the only reason it was caught at all.
+
+**Files.** `tool/make_brawl_enemies.py`, ten PNGs under
+`assets/images/finance_brawl_ui/enemies/`, `app_assets.dart`, `pubspec.yaml`,
+`finance_brawl_game.dart`, `test/brawl_enemies_test.dart`.
+
+---
+
+### Age scaling that nobody could see
+
+**The report, twice, in the same words.** *"I'm still not seeing the age
+separated for the app."*
+
+**My first reaction was that this was wrong**, because by then the age band
+was deciding six things: which of 187 questions are served (by measured
+reading grade), whether adult topics are held back at all, whether the random
+skin case exists, whether wagers appear, whether the wording is plain, and how
+fast Leak Patrol runs.
+
+**Then I counted where it was stated.** Five places, four of them inside the
+Academy, and the one clear sentence was on the sign-up screen — seen once,
+before the player had played anything.
+
+So the report was exactly right and I had misread what it was about. It was
+never "the filtering does not work". It was **"I cannot see it"**, and those
+are the same thing from the outside. Age scaling nobody can see is
+indistinguishable from age scaling that does not exist.
+
+**Fix.** `ageScalingFacts(band)` states all six, and the numbers are computed
+from the bank at runtime — *"142 of 187 questions fit your reading level"* is
+checkable and cannot rot when questions are added. It renders as a panel in
+Profile, directly above the row that sets the age, and `AgeScaledNote` now
+appears on every surface that filters: the Academy quiz, the Brawl checkpoint,
+the life-sim character sheet, the Market Board and the Coach.
+
+**The tests assert the claims are true**, not that the strings exist: the loot
+box line must match `allowsRandomisedRewards`, the wager line must match
+`allowsWagering`, and the under-9 band must really be served fewer questions
+than the adult band. A panel that lies about this is worse than no panel.
+
+**Collateral, and it was mine.** The new panel made Profile taller, and four
+`account_deletion_test` cases started failing. Not a layout fault:
+`scrollUntilVisible` stops as soon as a lazy child is *built*, which is not
+the same as being on screen, so the delete link came to rest just past the
+bottom edge and the tap landed on nothing. `ensureVisible` before the tap.
+
+**Files.** `age_scaling_facts.dart`, `age_scaling_card.dart`,
+`profile_screen.dart`, `lesson_detail_screen.dart`, `finance_brawl_game.dart`,
+`life_character_sheet.dart`, `test/age_visibility_test.dart`,
+`test/account_deletion_test.dart`.
+
+---
+
+### The guide was always somebody else's turtle
+
+**The ask.** *"Make the turtle skins change it for the guides and
+tutorials."*
+
+**What was there.** Four hardcoded PNGs of the **classic** turtle, used by the
+tour, the coach marks, the daily tip card and the hub tile. So a player who
+had pulled Guild Runner — a 1-in-1,000 legendary — walked the whole app as an
+orange turtle and was then taught by a green one. The costume was visible
+everywhere except on the character who talks to you, which is the one place a
+costume is actually looked at.
+
+**Why it did not need four new sets of art.** The four turtle skins are the
+*same sprite*, pixel for pixel, with a different palette and, on two of them,
+an accessory. That is checkable rather than assumed: comparing `classic.png`
+to each variant position by position, every base colour maps to exactly one
+variant colour, and the pixels that do not fit that mapping are precisely the
+coin medallion and the cape. So `tool/make_mentor_skins.py` **measures the
+palette out of the art** and applies it to the four poses. Redraw a skin,
+re-run, and the guide follows.
+
+**Two wrong turns, both caught by looking.**
+
+1. I composited the accessory *under* the pose, reasoning that a raised arm
+   has to cover what it is in front of. The belly is opaque, so the coin
+   vanished — the coin-shell guide came out byte-identical to the classic one
+   for two of the four poses. It looked exactly like the feature not working,
+   because it was not. Fixed by drawing the accessory on top and **clipping it
+   to the pose's own silhouette**, which gets the coin on the belly and
+   nothing floating beside a raised arm.
+
+2. I keyed the generated files by *filename*. The skin ids are
+   `classic_turtle`, `coin_shell`, `explorer_turtle`, `guild_runner` — and the
+   art files are `classic.png`, `coin_shell.png`, `explorer.png`,
+   `guild_runner.png`. `explorer` is not a skin id, so the Explorer's guide
+   fell back to the classic turtle forever. **A test caught this, not me**:
+   "every mentor skin id is a real skin" failed on the first run.
+
+**Files.** `tool/make_mentor_skins.py`, twelve PNGs under
+`assets/own_skins/turtle_mentor/`, `app_assets.dart`, `tutorial_steps.dart`,
+`mentor_image.dart` (new), `coach_mark.dart`, `tutorial_screen.dart`,
+`mentor_tip_card.dart`, `main_game_page.dart`,
+`test/mentor_skins_test.dart`.
+
+---
+
+### Everyone walked into town as the same blue villager
+
+**Found while** doing the above, in `adventure_world_screen.dart`:
+
+```dart
+final playerSheet = equippedSkin.isHuman
+    ? equippedSkin.sheetAsset(body)
+    : AppAssets.villagerSheet(null, female: body.isFemale);
+```
+
+Read the second branch. **Every non-villager skin walked the town as the
+default blue villager** — all four turtles and the Mushroom Goomba. Win the
+rarest item in the game, see it on your profile, in the customise grid and in
+Finance Brawl, then walk into town and be a stranger.
+
+Nothing threw and nothing logged. The fallback loads a real sheet perfectly;
+it is just not yours. That is the shape of every bug in this area — the art
+system works and points at the wrong art — and it is why they survive so
+long.
+
+**Why the fix went into the art, not the code.** The town is Bonfire. The
+player is a `SimpleDirectionAnimation` built from one packed sheet, and the
+loaders, `kSideWalkFrames`, the 104x162 cell size and the aspect ratio the
+component is sized by all assume that shape. Handing it a 640x640 still means
+rewriting the player, the loaders and the size maths for one case. So
+`tool/make_town_sheets.py` packs the stills *into* that shape and not a line
+of the town changes.
+
+**Where four facings came from one front-on picture.** South is the still with
+a two-pixel bob and a squash on the down-beat. North is the still with its
+face removed and the belly plate recoloured to shell — a real back view, since
+a turtle's head is a round blob and from behind you would see shell where the
+belly was. The Goomba has real north and south frames already and uses them.
+
+**West and east were tried properly first and it was worse.** Narrowing to 85%
+and sliding the face toward the direction of travel *sounds* like a
+three-quarter turn. Rendered, the eyes end up half off the side of the head
+with the mouth still centred: not a turn, a broken sprite. They are the front
+view now. A round mascot facing the camera while it walks sideways is an old
+convention and costs nothing; a turtle with its face falling off is a bug
+report. Direction is already legible from the fact that the thing is moving.
+
+**Files.** `tool/make_town_sheets.py`, five sheets under
+`assets/self_made_skins/`, `app_assets.dart`,
+`adventure_world_screen.dart`, `test/town_player_skin_test.dart`.
+
+---
+
 ---
 
 ## Open — found, not fixed

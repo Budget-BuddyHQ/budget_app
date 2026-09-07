@@ -79,6 +79,12 @@ void main() {
       reason: 'Play requires an in-app deletion route for any app with '
           'accounts, and it has to be reachable without leaving the app',
     );
+    // `scrollUntilVisible` stops as soon as the widget is *built*, which is
+    // not the same as being on screen -- it can come to rest just past the
+    // bottom edge, and the tap then lands on nothing. Profile grew again (the
+    // age-scaling panel), which is what surfaced this.
+    await tester.ensureVisible(entry);
+    await tester.pumpAndSettle();
     await tester.tap(entry);
     await tester.pumpAndSettle();
   }

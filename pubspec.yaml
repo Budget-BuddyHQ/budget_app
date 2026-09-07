@@ -75,6 +75,7 @@ flutter:
     - assets/images/turtle_guide/
     - assets/images/tiles/
     - assets/images/finance_brawl_ui/
+    - assets/images/finance_brawl_ui/enemies/
     # Adventure map: Bonfire's TiledAssetReader is hardcoded to read Tiled
     # maps from under assets/images/, so the exported map JSON + its
     # tileset image(s) both live here. See assets/images/maps/README.md.

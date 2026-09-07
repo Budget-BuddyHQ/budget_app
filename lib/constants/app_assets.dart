@@ -170,6 +170,37 @@ class AppAssets {
   static const String turtleMentorWorried =
       'assets/own_skins/turtle_mentor/turtle_mentor_worried.png';
 
+  /// Turtle skins that have their own set of guide poses, drawn by
+  /// `tool/make_mentor_skins.py`.
+  ///
+  /// Asked for directly: *"make the turtle skins change it for the guides and
+  /// tutorials"*. The guide was four hardcoded PNGs of the classic turtle, so
+  /// a player who had won Guild Runner — a 1-in-1,000 legendary — walked the
+  /// whole app as an orange turtle and was taught by a green one.
+  ///
+  /// Only turtles. A villager or a Goomba has no mentor pose to recolour, and
+  /// those skins keep the classic guide.
+  /// Skin **ids**, which are not always the filenames the art is drawn from —
+  /// `explorer_turtle` comes out of `explorer.png`. The lookup is by equipped
+  /// skin id, so getting this wrong falls silently back to the classic turtle
+  /// and looks precisely like the feature not working.
+  static const Set<String> mentorSkinIds = <String>{
+    'coin_shell',
+    'explorer_turtle',
+    'guild_runner',
+  };
+
+  /// The guide's [pose] as the wearer of [skinId] — the classic turtle for
+  /// any skin without its own set, which is every non-turtle.
+  ///
+  /// [pose] is one of `idle`, `wave`, `thinking`, `worried`.
+  static String turtleMentorPose(String pose, String skinId) {
+    if (!mentorSkinIds.contains(skinId)) {
+      return 'assets/own_skins/turtle_mentor/turtle_mentor_$pose.png';
+    }
+    return 'assets/own_skins/turtle_mentor/turtle_mentor_${pose}_$skinId.png';
+  }
+
   static const String loadingAnimation =
       'assets/animations/02_Manny_Run_Fill.json';
 
@@ -229,6 +260,16 @@ class AppAssets {
       'assets/images/finance_brawl_ui/brawl_boss.png';
   static const String brawlChestSprite =
       'assets/images/finance_brawl_ui/brawl_vault.png';
+
+  /// One sprite per Finance Brawl archetype, named by the id in
+  /// `brawl_enemies.dart` and drawn by `tool/make_brawl_enemies.py`.
+  ///
+  /// Ten archetypes used to share three images, picked by an `isBoss` /
+  /// `isEnemyTwo` test — so the roster's whole design rule ("the behaviour is
+  /// the lesson") was undone by a payday loan that looked identical to the
+  /// credit card beside it.
+  static String brawlEnemySprite(String archetypeId) =>
+      'assets/images/finance_brawl_ui/enemies/$archetypeId.png';
 
   static const String turtleClassic = 'assets/images/turtles/classic.png';
   static const String turtleCoinShell = 'assets/images/turtles/coin_shell.png';
@@ -381,6 +422,36 @@ class AppAssets {
     final name = variantId ?? 'classic';
     return '$villagerSheetRoot/villager_${gender}_$name.png';
   }
+
+  /// Skins that have a town walk sheet of their own, drawn by
+  /// `tool/make_town_sheets.py`.
+  ///
+  /// Villagers are not listed: they already have sheets, and
+  /// [AvatarSkin.sheetAsset] is the right lookup for those. This set is the
+  /// answer to the *other* branch — see [townSheet].
+  static const Set<String> townSheetSkinIds = <String>{
+    'classic_turtle',
+    'coin_shell',
+    'explorer_turtle',
+    'guild_runner',
+    'mushroom_goomba',
+  };
+
+  /// The town walk sheet for a non-villager skin.
+  ///
+  /// **The bug this closes.** `adventure_world_screen.dart` chose the player's
+  /// sprite with `equippedSkin.isHuman ? equippedSkin.sheetAsset(body) :
+  /// villagerSheet(null, ...)` — so every turtle and the Goomba walked the
+  /// town as the **default blue villager**. A player could win Guild Runner, a
+  /// 1-in-1,000 legendary, see it on their profile and in the customise grid,
+  /// then walk into town as a stranger. Nothing threw: the fallback is a real
+  /// sheet that loads perfectly and is simply the wrong character.
+  ///
+  /// Returns null for a skin with no sheet, so the caller keeps its own
+  /// fallback rather than being handed a path to nothing.
+  static String? townSheet(String skinId) => townSheetSkinIds.contains(skinId)
+      ? '$villagerSheetRoot/town_$skinId.png'
+      : null;
 
   /// Same path relative to `assets/images/`, the root Flame resolves against.
   /// The sheets live outside that root, so callers must use a zero-prefix
