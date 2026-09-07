@@ -20,6 +20,8 @@ import '../minigames_pages/react_challenge_screen.dart';
 import '../minigames_pages/stock_market_page.dart';
 import 'arcade_catalog.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
+import '../../../widgets_custom_lotties/coach_spot.dart';
+import '../../../models_Like_Skins_and_lessons_templates/money_analyzer.dart';
 
 class MinigamesPage extends StatelessWidget {
   const MinigamesPage({
@@ -231,6 +233,25 @@ class MinigamesPage extends StatelessWidget {
                           sliver: SliverList.list(
                             children: [
                               _ArcadeHeader(stats: stats),
+                              // The coach, filtered to what the arcade can
+                              // actually answer.
+                              //
+                              // `learning` and `saving` only: those are the
+                              // areas Coin Cascade and Finance Brawl feed,
+                              // and the cross-domain findings in
+                              // `money_analyzer.dart` that compare a quiz
+                              // score against how somebody plays live in
+                              // exactly those two. A note about logging a
+                              // habit every day is true here and is nagging
+                              // in the wrong room, so it is filtered out
+                              // rather than reworded.
+                              const CoachSpot(
+                                onlyDimensions: <MoneyDimension>{
+                                  MoneyDimension.learning,
+                                  MoneyDimension.saving,
+                                },
+                                margin: EdgeInsets.only(top: 16),
+                              ),
                               const SizedBox(height: 16),
                               _FeaturedCard(
                                 game: featured,

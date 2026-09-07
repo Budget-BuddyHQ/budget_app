@@ -29,5 +29,15 @@ abstract final class AppTabIndex {
   static const int daily = 5;
   static const int profile = 6;
 
-  static const int count = 7;
+  /// The money coach.
+  ///
+  /// A real slot rather than a route, for the same reason [daily] and
+  /// [profile] are: an `IndexedStack` child stays alive, so switching to it
+  /// keeps its scroll position and does not re-run the analysis on every
+  /// visit. It is reached from the top strip, not the bottom bar — the bar
+  /// was seven wide once and got crowded, and adding a sixth would undo a
+  /// decision already made for good reasons.
+  static const int coach = 7;
+
+  static const int count = 8;
 }

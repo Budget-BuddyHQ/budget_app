@@ -21,6 +21,7 @@ import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/money_habits/money_habits_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/feedback_screen.dart';
+import 'package:budget_app/screens_minigames_admin_etc/coach/coach_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/profile/profile_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/dashboard/leaderboard_screen.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/past_lives_screen.dart';
@@ -224,6 +225,11 @@ void main() {
     // it is the one screen whose height is set by how much the player has
     // done rather than by the design.
     'Profile': () => const ProfileScreen(),
+    // The Coach is the newest screen and the densest: a header, a five-row
+    // score grid, a diagnosis panel, a review panel and a card per finding.
+    // Every one of those is text over a coloured box, which is the shape
+    // that overflows first on a 320px phone.
+    'Coach': () => const CoachScreen(),
     'Leaderboard': () => const LeaderboardScreen(),
     'Past lives': () => const PastLivesScreen(),
     // Money Habits has four inner tabs and the sweep only ever saw the
@@ -439,6 +445,7 @@ void main() {
       'Daily',
       'Style',
       'Profile',
+      'Coach',
     ];
 
     for (final viewport in _viewports.entries) {

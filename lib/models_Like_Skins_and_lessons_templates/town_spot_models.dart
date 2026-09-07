@@ -196,8 +196,8 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         'here grows a little every year on its own."',
     tileX: 37,
     tileY: 12,
-    tileX2: 40,
-    tileY2: 15,
+    tileX2: 43,
+    tileY2: 3,
     choices: [
       TownChoice(
         label: 'Deposit 20 coins',
@@ -305,8 +305,8 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'Your budget notebook is open on the kitchen table, a few days '
         'behind.',
-    tileX: 27,
-    tileY: 42,
+    tileX: 23,
+    tileY: 44,
     tileX2: 25,
     tileY2: 40,
     choices: [
@@ -333,8 +333,8 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'A hand-written note is pinned here: "Whoever keeps track of the '
         'small stuff ends up with the big stuff. — a neighbour"',
-    tileX: 33,
-    tileY: 23,
+    tileX: 37,
+    tileY: 20,
     tileX2: 39,
     tileY2: 17,
     choices: [
@@ -359,8 +359,8 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         'they look better. Neither has a price per kilo.',
     tileX: 29,
     tileY: 19,
-    tileX2: 38,
-    tileY2: 16,
+    tileX2: 19,
+    tileY2: 5,
     choices: [
       TownChoice(
         label: 'Take the \$2 bag',
@@ -400,7 +400,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         'already.',
     tileX: 22,
     tileY: 31,
-    tileX2: 21,
+    tileX2: 17,
     tileY2: 32,
     choices: [
       TownChoice(
@@ -441,8 +441,8 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         'you wait nine days for the community slot.',
     tileX: 22,
     tileY: 18,
-    tileX2: 16,
-    tileY2: 28,
+    tileX2: 0,
+    tileY2: 18,
     choices: [
       TownChoice(
         label: 'Pay the \$40 and be seen today',
@@ -480,10 +480,10 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'A free course on Saturday mornings: six weeks, three hours each. '
         'The paid version online is \$180 and you can do it whenever.',
-    tileX: 16,
-    tileY: 22,
-    tileX2: 15,
-    tileY2: 28,
+    tileX: 8,
+    tileY: 18,
+    tileX2: 0,
+    tileY2: 24,
     choices: [
       TownChoice(
         label: 'Sign up for the free one',
@@ -523,8 +523,8 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         '\$60 now as a loan you can buy back for \$80.',
     tileX: 28,
     tileY: 38,
-    tileX2: 24,
-    tileY2: 42,
+    tileX2: 34,
+    tileY2: 43,
     choices: [
       TownChoice(
         label: 'Sell it for \$85',
@@ -746,14 +746,25 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
 ];
 
 /// Where the player appears when they walk into town — just outside their
-/// own front door (`spot_home` sits at 13,30).
+/// own front door.
+///
+/// **Derived from `spot_home`, not written down beside it.** This used to be
+/// a hardcoded tile with a comment claiming the house was at 13,30. The house
+/// was at 27,42 by then, and moved again when the markers were reassigned to
+/// distinct buildings — so the constant had drifted twice, and the comment
+/// documenting it was wrong both times. A spawn point that restates a
+/// position owned by something else is a second copy of that position, and
+/// second copies go stale silently.
 ///
 /// Not the map centre: you leave home to go into town and come back to it,
 /// so spawning in the middle of the square made the map read as a level
 /// select rather than somewhere you live. `test/town_map_test.dart` checks
-/// this tile is walkable, reachable, and has two clear rows overhead so the
+/// the tile is walkable, reachable, and has two clear rows overhead so the
 /// sprite does not clip the house.
-const ({int x, int y}) kTownSpawnTile = (x: 26, y: 42);
+({int x, int y}) townSpawnTile(TownMap map) {
+  final home = kTownSpots.firstWhere((s) => s.kind == TownSpotKind.home);
+  return (x: home.xOn(map), y: home.yOn(map));
+}
 
 /// Coin pickups scattered on confirmed-walkable tiles across the open
 /// middle of the map, so exploring pays a little on its own.

@@ -1865,8 +1865,14 @@ class _AcademyAnalyticsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final completed = progression.completedCount;
-    final total = progression.totalCount;
+    // Teaching lessons, matching the "63 lessons" the sourcing card claims.
+    //
+    // This used to be `completedCount`/`totalCount`, which count every node
+    // on the path — 89, including 13 quizzes and 13 unit tests. So the
+    // Academy stated its own size as both 63 and 89 on the same screen,
+    // under the same word. See `LessonProgression.teachingTotal`.
+    final completed = progression.teachingCompleted;
+    final total = progression.teachingTotal;
 
     // Average accuracy across units that have actually been attempted.
     final accuracies = <double>[

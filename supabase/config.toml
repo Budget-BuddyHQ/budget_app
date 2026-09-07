@@ -41,7 +41,7 @@ enabled = true
 # `docs/password-reset.html` is that page (GitHub Pages, /docs on main). It
 # reads the auth payload out of the URL and hands it to `budgetbuddy://`, and
 # explains itself if the app is not installed or the link has expired.
-site_url = "https://budget-buddyhq.github.io/budget_app/password-reset.html"
+site_url = "https://cwqjduingvevagrxbwts.supabase.co/functions/v1/pages/password-reset"
 
 # Everything the app is allowed to send somebody back to.
 #
@@ -59,7 +59,7 @@ site_url = "https://budget-buddyhq.github.io/budget_app/password-reset.html"
 # A deployed web build needs its real origin adding here, not a loopback one.
 additional_redirect_urls = [
   "budgetbuddy://password-reset",
-  "https://budget-buddyhq.github.io/budget_app/password-reset.html",
+  "https://cwqjduingvevagrxbwts.supabase.co/functions/v1/pages/password-reset",
 ]
 
 # An hour. Long enough that a child who asks for a reset, goes to find a

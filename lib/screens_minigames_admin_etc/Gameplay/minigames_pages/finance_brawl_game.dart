@@ -366,1230 +366,1230 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   bool _isAnswerSubmitted = false;
   List<ShuffledQuizQuestion> _activeQuizQuestions = [];
 
- final List<FinanceQuestion> _questionBank = const [
-  // -------------------------------------------------------------
-  // BUDGETING & MONEY MANAGEMENT (1-20)
-  // -------------------------------------------------------------
-  FinanceQuestion(
-    question: "What is an 'emergency fund' generally used for?",
-    options: [
-      "Buying concert tickets",
-      "Unexpected critical expenses like medical bills or repairs",
-      "Investing in high-risk stocks",
-      "Paying monthly bills",
-    ],
-    correctIndex: 1,
-    explanation:
-        "An emergency fund protects you against unexpected setbacks without forcing you into debt.",
-  ),
-  FinanceQuestion(
-    question: "What does 'paying yourself first' mean in budgeting?",
-    options: [
-      "Set aside savings as soon as you are paid before spending the rest",
-      "Buy new clothes before paying your electric and water bills",
-      "Give cash to family members immediately upon receiving your paycheck",
-      "Spend your entire paycheck on entertainment on payday",
-    ],
-    correctIndex: 0,
-    explanation:
-        "Prioritizing savings goals first guarantees you build financial security instead of saving leftover pennies.",
-  ),
-  FinanceQuestion(
-    question:
-        "What is the primary goal of creating a monthly zero-based budget?",
-    options: [
-      "To spend every dollar on entertainment",
-      "To lower your bank account balance to zero",
-      "To assign every dollar a purpose so Income minus Expenses equals zero",
-      "To eliminate all future tax obligations",
-    ],
-    correctIndex: 2,
-    explanation:
-        "A zero-based budget assigns every dollar of income to savings, bills, or spending so nothing goes untracked.",
-  ),
-  FinanceQuestion(
-    question: "Which of the following is considered a variable expense?",
-    options: [
-      "Fixed monthly rent",
-      "Car loan payment",
-      "Annual insurance premium",
-      "Groceries and utility bills",
-    ],
-    correctIndex: 3,
-    explanation:
-        "Variable expenses fluctuate month to month based on usage and personal choices, unlike fixed rent payments.",
-  ),
-  FinanceQuestion(
-    question: "What is the popular 50/30/20 budgeting rule framework?",
-    options: [
-      "50% Needs, 30% Wants, 20% Savings/Debt",
-      "50% Investments, 30% Savings, 20% Taxes",
-      "50% Rent, 30% Food, 20% Travel",
-      "50% Debt, 30% Needs, 20% Fun",
-    ],
-    correctIndex: 0,
-    explanation:
-        "The 50/30/20 guideline suggests spending 50% on essential needs, 30% on discretionary wants, and 20% on financial goals.",
-  ),
-  FinanceQuestion(
-    question: "What is a 'sinking fund' used for?",
-    options: [
-      "Paying off defaulted loans",
-      "An account charging negative interest",
-      "Saving over time for a specific expected future cost",
-      "An automated stock trading account",
-    ],
-    correctIndex: 2,
-    explanation:
-        "A sinking fund lets you set aside small monthly amounts for planned future costs like car maintenance or holidays.",
-  ),
-  FinanceQuestion(
-    question:
-        "Which expenditure is categorized as a 'Need' rather than a 'Want'?",
-    options: [
-      "Designer shoes",
-      "Essential prescription medication",
-      "Video game subscriptions",
-      "Dining out at restaurants",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Needs are basic items essential for survival, healthcare, shelter, and employment.",
-  ),
-  FinanceQuestion(
-    question:
-        "How many months of living expenses are typically recommended for a full emergency fund?",
-    options: ["1 to 2 weeks", "3 to 5 years", "3 to 6 months", "10 years"],
-    correctIndex: 2,
-    explanation:
-        "Financial advisors generally recommend keeping 3 to 6 months of basic living costs in liquid savings.",
-  ),
-  FinanceQuestion(
-    question:
-        "What happens if you overdraw your checking account without overdraft protection?",
-    options: [
-      "The bank gives you free credit",
-      "Your credit score increases",
-      "Your account is converted into a CD",
-      "The payment is declined or you incur an overdraft fee",
-    ],
-    correctIndex: 3,
-    explanation:
-        "Attempting to spend more than your account balance leads to declined transactions or overdraft penalties.",
-  ),
-  FinanceQuestion(
-    question: "What is opportunistic 'lifestyle creep'?",
-    options: [
-      "Increasing spending as income rises, preventing wealth accumulation",
-      "Increasing your savings when your salary drops unexpectedly",
-      "Moving into a smaller apartment to save money on utility bills",
-      "Automating bill payments every month through your mobile app",
-    ],
-    correctIndex: 0,
-    explanation:
-        "Lifestyle creep occurs when raises or bonuses trigger higher spending on luxury items instead of boosting savings.",
-  ),
-  FinanceQuestion(
-    question:
-        "Why should you track your daily cash flow and micro-purchases?",
-    options: [
-      "To satisfy bank auditors",
-      "To spot hidden leaks like forgotten recurring subscriptions",
-      "To calculate capital gains taxes on coffee",
-      "To double your checking account balance",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Small unmonitored purchases add up rapidly over time and can drain hundreds of dollars from your budget.",
-  ),
-  FinanceQuestion(
-    question: "What is gross income?",
-    options: [
-      "Income left after taxes and deductions",
-      "Money earned solely from investment dividends",
-      "Total earnings before taxes and deductions are removed",
-      "Income spent strictly on household bills",
-    ],
-    correctIndex: 2,
-    explanation:
-        "Gross income is your raw total compensation before income tax, insurance premiums, and retirement contributions are removed.",
-  ),
-  FinanceQuestion(
-    question: "What is net income (take-home pay)?",
-    options: [
-      "Total salary before tax",
-      "Total profit from selling a house",
-      "Total interest paid on credit cards",
-      "The money deposited into your account after taxes and deductions",
-    ],
-    correctIndex: 3,
-    explanation:
-        "Net income is the actual usable money available to spend or save after all paystub withholdings.",
-  ),
-  FinanceQuestion(
-    question:
-        "Which tool automatically moves money into savings without manual intervention?",
-    options: [
-      "Recurring automatic bank transfers or direct deposit allocations",
-      "Manual wire transfer",
-      "Paper check writing",
-      "ATM cash withdrawal",
-    ],
-    correctIndex: 0,
-    explanation:
-        "Automated recurring transfers remove human discipline hurdles and ensure consistent savings habit building.",
-  ),
-  FinanceQuestion(
-    question: "What is an opportunity cost in personal finance?",
-    options: [
-      "The interest charged by a bank loan",
-      "The tax deduction on charitable donations",
-      "The potential gain lost from one choice when another option is taken",
-      "The fee charged to open a savings account",
-    ],
-    correctIndex: 2,
-    explanation:
-        "Opportunity cost is the trade-off value—spending \$100 on shoes today means losing future interest if invested.",
-  ),
-  FinanceQuestion(
-    question: "What is the envelope budgeting method?",
-    options: [
-      "Mailing checks to creditors in physical paper envelopes",
-      "Allocating set cash amounts into envelopes for specific spending categories",
-      "Storing investment certificates in a safe",
-      "Filing tax returns through postal delivery",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Envelope budgeting relies on cash envelopes for categories like groceries—when the cash runs out, spending stops.",
-  ),
-  FinanceQuestion(
-    question: "Why is discretionary spending dangerous if unmonitored?",
-    options: [
-      "It lowers your tax refund automatically",
-      "It causes instant bank account termination",
-      "It freezes your credit score",
-      "It can consume funds needed for essential bills and debt payments",
-    ],
-    correctIndex: 3,
-    explanation:
-        "Discretionary non-essential spending easily expands, causing missed savings targets or unpaid essential bills.",
-  ),
-  FinanceQuestion(
-    question: "Which of these is a fixed expense?",
-    options: [
-      "Weekly grocery runs",
-      "Fixed apartment lease payment",
-      "Electric heating bill in winter",
-      "Dining out expenses",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Fixed expenses stay predictable and identical in cost across every payment cycle, simplifying planning.",
-  ),
-  FinanceQuestion(
-    question: "What does the term 'solvency' mean for an individual?",
-    options: [
-      "Having zero cash in hand",
-      "Having multiple credit card accounts open",
-      "Having total assets that exceed your total debts and financial liabilities",
-      "Earning income solely from dividends",
-    ],
-    correctIndex: 2,
-    explanation:
-        "Solvency means your overall assets outweigh what you owe, ensuring long-term financial stability.",
-  ),
-  FinanceQuestion(
-    question: "What is a major risk of not maintaining a financial buffer?",
-    options: [
-      "Relying on high-interest debt when unexpected costs happen",
-      "Higher investment returns",
-      "Decreased tax liability",
-      "Lower insurance premiums",
-    ],
-    correctIndex: 0,
-    explanation:
-        "Without savings, sudden repairs or emergencies force people to use high-cost loans or credit cards.",
-  ),
+  final List<FinanceQuestion> _questionBank = const [
+    // -------------------------------------------------------------
+    // BUDGETING & MONEY MANAGEMENT (1-20)
+    // -------------------------------------------------------------
+    FinanceQuestion(
+      question: "What is an 'emergency fund' generally used for?",
+      options: [
+        "Buying concert tickets",
+        "Unexpected critical expenses like medical bills or repairs",
+        "Investing in high-risk stocks",
+        "Paying monthly bills",
+      ],
+      correctIndex: 1,
+      explanation:
+          "An emergency fund protects you against unexpected setbacks without forcing you into debt.",
+    ),
+    FinanceQuestion(
+      question: "What does 'paying yourself first' mean in budgeting?",
+      options: [
+        "Set aside savings as soon as you are paid before spending the rest",
+        "Buy new clothes before paying your electric and water bills",
+        "Give cash to family members immediately upon receiving your paycheck",
+        "Spend your entire paycheck on entertainment on payday",
+      ],
+      correctIndex: 0,
+      explanation:
+          "Prioritizing savings goals first guarantees you build financial security instead of saving leftover pennies.",
+    ),
+    FinanceQuestion(
+      question:
+          "What is the primary goal of creating a monthly zero-based budget?",
+      options: [
+        "To spend every dollar on entertainment",
+        "To lower your bank account balance to zero",
+        "To assign every dollar a purpose so Income minus Expenses equals zero",
+        "To eliminate all future tax obligations",
+      ],
+      correctIndex: 2,
+      explanation:
+          "A zero-based budget assigns every dollar of income to savings, bills, or spending so nothing goes untracked.",
+    ),
+    FinanceQuestion(
+      question: "Which of the following is considered a variable expense?",
+      options: [
+        "Fixed monthly rent",
+        "Car loan payment",
+        "Annual insurance premium",
+        "Groceries and utility bills",
+      ],
+      correctIndex: 3,
+      explanation:
+          "Variable expenses fluctuate month to month based on usage and personal choices, unlike fixed rent payments.",
+    ),
+    FinanceQuestion(
+      question: "What is the popular 50/30/20 budgeting rule framework?",
+      options: [
+        "50% Needs, 30% Wants, 20% Savings/Debt",
+        "50% Investments, 30% Savings, 20% Taxes",
+        "50% Rent, 30% Food, 20% Travel",
+        "50% Debt, 30% Needs, 20% Fun",
+      ],
+      correctIndex: 0,
+      explanation:
+          "The 50/30/20 guideline suggests spending 50% on essential needs, 30% on discretionary wants, and 20% on financial goals.",
+    ),
+    FinanceQuestion(
+      question: "What is a 'sinking fund' used for?",
+      options: [
+        "Paying off defaulted loans",
+        "An account charging negative interest",
+        "Saving over time for a specific expected future cost",
+        "An automated stock trading account",
+      ],
+      correctIndex: 2,
+      explanation:
+          "A sinking fund lets you set aside small monthly amounts for planned future costs like car maintenance or holidays.",
+    ),
+    FinanceQuestion(
+      question:
+          "Which expenditure is categorized as a 'Need' rather than a 'Want'?",
+      options: [
+        "Designer shoes",
+        "Essential prescription medication",
+        "Video game subscriptions",
+        "Dining out at restaurants",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Needs are basic items essential for survival, healthcare, shelter, and employment.",
+    ),
+    FinanceQuestion(
+      question:
+          "How many months of living expenses are typically recommended for a full emergency fund?",
+      options: ["1 to 2 weeks", "3 to 5 years", "3 to 6 months", "10 years"],
+      correctIndex: 2,
+      explanation:
+          "Financial advisors generally recommend keeping 3 to 6 months of basic living costs in liquid savings.",
+    ),
+    FinanceQuestion(
+      question:
+          "What happens if you overdraw your checking account without overdraft protection?",
+      options: [
+        "The bank gives you free credit",
+        "Your credit score increases",
+        "Your account is converted into a CD",
+        "The payment is declined or you incur an overdraft fee",
+      ],
+      correctIndex: 3,
+      explanation:
+          "Attempting to spend more than your account balance leads to declined transactions or overdraft penalties.",
+    ),
+    FinanceQuestion(
+      question: "What is opportunistic 'lifestyle creep'?",
+      options: [
+        "Increasing spending as income rises, preventing wealth accumulation",
+        "Increasing your savings when your salary drops unexpectedly",
+        "Moving into a smaller apartment to save money on utility bills",
+        "Automating bill payments every month through your mobile app",
+      ],
+      correctIndex: 0,
+      explanation:
+          "Lifestyle creep occurs when raises or bonuses trigger higher spending on luxury items instead of boosting savings.",
+    ),
+    FinanceQuestion(
+      question:
+          "Why should you track your daily cash flow and micro-purchases?",
+      options: [
+        "To satisfy bank auditors",
+        "To spot hidden leaks like forgotten recurring subscriptions",
+        "To calculate capital gains taxes on coffee",
+        "To double your checking account balance",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Small unmonitored purchases add up rapidly over time and can drain hundreds of dollars from your budget.",
+    ),
+    FinanceQuestion(
+      question: "What is gross income?",
+      options: [
+        "Income left after taxes and deductions",
+        "Money earned solely from investment dividends",
+        "Total earnings before taxes and deductions are removed",
+        "Income spent strictly on household bills",
+      ],
+      correctIndex: 2,
+      explanation:
+          "Gross income is your raw total compensation before income tax, insurance premiums, and retirement contributions are removed.",
+    ),
+    FinanceQuestion(
+      question: "What is net income (take-home pay)?",
+      options: [
+        "Total salary before tax",
+        "Total profit from selling a house",
+        "Total interest paid on credit cards",
+        "The money deposited into your account after taxes and deductions",
+      ],
+      correctIndex: 3,
+      explanation:
+          "Net income is the actual usable money available to spend or save after all paystub withholdings.",
+    ),
+    FinanceQuestion(
+      question:
+          "Which tool automatically moves money into savings without manual intervention?",
+      options: [
+        "Recurring automatic bank transfers or direct deposit allocations",
+        "Manual wire transfer",
+        "Paper check writing",
+        "ATM cash withdrawal",
+      ],
+      correctIndex: 0,
+      explanation:
+          "Automated recurring transfers remove human discipline hurdles and ensure consistent savings habit building.",
+    ),
+    FinanceQuestion(
+      question: "What is an opportunity cost in personal finance?",
+      options: [
+        "The interest charged by a bank loan",
+        "The tax deduction on charitable donations",
+        "The potential gain lost from one choice when another option is taken",
+        "The fee charged to open a savings account",
+      ],
+      correctIndex: 2,
+      explanation:
+          "Opportunity cost is the trade-off value—spending \$100 on shoes today means losing future interest if invested.",
+    ),
+    FinanceQuestion(
+      question: "What is the envelope budgeting method?",
+      options: [
+        "Mailing checks to creditors in physical paper envelopes",
+        "Allocating set cash amounts into envelopes for specific spending categories",
+        "Storing investment certificates in a safe",
+        "Filing tax returns through postal delivery",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Envelope budgeting relies on cash envelopes for categories like groceries—when the cash runs out, spending stops.",
+    ),
+    FinanceQuestion(
+      question: "Why is discretionary spending dangerous if unmonitored?",
+      options: [
+        "It lowers your tax refund automatically",
+        "It causes instant bank account termination",
+        "It freezes your credit score",
+        "It can consume funds needed for essential bills and debt payments",
+      ],
+      correctIndex: 3,
+      explanation:
+          "Discretionary non-essential spending easily expands, causing missed savings targets or unpaid essential bills.",
+    ),
+    FinanceQuestion(
+      question: "Which of these is a fixed expense?",
+      options: [
+        "Weekly grocery runs",
+        "Fixed apartment lease payment",
+        "Electric heating bill in winter",
+        "Dining out expenses",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Fixed expenses stay predictable and identical in cost across every payment cycle, simplifying planning.",
+    ),
+    FinanceQuestion(
+      question: "What does the term 'solvency' mean for an individual?",
+      options: [
+        "Having zero cash in hand",
+        "Having multiple credit card accounts open",
+        "Having total assets that exceed your total debts and financial liabilities",
+        "Earning income solely from dividends",
+      ],
+      correctIndex: 2,
+      explanation:
+          "Solvency means your overall assets outweigh what you owe, ensuring long-term financial stability.",
+    ),
+    FinanceQuestion(
+      question: "What is a major risk of not maintaining a financial buffer?",
+      options: [
+        "Relying on high-interest debt when unexpected costs happen",
+        "Higher investment returns",
+        "Decreased tax liability",
+        "Lower insurance premiums",
+      ],
+      correctIndex: 0,
+      explanation:
+          "Without savings, sudden repairs or emergencies force people to use high-cost loans or credit cards.",
+    ),
 
-  // -------------------------------------------------------------
-  // SAVINGS & INTEREST (21-40)
-  // -------------------------------------------------------------
-  FinanceQuestion(
-    question:
-        "If you leave \$100 in a savings account with a 5% annual simple interest rate, how much is there after 1 year?",
-    options: ["\$105", "\$100", "\$150", "\$110"],
-    correctIndex: 0,
-    explanation:
-        "Simple interest calculates 5% of \$100, which yields \$5, bringing your total account balance to \$105.",
-  ),
-  FinanceQuestion(
-    question: "What is compound interest?",
-    options: [
-      "Interest earned only on your original cash deposit",
-      "Interest earned on principal plus past earned interest",
-      "A flat fee charged by banks to hold cash",
-      "Tax applied directly to high net worth individuals",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Compound interest creates snowball growth because your earned interest generates its own interest over time.",
-  ),
-  FinanceQuestion(
-    question: "What does 'APY' stand for on a bank savings account?",
-    options: [
-      "Annual Percentage Yield",
-      "Automated Payment Year",
-      "Asset Allocation Profit Yield",
-      "Average Principal Yield",
-    ],
-    correctIndex: 0,
-    explanation:
-        "APY reflects the actual total interest earned over a year, accounting for compounding frequency.",
-  ),
-  FinanceQuestion(
-    question: "What is the 'Rule of 72' used to estimate?",
-    options: [
-      "The percentage of income to spend on housing",
-      "The age everyone must retire",
-      "The maximum credit score attainable",
-      "How long it takes an investment to double at a given rate",
-    ],
-    correctIndex: 3,
-    explanation:
-        "Dividing 72 by your annual interest rate gives the approximate years it takes for your principal to double.",
-  ),
-  FinanceQuestion(
-    question:
-        "At a 6% annual return rate, roughly how many years will it take your money to double (Rule of 72)?",
-    options: ["12 years", "6 years", "72 years", "18 years"],
-    correctIndex: 0,
-    explanation:
-        "72 divided by 6 equals 12 years to double your initial capital investment.",
-  ),
-  FinanceQuestion(
-    question:
-        "What primary benefit does a High-Yield Savings Account (HYSA) offer over standard checking?",
-    options: [
-      "Free stock trades",
-      "Higher interest rates while keeping FDIC insurance and easy cash access",
-      "Unlimited cash withdrawals without limits",
-      "Zero taxes on earned interest",
-    ],
-    correctIndex: 1,
-    explanation:
-        "HYSAs provide superior interest rates compared to traditional accounts while keeping money secure and accessible.",
-  ),
-  FinanceQuestion(
-    question: "What is a Certificate of Deposit (CD)?",
-    options: [
-      "A volatile cryptocurrency asset",
-      "A credit card reward voucher",
-      "A savings product locking money for a set term for fixed interest",
-      "A government bond with floating rates",
-    ],
-    correctIndex: 2,
-    explanation:
-        "CDs lock up your deposit for a set timeframe; early withdrawals usually trigger interest penalties.",
-  ),
-  FinanceQuestion(
-    question:
-        "What institution in the US insures individual bank deposits up to \$250,000?",
-    options: [
-      "FDIC (Federal Deposit Insurance Corporation)",
-      "SEC (Securities and Exchange Commission)",
-      "IRS (Internal Revenue Service)",
-      "Federal Reserve Board",
-    ],
-    correctIndex: 0,
-    explanation:
-        "The FDIC guarantees member bank deposits, protecting consumer funds even if the bank defaults.",
-  ),
-  FinanceQuestion(
-    question:
-        "How does inflation impact cash sitting in a standard 0.01% savings account?",
-    options: [
-      "Increases purchasing power rapidly",
-      "It loses purchasing power because price increases outpace savings interest",
-      "Has no effect on real value",
-      "Multiplies the principal balance automatically",
-    ],
-    correctIndex: 1,
-    explanation:
-        "If inflation is 3% and interest is 0.01%, your real purchasing power drops by roughly 3% each year.",
-  ),
-  FinanceQuestion(
-    question:
-        "What is the difference between simple interest and compound interest?",
-    options: [
-      "Simple interest grows exponentially; Compound interest grows linearly",
-      "Simple interest applies only to stocks; Compound interest applies to loans",
-      "There is no functional difference",
-      "Simple interest applies only to principal; Compound interest earns interest on prior interest",
-    ],
-    correctIndex: 3,
-    explanation:
-        "Simple interest stays flat, whereas compound interest compounds continuously, driving long-term growth.",
-  ),
-  FinanceQuestion(
-    question:
-        "If interest compounds monthly versus annually at the same nominal rate, which yields more money?",
-    options: [
-      "Annual compounding",
-      "Monthly compounding",
-      "They yield the exact same amount",
-      "Neither yields interest",
-    ],
-    correctIndex: 1,
-    explanation:
-        "More frequent compounding periods calculate interest on newly added gains faster, resulting in higher overall yield.",
-  ),
-  FinanceQuestion(
-    question: "What is a money market savings account?",
-    options: [
-      "A high-risk stock account",
-      "A physical vault for cash and gold",
-      "A savings account that offers check writing and higher interest",
-      "An uninsured investment fund",
-    ],
-    correctIndex: 2,
-    explanation:
-        "Money market accounts combine competitive interest rates with basic transactional access like debit cards or checks.",
-  ),
-  FinanceQuestion(
-    question:
-        "What penalty do you usually face for withdrawing money early from a fixed CD?",
-    options: [
-      "Loss of a portion of accumulated interest earnings",
-      "Permanent account suspension",
-      "A credit score reduction of 100 points",
-      "Forfeiture of all original principal deposits",
-    ],
-    correctIndex: 0,
-    explanation:
-        "Banks assess an early withdrawal penalty equal to a set number of months of interest if you cash out a CD early.",
-  ),
-  FinanceQuestion(
-    question: "What is liquidity in personal finance?",
-    options: [
-      "The total amount of debt owed",
-      "How quickly an asset converts to cash without losing value",
-      "The interest rate on a mortgage",
-      "The profit made from stock sales",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Cash in a checking account is highly liquid, whereas real estate is illiquid because selling takes time.",
-  ),
-  FinanceQuestion(
-    question: "Why are physical cash savings stored under a mattress risky?",
-    options: [
-      "It gains too much interest to track",
-      "The government taxes hidden physical cash twice",
-      "It automatically degrades into unreadable paper",
-      "It earns zero interest, loses purchasing power to inflation, and can be stolen or damaged",
-    ],
-    correctIndex: 3,
-    explanation:
-        "Unbanked cash loses real value to inflation and lacks deposit insurance against disaster or theft.",
-  ),
-  FinanceQuestion(
-    question: "What is 'nominal interest rate'?",
-    options: [
-      "The stated interest rate before adjusting for inflation",
-      "The interest rate after adjusting for inflation",
-      "The maximum rate charged by credit cards",
-      "The fee charged for international bank transfers",
-    ],
-    correctIndex: 0,
-    explanation:
-        "The nominal rate is the baseline advertised rate, whereas the real rate subtracts current inflation.",
-  ),
-  FinanceQuestion(
-    question: "What is 'real interest rate'?",
-    options: [
-      "The total rate including bank service fees",
-      "The interest rate on payday loans",
-      "The nominal interest rate minus the inflation rate",
-      "The rate guaranteed by FDIC insurance",
-    ],
-    correctIndex: 2,
-    explanation:
-        "Real interest rate reflects actual purchasing power growth by taking inflation into account.",
-  ),
-  FinanceQuestion(
-    question:
-        "If your savings account earns 4% APY and annual inflation is 3%, what is your real rate of return?",
-    options: ["7%", "1%", "12%", "0.75%"],
-    correctIndex: 1,
-    explanation:
-        "Subtract 3% inflation from 4% APY to get a real purchasing power gain of 1%.",
-  ),
-  FinanceQuestion(
-    question: "What does the NCUA insure in the financial system?",
-    options: [
-      "Traditional commercial bank deposits",
-      "Deposits at credit unions up to \$250,000",
-      "Stock market brokerages",
-      "Private peer-to-peer loans",
-    ],
-    correctIndex: 1,
-    explanation:
-        "The National Credit Union Administration (NCUA) provides insurance protection for credit union accounts.",
-  ),
-  FinanceQuestion(
-    question: "What is a CD Ladder strategy?",
-    options: [
-      "Borrowing money from multiple CDs at once",
-      "Staggering multiple CD maturity dates to keep liquidity while earning higher rates",
-      "Paying off high-interest CDs first",
-      "Buying stocks through a bank certificate",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Staggering CD maturity dates ensures regular access to maturing cash while capturing higher long-term yields.",
-  ),
+    // -------------------------------------------------------------
+    // SAVINGS & INTEREST (21-40)
+    // -------------------------------------------------------------
+    FinanceQuestion(
+      question:
+          "If you leave \$100 in a savings account with a 5% annual simple interest rate, how much is there after 1 year?",
+      options: ["\$105", "\$100", "\$150", "\$110"],
+      correctIndex: 0,
+      explanation:
+          "Simple interest calculates 5% of \$100, which yields \$5, bringing your total account balance to \$105.",
+    ),
+    FinanceQuestion(
+      question: "What is compound interest?",
+      options: [
+        "Interest earned only on your original cash deposit",
+        "Interest earned on principal plus past earned interest",
+        "A flat fee charged by banks to hold cash",
+        "Tax applied directly to high net worth individuals",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Compound interest creates snowball growth because your earned interest generates its own interest over time.",
+    ),
+    FinanceQuestion(
+      question: "What does 'APY' stand for on a bank savings account?",
+      options: [
+        "Annual Percentage Yield",
+        "Automated Payment Year",
+        "Asset Allocation Profit Yield",
+        "Average Principal Yield",
+      ],
+      correctIndex: 0,
+      explanation:
+          "APY reflects the actual total interest earned over a year, accounting for compounding frequency.",
+    ),
+    FinanceQuestion(
+      question: "What is the 'Rule of 72' used to estimate?",
+      options: [
+        "The percentage of income to spend on housing",
+        "The age everyone must retire",
+        "The maximum credit score attainable",
+        "How long it takes an investment to double at a given rate",
+      ],
+      correctIndex: 3,
+      explanation:
+          "Dividing 72 by your annual interest rate gives the approximate years it takes for your principal to double.",
+    ),
+    FinanceQuestion(
+      question:
+          "At a 6% annual return rate, roughly how many years will it take your money to double (Rule of 72)?",
+      options: ["12 years", "6 years", "72 years", "18 years"],
+      correctIndex: 0,
+      explanation:
+          "72 divided by 6 equals 12 years to double your initial capital investment.",
+    ),
+    FinanceQuestion(
+      question:
+          "What primary benefit does a High-Yield Savings Account (HYSA) offer over standard checking?",
+      options: [
+        "Free stock trades",
+        "Higher interest rates while keeping FDIC insurance and easy cash access",
+        "Unlimited cash withdrawals without limits",
+        "Zero taxes on earned interest",
+      ],
+      correctIndex: 1,
+      explanation:
+          "HYSAs provide superior interest rates compared to traditional accounts while keeping money secure and accessible.",
+    ),
+    FinanceQuestion(
+      question: "What is a Certificate of Deposit (CD)?",
+      options: [
+        "A volatile cryptocurrency asset",
+        "A credit card reward voucher",
+        "A savings product locking money for a set term for fixed interest",
+        "A government bond with floating rates",
+      ],
+      correctIndex: 2,
+      explanation:
+          "CDs lock up your deposit for a set timeframe; early withdrawals usually trigger interest penalties.",
+    ),
+    FinanceQuestion(
+      question:
+          "What institution in the US insures individual bank deposits up to \$250,000?",
+      options: [
+        "FDIC (Federal Deposit Insurance Corporation)",
+        "SEC (Securities and Exchange Commission)",
+        "IRS (Internal Revenue Service)",
+        "Federal Reserve Board",
+      ],
+      correctIndex: 0,
+      explanation:
+          "The FDIC guarantees member bank deposits, protecting consumer funds even if the bank defaults.",
+    ),
+    FinanceQuestion(
+      question:
+          "How does inflation impact cash sitting in a standard 0.01% savings account?",
+      options: [
+        "Increases purchasing power rapidly",
+        "It loses purchasing power because price increases outpace savings interest",
+        "Has no effect on real value",
+        "Multiplies the principal balance automatically",
+      ],
+      correctIndex: 1,
+      explanation:
+          "If inflation is 3% and interest is 0.01%, your real purchasing power drops by roughly 3% each year.",
+    ),
+    FinanceQuestion(
+      question:
+          "What is the difference between simple interest and compound interest?",
+      options: [
+        "Simple interest grows exponentially; Compound interest grows linearly",
+        "Simple interest applies only to stocks; Compound interest applies to loans",
+        "There is no functional difference",
+        "Simple interest applies only to principal; Compound interest earns interest on prior interest",
+      ],
+      correctIndex: 3,
+      explanation:
+          "Simple interest stays flat, whereas compound interest compounds continuously, driving long-term growth.",
+    ),
+    FinanceQuestion(
+      question:
+          "If interest compounds monthly versus annually at the same nominal rate, which yields more money?",
+      options: [
+        "Annual compounding",
+        "Monthly compounding",
+        "They yield the exact same amount",
+        "Neither yields interest",
+      ],
+      correctIndex: 1,
+      explanation:
+          "More frequent compounding periods calculate interest on newly added gains faster, resulting in higher overall yield.",
+    ),
+    FinanceQuestion(
+      question: "What is a money market savings account?",
+      options: [
+        "A high-risk stock account",
+        "A physical vault for cash and gold",
+        "A savings account that offers check writing and higher interest",
+        "An uninsured investment fund",
+      ],
+      correctIndex: 2,
+      explanation:
+          "Money market accounts combine competitive interest rates with basic transactional access like debit cards or checks.",
+    ),
+    FinanceQuestion(
+      question:
+          "What penalty do you usually face for withdrawing money early from a fixed CD?",
+      options: [
+        "Loss of a portion of accumulated interest earnings",
+        "Permanent account suspension",
+        "A credit score reduction of 100 points",
+        "Forfeiture of all original principal deposits",
+      ],
+      correctIndex: 0,
+      explanation:
+          "Banks assess an early withdrawal penalty equal to a set number of months of interest if you cash out a CD early.",
+    ),
+    FinanceQuestion(
+      question: "What is liquidity in personal finance?",
+      options: [
+        "The total amount of debt owed",
+        "How quickly an asset converts to cash without losing value",
+        "The interest rate on a mortgage",
+        "The profit made from stock sales",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Cash in a checking account is highly liquid, whereas real estate is illiquid because selling takes time.",
+    ),
+    FinanceQuestion(
+      question: "Why are physical cash savings stored under a mattress risky?",
+      options: [
+        "It gains too much interest to track",
+        "The government taxes hidden physical cash twice",
+        "It automatically degrades into unreadable paper",
+        "It earns zero interest, loses purchasing power to inflation, and can be stolen or damaged",
+      ],
+      correctIndex: 3,
+      explanation:
+          "Unbanked cash loses real value to inflation and lacks deposit insurance against disaster or theft.",
+    ),
+    FinanceQuestion(
+      question: "What is 'nominal interest rate'?",
+      options: [
+        "The stated interest rate before adjusting for inflation",
+        "The interest rate after adjusting for inflation",
+        "The maximum rate charged by credit cards",
+        "The fee charged for international bank transfers",
+      ],
+      correctIndex: 0,
+      explanation:
+          "The nominal rate is the baseline advertised rate, whereas the real rate subtracts current inflation.",
+    ),
+    FinanceQuestion(
+      question: "What is 'real interest rate'?",
+      options: [
+        "The total rate including bank service fees",
+        "The interest rate on payday loans",
+        "The nominal interest rate minus the inflation rate",
+        "The rate guaranteed by FDIC insurance",
+      ],
+      correctIndex: 2,
+      explanation:
+          "Real interest rate reflects actual purchasing power growth by taking inflation into account.",
+    ),
+    FinanceQuestion(
+      question:
+          "If your savings account earns 4% APY and annual inflation is 3%, what is your real rate of return?",
+      options: ["7%", "1%", "12%", "0.75%"],
+      correctIndex: 1,
+      explanation:
+          "Subtract 3% inflation from 4% APY to get a real purchasing power gain of 1%.",
+    ),
+    FinanceQuestion(
+      question: "What does the NCUA insure in the financial system?",
+      options: [
+        "Traditional commercial bank deposits",
+        "Deposits at credit unions up to \$250,000",
+        "Stock market brokerages",
+        "Private peer-to-peer loans",
+      ],
+      correctIndex: 1,
+      explanation:
+          "The National Credit Union Administration (NCUA) provides insurance protection for credit union accounts.",
+    ),
+    FinanceQuestion(
+      question: "What is a CD Ladder strategy?",
+      options: [
+        "Borrowing money from multiple CDs at once",
+        "Staggering multiple CD maturity dates to keep liquidity while earning higher rates",
+        "Paying off high-interest CDs first",
+        "Buying stocks through a bank certificate",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Staggering CD maturity dates ensures regular access to maturing cash while capturing higher long-term yields.",
+    ),
 
-  // -------------------------------------------------------------
-  // CREDIT, DEBT & LOANS (41-60)
-  // -------------------------------------------------------------
-  FinanceQuestion(
-    question:
-        "What is the difference between a credit card and a debit card?",
-    options: [
-      "Debit cards borrow funds from a bank; Credit cards tap your checking balance directly.",
-      "Credit cards instantly withdraw money you currently own; Debit cards act as loans.",
-      "Debit cards pull money directly from checking; Credit cards use borrowed credit lines.",
-      "There is no functional financial operational difference.",
-    ],
-    correctIndex: 2,
-    explanation:
-        "Debit draws cash directly from your bank balance; credit is a revolving loan you must repay.",
-  ),
-  FinanceQuestion(
-    question:
-        "Which component has the single largest impact on calculating your FICO credit score?",
-    options: [
-      "Length of credit history",
-      "Types of credit used",
-      "Total number of credit inquiries",
-      "Payment history (paying bills on time)",
-    ],
-    correctIndex: 3,
-    explanation:
-        "Payment history accounts for roughly 35% of your total credit score, making on-time payments essential.",
-  ),
-  FinanceQuestion(
-    question: "What is a credit utilization ratio?",
-    options: [
-      "The percentage of your total available credit lines currently in use",
-      "The total amount of debt paid off per year",
-      "The interest rate charged on mortgage loans",
-      "The ratio of income to credit card rewards points",
-    ],
-    correctIndex: 0,
-    explanation:
-        "Credit utilization measures used credit against overall limits. Keeping it under 30% helps protect credit scores.",
-  ),
-  FinanceQuestion(
-    question: "What is the 'debt avalanche' debt payoff strategy?",
-    options: [
-      "Paying off debts from smallest balance to largest balance",
-      "Paying minimums on all balances while putting extra money toward the debt with the highest interest rate",
-      "Filing for bankruptcy immediately",
-      "Consolidating all loans into a single low-interest credit card",
-    ],
-    correctIndex: 1,
-    explanation:
-        "The debt avalanche mathematically minimizes interest costs by targeting high-APR balances first.",
-  ),
-  FinanceQuestion(
-    question:
-        "What is the 'debt snowball' strategy made popular by financial planners?",
-    options: [
-      "Targeting the debt with the highest interest rate first",
-      "Stopping all payments until loans enter default",
-      "Paying off smallest balances first for momentum",
-      "Transferring debt to overseas accounts",
-    ],
-    correctIndex: 2,
-    explanation:
-        "Debt snowball focuses on quick psychological wins by eliminating small debts first.",
-  ),
-  FinanceQuestion(
-    question:
-        "What happens if you only pay the minimum monthly balance on a high-APR credit card?",
-    options: [
-      "Your debt disappears within 12 months",
-      "High interest makes repayment take years, drastically raising the total cost",
-      "The card issuer waives remaining interest charges",
-      "Your credit score automatically maxes out",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Minimum payments cover mostly interest, leaving the core principal virtually unchanged for long periods.",
-  ),
-  FinanceQuestion(
-    question: "What is collateral in the context of a secured loan?",
-    options: [
-      "A cash bonus given by lenders",
-      "An asset pledged to secure a loan, which the lender can take if you default",
-      "The total interest accumulated over a loan's term",
-      "The credit score of a co-signer",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Secured loans (like auto loans or mortgages) use physical property as collateral to back the loan.",
-  ),
-  FinanceQuestion(
-    question: "Which of these is an example of an unsecured loan?",
-    options: [
-      "A traditional home mortgage",
-      "An auto loan backed by a vehicle title",
-      "A standard personal credit card",
-      "A pawn shop pawn loan",
-    ],
-    correctIndex: 2,
-    explanation:
-        "Credit cards are unsecured loans—lenders approve them based on creditworthiness without physical collateral.",
-  ),
-  FinanceQuestion(
-    question: "What is APR in personal credit agreements?",
-    options: [
-      "Annual Percentage Rate",
-      "Average Principal Return",
-      "Automated Payment Recovery",
-      "Annual Profit Ratio",
-    ],
-    correctIndex: 0,
-    explanation:
-        "APR represents the total annualized cost of borrowing, including interest rates and required finance fees.",
-  ),
-  FinanceQuestion(
-    question: "What is a grace period on a standard credit card?",
-    options: [
-      "A time window where you can spend unlimited funds without credit limits",
-      "The time given to pay off defaulted debts after bankruptcy",
-      "A period where credit card annual fees are waived",
-      "The window where no interest accrues if you pay the balance in full",
-    ],
-    correctIndex: 3,
-    explanation:
-        "Paying your statement balance in full before the grace period ends lets you avoid paying interest entirely.",
-  ),
-  FinanceQuestion(
-    question:
-        "What impact does closing an old, paid-off credit card account have on your credit score?",
-    options: [
-      "Always increases your score immediately",
-      "It can lower your score by reducing available credit and shortening credit history age",
-      "Has zero effect on credit calculations",
-      "Erases late payment history permanently",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Closing old accounts shrinks total credit lines (raising utilization) and reduces average credit account age.",
-  ),
-  FinanceQuestion(
-    question: "What is predatory lending?",
-    options: [
-      "Low-rate government student loans",
-      "Deceptive or unfair loan practices with extreme interest rates and hidden fees",
-      "Standard high-yield bank savings products",
-      "Interest-free promotional financing",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Predatory lenders take advantage of borrowers using misleading terms, extreme interest rates, and excessive trap fees.",
-  ),
-  FinanceQuestion(
-    question: "Why are payday loans considered highly financially dangerous?",
-    options: [
-      "They require high credit scores to qualify",
-      "They require valuable real estate assets as collateral",
-      "They carry extremely high annual interest rates that trap borrowers in debt cycles",
-      "They lock up funds for 10 years",
-    ],
-    correctIndex: 2,
-    explanation:
-        "Payday loans carry triple-digit annualized interest rates that trap borrowers in continuous refinancing cycles.",
-  ),
-  FinanceQuestion(
-    question: "What is debt consolidation?",
-    options: [
-      "Merging multiple debts into a single loan, ideally with a lower interest rate",
-      "Refusing to pay multiple bills until debt is forgiven",
-      "Declaring Chapter 7 bankruptcy",
-      "Converting debt directly into corporate stock",
-    ],
-    correctIndex: 0,
-    explanation:
-        "Consolidation merges multiple debts into a single monthly payment to simplify tracking and lower overall interest rates.",
-  ),
-  FinanceQuestion(
-    question: "What is a hard inquiry (hard pull) on a credit report?",
-    options: [
-      "Checking your own credit score on a mobile app",
-      "A credit check performed by a lender when you apply for a new line of credit",
-      "An annual audit by the Internal Revenue Service",
-      "An automated account review by an existing lender",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Hard inquiries occur during loan applications and can temporarily drop your credit score by a few points.",
-  ),
-  FinanceQuestion(
-    question: "What is a co-signer legally obligated to do on a loan?",
-    options: [
-      "Nothing unless they choose to help",
-      "Pay only 10% of remaining missed payments",
-      "Receive monthly dividend checks from the lender",
-      "Pay back the loan in full if the main borrower misses payments or defaults",
-    ],
-    correctIndex: 3,
-    explanation:
-        "Co-signers accept full legal responsibility for debt repayment if the main borrower misses payments or defaults.",
-  ),
-  FinanceQuestion(
-    question: "What constitutes 'good debt' in financial planning strategy?",
-    options: [
-      "Debt used to finance luxury vacations",
-      "Low-interest debt used to buy assets that grow in value or increase income",
-      "High-interest cash advances spent on dining out",
-      "Overdraft balances on retail checking accounts",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Debt used for mortgages or education can expand net worth or future income, unlike high-cost consumer debt.",
-  ),
-  FinanceQuestion(
-    question: "What is a balance transfer credit card designed for?",
-    options: [
-      "Earning high cash back on grocery purchases",
-      "Moving debt from a high-interest card to one with a lower or 0% introductory rate",
-      "Converting cash directly into foreign currency",
-      "Waiving federal student loan debts",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Balance transfers let you pause interest charges temporarily so you can pay down debt principal faster.",
-  ),
-  FinanceQuestion(
-    question:
-        "What is the typical range for FICO credit scores in the United States?",
-    options: ["0 to 100", "300 to 850", "100 to 500", "500 to 1000"],
-    correctIndex: 1,
-    explanation:
-        "FICO credit scores range from 300 to 850, with scores above 740 generally considered excellent.",
-  ),
-  FinanceQuestion(
-    question: "What happens when a loan goes into default status?",
-    options: [
-      "The loan interest rate drops to zero",
-      "The debt is automatically erased after 30 days",
-      "The lender can demand full payment immediately and send the debt to collections",
-      "The government pays off the balance",
-    ],
-    correctIndex: 2,
-    explanation:
-        "Default occurs after prolonged missed payments, leading to legal action, debt collections, and severe credit damage.",
-  ),
+    // -------------------------------------------------------------
+    // CREDIT, DEBT & LOANS (41-60)
+    // -------------------------------------------------------------
+    FinanceQuestion(
+      question:
+          "What is the difference between a credit card and a debit card?",
+      options: [
+        "Debit cards borrow funds from a bank; Credit cards tap your checking balance directly.",
+        "Credit cards instantly withdraw money you currently own; Debit cards act as loans.",
+        "Debit cards pull money directly from checking; Credit cards use borrowed credit lines.",
+        "There is no functional financial operational difference.",
+      ],
+      correctIndex: 2,
+      explanation:
+          "Debit draws cash directly from your bank balance; credit is a revolving loan you must repay.",
+    ),
+    FinanceQuestion(
+      question:
+          "Which component has the single largest impact on calculating your FICO credit score?",
+      options: [
+        "Length of credit history",
+        "Types of credit used",
+        "Total number of credit inquiries",
+        "Payment history (paying bills on time)",
+      ],
+      correctIndex: 3,
+      explanation:
+          "Payment history accounts for roughly 35% of your total credit score, making on-time payments essential.",
+    ),
+    FinanceQuestion(
+      question: "What is a credit utilization ratio?",
+      options: [
+        "The percentage of your total available credit lines currently in use",
+        "The total amount of debt paid off per year",
+        "The interest rate charged on mortgage loans",
+        "The ratio of income to credit card rewards points",
+      ],
+      correctIndex: 0,
+      explanation:
+          "Credit utilization measures used credit against overall limits. Keeping it under 30% helps protect credit scores.",
+    ),
+    FinanceQuestion(
+      question: "What is the 'debt avalanche' debt payoff strategy?",
+      options: [
+        "Paying off debts from smallest balance to largest balance",
+        "Paying minimums on all balances while putting extra money toward the debt with the highest interest rate",
+        "Filing for bankruptcy immediately",
+        "Consolidating all loans into a single low-interest credit card",
+      ],
+      correctIndex: 1,
+      explanation:
+          "The debt avalanche mathematically minimizes interest costs by targeting high-APR balances first.",
+    ),
+    FinanceQuestion(
+      question:
+          "What is the 'debt snowball' strategy made popular by financial planners?",
+      options: [
+        "Targeting the debt with the highest interest rate first",
+        "Stopping all payments until loans enter default",
+        "Paying off smallest balances first for momentum",
+        "Transferring debt to overseas accounts",
+      ],
+      correctIndex: 2,
+      explanation:
+          "Debt snowball focuses on quick psychological wins by eliminating small debts first.",
+    ),
+    FinanceQuestion(
+      question:
+          "What happens if you only pay the minimum monthly balance on a high-APR credit card?",
+      options: [
+        "Your debt disappears within 12 months",
+        "High interest makes repayment take years, drastically raising the total cost",
+        "The card issuer waives remaining interest charges",
+        "Your credit score automatically maxes out",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Minimum payments cover mostly interest, leaving the core principal virtually unchanged for long periods.",
+    ),
+    FinanceQuestion(
+      question: "What is collateral in the context of a secured loan?",
+      options: [
+        "A cash bonus given by lenders",
+        "An asset pledged to secure a loan, which the lender can take if you default",
+        "The total interest accumulated over a loan's term",
+        "The credit score of a co-signer",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Secured loans (like auto loans or mortgages) use physical property as collateral to back the loan.",
+    ),
+    FinanceQuestion(
+      question: "Which of these is an example of an unsecured loan?",
+      options: [
+        "A traditional home mortgage",
+        "An auto loan backed by a vehicle title",
+        "A standard personal credit card",
+        "A pawn shop pawn loan",
+      ],
+      correctIndex: 2,
+      explanation:
+          "Credit cards are unsecured loans—lenders approve them based on creditworthiness without physical collateral.",
+    ),
+    FinanceQuestion(
+      question: "What is APR in personal credit agreements?",
+      options: [
+        "Annual Percentage Rate",
+        "Average Principal Return",
+        "Automated Payment Recovery",
+        "Annual Profit Ratio",
+      ],
+      correctIndex: 0,
+      explanation:
+          "APR represents the total annualized cost of borrowing, including interest rates and required finance fees.",
+    ),
+    FinanceQuestion(
+      question: "What is a grace period on a standard credit card?",
+      options: [
+        "A time window where you can spend unlimited funds without credit limits",
+        "The time given to pay off defaulted debts after bankruptcy",
+        "A period where credit card annual fees are waived",
+        "The window where no interest accrues if you pay the balance in full",
+      ],
+      correctIndex: 3,
+      explanation:
+          "Paying your statement balance in full before the grace period ends lets you avoid paying interest entirely.",
+    ),
+    FinanceQuestion(
+      question:
+          "What impact does closing an old, paid-off credit card account have on your credit score?",
+      options: [
+        "Always increases your score immediately",
+        "It can lower your score by reducing available credit and shortening credit history age",
+        "Has zero effect on credit calculations",
+        "Erases late payment history permanently",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Closing old accounts shrinks total credit lines (raising utilization) and reduces average credit account age.",
+    ),
+    FinanceQuestion(
+      question: "What is predatory lending?",
+      options: [
+        "Low-rate government student loans",
+        "Deceptive or unfair loan practices with extreme interest rates and hidden fees",
+        "Standard high-yield bank savings products",
+        "Interest-free promotional financing",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Predatory lenders take advantage of borrowers using misleading terms, extreme interest rates, and excessive trap fees.",
+    ),
+    FinanceQuestion(
+      question: "Why are payday loans considered highly financially dangerous?",
+      options: [
+        "They require high credit scores to qualify",
+        "They require valuable real estate assets as collateral",
+        "They carry extremely high annual interest rates that trap borrowers in debt cycles",
+        "They lock up funds for 10 years",
+      ],
+      correctIndex: 2,
+      explanation:
+          "Payday loans carry triple-digit annualized interest rates that trap borrowers in continuous refinancing cycles.",
+    ),
+    FinanceQuestion(
+      question: "What is debt consolidation?",
+      options: [
+        "Merging multiple debts into a single loan, ideally with a lower interest rate",
+        "Refusing to pay multiple bills until debt is forgiven",
+        "Declaring Chapter 7 bankruptcy",
+        "Converting debt directly into corporate stock",
+      ],
+      correctIndex: 0,
+      explanation:
+          "Consolidation merges multiple debts into a single monthly payment to simplify tracking and lower overall interest rates.",
+    ),
+    FinanceQuestion(
+      question: "What is a hard inquiry (hard pull) on a credit report?",
+      options: [
+        "Checking your own credit score on a mobile app",
+        "A credit check performed by a lender when you apply for a new line of credit",
+        "An annual audit by the Internal Revenue Service",
+        "An automated account review by an existing lender",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Hard inquiries occur during loan applications and can temporarily drop your credit score by a few points.",
+    ),
+    FinanceQuestion(
+      question: "What is a co-signer legally obligated to do on a loan?",
+      options: [
+        "Nothing unless they choose to help",
+        "Pay only 10% of remaining missed payments",
+        "Receive monthly dividend checks from the lender",
+        "Pay back the loan in full if the main borrower misses payments or defaults",
+      ],
+      correctIndex: 3,
+      explanation:
+          "Co-signers accept full legal responsibility for debt repayment if the main borrower misses payments or defaults.",
+    ),
+    FinanceQuestion(
+      question: "What constitutes 'good debt' in financial planning strategy?",
+      options: [
+        "Debt used to finance luxury vacations",
+        "Low-interest debt used to buy assets that grow in value or increase income",
+        "High-interest cash advances spent on dining out",
+        "Overdraft balances on retail checking accounts",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Debt used for mortgages or education can expand net worth or future income, unlike high-cost consumer debt.",
+    ),
+    FinanceQuestion(
+      question: "What is a balance transfer credit card designed for?",
+      options: [
+        "Earning high cash back on grocery purchases",
+        "Moving debt from a high-interest card to one with a lower or 0% introductory rate",
+        "Converting cash directly into foreign currency",
+        "Waiving federal student loan debts",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Balance transfers let you pause interest charges temporarily so you can pay down debt principal faster.",
+    ),
+    FinanceQuestion(
+      question:
+          "What is the typical range for FICO credit scores in the United States?",
+      options: ["0 to 100", "300 to 850", "100 to 500", "500 to 1000"],
+      correctIndex: 1,
+      explanation:
+          "FICO credit scores range from 300 to 850, with scores above 740 generally considered excellent.",
+    ),
+    FinanceQuestion(
+      question: "What happens when a loan goes into default status?",
+      options: [
+        "The loan interest rate drops to zero",
+        "The debt is automatically erased after 30 days",
+        "The lender can demand full payment immediately and send the debt to collections",
+        "The government pays off the balance",
+      ],
+      correctIndex: 2,
+      explanation:
+          "Default occurs after prolonged missed payments, leading to legal action, debt collections, and severe credit damage.",
+    ),
 
-  // -------------------------------------------------------------
-  // INVESTING & CAPITAL MARKETS (61-80)
-  // -------------------------------------------------------------
-  FinanceQuestion(
-    question:
-        "Which investment carries the risk of losing your original principal capital?",
-    options: [
-      "An FDIC-insured High-Yield Savings Account",
-      "Individual stocks",
-      "A bank Certificate of Deposit (CD)",
-      "A standard cash checking account",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Stocks fluctuate based on business performance and broader economic conditions, meaning capital is at risk.",
-  ),
-  FinanceQuestion(
-    question:
-        "What represents partial ownership in a public corporate entity?",
-    options: [
-      "A corporate bond",
-      "A share of stock",
-      "A treasury bill",
-      "A certificate of deposit",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Buying stock gives you equity—a small piece of direct ownership in that business.",
-  ),
-  FinanceQuestion(
-    question: "What is a corporate or government bond?",
-    options: [
-      "Direct ownership shares in a private startup",
-      "A loan you make to an organization that pays you back with interest",
-      "An insurance contract protecting against stock market crashes",
-      "A cash savings account at a local credit union",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Bonds are IOUs—you lend money to a government or corporation, and they pay you regular interest until maturity.",
-  ),
-  FinanceQuestion(
-    question: "What is asset allocation diversification?",
-    options: [
-      "Putting 100% of capital into a single top-performing stock",
-      "Moving all wealth into physical cash under a mattress",
-      "Spreading investments across different asset types to lower risk",
-      "Trading options contracts with maximum leverage",
-    ],
-    correctIndex: 2,
-    explanation:
-        "Diversification reduces risk—if one asset or sector crashes, other investments help buffer the loss.",
-  ),
-  FinanceQuestion(
-    question: "What is an Index Fund?",
-    options: [
-      "A fund managed by an individual selecting hot daily stocks",
-      "A fund that tracks a market benchmark like the S&P 500",
-      "A high-interest government savings vehicle",
-      "A speculative foreign exchange trading contract",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Index funds track entire market segments, providing broad diversification and lower management fees.",
-  ),
-  FinanceQuestion(
-    question: "What is a corporate dividend payment?",
-    options: [
-      "A distribution of company earnings paid directly to shareholders",
-      "A penalty fee paid by corporations when revenues decline",
-      "The interest rate charged on business loans",
-      "The initial price of an IPO stock share",
-    ],
-    correctIndex: 0,
-    explanation:
-        "Dividends are cash payments companies make to reward shareholders out of accumulated profits.",
-  ),
-  FinanceQuestion(
-    question: "What is the S&P 500 index?",
-    options: [
-      "A list of the 500 highest tax-paying individuals",
-      "A government bond paying 5% interest annually",
-      "The top 500 commercial banks in North America",
-      "An index measuring the stock performance of 500 large public US companies",
-    ],
-    correctIndex: 3,
-    explanation:
-        "The S&P 500 is widely considered the primary benchmark for overall US stock market performance.",
-  ),
-  FinanceQuestion(
-    question: "What does Dollar-Cost Averaging (DCA) involve?",
-    options: [
-      "Timing the market to buy only at absolute rock-bottom lows",
-      "Investing a fixed dollar amount on a regular schedule regardless of share price",
-      "Selling all investments whenever stock prices decline by 5%",
-      "Converting foreign currencies into US dollars daily",
-    ],
-    correctIndex: 1,
-    explanation:
-        "DCA builds investment consistency and eliminates emotion by buying more shares when prices are low and fewer when high.",
-  ),
-  FinanceQuestion(
-    question: "What is a Mutual Fund?",
-    options: [
-      "An investment pool of money from many buyers used to purchase a portfolio of securities",
-      "A joint bank account opened between family members",
-      "A peer-to-peer loan agreement",
-      "A government insurance policy for home buyers",
-    ],
-    correctIndex: 0,
-    explanation:
-        "Mutual funds pool money from many investors to buy diversified portfolios managed by professional teams.",
-  ),
-  FinanceQuestion(
-    question: "What is market volatility?",
-    options: [
-      "The absolute guarantee of losing money in stocks",
-      "The total transaction fee charged by online brokerages",
-      "How quickly and drastically investment prices move up or down",
-      "The legal limit on how high a stock price can rise",
-    ],
-    correctIndex: 2,
-    explanation:
-        "High volatility means asset prices swing wildly in short periods, whereas low volatility indicates stable pricing.",
-  ),
-  FinanceQuestion(
-    question: "What is an Exchange-Traded Fund (ETF)?",
-    options: [
-      "A pooled investment fund that trades on stock exchanges like an individual stock",
-      "A wire transfer between international banks",
-      "An electronic check processor",
-      "A tax refund bond issued by state governments",
-    ],
-    correctIndex: 0,
-    explanation:
-        "ETFs operate similarly to mutual funds, but trade like individual stocks on an exchange throughout market hours.",
-  ),
-  FinanceQuestion(
-    question:
-        "What is the relationship between risk and return in investing?",
-    options: [
-      "Higher potential returns come with higher potential risk",
-      "Low-risk investments always produce higher long-term returns",
-      "Risk and return operate with zero mathematical connection",
-      "High returns guarantee absolute capital protection",
-    ],
-    correctIndex: 0,
-    explanation:
-        "Higher prospective returns exist to compensate investors for taking on greater risk of potential loss.",
-  ),
-  FinanceQuestion(
-    question: "What is a capital gain?",
-    options: [
-      "The profit earned when an asset sells for more than its buy price",
-      "The initial capital deposited into a checking account",
-      "The annual salary earned by corporate executives",
-      "The dividend income earned from holding bonds",
-    ],
-    correctIndex: 0,
-    explanation:
-        "A capital gain is achieved when you sell an asset (like stock or real estate) for more than you originally paid.",
-  ),
-  FinanceQuestion(
-    question: "What is an Initial Public Offering (IPO)?",
-    options: [
-      "A company's final liquidation sale during bankruptcy",
-      "The first time a company offers its shares to the general public",
-      "An international tax treaty on corporate bonds",
-      "A bank's promotional interest rate for new accounts",
-    ],
-    correctIndex: 1,
-    explanation:
-        "An IPO marks a private business's transition to a public company by issuing shares on a stock exchange.",
-  ),
-  FinanceQuestion(
-    question: "What characterizes a 'Bull Market'?",
-    options: [
-      "A prolonged period of declining stock prices and economic pessimism",
-      "A market condition where asset prices are rising or expected to rise",
-      "A market where trading is suspended due to technical errors",
-      "A period with high inflation and zero interest rates",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Bull markets describe sustained periods of rising asset prices and optimistic investor sentiment.",
-  ),
-  FinanceQuestion(
-    question: "What characterizes a 'Bear Market'?",
-    options: [
-      "A sustained drop in stock prices, usually 20% or more from recent peaks",
-      "A surge in stock prices across all economic sectors",
-      "A market where only government bonds are traded",
-      "A period of unprecedented corporate dividend payouts",
-    ],
-    correctIndex: 0,
-    explanation:
-        "Bear markets occur when market indices drop 20% or more from recent highs amid economic uncertainty.",
-  ),
-  FinanceQuestion(
-    question: "What is a market expense ratio in mutual funds or ETFs?",
-    options: [
-      "The total tax paid on capital gains",
-      "The interest rate paid on margin loans",
-      "The annual percentage fee paid to cover fund management costs",
-      "The cost to open a brokerage account",
-    ],
-    correctIndex: 2,
-    explanation:
-        "Expense ratios represent annual operational costs deducted from your total investment returns in a fund.",
-  ),
-  FinanceQuestion(
-    question: "Why can market timing be dangerous for retail investors?",
-    options: [
-      "It guarantees you pay double income taxes",
-      "Predicting market turns is tough and can cause you to buy high and sell low",
-      "Brokerages prohibit buying stocks more than once a month",
-      "It eliminates all potential capital losses automatically",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Trying to time the market often backfires when investors miss out on the market's best recovery days.",
-  ),
-  FinanceQuestion(
-    question: "What is a Real Estate Investment Trust (REIT)?",
-    options: [
-      "A government agency that builds public roads",
-      "A company that owns or funds income-producing real estate and trades like a stock",
-      "A mortgage loan given exclusively to first-time homebuyers",
-      "An insurance policy covering rental apartment property damage",
-    ],
-    correctIndex: 1,
-    explanation:
-        "REITs let investors buy shares in large real estate portfolios without physically buying or managing property.",
-  ),
-  FinanceQuestion(
-    question: "What does liquidity risk mean for an investor?",
-    options: [
-      "The risk that a bank goes completely out of business",
-      "The risk that you cannot sell an asset quickly for fair market value",
-      "The risk that dividends are paid in foreign currency",
-      "The risk of interest rates dropping to zero",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Liquidity risk happens when you hold an illiquid asset (like artwork or real estate) that cannot be sold fast for cash.",
-  ),
+    // -------------------------------------------------------------
+    // INVESTING & CAPITAL MARKETS (61-80)
+    // -------------------------------------------------------------
+    FinanceQuestion(
+      question:
+          "Which investment carries the risk of losing your original principal capital?",
+      options: [
+        "An FDIC-insured High-Yield Savings Account",
+        "Individual stocks",
+        "A bank Certificate of Deposit (CD)",
+        "A standard cash checking account",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Stocks fluctuate based on business performance and broader economic conditions, meaning capital is at risk.",
+    ),
+    FinanceQuestion(
+      question:
+          "What represents partial ownership in a public corporate entity?",
+      options: [
+        "A corporate bond",
+        "A share of stock",
+        "A treasury bill",
+        "A certificate of deposit",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Buying stock gives you equity—a small piece of direct ownership in that business.",
+    ),
+    FinanceQuestion(
+      question: "What is a corporate or government bond?",
+      options: [
+        "Direct ownership shares in a private startup",
+        "A loan you make to an organization that pays you back with interest",
+        "An insurance contract protecting against stock market crashes",
+        "A cash savings account at a local credit union",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Bonds are IOUs—you lend money to a government or corporation, and they pay you regular interest until maturity.",
+    ),
+    FinanceQuestion(
+      question: "What is asset allocation diversification?",
+      options: [
+        "Putting 100% of capital into a single top-performing stock",
+        "Moving all wealth into physical cash under a mattress",
+        "Spreading investments across different asset types to lower risk",
+        "Trading options contracts with maximum leverage",
+      ],
+      correctIndex: 2,
+      explanation:
+          "Diversification reduces risk—if one asset or sector crashes, other investments help buffer the loss.",
+    ),
+    FinanceQuestion(
+      question: "What is an Index Fund?",
+      options: [
+        "A fund managed by an individual selecting hot daily stocks",
+        "A fund that tracks a market benchmark like the S&P 500",
+        "A high-interest government savings vehicle",
+        "A speculative foreign exchange trading contract",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Index funds track entire market segments, providing broad diversification and lower management fees.",
+    ),
+    FinanceQuestion(
+      question: "What is a corporate dividend payment?",
+      options: [
+        "A distribution of company earnings paid directly to shareholders",
+        "A penalty fee paid by corporations when revenues decline",
+        "The interest rate charged on business loans",
+        "The initial price of an IPO stock share",
+      ],
+      correctIndex: 0,
+      explanation:
+          "Dividends are cash payments companies make to reward shareholders out of accumulated profits.",
+    ),
+    FinanceQuestion(
+      question: "What is the S&P 500 index?",
+      options: [
+        "A list of the 500 highest tax-paying individuals",
+        "A government bond paying 5% interest annually",
+        "The top 500 commercial banks in North America",
+        "An index measuring the stock performance of 500 large public US companies",
+      ],
+      correctIndex: 3,
+      explanation:
+          "The S&P 500 is widely considered the primary benchmark for overall US stock market performance.",
+    ),
+    FinanceQuestion(
+      question: "What does Dollar-Cost Averaging (DCA) involve?",
+      options: [
+        "Timing the market to buy only at absolute rock-bottom lows",
+        "Investing a fixed dollar amount on a regular schedule regardless of share price",
+        "Selling all investments whenever stock prices decline by 5%",
+        "Converting foreign currencies into US dollars daily",
+      ],
+      correctIndex: 1,
+      explanation:
+          "DCA builds investment consistency and eliminates emotion by buying more shares when prices are low and fewer when high.",
+    ),
+    FinanceQuestion(
+      question: "What is a Mutual Fund?",
+      options: [
+        "An investment pool of money from many buyers used to purchase a portfolio of securities",
+        "A joint bank account opened between family members",
+        "A peer-to-peer loan agreement",
+        "A government insurance policy for home buyers",
+      ],
+      correctIndex: 0,
+      explanation:
+          "Mutual funds pool money from many investors to buy diversified portfolios managed by professional teams.",
+    ),
+    FinanceQuestion(
+      question: "What is market volatility?",
+      options: [
+        "The absolute guarantee of losing money in stocks",
+        "The total transaction fee charged by online brokerages",
+        "How quickly and drastically investment prices move up or down",
+        "The legal limit on how high a stock price can rise",
+      ],
+      correctIndex: 2,
+      explanation:
+          "High volatility means asset prices swing wildly in short periods, whereas low volatility indicates stable pricing.",
+    ),
+    FinanceQuestion(
+      question: "What is an Exchange-Traded Fund (ETF)?",
+      options: [
+        "A pooled investment fund that trades on stock exchanges like an individual stock",
+        "A wire transfer between international banks",
+        "An electronic check processor",
+        "A tax refund bond issued by state governments",
+      ],
+      correctIndex: 0,
+      explanation:
+          "ETFs operate similarly to mutual funds, but trade like individual stocks on an exchange throughout market hours.",
+    ),
+    FinanceQuestion(
+      question:
+          "What is the relationship between risk and return in investing?",
+      options: [
+        "Higher potential returns come with higher potential risk",
+        "Low-risk investments always produce higher long-term returns",
+        "Risk and return operate with zero mathematical connection",
+        "High returns guarantee absolute capital protection",
+      ],
+      correctIndex: 0,
+      explanation:
+          "Higher prospective returns exist to compensate investors for taking on greater risk of potential loss.",
+    ),
+    FinanceQuestion(
+      question: "What is a capital gain?",
+      options: [
+        "The profit earned when an asset sells for more than its buy price",
+        "The initial capital deposited into a checking account",
+        "The annual salary earned by corporate executives",
+        "The dividend income earned from holding bonds",
+      ],
+      correctIndex: 0,
+      explanation:
+          "A capital gain is achieved when you sell an asset (like stock or real estate) for more than you originally paid.",
+    ),
+    FinanceQuestion(
+      question: "What is an Initial Public Offering (IPO)?",
+      options: [
+        "A company's final liquidation sale during bankruptcy",
+        "The first time a company offers its shares to the general public",
+        "An international tax treaty on corporate bonds",
+        "A bank's promotional interest rate for new accounts",
+      ],
+      correctIndex: 1,
+      explanation:
+          "An IPO marks a private business's transition to a public company by issuing shares on a stock exchange.",
+    ),
+    FinanceQuestion(
+      question: "What characterizes a 'Bull Market'?",
+      options: [
+        "A prolonged period of declining stock prices and economic pessimism",
+        "A market condition where asset prices are rising or expected to rise",
+        "A market where trading is suspended due to technical errors",
+        "A period with high inflation and zero interest rates",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Bull markets describe sustained periods of rising asset prices and optimistic investor sentiment.",
+    ),
+    FinanceQuestion(
+      question: "What characterizes a 'Bear Market'?",
+      options: [
+        "A sustained drop in stock prices, usually 20% or more from recent peaks",
+        "A surge in stock prices across all economic sectors",
+        "A market where only government bonds are traded",
+        "A period of unprecedented corporate dividend payouts",
+      ],
+      correctIndex: 0,
+      explanation:
+          "Bear markets occur when market indices drop 20% or more from recent highs amid economic uncertainty.",
+    ),
+    FinanceQuestion(
+      question: "What is a market expense ratio in mutual funds or ETFs?",
+      options: [
+        "The total tax paid on capital gains",
+        "The interest rate paid on margin loans",
+        "The annual percentage fee paid to cover fund management costs",
+        "The cost to open a brokerage account",
+      ],
+      correctIndex: 2,
+      explanation:
+          "Expense ratios represent annual operational costs deducted from your total investment returns in a fund.",
+    ),
+    FinanceQuestion(
+      question: "Why can market timing be dangerous for retail investors?",
+      options: [
+        "It guarantees you pay double income taxes",
+        "Predicting market turns is tough and can cause you to buy high and sell low",
+        "Brokerages prohibit buying stocks more than once a month",
+        "It eliminates all potential capital losses automatically",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Trying to time the market often backfires when investors miss out on the market's best recovery days.",
+    ),
+    FinanceQuestion(
+      question: "What is a Real Estate Investment Trust (REIT)?",
+      options: [
+        "A government agency that builds public roads",
+        "A company that owns or funds income-producing real estate and trades like a stock",
+        "A mortgage loan given exclusively to first-time homebuyers",
+        "An insurance policy covering rental apartment property damage",
+      ],
+      correctIndex: 1,
+      explanation:
+          "REITs let investors buy shares in large real estate portfolios without physically buying or managing property.",
+    ),
+    FinanceQuestion(
+      question: "What does liquidity risk mean for an investor?",
+      options: [
+        "The risk that a bank goes completely out of business",
+        "The risk that you cannot sell an asset quickly for fair market value",
+        "The risk that dividends are paid in foreign currency",
+        "The risk of interest rates dropping to zero",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Liquidity risk happens when you hold an illiquid asset (like artwork or real estate) that cannot be sold fast for cash.",
+    ),
 
-  // -------------------------------------------------------------
-  // RETIREMENT & TAXES (81-100)
-  // -------------------------------------------------------------
-  FinanceQuestion(
-    question:
-        "What primary tax advantage does a traditional 401(k) retirement plan offer?",
-    options: [
-      "Contributions reduce your current taxable income because they are made pre-tax",
-      "Withdrawals in retirement are 100% tax-free",
-      "The government matches 50% of all contributions automatically",
-      "Money can be withdrawn tax-free at any age",
-    ],
-    correctIndex: 0,
-    explanation:
-        "Traditional 401(k) contributions are pre-tax, reducing your tax burden today, though withdrawals in retirement are taxed.",
-  ),
-  FinanceQuestion(
-    question: "How does a Roth IRA differ from a Traditional IRA?",
-    options: [
-      "Roth IRAs use after-tax contributions so qualified retirement withdrawals are tax-free",
-      "Traditional IRAs offer tax-free withdrawals in retirement; Roth IRAs do not",
-      "Roth IRAs are only available through corporate employers",
-      "There are no differences between these retirement accounts",
-    ],
-    correctIndex: 0,
-    explanation:
-        "Roth IRAs use after-tax dollars today, so your investments grow tax-free and withdrawals in retirement are tax-free.",
-  ),
-  FinanceQuestion(
-    question: "What is an employer 401(k) match?",
-    options: [
-      "A mandatory tax paid to the federal government",
-      "Extra funds added by your employer to your retirement account up to a certain limit",
-      "A government program for low-income workers",
-      "A loan taken out against your future retirement balance",
-    ],
-    correctIndex: 1,
-    explanation:
-        "An employer match is essentially free compensation—failing to contribute enough to grab the full match leaves money on the table.",
-  ),
-  FinanceQuestion(
-    question:
-        "What standard penalty usually applies to early withdrawals from retirement accounts before age 59½?",
-    options: [
-      "Forfeiture of all invested principal",
-      "A 50-point drop in credit score",
-      "A 10% early withdrawal penalty plus income tax",
-      "Mandatory community service",
-    ],
-    correctIndex: 2,
-    explanation:
-        "Cashing out retirement accounts early incurs a 10% federal penalty plus standard income taxes on pre-tax balances.",
-  ),
-  FinanceQuestion(
-    question: "What is vesting in an employer retirement contribution plan?",
-    options: [
-      "The process of selecting mutual funds inside your account",
-      "The time required to gain full ownership of employer-contributed matching funds",
-      "The age at which you must legally retire",
-      "A legal exemption from state income taxes",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Vesting determines how much of your employer's matched contributions you get to keep if you leave the company.",
-  ),
-  FinanceQuestion(
-    question: "What does progressive income taxation mean in practice?",
-    options: [
-      "Everyone pays the exact same flat tax percentage regardless of income",
-      "Tax rates rise step-by-step as taxable income moves into higher brackets",
-      "Taxes are paid continuously every week through bank transfers",
-      "High earners pay zero income taxes",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Progressive tax systems charge higher tax rates on higher portions of income across escalating tax brackets.",
-  ),
-  FinanceQuestion(
-    question: "What is a standard tax deduction?",
-    options: [
-      "A fixed amount that reduces the portion of your total income that gets taxed",
-      "A cash payment sent directly from the IRS to every citizen annually",
-      "The total amount withheld from a monthly paycheck",
-      "A tax penalty charged on unpaid credit card debts",
-    ],
-    correctIndex: 0,
-    explanation:
-        "The standard deduction reduces your taxable income, lowering the overall tax amount you owe.",
-  ),
-  FinanceQuestion(
-    question:
-        "What is the difference between a tax deduction and a tax credit?",
-    options: [
-      "Tax deductions directly lower taxes owed dollar-for-dollar; Tax credits lower taxable income",
-      "Deductions apply only to businesses; Credits apply only to retirees",
-      "Deductions lower taxable income; Credits directly cut your total tax bill dollar-for-dollar",
-      "They are two terms for the exact same tax benefit",
-    ],
-    correctIndex: 2,
-    explanation:
-        "Credits directly reduce your total tax bill dollar-for-dollar, making them generally more valuable than deductions.",
-  ),
-  FinanceQuestion(
-    question: "What is a Health Savings Account (HSA)?",
-    options: [
-      "A high-interest account used to buy health insurance policies",
-      "A tax-advantaged account meant for eligible medical expenses",
-      "A government emergency grant given during illness",
-      "A credit card issued by hospitals",
-    ],
-    correctIndex: 1,
-    explanation:
-        "HSAs offer a triple tax advantage: pre-tax contributions, tax-free investment growth, and tax-free withdrawals for medical costs.",
-  ),
-  FinanceQuestion(
-    question: "What is a Required Minimum Distribution (RMD)?",
-    options: [
-      "The minimum amount you must contribute to a 401(k) each year",
-      "The minimum check required to open an IRA account",
-      "The base Social Security payment given to retirees",
-      "The annual minimum withdrawal required from tax-deferred accounts at a certain age",
-    ],
-    correctIndex: 3,
-    explanation:
-        "The IRS requires retirees to start withdrawing minimum amounts from tax-deferred accounts so those funds can finally be taxed.",
-  ),
-  FinanceQuestion(
-    question: "What is the primary function of Social Security in the US?",
-    options: [
-      "To fund public university education expenses",
-      "A government program offering income to retirees, disabled individuals, and survivors",
-      "A private investment bank managed by Congress",
-      "A mandatory health insurance company for young workers",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Social Security provides safety-net income for retirees, disabled individuals, and surviving dependents.",
-  ),
-  FinanceQuestion(
-    question: "What are FICA payroll deductions on your paystub?",
-    options: [
-      "Private health insurance premiums",
-      "Mandatory payroll taxes used to support Social Security and Medicare",
-      "Contributions to state college savings plans",
-      "Union dues and administrative costs",
-    ],
-    correctIndex: 1,
-    explanation:
-        "FICA taxes are automatically deducted from paychecks to fund Social Security and Medicare systems.",
-  ),
-  FinanceQuestion(
-    question: "What is a capital gains tax?",
-    options: [
-      "A tax charged on physical inventory stored in retail stores",
-      "A tax paid on the profit earned from selling an investment or property",
-      "A tax assessed on personal checking account deposits",
-      "A fee paid when opening a new brokerage account",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Capital gains tax applies when you sell an asset for a higher price than you paid to purchase it.",
-  ),
-  FinanceQuestion(
-    question:
-        "What distinguishes short-term capital gains from long-term capital gains for taxes?",
-    options: [
-      "Long-term applies to assets sold within 30 days and is completely tax-exempt",
-      "Short-term capital gains are taxed at 0% across all income levels",
-      "Short-term gains (held 1 year or less) face higher ordinary income tax rates",
-      "There is no difference in tax rates",
-    ],
-    correctIndex: 2,
-    explanation:
-        "Holding assets for over a year qualifies them for lower long-term capital gains tax rates compared to short-term rates.",
-  ),
-  FinanceQuestion(
-    question: "What is a 529 College Savings Plan?",
-    options: [
-      "A state-sponsored account designed to save for future education costs with tax advantages",
-      "A loan program offering guaranteed 1% interest rates to high school students",
-      "A retirement plan exclusively for public school teachers",
-      "A tax credit given to families with more than five children",
-    ],
-    correctIndex: 0,
-    explanation:
-        "529 plans allow investments to grow tax-free when used for qualified education expenses like tuition and books.",
-  ),
-  FinanceQuestion(
-    question: "What does tax-loss harvesting involve?",
-    options: [
-      "Filing income tax returns late to delay payment",
-      "Selling losing investments to lower taxes on capital gains from profitable ones",
-      "Hiding investment gains in offshore bank accounts",
-      "Claiming fake business expenses on personal taxes",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Tax-loss harvesting balances out taxable capital gains by strategically realizing losses on underperforming assets.",
-  ),
-  FinanceQuestion(
-    question: "What is a pension plan?",
-    options: [
-      "An individual savings account opened at a retail bank",
-      "An employer plan providing guaranteed lifetime retirement payments based on tenure",
-      "A short-term loan used to buy property",
-      "A stock option given to entry-level workers",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Pensions are defined-benefit plans where employers guarantee retirement payouts based on salary and service length.",
-  ),
-  FinanceQuestion(
-    question: "What is marginal tax rate?",
-    options: [
-      "The overall average percentage of total income paid in taxes",
-      "The tax percentage applied to the highest tier of your earnings",
-      "The tax rate paid on property taxes",
-      "The flat tax rate applied to food purchases",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Your marginal tax rate is the highest bracket tier that applies to your top slice of earned income.",
-  ),
-  FinanceQuestion(
-    question: "What is effective tax rate?",
-    options: [
-      "The highest tax bracket rate you reach",
-      "The actual average percentage of your overall income paid in taxes",
-      "The sales tax percentage in your home city",
-      "The penalty rate charged on late tax returns",
-    ],
-    correctIndex: 1,
-    explanation:
-        "Effective tax rate is calculated by dividing your total calculated tax paid by your overall gross income.",
-  ),
-  FinanceQuestion(
-    question: "Why should young adults start saving for retirement early?",
-    options: [
-      "To get an immediate exemption from paying all federal taxes",
-      "Because credit card companies require retirement accounts to open cards",
-      "Because bank accounts expire if not tied to a 401(k)",
-      "To maximize compound interest over time",
-    ],
-    correctIndex: 3,
-    explanation:
-        "Starting early gives compounding more time to work—a head start of 10 years can double your ultimate retirement nest egg.",
-  ),
-];
+    // -------------------------------------------------------------
+    // RETIREMENT & TAXES (81-100)
+    // -------------------------------------------------------------
+    FinanceQuestion(
+      question:
+          "What primary tax advantage does a traditional 401(k) retirement plan offer?",
+      options: [
+        "Contributions reduce your current taxable income because they are made pre-tax",
+        "Withdrawals in retirement are 100% tax-free",
+        "The government matches 50% of all contributions automatically",
+        "Money can be withdrawn tax-free at any age",
+      ],
+      correctIndex: 0,
+      explanation:
+          "Traditional 401(k) contributions are pre-tax, reducing your tax burden today, though withdrawals in retirement are taxed.",
+    ),
+    FinanceQuestion(
+      question: "How does a Roth IRA differ from a Traditional IRA?",
+      options: [
+        "Roth IRAs use after-tax contributions so qualified retirement withdrawals are tax-free",
+        "Traditional IRAs offer tax-free withdrawals in retirement; Roth IRAs do not",
+        "Roth IRAs are only available through corporate employers",
+        "There are no differences between these retirement accounts",
+      ],
+      correctIndex: 0,
+      explanation:
+          "Roth IRAs use after-tax dollars today, so your investments grow tax-free and withdrawals in retirement are tax-free.",
+    ),
+    FinanceQuestion(
+      question: "What is an employer 401(k) match?",
+      options: [
+        "A mandatory tax paid to the federal government",
+        "Extra funds added by your employer to your retirement account up to a certain limit",
+        "A government program for low-income workers",
+        "A loan taken out against your future retirement balance",
+      ],
+      correctIndex: 1,
+      explanation:
+          "An employer match is essentially free compensation—failing to contribute enough to grab the full match leaves money on the table.",
+    ),
+    FinanceQuestion(
+      question:
+          "What standard penalty usually applies to early withdrawals from retirement accounts before age 59½?",
+      options: [
+        "Forfeiture of all invested principal",
+        "A 50-point drop in credit score",
+        "A 10% early withdrawal penalty plus income tax",
+        "Mandatory community service",
+      ],
+      correctIndex: 2,
+      explanation:
+          "Cashing out retirement accounts early incurs a 10% federal penalty plus standard income taxes on pre-tax balances.",
+    ),
+    FinanceQuestion(
+      question: "What is vesting in an employer retirement contribution plan?",
+      options: [
+        "The process of selecting mutual funds inside your account",
+        "The time required to gain full ownership of employer-contributed matching funds",
+        "The age at which you must legally retire",
+        "A legal exemption from state income taxes",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Vesting determines how much of your employer's matched contributions you get to keep if you leave the company.",
+    ),
+    FinanceQuestion(
+      question: "What does progressive income taxation mean in practice?",
+      options: [
+        "Everyone pays the exact same flat tax percentage regardless of income",
+        "Tax rates rise step-by-step as taxable income moves into higher brackets",
+        "Taxes are paid continuously every week through bank transfers",
+        "High earners pay zero income taxes",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Progressive tax systems charge higher tax rates on higher portions of income across escalating tax brackets.",
+    ),
+    FinanceQuestion(
+      question: "What is a standard tax deduction?",
+      options: [
+        "A fixed amount that reduces the portion of your total income that gets taxed",
+        "A cash payment sent directly from the IRS to every citizen annually",
+        "The total amount withheld from a monthly paycheck",
+        "A tax penalty charged on unpaid credit card debts",
+      ],
+      correctIndex: 0,
+      explanation:
+          "The standard deduction reduces your taxable income, lowering the overall tax amount you owe.",
+    ),
+    FinanceQuestion(
+      question:
+          "What is the difference between a tax deduction and a tax credit?",
+      options: [
+        "Tax deductions directly lower taxes owed dollar-for-dollar; Tax credits lower taxable income",
+        "Deductions apply only to businesses; Credits apply only to retirees",
+        "Deductions lower taxable income; Credits directly cut your total tax bill dollar-for-dollar",
+        "They are two terms for the exact same tax benefit",
+      ],
+      correctIndex: 2,
+      explanation:
+          "Credits directly reduce your total tax bill dollar-for-dollar, making them generally more valuable than deductions.",
+    ),
+    FinanceQuestion(
+      question: "What is a Health Savings Account (HSA)?",
+      options: [
+        "A high-interest account used to buy health insurance policies",
+        "A tax-advantaged account meant for eligible medical expenses",
+        "A government emergency grant given during illness",
+        "A credit card issued by hospitals",
+      ],
+      correctIndex: 1,
+      explanation:
+          "HSAs offer a triple tax advantage: pre-tax contributions, tax-free investment growth, and tax-free withdrawals for medical costs.",
+    ),
+    FinanceQuestion(
+      question: "What is a Required Minimum Distribution (RMD)?",
+      options: [
+        "The minimum amount you must contribute to a 401(k) each year",
+        "The minimum check required to open an IRA account",
+        "The base Social Security payment given to retirees",
+        "The annual minimum withdrawal required from tax-deferred accounts at a certain age",
+      ],
+      correctIndex: 3,
+      explanation:
+          "The IRS requires retirees to start withdrawing minimum amounts from tax-deferred accounts so those funds can finally be taxed.",
+    ),
+    FinanceQuestion(
+      question: "What is the primary function of Social Security in the US?",
+      options: [
+        "To fund public university education expenses",
+        "A government program offering income to retirees, disabled individuals, and survivors",
+        "A private investment bank managed by Congress",
+        "A mandatory health insurance company for young workers",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Social Security provides safety-net income for retirees, disabled individuals, and surviving dependents.",
+    ),
+    FinanceQuestion(
+      question: "What are FICA payroll deductions on your paystub?",
+      options: [
+        "Private health insurance premiums",
+        "Mandatory payroll taxes used to support Social Security and Medicare",
+        "Contributions to state college savings plans",
+        "Union dues and administrative costs",
+      ],
+      correctIndex: 1,
+      explanation:
+          "FICA taxes are automatically deducted from paychecks to fund Social Security and Medicare systems.",
+    ),
+    FinanceQuestion(
+      question: "What is a capital gains tax?",
+      options: [
+        "A tax charged on physical inventory stored in retail stores",
+        "A tax paid on the profit earned from selling an investment or property",
+        "A tax assessed on personal checking account deposits",
+        "A fee paid when opening a new brokerage account",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Capital gains tax applies when you sell an asset for a higher price than you paid to purchase it.",
+    ),
+    FinanceQuestion(
+      question:
+          "What distinguishes short-term capital gains from long-term capital gains for taxes?",
+      options: [
+        "Long-term applies to assets sold within 30 days and is completely tax-exempt",
+        "Short-term capital gains are taxed at 0% across all income levels",
+        "Short-term gains (held 1 year or less) face higher ordinary income tax rates",
+        "There is no difference in tax rates",
+      ],
+      correctIndex: 2,
+      explanation:
+          "Holding assets for over a year qualifies them for lower long-term capital gains tax rates compared to short-term rates.",
+    ),
+    FinanceQuestion(
+      question: "What is a 529 College Savings Plan?",
+      options: [
+        "A state-sponsored account designed to save for future education costs with tax advantages",
+        "A loan program offering guaranteed 1% interest rates to high school students",
+        "A retirement plan exclusively for public school teachers",
+        "A tax credit given to families with more than five children",
+      ],
+      correctIndex: 0,
+      explanation:
+          "529 plans allow investments to grow tax-free when used for qualified education expenses like tuition and books.",
+    ),
+    FinanceQuestion(
+      question: "What does tax-loss harvesting involve?",
+      options: [
+        "Filing income tax returns late to delay payment",
+        "Selling losing investments to lower taxes on capital gains from profitable ones",
+        "Hiding investment gains in offshore bank accounts",
+        "Claiming fake business expenses on personal taxes",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Tax-loss harvesting balances out taxable capital gains by strategically realizing losses on underperforming assets.",
+    ),
+    FinanceQuestion(
+      question: "What is a pension plan?",
+      options: [
+        "An individual savings account opened at a retail bank",
+        "An employer plan providing guaranteed lifetime retirement payments based on tenure",
+        "A short-term loan used to buy property",
+        "A stock option given to entry-level workers",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Pensions are defined-benefit plans where employers guarantee retirement payouts based on salary and service length.",
+    ),
+    FinanceQuestion(
+      question: "What is marginal tax rate?",
+      options: [
+        "The overall average percentage of total income paid in taxes",
+        "The tax percentage applied to the highest tier of your earnings",
+        "The tax rate paid on property taxes",
+        "The flat tax rate applied to food purchases",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Your marginal tax rate is the highest bracket tier that applies to your top slice of earned income.",
+    ),
+    FinanceQuestion(
+      question: "What is effective tax rate?",
+      options: [
+        "The highest tax bracket rate you reach",
+        "The actual average percentage of your overall income paid in taxes",
+        "The sales tax percentage in your home city",
+        "The penalty rate charged on late tax returns",
+      ],
+      correctIndex: 1,
+      explanation:
+          "Effective tax rate is calculated by dividing your total calculated tax paid by your overall gross income.",
+    ),
+    FinanceQuestion(
+      question: "Why should young adults start saving for retirement early?",
+      options: [
+        "To get an immediate exemption from paying all federal taxes",
+        "Because credit card companies require retirement accounts to open cards",
+        "Because bank accounts expire if not tied to a 401(k)",
+        "To maximize compound interest over time",
+      ],
+      correctIndex: 3,
+      explanation:
+          "Starting early gives compounding more time to work—a head start of 10 years can double your ultimate retirement nest egg.",
+    ),
+  ];
 
   @override
   void initState() {
@@ -1872,7 +1872,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
         }
       } else {
         _bossActive = false;
-        
+
         // Calculate how many enemies have been created this wave
         int totalEnemiesThisWave = _debtsCleared + _liabilities.length;
 
@@ -1904,8 +1904,6 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
           _coins.removeAt(i);
         }
       }
-
-      
 
       // 6. Liability Movement & Continuous Tangent Sliding
       for (int i = _liabilities.length - 1; i >= 0; i--) {
@@ -2775,10 +2773,33 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   }
 
   Widget _buildHud(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // One measurement for both panels.
+        //
+        // Each panel used to run its own `LayoutBuilder` and reach its own
+        // conclusion. Measuring here instead does two things: the pair can
+        // never disagree about their own layout, and — the reason this moved
+        // — a `LayoutBuilder` inside a panel makes the panel impossible to
+        // put in an `IntrinsicHeight`, which is what equalises their heights.
+        //
+        // The panels sit side by side with a 10px gap, so each gets a little
+        // under half. The thresholds are per-panel, hence the halving.
+        final panelWidth = (constraints.maxWidth - 10) / 2;
+        return _buildHudRow(panelWidth);
+      },
+    );
+  }
+
+  Widget _buildHudRow(double panelWidth) {
+    final tight = panelWidth < 150;
+    final veryTight = panelWidth < 112;
     final isCrisis = _wave % 5 == 0;
     final balanceAccent = _bankBalance < 2500 ? _brawlDanger : _brawlMint;
 
     final wavePanel = _HudStatPanel(
+      tight: tight,
+      veryTight: veryTight,
       icon: Icons.waves_rounded,
       label: isCrisis ? 'CRISIS' : 'WAVE',
       value: 'WAVE $_wave',
@@ -2793,14 +2814,63 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     );
 
     final balancePanel = _HudStatPanel(
+      tight: tight,
+      veryTight: veryTight,
       icon: Icons.account_balance_wallet_rounded,
       label: 'NET WORTH',
       value: '\$$_bankBalance',
       detail: "Don't Let it Hit Zero!",
       accent: balanceAccent,
       alignStart: false,
+      // Both panels carry a bar so the two boxes are the same height by
+      // construction. Reported as "the header box sizes in finance brawl are
+      // all different sizes, making it visually jarring" — the wave panel drew
+      // a bar and a caption where this one drew a single line, so two boxes
+      // with identical borders sat side by side at different heights, and the
+      // difference changed as the layout got tighter.
+      //
+      // Not a spacer dressed up as content. This panel's flavour line was
+      // "Don't Let it Hit Zero!", which is precisely what a bar says better
+      // than a sentence — and says at a glance, mid-fight, which is the only
+      // time anybody reads it.
+      progress: HudProgress(
+        current: _bankBalance,
+        total: _maxBankBalance,
+        label: "Don't hit zero",
+      ),
     );
 
+    // Both panels the same height, always.
+    //
+    // Reported as "the header box sizes in finance brawl are all different
+    // sizes, making it visually jarring", and the cause is structural rather
+    // than a spacing mistake: the wave panel draws a progress bar plus its
+    // caption (~30px) where the net-worth panel draws a single flavour line
+    // (~14px). `Expanded` equalises their *widths* and says nothing about
+    // height, so two boxes with identical borders sat side by side at
+    // visibly different sizes — and the difference moved, because the wave
+    // panel loses its bar at narrow widths.
+    //
+    // `IntrinsicHeight` + `stretch` makes the shorter one adopt the taller
+    // one's height. The alternative — padding the shorter panel by a fixed
+    // amount to match — only lines up for one font size and one text scale,
+    // and silently stops lining up the next time either panel's contents
+    // change. This cannot drift, because nothing states the height.
+    //
+    // Cost is one extra layout pass over two leaf panels. That is cheap
+    // enough for a per-frame HUD, and the correctness is worth more than the
+    // pass.
+    // No IntrinsicHeight, and not for want of trying. `FittedLabel`,
+    // `_PixelPanel` and `PixelProgressBar` all use `LayoutBuilder`, and
+    // Flutter asserts that a LayoutBuilder cannot report intrinsic
+    // dimensions — so wrapping these panels in one throws rather than
+    // aligning them. The heights match because both panels now render the
+    // same widgets, which needs no measurement at all.
+    // Default alignment, deliberately. `stretch` was tried and cannot work
+    // here: this row sits inside a top-aligned `Align`, so its height is
+    // unbounded, and stretching against an unbounded cross axis asks the
+    // children for an infinite height. It is not needed either — with both
+    // panels rendering the same widgets there is nothing left to equalise.
     return Row(
       children: [
         Expanded(child: wavePanel),
@@ -3294,15 +3364,26 @@ class _TouchJoystick extends StatelessWidget {
 /// second one therefore has to survive a narrow phone.
 @immutable
 class HudProgress {
-  const HudProgress({required this.current, required this.total});
+  const HudProgress({
+    required this.current,
+    required this.total,
+    this.label,
+  });
 
   final int current;
   final int total;
 
+  /// Shown under the bar instead of `current / total`.
+  ///
+  /// The net-worth panel already prints the balance as its headline number,
+  /// so repeating "8400 / 10000" underneath would be the same figure twice
+  /// in one small box. It says what the bar *means* instead.
+  final String? label;
+
   /// Guards a zero total rather than letting it become NaN and blank the bar.
   double get fraction => total <= 0 ? 0 : (current / total).clamp(0.0, 1.0);
 
-  String get caption => '$current / $total';
+  String get caption => label ?? '$current / $total';
 }
 
 class _HudStatPanel extends StatelessWidget {
@@ -3312,6 +3393,8 @@ class _HudStatPanel extends StatelessWidget {
     required this.value,
     required this.detail,
     required this.accent,
+    required this.tight,
+    required this.veryTight,
     this.alignStart = false,
     this.progress,
   });
@@ -3321,6 +3404,19 @@ class _HudStatPanel extends StatelessWidget {
   final String value;
   final String detail;
   final Color accent;
+
+  /// Width decisions, made once by the row that owns both panels.
+  ///
+  /// **Not measured here on purpose.** These used to come from a
+  /// `LayoutBuilder` inside this widget, which had two costs. It made the
+  /// panel impossible to put inside an `IntrinsicHeight` — Flutter asserts
+  /// that a LayoutBuilder cannot report intrinsic dimensions — so the two
+  /// panels could never be made the same height. And it let each panel reach
+  /// its own conclusion about whether to drop its icon, so in principle the
+  /// pair could disagree with each other about their own layout.
+  final bool tight;
+  final bool veryTight;
+
   final bool alignStart;
 
   /// When set, the panel draws a bar instead of the flavour line — and keeps
@@ -3340,123 +3436,112 @@ class _HudStatPanel extends StatelessWidget {
     // The fix is the layout, not the text. Below ~150px the panel drops the
     // icon and the flavour line and keeps what the player actually needs
     // mid-fight — the label and the number.
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final tight = constraints.maxWidth < 150;
-        final veryTight = constraints.maxWidth < 112;
-
-        return _PixelPanel(
-          accent: accent,
-          background: _brawlPanelDeep,
-          padding: EdgeInsets.symmetric(
-            horizontal: tight ? 8 : 12,
-            vertical: tight ? 7 : 10,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (!veryTight) ...[
-                _PixelIconBadge(
-                  icon: icon,
-                  accent: accent,
-                  size: tight ? 24 : 32,
+    return _PixelPanel(
+      accent: accent,
+      background: _brawlPanelDeep,
+      padding: EdgeInsets.symmetric(
+        horizontal: tight ? 8 : 12,
+        vertical: tight ? 7 : 10,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!veryTight) ...[
+            _PixelIconBadge(icon: icon, accent: accent, size: tight ? 24 : 32),
+            SizedBox(width: tight ? 6 : 9),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: alignStart
+                  ? CrossAxisAlignment.start
+                  : CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FittedLabel(
+                  label,
+                  alignment: alignStart
+                      ? Alignment.centerLeft
+                      : Alignment.center,
+                  style: GoogleFonts.pixelifySans(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                SizedBox(width: tight ? 6 : 9),
-              ],
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: alignStart
-                      ? CrossAxisAlignment.start
-                      : CrossAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    FittedLabel(
-                      label,
-                      alignment: alignStart
-                          ? Alignment.centerLeft
-                          : Alignment.center,
-                      style: GoogleFonts.pixelifySans(
-                        color: Colors.white.withValues(alpha: 0.55),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      ),
+                // Money in the game's own display face rather than in a
+                // text font. `canRender` guards it: a figure that is half
+                // art and half fallback text looks worse than one drawn
+                // entirely in the text font, so anything with a character
+                // the glyph set lacks stays as it was.
+                if (MoneyGlyphs.canRender(value))
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: alignStart
+                        ? Alignment.centerLeft
+                        : Alignment.center,
+                    child: MoneyGlyphs(value, height: tight ? 17 : 22),
+                  )
+                else
+                  FittedLabel(
+                    value,
+                    alignment: alignStart
+                        ? Alignment.centerLeft
+                        : Alignment.center,
+                    style: GoogleFonts.pixelifySans(
+                      color: accent,
+                      fontSize: tight ? 16 : 20,
+                      fontWeight: FontWeight.w700,
                     ),
-                    // Money in the game's own display face rather than in a
-                    // text font. `canRender` guards it: a figure that is half
-                    // art and half fallback text looks worse than one drawn
-                    // entirely in the text font, so anything with a character
-                    // the glyph set lacks stays as it was.
-                    if (MoneyGlyphs.canRender(value))
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: alignStart
-                            ? Alignment.centerLeft
-                            : Alignment.center,
-                        child: MoneyGlyphs(value, height: tight ? 17 : 22),
-                      )
-                    else
-                      FittedLabel(
-                        value,
-                        alignment: alignStart
-                            ? Alignment.centerLeft
-                            : Alignment.center,
-                        style: GoogleFonts.pixelifySans(
-                          color: accent,
-                          fontSize: tight ? 16 : 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    // Progress survives at every width; flavour does not.
-                    //
-                    // This used to drop `detail` entirely below 150px, which
-                    // meant the panel hid "Debts Paid 3/12" — the number
-                    // telling the player how far they are from the next
-                    // upgrade — on exactly the phones where the HUD is
-                    // tightest. A bar is legible at any width, so nothing has
-                    // to be dropped to make room, and it answers "how much
-                    // further" at a glance in a way the sentence never did.
-                    if (progress != null) ...[
-                      SizedBox(height: tight ? 4 : 5),
-                      PixelProgressBar(
-                        value: progress!.fraction,
-                        height: tight ? 12 : 14,
-                        fillAsset: accent == _brawlDanger
-                            ? AppAssets.kitBarFillRed
-                            : AppAssets.kitBarFillGreen,
-                      ),
-                      const SizedBox(height: 3),
-                      FittedLabel(
-                        progress!.caption,
-                        alignment: alignStart
-                            ? Alignment.centerLeft
-                            : Alignment.center,
-                        style: GoogleFonts.quicksand(
-                          color: Colors.white.withValues(alpha: 0.78),
-                          fontSize: tight ? 10 : 11,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ] else if (!tight)
-                      // Panels with nothing to measure keep the old flavour
-                      // line, and it is still the first thing to go.
-                      FittedLabel(
-                        detail,
-                        alignment: alignStart
-                            ? Alignment.centerLeft
-                            : Alignment.center,
-                        style: GoogleFonts.quicksand(
-                          color: Colors.white.withValues(alpha: 0.70),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
+                  ),
+                // Progress survives at every width; flavour does not.
+                //
+                // This used to drop `detail` entirely below 150px, which
+                // meant the panel hid "Debts Paid 3/12" — the number
+                // telling the player how far they are from the next
+                // upgrade — on exactly the phones where the HUD is
+                // tightest. A bar is legible at any width, so nothing has
+                // to be dropped to make room, and it answers "how much
+                // further" at a glance in a way the sentence never did.
+                if (progress != null) ...[
+                  SizedBox(height: tight ? 4 : 5),
+                  PixelProgressBar(
+                    value: progress!.fraction,
+                    height: tight ? 12 : 14,
+                    fillAsset: accent == _brawlDanger
+                        ? AppAssets.kitBarFillRed
+                        : AppAssets.kitBarFillGreen,
+                  ),
+                  const SizedBox(height: 3),
+                  FittedLabel(
+                    progress!.caption,
+                    alignment: alignStart
+                        ? Alignment.centerLeft
+                        : Alignment.center,
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white.withValues(alpha: 0.78),
+                      fontSize: tight ? 10 : 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ] else if (!tight)
+                  // Panels with nothing to measure keep the old flavour
+                  // line, and it is still the first thing to go.
+                  FittedLabel(
+                    detail,
+                    alignment: alignStart
+                        ? Alignment.centerLeft
+                        : Alignment.center,
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white.withValues(alpha: 0.70),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+              ],
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }
