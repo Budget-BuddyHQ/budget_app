@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import '../../../themes_colors/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../models_Like_Skins_and_lessons_templates/life_seed.dart';
 
 /// What character creation hands back to the Life screen.
 @immutable
@@ -14,11 +15,21 @@ class LifeCharacter {
     required this.name,
     required this.gender,
     required this.origin,
+    required this.seed,
+    this.graded = true,
   });
 
   final String name;
   final Gender gender;
+
+  /// Rolled from [seed], never chosen. See [LifeSeed].
   final LifeOrigin origin;
+
+  /// The seed this life was rolled from, so it can be shown and replayed.
+  final LifeSeed seed;
+
+  /// Whether this run should count toward records and the coach's reading.
+  final bool graded;
 }
 
 const List<String> _firstNames = [
@@ -64,51 +75,73 @@ class LifeCharacterSheet extends StatefulWidget {
 
 class _LifeCharacterSheetState extends State<LifeCharacterSheet> {
   final Random _random = Random();
+
+  /// The seed this life is rolled from.
+  ///
+  /// The family you are born into comes from here rather than from a picker.
+  /// It supplied **0 coins for Struggling against 2,500 for Wealthy** — the
+  /// largest advantage in the game, previously a free choice made before the
+  /// first year. Nobody picks the family they are born into, and an app about
+  /// money that let you pick a rich one was teaching the opposite of its own
+  /// subject.
+  LifeSeed _seed = LifeSeed.fresh();
+
   late final TextEditingController _nameController = TextEditingController(
-    text: _randomName(),
+    text: _seed.suggestedName(_firstNames, _lastNames),
   );
+  late final TextEditingController _seedController = TextEditingController(
+    text: _seed.display,
+  );
+
   Gender _gender = Gender.nonBinary;
-  LifeOrigin _origin = LifeOrigin.workingClass;
+
+  /// Whether this run counts.
+  ///
+  /// Players deliberately wreck a run to reach an unusual ending or to farm
+  /// quick gold, and the coach was reading every one of those as evidence
+  /// they were getting worse at money. An ungraded run still plays and still
+  /// pays; it simply does not go into the record the coach reasons over.
+  bool _graded = true;
+
+  LifeOrigin get _origin => _seed.origin;
 
   String _randomName() =>
       '${_firstNames[_random.nextInt(_firstNames.length)]} '
       '${_lastNames[_random.nextInt(_lastNames.length)]}';
 
-  /// Rolls every field at once.
+  /// A whole new life: new seed, new family, new suggested name.
   ///
-  /// Origin is **not** uniform. A uniform roll would make "Wealthy" a 1-in-4
-  /// start, which quietly teaches that being born rich is the normal case.
-  /// Weighted 35/35/22/8 so most lives begin without a cushion — which is
-  /// both closer to reality and the version of this game that has anything
-  /// to teach about money.
-  void _randomiseAll() {
+  /// The weighting (35/35/22/8) moved into [LifeSeed] so the same odds apply
+  /// whether a life is rolled here or restored from a typed seed.
+  void _reroll() {
     HapticFeedback.selectionClick();
-    const originWeights = <LifeOrigin, int>{
-      LifeOrigin.struggling: 35,
-      LifeOrigin.workingClass: 35,
-      LifeOrigin.comfortable: 22,
-      LifeOrigin.wealthy: 8,
-    };
-    var roll = _random.nextInt(originWeights.values.reduce((a, b) => a + b));
-    var picked = LifeOrigin.workingClass;
-    for (final entry in originWeights.entries) {
-      roll -= entry.value;
-      if (roll < 0) {
-        picked = entry.key;
-        break;
-      }
-    }
-
     setState(() {
-      _nameController.text = _randomName();
+      _seed = LifeSeed.fresh();
+      _seedController.text = _seed.display;
+      _nameController.text = _seed.suggestedName(_firstNames, _lastNames);
       _gender = Gender.values[_random.nextInt(Gender.values.length)];
-      _origin = picked;
+    });
+  }
+
+  /// Applies a seed the player typed in.
+  ///
+  /// The point of a readable seed is that somebody can replay the exact start
+  /// they just had, or hand it to a friend and compare what each of them did
+  /// with the same beginning. That only works if typing it back in actually
+  /// restores the life.
+  void _applyTypedSeed() {
+    final next = LifeSeed.parse(_seedController.text);
+    setState(() {
+      _seed = next;
+      _seedController.text = next.display;
+      _nameController.text = next.suggestedName(_firstNames, _lastNames);
     });
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _seedController.dispose();
     super.dispose();
   }
 
@@ -119,6 +152,8 @@ class _LifeCharacterSheetState extends State<LifeCharacterSheet> {
         name: typed.isEmpty ? _randomName() : typed,
         gender: _gender,
         origin: _origin,
+        seed: _seed,
+        graded: _graded,
       ),
     );
   }
@@ -205,25 +240,112 @@ class _LifeCharacterSheetState extends State<LifeCharacterSheet> {
               ],
             ),
             const SizedBox(height: 22),
+
+            // The seed, and the family it rolled.
+            //
+            // This replaced a four-option picker for `LifeOrigin`, which
+            // supplies the starting money — **0 coins for Struggling against
+            // 2,500 for Wealthy**. It was the largest advantage in the game,
+            // free, chosen before the first year. Nobody picks the family
+            // they are born into, and an app about money that let you pick a
+            // rich one was teaching against itself.
+            //
+            // The seed is shown rather than hidden because a hidden roll is
+            // indistinguishable from the game cheating when a run goes badly.
+            // Readable and typeable means a player can replay the exact start
+            // they just had, or hand it to somebody and compare.
+            _Label('Seed'),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _seedController,
+                    textCapitalization: TextCapitalization.characters,
+                    onSubmitted: (_) => _applyTypedSeed(),
+                    style: AppTheme.numeric(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Type a seed to replay a life',
+                      filled: true,
+                      fillColor: AppTheme.panel,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                      suffixIcon: IconButton(
+                        tooltip: 'Use this seed',
+                        onPressed: _applyTypedSeed,
+                        icon: const Icon(Icons.check_rounded),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  tooltip: 'Roll a new life',
+                  onPressed: _reroll,
+                  icon: const Icon(Icons.casino_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
             _Label('Family you are born into'),
             const SizedBox(height: 8),
-            for (final option in LifeOrigin.values) ...[
-              _OriginTile(
-                origin: option,
-                selected: option == _origin,
-                onTap: () => setState(() => _origin = option),
+            _OriginTile(origin: _origin, selected: true, onTap: null),
+            const SizedBox(height: 6),
+            Text(
+              'Rolled from the seed — nobody chooses this one.',
+              style: AppTheme.numeric(
+                color: AppTheme.textMuted,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
               ),
-              const SizedBox(height: 10),
-            ],
+            ),
+
+            const SizedBox(height: 22),
+            _Label('Does this run count?'),
+            const SizedBox(height: 8),
+            // Graded or not, chosen up front.
+            //
+            // Players deliberately wreck a run to reach an unusual ending or
+            // to farm quick gold, and the coach was reading every one of
+            // those as evidence they were getting worse with money. An
+            // ungraded run still plays and still pays — it just stays out of
+            // the record the coach reasons over.
+            SwitchListTile.adaptive(
+              value: _graded,
+              onChanged: (value) => setState(() => _graded = value),
+              contentPadding: EdgeInsets.zero,
+              activeThumbColor: const Color(0xFF43D07E),
+              title: Text(
+                _graded ? 'Graded' : 'Just messing about',
+                style: GoogleFonts.pixelifySans(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              subtitle: Text(
+                _graded
+                    ? 'Saved to your past lives, and your coach reads it.'
+                    : 'Still pays out and still unlocks endings — your coach '
+                          'just will not judge you on it.',
+                style: AppTheme.numeric(
+                  color: AppTheme.textMuted,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  height: 1.35,
+                ),
+              ),
+            ),
+
             const SizedBox(height: 14),
-            // "Surprise me" — rolls the whole character, not just the name
-            // (the dice beside the name field only ever did that one field).
-            // Two reasons this earns its place: it makes replaying fast,
-            // and a randomly assigned family is the honest version of the
-            // lesson the origin picker is really about — nobody chooses
-            // what they are born into.
             OutlinedButton.icon(
-              onPressed: _randomiseAll,
+              onPressed: _reroll,
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFFFFD45C),
                 side: BorderSide(
@@ -234,7 +356,7 @@ class _LifeCharacterSheetState extends State<LifeCharacterSheet> {
               ),
               icon: const Icon(Icons.casino_rounded),
               label: Text(
-                'Surprise me',
+                'Roll a different life',
                 style: GoogleFonts.pixelifySans(
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
@@ -344,12 +466,19 @@ class _OriginTile extends StatelessWidget {
   const _OriginTile({
     required this.origin,
     required this.selected,
-    required this.onTap,
+    this.onTap,
   });
 
   final LifeOrigin origin;
   final bool selected;
-  final VoidCallback onTap;
+
+  /// Null when the tile is a read-out rather than a choice.
+  ///
+  /// The family is rolled from the seed now, so this renders the result
+  /// instead of offering four of them. Keeping the same tile means the
+  /// rolled family is presented exactly as prominently as it used to be
+  /// chosen — it still matters, it is simply not yours to pick.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

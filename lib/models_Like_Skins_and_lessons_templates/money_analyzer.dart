@@ -471,16 +471,38 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
     final newest = snap.pastLifeNetWorths.first;
     final previous = snap.pastLifeNetWorths[1];
     if (newest > previous) {
+      // Even "you did better" assumes richer is the goal.
+      //
+      // The flat-lives branch below already checks whether somebody is
+      // collecting endings rather than chasing money. This branch needed the
+      // same check for the same reason: a player working through the endings
+      // sees net worth swing wildly between runs, and congratulating them on
+      // a number they were not aiming at is the coach talking past them. It
+      // is a smaller mistake than the scolding one — nobody minds being
+      // praised — but it is the same failure to read what the player is
+      // actually doing.
+      final chasingEndings =
+          snap.distinctEndings >= 3 &&
+          snap.distinctEndings >= snap.pastLifeNetWorths.length - 1;
+
       findings.add(
         MoneyFinding(
           id: 'lives_improving',
           kind: MoneyFindingKind.strength,
           dimension: MoneyDimension.exposure,
-          title: 'Your last life went better than the one before',
-          evidence: 'Net worth $previous, then $newest.',
-          action:
-              'Whatever you did differently, do it again — and this time '
-              'notice which decision it was.',
+          title: chasingEndings
+              ? 'A different ending, and richer for it'
+              : 'Your last life went better than the one before',
+          evidence: chasingEndings
+              ? '${snap.distinctEndings} endings found, and net worth still '
+                    'went $previous to $newest.'
+              : 'Net worth $previous, then $newest.',
+          action: chasingEndings
+              ? 'You are exploring and building at the same time, which is '
+                    'harder than either on its own. The unusual endings '
+                    'normally cost money — this run did not.'
+              : 'Whatever you did differently, do it again — and this time '
+                    'notice which decision it was.',
           concept: FinanceConcept.compoundGrowth,
         ),
       );

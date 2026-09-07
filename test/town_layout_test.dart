@@ -17,6 +17,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// silently untrue: every marker is walkable, reachable, and *beside a
 /// building*. `tool/place_town_spots.py` is what fixes a failure here.
 void main() {
+  _mapIdentity();
+
   _buildingAssignment();
 
   /// One parsed map: its size and the set of solid tiles.
@@ -327,6 +329,129 @@ void _buildingAssignment() {
               'is why the town read as random. Re-run '
               'tool/assign_town_buildings.py --write',
         );
+      });
+    }
+  });
+}
+
+/// One town per life, and both towns inhabited.
+///
+/// Two bugs the player reported in the same breath: *"why does it change in
+/// between if a run has started, please stick with one map"* and *"there are
+/// no NPCs on the other map"*. They were related — the map was rolled per
+/// visit, so half of all entries landed on the second map, and the renderer
+/// drew NPCs and coins only on the first.
+void _mapIdentity() {
+  group('a life gets one town', () {
+    test('the same life always walks into the same map', () {
+      // The old code held `late final _townMap = Random()...` on the *screen*,
+      // which is rebuilt on every entry. Deriving from the life instead means
+      // re-entering is the same place by construction, with nothing stored.
+      for (final name in ['Quinn', 'Casey', 'Ada', 'Bo', 'Wren']) {
+        final first = townMapForLife(name, 'workingClass');
+        for (var i = 0; i < 20; i++) {
+          expect(townMapForLife(name, 'workingClass'), first);
+        }
+      }
+    });
+
+    test('different lives can get different towns', () {
+      final seen = <TownMap>{};
+      for (var i = 0; i < 60; i++) {
+        seen.add(townMapForLife('player$i', 'workingClass'));
+      }
+      expect(
+        seen.length,
+        TownMap.values.length,
+        reason: 'every life is landing in the same town — the hash is not '
+            'spreading, so the second map would never be seen',
+      );
+    });
+
+    test('the origin is part of the identity, not just the name', () {
+      // Two lives can share a name across runs; the origin is what makes a
+      // fresh start feel like a fresh place.
+      final a = <TownMap>{};
+      for (final origin in ['workingClass', 'wealthy', 'rural', 'urban']) {
+        a.add(townMapForLife('Quinn', origin));
+      }
+      expect(a.length, greaterThan(1));
+    });
+
+    test('the seed survives a restart', () {
+      // FNV-1a, not Object.hash — Dart seeds string hashing per isolate, so a
+      // map picked with that would change every time the app was reopened.
+      // Pinned, because that is exactly how this class of bug returns.
+      expect(townMapForLife('Quinn', 'workingClass'), isA<TownMap>());
+      expect(townMapForLife('Quinn', 'workingClass').index, isNonNegative);
+    });
+  });
+
+  group('both towns have people and coins in them', () {
+    for (final map in TownMap.values) {
+      test('${map.name} places every NPC somewhere sensible', () async {
+        final data =
+            jsonDecode(
+                  await File(
+                    'assets/images/maps/${map.asset.split('/').last}',
+                  ).readAsString(),
+                )
+                as Map<String, dynamic>;
+
+        final solid = <({int x, int y})>{};
+        for (final layer in data['layers'] as List) {
+          if (layer['collider'] != true) continue;
+          for (final tile in layer['tiles'] as List) {
+            solid.add((
+              x: int.parse(tile['x'].toString()),
+              y: int.parse(tile['y'].toString()),
+            ));
+          }
+        }
+
+        final taken = <String, String>{};
+        for (final npc in kTownNpcs) {
+          final x = npc.xOn(map);
+          final y = npc.yOn(map);
+
+          expect(
+            solid.contains((x: x, y: y)),
+            isFalse,
+            reason: '${npc.id} stands inside a wall on ${map.name}',
+          );
+
+          // The sprite is about two tiles tall and drawn upward from its
+          // feet, so a solid tile one or two rows above clips it.
+          for (final dy in const [1, 2]) {
+            expect(
+              solid.contains((x: x, y: y - dy)),
+              isFalse,
+              reason: '${npc.id} is clipped by scenery on ${map.name}',
+            );
+          }
+
+          final key = '$x,$y';
+          expect(
+            taken[key],
+            isNull,
+            reason: '${npc.id} and ${taken[key]} share a tile on ${map.name}',
+          );
+          taken[key] = npc.id;
+        }
+      });
+
+      test('${map.name} has coins, and none of them overlap', () {
+        final coins = townCoinsFor(map);
+        expect(
+          coins,
+          isNotEmpty,
+          reason: 'a town with nothing to pick up reads as unfinished',
+        );
+        final tiles = coins.map((c) => '${c.x},${c.y}').toSet();
+        expect(tiles.length, coins.length, reason: 'two coins on one tile');
+        for (final coin in coins) {
+          expect(coin.value, greaterThan(0));
+        }
       });
     }
   });

@@ -1654,8 +1654,110 @@ class UserStatsController extends ChangeNotifier {
     );
   }
 
+  /// Buys one specific skin outright, with no randomness.
+  ///
+  /// **The replacement for the case, not a consolation prize.** Under-13s
+  /// cannot open a randomised case (see `AgeBand.allowsRandomisedRewards`),
+  /// and locking them out of cosmetics entirely would punish them for their
+  /// age. They pay the same 180 gold and get the skin they actually chose —
+  /// which is, if anything, the better deal, and is a fair thing for the app
+  /// to be modelling.
+  ///
+  /// Available to everyone. An adult who would rather buy the one they want
+  /// than gamble for it should be able to, and an app about money has no
+  /// business making the gamble the only route.
+  Future<SkinCaseResult> buySkinDirectly(String skinId) async {
+    const skinCost = 180;
+    final skin = skinFromId(skinId);
+
+    if (_stats.unlockedSkins.contains(skinId)) {
+      return SkinCaseResult(
+        success: false,
+        message: 'You already own ${skin.name}.',
+        syncState: const SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'No changes saved.',
+        ),
+        skin: skin,
+        isNewUnlock: false,
+        goldSpent: 0,
+      );
+    }
+
+    if (_stats.gold < skinCost) {
+      return SkinCaseResult(
+        success: false,
+        message: 'You need $skinCost gold for ${skin.name}.',
+        syncState: const SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'No changes saved.',
+        ),
+        skin: skin,
+        isNewUnlock: false,
+        goldSpent: 0,
+      );
+    }
+
+    final now = DateTime.now().toUtc();
+    final nextStats = _stats.copyWith(
+      gold: _stats.gold - skinCost,
+      xp: _stats.xp + 16,
+      literacyPoints: _stats.literacyPoints + 8,
+      spendingHabits: <String, dynamic>{
+        ..._stats.spendingHabits,
+        'equipped_skin': skinId,
+        'unlocked_skins': <String>{..._stats.unlockedSkins, skinId}.toList(
+          growable: false,
+        ),
+      },
+      transactions: <LedgerTransaction>[
+        LedgerTransaction(
+          id: 'txn_${now.microsecondsSinceEpoch}',
+          title: 'Bought a skin',
+          description: 'Chose ${skin.name} directly for $skinCost gold.',
+          amount: -skinCost,
+          createdAt: now,
+          category: 'unlock',
+        ),
+        ..._stats.transactions,
+      ],
+      updatedAt: now,
+    );
+
+    final result = await _saveStats(nextStats, savingMessage: 'Unlocking...');
+    return SkinCaseResult(
+      success: true,
+      message: '${skin.name} is yours.',
+      syncState: result.syncState,
+      skin: skin,
+      isNewUnlock: true,
+      goldSpent: skinCost,
+    );
+  }
+
   Future<SkinCaseResult> openSkinCase() async {
     const caseCost = 180;
+
+    // A randomised paid reward is a loot box, and this had no age check on
+    // it at all. Under-13s buy the skin they want instead, for the same
+    // price — see `AgeBand.allowsRandomisedRewards` and `buySkinDirectly`.
+    if (!_stats.ageBand.allowsRandomisedRewards) {
+      return SkinCaseResult(
+        success: false,
+        message: 'Pick the skin you want instead — no surprises here.',
+        syncState: const SyncState(
+          synced: false,
+          usedCache: true,
+          message: 'No changes saved.',
+        ),
+        skin: skinFromId(_stats.equippedSkin),
+        isNewUnlock: false,
+        goldSpent: 0,
+      );
+    }
+
     if (_stats.gold < caseCost) {
       return SkinCaseResult(
         success: false,

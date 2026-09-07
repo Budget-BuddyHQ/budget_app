@@ -34,7 +34,14 @@ void main() {
 
   group('the age band decides, not the character', () {
     test('under-13 accounts may not wager; everyone else may', () {
-      expect(AgeBand.under13.allowsWagering, isFalse);
+      expect(AgeBand.age9to12.allowsWagering, isFalse);
+      // The under-13 bucket was split into 4-8 and 9-12 so the two halves
+      // could be *taught* differently. Every protection has to apply to both
+      // halves, or splitting a bucket for content reasons quietly opened a
+      // gate for the younger one.
+      expect(AgeBand.under9.allowsWagering, isFalse);
+      expect(AgeBand.under9.isMinorUnder13, isTrue);
+      expect(AgeBand.under9.prefersSimpleWording, isTrue);
       expect(AgeBand.teen13to15.allowsWagering, isTrue);
       expect(AgeBand.teen16to17.allowsWagering, isTrue);
       expect(AgeBand.adult18plus.allowsWagering, isTrue);

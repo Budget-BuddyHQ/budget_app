@@ -8,6 +8,7 @@ import '../../../models_Like_Skins_and_lessons_templates/daily_quest.dart';
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
 import '../../../widgets_custom_lotties/idle_hover_icon.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
+import '../../../themes_colors/app_theme.dart';
 
 /// The home screen's spine: today's ordered checklist.
 ///
@@ -156,7 +157,7 @@ class _StreakBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             '$days',
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.numeric(
               color: active
                   ? const Color(0xFFFF8A5B)
                   : Colors.white.withValues(alpha: 0.5),
@@ -282,7 +283,7 @@ class _QuestRow extends StatelessWidget {
                   ),
                   child: Text(
                     '+${quest.xpReward}',
-                    style: GoogleFonts.pixelifySans(
+                    style: AppTheme.numeric(
                       color: Color(0xFFFFD45C),
                       fontWeight: FontWeight.w700,
                       fontSize: 12,

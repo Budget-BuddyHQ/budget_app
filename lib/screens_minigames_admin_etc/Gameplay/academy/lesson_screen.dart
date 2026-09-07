@@ -271,7 +271,7 @@ class _LessonScreenState extends State<LessonScreen> {
             Expanded(
               child: Text(
                 'Written for ${unit.ageStage.label.toLowerCase()}',
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.numeric(
                   color: const Color(0xFFFFB84D),
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
@@ -933,7 +933,7 @@ class _UnitJumpChip extends StatelessWidget {
                   children: [
                     Text(
                       'Unit ${index + 1}',
-                      style: GoogleFonts.pixelifySans(
+                      style: AppTheme.numeric(
                         color: selected
                             ? const Color(0xFF062C21)
                             : const Color(0xFFB9D1C6),
@@ -1829,7 +1829,7 @@ class _TooYoungBanner extends StatelessWidget {
               children: [
                 Text(
                   'Written for ${stage.label.toLowerCase()}',
-                  style: GoogleFonts.pixelifySans(
+                  style: AppTheme.numeric(
                     color: accent,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,

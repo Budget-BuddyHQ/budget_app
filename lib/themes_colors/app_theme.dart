@@ -40,6 +40,44 @@ class AppTheme {
   static const double radiusSmall = 10.0;
   static const double radiusMedium = 18.0;
   static const double radiusLarge = 24.0;
+
+  /// The typeface for anything containing a **numeral**.
+  ///
+  /// **Never Pixelify Sans.** Measured with
+  /// `tool/check_digit_legibility.py`: at 22px, **18 of the 45 digit pairs in
+  /// Pixelify Sans differ in under 18% of their inked pixels**, and 8/9
+  /// differ in under 4%. Its 5 and 6 have closed top counters, so rows 3-9 of
+  /// those glyphs are pixel-identical to the 8's.
+  ///
+  /// That is not a matter of taste. A tester was shown *"you get \$1 each
+  /// time, after 5 days, how much have you earned?"*, read the 5 as an 8,
+  /// looked for \$8, and found options of \$1 / \$3 / \$5 / \$10 — no answer
+  /// to the question in front of them. In an app whose entire subject is
+  /// arithmetic about money, the font was corrupting the operand.
+  ///
+  /// Quicksand scores **0 of 45** confusable pairs on the same measurement,
+  /// with its worst pair eight times clearer than Pixelify's worst. It is
+  /// already bundled and already the body face, so this costs nothing.
+  ///
+  /// Pixelify stays for wordmarks, titles and labels **without digits** —
+  /// it is the app's identity and there is nothing wrong with it there.
+  /// `test/digit_legibility_test.dart` holds this line.
+  static TextStyle numeric({
+    Color? color,
+    double? fontSize,
+    FontWeight? fontWeight,
+    double? height,
+    double? letterSpacing,
+  }) => GoogleFonts.quicksand(
+    color: color,
+    fontSize: fontSize,
+    // Quicksand runs visually lighter than Pixelify at the same weight, so
+    // number-carrying text asked for w700 keeps its emphasis rather than
+    // quietly receding when it changes face.
+    fontWeight: fontWeight ?? FontWeight.w700,
+    height: height,
+    letterSpacing: letterSpacing,
+  );
   static const double radiusXLarge = 32.0;
 
   // Font sizes
