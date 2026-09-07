@@ -177,7 +177,13 @@ void main() {
     });
 
     test('the player spawns outside their own house, on a clear tile', () {
-      final spawn = (x: kTownSpawnTile.x, y: kTownSpawnTile.y);
+      // The spawn is now derived from `spot_home` rather than written
+      // down beside it, so the distance check below can no longer fail —
+      // which is the point. It stays because the *other* assertions here
+      // (walkable, two clear rows overhead) are still real, and because a
+      // future change that reintroduces a separate constant should fail.
+      final t = townSpawnTile(TownMap.village);
+      final spawn = (x: t.x, y: t.y);
       expect(
         solid.contains(spawn),
         isFalse,

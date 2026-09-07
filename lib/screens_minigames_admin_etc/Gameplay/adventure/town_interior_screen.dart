@@ -8,6 +8,9 @@ import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/pixel_frame_animation.dart';
 import '../../../widgets_custom_lotties/pixel_panel.dart';
+import '../../../models_Like_Skins_and_lessons_templates/town_challenges.dart';
+import '../../../services_backend_and_other_services/app_sound_service.dart';
+import '../../../widgets_custom_lotties/pixel_kit.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_scenarios.dart';
 
 /// Inside a town building — a whole screen, with the room art as the room.
@@ -115,15 +118,51 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
                   confirming: _confirming != null,
                   onSellFinished: _sellFinished,
                 );
-                final panel = _DecisionPanel(
-                  spot: spot,
-                  lifeAge: widget.lifeAge,
-                  today: widget.today,
-                  settled: widget.settled,
-                  busy: _confirming != null,
-                  onChoose: _choose,
-                  onLeave: () => Navigator.of(context).pop(),
+                // A puzzle where there is one, the conversation otherwise.
+                //
+                // **Why the challenge replaces the dialogue rather than
+                // sitting beside it.** Reported as: the library offers "book
+                // the room / go to the cafe / work at home", and the Life
+                // menu already has a "Visit the library" row doing the same
+                // job — so the map was a second menu with a longer walk. Two
+                // panels would have made that worse, not better. The
+                // buildings that can pose a real question now pose one, and
+                // the menu keeps the plain version.
+                //
+                // The park and your own house keep the conversation on
+                // purpose: they are places to *be*, and arithmetic in them
+                // would turn the whole town into a worksheet.
+                // Seeded from the day's condition rather than a date.
+                //
+                // `today` is a `TownCondition` — the weather-and-economy
+                // state, which already rotates once per in-game day. Using it
+                // means the puzzle changes exactly when everything else about
+                // the town changes, so one walk through the town is one
+                // consistent day rather than a set of independently shuffling
+                // parts.
+                final challenge = townChallengeFor(
+                  spot.kind,
+                  age: widget.lifeAge ?? 12,
+                  daySeed: stableChallengeHash(widget.today?.id ?? 'clear'),
                 );
+
+                final panel = challenge == null
+                    ? _DecisionPanel(
+                        spot: spot,
+                        lifeAge: widget.lifeAge,
+                        today: widget.today,
+                        settled: widget.settled,
+                        busy: _confirming != null,
+                        onChoose: _choose,
+                        onLeave: () => Navigator.of(context).pop(),
+                      )
+                    : _ChallengePanel(
+                        challenge: challenge,
+                        settled: widget.settled,
+                        onFinish: (choice) =>
+                            Navigator.of(context).pop(choice),
+                        onLeave: () => Navigator.of(context).pop(),
+                      );
 
                 if (wide) {
                   // Both columns centred, and the panel capped.
@@ -421,6 +460,253 @@ class _InteriorNpc extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// A playable money puzzle inside a building.
+///
+/// **What makes this a minigame rather than a shop dialogue.** There is a
+/// right answer, you find out immediately whether you had it, and the
+/// arithmetic that decided it is shown either way. A dialogue asks what you
+/// would like; this asks whether you can work it out — and only the second
+/// one can be got wrong, which is the only reason to walk here rather than
+/// tap the menu.
+///
+/// **Payout goes through `TownChoice`** rather than a new reward path. That
+/// is not laziness: the caller already owns the ledger, already knows whether
+/// this encounter has been settled today, and already applies anti-farming.
+/// A second payout route would be a second place for the farming bug to come
+/// back — and it has come back once already, through the coins.
+class _ChallengePanel extends StatefulWidget {
+  const _ChallengePanel({
+    required this.challenge,
+    required this.settled,
+    required this.onFinish,
+    required this.onLeave,
+  });
+
+  final TownChallenge challenge;
+  final bool settled;
+  final ValueChanged<TownChoice> onFinish;
+  final VoidCallback onLeave;
+
+  @override
+  State<_ChallengePanel> createState() => _ChallengePanelState();
+}
+
+class _ChallengePanelState extends State<_ChallengePanel> {
+  int? _picked;
+
+  bool get _answered => _picked != null;
+  bool get _correct => _picked == widget.challenge.correctIndex;
+
+  void _pick(int index) {
+    if (_answered) return;
+    setState(() => _picked = index);
+    AppSoundService.play(
+      index == widget.challenge.correctIndex
+          ? AppSoundEffect.success
+          : AppSoundEffect.error,
+    );
+  }
+
+  /// Turns the result into the shape the caller already knows how to pay.
+  ///
+  /// A wrong answer still pays a little. The alternative — nothing at all —
+  /// teaches a nine-year-old that the safe move is to stop opening buildings,
+  /// which is the opposite of what a town full of practice is for. Getting it
+  /// right is worth roughly three times as much, so the incentive is intact
+  /// without the punishment.
+  TownChoice _asChoice() {
+    final c = widget.challenge;
+    final right = _correct;
+    return TownChoice(
+      label: c.title,
+      outcome: right ? 'You worked it out.' : c.explanation,
+      gold: right ? c.reward * 3 : 1,
+      xp: right ? c.reward * 2 : 1,
+      literacy: right ? c.reward : 1,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.challenge;
+    final accent = _answered
+        ? (_correct ? AppTheme.greenPrimary : const Color(0xFFFFB084))
+        : AppTheme.greenPrimary;
+
+    return PixelFrame(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            c.title,
+            style: GoogleFonts.pixelifySans(
+              color: accent,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            c.prompt,
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.92),
+              fontSize: 13.5,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (widget.settled) ...[
+            const SizedBox(height: 8),
+            Text(
+              'You already settled here today — this one is for the practice.',
+              style: GoogleFonts.quicksand(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          for (var i = 0; i < c.options.length; i++) ...[
+            _ChallengeOptionTile(
+              option: c.options[i],
+              // The working stays hidden until an answer is in. Showing the
+              // per-unit price up front turns the puzzle into a reading
+              // exercise, which is the mistake most teaching apps make.
+              revealed: _answered,
+              isCorrect: i == c.correctIndex,
+              isPicked: i == _picked,
+              onTap: _answered ? null : () => _pick(i),
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (_answered) ...[
+            const SizedBox(height: 2),
+            Text(
+              c.explanation,
+              style: GoogleFonts.quicksand(
+                color: Colors.white.withValues(alpha: 0.78),
+                fontSize: 12.5,
+                height: 1.45,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: PixelButton(
+                label: _correct ? 'Take the reward' : 'Got it',
+                onPressed: () => widget.onFinish(_asChoice()),
+              ),
+            ),
+          ] else
+            Center(
+              child: TextButton(
+                onPressed: widget.onLeave,
+                child: Text(
+                  'Leave',
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChallengeOptionTile extends StatelessWidget {
+  const _ChallengeOptionTile({
+    required this.option,
+    required this.revealed,
+    required this.isCorrect,
+    required this.isPicked,
+    required this.onTap,
+  });
+
+  final ChallengeOption option;
+  final bool revealed;
+  final bool isCorrect;
+  final bool isPicked;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    // After answering, the correct row is marked whether or not it was the
+    // one picked. Being shown only that you were wrong, without being shown
+    // what was right, is the least useful possible feedback.
+    final accent = !revealed
+        ? Colors.white.withValues(alpha: 0.18)
+        : isCorrect
+        ? AppTheme.greenPrimary
+        : isPicked
+        ? const Color(0xFFFF8A80)
+        : Colors.white.withValues(alpha: 0.12);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: revealed ? 0.14 : 0.06),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: accent, width: revealed ? 1.6 : 1),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      option.label,
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (revealed) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        option.detail,
+                        style: GoogleFonts.quicksand(
+                          color: Colors.white.withValues(alpha: 0.72),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (revealed && isCorrect)
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppTheme.greenPrimary,
+                  size: 20,
+                )
+              else if (revealed && isPicked)
+                const Icon(
+                  Icons.cancel_rounded,
+                  color: Color(0xFFFF8A80),
+                  size: 20,
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

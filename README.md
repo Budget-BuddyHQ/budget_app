@@ -182,6 +182,190 @@ a number said otherwise.
 
 ### Data correctness
 
+**The best thing in the app could only be reached down six tabs**
+Reported as *"make the coach more, not just in the daily, since the coach
+should be everywhere"* — a feature request, and underneath it a design fault
+worth writing down.
+
+*What was already there.* `money_analyzer.dart` scores five areas separately
+— showing up, money moving, finishing, understanding, trying things — and
+produces findings that each carry the number they came from. It is the most
+interesting code in the project. It was reachable through exactly one route:
+the **sixth tab** of the Money Habits screen. A player who never opened that
+tab never met it.
+
+*The give-away was in the code, not the screens.* `MoneyReport.headline` is
+documented as *"the single line to show if there is only room for one"* — and
+had **no callers**. Somebody had already seen this coming and built the hook
+for it, and nothing was ever plugged in. A getter with no callers and a
+comment describing a use case is a design that was half-finished, not a
+utility that went stale.
+
+*What made it worth more than a copy-paste.* The analyser was five report
+cards in a row: each rule read one area and reported on it. That is a
+scoreboard, not a coach. The findings that matter in financial literacy are
+the ones that compare two areas and notice they disagree — so the rules now
+include cross-domain ones, and the headline finding is this:
+
+> You score 90% on needs versus wants, and across four Coin Cascade runs
+> wants took 42% of your board.
+
+**No single screen in this app can produce that sentence.** The Academy sees
+a good quiz score. The arcade sees a finished game. The gap between knowing a
+rule and playing by it is invisible to both, and it is the entire difference
+between knowing about money and being good with it.
+
+*The data that made it possible.* Coin Cascade now records how the board was
+actually divided. That game never uses the word *budget* while it is being
+played — needs clear bills, wants raise them, savings win — so the split it
+produces is **behaviour rather than an answer about behaviour**, which is what
+makes it worth checking a quiz score against. Stored as running totals rather
+than an average: an average has to be read, re-weighted and written back every
+run, so one lost write silently corrupts every future reading of it, where a
+lost total costs one run's accuracy and nothing else.
+
+*A small bug written on purpose rather than shipped.* `CoachSpot` renders
+nothing for a player with no history. Placed between two `SizedBox`es in a
+`Column`, a silent coach would still leave a **double gap** — on exactly the
+screens a brand-new player sees first. So the spacing is a `margin` on the
+widget, which disappears with it, and there is a test that measures the
+rendered height is zero.
+*Files:* `money_analyzer.dart`, `money_snapshot_source.dart`,
+`coach_spot.dart`, `coin_cascade_page.dart`, `supabase_service.dart`,
+`home_screen.dart`, `minigames_page.dart`, `coach_cross_domain_test.dart`
+
+**Nobody could say what Coin Cascade's rules were, including its owner**
+Reported as a question rather than a bug: *"I'm not sure what the coin cascade
+of this even mean, like does it mean that you have to pay the bill, how are
+the bills determined etc and what does the next level even mean."*
+
+*That is the most serious kind of report this project has had.* The person
+asking commissioned the game. If they cannot state the rules, no nine-year-old
+is deriving them.
+
+*The rules were never wrong.* Reading the model: needs clear bills, wants
+score and add bills, bills arrive on a schedule set per level, savings fill
+the goal, coins buy moves. The level ladder is an explicit curriculum with the
+reasoning written above it — *"Level 1 teaches savings win. Level 2 teaches
+cover your needs first by making bills arrive faster. Level 4 teaches the
+actual 50/30/20 lesson by doubling what wants cost."* Coherent, deliberate,
+and **written down only in a comment the player cannot read**.
+
+*The help dialog listed the five tile kinds and stopped.* That explains the
+pieces and none of the game — and every one of the three things actually being
+asked about was missing from it: what the bills counter is, where bills come
+from, and what a level is. The one-line `rule` on the level banner is a
+reminder for somebody who already knows, which is the failure mode of writing
+help while holding the whole design in your head.
+*Fix:* the help is now four sections — what you are trying to do, the five
+tiles, **where bills come from** (two sources: the schedule and your own
+wants), and what a level is. The lesson is named **last**, on purpose: leading
+with "this is 50/30/20" turns a game into a worksheet, where naming it after
+the rules lets a player recognise something they have already been doing.
+*Files:* `coin_cascade_page.dart`
+
+**The password-reset page had never existed, and neither had the privacy policy**
+Reported as a screenshot of the reset email landing on *"This site can't be
+reached — localhost refused to connect"*, plus "I'm not sure if you fixed that
+or not".
+
+*The first move was to check whether it had been fixed, and it had.* There is
+a long comment in `supabase_service.dart` explaining that Supabase silently
+**substitutes the project's Site URL** when `redirect_to` is not on the
+allow-list — so a missing dashboard entry produces a `localhost:3000` link and
+looks like an app bug. That analysis was right, the constant pointed at a real
+https page, `docs/password-reset.html` existed and forwarded correctly, and
+`auth_redirect_test.dart` asserted the whole chain. Everything was green.
+So the obvious conclusion was "the dashboard still needs configuring", and
+that would have been the end of it.
+
+*What broke that conclusion was spending ten seconds checking the page
+itself:*
+
+    curl -o /dev/null -w "%{http_code}" \
+      https://budget-buddyhq.github.io/budget_app/password-reset.html
+    404
+
+Not a redirect problem. The landing page **has never been served**. The URL is
+a GitHub Pages address, and the repository is **private** — Pages does not
+publish private repositories on a free plan. So the reset link would have been
+dead even with a perfectly configured dashboard, and configuring the dashboard
+would have produced *no visible improvement*, which is exactly the kind of
+dead end that costs an afternoon.
+
+*The test suite was complicit, and this is the part worth keeping.* There was a
+test named "the landing page exists where the constant says it does", and it
+passed. It checked that the last path segment of the URL matched a real file in
+`docs/`. Every word of that was true. **"The file is in the repository" and
+"the file is being served" are different claims, and only the first was ever
+being checked** — the test was measuring the half that could be measured
+locally and reading as though it covered the whole thing.
+
+*Then the same fault turned out to be worse somewhere else.* Grepping for the
+dead host found `kPrivacyPolicyUrl` pointing at the same origin. Google Play
+**requires a reachable privacy-policy URL** for any app that collects user
+data, and checks it. That was a store rejection sitting in the repo behind a
+passing test, and nobody had reported it because nothing in the app ever opens
+it.
+
+*Fix, and why not the obvious one.* Making the repository public would fix
+both in one toggle, but that is the user's call and not a thing to do quietly.
+Netlify or Vercel means a new account and new credentials. The project already
+deploys Supabase edge functions successfully, so `tool/build_pages_function.py`
+bakes both pages into `supabase/functions/pages` — no new account, no change to
+repository visibility, and the landing page ends up on the **same origin as the
+auth server that issued the link**, which removes the redirect-allow-list
+failure mode rather than documenting it.
+*Two details that would have bitten later:* the page links to
+`privacy-policy.html` as a sibling file, which resolves to a different function
+under a route, so the generator absolutises those links; and the function must
+deploy with `--no-verify-jwt`, because somebody clicking a link in an email has
+no Authorization header and would get a 401 that looks identical to the 404 it
+replaces.
+*The tests now assert the thing that was actually wrong:* the constant's route
+exists in the function, the baked HTML is in sync with `docs/` (it is embedded,
+so editing the source and forgetting to regenerate would ship a stale page),
+and the URL is **not** on `github.io` — pinned with the reason, so it cannot
+come back.
+*Still requires a person:* deploy the function, then set the Site URL and
+redirect allow-list in the dashboard. The function's bare root deliberately
+serves the reset page, so that if the dashboard is still wrong the silent
+substitution now lands somewhere useful instead of nowhere.
+*Files:* `tool/build_pages_function.py`, `supabase/functions/pages/index.ts`,
+`supabase_service.dart`, `privacy_policy.dart`, `config.toml`,
+`docs/auth_emails/*.html`, `auth_redirect_test.dart`, `privacy_policy_test.dart`
+
+**A test reported a bug that did not exist, because of line endings**
+`audio_mix_test.dart` was failing on a checked-out, committed tree:
+
+    initialize is a single shared future, not a flag set early
+    Expected: a value greater than <15498>
+      Actual: <-1>
+    _playersReady is set before the setup it is supposed to gate
+
+*The failure message is an accusation about ordering, so the first thing
+checked was the ordering* — and it was correct. `_playersReady = true;` is the
+last statement in `_initialize()`, after `_attachLifecycleObserver()`, with a
+comment above it saying so. The code was right and the test said it was wrong.
+
+*The tell was `-1` rather than a small number.* A genuine ordering failure
+gives two real offsets in the wrong order. `-1` is `indexOf` saying **not
+found at all**, which is a different fact wearing the same error message. The
+test searched for `'_playersReady = true;\n  }'` — a pattern spanning a line
+break — and the file is checked out with **CRLF** endings, so every `\n` in it
+is really `\r\n` and that pattern cannot match on this machine at any time.
+The other checks in the same file passed only because they happened to be
+single-line.
+*Fix:* `serviceSource()` normalises `\r\n` to `\n` once, which fixes every
+source-scanning check in the file rather than the one that happened to fail.
+*Lesson, and it is about diagnosis rather than line endings:* read the shape of
+the number, not just the message. A sentinel value like `-1` from a search means
+the search failed, and a test that reports "your code is in the wrong order"
+when it means "I could not find the text" will send you to read correct code
+looking for a bug that is not there. A test that only works under one
+line-ending convention is worse than no test.
+*Files:* `audio_mix_test.dart`
+
 **Sounds cut each other off, and the app was doing it to itself**
 Reported as "the sound would randomly cut off if I switched tabs or play
 another sound".

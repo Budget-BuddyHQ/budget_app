@@ -14,15 +14,29 @@ import '../models_Like_Skins_and_lessons_templates/player_profile.dart';
 
 /// The hosted page the emailed password-reset link lands on.
 ///
-/// GitHub Pages, `/docs` on `main` — the same publishing setup that serves
-/// [kPrivacyPolicyUrl]. The page itself (`docs/password-reset.html`) forwards
-/// straight on to [passwordResetDeepLink], carrying the auth payload with it.
+/// A Supabase **edge function** (`supabase/functions/pages`), which is
+/// generated from `docs/password-reset.html` by
+/// `tool/build_pages_function.py`. The page forwards straight on to
+/// [passwordResetDeepLink], carrying the auth payload with it.
+///
+/// **This used to be GitHub Pages, and it returned 404 on every
+/// request.** The repository is private and Pages does not serve
+/// private repositories on a free plan, so the emailed link landed on
+/// "This site can't be reached" — the exact symptom the long note on
+/// [passwordResetRedirectUrl] was written to rule out, arriving again
+/// from a completely different direction. Nothing in the app could
+/// show it: the constant was right, the deep link was right, and the
+/// only evidence lived in an email opened on a phone.
+///
+/// An edge function needs no new account and no change to the
+/// repository's visibility, and it puts the landing page on the same
+/// origin as the auth server that issued the link.
 ///
 /// **This is also what the project's Site URL should be set to.** See the
 /// long note on [passwordResetRedirectUrl] for why that is the load-bearing
 /// half of the fix rather than a nicety.
 const String passwordResetLandingUrl =
-    'https://budget-buddyhq.github.io/budget_app/password-reset.html';
+    'https://cwqjduingvevagrxbwts.supabase.co/functions/v1/pages/password-reset';
 
 /// The custom scheme the OS hands back to this app.
 ///
@@ -372,6 +386,38 @@ class UserStats {
     return _readInt(entry['best_correct']) / total;
   }
 
+  /// When each money idea should next be reviewed.
+  ///
+  /// The spaced-repetition schedule, stored as a small map keyed by concept
+  /// name. See `review_schedule.dart` for the algorithm and why it runs
+  /// entirely on the device.
+  ///
+  /// Only concepts that have actually been studied are written, so this stays
+  /// empty for a new account and does not grow every time a concept is added
+  /// to the enum.
+  Map<String, dynamic> get reviewScheduleMap {
+    final raw = spendingHabits['review_schedule'];
+    if (raw is Map) {
+      return raw.map((key, value) => MapEntry(key.toString(), value));
+    }
+    return const <String, dynamic>{};
+  }
+
+  /// Estimated mastery per money idea, from Bayesian Knowledge Tracing.
+  ///
+  /// Stored separately from `quiz_scores` because it answers a different
+  /// question. `quiz_scores` records what happened; this records what the app
+  /// *believes* about the learner as a result — with the 25% chance of
+  /// guessing a four-option question already discounted. See
+  /// `knowledge_tracing.dart`.
+  Map<String, dynamic> get knowledgeMap {
+    final raw = spendingHabits['knowledge'];
+    if (raw is Map) {
+      return raw.map((key, value) => MapEntry(key.toString(), value));
+    }
+    return const <String, dynamic>{};
+  }
+
   /// Local date key (yyyy-mm-dd) the daily plan was last generated for.
   String get dailyPlanDateKey =>
       spendingHabits['daily_plan_date']?.toString() ?? '';
@@ -565,6 +611,23 @@ class UserStats {
   ///
   /// 0 means nothing cleared yet, so level 1 is the only one open.
   int get cascadeClearedThrough => _readInt(spendingHabits['cascade_cleared']);
+
+  /// Finished Coin Cascade runs, and the tiles cleared across all of them.
+  ///
+  /// **Totals rather than a stored average, on purpose.** An average has to be
+  /// read, re-weighted and written back on every run, so a lost write
+  /// silently corrupts every future reading of it. Totals only ever go up:
+  /// a dropped write costs one run's worth of accuracy and nothing else, and
+  /// the share is recomputed from scratch each time it is asked for.
+  ///
+  /// These exist so the coach can compare how somebody *plays* against how
+  /// they *answer* — see the cross-domain rules in `money_analyzer.dart`.
+  /// Coin Cascade never uses the word budget while it is being played, which
+  /// is what makes the split it produces worth checking a quiz score against.
+  int get cascadeRuns => _readInt(spendingHabits['cascade_runs']);
+  int get cascadeNeedsTotal => _readInt(spendingHabits['cascade_needs_total']);
+  int get cascadeWantsTotal => _readInt(spendingHabits['cascade_wants_total']);
+  int get cascadeSavesTotal => _readInt(spendingHabits['cascade_saves_total']);
 
   /// Town encounters that have already paid out, by `townEncounterFor().id`.
   ///
@@ -1903,9 +1966,23 @@ alter view public.leaderboard set (security_invoker = false);
           friendIds.add(userId);
         }
       }
+      // No friends is a different screen, not an empty ranking. The board
+      // says "ranked among friends who've added your code", and answering
+      // that with a list of one — you — reads as a bug rather than an
+      // invitation.
       if (friendIds.isEmpty) {
         return const <LeaderboardEntry>[];
       }
+
+      // **You are in your own friends ranking.**
+      //
+      // This was the bug: the query asked only for the friend ids, so the
+      // signed-in player was the one person guaranteed to be missing from a
+      // board about them. On an account with one friend it produced a podium
+      // with a winner and two blank plinths, and no way to see where you
+      // stood — which is the entire question a friends leaderboard exists to
+      // answer.
+      friendIds.add(currentUserId);
 
       final unordered = client
           .from(leaderboardView)

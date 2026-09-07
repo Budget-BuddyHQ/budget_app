@@ -487,7 +487,10 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     );
 
     return TownPlayer(
-      position: Vector2(kTownSpawnTile.x * 16.0, kTownSpawnTile.y * 16.0),
+      position: Vector2(
+        townSpawnTile(_townMap).x * 16.0,
+        townSpawnTile(_townMap).y * 16.0,
+      ),
       size: Vector2(34 * AppAssets.villagerAspectRatio, 34),
       speed: kTownWalkSpeed,
       animation: SimpleDirectionAnimation(
