@@ -410,6 +410,29 @@ class AppSoundService {
     }
   }
 
+  /// Stops and disposes players when the app is backgrounded or closed.
+  ///
+  /// Keeps `_musicWanted` so a resume can restart the loop if the user had
+  /// previously requested music.
+  static Future<void> handleAppPaused() async {
+    if (!_playersReady) return;
+    // Dispose effect players.
+    for (final effect in _players.keys.toList()) {
+      final old = _players.remove(effect);
+      if (old != null) {
+        try {
+          await old.stop();
+          await old.dispose();
+        } catch (error) {
+          debugPrint('Could not dispose ${effect.name} on pause: $error');
+        }
+      }
+    }
+
+    // Dispose music but do not clear `_musicWanted` so resume can restart it.
+    await _disposeMusic();
+  }
+
   /// Throws away one effect's player and builds a configured replacement.
   static Future<void> _rebuildPlayer(AppSoundEffect effect) async {
     final old = _players.remove(effect);
@@ -547,6 +570,9 @@ class _AudioLifecycleObserver with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(AppSoundService.handleAppResumed());
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      unawaited(AppSoundService.handleAppPaused());
     }
   }
 }
