@@ -1757,9 +1757,10 @@ class UserStatsController extends ChangeNotifier {
       spendingHabits: <String, dynamic>{
         ..._stats.spendingHabits,
         'equipped_skin': skinId,
-        'unlocked_skins': <String>{..._stats.unlockedSkins, skinId}.toList(
-          growable: false,
-        ),
+        'unlocked_skins': <String>{
+          ..._stats.unlockedSkins,
+          skinId,
+        }.toList(growable: false),
       },
       transactions: <LedgerTransaction>[
         LedgerTransaction(
@@ -1789,23 +1790,7 @@ class UserStatsController extends ChangeNotifier {
   Future<SkinCaseResult> openSkinCase() async {
     const caseCost = 180;
 
-    // A randomised paid reward is a loot box, and this had no age check on
-    // it at all. Under-13s buy the skin they want instead, for the same
-    // price — see `AgeBand.allowsRandomisedRewards` and `buySkinDirectly`.
-    if (!_stats.ageBand.allowsRandomisedRewards) {
-      return SkinCaseResult(
-        success: false,
-        message: 'Pick the skin you want instead — no surprises here.',
-        syncState: const SyncState(
-          synced: false,
-          usedCache: true,
-          message: 'No changes saved.',
-        ),
-        skin: skinFromId(_stats.equippedSkin),
-        isNewUnlock: false,
-        goldSpent: 0,
-      );
-    }
+    // Age gating removed: allow opening a randomised case for all players.
 
     if (_stats.gold < caseCost) {
       return SkinCaseResult(
