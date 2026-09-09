@@ -1971,20 +1971,31 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
         }
       }
 
+
       // 4. Spawning Debts / Boss Market Crises
       if (_wave % 5 == 0) {
-        // Boss Wave: Wait until all standard liabilities are cleared before spawning the boss
-        if (!_bossActive && _liabilities.isEmpty) {
+        int minionTarget = max(0, _debtsNeededForLevelUp - 1);
+        int spawnedOrAliveMinions = _debtsCleared + _liabilities.where((m) => !m.isBoss).length;
+
+        // ONLY spawn regular minions if we haven't reached the minion quota
+        if (spawnedOrAliveMinions < minionTarget) {
+          _lastSpawnTime += dt;
+          double spawnInterval = max(0.2, 1.5 - (_wave * 0.12));
+          if (_lastSpawnTime >= spawnInterval) {
+            _lastSpawnTime = 0;
+            _spawnLiability();
+          }
+        } 
+        // ONLY spawn the boss when all regular minions have been spawned AND killed
+        else if (!_bossActive && _liabilities.isEmpty && _debtsCleared == minionTarget) {
+          _bossActive = true;
           _spawnMarketCrashBoss();
         }
       } else {
         _bossActive = false;
+        int spawnedOrAlive = _debtsCleared + _liabilities.length;
 
-        // Calculate how many enemies have been created this wave
-        int totalEnemiesThisWave = _debtsCleared + _liabilities.length;
-
-        // Stop spawning if we reached the required count for this wave
-        if (totalEnemiesThisWave < _debtsNeededForLevelUp) {
+        if (spawnedOrAlive < _debtsNeededForLevelUp) {
           _lastSpawnTime += dt;
           double spawnInterval = max(0.2, 1.5 - (_wave * 0.12));
           if (_lastSpawnTime >= spawnInterval) {
@@ -2161,19 +2172,24 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   }
 
   void _onLiabilityCleared(int index, _FinancialLiability mob) {
-    _liabilities.removeAt(index);
+  _liabilities.removeAt(index);
+  
+  // Increment debts cleared up to the maximum target for this wave
+  if (_debtsCleared < _debtsNeededForLevelUp) {
     _debtsCleared++;
-    _goldAccumulated += mob.rewardGold;
-    _xpAccumulated += mob.isBoss ? 80 : 8;
-
-    if (mob.isBoss) {
-      _bossActive = false;
-      _chests.add(_TreasureChest(pos: mob.pos));
-      _triggerQuizGate();
-    } else if (_wave % 5 != 0 && _debtsCleared >= _debtsNeededForLevelUp) {
-      _triggerQuizGate();
-    }
   }
+
+  _goldAccumulated += mob.rewardGold;
+  _xpAccumulated += mob.isBoss ? 80 : 8;
+
+  if (mob.isBoss) {
+    _bossActive = false;
+    _chests.add(_TreasureChest(pos: mob.pos));
+    _triggerQuizGate();
+  } else if (_wave % 5 != 0 && _debtsCleared >= _debtsNeededForLevelUp) {
+    _triggerQuizGate();
+  }
+}
 
   /// The most recent archetype spawned, so the wave-end card can say what it
   /// was. Shown after the fight rather than during it: a sentence about
@@ -2442,54 +2458,53 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   }
 
   void _nextQuizQuestion() {
-    setState(() {
-      final total = _activeQuizQuestions.length;
-      if (_quizQuestionIndex < total - 1) {
-        _quizQuestionIndex++;
-        _selectedAnswerIndex = null;
-        _isAnswerSubmitted = false;
-        return;
-      }
+      setState(() {
+        final total = _activeQuizQuestions.length;
+        if (_quizQuestionIndex < total - 1) {
+          _quizQuestionIndex++;
+          _selectedAnswerIndex = null;
+          _isAnswerSubmitted = false;
+          return;
+        }
 
-      _isQuizOpen = false;
+        _isQuizOpen = false;
 
-      // A perfect round lets you pick an upgrade. Getting most of them right
-      // still earns one at random — going from "nearly perfect" to nothing at
-      // all made the gate feel punishing rather than motivating.
-      if (_quizCorrectCount == total) {
-        _isUpgradeChoiceOpen = true;
-        return;
-      }
+        // Reset wave counters FIRST so level state is clean regardless of quiz outcome
+        _debtsCleared = 0;
+        _wave++;
+        _bossActive = false;
+        _debtsNeededForLevelUp = 6 + (_wave * 3);
 
-      _debtsCleared = 0;
-      _wave++;
-      _bossActive = false;
-      _debtsNeededForLevelUp = 6 + (_wave * 3);
+        // A perfect round lets you pick an upgrade.
+        if (_quizCorrectCount == total) {
+          _isUpgradeChoiceOpen = true;
+          return;
+        }
 
-      final earnedConsolation = total > 1 && _quizCorrectCount >= total - 1;
-      if (earnedConsolation) {
-        final bonus = _getUpgradeOptions().first;
-        bonus.action();
+        final earnedConsolation = total > 1 && _quizCorrectCount >= total - 1;
+        if (earnedConsolation) {
+          final bonus = _getUpgradeOptions().first;
+          bonus.action();
+          GameToast.show(
+            context,
+            title: "Quiz Score: $_quizCorrectCount/$total",
+            message: "${bonus.name} granted. Answer all $total for your pick!",
+            icon: Icons.school_rounded,
+            accent: const Color(0xFF85EFAC),
+          );
+          return;
+        }
+
         GameToast.show(
           context,
           title: "Quiz Score: $_quizCorrectCount/$total",
-          message: "${bonus.name} granted. Answer all $total for your pick!",
+          message:
+              "Score $total/$total for income upgrades! Market grid reinforced.",
           icon: Icons.school_rounded,
-          accent: const Color(0xFF85EFAC),
+          accent: const Color(0xFFE1BB72),
         );
-        return;
-      }
-
-      GameToast.show(
-        context,
-        title: "Quiz Score: $_quizCorrectCount/$total",
-        message:
-            "Score $total/$total for income upgrades! Market grid reinforced.",
-        icon: Icons.school_rounded,
-        accent: const Color(0xFFE1BB72),
-      );
-    });
-  }
+      });
+    }
 
   /// The levelled upgrade tracks, in the order they were designed rather than
   /// the order they appear — [_getUpgradeOptions] shuffles.
@@ -2944,7 +2959,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       alignStart: false,
       // The count the player is actually tracking toward their next upgrade.
       progress: HudProgress(
-        current: _debtsCleared,
+        current: min(_debtsCleared, _debtsNeededForLevelUp),
         total: _debtsNeededForLevelUp,
       ),
     );
