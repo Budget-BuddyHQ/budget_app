@@ -290,6 +290,8 @@ class CascadeLevel {
     this.coinValue = 1,
     this.mode = CascadeMode.ladder,
     this.seconds = 0,
+    this.shockAtMove = 0,
+    this.shockBills = 0,
   });
 
   final int number;
@@ -317,6 +319,38 @@ class CascadeLevel {
 
   /// Coins earned per matched coin tile.
   final int coinValue;
+
+  /// The move a surprise expense lands on. Zero for levels that have none.
+  ///
+  /// # Why the game needed one
+  ///
+  /// The ladder taught allocation under a *predictable* squeeze: bills every
+  /// three moves, every four moves, always on schedule. Thirteen levels of
+  /// it, and the only thing that ever changed was the rate.
+  ///
+  /// Real money does not fail that way. It fails on the month the boiler
+  /// goes, and the whole reason an emergency fund exists is that the timing
+  /// is the part you cannot plan for. The life sim has expense shocks and
+  /// teaches exactly this; the allocation game had no version of it.
+  ///
+  /// # Why a fixed move rather than a random one
+  ///
+  /// A random shock is a random loss, and a player who lost to one learns
+  /// "this game is unfair" rather than anything about money. On a fixed move
+  /// the level is *solvable* — and the second time through, a player who
+  /// keeps headroom before move twelve survives it. That is the emergency
+  /// fund, discovered rather than explained.
+  ///
+  /// The rule line says a shock is coming without saying when, which is the
+  /// honest amount of warning: you know these happen, you do not know the
+  /// date.
+  final int shockAtMove;
+
+  /// How many bills the shock drops at once. This is what makes it a shock
+  /// rather than an early bill.
+  final int shockBills;
+
+  bool get hasShock => shockAtMove > 0 && shockBills > 0;
 }
 
 /// The ladder. Beat one, the next unlocks.
@@ -453,6 +487,94 @@ const List<CascadeLevel> kCascadeLevels = <CascadeLevel>[
     wantsCostMultiplier: 3,
     coinValue: 2,
   ),
+
+  // --- 14 onward: the month something breaks --------------------------
+  //
+  // Thirteen levels taught allocation under a **predictable** squeeze. Bills
+  // every three moves, every four moves, always on schedule — and the only
+  // thing that ever changed across the whole ladder was the rate.
+  //
+  // Real money does not fail on a schedule. It fails on the month the boiler
+  // goes, and the reason an emergency fund exists at all is that the timing
+  // is the part you cannot plan for. The life sim has expense shocks and
+  // teaches exactly this; the allocation game had no version of it.
+  //
+  // These five are built on `shockAtMove`. The shock is on a fixed move, so
+  // the level is solvable and a second attempt rewards keeping headroom —
+  // which is the emergency fund, discovered rather than explained. See
+  // `CascadeLevel.shockAtMove` for why fixed rather than random.
+  CascadeLevel(
+    number: 14,
+    name: 'Something Breaks',
+    rule: 'A surprise bill lands partway through. Keep room for it.',
+    savingsGoal: 26,
+    moves: 30,
+    billCapacity: 13,
+    billInterval: 4,
+    shockAtMove: 12,
+    shockBills: 3,
+  ),
+  CascadeLevel(
+    number: 15,
+    name: 'Full Capacity',
+    // The lesson stated as a mechanic: the same shock is survivable or fatal
+    // depending on how much room you were carrying when it arrived. Nothing
+    // about the shock changes between attempts. What changes is you.
+    rule: 'Bills every 3, and a bigger surprise. Room matters more than speed.',
+    savingsGoal: 30,
+    moves: 30,
+    billCapacity: 12,
+    billInterval: 3,
+    shockAtMove: 14,
+    shockBills: 4,
+  ),
+  CascadeLevel(
+    number: 16,
+    name: 'Twice in One Month',
+    // Two shocks cannot both be planned around, which is the point: past a
+    // certain frequency the answer stops being "budget better" and starts
+    // being "this is why the fund is separate money".
+    rule: 'It happens again. One buffer has to cover both.',
+    savingsGoal: 28,
+    moves: 32,
+    billCapacity: 14,
+    billInterval: 4,
+    shockAtMove: 10,
+    shockBills: 5,
+    coinValue: 2,
+  ),
+  CascadeLevel(
+    number: 17,
+    name: 'Expensive Taste',
+    // Wants at quadruple cost against a shock. The temptation is the enemy
+    // here rather than the schedule: every want cleared is capacity you do
+    // not have on move sixteen.
+    rule: 'Wants cost four bills now, and a surprise is coming.',
+    savingsGoal: 32,
+    moves: 30,
+    billCapacity: 13,
+    billInterval: 4,
+    wantsCostMultiplier: 4,
+    shockAtMove: 16,
+    shockBills: 3,
+    coinValue: 2,
+  ),
+  CascadeLevel(
+    number: 18,
+    name: 'The Whole Year',
+    // The finale, and deliberately generous on capacity. A last level that
+    // is lost to arithmetic nobody could have done is a last level nobody
+    // finishes.
+    rule: 'Everything at once. Bills every 2, wants cost triple, one shock.',
+    savingsGoal: 36,
+    moves: 34,
+    billCapacity: 15,
+    billInterval: 2,
+    wantsCostMultiplier: 3,
+    shockAtMove: 18,
+    shockBills: 4,
+    coinValue: 3,
+  ),
 ];
 
 /// Payday Rush.
@@ -550,6 +672,10 @@ class CoinCascadeGame {
   /// Moves since a bill was last dropped in.
   int _sinceBill = 0;
 
+  /// Whether this run's surprise expense has already landed. Once only — a
+  /// shock that repeats is just a shorter bill interval wearing a costume.
+  bool _shockFired = false;
+
   /// Tiles cleared across the whole run, by kind.
   ///
   /// The engine already knew all of this a swap at a time — `CascadeOutcome`
@@ -612,6 +738,7 @@ class CoinCascadeGame {
     savings = 0;
     bills = 0;
     _sinceBill = 0;
+    _shockFired = false;
     needsCleared = 0;
     wantsCleared = 0;
     savesCleared = 0;
@@ -905,6 +1032,28 @@ class CoinCascadeGame {
     if (!isTimed && _sinceBill >= billInterval) {
       _sinceBill = 0;
       _dropBill();
+    }
+    // The surprise expense. Fires once, on its move — see
+    // [CascadeLevel.shockAtMove].
+    //
+    // **It raises the bill meter rather than dropping bill tiles**, and the
+    // first version got that backwards. `_dropBill` places a *bill tile* on
+    // the board, and clearing a bill tile **pays the meter down** — so a
+    // shock built out of them handed the player four extra ways to reduce
+    // their bills. It made the level easier. Nothing failed; the level was
+    // simply not doing what its name said.
+    //
+    // Raising `bills` is what a surprise expense actually is: your load
+    // jumps, and whether you survive depends on the headroom you were
+    // carrying. That headroom is the emergency fund, and this is the only
+    // place in the ladder where it is worth anything.
+    if (!isTimed &&
+        !_shockFired &&
+        level.hasShock &&
+        (moves - movesLeft) >= level.shockAtMove) {
+      _shockFired = true;
+      billsAddedTotal += level.shockBills;
+      bills = (bills + level.shockBills).clamp(0, billCapacity);
     }
     if (!hasLegalMove()) {
       _reshuffle();
