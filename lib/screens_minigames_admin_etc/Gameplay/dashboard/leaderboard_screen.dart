@@ -20,7 +20,7 @@ class LeaderboardScreen extends StatefulWidget {
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
   late Future<List<LeaderboardEntry>> _leaderboardFuture;
   bool _showFriends = false;
-  bool _byGold = false;
+  LeaderboardMetric _metric = LeaderboardMetric.literacy;
 
   @override
   void initState() {
@@ -33,13 +33,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     if (_showFriends) {
       return SupabaseService.instance.fetchFriendsLeaderboard(
         currentUserId: currentUserId,
-        byGold: _byGold,
+        metric: _metric,
       );
     }
     return SupabaseService.instance.fetchLeaderboard(
       limit: 100,
       currentUserId: currentUserId,
-      byGold: _byGold,
+      metric: _metric,
     );
   }
 
@@ -51,10 +51,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     });
   }
 
-  void _setMetric({required bool byGold}) {
-    if (byGold == _byGold) return;
+  void _setMetric(LeaderboardMetric metric) {
+    if (metric == _metric) return;
     setState(() {
-      _byGold = byGold;
+      _metric = metric;
       _leaderboardFuture = _loadLeaderboard();
     });
   }
@@ -70,7 +70,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   Widget build(BuildContext context) {
     final currentUser = context.watch<UserStatsController>().stats;
-    final accent = _byGold ? const Color(0xFFF4D06F) : AppTheme.greenPrimary;
+    final accent = switch (_metric) {
+      LeaderboardMetric.literacy => AppTheme.greenPrimary,
+      LeaderboardMetric.gold => const Color(0xFFF4D06F),
+      LeaderboardMetric.ranked => const Color(0xFFD98CFF),
+    };
 
     return Scaffold(
       backgroundColor: AppTheme.deepForest,
@@ -110,7 +114,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
                 children: [
                   Text(
-                    _byGold ? 'Richest Players' : 'Top Finance Wizards',
+                    switch (_metric) {
+                      LeaderboardMetric.literacy => 'Top Finance Wizards',
+                      LeaderboardMetric.gold => 'Richest Players',
+                      LeaderboardMetric.ranked => 'Best Ranked Lives',
+                    },
                     style: GoogleFonts.pixelifySans(
                       color: Colors.white,
                       fontSize: 24,
@@ -123,9 +131,21 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                         ? 'Ranked among friends who\'ve added your code (or you\'ve added theirs).'
                         : leaders.isEmpty
                         ? 'No cloud leaderboard data is available yet, so you are seeing cached progress only.'
-                        : _byGold
-                        ? 'Ranked by gold — every trade, quest, and case pays off here.'
-                        : 'Rankings come from saved user stats, not hardcoded demo names.',
+                        : switch (_metric) {
+                            LeaderboardMetric.gold =>
+                              'Ranked by gold — every trade, quest, and case '
+                                  'pays off here.',
+                            // Says what the score is made of, because a
+                            // number nobody can account for is a number
+                            // nobody trusts. See `ranked_run.dart`.
+                            LeaderboardMetric.ranked =>
+                              'One life, fixed rules. Wealth, multiplied by '
+                                  'how long you lasted, plus what you '
+                                  'learned.',
+                            LeaderboardMetric.literacy =>
+                              'Rankings come from saved user stats, not '
+                                  'hardcoded demo names.',
+                          },
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.72),
                       height: 1.4,
@@ -140,8 +160,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   _FilterPanel(
                     showFriends: _showFriends,
                     onFriendsChanged: (friends) => _setMode(friends: friends),
-                    byGold: _byGold,
-                    onMetricChanged: (byGold) => _setMetric(byGold: byGold),
+                    metric: _metric,
+                    onMetricChanged: _setMetric,
                   ),
                   const SizedBox(height: 14),
                   _CurrentUserSummary(
@@ -159,7 +179,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   else ...[
                     _HallOfFameStage(
                       top3: podium,
-                      byGold: _byGold,
+                      metric: _metric,
                       currentUserProfileImageUrl: currentUser.profileImageUrl,
                       currentUserSkin: currentUser.equippedSkin,
                     ),
@@ -182,7 +202,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                         padding: const EdgeInsets.only(bottom: 10),
                         child: _LeaderboardRow(
                           leader: leader,
-                          byGold: _byGold,
+                          metric: _metric,
                           currentUserProfileImageUrl:
                               currentUser.profileImageUrl,
                           currentUserSkin: currentUser.equippedSkin,
@@ -221,14 +241,14 @@ class _FilterPanel extends StatelessWidget {
   const _FilterPanel({
     required this.showFriends,
     required this.onFriendsChanged,
-    required this.byGold,
+    required this.metric,
     required this.onMetricChanged,
   });
 
   final bool showFriends;
   final ValueChanged<bool> onFriendsChanged;
-  final bool byGold;
-  final ValueChanged<bool> onMetricChanged;
+  final LeaderboardMetric metric;
+  final ValueChanged<LeaderboardMetric> onMetricChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -251,27 +271,33 @@ class _FilterPanel extends StatelessWidget {
           final show = _FilterGroup(
             label: 'SHOW',
             child: _SegmentedRow(
-              leftLabel: 'Global',
-              rightLabel: 'Friends',
-              activeIsRight: showFriends,
-              onChanged: onFriendsChanged,
+              options: const [
+                _Segment('Global', AppTheme.greenPrimary),
+                _Segment('Friends', AppTheme.greenPrimary),
+              ],
+              activeIndex: showFriends ? 1 : 0,
+              onChanged: (index) => onFriendsChanged(index == 1),
             ),
           );
           final rankBy = _FilterGroup(
             label: 'RANK BY',
             child: _SegmentedRow(
-              leftLabel: 'Finance Wizards',
-              rightLabel: 'Most Gold',
-              activeIsRight: byGold,
-              onChanged: onMetricChanged,
-              rightAccent: const Color(0xFFF4D06F),
+              options: const [
+                _Segment('Wizards', AppTheme.greenPrimary),
+                _Segment('Gold', Color(0xFFF4D06F)),
+                _Segment('Ranked', Color(0xFFD98CFF)),
+              ],
+              activeIndex: metric.index,
+              onChanged: (index) =>
+                  onMetricChanged(LeaderboardMetric.values[index]),
             ),
           );
 
-          // 460 is where "Finance Wizards" and "Most Gold" still read at a
-          // sane size in half the width. Below it they stack, which is the
-          // old layout and correct for a phone.
-          if (constraints.maxWidth < 460) {
+          // The threshold went up with the third option. Two labels fit
+          // half a window at 460; three do not, and the first symptom is
+          // "Ranked" ellipsing to "Rank..." which makes the control unusable
+          // rather than merely tight.
+          if (constraints.maxWidth < 560) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [show, const SizedBox(height: 12), rankBy],
@@ -309,20 +335,34 @@ class _FilterLabel extends StatelessWidget {
   }
 }
 
+/// One option in a [_SegmentedRow].
+@immutable
+class _Segment {
+  const _Segment(this.label, this.accent);
+
+  final String label;
+  final Color accent;
+}
+
+/// A segmented control of any width.
+///
+/// **This took exactly two options**, `leftLabel` and `rightLabel` with a
+/// `bool activeIsRight` — which is the shape that stops working the moment
+/// there is a third thing to choose between, and Ranked is a third thing.
+///
+/// Generalising it rather than adding a second three-way widget keeps "Show"
+/// and "Rank by" looking identical, which is the whole reason they sit on one
+/// card.
 class _SegmentedRow extends StatelessWidget {
   const _SegmentedRow({
-    required this.leftLabel,
-    required this.rightLabel,
-    required this.activeIsRight,
+    required this.options,
+    required this.activeIndex,
     required this.onChanged,
-    this.rightAccent,
   });
 
-  final String leftLabel;
-  final String rightLabel;
-  final bool activeIsRight;
-  final ValueChanged<bool> onChanged;
-  final Color? rightAccent;
+  final List<_Segment> options;
+  final int activeIndex;
+  final ValueChanged<int> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -334,22 +374,15 @@ class _SegmentedRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Expanded(
-            child: _SegmentTab(
-              label: leftLabel,
-              active: !activeIsRight,
-              accent: AppTheme.greenPrimary,
-              onTap: () => onChanged(false),
+          for (var i = 0; i < options.length; i++)
+            Expanded(
+              child: _SegmentTab(
+                label: options[i].label,
+                active: i == activeIndex,
+                accent: options[i].accent,
+                onTap: () => onChanged(i),
+              ),
             ),
-          ),
-          Expanded(
-            child: _SegmentTab(
-              label: rightLabel,
-              active: activeIsRight,
-              accent: rightAccent ?? AppTheme.greenPrimary,
-              onTap: () => onChanged(true),
-            ),
-          ),
         ],
       ),
     );
@@ -568,13 +601,13 @@ class _EmptyLeaderboardState extends StatelessWidget {
 class _HallOfFameStage extends StatelessWidget {
   const _HallOfFameStage({
     required this.top3,
-    required this.byGold,
+    required this.metric,
     required this.currentUserProfileImageUrl,
     required this.currentUserSkin,
   });
 
   final List<LeaderboardEntry> top3;
-  final bool byGold;
+  final LeaderboardMetric metric;
   final String currentUserProfileImageUrl;
 
   /// The signed-in player's equipped skin, so their own row can
@@ -608,7 +641,7 @@ class _HallOfFameStage extends StatelessWidget {
             standHeight: 64,
             medalColor: const Color(0xFFC0C0C0),
             avatarSize: 52,
-            byGold: byGold,
+            metric: metric,
             currentUserProfileImageUrl: currentUserProfileImageUrl,
             currentUserSkin: currentUserSkin,
           ),
@@ -622,7 +655,7 @@ class _HallOfFameStage extends StatelessWidget {
             medalColor: const Color(0xFFF4D06F),
             avatarSize: 66,
             crowned: true,
-            byGold: byGold,
+            metric: metric,
             currentUserProfileImageUrl: currentUserProfileImageUrl,
             currentUserSkin: currentUserSkin,
           ),
@@ -635,7 +668,7 @@ class _HallOfFameStage extends StatelessWidget {
             standHeight: 48,
             medalColor: const Color(0xFFCD7F32),
             avatarSize: 46,
-            byGold: byGold,
+            metric: metric,
             currentUserProfileImageUrl: currentUserProfileImageUrl,
             currentUserSkin: currentUserSkin,
           ),
@@ -683,7 +716,7 @@ class _PodiumPlace extends StatelessWidget {
     required this.standHeight,
     required this.medalColor,
     required this.avatarSize,
-    required this.byGold,
+    required this.metric,
     required this.currentUserProfileImageUrl,
     required this.currentUserSkin,
     this.crowned = false,
@@ -694,7 +727,7 @@ class _PodiumPlace extends StatelessWidget {
   final double standHeight;
   final Color medalColor;
   final double avatarSize;
-  final bool byGold;
+  final LeaderboardMetric metric;
   final bool crowned;
   final String currentUserProfileImageUrl;
 
@@ -735,9 +768,7 @@ class _PodiumPlace extends StatelessWidget {
       );
     }
 
-    final value = leader == null
-        ? '—'
-        : (byGold ? '${leader.gold}g' : leader.scoreLabel);
+    final value = leader == null ? '—' : leader.headlineFor(metric);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -870,14 +901,14 @@ class _PodiumPlace extends StatelessWidget {
 class _LeaderboardRow extends StatelessWidget {
   const _LeaderboardRow({
     required this.leader,
-    required this.byGold,
+    required this.metric,
     required this.currentUserProfileImageUrl,
     required this.currentUserSkin,
     required this.onOpen,
   });
 
   final LeaderboardEntry leader;
-  final bool byGold;
+  final LeaderboardMetric metric;
   final String currentUserProfileImageUrl;
 
   /// The signed-in player's equipped skin, so their own row can
@@ -956,9 +987,7 @@ class _LeaderboardRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    byGold
-                        ? '${leader.literacyPoints} LP • ${leader.xp} XP'
-                        : '${leader.xp} XP • ${leader.gold} gold',
+                    leader.detailFor(metric),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -971,7 +1000,7 @@ class _LeaderboardRow extends StatelessWidget {
               ),
             ),
             Text(
-              byGold ? '${leader.gold}g' : leader.scoreLabel,
+              leader.headlineFor(metric),
               style: TextStyle(color: rowAccent, fontWeight: FontWeight.bold),
             ),
           ],
