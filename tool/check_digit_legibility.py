@@ -27,10 +27,29 @@ similar" cannot be reviewed, cannot be regression-tested, and cannot settle an
 argument about whether a font is good enough for numbers a child is being
 asked to do arithmetic on.
 
+IT IS NOT ONLY DIGITS
+---------------------
+The same report came back later about letters -- *"that E is pretty hard to
+read"* -- and about the gold balance on the hub, which is not a font at all
+but a folder of bitmap glyphs. Both are the same question, so both are
+measured the same way:
+
+    --chars      which characters to compare (default: the ten digits)
+    --glyph-dir  measure a folder of PNGs instead of a .ttf
+
+Measuring Pixelify Sans's lowercase is what turned "the E looks wrong" into
+something actionable. The font has a very small x-height, so at reading size
+the lowercase gets about five pixel rows and e / a / o / c / s collapse into
+the same little square. Its **capitals** score fine -- which is why the fix
+was to set short display headings in caps rather than to abandon a font the
+whole app is built around.
+
 USAGE
 -----
     python tool/check_digit_legibility.py
     python tool/check_digit_legibility.py --font assets/fonts/Quicksand-Bold.ttf
+    python tool/check_digit_legibility.py --chars abcdefghijklmnopqrstuvwxyz
+    python tool/check_digit_legibility.py --glyph-dir assets/images/hud_font
 """
 import argparse
 import itertools
@@ -82,20 +101,68 @@ def difference(a, b):
     return differ / union if union else 0.0
 
 
+# Filenames the hud_font glyph set uses for the characters that are not
+# digits. The same map as `MoneyGlyphs._names`, and it has to stay that way.
+GLYPH_NAMES = {'$': 'dollar', '%': 'percent', '.': 'dot', ':': 'colon',
+               '+': 'plus'}
+
+
+def from_png(directory, ch):
+    """One glyph loaded from art, normalised the way a rendered one is.
+
+    The hud font is a folder of PNGs, not a typeface -- bold italic cartoon
+    numerals with a white outline baked in. It was never put through this
+    measurement *because it is not a font*, which is exactly why it kept a
+    confusable 5 long after the .ttf digits were dealt with.
+    """
+    name = ch if ch.isdigit() else GLYPH_NAMES.get(ch)
+    if name is None:
+        return None
+    path = os.path.join(directory, name + '.png')
+    if not os.path.exists(path):
+        return None
+
+    art = Image.open(path).convert('RGBA')
+    # Alpha, not luminance: these are yellow glyphs inside a white outline,
+    # and thresholding brightness would measure the outline, not the shape.
+    im = art.split()[3]
+    bounds = im.getbbox()
+    if bounds is None:
+        return None
+    im = im.crop(bounds).resize((32, 48), Image.NEAREST)
+    return im.point(lambda v: 255 if v > 110 else 0)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--font', default='assets/fonts/PixelifySans-Bold.ttf')
+    ap.add_argument('--glyph-dir', default=None,
+                    help='measure a folder of PNGs instead of a .ttf')
+    ap.add_argument('--chars', default='0123456789')
     ap.add_argument('--size', type=int, default=SIZE)
     args = ap.parse_args()
 
-    path = os.path.join(ROOT, args.font)
-    font = ImageFont.truetype(path, args.size)
-    glyphs = {c: bitmap(font, c) for c in '0123456789'}
+    chars = args.chars
+    if args.glyph_dir:
+        directory = os.path.join(ROOT, args.glyph_dir)
+        glyphs = {c: from_png(directory, c) for c in chars}
+        label = args.glyph_dir + ' (art)'
+    else:
+        path = os.path.join(ROOT, args.font)
+        font = ImageFont.truetype(path, args.size)
+        glyphs = {c: bitmap(font, c) for c in chars}
+        label = '%s  at %dpx' % (os.path.basename(path), args.size)
 
-    print('%s  at %dpx\n' % (os.path.basename(path), args.size))
+    missing = [c for c in chars if glyphs.get(c) is None]
+    if missing:
+        print('no glyph for: ' + ', '.join(missing))
+    chars = [c for c in chars if glyphs.get(c) is not None]
+
+    print(label)
+    print('')
 
     scored = []
-    for a, b in itertools.combinations('0123456789', 2):
+    for a, b in itertools.combinations(chars, 2):
         scored.append((difference(glyphs[a], glyphs[b]), a, b))
     scored.sort()
 

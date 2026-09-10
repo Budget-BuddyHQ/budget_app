@@ -2034,7 +2034,14 @@ alter view public.leaderboard set (security_invoker = false);
             (entry) => _leaderboardEntryFrom(
               entry.value,
               entry.key,
-              isCurrentUser: false,
+              // **This was hardcoded `false`**, on the one board that
+              // deliberately puts you in it — `friendIds.add(currentUserId)`
+              // is right above. So your own row was never marked as yours:
+              // no "(you)", no highlight, and no fall back to your locally
+              // stored photo when the view had not supplied one. You appeared
+              // on your own friends podium as a stranger with a letter for a
+              // face.
+              isCurrentUser: entry.value['id'] == currentUserId,
             ),
           )
           .toList(growable: false);
@@ -2243,6 +2250,14 @@ alter view public.leaderboard set (security_invoker = false);
     String? currentUserId,
     bool byGold = false,
   }) {
+    // The face travels with the row.
+    //
+    // These two fields used to be left at their defaults, so **every avatar
+    // on the board vanished the moment it fell back to cache** — no network,
+    // a query timeout, an empty response — and came back when the query
+    // succeeded. That is what made it read as "pictures work on one tab and
+    // not the others" rather than as an outage: the two tabs simply failed
+    // over at different moments.
     final entries = _memoryCache.values
         .map(
           (stats) => LeaderboardEntry(
@@ -2253,6 +2268,8 @@ alter view public.leaderboard set (security_invoker = false);
             xp: stats.xp,
             gold: stats.gold,
             isCurrentUser: currentUserId != null && currentUserId == stats.id,
+            profileImageUrl: stats.profileImageUrl,
+            equippedSkin: stats.equippedSkin,
           ),
         )
         .toList(growable: false);
@@ -2268,6 +2285,8 @@ alter view public.leaderboard set (security_invoker = false);
           xp: stats.xp,
           gold: stats.gold,
           isCurrentUser: true,
+          profileImageUrl: stats.profileImageUrl,
+          equippedSkin: stats.equippedSkin,
         ),
       ];
     }

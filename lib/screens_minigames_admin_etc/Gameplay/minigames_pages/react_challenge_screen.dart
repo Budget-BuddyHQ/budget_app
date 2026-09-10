@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../models_Like_Skins_and_lessons_templates/money_habit_models.dart';
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -710,15 +711,31 @@ class _NativeBudgetBattleChallengeState
       _isSubmitting = true;
     });
 
-    final now = DateTime.now();
-    final today =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    // `HabitDateKeys` rather than a hand-rolled `yyyy-MM-dd`, which is what
+    // this was. The two happened to agree, but a date format written out
+    // twice is a date format that eventually disagrees with itself — and
+    // when it does, the dated key silently never matches and the challenge
+    // is either always done or never done.
+    final today = HabitDateKeys.todayKey();
     final stats = context.read<UserStatsController>().stats;
 
-    // Append the unique challenge ID to user stats:
-    final updatedTasks = List<String>.from(stats.completedChallengeTasks)
-      ..add('daily_budget_battle')
-      ..add('daily_budget_battle_$today');
+    // Dated only.
+    //
+    // This used to add an **undated** `daily_budget_battle` as well, and
+    // `isTodayChallengeCompleted` accepted it — so the first win pinned the
+    // card to "Challenge cleared" permanently. See that getter.
+    //
+    // Old day keys are dropped as they go out of range: this list lives in
+    // `spending_habits` and is written back on every completion, so an
+    // unbounded one is a row that grows by an entry a day forever.
+    final updatedTasks = <String>[
+      for (final task in stats.completedChallengeTasks)
+        if (!task.startsWith('daily_budget_battle')) task,
+      for (final key in HabitDateKeys.lastDayKeys(30))
+        if (stats.completedChallengeTasks.contains('daily_budget_battle_$key'))
+          'daily_budget_battle_$key',
+      'daily_budget_battle_$today',
+    ];
 
     await widget.onComplete(<String, dynamic>{
       'status': passed ? 'victory' : 'defeat',

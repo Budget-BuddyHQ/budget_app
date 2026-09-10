@@ -16,7 +16,6 @@ import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../widgets_custom_lotties/age_scaled_note.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
-import '../../../widgets_custom_lotties/money_glyphs.dart';
 import '../../../widgets_custom_lotties/pixel_kit.dart';
 import '../../../models_Like_Skins_and_lessons_templates/brawl_questions_extra.dart';
 import '../../../themes_colors/app_theme.dart';
@@ -3084,7 +3083,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
               children: [
                 Text(
                   'PAUSE & BANK?',
-                  style: GoogleFonts.pixelifySans(
+                  style: AppTheme.caps(
                     color: _brawlMint,
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
@@ -3265,7 +3264,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
               Text(
                 "PROFIT CHANNELS UNLOCKED!",
                 textAlign: TextAlign.center,
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.caps(
                   color: _brawlGold,
                   fontSize: 26,
                   fontWeight: FontWeight.w700,
@@ -3329,7 +3328,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                           children: [
                             Text(
                               _lastEnemySeen!.name.toUpperCase(),
-                              style: GoogleFonts.pixelifySans(
+                              style: AppTheme.caps(
                                 color: _lastEnemySeen!.color,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -3430,7 +3429,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                 Text(
                   _isSavingAndExiting ? "SAVING DATA..." : "BANKRUPT!",
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.pixelifySans(
+                  style: AppTheme.caps(
                     color: accent,
                     fontSize: 34,
                     fontWeight: FontWeight.w700,
@@ -3704,31 +3703,25 @@ class _HudStatPanel extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                // Money in the game's own display face rather than in a
-                // text font. `canRender` guards it: a figure that is half
-                // art and half fallback text looks worse than one drawn
-                // entirely in the text font, so anything with a character
-                // the glyph set lacks stays as it was.
-                if (MoneyGlyphs.canRender(value))
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: alignStart
-                        ? Alignment.centerLeft
-                        : Alignment.center,
-                    child: MoneyGlyphs(value, height: tight ? 17 : 22),
-                  )
-                else
-                  FittedLabel(
-                    value,
-                    alignment: alignStart
-                        ? Alignment.centerLeft
-                        : Alignment.center,
-                    style: GoogleFonts.pixelifySans(
-                      color: accent,
-                      fontSize: tight ? 16 : 20,
-                      fontWeight: FontWeight.w700,
-                    ),
+                // The HUD figure, in the face that measures legible.
+                //
+                // This drew money in the underwater pack's display art, and
+                // fell back to Pixelify when the glyph set was short a
+                // character. Both were wrong for a number: the art has **13
+                // of 45 confusable digit pairs** and Pixelify has 18. This
+                // is the balance a player watches while deciding whether to
+                // bank — see `AppTheme.numeric`.
+                FittedLabel(
+                  value,
+                  alignment: alignStart
+                      ? Alignment.centerLeft
+                      : Alignment.center,
+                  style: AppTheme.numeric(
+                    color: accent,
+                    fontSize: tight ? 17 : 21,
+                    fontWeight: FontWeight.w800,
                   ),
+                ),
                 // Progress survives at every width; flavour does not.
                 //
                 // This used to drop `detail` entirely below 150px, which

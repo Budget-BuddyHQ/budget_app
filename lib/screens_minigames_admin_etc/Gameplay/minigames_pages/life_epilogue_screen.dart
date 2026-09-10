@@ -540,7 +540,7 @@ class _RankedScoreCard extends StatelessWidget {
             children: [
               Text(
                 'RANKED',
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.caps(
                   color: chip.ink,
                   fontSize: 11,
                   letterSpacing: 1.4,

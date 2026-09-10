@@ -255,7 +255,7 @@ class _FindingCard extends StatelessWidget {
                   badge.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.pixelifySans(
+                  style: AppTheme.caps(
                     color: chip.ink,
                     fontSize: 10.5,
                     letterSpacing: 0.6,

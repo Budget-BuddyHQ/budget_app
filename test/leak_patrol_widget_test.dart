@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:budget_app/controllers_that_updates_stats/user_stats_controller.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/leak_patrol_page.dart';
 import 'package:budget_app/services_backend_and_other_services/supabase_service.dart';
+import 'package:budget_app/widgets_custom_lotties/age_scaled_note.dart';
 
 /// Leak Patrol, actually played.
 ///
@@ -28,10 +29,17 @@ void main() {
 
     expect(find.text('Start'), findsOneWidget);
     expect(
-      find.textContaining('speed set for your age'),
+      find.byType(AgeScaledNote),
       findsOneWidget,
       reason: 'the age scaling has to be said out loud, not just applied',
     );
+
+    // The start screen shows the rule rather than describing it: one real
+    // leak and one real charge, each labelled with what to do about it. This
+    // is the whole distinction the game teaches, and a new player who reads
+    // nothing else has to be able to get it from these two cards.
+    expect(find.text('TAP IT'), findsOneWidget);
+    expect(find.text('LEAVE IT'), findsOneWidget);
 
     await tester.tap(find.text('Start'));
     await tester.pump();

@@ -76,6 +76,9 @@ flutter:
     - assets/images/tiles/
     - assets/images/finance_brawl_ui/
     - assets/images/finance_brawl_ui/enemies/
+    # Rise / idle / hit frames per creature, drawn by
+    # tool/make_leak_sprites.py. See LeakCreature.
+    - assets/images/leak_patrol/
     # Adventure map: Bonfire's TiledAssetReader is hardcoded to read Tiled
     # maps from under assets/images/, so the exported map JSON + its
     # tileset image(s) both live here. See assets/images/maps/README.md.
