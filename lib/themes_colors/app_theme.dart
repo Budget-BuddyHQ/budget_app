@@ -78,6 +78,49 @@ class AppTheme {
     height: height,
     letterSpacing: letterSpacing,
   );
+
+  /// The typeface for anything set in **ALL CAPS**.
+  ///
+  /// **Never Pixelify Sans.** Reported as *"that E is pretty hard to read"*,
+  /// and the obvious guess — that the pixel face's small lowercase was at
+  /// fault — was wrong. Measured with
+  /// `tool/check_digit_legibility.py --chars ABC...`:
+  ///
+  /// | face                  | confusable pairs of 325 |
+  /// |-----------------------|-------------------------|
+  /// | Pixelify lowercase    | 3                       |
+  /// | Pixelify **CAPITALS** | 10–23, at every size    |
+  /// | Quicksand lowercase   | 2                       |
+  /// | Quicksand **CAPITALS**| 0–1                     |
+  ///
+  /// Three of Pixelify's confusable capital pairs contain an E — **E/S, B/E
+  /// and E/G** — so the reader named the right letter. The first idea was to
+  /// set headings in caps to dodge the small lowercase; the measurement says
+  /// that would have made it measurably worse.
+  ///
+  /// It is not a size problem either. The capitals score badly at 12px and at
+  /// 30px alike, because they share skeletons rather than lose detail.
+  ///
+  /// **Pixelify stays for mixed-case titles** — "Play", "Play Life", the
+  /// wordmark — which is every place the app is recognised by it, and where
+  /// it measures fine. This is only for the shouty labels: badges, section
+  /// headers, chips. `test/caps_legibility_test.dart` holds the line.
+  ///
+  /// The default tracking is deliberate: caps set tight read as a block, and
+  /// this face has no pixel-grid rhythm to carry them.
+  static TextStyle caps({
+    Color? color,
+    double? fontSize,
+    FontWeight? fontWeight,
+    double? height,
+    double? letterSpacing,
+  }) => GoogleFonts.quicksand(
+    color: color,
+    fontSize: fontSize,
+    fontWeight: fontWeight ?? FontWeight.w800,
+    height: height,
+    letterSpacing: letterSpacing ?? 0.8,
+  );
   static const double radiusXLarge = 32.0;
 
   // Font sizes

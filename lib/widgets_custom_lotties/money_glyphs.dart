@@ -18,6 +18,32 @@ import 'package:flutter/material.dart';
 /// Falls back to a styled [Text] for any character it has no glyph for, so a
 /// caller passing a comma or a minus sign degrades to something readable
 /// rather than dropping it silently.
+///
+/// # It is not used for balances any more, and here is the number
+///
+/// Reported as *"the numbers above there is pretty hard to read"*, pointing at
+/// the gold figure on the hub. Measured with
+/// `tool/check_digit_legibility.py --glyph-dir assets/images/hud_font`:
+///
+/// > **13 of 45 digit pairs** differ in under 18% of their inked pixels.
+/// > 0/8 at 0.090, 3/8 at 0.096, 1/2 at 0.103.
+///
+/// That is *worse* than the Pixelify Sans digits a tester had already
+/// complained about in a quiz question. The cause is the art's own strengths
+/// turned against it: a heavy italic weight with a white outline baked in
+/// closes every counter, so 0, 3, 6, 8 and 9 collapse into one blob.
+///
+/// It was never put through that measurement **because it is not a font** —
+/// the digit sweep looked at `.ttf` files and this is a folder of PNGs. The
+/// tool takes `--glyph-dir` now, and `test/money_glyphs_test.dart` records
+/// the score so it cannot quietly come back.
+///
+/// **Where it may still be used:** short, decorative figures with plenty of
+/// context around them — a reward burst, a score flourish. **Not** a balance,
+/// a price, a quiz operand, or anything a player has to read exactly. Those
+/// use [AppTheme.numeric], which scores 0 of 45. Nothing uses it today; the
+/// widget is kept because the art is good and the rule for using it safely is
+/// now written down.
 class MoneyGlyphs extends StatelessWidget {
   const MoneyGlyphs(
     this.text, {

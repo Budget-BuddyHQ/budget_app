@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/player_profile.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/question_reading_levels.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/question_stage.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/quiz_bank.dart';
 
 /// Serving a six-year-old and an eighteen-year-old out of one question bank.
@@ -116,22 +117,41 @@ void main() {
       );
     });
 
-    test('a node with nothing in range returns the unfiltered set', () {
-      // A quiz that is slightly too hard beats a quiz with no questions in
-      // it. This is the branch that guarantees a player who asked for a quiz
-      // gets one.
-      final hardOnly = everything
-          .where((q) => (kQuestionReadingGrade[q.id] ?? 0) > 12)
+    test('the reading window relaxes, but the age floors do not', () {
+      // **This test used to assert the opposite**, and it was wrong in a way
+      // that mattered: it required the unfiltered set to come back whenever
+      // filtering emptied the list, on the reasoning that a slightly-too-hard
+      // quiz beats an empty one.
+      //
+      // That reasoning holds for *reading difficulty* and not for *age*. The
+      // same fallback was handing a four-year-old a retirement quiz, because
+      // "nothing in range" is exactly what happens when a young reader opens
+      // an adult unit. See `question_stage.dart`.
+      //
+      // So the two now fail differently. Reading grade is a fit and relaxes;
+      // stage and adult topics are floors and do not.
+      final hardToRead = everything
+          .where(
+            (q) =>
+                (kQuestionReadingGrade[q.id] ?? 0) > 12 &&
+                questionFitsStage(q.id, AgeBand.adult18plus),
+          )
           .toList();
-      expect(hardOnly, isNotEmpty, reason: 'no hard questions to test with');
+      expect(hardToRead, isNotEmpty, reason: 'no hard questions to test with');
 
-      final served = ageAppropriateQuestions(hardOnly, AgeBand.under9);
+      // An adult may read them all: the window relaxed rather than emptying.
       expect(
-        served.length,
-        hardOnly.length,
+        ageAppropriateQuestions(hardToRead, AgeBand.adult18plus).length,
+        hardToRead.length,
+        reason: 'the reading window should relax rather than empty',
+      );
+
+      // A four-year-old gets none of them, and that is the point.
+      expect(
+        ageAppropriateQuestions(hardToRead, AgeBand.under9),
+        isEmpty,
         reason:
-            'filtering emptied the list and it was not restored — a player '
-            'would see a quiz with nothing in it',
+            'the age floor relaxed and handed a four-year-old an adult quiz',
       );
     });
 

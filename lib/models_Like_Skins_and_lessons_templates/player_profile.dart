@@ -235,8 +235,16 @@ class ProfileKeys {
 /// less useful than being handed something years above.
 extension AgeBandReading on AgeBand {
   /// Highest reading grade to serve this band.
+  ///
+  /// A **trim, not the main filter.** Since `AgeBandStage.maxQuizStage`
+  /// started deciding what a band is asked *about*, this only has to catch
+  /// sentences that are long for the reader — and it was doing far more than
+  /// that. At 3.5 it cut the under-9 pool from its own 28 questions to 17,
+  /// throwing away material written for four-to-eight-year-olds because the
+  /// sentence ran long. Raised to 5.0, which keeps 26 and still trims the two
+  /// genuinely wordy ones.
   double get maxReadingGrade => switch (this) {
-    AgeBand.under9 => 3.5,
+    AgeBand.under9 => 5.0,
     AgeBand.age9to12 => 6.5,
     AgeBand.teen13to15 => 9.5,
     AgeBand.teen16to17 => 12.0,
@@ -247,18 +255,30 @@ extension AgeBandReading on AgeBand {
     AgeBand.undisclosed => 9.5,
   };
 
-  /// Lowest reading grade to serve, so nobody is fed years-below material.
+  /// Lowest reading grade to serve.
   ///
-  /// Zero for the youngest band — there is nothing below them — and it never
-  /// rises so high that a band has too few questions to draw from.
-  double get minReadingGrade => switch (this) {
-    AgeBand.under9 => -99.0,
-    AgeBand.age9to12 => 1.0,
-    AgeBand.teen13to15 => 3.0,
-    AgeBand.teen16to17 => 5.0,
-    AgeBand.adult18plus => 6.0,
-    AgeBand.undisclosed => 1.0,
-  };
+  /// **Retired, and deliberately left at no floor.** This used to keep older
+  /// readers away from years-below material, and measuring it showed the
+  /// instrument was wrong for the job:
+  ///
+  ///  * The adult floor of 6.0 withheld **109 of 186 questions**. Adults were
+  ///    served 77 — fifty-nine per cent of the bank unreachable by the one
+  ///    band that should see all of it.
+  ///  * The 9-to-12 floor of 1.0 withheld the **sixteen easiest questions in
+  ///    the app** from exactly the child in the report: a ten-year-old who
+  ///    was struggling and could not be handed anything easier, because a
+  ///    syllable count had decided it was beneath him.
+  ///
+  /// A reading grade is a property of the sentence, not of the reader, so
+  /// using it as a floor punishes plain writing. *"What is money used for?"*
+  /// scores 0.5 and is a fine question for anybody who has not thought about
+  /// it.
+  ///
+  /// The job moved to `AgeBandStage.minQuizStage`, which says the same thing
+  /// in the curriculum's own terms — a unit's hand-assigned audience — and
+  /// fails in the kind direction. The getter stays so the ceiling and the
+  /// floor read as a pair and so nothing that reads it breaks.
+  double get minReadingGrade => -99.0;
 
   /// Whether to withhold questions naming adult financial instruments.
   ///

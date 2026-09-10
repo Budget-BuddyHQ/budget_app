@@ -8,6 +8,7 @@ import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../profile/friend_profile_screen.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
+import '../../../widgets_custom_lotties/leader_avatar.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -149,6 +150,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     xp: currentUser.xp,
                     gold: currentUser.gold,
                     accent: accent,
+                    profileImageUrl: currentUser.profileImageUrl,
+                    equippedSkin: currentUser.equippedSkin,
                   ),
                   const SizedBox(height: 22),
                   if (leaders.isEmpty)
@@ -158,6 +161,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       top3: podium,
                       byGold: _byGold,
                       currentUserProfileImageUrl: currentUser.profileImageUrl,
+                      currentUserSkin: currentUser.equippedSkin,
                     ),
                     const SizedBox(height: 22),
                     if (rest.isNotEmpty)
@@ -181,6 +185,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                           byGold: _byGold,
                           currentUserProfileImageUrl:
                               currentUser.profileImageUrl,
+                          currentUserSkin: currentUser.equippedSkin,
                           onOpen: leader.isCurrentUser
                               ? null
                               : () => Navigator.of(context).push<void>(
@@ -406,6 +411,8 @@ class _CurrentUserSummary extends StatelessWidget {
     required this.xp,
     required this.gold,
     required this.accent,
+    this.profileImageUrl = '',
+    this.equippedSkin = '',
   });
 
   final String username;
@@ -413,6 +420,8 @@ class _CurrentUserSummary extends StatelessWidget {
   final int xp;
   final int gold;
   final Color accent;
+  final String profileImageUrl;
+  final String equippedSkin;
 
   @override
   Widget build(BuildContext context) {
@@ -421,16 +430,16 @@ class _CurrentUserSummary extends StatelessWidget {
       decoration: AppTheme.getPuffyDecoration(accent: accent, restAlpha: 0.18),
       child: Row(
         children: [
-          Container(
-            width: 46,
-            height: 46,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.18),
-              shape: BoxShape.circle,
-              border: Border.all(color: accent.withValues(alpha: 0.5)),
-            ),
-            child: Icon(Icons.person_rounded, color: accent, size: 24),
+          // This was a hardcoded person icon and was never passed an image,
+          // so a player could see their own photo on the podium and a grey
+          // silhouette in their own header on the same screen.
+          LeaderAvatar(
+            size: 46,
+            imageUrl: profileImageUrl,
+            skinId: equippedSkin,
+            username: username,
+            borderColor: accent.withValues(alpha: 0.5),
+            background: accent.withValues(alpha: 0.18),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -561,11 +570,18 @@ class _HallOfFameStage extends StatelessWidget {
     required this.top3,
     required this.byGold,
     required this.currentUserProfileImageUrl,
+    required this.currentUserSkin,
   });
 
   final List<LeaderboardEntry> top3;
   final bool byGold;
   final String currentUserProfileImageUrl;
+
+  /// The signed-in player's equipped skin, so their own row can
+  /// draw a face even when the leaderboard view has not supplied
+  /// one — which is the case until `0005_leaderboard_profile.sql`
+  /// has been run against the live database.
+  final String currentUserSkin;
 
   @override
   Widget build(BuildContext context) {
@@ -594,6 +610,7 @@ class _HallOfFameStage extends StatelessWidget {
             avatarSize: 52,
             byGold: byGold,
             currentUserProfileImageUrl: currentUserProfileImageUrl,
+            currentUserSkin: currentUserSkin,
           ),
         ),
       if (first != null)
@@ -607,6 +624,7 @@ class _HallOfFameStage extends StatelessWidget {
             crowned: true,
             byGold: byGold,
             currentUserProfileImageUrl: currentUserProfileImageUrl,
+            currentUserSkin: currentUserSkin,
           ),
         ),
       if (third != null)
@@ -619,6 +637,7 @@ class _HallOfFameStage extends StatelessWidget {
             avatarSize: 46,
             byGold: byGold,
             currentUserProfileImageUrl: currentUserProfileImageUrl,
+            currentUserSkin: currentUserSkin,
           ),
         ),
     ];
@@ -666,6 +685,7 @@ class _PodiumPlace extends StatelessWidget {
     required this.avatarSize,
     required this.byGold,
     required this.currentUserProfileImageUrl,
+    required this.currentUserSkin,
     this.crowned = false,
   });
 
@@ -678,51 +698,40 @@ class _PodiumPlace extends StatelessWidget {
   final bool crowned;
   final String currentUserProfileImageUrl;
 
+  /// The signed-in player's equipped skin, so their own row can
+  /// draw a face even when the leaderboard view has not supplied
+  /// one — which is the case until `0005_leaderboard_profile.sql`
+  /// has been run against the live database.
+  final String currentUserSkin;
+
   @override
   Widget build(BuildContext context) {
     final leader = entry;
 
     Widget avatar() {
-      final placeholder = Container(
-        width: avatarSize,
-        height: avatarSize,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: const Color(0xFF1E4D3D),
-          border: Border.all(color: medalColor, width: 3),
-        ),
-        child: leader == null
-            ? null
-            : Center(
-                child: Text(
-                  leader.username.isNotEmpty
-                      ? leader.username[0].toUpperCase()
-                      : '?',
-                  style: GoogleFonts.pixelifySans(
-                    color: medalColor,
-                    fontWeight: FontWeight.w700,
-                    fontSize: avatarSize * 0.36,
-                  ),
-                ),
-              ),
-      );
       if (leader == null) {
-        return placeholder;
-      }
-      final url = leader.profileImageUrl.isNotEmpty
-          ? leader.profileImageUrl
-          : (leader.isCurrentUser ? currentUserProfileImageUrl : '');
-      if (url.isEmpty) {
-        return placeholder;
-      }
-      return ClipOval(
-        child: Image.network(
-          url,
+        // An empty podium step, not a person.
+        return Container(
           width: avatarSize,
           height: avatarSize,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => placeholder,
-        ),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF1E4D3D),
+            border: Border.all(color: medalColor, width: 3),
+          ),
+        );
+      }
+      return LeaderAvatar(
+        size: avatarSize,
+        imageUrl: leader.profileImageUrl.isNotEmpty
+            ? leader.profileImageUrl
+            : (leader.isCurrentUser ? currentUserProfileImageUrl : ''),
+        skinId: leader.equippedSkin.isNotEmpty
+            ? leader.equippedSkin
+            : (leader.isCurrentUser ? currentUserSkin : ''),
+        username: leader.username,
+        borderColor: medalColor,
+        borderWidth: 3,
       );
     }
 
@@ -782,7 +791,17 @@ class _PodiumPlace extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          leader?.username ?? '—',
+          // Says which one is you.
+          //
+          // A podium is three faces and three numbers, and the question
+          // somebody actually opens it to answer is "where am I?" — which it
+          // could not answer on the friends board at all, because every row
+          // came back with `isCurrentUser: false`.
+          leader == null
+              ? '—'
+              : (leader.isCurrentUser
+                    ? '${leader.username} (you)'
+                    : leader.username),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
@@ -853,6 +872,7 @@ class _LeaderboardRow extends StatelessWidget {
     required this.leader,
     required this.byGold,
     required this.currentUserProfileImageUrl,
+    required this.currentUserSkin,
     required this.onOpen,
   });
 
@@ -860,26 +880,16 @@ class _LeaderboardRow extends StatelessWidget {
   final bool byGold;
   final String currentUserProfileImageUrl;
 
+  /// The signed-in player's equipped skin, so their own row can
+  /// draw a face even when the leaderboard view has not supplied
+  /// one — which is the case until `0005_leaderboard_profile.sql`
+  /// has been run against the live database.
+  final String currentUserSkin;
+
   /// Opens the player's profile. Null for your own row — there is a whole
   /// Profile tab for that, and a screen comparing you to yourself is a row of
   /// dead-level bars.
   final VoidCallback? onOpen;
-
-  Widget _initialAvatar() {
-    final initial = leader.username.isNotEmpty
-        ? leader.username[0].toUpperCase()
-        : '?';
-    return Center(
-      child: Text(
-        initial,
-        style: GoogleFonts.pixelifySans(
-          color: const Color(0xFF85EFAC),
-          fontWeight: FontWeight.w700,
-          fontSize: 16,
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -912,37 +922,19 @@ class _LeaderboardRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            Container(
-              width: 38,
-              height: 38,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFF1E4D3D),
-              ),
-              child: ClipOval(
-                child: Builder(
-                  builder: (context) {
-                    // Every row shows its own avatar from the leaderboard
-                    // view; the signed-in user falls back to their local
-                    // profile image, everyone else to an initial.
-                    final url = leader.profileImageUrl.isNotEmpty
-                        ? leader.profileImageUrl
-                        : (leader.isCurrentUser
-                              ? currentUserProfileImageUrl
-                              : '');
-                    if (url.isNotEmpty) {
-                      return Image.network(
-                        url,
-                        fit: BoxFit.cover,
-                        width: 38,
-                        height: 38,
-                        errorBuilder: (_, _, _) => _initialAvatar(),
-                      );
-                    }
-                    return _initialAvatar();
-                  },
-                ),
-              ),
+            // Photo, then the equipped skin, then an initial. Most players
+            // have never uploaded a photo, so before the skin was drawn this
+            // list was a column of capital letters — in the one place a
+            // confusable capital has no word around it to be read from.
+            LeaderAvatar(
+              size: 38,
+              imageUrl: leader.profileImageUrl.isNotEmpty
+                  ? leader.profileImageUrl
+                  : (leader.isCurrentUser ? currentUserProfileImageUrl : ''),
+              skinId: leader.equippedSkin.isNotEmpty
+                  ? leader.equippedSkin
+                  : (leader.isCurrentUser ? currentUserSkin : ''),
+              username: leader.username,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -950,7 +942,9 @@ class _LeaderboardRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    leader.username,
+                    leader.isCurrentUser
+                        ? '${leader.username} (you)'
+                        : leader.username,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

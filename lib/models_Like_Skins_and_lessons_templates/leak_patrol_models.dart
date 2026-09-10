@@ -286,6 +286,157 @@ class LeakRound {
   };
 }
 
+/// Which creature draws an item, and how the round speeds up.
+///
+/// # The sprite carries no information, on purpose
+///
+/// The one rule is **tap the leaks, leave the real charges**, and telling
+/// them apart means *reading the label*. So the artwork must not say which is
+/// which.
+///
+/// The obvious idea — leaks as one creature, real charges as another — would
+/// look great and would delete the lesson, because the game would then be
+/// winnable without reading a word. This picks from the item's id instead:
+/// stable per item, so the same charge always looks the same and nobody is
+/// tricked by a costume change; varied across the board, so nine holes are
+/// not nine identical pictures; and meaningless.
+///
+/// `test/leak_patrol_test.dart` asserts every creature is worn by both leaks
+/// and legitimate charges, so this cannot quietly become a tell.
+///
+/// # Why this is a cycle and not a hash
+///
+/// It was a hash first — FNV-1a over the item id, which is stable across
+/// launches and looks perfectly random. The test that every creature is worn
+/// by **both** leaks and real charges failed immediately:
+///
+/// ```
+/// goomba   leak 2  legit 1
+/// red      leak 3  legit 1
+/// violet   leak 2  legit 2
+/// shadow   leak 0  legit 2   <-- only ever a real charge
+/// ```
+///
+/// With thirteen items, a hash distributes them *approximately*. Approximately
+/// is not good enough here: a creature that only ever appears on real charges
+/// is a tell, and a player would learn it in a couple of rounds without ever
+/// noticing they had — which is the worst kind, because it silently replaces
+/// reading with pattern-matching.
+///
+/// Cycling within each kind makes the balance structural rather than lucky.
+/// Leaks walk the four creatures in order and so do real charges, so every
+/// creature is worn by both as long as each kind has four items, and adding a
+/// fifteenth item cannot reintroduce the problem.
+enum LeakCreature {
+  goomba,
+  red,
+  violet,
+  shadow;
+
+  String get id => name;
+
+  String frame(String pose) => 'assets/images/leak_patrol/${name}_$pose.png';
+}
+
+final Map<String, LeakCreature> _creatureByItem = _assignCreatures();
+
+Map<String, LeakCreature> _assignCreatures() {
+  final out = <String, LeakCreature>{};
+  var leaks = 0;
+  var real = 0;
+  for (final item in kLeakItems) {
+    final index = item.isLeak ? leaks++ : real++;
+    out[item.id] = LeakCreature.values[index % LeakCreature.values.length];
+  }
+  return out;
+}
+
+/// Which creature draws [itemId]. Stable, varied, and meaningless.
+LeakCreature creatureFor(String itemId) =>
+    _creatureByItem[itemId] ?? LeakCreature.goomba;
+
+/// How much faster the round gets as it goes.
+///
+/// # Why a round needs a shape
+///
+/// It was one speed from the first second to the last, which makes the last
+/// twenty seconds of a fifty-second round identical to the first twenty. A
+/// game with no shape is a drill.
+///
+/// The ramp is gentle and it is bounded. This is not a reflex game — the
+/// thing being trained is *reading before acting*, and a speed that
+/// eventually outruns reading would train the opposite. So the fastest it
+/// ever gets is 65% of the starting interval, reached at the end, and the
+/// floor is held at 520ms regardless of band so a young player's round never
+/// becomes an older player's.
+///
+/// [elapsed] and [total] are the round's own clock, so this stays a pure
+/// function of progress rather than of wall time.
+class LeakPacing {
+  const LeakPacing._();
+
+  static const double _fastestShare = 0.65;
+  static const int _floorMillis = 520;
+
+  static int popMillisAt(LeakRound round, int elapsed, int total) {
+    if (total <= 0) return round.popMillis;
+    final progress = (elapsed / total).clamp(0.0, 1.0);
+    final scale = 1.0 - ((1.0 - _fastestShare) * progress);
+    final scaled = (round.popMillis * scale).round();
+    return scaled < _floorMillis ? _floorMillis : scaled;
+  }
+
+  /// How long a thing stays up. Shrinks with the gap, but by less: the pop
+  /// rate is the pressure, and cutting reading time at the same rate would
+  /// make the end of a round a test of eyesight.
+  static int visibleMillisAt(LeakRound round, int elapsed, int total) {
+    if (total <= 0) return round.visibleMillis;
+    final progress = (elapsed / total).clamp(0.0, 1.0);
+    final scale = 1.0 - (0.22 * progress);
+    final scaled = (round.visibleMillis * scale).round();
+    // Never below the pop gap plus a beat, or things would vanish before the
+    // next one arrives and the board would read as empty.
+    final floor = popMillisAt(round, elapsed, total) + 400;
+    return scaled < floor ? floor : scaled;
+  }
+}
+
+/// A run of correct decisions.
+///
+/// # Why a streak and not a score multiplier on everything
+///
+/// The failure this game is built around is **tapping indiscriminately**.
+/// A plain multiplier rewards volume, which is the wrong instinct to pay for.
+/// A streak breaks the moment you cancel a real charge, so the thing being
+/// rewarded is *not making that mistake* — and a player who taps everything
+/// never sees a streak at all, which is the correct outcome.
+///
+/// Leaving a real charge alone counts. It is a decision, and it is the one
+/// the game is trying to teach.
+class LeakStreak {
+  const LeakStreak(this.current, this.best);
+
+  const LeakStreak.empty() : current = 0, best = 0;
+
+  final int current;
+  final int best;
+
+  /// Coins are multiplied by this. Capped so a long streak cannot dwarf the
+  /// reading: the point is the habit, not the number.
+  static const int maxMultiplier = 3;
+
+  int get multiplier {
+    if (current < 3) return 1;
+    if (current < 6) return 2;
+    return maxMultiplier;
+  }
+
+  LeakStreak advanced() =>
+      LeakStreak(current + 1, current + 1 > best ? current + 1 : best);
+
+  LeakStreak broken() => LeakStreak(0, best);
+}
+
 /// The result of a round.
 @immutable
 class LeakResult {

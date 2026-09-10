@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
-import '../../../widgets_custom_lotties/money_glyphs.dart';
 import '../../../widgets_custom_lotties/pixel_kit.dart';
 import '../../../constants/app_assets.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +13,7 @@ import '../../../models_Like_Skins_and_lessons_templates/life_record.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../minigames_pages/life_sim_page.dart';
 import '../minigames_pages/past_lives_screen.dart';
+import '../../../utils/number_format.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/idle_hover_icon.dart';
@@ -146,11 +146,30 @@ class MainGamePage extends StatelessWidget {
                       const SizedBox(width: 16),
                       PixelKitIcon(AppAssets.kitIconCoin, size: 18),
                       const SizedBox(width: 7),
+                      // The balance, in the face that measures legible.
+                      //
+                      // This was `MoneyGlyphs` — the underwater pack's bold
+                      // italic numerals — and it was reported as hard to
+                      // read. Measured with
+                      // `tool/check_digit_legibility.py --glyph-dir`, that
+                      // art has **13 of 45 confusable digit pairs**, worse
+                      // than the Pixelify digits a tester complained about.
+                      // The italic weight and the baked outline close every
+                      // counter, so 0/3/6/8/9 collapse into one shape.
+                      //
+                      // Grouped, too: `8371128` is hard to read in any face.
                       Flexible(
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
-                          child: MoneyGlyphs('${stats.gold}', height: 20),
+                          child: Text(
+                            groupedNumber(stats.gold),
+                            style: AppTheme.numeric(
+                              color: const Color(0xFFFFD45C),
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -549,7 +568,7 @@ class _LifeHeroCard extends StatelessWidget {
                         ),
                         child: Text(
                           'MAIN GAME',
-                          style: GoogleFonts.pixelifySans(
+                          style: AppTheme.caps(
                             color: _mainGameTag.ink,
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
