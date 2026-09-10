@@ -1501,7 +1501,7 @@ class _NpcEncounterSheet extends StatelessWidget {
         children: [
           Text(
             npc.name.toUpperCase(),
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.caps(
               color: _accent,
               fontSize: 12,
               fontWeight: FontWeight.w700,

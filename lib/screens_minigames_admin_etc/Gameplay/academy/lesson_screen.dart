@@ -2028,7 +2028,7 @@ class _AnalyticStat extends StatelessWidget {
         children: [
           Text(
             label.toUpperCase(),
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.caps(
               color: Colors.white.withValues(alpha: 0.6),
               fontSize: 9.5,
               fontWeight: FontWeight.w700,

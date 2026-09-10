@@ -409,7 +409,7 @@ class _Label extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text.toUpperCase(),
-      style: GoogleFonts.pixelifySans(
+      style: AppTheme.caps(
         color: Colors.white.withValues(alpha: 0.55),
         fontSize: 11,
         fontWeight: FontWeight.w700,

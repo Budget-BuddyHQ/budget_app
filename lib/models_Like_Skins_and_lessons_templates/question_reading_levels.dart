@@ -5,7 +5,7 @@
 // six-year-old and an eighteen-year-old different questions out
 // of one bank. See `ageAppropriateQuestions` in quiz_bank.dart.
 //
-// A separate lookup rather than a field on all 186 questions:
+// A separate lookup rather than a field on all 198 questions:
 // the bank is 3,000 lines of hand-written content, and a
 // generator that rewrites it in place is one bad regex away from
 // corrupting questions nobody would notice were wrong.
@@ -27,6 +27,12 @@ const Map<String, double> kQuestionReadingGrade = <String, double>{
   'u10p1': 0.5,
   'u10p2': 0.5,
   'u10p3': 0.5,
+  'u10p4': -1.3,
+  'u10p5': 0.6,
+  'u10p6': -1.1,
+  'u10p7': 1.5,
+  'u10p8': 1.0,
+  'u10p9': 1.2,
   'u10q1': 4.8,
   'u10q2': 1.0,
   'u10q3': 5.8,
@@ -41,6 +47,12 @@ const Map<String, double> kQuestionReadingGrade = <String, double>{
   'u11p1': 3.7,
   'u11p2': -0.3,
   'u11p3': 0.5,
+  'u11p4': 3.4,
+  'u11p5': 2.0,
+  'u11p6': -0.1,
+  'u11p7': 4.9,
+  'u11p8': 4.7,
+  'u11p9': 3.4,
   'u11q1': 3.7,
   'u11q2': 1.9,
   'u11q3': 3.7,

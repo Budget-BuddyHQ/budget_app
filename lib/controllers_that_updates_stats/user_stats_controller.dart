@@ -1487,15 +1487,32 @@ class UserStatsController extends ChangeNotifier {
     return _saveStats(nextStats, savingMessage: 'Saving lesson progress...');
   }
 
-  /// Checks if the daily budget battle challenge has already been completed today.
-  /// Checks if any challenge task has been completed.
-  bool get isTodayChallengeCompleted {
-    final completed = _stats.completedChallengeTasks;
-    final today = HabitDateKeys.todayKey();
-
-    return completed.contains('daily_budget_battle') ||
-        completed.contains('daily_budget_battle_$today');
-  }
+  /// Whether today's Budget Battle has been cleared.
+  ///
+  /// **This used to be permanent.** The check accepted an *undated* key
+  /// alongside the dated one:
+  ///
+  /// ```dart
+  /// return completed.contains('daily_budget_battle') ||
+  ///     completed.contains('daily_budget_battle_\$today');
+  /// ```
+  ///
+  /// and `react_challenge_screen.dart` wrote both on every win. So the first
+  /// time anybody finished the challenge, the undated key landed in
+  /// `completed_challenge_tasks` and stayed there — and from that day on the
+  /// card read *"Challenge cleared. Play again for practice."* forever. The
+  /// dated key was doing its job perfectly and was never consulted, because
+  /// the `||` short-circuited on the legacy one first.
+  ///
+  /// Reported as *"change it to reset every day"*, which it now does.
+  ///
+  /// The undated key is simply no longer read. That is the whole migration:
+  /// existing rows keep it, it goes inert, and anybody who cleared the
+  /// challenge *today* still has the dated key and still reads as done.
+  bool get isTodayChallengeCompleted =>
+      _stats.completedChallengeTasks.contains(
+        'daily_budget_battle_${HabitDateKeys.todayKey()}',
+      );
 
   /// Records an arcade run so the hub can show a personal best and play count.
   ///

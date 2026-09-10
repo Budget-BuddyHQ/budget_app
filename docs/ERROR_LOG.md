@@ -1728,6 +1728,189 @@ report. Direction is already legible from the fact that the thing is moving.
 
 ---
 
+### The E, and the numbers above it
+
+**The report.** *"I like the pixelated fonts however that E and then the
+numbers above there is pretty hard to read."*
+
+**My first guess was wrong, and the measurement said so.** The obvious reading
+is that Pixelify Sans's lowercase is too small — it is a pixel face, and next
+to a capital L the 'e' looks like a blob. So the plan was to set headings in
+caps. Then I extended `tool/check_digit_legibility.py` to take `--chars` and
+measured it:
+
+| face                   | confusable pairs of 325 |
+|------------------------|-------------------------|
+| Pixelify lowercase     | 3                       |
+| Pixelify **CAPITALS**  | 10–23, at every size    |
+| Quicksand lowercase    | 2                       |
+| Quicksand **CAPITALS** | 0–1                     |
+
+Uppercasing would have made it **worse**. Three of Pixelify's confusable
+capital pairs contain an E — **E/S, B/E, E/G** — so the reader named exactly
+the right letter and I had the cause backwards. It is not a size problem
+either: the capitals score badly at 12px and at 30px alike, because they share
+skeletons rather than lose detail.
+
+**The rule that fell out.** Pixelify is fine in mixed case and must not be
+used for all-caps. `tool/audit_caps_font.py` found 29 sites; 22 moved to
+`AppTheme.caps()`. "Play", "Play Life" and the wordmark are untouched, which
+is every place the app is recognised by that font.
+
+**The numbers were a different fault with the same shape.** The gold balance
+was `MoneyGlyphs` — the underwater pack's bold italic numerals. Measured with
+the same tool, now taking `--glyph-dir`:
+
+> **13 of 45 digit pairs** below threshold. 0/8 at 0.090, 3/8 at 0.096.
+
+Worse than the Pixelify digits a tester had already misread in a quiz. The
+heavy italic and the baked-in white outline close every counter, so 0, 3, 6, 8
+and 9 collapse into one blob.
+
+**It had escaped the original digit sweep because it is not a font.** That
+sweep looked at `.ttf` files; this is a folder of PNGs. Four balance readouts
+moved to `AppTheme.numeric()` with thousands separators — `8371128` is hard to
+read in any face.
+
+**Files.** `tool/check_digit_legibility.py`, `tool/audit_caps_font.py` (new),
+`app_theme.dart`, 22 screens, `money_glyphs.dart`,
+`test/caps_legibility_test.dart`.
+
+---
+
+### A four-year-old was being asked about 401(k)s
+
+**Two reports, one bug.**
+
+> *"make sure that no 4 year old or someone will get the wrong questions"*
+
+> *"the questions are a bit shift because my little brother of 10 year of age
+> is struggling with questions that are 8 and below"*
+
+The second is the diagnosis. He was served the under-9 set and found it too
+hard, which means **the set was mislabelled**, not that he was behind.
+
+**What the under-9 band was actually being served.** Fifty questions, among
+them:
+
+```
+ 2.3  u9p1   A 401(k) is best described as:
+ 2.9  u4t1   Which best describes a bond?
+ 2.5  u5q4   Which form tells your employer how much tax to withhold?
+ 2.3  u5q1   Gross pay and net pay differ because of:
+-0.3  u5p1   On a pay stub, "year to date" (YTD) shows:
+```
+
+Every one scores as easy reading, because Flesch-Kincaid counts syllables per
+word and words per sentence and nothing else. *"Which best describes a bond?"*
+is five short words.
+
+**Two gates were missing, and one of them already existed.**
+
+`mentionsAdultTopic` was written for exactly this gap and was wired into the
+life sim and Finance Brawl — and **never into `ageAppropriateQuestions`**,
+which is the Academy, which is the main teaching surface. Worse, the age panel
+added earlier the same day was *telling* players that topics like IRAs are
+held back. A panel that says so while a four-year-old is asked about vesting
+is worse than no panel.
+
+The second gate did not exist at all, and the data for it has been in the repo
+the whole time: **every unit carries a hand-assigned `ageStage`**. Unit 10 is
+"Money Is Real" at `earlyChildhood`; unit 9 is "Retirement and the 401(k)" at
+`adult`. `ageAppropriateQuestions` even claimed in its own doc comment to be
+using it — *"the unit a question belongs to is the other input"*. That was a
+description of intent, not of code.
+
+**The rule now: you may read above your age; you are not tested above it.**
+
+**The other half — and it was hurting the exact child in the report.** There
+was a `minReadingGrade` floor meant to stop older readers being fed
+years-below material. Measured:
+
+  * The adult floor of 6.0 withheld **109 of 186 questions**. Adults were
+    served 77.
+  * The 9-to-12 floor of 1.0 withheld the **sixteen easiest questions in the
+    app** from a struggling ten-year-old. He could not be handed anything
+    easier because a syllable count had decided it was beneath him.
+
+A reading grade is a property of the sentence, not of the reader. The job
+moved to `minQuizStage`, which says the same thing in the curriculum's terms
+and fails in the kind direction.
+
+**And then there were not enough.** With the gates on, the four-to-eight band
+had **26 correct questions** where it had had 50 wrong ones. The honest answer
+to "not enough" is to write more, not to loosen a gate, so twelve new
+early-childhood and young-kids questions went in and reading levels were
+regenerated. That band now has 38, and every one of them reads right.
+
+**Files.** `question_stage.dart` (new), `quiz_bank.dart`,
+`player_profile.dart`, `question_reading_levels.dart`,
+`test/question_stage_test.dart`, `test/age_routing_test.dart`.
+
+---
+
+### Everyone was a letter
+
+**The report.** *"I don't think you can see other profile pictures or yours in
+like the most gold section and all other sections other than the LP board."*
+
+**Three faults, which is why it looked inconsistent rather than broken.**
+
+1. `_buildCachedLeaderboard` built every row **without `profileImageUrl`**.
+   Every face on the board vanished the moment it fell back to cache — no
+   network, a query timeout, an empty response — and came back when the query
+   succeeded. The two tabs failed over at different moments, which is exactly
+   what makes an outage read as "one tab works".
+2. The "Your saved progress" header had a **hardcoded
+   `Icon(Icons.person_rounded)`** and was never passed an image at all. A
+   player could see their own photo on the podium and a grey silhouette in
+   their own header, on the same screen.
+3. Everywhere else fell back to the first letter of the username.
+
+**Why the fix was the skin.** Most players have never uploaded a photo, so a
+letter fallback means the board is mostly initials — set in the font whose
+capitals had just measured 10 to 23 confusable pairs, in the one place a
+capital has no word around it to be read from. Everybody has a skin, and
+`FriendProfileScreen` was already drawing it, so the leaderboard was the
+outlier rather than the pattern.
+
+**Files.** `leader_avatar.dart` (new), `leaderboard_screen.dart`,
+`supabase_service.dart`, `test/leader_avatar_test.dart`.
+
+---
+
+### The daily challenge was cleared permanently
+
+**The report.** *"for the daily challenge change it to reset every day"*.
+
+The check accepted an **undated** key beside the dated one — `contains(
+'daily_budget_battle')` OR `contains('daily_budget_battle_<today>')` — and
+`react_challenge_screen.dart` wrote both on every win. So the first time
+anybody finished the challenge the undated key landed in
+`completed_challenge_tasks` and stayed there, and the card read *"Challenge
+cleared. Play again for practice."* every day after, forever.
+
+The dated key was correct and was **never reached**, because the `||`
+short-circuited on the legacy one first. Nothing threw, nothing logged, and
+the feature read as implemented.
+
+**Also fixed while in there.** The screen built `yyyy-MM-dd` by hand while the
+controller used `HabitDateKeys`. The two agreed, which is the dangerous kind
+of duplication — when a hand-rolled date format drifts, the dated key silently
+stops matching and the challenge becomes either always done or never done,
+with no error either way. And the key list is now pruned to 30 days; it is
+stored in `spending_habits` and rewritten on every completion, so unbounded it
+grows by an entry a day forever.
+
+**Migration is nothing.** The undated key is simply no longer read. It goes
+inert in existing rows, and anybody who cleared the challenge *today* still
+has the dated key.
+
+**Files.** `user_stats_controller.dart`, `react_challenge_screen.dart`,
+`test/daily_challenge_reset_test.dart`.
+
+---
+
 ---
 
 ## Open — found, not fixed

@@ -766,7 +766,7 @@ class _SkinCollection extends StatelessWidget {
             const SizedBox(height: 20),
             Text(
               family.label.toUpperCase(),
-              style: GoogleFonts.pixelifySans(
+              style: AppTheme.caps(
                 color: Colors.white.withValues(alpha: 0.55),
                 fontSize: 12,
                 letterSpacing: 1.2,

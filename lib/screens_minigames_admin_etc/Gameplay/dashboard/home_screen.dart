@@ -20,7 +20,6 @@ import '../../../widgets_custom_lotties/coach_spot.dart';
 import '../../../widgets_custom_lotties/feedback_prompt_sheet.dart';
 import '../../../widgets_custom_lotties/idle_hover_icon.dart';
 import '../../../widgets_custom_lotties/mentor_tip_card.dart';
-import '../../../widgets_custom_lotties/money_glyphs.dart';
 import '../../../widgets_custom_lotties/profile_avatar.dart';
 import '../../../widgets_custom_lotties/reef_scene.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
@@ -850,18 +849,18 @@ class _HudReadout extends StatelessWidget {
                 filterQuality: FilterQuality.none,
               ),
               const SizedBox(width: 6),
-              if (MoneyGlyphs.canRender(goldText))
-                MoneyGlyphs(goldText, height: 18)
-              else
-                Text(
-                  goldText,
-                  style: GoogleFonts.pixelifySans(
-                    color: _gold,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    height: 1,
-                  ),
+              // See `AppTheme.numeric` and the note on the hub's balance:
+              // the display art measures 13 of 45 confusable digit pairs,
+              // which is worse than the font a tester already reported.
+              Text(
+                goldText,
+                style: AppTheme.numeric(
+                  color: _gold,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
                 ),
+              ),
             ],
           ),
         ),

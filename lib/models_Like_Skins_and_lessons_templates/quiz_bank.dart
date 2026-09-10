@@ -16,6 +16,8 @@ library;
 
 import 'player_profile.dart';
 import 'question_reading_levels.dart';
+import 'question_stage.dart';
+import 'reading_grade.dart';
 
 /// How demanding a question is. Practice sets lead with [core]; unit tests mix
 /// in [stretch] items that need two ideas combined.
@@ -2844,6 +2846,96 @@ const List<QuizQuestion> _unit10Practice = <QuizQuestion>[
         'A piggy bank holds onto your coins for you, so they are still there '
         'later when you want them.',
   ),
+  QuizQuestion(
+    id: 'u10p4',
+    skillId: QuizSkills.earlyMoneyBasics,
+    prompt: 'You have one big coin and three small coins. Which is worth more?',
+    options: [
+      'The big coin, because it is bigger',
+      'You have to look at the number on each coin',
+      'The three small coins, because there are more of them',
+      'They are always worth the same',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Size does not tell you what a coin is worth. The number on the coin '
+        'does. Sometimes a small coin is worth more than a big one.',
+  ),
+  QuizQuestion(
+    id: 'u10p5',
+    skillId: QuizSkills.earlyMoneyBasics,
+    prompt: 'A grown-up pays with a card instead of coins. Did they spend money?',
+    options: [
+      'No, cards are free',
+      'Only if the shop gives them a receipt',
+      'Yes, the card takes the money from their bank',
+      'No, the money comes back later',
+    ],
+    correctIndex: 2,
+    explanation:
+        'A card is not free money. It takes real money out of the bank, you '
+        'just do not see the coins move.',
+  ),
+  QuizQuestion(
+    id: 'u10p6',
+    skillId: QuizSkills.earlySaving,
+    prompt: 'You want a toy that costs more than you have. What can you do?',
+    options: [
+      'Keep saving until you have enough',
+      'Give up, because you can never have it',
+      'Take it and pay another day',
+      'Ask the shop to make it cost less',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Waiting and saving a bit at a time is how you get something that '
+        'costs more than you have today.',
+  ),
+  QuizQuestion(
+    id: 'u10p7',
+    skillId: QuizSkills.earlySaving,
+    prompt: 'You spend all your coins today. What do you have to spend tomorrow?',
+    options: [
+      'The same amount as today',
+      'Twice as much',
+      'A little bit more',
+      'Nothing, until you get more',
+    ],
+    correctIndex: 3,
+    explanation:
+        'Money does not come back on its own. Once it is spent it is gone '
+        'until you earn or are given some more.',
+  ),
+  QuizQuestion(
+    id: 'u10p8',
+    skillId: QuizSkills.earlyMoneyBasics,
+    prompt: 'Which of these do you NOT need money for?',
+    options: [
+      'A new bike',
+      'A hug from someone who loves you',
+      'A bus ride',
+      'A sandwich',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Lots of the best things are free. Money is only for the things '
+        'somebody has to make, grow, or bring to you.',
+  ),
+  QuizQuestion(
+    id: 'u10p9',
+    skillId: QuizSkills.earlySaving,
+    prompt: 'You get two coins each week. How many will you have after three weeks if you save them all?',
+    options: [
+      'Two',
+      'Three',
+      'Six',
+      'Nine',
+    ],
+    correctIndex: 2,
+    explanation:
+        'Two coins, three times, is six coins. Saving a small amount over and '
+        'over adds up faster than it feels like it will.',
+  ),
 ];
 
 const List<QuizQuestion> _unit10Quiz = <QuizQuestion>[
@@ -3055,6 +3147,96 @@ const List<QuizQuestion> _unit11Practice = <QuizQuestion>[
         'A simple plan just means deciding ahead of time how much you will '
         'save and how much you will spend, instead of spending first and '
         'thinking later.',
+  ),
+  QuizQuestion(
+    id: 'u11p4',
+    skillId: QuizSkills.simpleSavingsPlan,
+    prompt: 'You get 10 coins a week and want a game that costs 40 coins. About how long will it take if you save every coin?',
+    options: [
+      'Two weeks',
+      'Four weeks',
+      'Ten weeks',
+      'Forty weeks',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Forty coins, ten a week, is four weeks. Working out how long a goal '
+        'will take is what turns wanting something into a plan.',
+  ),
+  QuizQuestion(
+    id: 'u11p5',
+    skillId: QuizSkills.simpleSavingsPlan,
+    prompt: 'You are saving for a bike, and a smaller thing you want goes on sale. What does buying it cost you?',
+    options: [
+      'Nothing, because it is on sale',
+      'Only the price on the label',
+      'The price, plus waiting longer for the bike',
+      'Nothing, sales do not count as spending',
+    ],
+    correctIndex: 2,
+    explanation:
+        'Every coin has one job. Spending it on one thing means it cannot do '
+        'the other job, so the bike moves further away.',
+  ),
+  QuizQuestion(
+    id: 'u11p6',
+    skillId: QuizSkills.allowanceEarning,
+    prompt: 'Your friend says you should buy the same thing they did. What is the best thing to do first?',
+    options: [
+      'Buy it, so you both have one',
+      'Ask yourself whether you actually want it',
+      'Buy two, in case you lose one',
+      'Never buy anything a friend has',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Wanting something because somebody else has it is not the same as '
+        'wanting it. Stopping to ask is free, and it saves a lot of coins.',
+  ),
+  QuizQuestion(
+    id: 'u11p7',
+    skillId: QuizSkills.wantsVsNeeds,
+    prompt: 'Your shoes still fit and are not broken, but a new pair looks nicer. The new pair is a:',
+    options: [
+      'Want',
+      'Need',
+      'Both, because shoes are always a need',
+      'Neither',
+    ],
+    correctIndex: 0,
+    explanation:
+        'Shoes are a need when you do not have any that work. When the ones '
+        'you have are fine, a nicer pair is a want.',
+  ),
+  QuizQuestion(
+    id: 'u11p8',
+    skillId: QuizSkills.simpleSavingsPlan,
+    prompt: 'What does it mean to keep some of your money instead of spending all of it?',
+    options: [
+      'You are not allowed to spend it ever again',
+      'You are wasting it by not using it',
+      'You lose a bit of it each week',
+      'You are saving, so you can choose later',
+    ],
+    correctIndex: 3,
+    explanation:
+        'Saving is not the same as never spending. It is choosing to spend '
+        'later, when you know what you want.',
+  ),
+  QuizQuestion(
+    id: 'u11p9',
+    skillId: QuizSkills.allowanceEarning,
+    prompt: 'You do a job for a neighbour and they pay you. That money is:',
+    options: [
+      'A gift, because you did not have to do it',
+      'Earned, because you did work for it',
+      'Not really yours until a grown-up says so',
+      'Free money that does not count',
+    ],
+    correctIndex: 1,
+    explanation:
+        'Money you get for doing work is earned. Most of the money grown-ups '
+        'have works exactly the same way.',
   ),
 ];
 
@@ -3486,18 +3668,74 @@ const List<QuizQuestion> _investingSourcedPractice = <QuizQuestion>[
 /// # Never returns nothing
 ///
 /// A band with a narrow window on a small node could filter everything away,
-/// and a quiz with no questions is a worse outcome than a quiz that is
-/// slightly too hard. If the window empties the list, the unfiltered set
-/// comes back — silently, because the player wanted a quiz and should get
-/// one.
+/// and a quiz that is slightly too hard to read is better than no quiz. So
+/// the **reading window** relaxes when it empties the list.
+///
+/// # The topic gate does not relax, and this is why
+///
+/// Reported as *"make sure that no 4 year old or someone will get the wrong
+/// questions"*. They were getting them. Dumping what the under-9 band was
+/// actually served turned up, among fifty questions:
+///
+/// > *"A 401(k) is best described as:"* — grade 2.3
+/// > *"Which best describes a bond?"* — grade 2.9
+/// > *"Which form tells your employer how much tax to withhold?"* — grade 2.5
+/// > *"Gross pay and net pay differ because of:"* — grade 2.3
+///
+/// Every one of those scores as easy reading, because Flesch-Kincaid counts
+/// syllables and sentence length and nothing else. That gap is exactly what
+/// [mentionsAdultTopic] was written for — and **this function never called
+/// it**. The gate was wired into the life sim and into Finance Brawl, and the
+/// Academy, which is the main teaching surface, was left filtering on reading
+/// grade alone.
+///
+/// Worse, the app had begun *claiming* the gate was on: the age panel tells
+/// an under-13 that topics like mortgages and IRAs are held back. A panel
+/// that says so while a four-year-old is asked about vesting is worse than no
+/// panel.
+///
+/// So the two filters now fail differently, because they are protecting
+/// different things:
+///
+///  * **Reading grade** is a fit. Too tight a fit is annoying, so it relaxes.
+///  * **Adult topics** is a floor. Relaxing it hands a child a question from
+///    somebody else's life, which is the thing being guarded against.
+///
+/// If nothing in a lesson survives the topic gate, this returns **empty**.
+/// That is a supported state: `lesson_detail_screen.dart` renders the lesson
+/// body when there is no quiz. A young reader on the retirement unit gets the
+/// reading and no test, which is the right outcome — the alternative is
+/// testing them on vesting.
 List<QuizQuestion> ageAppropriateQuestions(
   List<QuizQuestion> source,
   AgeBand band,
 ) {
   if (source.isEmpty) return source;
 
+  // Floor one: who the question was written for.
+  //
+  // Taken from the unit that owns it, which is a human judgement about
+  // audience rather than a syllable count — see `question_stage.dart` for
+  // why reading grade could never have caught a 401(k) question reaching a
+  // six-year-old. This is the fix for *"the questions are a bit shift"*.
+  //
+  // Floor two: adult topics, prompt *and* options, because a question can
+  // ask something innocent and offer four answers naming instruments —
+  // "Which of these grows fastest?" with an ETF, an IRA and a CD ladder
+  // among the choices.
+  final allowed = <QuizQuestion>[
+    for (final question in source)
+      if (questionFitsStage(question.id, band) &&
+          !(band.blocksAdultTopics &&
+              (mentionsAdultTopic(question.prompt) ||
+                  question.options.any(mentionsAdultTopic))))
+        question,
+  ];
+
+  if (allowed.isEmpty) return const <QuizQuestion>[];
+
   final fitted = <QuizQuestion>[];
-  for (final question in source) {
+  for (final question in allowed) {
     // A question with no measured grade is kept rather than dropped. The
     // lookup is generated from the bank, so a missing entry means somebody
     // added a question and did not re-run the tool — and losing content
@@ -3512,7 +3750,8 @@ List<QuizQuestion> ageAppropriateQuestions(
     }
   }
 
-  return fitted.isEmpty ? source : fitted;
+  // Relaxes the fit, never the floor.
+  return fitted.isEmpty ? allowed : fitted;
 }
 
 /// How many questions each band can actually be served, across the whole bank.

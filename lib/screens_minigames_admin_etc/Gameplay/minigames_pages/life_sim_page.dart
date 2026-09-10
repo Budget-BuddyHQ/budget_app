@@ -15,6 +15,7 @@ import '../../../models_Like_Skins_and_lessons_templates/life_tutorial_steps.dar
 import '../../../models_Like_Skins_and_lessons_templates/ranked_run.dart';
 import '../../../models_Like_Skins_and_lessons_templates/relationship.dart';
 import '../../../models_Like_Skins_and_lessons_templates/volunteer_places.dart';
+import '../../../utils/number_format.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../onboarding/coach_mark.dart';
 import '../../../widgets_custom_lotties/confetti_burst.dart';
@@ -25,7 +26,6 @@ import 'life_epilogue_screen.dart';
 import '../../../constants/app_assets.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/life_money_panel.dart';
-import '../../../widgets_custom_lotties/money_glyphs.dart';
 import '../../../widgets_custom_lotties/pixel_kit.dart';
 import '../../../widgets_custom_lotties/pixel_panel.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_seed.dart';
@@ -850,13 +850,24 @@ class _HeaderBar extends StatelessWidget {
             // thing in the header that must stay readable.
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 96),
-              // The balance is the number this header exists to show, so it
-              // gets the display face. `FittedBox` keeps a six-figure fortune
-              // inside the same 96px the pixel font was clamped to.
+              // The balance is the number this header exists to show, so
+              // it gets the face that measures legible rather than the one
+              // that looks best on a poster — see `AppTheme.numeric`. The
+              // display art it used to use has 13 of 45 confusable digit
+              // pairs. `FittedBox` keeps a six-figure fortune inside the
+              // same 96px the pixel font was clamped to.
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerRight,
-                child: MoneyGlyphs('$money', height: 20),
+                child: Text(
+                  groupedNumber(money),
+                  style: AppTheme.numeric(
+                    color: const Color(0xFFFFD45C),
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    height: 1,
+                  ),
+                ),
               ),
             ),
             const Text(
@@ -2015,7 +2026,7 @@ class _SkillsSheetState extends State<_SkillsSheet> {
                 const SizedBox(height: 8),
                 Text(
                   'TRAITS',
-                  style: GoogleFonts.pixelifySans(
+                  style: AppTheme.caps(
                     color: Colors.white.withValues(alpha: 0.55),
                     fontSize: 11,
                     letterSpacing: 1.2,
@@ -3913,7 +3924,7 @@ class _PowersHeading extends StatelessWidget {
     padding: const EdgeInsets.only(bottom: 8),
     child: Text(
       label.toUpperCase(),
-      style: GoogleFonts.pixelifySans(
+      style: AppTheme.caps(
         color: Colors.white.withValues(alpha: 0.5),
         fontSize: 11,
         letterSpacing: 0.7,
