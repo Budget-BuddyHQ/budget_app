@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/avatar_skin.dart';
@@ -182,6 +184,72 @@ void main() {
           'Amortisation schedules determine how principal and interest are '
           'apportioned across the life of a secured obligation.',
         )),
+      );
+    });
+  });
+
+  group('a child is not published to the leaderboard', () {
+    // **The bug this exists to prevent, which had already happened.**
+    //
+    // The leaderboard view filtered with `age_band <> 'under_13'`. That was
+    // correct while `under_13` was the only child band. Splitting the bucket
+    // into `under_9` (ages 4-8) and `age9to12` — which deliberately **kept
+    // the stored id `under_13`** so existing accounts were not re-aged —
+    // created a band the filter had never heard of, and it was the youngest
+    // one.
+    //
+    // Result: a four-to-eight-year-old's username, gold and profile image
+    // were selected into a view granted to every authenticated user. Nothing
+    // threw and nothing logged, because the filter was still excluding a real
+    // band. It looked like it was working.
+    //
+    // This is a source check on the SQL rather than a database test, because
+    // the migration is run by hand in a web console and the failure is
+    // silent. A test that only runs against a live database is a test that
+    // was not run.
+    final sql = File(
+      'supabase/migrations/0005_leaderboard_profile.sql',
+    ).readAsStringSync();
+
+    test('every band that reports itself as a child is excluded by name', () {
+      final childBands = AgeBand.values.where((b) => b.blocksAdultTopics);
+      expect(childBands, isNotEmpty, reason: 'no band identifies as a child');
+
+      for (final band in childBands) {
+        expect(
+          sql.contains("'${band.id}'"),
+          isTrue,
+          reason:
+              '${band.name} (stored as "${band.id}") is not excluded from the '
+              'leaderboard view, so those players are published to every '
+              'authenticated user',
+        );
+      }
+    });
+
+    test('the filter is a set, not a single comparison', () {
+      // `<> 'under_13'` is the shape that could only ever exclude one band,
+      // and is what made adding a second band silently unsafe.
+      expect(
+        sql.contains('not in ('),
+        isTrue,
+        reason: 'the age filter cannot exclude more than one band',
+      );
+    });
+
+    test('the new columns are appended, so the view can be replaced', () {
+      // `create or replace view` may only append columns. The first draft put
+      // the new ones in the middle and failed with 42P16 in the SQL editor,
+      // which is a bad place to discover it.
+      final updatedAt = sql.indexOf('  updated_at,');
+      final firstNew = sql.indexOf('as profile_image_url');
+      expect(updatedAt, greaterThan(-1));
+      expect(
+        updatedAt,
+        lessThan(firstNew),
+        reason:
+            'new columns sit before updated_at, so CREATE OR REPLACE will '
+            'fail with 42P16: cannot change name of view column',
       );
     });
   });

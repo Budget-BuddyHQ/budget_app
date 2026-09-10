@@ -1467,18 +1467,34 @@ class _MoneyHabitsProfileCard extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 10),
+              // `Expanded`, not `Spacer` + `Text`.
+              //
+              // A `Spacer` takes the free space and then hands the sentence
+              // an unbounded width, so "$103 less saved than last month" ran
+              // 59px past the right edge on a phone — the yellow overflow
+              // stripe was sitting on the Profile screen.
+              //
+              // Expanded caps it at the space that is actually left and lets
+              // it wrap to a second line, which is why the copy is not
+              // shortened: the number and "than last month" are both the
+              // point, and a truncated comparison is worse than a tall one.
               if (delta != null)
-                Text(
-                  delta >= 0
-                      ? '\$${delta.toStringAsFixed(0)} more saved than last month'
-                      : '\$${delta.abs().toStringAsFixed(0)} less saved than last month',
-                  style: TextStyle(
-                    color: delta >= 0
-                        ? const Color(0xFF85EFAC)
-                        : const Color(0xFFFF8474),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
+                Expanded(
+                  child: Text(
+                    delta >= 0
+                        ? '\$${delta.toStringAsFixed(0)} more saved than last month'
+                        : '\$${delta.abs().toStringAsFixed(0)} less saved than last month',
+                    textAlign: TextAlign.right,
+                    maxLines: 2,
+                    style: TextStyle(
+                      color: delta >= 0
+                          ? const Color(0xFF85EFAC)
+                          : const Color(0xFFFF8474),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      height: 1.25,
+                    ),
                   ),
                 ),
             ],

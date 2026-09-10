@@ -548,7 +548,7 @@ class _ObjectivesCard extends StatelessWidget {
         children: [
           Text(
             'WHAT YOU\'LL LEARN',
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.caps(
               color: const Color(0xFFB8F5D1),
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -610,7 +610,7 @@ class _WorkedExampleCard extends StatelessWidget {
             children: [
               Text(
                 'WORKED EXAMPLE',
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.caps(
                   color: const Color(0xFF9BD9FF),
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -666,7 +666,7 @@ class _KeyTermsCard extends StatelessWidget {
         children: [
           Text(
             'KEY TERMS',
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.caps(
               color: const Color(0xFFFFD45C),
               fontSize: 12,
               fontWeight: FontWeight.w700,

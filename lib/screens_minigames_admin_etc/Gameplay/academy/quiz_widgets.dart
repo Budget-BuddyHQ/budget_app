@@ -371,7 +371,7 @@ class QuizResultsCard extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'WORTH REVISITING',
-            style: GoogleFonts.pixelifySans(
+            style: AppTheme.caps(
               color: const Color(0xFFFFB084),
               fontSize: 12,
               fontWeight: FontWeight.w700,

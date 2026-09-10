@@ -14,6 +14,7 @@ import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/hover_lift.dart';
 import '../../../models_Like_Skins_and_lessons_templates/coin_cascade_models.dart';
+import '../../../models_Like_Skins_and_lessons_templates/leak_patrol_unlock.dart';
 import '../minigames_pages/coin_cascade_page.dart';
 import '../minigames_pages/leak_patrol_page.dart';
 import '../minigames_pages/finance_brawl_game.dart';
@@ -58,6 +59,28 @@ class MinigamesPage extends StatelessWidget {
   /// that nothing had actually paid. Nothing to reconcile here means nothing
   /// to get out of step.
   Future<void> _openLeakPatrol(BuildContext context) async {
+    // Locked behind owning the Mushroom Goomba.
+    //
+    // Asked for directly, and it is the right pairing rather than an
+    // arbitrary toll: the creatures that come out of the holes are built
+    // from that sprite, which had sat in the catalogue with a walk cycle no
+    // code ever called. Winning the skin now hands you something to do with
+    // it. See `leak_patrol_unlock.dart`.
+    //
+    // Owning, not equipping — nobody should have to take off the skin they
+    // like in order to play.
+    final stats = context.read<UserStatsController>().stats;
+    if (!leakPatrolUnlocked(stats.unlockedSkins)) {
+      GameToast.show(
+        context,
+        title: 'Leak Patrol is locked',
+        message: kLeakPatrolLockHint,
+        icon: Icons.lock_rounded,
+        accent: const Color(0xFFD98CFF),
+      );
+      return;
+    }
+
     await Navigator.of(
       context,
     ).push(FadePageRoute(builder: (_) => const LeakPatrolPage()));
@@ -278,7 +301,7 @@ class MinigamesPage extends StatelessWidget {
                               const SizedBox(height: 22),
                               Text(
                                 'ALL GAMES',
-                                style: GoogleFonts.pixelifySans(
+                                style: AppTheme.caps(
                                   color: Colors.white.withValues(alpha: 0.55),
                                   fontSize: 12,
                                   letterSpacing: 1.2,
@@ -471,7 +494,7 @@ class _FeaturedCard extends StatelessWidget {
                         children: [
                           Text(
                             plays == 0 ? 'TRY NEXT' : 'PICK UP AGAIN',
-                            style: GoogleFonts.pixelifySans(
+                            style: AppTheme.caps(
                               color: game.accent,
                               fontSize: 11,
                               letterSpacing: 1.2,

@@ -16,14 +16,53 @@
 --
 -- Safe to run more than once: `create or replace` on a view.
 --
+--
+-- WHY THE NEW COLUMNS ARE AT THE END
+-- ----------------------------------
+-- Running this the first time failed:
+--
+--   ERROR 42P16: cannot change name of view column "updated_at" to
+--   "profile_image_url"
+--
+-- `create or replace view` may only **append** columns. It cannot insert,
+-- reorder or rename them, because anything already selecting from the view
+-- is positionally bound to what is there. The original draft put the four new
+-- columns in the middle, which meant renaming column six.
+--
+-- The fix is ordering, not `drop view`. Dropping would work and would also
+-- take out anything that had come to depend on the view, silently, at the
+-- moment somebody is running a migration by hand in a web console. Column
+-- order is invisible to the app — `_leaderboardEntryFrom` reads by name — so
+-- appending costs nothing.
+--
+--
 -- WHAT IS DELIBERATELY NOT HERE
 -- -----------------------------
 -- No email, no age band, no gender, no transaction ledger, no holdings. This
 -- view is readable by every authenticated user — that is the whole point of a
 -- leaderboard — so anything added to it is published to everyone who can sign
--- in. The four below are all facts about how somebody plays a game. The
--- under-13 exclusion in the WHERE clause is unchanged and is the other half
--- of that: a self-declared child's row never appears here at all.
+-- in. The four below are all facts about how somebody plays a game.
+--
+--
+-- THE AGE FILTER, WHICH WAS WRONG
+-- -------------------------------
+-- The `where` clause used to read:
+--
+--   where coalesce(spending_habits->>'age_band', '') <> 'under_13'
+--
+-- That was correct when `under_13` was the only child band. It stopped being
+-- correct the day the bucket was split into `under_9` (ages 4-8) and
+-- `age9to12` — which **kept the stored id `under_13`** so existing accounts
+-- would not be re-aged.
+--
+-- So the split created a band the filter had never heard of, and the newest,
+-- youngest one at that: a four-to-eight-year-old's username, gold and profile
+-- image were published to every authenticated user of the app. Nothing threw.
+-- The filter kept excluding a real band, so it looked like it was working.
+--
+-- Both ids are now excluded by name. New child bands must be added here as
+-- well as in `player_profile.dart`, and `test/child_safety_test.dart` checks
+-- that this file names every band that reports itself as a child.
 
 create or replace view public.leaderboard as
 select
@@ -32,6 +71,8 @@ select
   literacy_points,
   xp,
   gold,
+  updated_at,
+
   spending_habits->>'profile_image_url' as profile_image_url,
 
   -- Which villager they walk around as. Drawing a friend as their own
@@ -60,10 +101,9 @@ select
       coalesce(spending_habits->>'daily_streak', '0'), '[^0-9]', '', 'g'
     ), '')::int,
     0
-  ) as daily_streak,
+  ) as daily_streak
 
-  updated_at
 from public.user_stats
-where coalesce(spending_habits->>'age_band', '') <> 'under_13';
+where coalesce(spending_habits->>'age_band', '') not in ('under_9', 'under_13');
 
 grant select on table public.leaderboard to authenticated;

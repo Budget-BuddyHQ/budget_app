@@ -913,7 +913,7 @@ class _TrendingPromoStrip extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               'TRENDING NOW',
-              style: GoogleFonts.pixelifySans(
+              style: AppTheme.caps(
                 color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 12,
                 letterSpacing: 1.1,
@@ -2923,7 +2923,7 @@ class _WorkingOrderRow extends StatelessWidget {
                       ),
                       child: Text(
                         'WORKING',
-                        style: GoogleFonts.pixelifySans(
+                        style: AppTheme.caps(
                           color: Color(0xFF58C7FF),
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -3550,7 +3550,7 @@ class _MetricTile extends StatelessWidget {
             children: [
               Text(
                 label.toUpperCase(),
-                style: GoogleFonts.pixelifySans(
+                style: AppTheme.caps(
                   color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
