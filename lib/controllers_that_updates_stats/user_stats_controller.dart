@@ -406,6 +406,55 @@ class UserStatsController extends ChangeNotifier {
   /// Records that a Life run reached [endingId], so the endings collection
   /// on the Adventure hub can show it as discovered. Idempotent — reaching
   /// the same ending twice is a no-op rather than a duplicate entry.
+  /// Files a finished Ranked run, keeping only the player's best.
+  ///
+  /// # Why Ranked needed to remember anything
+  ///
+  /// It did not. `scoreRankedRun` produced a score, the epilogue screen
+  /// showed it, and the number died with that screen. So the one mode whose
+  /// whole premise is *"given the same start everybody else got, how much can
+  /// you build?"* could not answer **how did I do compared to last time** —
+  /// and had nothing at all to put on a board.
+  ///
+  /// # Why best rather than latest
+  ///
+  /// A leaderboard of most-recent runs rewards playing often, and this mode
+  /// is a one-life challenge. Keeping the best also means a bad run costs
+  /// nothing but the time, which is the right shape for something people
+  /// should feel free to attempt badly.
+  ///
+  /// The grade and the age travel with it. The grade because the bands may be
+  /// retuned and a board that silently re-grades old runs is lying about
+  /// history; the age because it is the one number that says *how* the score
+  /// was got — a fortune at thirty-five and a comfortable eighty can total the
+  /// same and are not the same run.
+  Future<StatsActionResult> recordRankedRun({
+    required int score,
+    required String grade,
+    required int ageReached,
+  }) async {
+    if (score <= _stats.bestRankedScore) {
+      return StatsActionResult(
+        success: true,
+        message: 'Not a personal best.',
+        syncState: const SyncState(synced: true, usedCache: false, message: ''),
+      );
+    }
+
+    return _saveStats(
+      _stats.copyWith(
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          'best_ranked_score': score,
+          'best_ranked_grade': grade,
+          'best_ranked_age': ageReached,
+        },
+        updatedAt: DateTime.now().toUtc(),
+      ),
+      savingMessage: 'Filing your ranked run...',
+    );
+  }
+
   Future<StatsActionResult> recordLifeEnding(String endingId) async {
     final existing = _stats.discoveredEndings;
     if (existing.contains(endingId)) {

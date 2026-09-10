@@ -1911,6 +1911,201 @@ has the dated key.
 
 ---
 
+### A four-to-eight-year-old's row was published to every user
+
+**Found while** fixing the SQL error the migration threw in the Supabase
+editor. The error was cosmetic. What was underneath it was not.
+
+**The filter.**
+
+```sql
+where coalesce(spending_habits->>'age_band', '') <> 'under_13'
+```
+
+That was correct while `under_13` was the only child band. It stopped being
+correct the day the bucket was split into `under_9` (ages 4-8) and
+`age9to12` — and `age9to12` **deliberately kept the stored id `under_13`** so
+that existing accounts would not be re-aged.
+
+So the split created a band the filter had never heard of, and it was the
+youngest one. A four-to-eight-year-old's username, gold and profile image
+were selected into a view that is `grant select ... to authenticated`.
+
+**Nothing threw.** The filter kept excluding a real band the whole time, so it
+looked like it was working. This is the same shape as every other bug in this
+session: the mechanism was fine and it was pointed at the wrong thing.
+
+**Fix.** `not in ('under_9', 'under_13')`, and
+`test/child_safety_test.dart` now derives the list from
+`AgeBand.blocksAdultTopics` and asserts the SQL names every band that reports
+itself as a child. A source check rather than a database test on purpose —
+this migration is run by hand in a web console, and a test that only runs
+against a live database is a test that was not run.
+
+**The error that led me there.**
+
+```
+ERROR 42P16: cannot change name of view column "updated_at" to
+"profile_image_url"
+```
+
+`create or replace view` may only **append** columns — it cannot insert,
+reorder or rename, because anything selecting from the view is positionally
+bound. The draft put four new columns in the middle. The fix is ordering, not
+`drop view`: dropping would also take out anything that had come to depend on
+the view, silently, while somebody is running a migration by hand.
+
+**Files.** `supabase/migrations/0005_leaderboard_profile.sql`,
+`test/child_safety_test.dart`.
+
+---
+
+### Leak Patrol was a grid of buttons
+
+**The report.** *"Make this game better and draw some animations for this game
+please and then starting screen for this minigame is pretty bad upgrade it and
+make this a complete game is what I'm saying."*
+
+Fair on every count. The screenshot showed nine holes each drawing **the same
+single static frame** of the Goomba (`AppAssets.goombaWalk`, frame one of its
+walk cycle) on flat dark rectangles. Nothing rose, nothing reacted to a tap,
+nothing changed across a round.
+
+**What went in.**
+
+  * `tool/make_leak_sprites.py` derives **rise / idle / hit** for four
+    creatures by squash-and-stretch, plus a white flash on the hit frame.
+    Twelve frames, no new drawing.
+  * The board is the app's own meadow tile with real holes in it, not a panel.
+  * `LeakPacing` ramps the pop rate across the round, bounded — the skill is
+    reading before acting, so a speed that eventually outruns reading would
+    train the opposite. It was `Timer.periodic`, fixed at one interval, so the
+    last twenty seconds of a round were identical to the first twenty.
+  * `LeakStreak` pays for runs of correct decisions and breaks on the
+    mistake — deliberately not a flat multiplier, which would reward volume,
+    which is the exact instinct this game exists to argue with.
+  * The start screen shows one real leak and one real charge, marked TAP IT
+    and LEAVE IT, pulled from the live item list so the tutorial cannot
+    describe a game that no longer exists.
+  * Locked behind owning the Mushroom Goomba, which is what the whole game is
+    drawn out of.
+
+**The mistake worth recording: the art nearly gave the answer away.**
+
+The obvious way to add visual variety is leaks as one creature and real
+charges as another. It looks great and it deletes the entire lesson — the
+game becomes winnable without reading a word. So the creature is chosen from
+the item id and means nothing.
+
+I used an FNV-1a hash for that, which is stable and looks perfectly random.
+The test that every creature is worn by **both** kinds failed immediately:
+
+```
+goomba   leak 2  legit 1
+red      leak 3  legit 1
+violet   leak 2  legit 2
+shadow   leak 0  legit 2   <-- only ever a real charge
+```
+
+With thirteen items a hash distributes them *approximately*, and approximately
+is not good enough: a creature that only ever appears on real charges is a
+tell, and a player would learn it in two rounds without noticing — silently
+replacing reading with pattern-matching. Cycling within each kind makes the
+balance structural instead of lucky.
+
+**The second mistake: I had the layout upside down.** The first build put the
+label chip *between* the sprite and the hole, so the creature floated above a
+caption above a hole and nothing appeared to come out of anything. Caught by
+rendering a mock of the board with the real assets and looking at it. Label
+above, feet on the rim.
+
+**Files.** `tool/make_leak_sprites.py`, twelve PNGs,
+`leak_patrol_models.dart`, `leak_patrol_unlock.dart` (new),
+`leak_patrol_page.dart`, `minigames_page.dart`, `pubspec.yaml`,
+`test/leak_patrol_test.dart`, `test/leak_patrol_widget_test.dart`.
+
+---
+
+### The surprise expense that made the level easier
+
+**The ask.** *"Add more content to the Coin Cascade."*
+
+Thirteen ladder levels, and across all of them the only thing that ever
+changed was the *rate* — bills every three moves, every four moves, always on
+schedule. Real money does not fail on a schedule. It fails on the month the
+boiler goes, and that timing is the entire reason an emergency fund is a
+separate idea from a budget. The life sim models expense shocks; the
+allocation game had no version of it.
+
+So: `CascadeLevel.shockAtMove` / `shockBills`, and five levels built on it
+(14 through 18).
+
+**The bug I wrote and then caught.** The first version dropped bill *tiles*:
+
+```dart
+for (var i = 0; i < level.shockBills; i++) {
+  _dropBill();
+}
+```
+
+Read what a bill tile does. Clearing one **pays the meter down** — bills and
+needs are both defence in this game. So a "surprise expense" built out of
+them handed the player four extra ways to *reduce* their bills. It made the
+level easier. Nothing failed, no test complained, and the level simply was
+not doing what its name said.
+
+Raising `bills` directly is what a surprise expense is: your load jumps, and
+survival depends on the headroom you were carrying. That headroom is the
+emergency fund, and this is the only place in the ladder where it is worth
+anything.
+
+**Two wrong measurements before the right one.** Testing this needed a way to
+count bills the shock was responsible for:
+
+  1. Reading `billsAddedTotal`. Confounded — matching a *want* also adds
+     bills, which is the ladder's core mechanic, so the total counted the
+     player's own spending too.
+  2. Subtracting an identical run with the shock removed. Sound only at the
+     instant of the shock: dropping bills *changes the board*, the two runs
+     diverge immediately after, and the difference washed out to zero a few
+     moves later.
+
+The answer was a test level with `wantsCostMultiplier: 0` and an unreachable
+`billInterval`, so the shock is the only thing that can add anything.
+
+**And a test for whether the levels can be won at all**, which "it resolves"
+does not cover. A bot taking the first legal swap it finds — the weakest
+strategy there is — has to win each new level at least once in forty runs. A
+level that cannot be won reads to a player as the game being broken, and
+there is no way for them to find out otherwise.
+
+**Files.** `coin_cascade_models.dart`, `test/coin_cascade_test.dart`.
+
+---
+
+### A sentence 59 pixels too wide
+
+**Spotted in a screenshot** of the Profile screen: the yellow-and-black
+overflow stripe, *RIGHT OVERFLOWED BY 59 PIXELS*, across the Money Habits
+card.
+
+```dart
+const Spacer(),
+if (delta != null)
+  Text('\$${delta.abs()} less saved than last month', ...),
+```
+
+`Spacer` takes the free space and then hands the `Text` an **unbounded**
+width, so the sentence laid itself out at its natural length and ran off the
+edge. `Expanded` caps it at the space that is actually left.
+
+The copy is not shortened, deliberately: the number and "than last month" are
+both the point, and a truncated comparison is worse than a two-line one.
+
+**Files.** `profile_screen.dart`.
+
+---
+
 ---
 
 ## Open — found, not fixed
