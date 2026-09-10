@@ -634,6 +634,26 @@ class UserStats {
   /// is one nobody would ever finish.
   int get challengesSolved => _readInt(spendingHabits['challenges_solved']);
 
+  /// The best Ranked life this player has finished.
+  ///
+  /// **Ranked had no memory at all.** `scoreRankedRun` computed a score, the
+  /// epilogue showed it once, and the number was gone the moment that screen
+  /// was popped — so a mode whose entire premise is *"given the same start
+  /// everybody else got, how much can you build?"* could not answer "how did
+  /// I do compared to last time", let alone compared to anyone else.
+  int get bestRankedScore => _readInt(spendingHabits['best_ranked_score']);
+
+  /// The grade letter that came with [bestRankedScore], for display. Stored
+  /// rather than recomputed because the grade bands may be retuned, and a
+  /// board that silently re-grades old runs is lying about history.
+  String get bestRankedGrade =>
+      (spendingHabits['best_ranked_grade'] ?? '').toString();
+
+  /// The age reached on that run. The one number that says *how* the score
+  /// was got — a fortune at thirty-five and a comfortable eighty can total
+  /// the same, and they are not the same run.
+  int get bestRankedAge => _readInt(spendingHabits['best_ranked_age']);
+
   /// Missions finished, by id.
   ///
   /// The whole file `town_missions.dart` was written and then referenced by
@@ -841,6 +861,9 @@ class LeaderboardEntry {
     this.personalityType = '',
     this.lessonsCompleted = 0,
     this.dailyStreak = 0,
+    this.rankedScore = 0,
+    this.rankedGrade = '',
+    this.rankedAge = 0,
     this.updatedAt,
   });
 
@@ -852,6 +875,14 @@ class LeaderboardEntry {
   final int gold;
   final bool isCurrentUser;
   final String profileImageUrl;
+
+  /// Best Ranked life, for the Ranked board. Zero for anybody who has never
+  /// finished one, and zero for everybody until
+  /// `0005_leaderboard_profile.sql` has been run — read defensively for the
+  /// same reason as every other column added after the original six.
+  final int rankedScore;
+  final String rankedGrade;
+  final int rankedAge;
 
   // --- The extras behind FriendProfileScreen ----------------------------
   //
@@ -882,6 +913,31 @@ class LeaderboardEntry {
   final DateTime? updatedAt;
 
   String get scoreLabel => '$literacyPoints LP';
+
+  /// The headline figure for [metric], and the supporting line under it.
+  ///
+  /// Stated on the entry rather than in the widget so the podium and the
+  /// rows cannot disagree — they were two separate `byGold ? ... : ...`
+  /// expressions, which is two places to forget a third case.
+  String headlineFor(LeaderboardMetric metric) => switch (metric) {
+    LeaderboardMetric.literacy => scoreLabel,
+    LeaderboardMetric.gold => '${gold}g',
+    // Never "0" for somebody who has not played it. A blank is honest; a
+    // zero looks like a score you earned.
+    LeaderboardMetric.ranked => rankedScore > 0 ? '$rankedScore' : '—',
+  };
+
+  String detailFor(LeaderboardMetric metric) => switch (metric) {
+    LeaderboardMetric.literacy => '$xp XP • $gold gold',
+    LeaderboardMetric.gold => '$literacyPoints LP • $xp XP',
+    // The grade and the age, because they are what the score is made of. A
+    // fortune at thirty-five and a comfortable eighty can total the same and
+    // are not the same run.
+    LeaderboardMetric.ranked => rankedScore > 0
+        ? '${rankedGrade.isEmpty ? 'Scored' : rankedGrade} • lived to '
+              '$rankedAge'
+        : 'No ranked life yet',
+  };
 }
 
 @immutable
@@ -1870,7 +1926,7 @@ alter view public.leaderboard set (security_invoker = false);
     // literacy-ranked page client-side: the top 100 by literacy points can
     // easily exclude someone who is actually top-100 by gold, so re-sorting
     // the wrong page in Dart would just hide them.
-    bool byGold = false,
+    LeaderboardMetric metric = LeaderboardMetric.literacy,
   }) async {
     await _ensurePreferences();
     final normalizedLimit = limit.clamp(1, 100);
@@ -1879,32 +1935,27 @@ alter view public.leaderboard set (security_invoker = false);
       return _buildCachedLeaderboard(
         limit: normalizedLimit,
         currentUserId: currentUserId,
-        byGold: byGold,
+        metric: metric,
       );
     }
 
     try {
-      final unordered = Supabase.instance.client
+      var query = Supabase.instance.client
           .from(leaderboardView)
-          .select('*');
-      final response =
-          await (byGold
-                  ? unordered
-                        .order('gold', ascending: false)
-                        .order('literacy_points', ascending: false)
-                        .order('xp', ascending: false)
-                  : unordered
-                        .order('literacy_points', ascending: false)
-                        .order('xp', ascending: false)
-                        .order('gold', ascending: false))
-              .limit(normalizedLimit)
-              .timeout(_supabaseReadTimeout);
+          .select('*')
+          .order(metric.orderColumns.first, ascending: false);
+      for (final column in metric.orderColumns.skip(1)) {
+        query = query.order(column, ascending: false);
+      }
+      final response = await query
+          .limit(normalizedLimit)
+          .timeout(_supabaseReadTimeout);
 
       if (response.isEmpty) {
         return _buildCachedLeaderboard(
           limit: normalizedLimit,
           currentUserId: currentUserId,
-          byGold: byGold,
+          metric: metric,
         );
       }
 
@@ -1961,7 +2012,7 @@ alter view public.leaderboard set (security_invoker = false);
 
   Future<List<LeaderboardEntry>> fetchFriendsLeaderboard({
     required String currentUserId,
-    bool byGold = false,
+    LeaderboardMetric metric = LeaderboardMetric.literacy,
   }) async {
     // Signed out: there are no friends to fetch, and asking would be a
     // guaranteed 22P02 rather than an empty list.
@@ -2005,21 +2056,15 @@ alter view public.leaderboard set (security_invoker = false);
       // answer.
       friendIds.add(currentUserId);
 
-      final unordered = client
+      var query = client
           .from(leaderboardView)
           .select('*')
-          .inFilter('id', friendIds.toList());
-      final response =
-          await (byGold
-                  ? unordered
-                        .order('gold', ascending: false)
-                        .order('literacy_points', ascending: false)
-                        .order('xp', ascending: false)
-                  : unordered
-                        .order('literacy_points', ascending: false)
-                        .order('xp', ascending: false)
-                        .order('gold', ascending: false))
-              .timeout(_supabaseReadTimeout);
+          .inFilter('id', friendIds.toList())
+          .order(metric.orderColumns.first, ascending: false);
+      for (final column in metric.orderColumns.skip(1)) {
+        query = query.order(column, ascending: false);
+      }
+      final response = await query.timeout(_supabaseReadTimeout);
 
       return response
           .whereType<Map>()
@@ -2248,7 +2293,7 @@ alter view public.leaderboard set (security_invoker = false);
   List<LeaderboardEntry> _buildCachedLeaderboard({
     required int limit,
     String? currentUserId,
-    bool byGold = false,
+    LeaderboardMetric metric = LeaderboardMetric.literacy,
   }) {
     // The face travels with the row.
     //
@@ -2270,6 +2315,9 @@ alter view public.leaderboard set (security_invoker = false);
             isCurrentUser: currentUserId != null && currentUserId == stats.id,
             profileImageUrl: stats.profileImageUrl,
             equippedSkin: stats.equippedSkin,
+            rankedScore: stats.bestRankedScore,
+            rankedGrade: stats.bestRankedGrade,
+            rankedAge: stats.bestRankedAge,
           ),
         )
         .toList(growable: false);
@@ -2291,23 +2339,25 @@ alter view public.leaderboard set (security_invoker = false);
       ];
     }
 
+    // The same ordering the live query uses, read off the same list of
+    // columns. It used to be a hand-written comparator that duplicated the
+    // query's `order()` chain — so an offline board could rank two players
+    // differently from an online one, and nothing would ever have said so.
+    int valueOf(LeaderboardEntry entry, String column) => switch (column) {
+      'literacy_points' => entry.literacyPoints,
+      'xp' => entry.xp,
+      'gold' => entry.gold,
+      'best_ranked_score' => entry.rankedScore,
+      'best_ranked_age' => entry.rankedAge,
+      _ => 0,
+    };
+
     entries.sort((a, b) {
-      if (byGold) {
-        final goldCompare = b.gold.compareTo(a.gold);
-        if (goldCompare != 0) {
-          return goldCompare;
-        }
-        return b.literacyPoints.compareTo(a.literacyPoints);
+      for (final column in metric.orderColumns) {
+        final compare = valueOf(b, column).compareTo(valueOf(a, column));
+        if (compare != 0) return compare;
       }
-      final literacyCompare = b.literacyPoints.compareTo(a.literacyPoints);
-      if (literacyCompare != 0) {
-        return literacyCompare;
-      }
-      final xpCompare = b.xp.compareTo(a.xp);
-      if (xpCompare != 0) {
-        return xpCompare;
-      }
-      return b.gold.compareTo(a.gold);
+      return 0;
     });
 
     return entries
@@ -2340,6 +2390,52 @@ double _readDouble(dynamic value) {
   return 0;
 }
 
+/// What the board is sorted by.
+///
+/// **This used to be `bool byGold`**, which is the shape that stops working
+/// the moment there is a third thing to rank by — and Ranked is a third
+/// thing. A boolean also cannot say what the *tie-breaks* are, so those lived
+/// as two copy-pasted `order()` chains in the query and a third copy in the
+/// cached sort, which is three places for them to disagree.
+enum LeaderboardMetric {
+  /// Literacy points: the app's own measure of learning. The default,
+  /// because it is the one this app exists to move.
+  literacy,
+
+  /// Gold. Everything you have earned across every game.
+  gold,
+
+  /// Best Ranked life. One life, fixed rules, scored — see `ranked_run.dart`.
+  ranked;
+
+  /// Sort key first, then the tie-breaks, most significant first.
+  ///
+  /// Stated once and used by both the live query and the offline sort, so
+  /// two players on the same numbers cannot be ordered differently depending
+  /// on whether the network was up.
+  List<String> get orderColumns => switch (this) {
+    LeaderboardMetric.literacy => const [
+      'literacy_points',
+      'xp',
+      'gold',
+    ],
+    LeaderboardMetric.gold => const [
+      'gold',
+      'literacy_points',
+      'xp',
+    ],
+    // Ties on the score break toward the player who got there *later* in
+    // life, because surviving longer for the same total is the harder run —
+    // see `scoreRankedRun`, where survival is a multiplier for the same
+    // reason.
+    LeaderboardMetric.ranked => const [
+      'best_ranked_score',
+      'best_ranked_age',
+      'literacy_points',
+    ],
+  };
+}
+
 /// One leaderboard row, whichever query produced it.
 ///
 /// Factored out because the global board and the friends board built this
@@ -2370,6 +2466,9 @@ LeaderboardEntry _leaderboardEntryFrom(
     personalityType: (row['personality_type'] ?? '').toString(),
     lessonsCompleted: _readInt(row['lessons_completed']),
     dailyStreak: _readInt(row['daily_streak']),
+    rankedScore: _readInt(row['best_ranked_score']),
+    rankedGrade: (row['best_ranked_grade'] ?? '').toString(),
+    rankedAge: _readInt(row['best_ranked_age']),
     updatedAt: DateTime.tryParse((row['updated_at'] ?? '').toString()),
   );
 }

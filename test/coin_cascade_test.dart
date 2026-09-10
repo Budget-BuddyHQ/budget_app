@@ -536,6 +536,225 @@ void main() {
       );
     });
   });
+
+  group('the surprise expense', () {
+    // Thirteen levels taught allocation under a **predictable** squeeze —
+    // bills every three moves, every four moves, always on schedule, and the
+    // only thing that ever changed across the whole ladder was the rate.
+    //
+    // Real money does not fail on a schedule. It fails on the month the
+    // boiler goes, and that timing is the entire reason an emergency fund is
+    // a separate idea from a budget. The life sim already models expense
+    // shocks; the allocation game had no version of it.
+    CascadeLevel shocked({int at = 6, int size = 3}) => CascadeLevel(
+      number: 99,
+      name: 'Test',
+      rule: 'test',
+      savingsGoal: 1 << 30,
+      moves: 40,
+      billCapacity: 1 << 30,
+      billInterval: 1 << 30,
+      // Wants add no bills here, so the only thing that can is the shock.
+      wantsCostMultiplier: 0,
+      shockAtMove: at,
+      shockBills: size,
+    );
+
+    /// Bills added, on a level where **only the shock can add any**.
+    ///
+    /// Two earlier attempts got this wrong and are worth recording, because
+    /// both looked right:
+    ///
+    ///  1. Reading `billsAddedTotal` directly. Confounded — matching a *want*
+    ///     also adds bills, which is the ladder's core mechanic, so the raw
+    ///     total counts the player's own spending alongside the shock.
+    ///  2. Subtracting an identical run with the shock removed. Sound only at
+    ///     the instant of the shock: dropping four bills *changes the board*,
+    ///     so the two runs diverge immediately afterwards and the difference
+    ///     washes out to nothing a few moves later.
+    ///
+    /// `wantsCostMultiplier: 0` and an unreachable `billInterval` remove both
+    /// other sources, so whatever arrives is the shock and nothing else.
+    int shockBillsAfter(CascadeLevel level, int movesToPlay) {
+      final board = CoinCascadeGame(random: Random(7), level: level);
+      for (var i = 0; i < movesToPlay; i++) {
+        if (!_makeAnyMove(board)) break;
+        board.resolveAll();
+      }
+      return board.billsAddedTotal;
+    }
+
+    test('nothing lands before its move', () {
+      // The shock is on a fixed move so the level stays solvable. A shock
+      // that arrived early would be indistinguishable from a random one.
+      expect(shockBillsAfter(shocked(at: 20), 5), 0);
+    });
+
+    test('it lands once the move is reached', () {
+      expect(shockBillsAfter(shocked(at: 3, size: 4), 12), 4);
+    });
+
+    test('it fires once, not every move after', () {
+      // A shock that repeats is a shorter bill interval wearing a costume,
+      // and it would make the level unwinnable for a reason nobody could see.
+      expect(shockBillsAfter(shocked(at: 2, size: 3), 30), 3);
+    });
+
+    test('a level with no shock never fires one', () {
+      final quiet = CascadeLevel(
+        number: 98,
+        name: 'Quiet',
+        rule: 'test',
+        savingsGoal: 1 << 30,
+        moves: 40,
+        billCapacity: 1 << 30,
+        billInterval: 1 << 30,
+        wantsCostMultiplier: 0,
+      );
+      expect(quiet.hasShock, isFalse);
+      expect(shockBillsAfter(quiet, 30), 0);
+    });
+
+    test('restarting rearms it', () {
+      // `reset()` has to clear the fired flag, or a replay of a shock level
+      // is a different, easier level — and the second attempt is exactly
+      // where the lesson lands.
+      final board = CoinCascadeGame(random: Random(3), level: shocked(at: 2));
+      for (var i = 0; i < 20; i++) {
+        if (!_makeAnyMove(board)) break;
+        board.resolveAll();
+      }
+      final first = board.billsAddedTotal;
+      expect(first, greaterThan(0));
+
+      board.reset();
+      for (var i = 0; i < 20; i++) {
+        if (!_makeAnyMove(board)) break;
+        board.resolveAll();
+      }
+      expect(board.billsAddedTotal, greaterThan(0));
+    });
+  });
+
+  group('the new levels are levels, not padding', () {
+    final shockLevels = kCascadeLevels.where((l) => l.hasShock).toList();
+
+    test('there are some', () {
+      expect(shockLevels, isNotEmpty);
+    });
+
+    test('every shock lands inside its own level', () {
+      // A shock scheduled past the move limit never fires, which would make
+      // the level quietly identical to the one before it.
+      for (final level in shockLevels) {
+        expect(
+          level.shockAtMove,
+          lessThan(level.moves),
+          reason: '${level.name} shocks at move ${level.shockAtMove} but only '
+              'has ${level.moves} moves, so it never happens',
+        );
+      }
+    });
+
+    test('a shock cannot exceed the capacity on its own', () {
+      // Survivable in principle. A shock bigger than the whole bill capacity
+      // is an unavoidable loss, and losing to something you could not have
+      // planned for teaches "this game is unfair" rather than anything about
+      // money.
+      for (final level in shockLevels) {
+        expect(
+          level.shockBills,
+          lessThan(level.billCapacity),
+          reason: '${level.name} drops ${level.shockBills} bills into a '
+              'capacity of ${level.billCapacity} — unloseable to survive',
+        );
+      }
+    });
+
+    test('every level still resolves', () {
+      // The property the ladder already had, re-checked with the new knob:
+      // a run must always end in a real result rather than hanging.
+      for (final level in shockLevels) {
+        for (var seed = 0; seed < 8; seed++) {
+          final board = CoinCascadeGame(random: Random(seed), level: level);
+          var guard = 0;
+          while (board.status == CascadeStatus.playing && guard++ < 400) {
+            if (!_makeAnyMove(board)) break;
+            board.resolveAll();
+          }
+          expect(
+            board.status,
+            isNot(CascadeStatus.playing),
+            reason: '${level.name} seed $seed never resolved',
+          );
+        }
+      }
+    });
+
+    test('the weakest possible strategy still wins sometimes', () {
+      // "It terminates" is not "it is beatable", and a level that cannot be
+      // won is the worst thing a ladder can contain: it reads as the game
+      // being broken and there is no way for a player to find out otherwise.
+      //
+      // The bot takes the first legal swap it finds, which is the weakest
+      // strategy there is. If *that* wins occasionally, a human who is
+      // choosing moves can win reliably. If it never wins, the level needs
+      // looking at.
+      for (final level in shockLevels) {
+        var wins = 0;
+        for (var seed = 0; seed < 40; seed++) {
+          final board = CoinCascadeGame(random: Random(seed), level: level);
+          var guard = 0;
+          while (board.status == CascadeStatus.playing && guard++ < 400) {
+            if (!_makeAnyMove(board)) break;
+            board.resolveAll();
+          }
+          if (board.status == CascadeStatus.won) wins++;
+        }
+        expect(
+          wins,
+          greaterThan(0),
+          reason:
+              '${level.name} was never won in 40 runs by a bot playing at '
+              'random. It may be impossible.',
+        );
+      }
+    });
+
+    test('each one says what it is in one line', () {
+      // The authoring rule the ladder already follows: if a rule cannot be
+      // stated in one line it is too complicated for a game a seven-year-old
+      // plays.
+      for (final level in shockLevels) {
+        expect(level.rule.trim(), isNotEmpty);
+        expect(level.rule.length, lessThan(90), reason: level.name);
+        expect(level.rule.contains('\n'), isFalse);
+      }
+    });
+
+    test('the shock is warned about without being timed', () {
+      // You know these happen; you do not know the date. That is the honest
+      // amount of warning and it is what makes the second attempt teach
+      // something.
+      for (final level in shockLevels) {
+        final rule = level.rule.toLowerCase();
+        expect(
+          rule.contains('surprise') ||
+              rule.contains('breaks') ||
+              rule.contains('again') ||
+              rule.contains('shock'),
+          isTrue,
+          reason: '${level.name} springs a shock with no warning at all',
+        );
+        expect(
+          rule.contains('move ${level.shockAtMove}'),
+          isFalse,
+          reason: '${level.name} gives the exact move, which removes the '
+              'reason to carry a buffer at all',
+        );
+      }
+    });
+  });
 }
 
 /// Makes the first legal swap found, or returns false if none exists.

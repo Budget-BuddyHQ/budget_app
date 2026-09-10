@@ -1,4 +1,5 @@
--- Four more columns on the leaderboard view, for the friend profile screen.
+-- Extra columns on the leaderboard view: the friend profile screen, and
+-- the Ranked board.
 --
 -- **What this is for.** Tapping a friend now opens a profile rather than
 -- doing nothing, and a profile built from a username, three numbers and a
@@ -101,7 +102,33 @@ select
       coalesce(spending_habits->>'daily_streak', '0'), '[^0-9]', '', 'g'
     ), '')::int,
     0
-  ) as daily_streak
+  ) as daily_streak,
+
+  -- The Ranked board.
+  --
+  -- Ranked is the one-life scored mode, and it had no leaderboard because it
+  -- had no memory: the score was shown on the epilogue screen and thrown
+  -- away with it. Now that `recordRankedRun` keeps a personal best, these
+  -- three make it comparable.
+  --
+  -- Coerced the same way `daily_streak` is, for the same reason: this is
+  -- JSON written by clients of several versions, and a bad cast takes the
+  -- whole leaderboard down rather than one column.
+  coalesce(
+    nullif(regexp_replace(
+      coalesce(spending_habits->>'best_ranked_score', '0'), '[^0-9]', '', 'g'
+    ), '')::int,
+    0
+  ) as best_ranked_score,
+
+  coalesce(spending_habits->>'best_ranked_grade', '') as best_ranked_grade,
+
+  coalesce(
+    nullif(regexp_replace(
+      coalesce(spending_habits->>'best_ranked_age', '0'), '[^0-9]', '', 'g'
+    ), '')::int,
+    0
+  ) as best_ranked_age
 
 from public.user_stats
 where coalesce(spending_habits->>'age_band', '') not in ('under_9', 'under_13');

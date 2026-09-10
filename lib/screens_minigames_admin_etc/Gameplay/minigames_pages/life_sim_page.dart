@@ -218,6 +218,17 @@ class _LifeSimPageState extends State<LifeSimPage> {
     // Scored from the controller before it is disposed, for the same reason
     // the summary is snapshotted above.
     final score = widget.ranked ? scoreRankedRun(life.rankedResult) : null;
+    // ...and filed, which it never used to be. The score was shown on the
+    // epilogue and then thrown away with the screen, so Ranked had no memory
+    // and nothing to rank. See `recordRankedRun`.
+    if (score != null) {
+      await controller.recordRankedRun(
+        score: score.total,
+        grade: score.grade,
+        ageReached: life.age,
+      );
+      if (!mounted) return;
+    }
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => LifeEpilogueScreen(
