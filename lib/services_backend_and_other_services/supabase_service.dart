@@ -171,7 +171,7 @@ class UserStats {
     return UserStats(
       id: userId,
       username: 'Username3189',
-      gold: 999999,
+      gold: 2000,
       xp: 850,
       literacyPoints: 850,
       personalityType: 'Spender',
@@ -666,6 +666,7 @@ class UserStats {
     }
     return const <String>{};
   }
+
   int get cascadeNeedsTotal => _readInt(spendingHabits['cascade_needs_total']);
   int get cascadeWantsTotal => _readInt(spendingHabits['cascade_wants_total']);
   int get cascadeSavesTotal => _readInt(spendingHabits['cascade_saves_total']);
@@ -933,10 +934,11 @@ class LeaderboardEntry {
     // The grade and the age, because they are what the score is made of. A
     // fortune at thirty-five and a comfortable eighty can total the same and
     // are not the same run.
-    LeaderboardMetric.ranked => rankedScore > 0
-        ? '${rankedGrade.isEmpty ? 'Scored' : rankedGrade} • lived to '
-              '$rankedAge'
-        : 'No ranked life yet',
+    LeaderboardMetric.ranked =>
+      rankedScore > 0
+          ? '${rankedGrade.isEmpty ? 'Scored' : rankedGrade} • lived to '
+                '$rankedAge'
+          : 'No ranked life yet',
   };
 }
 
@@ -2341,16 +2343,8 @@ enum LeaderboardMetric {
   /// two players on the same numbers cannot be ordered differently depending
   /// on whether the network was up.
   List<String> get orderColumns => switch (this) {
-    LeaderboardMetric.literacy => const [
-      'literacy_points',
-      'xp',
-      'gold',
-    ],
-    LeaderboardMetric.gold => const [
-      'gold',
-      'literacy_points',
-      'xp',
-    ],
+    LeaderboardMetric.literacy => const ['literacy_points', 'xp', 'gold'],
+    LeaderboardMetric.gold => const ['gold', 'literacy_points', 'xp'],
     // Ties on the score break toward the player who got there *later* in
     // life, because surviving longer for the same total is the harder run —
     // see `scoreRankedRun`, where survival is a multiplier for the same
