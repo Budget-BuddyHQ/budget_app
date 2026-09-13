@@ -42,7 +42,12 @@ class AvatarSprite extends StatelessWidget {
         width: size,
         height: size,
         fit: fit,
-        filterQuality: FilterQuality.none,
+        // Nearest-neighbour keeps pixel art crisp and makes a smooth
+        // illustration stair-step, so it depends on the art. See
+        // `AvatarSkin.isPixelArt`.
+        filterQuality: skin.isPixelArt
+            ? FilterQuality.none
+            : FilterQuality.medium,
         errorBuilder: (context, error, stack) => _MissingArt(size: size),
       );
     }

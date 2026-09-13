@@ -4,7 +4,7 @@
 // boots straight to the dashboard without a real login. This exists only
 // to preview UI locally without signing in. Flip back to false (or delete
 // this file and its call site in main.dart) before pushing anything.
-const bool kDevSkipAuthGate = true;
+const bool kDevSkipAuthGate = false;
 
 // Shows an internal "Dev Tools" card on the Profile screen linking to
 // reference/preview screens (e.g. the coded turtle sprite gallery). Not a

@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -132,6 +133,15 @@ class _LifeSimPageState extends State<LifeSimPage> {
       _graded = character.graded;
       _seed = character.seed;
       _life = LifeSimController(
+        // The seed now decides the whole life, not just who you are.
+        //
+        // It used to set the name, family and town only, while every event
+        // and surprise cost came from an unseeded `Random()` — so two
+        // players on the same seed lived different lives, and Ranked's
+        // "same start everybody else got" held for the first screen and
+        // nothing after it. Seeding the controller makes a seed replayable:
+        // the same seed and the same choices give the same life.
+        random: Random(character.seed.value),
         name: character.name,
         gender: character.gender,
         origin: character.origin,

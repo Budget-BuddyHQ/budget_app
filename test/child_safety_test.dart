@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/age_scaling_facts.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/player_profile.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/reading_grade.dart';
@@ -17,8 +18,8 @@ import 'package:budget_app/models_Like_Skins_and_lessons_templates/reading_grade
 /// did not:
 ///
 ///   * `openSkinCase()` charges 180 gold for a weighted-random pull across
-///     four rarity tiers — a loot box — with **no age check anywhere on the
-///     path to it**.
+///     four rarity tiers — a loot box — and its odds were not published.
+///     They are now, for everyone, and every skin can be bought outright.
 ///   * Finance Brawl kept its own question bank and never went through the
 ///     age filter the Academy used.
 ///
@@ -29,33 +30,21 @@ void main() {
   const childBands = <AgeBand>[AgeBand.under9, AgeBand.age9to12];
 
   group('nothing gambling-shaped reaches a child', () {
-    test('under-13s cannot open a randomised case', () {
-      for (final band in childBands) {
-        expect(
-          band.allowsRandomisedRewards,
-          isFalse,
-          reason: '${band.name} can open a loot box',
-        );
+    test('no age is promised a case restriction the app does not apply', () {
+      // The case used to be gated for under-13s and the age card said so.
+      // The team removed the gate, so every band now sees the same case with
+      // the same disclosed odds. What must never happen is the card still
+      // telling a child it is closed to them: a safety claim that is not true
+      // is worse than none, because a parent reads it and stops checking.
+      for (final band in AgeBand.values) {
+        for (final fact in ageScalingFacts(band)) {
+          expect(
+            fact.detail.toLowerCase(),
+            isNot(contains('random case')),
+            reason: '${band.label} is told something about the case',
+          );
+        }
       }
-    });
-
-    test('teens and adults still can', () {
-      // The fix is an age gate, not a removal. Blocking everybody would be a
-      // different product, and would not be what the policy asks for.
-      for (final band in [
-        AgeBand.teen13to15,
-        AgeBand.teen16to17,
-        AgeBand.adult18plus,
-      ]) {
-        expect(band.allowsRandomisedRewards, isTrue);
-      }
-    });
-
-    test('undisclosed age is treated as an adult, deliberately', () {
-      // Guessing "child" would gate features behind answering a personal
-      // question, which teaches children to over-share to unlock things —
-      // the same reasoning the wagering gate already uses.
-      expect(AgeBand.undisclosed.allowsRandomisedRewards, isTrue);
     });
 
     test('no child band can wager, on any surface', () {
@@ -84,7 +73,8 @@ void main() {
       expect(
         total,
         closeTo(100, 0.51),
-        reason: 'published odds sum to $total%, which is not a probability '
+        reason:
+            'published odds sum to $total%, which is not a probability '
             'distribution and would be a false disclosure',
       );
     });
@@ -98,7 +88,8 @@ void main() {
       expect(
         readingGrade(prompt),
         lessThan(AgeBand.under9.maxReadingGrade + 4),
-        reason: 'this is short, plain English — the grade was never going to '
+        reason:
+            'this is short, plain English — the grade was never going to '
             'catch it, which is the whole point of the topic check',
       );
       expect(mentionsAdultTopic(prompt), isTrue);
@@ -165,7 +156,8 @@ void main() {
       // two games is banding its questions wrongly and nothing would say so.
       const samples = <String, double>{
         'You do the dishes every day and get 1 dollar each time. '
-            'After 5 days, how much have you earned?': 3.6,
+                'After 5 days, how much have you earned?':
+            3.6,
         'Diversification reduces risk by:': 18.4,
       };
       samples.forEach((text, expected) {
@@ -180,10 +172,12 @@ void main() {
     test('a simple sentence grades below a complex one', () {
       expect(
         readingGrade('You have 3 coins. You get 2 more. How many now?'),
-        lessThan(readingGrade(
-          'Amortisation schedules determine how principal and interest are '
-          'apportioned across the life of a secured obligation.',
-        )),
+        lessThan(
+          readingGrade(
+            'Amortisation schedules determine how principal and interest are '
+            'apportioned across the life of a secured obligation.',
+          ),
+        ),
       );
     });
   });

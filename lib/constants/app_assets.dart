@@ -271,6 +271,10 @@ class AppAssets {
   static String brawlEnemySprite(String archetypeId) =>
       'assets/images/finance_brawl_ui/enemies/$archetypeId.png';
 
+  /// Folder holding the fifteen Budget Buddy turtles, drawn in the style of
+  /// the logo. See `tool/import_buddy_turtles.py`.
+  static const String buddyTurtleRoot = 'assets/images/turtles/buddy';
+
   static const String turtleClassic = 'assets/images/turtles/classic.png';
   static const String turtleCoinShell = 'assets/images/turtles/coin_shell.png';
   static const String turtleGuildRunner =
@@ -429,13 +433,7 @@ class AppAssets {
   /// Villagers are not listed: they already have sheets, and
   /// [AvatarSkin.sheetAsset] is the right lookup for those. This set is the
   /// answer to the *other* branch — see [townSheet].
-  static const Set<String> townSheetSkinIds = <String>{
-    'classic_turtle',
-    'coin_shell',
-    'explorer_turtle',
-    'guild_runner',
-    'mushroom_goomba',
-  };
+  static const Set<String> townSheetSkinIds = <String>{'mushroom_goomba'};
 
   /// The town walk sheet for a non-villager skin.
   ///

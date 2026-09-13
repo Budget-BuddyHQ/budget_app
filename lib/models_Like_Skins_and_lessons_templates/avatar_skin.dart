@@ -88,6 +88,7 @@ class AvatarSkin {
     this.humanVariantId,
     this.isHuman = false,
     this.blurb,
+    this.isPixelArt = true,
   });
 
   /// A villager skin built from one of the recoloured human sprite folders.
@@ -99,6 +100,7 @@ class AvatarSkin {
     required this.rarity,
     required this.accent,
     this.blurb,
+    this.isPixelArt = true,
   }) : humanVariantId = variantId,
        isHuman = true,
        family = SkinFamily.villager,
@@ -116,6 +118,25 @@ class AvatarSkin {
 
   final String? humanVariantId;
   final bool isHuman;
+
+  /// Whether the art is pixel art, and so must be scaled nearest-neighbour.
+  ///
+  /// Everything in the app was pixel art until the Budget Buddy turtles
+  /// arrived: soft outlined illustrations in the style of the logo. Scaling
+  /// those with `FilterQuality.none` makes their smooth outlines stair-step,
+  /// and scaling pixel art smoothly blurs it — so the widget has to know
+  /// which kind of art it is drawing.
+  final bool isPixelArt;
+
+  /// Whether this is a turtle mascot rather than a player skin.
+  ///
+  /// The two used to share one equipped slot, so wearing a villager meant
+  /// giving up your turtle and the reverse. They do different jobs: the
+  /// player skin is who you walk around town and fight as; the mascot is
+  /// the turtle that explains things to you. See [SkinSlot].
+  bool get isMascot => family == SkinFamily.turtle;
+
+  SkinSlot get slot => isMascot ? SkinSlot.mascot : SkinSlot.player;
 
   /// One-line flavour text shown in the customise grid.
   final String? blurb;
@@ -219,6 +240,148 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     rarity: SkinRarity.legendary,
     accent: Color(0xFFFFD45C),
     blurb: 'Fastest shell in the village.',
+  ),
+
+  // --- Budget Buddy turtles ------------------------------------------
+  //
+  // Drawn in the style of the Budget Buddy logo, supplied as one sheet
+  // (`assets/images/bb characters.png`) and cut out by
+  // `tool/import_buddy_turtles.py`. Names and mottos are the client's own
+  // copy from under each turtle; accents are read from each name pill.
+  AvatarSkin(
+    id: 'buddy_classic',
+    name: 'Classic',
+    assetPath: '${AppAssets.buddyTurtleRoot}/buddy_classic.png',
+    rarity: SkinRarity.common,
+    accent: Color(0xFF869A76),
+    blurb: 'The original money-minded turtle.',
+    isPixelArt: false,
+  ),
+  AvatarSkin(
+    id: 'buddy_scholar',
+    name: 'Scholar',
+    assetPath: '${AppAssets.buddyTurtleRoot}/buddy_scholar.png',
+    rarity: SkinRarity.rare,
+    accent: Color(0xFF908EBD),
+    blurb: 'Learns today, builds tomorrow.',
+    isPixelArt: false,
+  ),
+  AvatarSkin(
+    id: 'buddy_adventurer',
+    name: 'Adventurer',
+    assetPath: '${AppAssets.buddyTurtleRoot}/buddy_adventurer.png',
+    rarity: SkinRarity.rare,
+    accent: Color(0xFF75854F),
+    blurb: 'Explores. Learns. Grows.',
+    isPixelArt: false,
+  ),
+  AvatarSkin(
+    id: 'buddy_cool',
+    name: 'Cool',
+    assetPath: '${AppAssets.buddyTurtleRoot}/buddy_cool.png',
+    rarity: SkinRarity.epic,
+    accent: Color(0xFF5B97B4),
+    blurb: 'Smart money, good vibes.',
+    isPixelArt: false,
+  ),
+  AvatarSkin(
+    id: 'buddy_pink_dream',
+    name: 'Pink Dream',
+    assetPath: '${AppAssets.buddyTurtleRoot}/buddy_pink_dream.png',
+    rarity: SkinRarity.rare,
+    accent: Color(0xFFEC7A8B),
+    blurb: 'Big dreams, smart moves.',
+    isPixelArt: false,
+  ),
+  AvatarSkin(
+    id: 'buddy_ocean',
+    name: 'Ocean',
+    assetPath: '${AppAssets.buddyTurtleRoot}/buddy_ocean.png',
+    rarity: SkinRarity.rare,
+    accent: Color(0xFF45A19F),
+    blurb: 'Dive into your future.',
+    isPixelArt: false,
+  ),
+  AvatarSkin(
+    id: 'buddy_gamer',
+    name: 'Gamer',
+    assetPath: '${AppAssets.buddyTurtleRoot}/buddy_gamer.png',
+    rarity: SkinRarity.epic,
+    accent: Color(0xFF487342),
+    blurb: 'Level up your finances.',
+    isPixelArt: false,
+  ),
+  AvatarSkin(
+    id: 'buddy_space',
+    name: 'Space',
+    assetPath: '${AppAssets.buddyTurtleRoot}/buddy_space.png',
+    rarity: SkinRarity.legendary,
+    accent: Color(0xFF514890),
+    blurb: 'Reach your financial goals.',
+    isPixelArt: false,
+  ),
+  AvatarSkin(
+    id: 'buddy_forest',
+    name: 'Forest',
+    assetPath: '${AppAssets.buddyTurtleRoot}/buddy_forest.png',
+    rarity: SkinRarity.common,
+    accent: Color(0xFF619654),
+    blurb: 'Save. Invest. Grow.',
+    isPixelArt: false,
+  ),
+  AvatarSkin(
+    id: 'buddy_beach',
+    name: 'Beach',
+    assetPath: '${AppAssets.buddyTurtleRoot}/buddy_beach.png',
+    rarity: SkinRarity.common,
+    accent: Color(0xFFFBBB43),
+    blurb: 'Good habits are always in season.',
+    isPixelArt: false,
+  ),
+  AvatarSkin(
+    id: 'buddy_golden',
+    name: 'Golden',
+    assetPath: '${AppAssets.buddyTurtleRoot}/buddy_golden.png',
+    rarity: SkinRarity.mythic,
+    accent: Color(0xFFDDB33E),
+    blurb: 'Wealth looks good on you.',
+    isPixelArt: false,
+  ),
+  AvatarSkin(
+    id: 'buddy_cozy',
+    name: 'Cozy',
+    assetPath: '${AppAssets.buddyTurtleRoot}/buddy_cozy.png',
+    rarity: SkinRarity.common,
+    accent: Color(0xFF767FAF),
+    blurb: 'Stay warm, keep saving.',
+    isPixelArt: false,
+  ),
+  AvatarSkin(
+    id: 'buddy_retro',
+    name: 'Retro',
+    assetPath: '${AppAssets.buddyTurtleRoot}/buddy_retro.png',
+    rarity: SkinRarity.rare,
+    accent: Color(0xFFC7778B),
+    blurb: 'Good money never goes out of style.',
+    isPixelArt: false,
+  ),
+  AvatarSkin(
+    id: 'buddy_rocket',
+    name: 'Rocket',
+    assetPath: '${AppAssets.buddyTurtleRoot}/buddy_rocket.png',
+    rarity: SkinRarity.epic,
+    accent: Color(0xFFE46454),
+    blurb: 'Small steps, big goals.',
+    isPixelArt: false,
+  ),
+  AvatarSkin(
+    id: 'buddy_rainbow',
+    name: 'Rainbow',
+    assetPath: '${AppAssets.buddyTurtleRoot}/buddy_rainbow.png',
+    rarity: SkinRarity.legendary,
+    accent: Color(0xFF9D80CA),
+    blurb: 'More knowledge. More freedom.',
+    isPixelArt: false,
   ),
 
   // --- Critters ----------------------------------------------------------
@@ -404,6 +567,23 @@ final Set<String> budgetBuddySkinIds = budgetBuddySkins
     .toSet();
 
 bool isRegisteredSkinId(String skinId) => budgetBuddySkinIds.contains(skinId);
+
+/// The two things you can wear at once.
+enum SkinSlot {
+  /// Who you walk around town and fight as: villagers and critters.
+  player,
+
+  /// The turtle that guides and explains: every turtle skin.
+  mascot,
+}
+
+/// What a new account wears in each slot, and always owns.
+const String kDefaultPlayerSkinId = 'villager_classic';
+const String kDefaultMascotSkinId = 'classic_turtle';
+
+/// Whether [skinId] is a registered skin that belongs in [slot].
+bool fitsSlot(String skinId, SkinSlot slot) =>
+    isRegisteredSkinId(skinId) && skinFromId(skinId).slot == slot;
 
 AvatarSkin skinFromId(String skinId) {
   return budgetBuddySkins.firstWhere(

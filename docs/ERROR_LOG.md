@@ -2106,6 +2106,85 @@ both the point, and a truncated comparison is worse than a two-line one.
 
 ---
 
+### Fifteen turtles that match the logo
+
+**The ask.** The person the app is being built for said the turtle skins do
+not match the main turtle — the one in the Budget Buddy logo — and supplied a
+sheet of fifteen new ones drawn in the logo's style
+(`assets/images/bb characters.png`), each with a name and a motto underneath.
+
+They were right. The four original turtle skins are chunky pixel sprites; the
+logo is a soft outlined illustration. The mascot and its costumes looked like
+two different characters.
+
+**Why a script instead of fifteen manual crops.** The sheet is a flat RGB
+image on cream, with the names baked in. `tool/import_buddy_turtles.py`
+measures the grid from where ink starts and stops against the background,
+separates the art rows from the name rows by the gap between them, and reads
+each skin's accent colour out of its own name pill.
+
+**Why flood fill and not a colour key.** A colour key deletes every cream
+pixel, including the ones that belong to the art — the Space turtle's white
+suit, Forest's flower petals, the whites of every eye. Filling inward from the
+edge of each cell only removes background connected to the outside. The
+anti-aliased edge ring is then un-mixed from the cream, or every turtle would
+wear a pale halo on the app's dark green screens.
+
+**Smooth art needed its own filter.** `AvatarSprite` drew every skin with
+`FilterQuality.none`, correct for pixel art and wrong for illustrations, whose
+outlines stair-step when scaled nearest-neighbour. `AvatarSkin.isPixelArt`
+now decides.
+
+**Town walk sheets.** `town_player_skin_test` requires every non-villager skin
+to have a sheet, or the player walks into town as the default villager.
+`make_town_sheets.py` gained a `front_only` mode for these: its back-view trick
+blanks a face box measured on the *pixel* turtle, and on an illustration that
+box lands on the shell and the coin.
+
+**Files.** `tool/import_buddy_turtles.py` (new), 15 skins under
+`assets/images/turtles/buddy/`, 15 town sheets, `avatar_skin.dart`,
+`avatar_sprite.dart`, `app_assets.dart`, `tool/make_town_sheets.py`,
+`pubspec.yaml`.
+
+**Open.** Every new turtle — and the logo — carries a Bitcoin (₿) coin. For a
+money-education app aimed at students that can read as recommending crypto.
+Not changed, because it is the client's brand art; raised with the team.
+
+---
+
+### A contrast helper that proved legibility against a colour no pixel shows
+
+**Found by** the contrast audit as soon as the new skins landed:
+
+```
+Customize: "R" #EF8C9B on #403F38 = 4.48:1 (needs 4.5)
+```
+
+The Pink Dream skin's rarity letter. The easy fix was to nudge Pink Dream's
+accent until it passed, and that would have been wrong: the letter already
+went through `AppTheme.tintedChip`, which exists precisely so that chip text is
+proven legible against its chip. If a helper built for this fails, the next
+accent fails too.
+
+**The measurement.** `tintedChip` blends its fill in floating point. Against
+that exact fill, (63.62, 62.72, 55.54), the pink ink cleared **4.500:1** —
+precisely the target, which is where `legibleOn`'s walk stops. But a screen
+paints whole 8-bit channels, (64, 63, 56), and against the fill actually
+painted the same ink measures **4.478:1**.
+
+So the helper was proving legibility against a colour that never reaches the
+screen. It only matters at the threshold — and the threshold is exactly where
+this algorithm always lands.
+
+**Fix.** `AppTheme.flatten`, documented as "what the eye actually receives",
+now returns whole 8-bit channels. Every chip's ink is measured against the
+pixel that is really painted, and a colour sitting on the boundary walks one
+more step instead of failing by rounding.
+
+**Files.** `app_theme.dart`.
+
+---
+
 ---
 
 ## Open — found, not fixed
@@ -2156,3 +2235,84 @@ crossings-per-second than for the synthesis that replaced it.
 If a fault could not be seen by reading the code, say so in **What it cost**,
 and add the measurement as a test. Most of this file is faults that read
 perfectly.
+
+### One skin slot doing two jobs
+
+**Reported as:** the new Budget Buddy turtles and the player skins "serve 2
+different purposes", but only one could be worn at a time.
+
+**What was wrong.** `equipped_skin` held both the character you walk the town
+and fight as, and the turtle that explains lessons. Picking a villager replaced
+the guide; picking a Buddy turtle sent a still illustration walking into town,
+which is why fifteen front-only town sheets had been generated for them.
+
+**Fix.** `SkinSlot { player, mascot }` on `AvatarSkin` (turtles are mascots).
+`UserStats.equippedMascot` reads `equipped_mascot`, and on old saves falls back
+to a turtle found in `equipped_skin`, so nobody loses their choice;
+`equippedSkin` only ever returns a player skin. Buy, case and equip write to the
+slot the skin belongs to. Both defaults are always owned.
+
+The guide now follows the mascot: `TutorialMascot.assetFor` keeps drawn poses
+for the four pixel turtles and uses the Buddy turtle's own art otherwise, with
+smooth filtering. Customize shows the mascot as the hero with the player
+beneath it, and lists the collection as Turtle Mascots / Player Skins with one
+equipped mark per slot. The Play Life card and "How to play" tile use the
+mascot; the home avatar fallback, town, Brawl and leaderboard stay on the
+player. The achievement celebration was left alone: it already plays the
+animated classic-turtle sheet.
+
+Turtle town sheets (19) were deleted and `town_player_skin_test` now covers
+player skins only.
+
+**Found while fixing:** the body toggle, moved into the player row, used a 20%
+green wash whose lightness came from the panel behind it — the contrast audit
+measured the label at 2.68:1. The selected chip is now opaque.
+
+**Files.** `avatar_skin.dart`, `supabase_service.dart`,
+`user_stats_controller.dart`, `customize_screen.dart`, `tutorial_steps.dart`,
+`mentor_image.dart`, `main_game_page.dart`, `home_screen.dart`,
+`app_assets.dart`, `tool/make_town_sheets.py`, `test/skin_slots_test.dart`
+(new), `test/town_player_skin_test.dart`.
+
+---
+
+### An age card promising a gate the code no longer had
+
+**What was wrong.** Commit 5ec5ab6 removed the under-13 check from
+`openSkinCase`, but `AgeBand.allowsRandomisedRewards` stayed, the age card
+still told under-9s "No random case for you", and three tests kept passing
+because they tested the getter, not the case. A safety claim that is not true
+is worse than none.
+
+**Fix.** Aligned with the committed behaviour: removed the getter, the
+`rewards` age fact and its icon; the card now lists five systems. Docs in
+`leak_patrol_unlock.dart` and on `buySkinDirectly` (whose doc comment had also
+drifted onto `completeMission`) were corrected. `child_safety_test` now checks
+that no band is told anything about the case; the odds-disclosure test stays.
+
+**Files.** `player_profile.dart`, `age_scaling_facts.dart`,
+`age_scaling_card.dart`, `leak_patrol_unlock.dart`,
+`user_stats_controller.dart`, `test/child_safety_test.dart`,
+`test/age_visibility_test.dart`.
+
+---
+
+### The life seed did not decide the life
+
+**What was wrong.** The character sheet shows a seed and derives name, origin
+and map from it, but `LifeSimPage` built `LifeSimController` with an unseeded
+`Random()`, so two lives with the same seed had different events.
+
+**Fix.** `random: Random(character.seed.value)`. A test replays 60 years twice
+from one seed with the same choices and requires identical events and money.
+
+**Files.** `life_sim_page.dart`, `test/skin_slots_test.dart`.
+
+---
+
+### Auth gate left skipped
+
+`kDevSkipAuthGate` was `true`, which skips sign-in in a release build. Set to
+`false`. (`kShowDevTools` has no call site, so it shows nothing either way.)
+
+**Files.** `dev_preview_flags.dart`.
