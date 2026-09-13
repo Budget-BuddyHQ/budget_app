@@ -77,7 +77,11 @@ class HomeScreen extends StatelessWidget {
     return Consumer<UserStatsController>(
       builder: (context, controller, _) {
         final stats = controller.stats;
-        final turtleSkin = skinFromId(stats.equippedSkin);
+        // The face when there is no profile photo. That is the *player* skin
+        // — the same face the leaderboard and friend profiles show — not the
+        // guide turtle. It was called `avatarSkin` because, with one slot,
+        // it usually was a turtle.
+        final avatarSkin = skinFromId(stats.equippedSkin);
 
         return Scaffold(
           backgroundColor: AppTheme.deepForest,
@@ -118,7 +122,7 @@ class HomeScreen extends StatelessWidget {
                             height: heroHeight,
                             child: _AdventureLaunchHero(
                               stats: stats,
-                              turtleSkin: turtleSkin,
+                              avatarSkin: avatarSkin,
                               profileImageUrl: stats.profileImageUrl,
                               compact: compactHeight,
                               onOpenAdventure: () =>
@@ -145,9 +149,7 @@ class HomeScreen extends StatelessWidget {
                           // `MoneyReport.isNewcomer`. A coach with no
                           // history to read should be quiet rather than
                           // encouraging.
-                          const CoachSpot(
-                            margin: EdgeInsets.only(top: 10),
-                          ),
+                          const CoachSpot(margin: EdgeInsets.only(top: 10)),
                           const SizedBox(height: 10),
                           MentorTipCard(
                             simpleWording: stats.ageBand.prefersSimpleWording,
@@ -580,14 +582,14 @@ class _DashboardBackdrop extends StatelessWidget {
 class _AdventureLaunchHero extends StatelessWidget {
   const _AdventureLaunchHero({
     required this.stats,
-    required this.turtleSkin,
+    required this.avatarSkin,
     required this.profileImageUrl,
     required this.compact,
     required this.onOpenAdventure,
   });
 
   final UserStats stats;
-  final AvatarSkin turtleSkin;
+  final AvatarSkin avatarSkin;
   final String profileImageUrl;
   final bool compact;
   final VoidCallback? onOpenAdventure;
@@ -680,7 +682,7 @@ class _AdventureLaunchHero extends StatelessWidget {
                         Align(
                           alignment: Alignment.topRight,
                           child: _HeroAvatar(
-                            turtleSkin: turtleSkin,
+                            avatarSkin: avatarSkin,
                             profileImageUrl: profileImageUrl,
                             size: veryTight ? 70 : 92,
                           ),
@@ -893,12 +895,12 @@ class _HudPill extends StatelessWidget {
 
 class _HeroAvatar extends StatelessWidget {
   const _HeroAvatar({
-    required this.turtleSkin,
+    required this.avatarSkin,
     required this.profileImageUrl,
     required this.size,
   });
 
-  final AvatarSkin turtleSkin;
+  final AvatarSkin avatarSkin;
   final String profileImageUrl;
   final double size;
 
@@ -909,7 +911,7 @@ class _HeroAvatar extends StatelessWidget {
       hoverScale: 1.05,
       child: ProfileAvatar(
         imageUrl: profileImageUrl,
-        fallbackSkin: turtleSkin,
+        fallbackSkin: avatarSkin,
         size: size,
       ),
     );

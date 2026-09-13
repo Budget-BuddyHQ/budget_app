@@ -430,14 +430,25 @@ class AppTheme {
   }
 
   /// Flattens [fg] onto an opaque [bg] — what the eye actually receives.
+  ///
+  /// **Rounded to whole 8-bit channels**, because that is what a screen can
+  /// paint. It used to return the exact floating-point blend, and
+  /// [legibleOn] would then prove a label against a colour no pixel ever
+  /// shows. That only matters at the threshold, which is exactly where the
+  /// walk stops: the Pink Dream skin's rarity letter cleared its chip at
+  /// 4.500:1 against the float fill (63.62, 62.72, 55.54), and measured
+  /// 4.478:1 against the fill actually painted, (64, 63, 56) — an AA failure
+  /// produced entirely by rounding, in a helper whose job is preventing them.
   static Color flatten(Color fg, Color bg) {
     final a = fg.a;
     if (a >= 1.0) return fg;
-    return Color.from(
-      alpha: 1.0,
-      red: fg.r * a + bg.r * (1 - a),
-      green: fg.g * a + bg.g * (1 - a),
-      blue: fg.b * a + bg.b * (1 - a),
+    int channel(double f, double b) =>
+        ((f * a + b * (1 - a)) * 255).round().clamp(0, 255);
+    return Color.fromARGB(
+      255,
+      channel(fg.r, bg.r),
+      channel(fg.g, bg.g),
+      channel(fg.b, bg.b),
     );
   }
 

@@ -92,7 +92,9 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
       // "equipped" needs a second line about. On failure it is a real reason
       // ("That skin is still locked") and worth keeping.
       message: result.success
-          ? 'Your look is updated everywhere.'
+          ? (skin.isMascot
+                ? 'Your guide turtle is now ${skin.name}.'
+                : 'You walk around town as ${skin.name} now.')
           : result.message,
       icon: result.success
           ? Icons.check_circle_rounded
@@ -120,7 +122,10 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
     return Consumer<UserStatsController>(
       builder: (context, controller, _) {
         final stats = controller.stats;
-        final equippedSkin = skinFromId(stats.equippedSkin);
+        // Two slots, worn together: the turtle that guides you, and who you
+        // walk around town as. See `SkinSlot`.
+        final mascot = skinFromId(stats.equippedMascot);
+        final playerSkin = skinFromId(stats.equippedSkin);
         final unlockedIds = stats.unlockedSkins.toSet();
 
         return Scaffold(
@@ -133,7 +138,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
                 ),
           body: Stack(
             children: [
-              _CustomizeBackdrop(skin: equippedSkin),
+              _CustomizeBackdrop(skin: mascot),
               SafeArea(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -148,7 +153,8 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
                       children: [
                         _CharacterPreviewCard(
                           stats: stats,
-                          equippedSkin: equippedSkin,
+                          mascot: mascot,
+                          playerSkin: playerSkin,
                         ),
                         const SizedBox(height: 18),
                         _StorePanel(
@@ -165,7 +171,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
 
                     final collection = _SkinCollection(
                       unlockedIds: unlockedIds,
-                      equippedId: stats.equippedSkin,
+                      equippedIds: <String>{mascot.id, playerSkin.id},
                       availableWidth: gridWidth - 36,
                       onEquip: _equipSkin,
                       onLockedTap: _showLockedSkinInfo,
@@ -219,11 +225,17 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
 class _CharacterPreviewCard extends StatelessWidget {
   const _CharacterPreviewCard({
     required this.stats,
-    required this.equippedSkin,
+    required this.mascot,
+    required this.playerSkin,
   });
 
   final UserStats stats;
-  final AvatarSkin equippedSkin;
+
+  /// The turtle that guides and explains. See [SkinSlot.mascot].
+  final AvatarSkin mascot;
+
+  /// Who you walk around town and fight as. See [SkinSlot.player].
+  final AvatarSkin playerSkin;
 
   @override
   Widget build(BuildContext context) {
@@ -260,30 +272,21 @@ class _CharacterPreviewCard extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
               // Faint translucent panel instead of an opaque accent-to-dark
-              // gradient. The gradient was doing most of the work of making
-              // this screen feel like a solid slab of colour — a light fill
-              // lets the village map read through it instead.
+              // gradient, so the village map reads through it.
               color: Colors.white.withValues(alpha: 0.07),
-              border: Border.all(
-                color: equippedSkin.accent.withValues(alpha: 0.30),
-              ),
+              border: Border.all(color: mascot.accent.withValues(alpha: 0.30)),
             ),
             child: Column(
               children: [
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    _RarityAura(
-                      skin: equippedSkin,
-                      size: 230,
-                      imageSize: 160,
-                      showImage: true,
-                    ),
-                  ],
+                _RarityAura(
+                  skin: mascot,
+                  size: 230,
+                  imageSize: 160,
+                  showImage: true,
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  equippedSkin.name,
+                  mascot.name,
                   style: GoogleFonts.pixelifySans(
                     color: Colors.white,
                     fontSize: 22,
@@ -292,19 +295,94 @@ class _CharacterPreviewCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${equippedSkin.rarityLabel} skin • ${stats.gold} gold ready',
+                  '${mascot.rarityLabel} guide • ${stats.gold} gold ready',
                   style: GoogleFonts.quicksand(
                     color: Colors.white.withValues(alpha: 0.80),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                if (equippedSkin.isHuman) ...[
-                  const SizedBox(height: 14),
-                  _BodyToggle(current: stats.villagerBody),
-                ],
               ],
             ),
           ),
+          const SizedBox(height: 14),
+          _PlayerSlotRow(stats: stats, skin: playerSkin),
+        ],
+      ),
+    );
+  }
+}
+
+/// The player skin, shown beneath the mascot rather than instead of it.
+///
+/// With one slot, equipping a villager replaced the turtle in the hero above,
+/// so a screen headed "Your turtle mascot" showed a villager under it. The two
+/// sit together now because they are worn together.
+class _PlayerSlotRow extends StatelessWidget {
+  const _PlayerSlotRow({required this.stats, required this.skin});
+
+  final UserStats stats;
+  final AvatarSkin skin;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: skin.accent.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              SizedBox(
+                width: 56,
+                height: 56,
+                child: AvatarSprite(skin: skin, size: 56),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'YOUR PLAYER',
+                      style: AppTheme.caps(
+                        color: Colors.white.withValues(alpha: 0.72),
+                        fontSize: 11,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      skin.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.pixelifySans(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      'Who you walk around town as',
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white.withValues(alpha: 0.78),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (skin.isHuman) ...[
+            const SizedBox(height: 12),
+            _BodyToggle(current: stats.villagerBody),
+          ],
         ],
       ),
     );
@@ -358,8 +436,11 @@ class _BodyChip extends StatelessWidget {
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
+          // Opaque when selected: a 20% green wash took its lightness from
+          // whatever sat behind it, and on the player row that was light
+          // enough to drop the green label to 2.7:1.
           color: selected
-              ? const Color(0xFF85EFAC).withValues(alpha: 0.20)
+              ? const Color(0xFF14432B)
               : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
@@ -371,7 +452,7 @@ class _BodyChip extends StatelessWidget {
         child: Text(
           body.label,
           style: TextStyle(
-            color: selected ? const Color(0xFF85EFAC) : Colors.white70,
+            color: selected ? const Color(0xFF85EFAC) : Colors.white,
             fontWeight: FontWeight.w800,
             fontSize: 13,
           ),
@@ -693,14 +774,16 @@ class _RarityDot extends StatelessWidget {
 class _SkinCollection extends StatelessWidget {
   const _SkinCollection({
     required this.unlockedIds,
-    required this.equippedId,
+    required this.equippedIds,
     required this.availableWidth,
     required this.onEquip,
     required this.onLockedTap,
   });
 
   final Set<String> unlockedIds;
-  final String equippedId;
+
+  /// One per slot: the mascot and the player skin are both "equipped".
+  final Set<String> equippedIds;
   final double availableWidth;
   final ValueChanged<AvatarSkin> onEquip;
   final ValueChanged<AvatarSkin> onLockedTap;
@@ -761,41 +844,69 @@ class _SkinCollection extends StatelessWidget {
             valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF85EFAC)),
           ),
         ),
-        for (final family in SkinFamily.values) ...[
-          if (skinsInFamily(family).isNotEmpty) ...[
-            const SizedBox(height: 20),
-            Text(
-              family.label.toUpperCase(),
-              style: AppTheme.caps(
-                color: Colors.white.withValues(alpha: 0.55),
-                fontSize: 12,
-                letterSpacing: 1.2,
-                fontWeight: FontWeight.w700,
-              ),
+        // Grouped by what the skin is *for*, not by what it looks like. The
+        // page used to list Turtles, Villagers and Critters as one pool with
+        // one "equipped", which made a turtle and a villager compete for a
+        // single spot when they do two different jobs.
+        for (final slot in const <SkinSlot>[
+          SkinSlot.mascot,
+          SkinSlot.player,
+        ]) ...[
+          const SizedBox(height: 20),
+          Text(
+            slot == SkinSlot.mascot ? 'TURTLE MASCOTS' : 'PLAYER SKINS',
+            style: AppTheme.caps(
+              color: Colors.white.withValues(alpha: 0.72),
+              fontSize: 12,
+              letterSpacing: 1.2,
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: 10),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: skinsInFamily(family).length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: columns,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.74,
-              ),
-              itemBuilder: (context, index) {
-                final skin = skinsInFamily(family)[index];
-                final unlocked = unlockedIds.contains(skin.id);
-                return _SkinTile(
-                  skin: skin,
-                  unlocked: unlocked,
-                  equipped: equippedId == skin.id,
-                  onTap: () => unlocked ? onEquip(skin) : onLockedTap(skin),
-                );
-              },
+          ),
+          const SizedBox(height: 4),
+          Text(
+            slot == SkinSlot.mascot
+                ? 'Your guide. It explains lessons, tips and the tour.'
+                : 'Who you walk around town and fight as.',
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.78),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
-          ],
+          ),
+          const SizedBox(height: 10),
+          Builder(
+            builder: (context) {
+              // Family order is kept inside each slot, so the pixel turtles
+              // still come before the Budget Buddy turtles and villagers
+              // before critters.
+              final skins = <AvatarSkin>[
+                for (final family in SkinFamily.values)
+                  for (final skin in skinsInFamily(family))
+                    if (skin.slot == slot) skin,
+              ];
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: skins.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.74,
+                ),
+                itemBuilder: (context, index) {
+                  final skin = skins[index];
+                  final unlocked = unlockedIds.contains(skin.id);
+                  return _SkinTile(
+                    skin: skin,
+                    unlocked: unlocked,
+                    equipped: equippedIds.contains(skin.id),
+                    onTap: () => unlocked ? onEquip(skin) : onLockedTap(skin),
+                  );
+                },
+              );
+            },
+          ),
         ],
       ],
     );

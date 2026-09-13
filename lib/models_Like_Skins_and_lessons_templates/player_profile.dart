@@ -294,28 +294,6 @@ extension AgeBandReading on AgeBand {
   bool get blocksAdultTopics =>
       this == AgeBand.under9 || this == AgeBand.age9to12;
 
-  /// Whether this player may open a randomised reward case.
-  ///
-  /// **This is the loot box question, and it was ungated.**
-  /// `openSkinCase()` charges 180 gold and returns a weighted-random skin
-  /// from four rarity tiers. That is a loot box by any definition, and there
-  /// was no age check anywhere on the path to it — a four-year-old could
-  /// spend earned currency on a randomised rarity pull.
-  ///
-  /// Google Play's Families policy requires that content accessible to
-  /// children be appropriate for children, and its developer programme policy
-  /// requires loot box odds be disclosed before purchase. The second is now
-  /// done for everybody (see `skinCaseRarityOdds`, surfaced in the UI). The
-  /// first is this: under-13s do not get the random pull at all.
-  ///
-  /// **They are not locked out of skins.** They buy the one they want, for
-  /// the same gold, through `buySkinDirectly`. The reward is identical; what
-  /// is removed is the gamble — which is the part that does not belong in
-  /// front of an eight-year-old, and which they were never going to
-  /// understand as a cost anyway.
-  bool get allowsRandomisedRewards =>
-      this != AgeBand.under9 && this != AgeBand.age9to12;
-
   /// What to tell the player about why the questions changed.
   String get readingBlurb => switch (this) {
     AgeBand.under9 => 'Short questions with small numbers.',

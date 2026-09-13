@@ -179,8 +179,9 @@ class UserStats {
         'risk_tolerance': 'balanced',
         'confidence_score': 2.0,
         'missed_questions': <String>[],
-        'equipped_skin': 'classic_turtle',
-        'unlocked_skins': <String>['classic_turtle'],
+        'equipped_skin': kDefaultPlayerSkinId,
+        'equipped_mascot': kDefaultMascotSkinId,
+        'unlocked_skins': <String>[kDefaultMascotSkinId, kDefaultPlayerSkinId],
       },
       transactions: <LedgerTransaction>[
         LedgerTransaction(
@@ -258,12 +259,28 @@ class UserStats {
 
   double get levelProgress => (xp % 120) / 120;
 
+  /// The **player** skin: who you walk around town and fight as.
+  ///
+  /// This key used to hold whatever you last equipped, turtle or villager,
+  /// because there was only one slot. Saves written then can hold a turtle
+  /// here. That is read as "no player skin chosen yet" rather than rewritten,
+  /// so no existing save is changed by upgrading — the turtle moves to
+  /// [equippedMascot] on read, and the player slot shows the default villager.
   String get equippedSkin {
-    final value = spendingHabits['equipped_skin']?.toString().trim();
-    if (value == null || value.isEmpty || !isRegisteredSkinId(value)) {
-      return budgetBuddySkins.first.id;
-    }
-    return value;
+    final value = spendingHabits['equipped_skin']?.toString().trim() ?? '';
+    return fitsSlot(value, SkinSlot.player) ? value : kDefaultPlayerSkinId;
+  }
+
+  /// The **mascot**: the turtle that guides and explains.
+  ///
+  /// Falls back to a turtle left in the old single slot, so a player who had
+  /// equipped Guild Runner before the split still has Guild Runner as their
+  /// guide afterwards.
+  String get equippedMascot {
+    final value = spendingHabits['equipped_mascot']?.toString().trim() ?? '';
+    if (fitsSlot(value, SkinSlot.mascot)) return value;
+    final legacy = spendingHabits['equipped_skin']?.toString().trim() ?? '';
+    return fitsSlot(legacy, SkinSlot.mascot) ? legacy : kDefaultMascotSkinId;
   }
 
   List<String> get unlockedSkins {
@@ -276,14 +293,16 @@ class UserStats {
           )
           .toSet()
           .toList(growable: false);
-      if (normalized.isNotEmpty) {
-        if (!normalized.contains(budgetBuddySkins.first.id)) {
-          return <String>[budgetBuddySkins.first.id, ...normalized];
-        }
-        return normalized;
-      }
+      // Both defaults are always owned. Before the split only the turtle was,
+      // so an old save reading the default villager into its player slot
+      // would otherwise show that villager equipped and locked at once.
+      return <String>{
+        kDefaultMascotSkinId,
+        kDefaultPlayerSkinId,
+        ...normalized,
+      }.toList(growable: false);
     }
-    return <String>[budgetBuddySkins.first.id];
+    return const <String>[kDefaultMascotSkinId, kDefaultPlayerSkinId];
   }
 
   /// Ids of [LifeEndingArchetype]s the player has actually reached in Life.
@@ -770,6 +789,7 @@ class UserStats {
         ...spendingHabits,
         'username': username,
         'equipped_skin': equippedSkin,
+        'equipped_mascot': equippedMascot,
         'unlocked_skins': unlockedSkins,
       },
       'transaction_ledger': transactions
