@@ -48,6 +48,10 @@ looked worse.
 
 from __future__ import annotations
 
+import sys as _superseded_sys
+
+_superseded_sys.exit('Superseded by tool/redraw_side_walk.py, which redraws the villager side rows from scratch. This script patched the old frames in place; run now it would damage the new walk cycle.')
+
 import argparse
 import glob
 import os

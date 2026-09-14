@@ -1,10 +1,55 @@
 import 'dart:math' as math;
 import 'package:bonfire/bonfire.dart';
 import 'package:flutter/material.dart'
-    show Colors, Paint, PaintingStyle, Radius, RRect, Rect, StrokeCap;
+    show
+        Colors,
+        EdgeInsets,
+        Offset,
+        Paint,
+        PaintingStyle,
+        Radius,
+        RRect,
+        Rect,
+        StrokeCap;
 
 import '../../../constants/app_assets.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_spot_models.dart';
+
+/// Where the town's joystick sits, in one place.
+///
+/// The joystick and the tap-to-walk check both read this, so the two cannot
+/// disagree about where the stick is. The values are Bonfire's own defaults,
+/// written out: bottom-left, 80px across, 100px in from the corner.
+class TownJoystickLayout {
+  const TownJoystickLayout._();
+
+  static const double size = 80;
+  static const EdgeInsets margin = EdgeInsets.all(100);
+
+  /// How far outside its circle Bonfire still starts a drag. From
+  /// `JoystickDirectional.directionalDown`, which inflates the stick's
+  /// bounds by 50 on every side.
+  static const double grabSlop = 50;
+
+  /// A little more on top, so a thumb that lands just past the grab area is
+  /// ignored rather than sending the player walking to the corner.
+  static const double tapSlop = 20;
+
+  /// Whether a touch at [screen] belongs to the joystick, on a viewport of
+  /// [viewport] logical pixels. Same coordinate space as
+  /// `GestureEvent.screenPosition` and the joystick's own hit test.
+  static bool owns(Offset screen, Vector2 viewport) {
+    final radius = size / 2;
+    final centre = Offset(
+      margin.left + radius,
+      viewport.y - margin.bottom - radius,
+    );
+    return Rect.fromCircle(
+      center: centre,
+      radius: radius + grabSlop + tapSlop,
+    ).contains(screen);
+  }
+}
 
 class TownPlayer extends SimplePlayer
     with BlockMovementCollision, PathFinding, TapGesture {
@@ -29,31 +74,49 @@ class TownPlayer extends SimplePlayer
   @override
   void onTap() {}
 
-  /// Tap anywhere to walk there.
+  /// Whether the joystick (or a movement key) is currently held.
+  bool _stickHeld = false;
+
+  /// The joystick takes over from a tap-to-walk path the moment it moves.
   ///
-  /// **This used to be `onTapDown`, which could never fire usefully.**
-  /// Bonfire's `TapGesture` gates `onTapDown` behind
-  /// `containsPoint(tapEvent.worldPosition)` — the tap has to land *inside
-  /// the player component itself*. So a tap anywhere else on the map was
-  /// ignored, and a tap on the player passed its own position to
-  /// `moveAlongThePath`, which is a walk to where you already are. Tap-to-move
-  /// looked implemented, read as implemented, and did nothing at all; the town
-  /// was joystick-and-keyboard only.
+  /// Without this the two fought: a path set by an earlier tap kept pulling
+  /// the player toward its target while the stick pushed another way.
+  @override
+  void onJoystickChangeDirectional(JoystickDirectionalEvent event) {
+    _stickHeld = event.directional != JoystickMoveDirectional.IDLE;
+    if (_stickHeld && isMovingAlongThePath) {
+      stopMoveAlongThePath();
+    }
+    super.onJoystickChangeDirectional(event);
+  }
+
+  /// Tap anywhere on the map to walk there — but not on the joystick.
   ///
-  /// `onTapDownScreen` is the callback that fires for taps anywhere on the
-  /// screen, which is what "tap and go" needs. It arrives in *screen* space,
-  /// so it has to be converted before pathfinding — feeding screen
-  /// coordinates to `moveAlongThePath` would send the player to the wrong
-  /// tile on any map that is scrolled, which is every map after the first
-  /// step.
+  /// **Why the joystick was broken.** Bonfire hands every touch-down to both
+  /// the joystick and this player, and `onTapDownScreen` fires for all of
+  /// them. So putting a thumb on the stick *also* set a walk path to the
+  /// spot under the thumb — the bottom-left of the screen — and from then on
+  /// the stick and the path pulled the character in two directions. It read
+  /// as a joystick that steers wrong, sticks, or drags the player to the
+  /// corner.
   ///
-  /// The joystick and WASD/arrow input are untouched. This is an addition for
-  /// desktop and for anybody who would rather not drive a thumbstick.
+  /// A touch in the joystick's area, or any tap while the stick is held with
+  /// the other thumb, is now left to the joystick.
+  ///
+  /// (This used to be `onTapDown`, which Bonfire only fires for taps *on the
+  /// player sprite*, so tap-to-walk did nothing. `onTapDownScreen` is the one
+  /// that fires anywhere.)
   @override
   void onTapDownScreen(GestureEvent event) {
-    final target = gameRef.screenToWorld(event.screenPosition);
-    moveAlongThePath([target]);
     super.onTapDownScreen(event);
+    if (_stickHeld) return;
+    if (TownJoystickLayout.owns(
+      event.screenPosition.toOffset(),
+      gameRef.camera.viewport.virtualSize,
+    )) {
+      return;
+    }
+    moveAlongThePath([event.worldPosition]);
   }
 }
 

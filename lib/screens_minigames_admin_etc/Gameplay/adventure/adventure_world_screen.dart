@@ -264,7 +264,8 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
                 age: age,
                 lessonsFinished: controller.stats.completedLessons.length,
               ),
-        canClaim: mission != null &&
+        canClaim:
+            mission != null &&
             missionComplete(
               mission,
               coinsSaved: widget.life?.emergencyFund ?? 0,
@@ -375,7 +376,10 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     // lock **names the unit**, because a door that is simply shut teaches
     // nothing and reads as a bug — the point is to send somebody to a lesson,
     // not to keep them out of a building.
-    final completed = context.read<UserStatsController>().stats.completedLessons
+    final completed = context
+        .read<UserStatsController>()
+        .stats
+        .completedLessons
         .toSet();
     if (!isSpotUnlocked(spot.kind, completed)) {
       final unlock = unlockFor(spot.kind)!;
@@ -542,7 +546,12 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
               ),
               player: _buildPlayer(playerSheet),
               playerControllers: [
-                Joystick(directional: JoystickDirectional()),
+                Joystick(
+                  directional: JoystickDirectional(
+                    size: TownJoystickLayout.size,
+                    margin: TownJoystickLayout.margin,
+                  ),
+                ),
                 Keyboard(
                   config: KeyboardConfig(
                     acceptedKeys: [
@@ -588,14 +597,13 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
                     onExit: _onExitNpc,
                   ),
                 for (final coin in townCoinsFor(_townMap))
-                    if (!_collectedCoinIds.contains(_coinId(coin)))
-                      TownCoinComponent(
-                        value: coin.value,
-                        tileX: coin.x,
-                        tileY: coin.y,
-                        onCollect: (value) =>
-                            _collectCoin(_coinId(coin), value),
-                      ),
+                  if (!_collectedCoinIds.contains(_coinId(coin)))
+                    TownCoinComponent(
+                      value: coin.value,
+                      tileX: coin.x,
+                      tileY: coin.y,
+                      onCollect: (value) => _collectCoin(_coinId(coin), value),
+                    ),
               ],
               cameraConfig: CameraConfig(zoom: 1.6, moveOnlyMapArea: true),
             ),
@@ -1273,28 +1281,27 @@ Future<SpriteAnimation> _loadRowFrames(
   ], stepTime: stepTime);
 }
 
-/// The side-on walk cycle.
+/// The side-on walk cycle: all eight columns, in order.
 ///
-/// **What was wrong, and it was not the drawing.** Every villager sheet has
-/// eight side-facing columns but only *four distinct poses* — measured across
-/// all 38 sheets, column 0 was pixel-identical to 4, 1 to 3, and 5 to 7. And
-/// 5-7 were not the other half of the stride, they were the same poses drawn
-/// 16% bulkier (7,820 opaque pixels at 79.5px wide against 6,740 at 65px).
+/// **Why it skipped frames before, and why it does not now.** The old side
+/// rows were never a walk. Columns 0 and 4 had face-on legs on a profile
+/// body, 1 and 3 were the same pose, and 5-7 were 1-3 with the leg band
+/// flipped, which pointed the shoes backwards. No frame had the legs apart,
+/// so the cycle `[1, 2, 3, 5, 6, 7]` shuffled on the spot with the feet
+/// flipping direction — reported as the left/right walk "not working".
+/// Five in-place patches to those frames each fixed one measurement and left
+/// the walk just as broken.
 ///
-/// So this cycle used to run slim-pass, slim-up, slim-pass, fat-pass, fat-up,
-/// fat-pass: **the same leg leading the whole way round**, with the body
-/// swelling and shrinking twice a second. That is what "the character is
-/// clanking" was, and it is why redrawing individual frames never fixed it —
-/// the frames were fine, the second half of the cycle was missing.
-///
-/// `tool/fix_side_walk_cycle.py` rebuilds columns 5-7 as copies of 1-2 with
-/// only the *leg band* mirrored, so the torso is pixel-identical between the
-/// halves (no swell, by construction) and the legs alternate (which is the
-/// part that reads as walking). Columns 0 and 4 stay out: they draw
-/// front-facing legs on a profile body, so the walk would snap face-on twice
-/// per cycle.
-const List<int> kSideWalkFrames = <int>[1, 2, 3, 5, 6, 7];
-const int kSideIdleFrame = 1;
+/// `tool/redraw_side_walk.py` now draws the side rows from scratch: the body
+/// from one frame, identical in all eight, and the legs drawn per frame for
+/// a real stride — heel strike, weight, passing, push-off, toe-off, lift,
+/// swing, reach — with the other leg half a cycle behind, toes always
+/// forward, and feet on one ground line. Every column is a good frame, so
+/// every column plays.
+const List<int> kSideWalkFrames = <int>[0, 1, 2, 3, 4, 5, 6, 7];
+
+/// Standing still sideways: the passing pose, both feet under the body.
+const int kSideIdleFrame = 2;
 
 class _AdventureMapPendingScreen extends StatelessWidget {
   const _AdventureMapPendingScreen();
@@ -1352,7 +1359,6 @@ class _AdventureMapPendingScreen extends StatelessWidget {
   }
 }
 
-
 /// A mission, shown under whatever the person just said.
 class _MissionBlock extends StatelessWidget {
   const _MissionBlock({
@@ -1369,9 +1375,7 @@ class _MissionBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = canClaim
-        ? AppTheme.greenPrimary
-        : const Color(0xFFFFD45C);
+    final accent = canClaim ? AppTheme.greenPrimary : const Color(0xFFFFD45C);
 
     return Container(
       margin: const EdgeInsets.only(top: 14),
@@ -1437,9 +1441,7 @@ class _MissionBlock extends StatelessWidget {
                 icon: const Icon(Icons.check_rounded),
                 label: Text(
                   'Collect ${mission.rewardGold} gold',
-                  style: GoogleFonts.pixelifySans(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
                 ),
               ),
             )
