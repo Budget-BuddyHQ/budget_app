@@ -2316,3 +2316,156 @@ from one seed with the same choices and requires identical events and money.
 `false`. (`kShowDevTools` has no call site, so it shows nothing either way.)
 
 **Files.** `dev_preview_flags.dart`.
+
+### Leak Patrol: six holes off screen, and a start screen nobody could parse
+
+**Reported as:** two screenshots and "this UI is so confusing", with a request
+that it work when the resolution changes.
+
+**The board.** The grid was a fixed three columns of near-square cells, sized
+from the board's width only, inside a grid that cannot scroll. On a ~974x746
+window each cell came out ~310px tall; three rows needed ~980px and the board
+had ~550px, so six of the nine holes were laid out below the screen — still
+spawning leaks that could never be seen or tapped. The sprite was a fixed 46px
+and the label a fixed 10.5pt, so a thing rising in a big cell was a caption on
+a hole with the creature clipped away.
+
+`LeakBoardLayout.fit` now picks the largest square cell that fits both width
+and height (3x3 for nine holes; 3x2 or 2x3 for six), the board is only as big
+as its holes, and everything inside a hole (sprite, label, rim, burst,
+floating number) scales from the cell. On a short, wide window (a phone held
+sideways) the score and tip panel move to a left column so the board keeps
+the full height — stacked, the holes there were 16px.
+
+**Nothing above the board changes height any more.** The streak bar and the
+explanation banner appeared and disappeared above the board, resizing it
+between the player looking and tapping. Both now live in one fixed-height
+panel.
+
+**The confusing parts.** The in-game banner showed only an item's explanation
+("A charge for not having money...") with no item name, verdict or cost; it
+now says "Leak caught: …  +9", "That was a real bill: …  −12" or "A leak got
+away: …", then why. Before the first tap it states the rule. The HUD's SAVED
+showed saved-minus-lost (it could read "saved -4"); it is COINS now, and WRONG
+is MISTAKES. The intro opened on a riddle ("Tap the money leaving. Leave the
+money you owe."); it now defines a leak, gives three numbered steps with their
+consequences, labels the example cards LEAK / REAL BILL with what the tap is
+worth, sits on a dark panel instead of raw over the map, is capped at 560px
+wide, and keeps Start pinned under the panel instead of below the fold.
+
+**Why no test caught it.** `responsive_layout_test` only renders the start
+screen; the board does not exist until Start is pressed.
+`test/leak_patrol_layout_test.dart` (new) presses Start at nine window sizes
+from 568x320 to 1920x1080 and requires every hole fully on screen, at least
+44px, non-overlapping, with each creature and label inside its own hole.
+
+**Test harness trap, found on the way.** The new test hung for ten minutes per
+size: an `expect` failed while `FlutterError.onError` was still overridden,
+and the binding waits forever for an error it was told to handle. The override
+is now restored before any assertion.
+
+**Files.** `leak_patrol_page.dart`, `test/leak_patrol_layout_test.dart` (new).
+
+### The left/right walk was never a walk cycle
+
+**Reported as:** "the walking animation is not working and the sprites are
+still misdrawn — please fix the left and right walking animation", after
+several earlier rounds of fixes.
+
+**What the frames actually were.** Rendered large, the west row of every
+villager sheet held three leg poses at most. Columns 0 and 4 drew face-on legs
+on a profile body (with a stray hip line left by an earlier edit); 1 and 3 were
+the same pose; 5-7 were 1-3 with the leg band flipped by
+`fix_side_walk_cycle.py`, which **pointed the shoes backwards**. No frame had
+the legs apart. The cycle `[1, 2, 3, 5, 6, 7]` shuffled on the spot with the
+feet flipping direction every half second.
+
+**Why five fixes did not fix it.** `narrow_side_profile`, `redraw_side_profile`,
+`normalize_walk_baseline` and `fix_side_walk_cycle` each patched one measured
+property of frames that were never a stride. Each test passed; the walk was
+still broken. The tests measured body mass and pixel differences, not whether
+the legs ever took a step.
+
+**Fix.** `tool/redraw_side_walk.py` redraws rows 2 and 3 of all 38 sheets from
+scratch: the body from column 1, identical in every frame except a one-block
+dip when both feet are planted, and legs drawn per frame on the sheet's 5px
+grid for an eight-step stride (heel strike, weight, passing, push-off,
+toe-off, lift, swing, reach), the second leg half a cycle behind and a shade
+darker, toes forward, feet on one ground line, in each sheet's own trouser
+colour. East is west mirrored. It is dry by default and was checked on a 4x
+close-up and at the 34px size the town draws before `--write`. The game now
+plays all eight columns and idles on column 2 (feet under the body).
+
+The three superseded scripts now exit with a message instead of running, so
+nobody re-applies an old patch to the new frames.
+
+**Tests.** `town_map_test` "side walk cycle" now checks, on every sheet: all
+eight frames play; every frame's feet are on the same ground line; the body is
+pixel-identical across frames; the legs change on every step; east mirrors
+west; and the standing shoe points forward.
+
+**Files.** `tool/redraw_side_walk.py` (new), 38 `villager_*.png` sheets,
+`adventure_world_screen.dart` (`kSideWalkFrames`, `kSideIdleFrame`),
+`test/town_map_test.dart`, and guards in `tool/fix_side_walk_cycle.py`,
+`tool/narrow_side_profile.py`, `tool/redraw_side_profile.py`.
+
+### The town joystick fought tap-to-walk
+
+**Reported as:** "the joystick is broken".
+
+**Cause.** Bonfire hands every touch-down to both the joystick and the
+player's `TapGesture`, and `onTapDownScreen` fires for all of them. The
+tap-to-walk added to `TownPlayer` therefore also ran for a thumb on the
+joystick, setting a walk path to the spot under the thumb — the bottom-left
+of the screen. From then on the path and the stick pulled the character in
+different directions: it steered wrong, stuck, or drifted to the corner.
+
+**Fix.** `TownJoystickLayout` holds the joystick's size and margin in one
+place; the `Joystick` is built from it, and `TownJoystickLayout.owns` covers
+the same area Bonfire uses to start a drag (its circle plus 50px, plus 20px
+spare). `onTapDownScreen` ignores touches there and any tap while the stick
+is held, and `onJoystickChangeDirectional` cancels a tap-to-walk path the
+moment the stick (or a movement key) moves. It also uses the event's own
+world position instead of converting the screen position a second time.
+
+**Tests.** `test/town_joystick_test.dart`: on portrait, landscape and tablet
+sizes, the stick's centre and every point Bonfire would grab belong to the
+joystick; the open map does not.
+
+**Files.** `town_components.dart`, `adventure_world_screen.dart`.
+
+---
+
+### Music playing after the app was closed
+
+**Reported as:** close the app on a phone, press a volume button, and the
+music plays.
+
+**Cause.** Nothing checked whether the app was still on screen before
+starting sound, and four paths let the loop run in the background:
+
+* `handleAppPaused` disposed sixteen effect players one at a time and stopped
+  the music **last**, so the loop kept going through all of that — and if the
+  process was suspended part-way, it never stopped.
+* `handleAppResumed` rebuilt the same sixteen players before restarting the
+  music; leaving the app during that still restarted it.
+* `startMusic` assigns its player only after `play()` returns, so a pause that
+  arrived during that await found nothing to stop.
+* `AppLifecycleState.hidden` was not treated as backgrounded, and the observer
+  was attached only after start-up had finished.
+
+**Fix.** `AppSoundService` tracks whether the app is in the foreground and a
+lifecycle epoch. `hidden`, `paused` and `detached` all count as backgrounded
+(`inactive`, the notification shade, does not). The pause handler stops the
+music first. `startMusic` and `play` refuse while backgrounded; `startMusic`
+re-checks after each await and throws away a player whose app has left. The
+resume handler stops if the app leaves again part-way, and the observer is
+attached at the start of `initialize`. A music request made in the background
+is remembered and starts when the app returns.
+
+**Tests.** `test/audio_lifecycle_test.dart`: music will not start once the
+app is hidden, paused or detached (and the request is kept); `inactive` does
+not stop it; resuming allows sound again; effects are silent in the
+background.
+
+**Files.** `app_sound_service.dart`.
