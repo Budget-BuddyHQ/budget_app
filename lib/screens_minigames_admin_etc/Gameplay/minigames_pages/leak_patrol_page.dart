@@ -15,6 +15,7 @@ import '../../../widgets_custom_lotties/confetti_burst.dart';
 import '../../../widgets_custom_lotties/age_scaled_note.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/map_backdrop.dart';
+import '../../../navigation_tools_and_animation/pauses_in_background.dart';
 
 /// Leak Patrol — tap the money leaving, leave the money you owe.
 ///
@@ -40,7 +41,8 @@ class LeakPatrolPage extends StatefulWidget {
 /// eye could not tell what was UI and what was scenery.
 const Color _panel = Color(0xE60A1F14);
 
-class _LeakPatrolPageState extends State<LeakPatrolPage> {
+class _LeakPatrolPageState extends State<LeakPatrolPage>
+    with PausesInBackground {
   final Random _random = Random();
 
   late LeakRound _round;
@@ -111,6 +113,42 @@ class _LeakPatrolPageState extends State<LeakPatrolPage> {
     super.dispose();
   }
 
+  /// A round that was running when the app went away.
+  ///
+  /// The clock and the spawner used to keep going in the background, so a
+  /// fifty-five second round could end while the phone was in a pocket and
+  /// the player came back to a results card for a round they did not play.
+  bool _pausedInBackground = false;
+
+  @override
+  void onAppBackgrounded() {
+    if (!_running) return;
+    _pausedInBackground = true;
+    _clock?.cancel();
+    _spawner?.cancel();
+    for (final timer in _retreats.values) {
+      timer.cancel();
+    }
+    _retreats.clear();
+    // Clear the board rather than leaving things frozen mid-rise. Anything
+    // that was up would otherwise hang there with a retreat timer that no
+    // longer exists.
+    setState(() {
+      _holes = List<LeakItem?>.filled(_round.holes, null);
+      _resolved.clear();
+      _hits.clear();
+    });
+  }
+
+  @override
+  void onAppForegrounded() {
+    if (!_pausedInBackground) return;
+    _pausedInBackground = false;
+    if (!_running || _finished) return;
+    _startClock();
+    _scheduleNextPop();
+  }
+
   void _start() {
     setState(() {
       _running = true;
@@ -127,6 +165,13 @@ class _LeakPatrolPageState extends State<LeakPatrolPage> {
       _streak = LeakStreak(0, _streak.best);
     });
 
+    _startClock();
+    _scheduleNextPop();
+  }
+
+  /// The round clock, started fresh or restarted after the app comes back.
+  void _startClock() {
+    _clock?.cancel();
     _clock = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       setState(() {
@@ -135,8 +180,6 @@ class _LeakPatrolPageState extends State<LeakPatrolPage> {
       });
       if (_secondsLeft <= 0) _finish();
     });
-
-    _scheduleNextPop();
   }
 
   /// Schedules one pop, then reschedules itself.

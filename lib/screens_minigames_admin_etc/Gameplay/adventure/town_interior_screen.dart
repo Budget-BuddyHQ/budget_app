@@ -14,6 +14,7 @@ import '../../../models_Like_Skins_and_lessons_templates/town_challenges.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
 import '../../../widgets_custom_lotties/pixel_kit.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_scenarios.dart';
+import 'park_activity_panel.dart';
 
 /// Inside a town building — a whole screen, with the room art as the room.
 ///
@@ -77,6 +78,12 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
   TownChoice? _confirming;
 
   bool get _hasCounter => widget.spot.kind == TownSpotKind.store;
+
+  /// The park offers games first and the conversation second, and this is
+  /// the player choosing the conversation. See [ParkActivityPanel].
+  bool _talkingInThePark = false;
+
+  bool get _isPark => widget.spot.kind == TownSpotKind.park;
 
   void _choose(TownChoice choice) {
     if (_confirming != null) return;
@@ -148,7 +155,20 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
                   daySeed: stableChallengeHash(widget.today?.id ?? 'clear'),
                 );
 
-                final panel = challenge == null
+                // The park is the one place people come to for fun, so it
+                // leads with something to play. "Sit and talk" is still
+                // there and still pays what it always did.
+                final Widget panel = _isPark && !_talkingInThePark
+                    ? ParkActivityPanel(
+                        spot: spot,
+                        band: context
+                            .watch<UserStatsController>()
+                            .stats
+                            .ageBand,
+                        onTalk: () => setState(() => _talkingInThePark = true),
+                        onFinish: (choice) => Navigator.of(context).pop(choice),
+                      )
+                    : challenge == null
                     ? _DecisionPanel(
                         spot: spot,
                         lifeAge: widget.lifeAge,
@@ -161,8 +181,7 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
                     : _ChallengePanel(
                         challenge: challenge,
                         settled: widget.settled,
-                        onFinish: (choice) =>
-                            Navigator.of(context).pop(choice),
+                        onFinish: (choice) => Navigator.of(context).pop(choice),
                         onLeave: () => Navigator.of(context).pop(),
                       );
 
@@ -610,9 +629,7 @@ class _ChallengePanelState extends State<_ChallengePanel> {
                   // only once per panel, because the whole point of those
                   // missions is that they cannot be walked into.
                   if (_correct) {
-                    context
-                        .read<UserStatsController>()
-                        .recordChallengeSolved();
+                    context.read<UserStatsController>().recordChallengeSolved();
                   }
                   widget.onFinish(_asChoice());
                 },

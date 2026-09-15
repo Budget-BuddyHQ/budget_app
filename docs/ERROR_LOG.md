@@ -2469,3 +2469,99 @@ not stop it; resuming allows sound again; effects are silent in the
 background.
 
 **Files.** `app_sound_service.dart`.
+
+### Town sheets overflowed on a phone in landscape
+
+**Reported as:** screenshots of the neighbour's mission sheet and the Pawn
+Shop's locked sheet with Flutter's yellow stripes across them, "BOTTOM
+OVERFLOWED BY 104 PIXELS" and by 28.
+
+**Cause.** Each sheet was a fixed-height `Column` in a plain
+`showModalBottomSheet`, which caps a sheet at half the screen. The town locks
+landscape, so the normal case is about 460 logical pixels tall. The reward
+line and the button under it were off the bottom and could not be reached.
+
+**Fix.** One `_TownSheet` frame for all three sheets: at most 88% of the
+screen, scrollable inside that, with the last row clear of the gesture bar.
+The call sites pass `isScrollControlled` and `useSafeArea`.
+
+**Why nothing caught it.** The layout sweep renders whole screens, and these
+sheets only exist after you walk up to a person or a locked door.
+`test/town_sheet_layout_test.dart` builds them through a test seam and checks
+four phone sizes.
+
+**Files.** `adventure_world_screen.dart`, `test/town_sheet_layout_test.dart`.
+
+---
+
+### The app kept playing itself after you left it
+
+**Reported as:** leaving the app, or holding something down, and the app
+carrying on.
+
+**Cause.** No game screen watched the app lifecycle. Flutter stops animations
+by itself because it stops producing frames, but timers and held input are
+not animations. So Leak Patrol's round ran out in the background, Coin
+Cascade's bills kept dropping, the Market Board polled the network every two
+seconds in somebody's pocket, and the ticker tape scrolled thirty times a
+second for nobody. A key held down when the app went away never sent its
+key-up, and a thumb on the Brawl joystick never sent its pan-end, so the
+character kept running.
+
+**Fix.** `PausesInBackground`, one mixin that adds and removes the observer
+and calls `onAppBackgrounded` / `onAppForegrounded`. `hidden`, `paused` and
+`detached` count as away; `inactive` does not, because that is the
+notification shade over a visible app. Leak Patrol and Coin Cascade stop and
+restart their clocks, the Market Board stops polling and refreshes on return,
+and Finance Brawl clears held keys and the joystick and opens its own pause
+dialog so you come back paused rather than dead.
+
+**Files.** `pauses_in_background.dart` (new), `leak_patrol_page.dart`,
+`coin_cascade_page.dart`, `stock_market_page.dart`, `finance_brawl_game.dart`,
+`test/background_pause_test.dart`.
+
+---
+
+### The park was a menu
+
+**Reported as:** a request for real things to do inside the dialogue boxes.
+
+Every other building in town poses a question; the park was three sentences
+and three buttons, in the one place a player walks to for fun. It now opens
+with two games that run inside the panel. **Coin Rush** is an action round
+where coins and fees fall together and tapping a fee costs, so tapping
+everything loses. **Price Dash** is unit price against a clock. Both scale
+with the account's age band, both pay through the town's existing reward
+path, and the conversation is still one tap away and still pays what it did.
+
+**Found while building it.** The first draft of the Price Dash table had the
+small pack cheaper in six of ten questions, which teaches the opposite of
+what the game says afterwards. It is seven of ten to the bigger pack now, and
+the three exceptions are exactly the packs labelled value, bonus and party
+box. A test holds that split.
+
+**Files.** `park_activity_models.dart` (new), `park_activity_panel.dart`
+(new), `town_interior_screen.dart`, `test/park_activity_test.dart`,
+`test/responsive_layout_test.dart`.
+
+---
+
+### An eight-year-old could reach the loot box events
+
+**Found during a child-safety pass before submission.**
+
+`t_loot_box` and `t_skin_gamble` put a paid game of chance on screen. They are
+deliberately not wagers — their outcomes are scripted and they state the real
+odds — so the wagering gate did not hide them, and they gated on the
+character's age of 10 and 13. A small child can tap a character to 13 in
+about a minute, which is the same character-age-versus-account-age mistake
+the wagering gate already exists to fix.
+
+**Fix.** `LifeEvent.showsGamblingMechanic`, gated by
+`AgeBand.hidesGamblingMechanics`, which is true only for the 4-to-8 band. The
+9-to-12 band keeps both, because a loot box with its odds written out is the
+most useful thing in the set for the age that is actually buying them.
+
+**Files.** `life_sim_models.dart`, `life_events_traps.dart`,
+`player_profile.dart`, `life_sim_controller.dart`, `life_sim_page.dart`,
+`test/child_safety_test.dart`.

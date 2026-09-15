@@ -250,6 +250,10 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      // Without this a sheet is capped at half the screen and the
+      // content underneath is simply unreachable.
+      isScrollControlled: true,
+      useSafeArea: true,
       builder: (_) => _NpcDialogueSheet(
         npc: npc,
         line: line,
@@ -289,6 +293,10 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     final accepted = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
+      // Without this a sheet is capped at half the screen and the
+      // content underneath is simply unreachable.
+      isScrollControlled: true,
+      useSafeArea: true,
       isDismissible: isDeclinable(action.kind),
       enableDrag: isDeclinable(action.kind),
       builder: (_) => _NpcEncounterSheet(npc: npc, action: action),
@@ -386,6 +394,10 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
       await showModalBottomSheet<void>(
         context: context,
         backgroundColor: Colors.transparent,
+        // Without this a sheet is capped at half the screen and the
+        // content underneath is simply unreachable.
+        isScrollControlled: true,
+        useSafeArea: true,
         builder: (_) => _LockedSpotSheet(
           spot: spot,
           unlock: unlock,
@@ -899,6 +911,102 @@ class _TalkButton extends StatelessWidget {
   }
 }
 
+/// Every town bottom sheet, at its wordiest, for the layout sweep.
+///
+/// These are private widgets inside a Bonfire screen, and a test cannot drive
+/// that screen to the point of opening one (the map needs a real game loop
+/// and a map file). They are also exactly where the overflow was reported, so
+/// `test/town_sheet_layout_test.dart` builds them through here instead. Each
+/// is filled from the real catalogues, picking the longest text in each, so
+/// the sweep measures the worst case rather than a convenient one.
+@visibleForTesting
+Map<String, Widget> debugTownSheets() {
+  T longestBy<T>(Iterable<T> items, int Function(T) length) =>
+      items.reduce((a, b) => length(b) > length(a) ? b : a);
+
+  final npc = longestBy(
+    kTownNpcs,
+    (n) => longestBy(n.lines, (l) => l.length).length,
+  );
+  final line = longestBy(npc.lines, (l) => l.length);
+  final mission = longestBy(
+    kTownMissions,
+    (m) => m.brief.length + m.title.length,
+  );
+  final action = longestBy(
+    kNpcActions,
+    (a) => a.detail.length + a.headline.length,
+  );
+  final unlock = longestBy(kTownUnlocks, (u) => u.why.length);
+  final spot = kTownSpots.firstWhere((s) => s.kind == unlock.spotKind);
+
+  return <String, Widget>{
+    'neighbour with a mission': _NpcDialogueSheet(
+      npc: npc,
+      line: line,
+      mission: mission,
+      progress: 0.5,
+      canClaim: true,
+      onClaim: () {},
+    ),
+    'neighbour, no mission': _NpcDialogueSheet(npc: npc, line: line),
+    'encounter': _NpcEncounterSheet(npc: npc, action: action),
+    'locked building': _LockedSpotSheet(
+      spot: spot,
+      unlock: unlock,
+      progress: 0,
+    ),
+  };
+}
+
+/// The frame every town bottom sheet sits in.
+///
+/// **The bug this fixes.** Each sheet was a fixed-height `Column` in a plain
+/// `showModalBottomSheet`, which caps a sheet at half the screen. The town
+/// map locks landscape, so the *normal* case here is a phone about 460
+/// logical pixels tall. A neighbour handing out a mission, or a locked
+/// building explaining its unlock, ran off the bottom: Flutter painted the
+/// yellow overflow stripes across the reward line, and the button below it
+/// could not be reached at all.
+///
+/// So a sheet now takes as much height as it needs up to 88% of the screen,
+/// scrolls inside that, and keeps its last row clear of the gesture bar.
+class _TownSheet extends StatelessWidget {
+  const _TownSheet({required this.child, this.border});
+
+  final Widget child;
+
+  /// The encounter sheet tints its edge by what kind of encounter it is.
+  final Color? border;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppTheme.panelStrong,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppTheme.radiusXLarge),
+          ),
+          border: border == null
+              ? null
+              : Border.all(color: border!, width: 1.5),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _NpcDialogueSheet extends StatelessWidget {
   const _NpcDialogueSheet({
     required this.npc,
@@ -927,14 +1035,7 @@ class _NpcDialogueSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-      decoration: const BoxDecoration(
-        color: AppTheme.panelStrong,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppTheme.radiusXLarge),
-        ),
-      ),
+    return _TownSheet(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1488,15 +1589,8 @@ class _NpcEncounterSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final choosable = isDeclinable(action.kind);
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-      decoration: BoxDecoration(
-        color: AppTheme.panelStrong,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppTheme.radiusXLarge),
-        ),
-        border: Border.all(color: _accent.withValues(alpha: 0.4), width: 1.5),
-      ),
+    return _TownSheet(
+      border: _accent.withValues(alpha: 0.4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1618,14 +1712,7 @@ class _LockedSpotSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = spot.kind.accent;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-      decoration: const BoxDecoration(
-        color: AppTheme.panelStrong,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppTheme.radiusXLarge),
-        ),
-      ),
+    return _TownSheet(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

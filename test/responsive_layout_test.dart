@@ -89,7 +89,6 @@ List<LiveQuote> _fakeQuotes() {
   ];
 }
 
-
 /// A freshly created character, bypassing the character sheet.
 LifeSimController _newborn() =>
     LifeSimController(random: Random(5), initialAge: 0);
@@ -213,6 +212,12 @@ void main() {
     'Bank interior': () => TownInteriorScreen(
       spot: kTownSpots.firstWhere((s) => s.kind == TownSpotKind.bank),
     ),
+    // The park leads with two playable games inside the dialogue panel
+    // rather than a list of choices, so it is a different shape from every
+    // other interior and needs its own pass.
+    'Park interior': () => TownInteriorScreen(
+      spot: kTownSpots.firstWhere((s) => s.kind == TownSpotKind.park),
+    ),
     'Finance Brawl': () => const FinanceBrawlScreen(),
     // The board fits itself to whatever space it gets, which is exactly the
     // kind of claim that needs the landscape and small-phone entries.
@@ -243,9 +248,12 @@ void main() {
     'Money Habits — Today': () => const MoneyHabitsScreen(),
     'Money Habits — My Week': () =>
         const MoneyHabitsScreen(initialTab: MoneyHabitsTab.week),
-    'Money Habits — Challenges': () => const MoneyHabitsScreen(initialTab: MoneyHabitsTab.challenges),
-    'Money Habits — My Jar': () => const MoneyHabitsScreen(initialTab: MoneyHabitsTab.jar),
-    'Money Habits — Coach': () => const MoneyHabitsScreen(initialTab: MoneyHabitsTab.coach),
+    'Money Habits — Challenges': () =>
+        const MoneyHabitsScreen(initialTab: MoneyHabitsTab.challenges),
+    'Money Habits — My Jar': () =>
+        const MoneyHabitsScreen(initialTab: MoneyHabitsTab.jar),
+    'Money Habits — Coach': () =>
+        const MoneyHabitsScreen(initialTab: MoneyHabitsTab.coach),
     // No map file exists yet, so this exercises the "waiting for the map"
     // fallback screen, not the Bonfire game canvas itself.
     'Adventure (map pending)': () => const AdventureWorldScreen(),

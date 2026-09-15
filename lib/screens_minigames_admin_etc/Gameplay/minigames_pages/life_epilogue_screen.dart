@@ -775,7 +775,6 @@ class _EndingsPanel extends StatelessWidget {
   }
 }
 
-
 /// The seed this life was rolled from, ready to copy.
 class _SeedCard extends StatelessWidget {
   const _SeedCard({required this.seed, required this.graded});

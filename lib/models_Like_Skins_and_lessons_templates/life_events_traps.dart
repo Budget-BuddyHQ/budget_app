@@ -353,6 +353,9 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
         'the boxes are \$2.30 each.',
     icon: Icons.casino_rounded,
     minAge: 10,
+    // Shown to 9-to-12s and up, never to the 4-to-8 band, whose characters
+    // can reach age 10 in a couple of minutes of tapping.
+    showsGamblingMechanic: true,
     weight: 1.0,
     choices: [
       LifeChoice(
@@ -395,6 +398,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
         'It says the odds are fair.',
     icon: Icons.swap_horiz_rounded,
     minAge: 13,
+    showsGamblingMechanic: true,
     weight: 0.85,
     choices: [
       LifeChoice(

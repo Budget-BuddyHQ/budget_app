@@ -149,6 +149,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
         // The *account's* age, not the character's. See
         // `AgeBand.allowsWagering`.
         allowWagering: allowWagering,
+        hideGamblingMechanics: band.hidesGamblingMechanics,
         // Also the account's age. A ten-year-old whose character reaches
         // thirty was being offered mortgages and down payments, because
         // events gate on the character's age and nothing was checking who
@@ -214,7 +215,10 @@ class _LifeSimPageState extends State<LifeSimPage> {
     // ...and files the run itself, which is what Past Lives and the
     // personal bests are built from. Must come after the gold award above
     // so the record's reward figure matches what was actually paid out.
-    final bestsBeaten = await controller.recordLifeRun(summary, graded: _graded);
+    final bestsBeaten = await controller.recordLifeRun(
+      summary,
+      graded: _graded,
+    );
     if (!mounted) return;
     GameToast.show(
       context,

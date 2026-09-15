@@ -19,6 +19,7 @@ import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/pixel_kit.dart';
 import '../../../models_Like_Skins_and_lessons_templates/brawl_questions_extra.dart';
 import '../../../themes_colors/app_theme.dart';
+import '../../../navigation_tools_and_animation/pauses_in_background.dart';
 
 class FinanceBrawlCloseResult {
   const FinanceBrawlCloseResult({
@@ -131,7 +132,7 @@ class FinanceBrawlScreen extends StatefulWidget {
 }
 
 class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, PausesInBackground {
   late final Ticker _ticker;
   final FocusNode _keyboardFocusNode = FocusNode();
 
@@ -1970,11 +1971,11 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
         }
       }
 
-
       // 4. Spawning Debts / Boss Market Crises
       if (_wave % 5 == 0) {
         int minionTarget = max(0, _debtsNeededForLevelUp - 1);
-        int spawnedOrAliveMinions = _debtsCleared + _liabilities.where((m) => !m.isBoss).length;
+        int spawnedOrAliveMinions =
+            _debtsCleared + _liabilities.where((m) => !m.isBoss).length;
 
         // ONLY spawn regular minions if we haven't reached the minion quota
         if (spawnedOrAliveMinions < minionTarget) {
@@ -1984,9 +1985,11 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
             _lastSpawnTime = 0;
             _spawnLiability();
           }
-        } 
+        }
         // ONLY spawn the boss when all regular minions have been spawned AND killed
-        else if (!_bossActive && _liabilities.isEmpty && _debtsCleared == minionTarget) {
+        else if (!_bossActive &&
+            _liabilities.isEmpty &&
+            _debtsCleared == minionTarget) {
           _bossActive = true;
           _spawnMarketCrashBoss();
         }
@@ -2171,24 +2174,24 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   }
 
   void _onLiabilityCleared(int index, _FinancialLiability mob) {
-  _liabilities.removeAt(index);
-  
-  // Increment debts cleared up to the maximum target for this wave
-  if (_debtsCleared < _debtsNeededForLevelUp) {
-    _debtsCleared++;
-  }
+    _liabilities.removeAt(index);
 
-  _goldAccumulated += mob.rewardGold;
-  _xpAccumulated += mob.isBoss ? 80 : 8;
+    // Increment debts cleared up to the maximum target for this wave
+    if (_debtsCleared < _debtsNeededForLevelUp) {
+      _debtsCleared++;
+    }
 
-  if (mob.isBoss) {
-    _bossActive = false;
-    _chests.add(_TreasureChest(pos: mob.pos));
-    _triggerQuizGate();
-  } else if (_wave % 5 != 0 && _debtsCleared >= _debtsNeededForLevelUp) {
-    _triggerQuizGate();
+    _goldAccumulated += mob.rewardGold;
+    _xpAccumulated += mob.isBoss ? 80 : 8;
+
+    if (mob.isBoss) {
+      _bossActive = false;
+      _chests.add(_TreasureChest(pos: mob.pos));
+      _triggerQuizGate();
+    } else if (_wave % 5 != 0 && _debtsCleared >= _debtsNeededForLevelUp) {
+      _triggerQuizGate();
+    }
   }
-}
 
   /// The most recent archetype spawned, so the wave-end card can say what it
   /// was. Shown after the fight rather than during it: a sentence about
@@ -2457,53 +2460,53 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   }
 
   void _nextQuizQuestion() {
-      setState(() {
-        final total = _activeQuizQuestions.length;
-        if (_quizQuestionIndex < total - 1) {
-          _quizQuestionIndex++;
-          _selectedAnswerIndex = null;
-          _isAnswerSubmitted = false;
-          return;
-        }
+    setState(() {
+      final total = _activeQuizQuestions.length;
+      if (_quizQuestionIndex < total - 1) {
+        _quizQuestionIndex++;
+        _selectedAnswerIndex = null;
+        _isAnswerSubmitted = false;
+        return;
+      }
 
-        _isQuizOpen = false;
+      _isQuizOpen = false;
 
-        // Reset wave counters FIRST so level state is clean regardless of quiz outcome
-        _debtsCleared = 0;
-        _wave++;
-        _bossActive = false;
-        _debtsNeededForLevelUp = 6 + (_wave * 3);
+      // Reset wave counters FIRST so level state is clean regardless of quiz outcome
+      _debtsCleared = 0;
+      _wave++;
+      _bossActive = false;
+      _debtsNeededForLevelUp = 6 + (_wave * 3);
 
-        // A perfect round lets you pick an upgrade.
-        if (_quizCorrectCount == total) {
-          _isUpgradeChoiceOpen = true;
-          return;
-        }
+      // A perfect round lets you pick an upgrade.
+      if (_quizCorrectCount == total) {
+        _isUpgradeChoiceOpen = true;
+        return;
+      }
 
-        final earnedConsolation = total > 1 && _quizCorrectCount >= total - 1;
-        if (earnedConsolation) {
-          final bonus = _getUpgradeOptions().first;
-          bonus.action();
-          GameToast.show(
-            context,
-            title: "Quiz Score: $_quizCorrectCount/$total",
-            message: "${bonus.name} granted. Answer all $total for your pick!",
-            icon: Icons.school_rounded,
-            accent: const Color(0xFF85EFAC),
-          );
-          return;
-        }
-
+      final earnedConsolation = total > 1 && _quizCorrectCount >= total - 1;
+      if (earnedConsolation) {
+        final bonus = _getUpgradeOptions().first;
+        bonus.action();
         GameToast.show(
           context,
           title: "Quiz Score: $_quizCorrectCount/$total",
-          message:
-              "Score $total/$total for income upgrades! Market grid reinforced.",
+          message: "${bonus.name} granted. Answer all $total for your pick!",
           icon: Icons.school_rounded,
-          accent: const Color(0xFFE1BB72),
+          accent: const Color(0xFF85EFAC),
         );
-      });
-    }
+        return;
+      }
+
+      GameToast.show(
+        context,
+        title: "Quiz Score: $_quizCorrectCount/$total",
+        message:
+            "Score $total/$total for income upgrades! Market grid reinforced.",
+        icon: Icons.school_rounded,
+        accent: const Color(0xFFE1BB72),
+      );
+    });
+  }
 
   /// The levelled upgrade tracks, in the order they were designed rather than
   /// the order they appear — [_getUpgradeOptions] shuffles.
@@ -3064,9 +3067,30 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     );
   }
 
+  /// Leaving the app pauses the fight, and lets go of whatever was held.
+  ///
+  /// **The stuck-input bug.** A key that is down when the app goes away never
+  /// sends its key-up, and a thumb on the joystick never sends its pan-end.
+  /// Both used to leave the character running in a direction for as long as
+  /// the game was open, which is the "hold something down and it keeps going"
+  /// report.
+  @override
+  void onAppBackgrounded() {
+    _pressedKeys.clear();
+    _touchMoveKnob = Offset.zero;
+    if (_isGameOver || _isSavingAndExiting || _pauseDialogOpen) return;
+    _showPauseDialog(context);
+  }
+
+  /// Open pause dialogs must not stack, and the ticker must not restart
+  /// under one.
+  bool _pauseDialogOpen = false;
+
   void _showPauseDialog(BuildContext context) {
+    if (_pauseDialogOpen) return;
+    _pauseDialogOpen = true;
     _ticker.stop();
-    showDialog(
+    showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => Dialog(
@@ -3128,7 +3152,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
           ),
         ),
       ),
-    );
+    ).whenComplete(() => _pauseDialogOpen = false);
   }
 
   Widget _buildQuizOverlay() {
@@ -3599,11 +3623,7 @@ class _TouchJoystick extends StatelessWidget {
 /// second one therefore has to survive a narrow phone.
 @immutable
 class HudProgress {
-  const HudProgress({
-    required this.current,
-    required this.total,
-    this.label,
-  });
+  const HudProgress({required this.current, required this.total, this.label});
 
   final int current;
   final int total;
