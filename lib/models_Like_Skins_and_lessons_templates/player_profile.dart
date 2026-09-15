@@ -66,8 +66,7 @@ enum AgeBand {
   };
 
   /// Under-13 accounts get the conservative default: no leaderboard presence.
-  bool get isMinorUnder13 =>
-      this == AgeBand.under9 || this == AgeBand.age9to12;
+  bool get isMinorUnder13 => this == AgeBand.under9 || this == AgeBand.age9to12;
 
   /// Whether money explainers should use the simplest wording (see
   /// `FinanceConcept.explainerFor`).
@@ -106,8 +105,16 @@ enum AgeBand {
   /// they are the most valuable events in the pack for exactly the age group
   /// this flag protects. Their outcomes are scripted, so nothing is being
   /// wagered to read them.
-  bool get allowsWagering =>
-      this != AgeBand.under9 && this != AgeBand.age9to12;
+  bool get allowsWagering => this != AgeBand.under9 && this != AgeBand.age9to12;
+
+  /// Whether paid games of chance are kept off this player's screen entirely.
+  ///
+  /// Only the youngest band. A loot box explained with its real odds is one
+  /// of the most useful things a twelve-year-old can be shown, because it is
+  /// the thing actually taking their money. An eight-year-old does not need
+  /// to see the mechanic at all, and the events that carry it gate on the
+  /// *character's* age, which a child can run up in ten taps.
+  bool get hidesGamblingMechanics => this == AgeBand.under9;
 
   /// A single representative number for this bucket, used only where a plain
   /// integer is needed (e.g. mirroring into a numeric database column) — the
@@ -216,7 +223,6 @@ class ProfileKeys {
   static const String displayPronoun = 'display_pronoun';
   static const String onboardingComplete = 'personal_details_complete';
 }
-
 
 /// Which questions a band should actually be asked.
 ///

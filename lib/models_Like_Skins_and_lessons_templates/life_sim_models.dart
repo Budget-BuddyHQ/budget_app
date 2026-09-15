@@ -436,6 +436,7 @@ class LifeEvent {
     this.maxAge = 200,
     this.weight = 1.0,
     this.isWager = false,
+    this.showsGamblingMechanic = false,
     this.requiresSkill,
     this.minSkill = 0,
     this.requiresTrait,
@@ -464,6 +465,19 @@ class LifeEvent {
   /// See `AgeBand.allowsWagering` for why the character's age was not enough
   /// of a gate on its own.
   final bool isWager;
+
+  /// Whether this event puts a paid game-of-chance mechanic on screen.
+  ///
+  /// Loot boxes and skin trading sites. These are not wagers by the flag
+  /// above, because their outcomes are scripted and they exist to show the
+  /// mechanic from the inside with its real odds, which is a lesson the
+  /// 9-to-12 band needs more than anybody.
+  ///
+  /// The 4-to-8 band does not need it. They gate on the *character's* age
+  /// (10 and 13), and a small child can age a character there in about ten
+  /// taps, so without this an eight-year-old account could be shown a site
+  /// offering to take their item. See `AgeBand.hidesGamblingMechanics`.
+  final bool showsGamblingMechanic;
 
   final int minAge;
   final int maxAge;

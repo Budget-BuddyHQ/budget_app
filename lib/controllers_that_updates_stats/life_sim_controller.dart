@@ -33,6 +33,7 @@ class LifeSimController extends ChangeNotifier {
     this.origin = LifeOrigin.workingClass,
     this.allowWagering = true,
     this.plainWordsOnly = false,
+    this.hideGamblingMechanics = false,
   }) : _random = random ?? Random(),
        startAge = initialAge,
        _age = initialAge,
@@ -726,6 +727,12 @@ class LifeSimController extends ChangeNotifier {
   /// rather than the story.
   final bool plainWordsOnly;
 
+  /// Whether loot boxes and skin-trading sites are kept off screen entirely.
+  ///
+  /// Set from `AgeBand.hidesGamblingMechanics`, so it follows the account and
+  /// not the character's age. See [LifeEvent.showsGamblingMechanic].
+  final bool hideGamblingMechanics;
+
   LifeStage get stage => LifeStageInfo.forAge(_age);
 
   /// Everything you own minus everything you owe — the "earning vs keeping"
@@ -1257,6 +1264,7 @@ class LifeSimController extends ChangeNotifier {
 
     bool fresh(LifeEvent e) {
       if (e.isWager && !allowWagering) return false;
+      if (e.showsGamblingMechanic && hideGamblingMechanics) return false;
       // Grown-up instruments, kept back from young *players* — not from
       // grown-up characters. See [plainWordsOnly].
       if (plainWordsOnly && mentionsAdultTopic(e.prompt)) return false;
@@ -1277,6 +1285,7 @@ class LifeSimController extends ChangeNotifier {
           .where(
             (e) =>
                 (!e.isWager || allowWagering) &&
+                !(e.showsGamblingMechanic && hideGamblingMechanics) &&
                 // The fallback has to apply the same filter. Without this a
                 // long life exhausts the fresh pool and quietly reopens the
                 // door that was just closed — which is how age gates leak.

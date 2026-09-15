@@ -1,6 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_sim_models.dart';
+import 'package:budget_app/controllers_that_updates_stats/life_sim_controller.dart';
+import 'dart:math';
 
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/age_scaling_facts.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/avatar_skin.dart';
@@ -43,6 +46,48 @@ void main() {
             isNot(contains('random case')),
             reason: '${band.label} is told something about the case',
           );
+        }
+      }
+    });
+
+    test('the youngest band is shown no paid game of chance at all', () {
+      // The two events that put a loot box or a skin-trading site on screen
+      // gate on the *character's* age, 10 and 13. A small child can tap a
+      // character up to 13 in about a minute, so the account's own band has
+      // to be the gate. Nine to twelve keep it, because a loot box with its
+      // real odds written out is the most useful thing in the set for them.
+      expect(AgeBand.under9.hidesGamblingMechanics, isTrue);
+      for (final band in AgeBand.values) {
+        if (band == AgeBand.under9) continue;
+        expect(band.hidesGamblingMechanics, isFalse, reason: band.name);
+      }
+    });
+
+    test('and never draws one, over many lives', () {
+      final gambling = kLifeEvents
+          .where((e) => e.showsGamblingMechanic)
+          .map((e) => e.id)
+          .toSet();
+      expect(gambling, isNotEmpty, reason: 'nothing carries the flag');
+
+      for (var seed = 0; seed < 40; seed++) {
+        final life = LifeSimController(
+          random: Random(seed),
+          allowWagering: false,
+          hideGamblingMechanics: true,
+        );
+        for (var year = 0; year < 80 && !life.finished; year++) {
+          life.takeLesson();
+          life.ageUp();
+          final event = life.currentEvent;
+          if (event == null) continue;
+          expect(
+            gambling.contains(event.id),
+            isFalse,
+            reason: 'seed $seed served ${event.id} to a 4-to-8 account',
+          );
+          expect(event.isWager, isFalse);
+          life.chooseOption(0);
         }
       }
     });

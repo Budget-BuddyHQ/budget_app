@@ -19,6 +19,7 @@ import 'order_ticket_page.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/age_scaled_note.dart';
+import '../../../navigation_tools_and_animation/pauses_in_background.dart';
 
 /// Real, tradeable stock: a [LiveQuote] plus the display/trade dressing
 /// (icon, accent, thesis, bid-ask spread) that Finnhub doesn't provide.
@@ -201,7 +202,7 @@ class StockMarketPage extends StatefulWidget {
 }
 
 class _StockMarketPageState extends State<StockMarketPage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, PausesInBackground {
   late final TabController _tabController;
 
   /// Polls live prices while the board is open, so quotes and charts move
@@ -216,6 +217,11 @@ class _StockMarketPageState extends State<StockMarketPage>
     // Two seconds behind the cached proxy, five without one. The proxy makes
     // the difference: it holds vendor responses for twelve seconds, so the
     // board's poll rate stops being the same thing as Finnhub's call limit.
+    _startLivePoll();
+  }
+
+  /// The price poll, started on open and restarted when the app comes back.
+  void _startLivePoll() {
     final market = context.read<MarketDataService>();
     _livePoll = Timer.periodic(
       market.usesProxy
@@ -223,6 +229,21 @@ class _StockMarketPageState extends State<StockMarketPage>
           : MarketDataService.livePollInterval,
       (_) => _tick(),
     );
+  }
+
+  @override
+  void onAppBackgrounded() {
+    // Polling prices for a screen nobody is looking at is somebody's battery
+    // and somebody's data plan.
+    _livePoll?.cancel();
+    _livePoll = null;
+  }
+
+  @override
+  void onAppForegrounded() {
+    if (_livePoll != null) return;
+    _startLivePoll();
+    _tick(force: true);
   }
 
   @override
@@ -1370,16 +1391,20 @@ class _PortfolioTab extends StatelessWidget {
     final quoteMap = {for (final q in quotes) q.symbol: q};
 
     // 2. Identify all non-zero stock holdings from stats.holdings
-    final holdings = <({
-      _TradeQuote quote,
-      double ownedLots,
-      ({
-        double averageCost,
-        double currentValue,
-        double totalProfitLoss,
-        double profitLossPercent,
-      }) metrics,
-    })>[];
+    final holdings =
+        <
+          ({
+            _TradeQuote quote,
+            double ownedLots,
+            ({
+              double averageCost,
+              double currentValue,
+              double totalProfitLoss,
+              double profitLossPercent,
+            })
+            metrics,
+          })
+        >[];
 
     stats.holdings.forEach((key, owned) {
       if (!key.startsWith('stock_') || owned == 0) return;
@@ -1388,7 +1413,8 @@ class _PortfolioTab extends StatelessWidget {
       final fallbackPrice = (stats.costBasis[key] ?? 10) / kCoinsPerDollar;
 
       // Fetch quote from market quotes list, or construct a dynamic fallback quote
-      final quote = quoteMap[symbol] ??
+      final quote =
+          quoteMap[symbol] ??
           _tradeQuoteFor(
             LiveQuote(
               symbol: symbol,
@@ -1872,14 +1898,30 @@ class _TickerTape extends StatefulWidget {
   State<_TickerTape> createState() => _TickerTapeState();
 }
 
-class _TickerTapeState extends State<_TickerTape> {
+class _TickerTapeState extends State<_TickerTape> with PausesInBackground {
   final ScrollController _scrollController = ScrollController();
   Timer? _timer;
 
   @override
+  void onAppBackgrounded() {
+    // Thirty times a second, scrolling a strip nobody can see.
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  @override
+  void onAppForegrounded() {
+    _timer ??= _scrollTimer();
+  }
+
+  @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 30), (_) {
+    _timer = _scrollTimer();
+  }
+
+  Timer _scrollTimer() {
+    return Timer.periodic(const Duration(milliseconds: 30), (_) {
       if (!_scrollController.hasClients) {
         return;
       }
@@ -3194,7 +3236,7 @@ class _PnlTab extends StatelessWidget {
 /// [PriceChart], which gives it a price axis and a current-value tag.
 ///
 /// Passing [basePrice] sets each candle's open price to the initial snapshot value,
-/// allowing the chart tooltip to accurately calculate gains and percent changes 
+/// allowing the chart tooltip to accurately calculate gains and percent changes
 /// since tracking began.
 List<Candle> _flatCandles(
   List<double> values, {
@@ -3219,7 +3261,6 @@ List<Candle> _flatCandles(
       ),
   ];
 }
-
 
 class _EquityCurveEmpty extends StatelessWidget {
   const _EquityCurveEmpty({required this.netWorth});
@@ -3652,10 +3693,7 @@ class _PositionBar extends StatelessWidget {
           Text(
             '$sign${coinLabel(pl)} ($sign'
             '${entry.metrics.profitLossPercent.toStringAsFixed(1)}%)',
-            style: AppTheme.numeric(
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
+            style: AppTheme.numeric(color: color, fontWeight: FontWeight.w700),
           ),
         ],
       ),
