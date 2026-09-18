@@ -363,6 +363,11 @@ class _LifeSimPageState extends State<LifeSimPage> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      // Without this a tall sheet runs under the status bar and its
+      // heading is unreadable.
+      useSafeArea: true,
+      // A visible grab bar, so the way out is on screen.
+      showDragHandle: true,
       builder: (sheetContext) => _LifeMenuSheet(
         menu: menu,
         life: life,
@@ -393,6 +398,11 @@ class _LifeSimPageState extends State<LifeSimPage> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      // Without this a tall sheet runs under the status bar and its
+      // heading is unreadable.
+      useSafeArea: true,
+      // A visible grab bar, so the way out is on screen.
+      showDragHandle: true,
       builder: (_) => _BudgetSheet(life: life),
     );
     if (mounted) _drainLesson(life);
@@ -404,6 +414,11 @@ class _LifeSimPageState extends State<LifeSimPage> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      // Without this a tall sheet runs under the status bar and its
+      // heading is unreadable.
+      useSafeArea: true,
+      // A visible grab bar, so the way out is on screen.
+      showDragHandle: true,
       builder: (_) => _PowersSheet(life: life),
     );
   }
@@ -413,6 +428,11 @@ class _LifeSimPageState extends State<LifeSimPage> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      // Without this a tall sheet runs under the status bar and its
+      // heading is unreadable.
+      useSafeArea: true,
+      // A visible grab bar, so the way out is on screen.
+      showDragHandle: true,
       builder: (_) => _ConceptsSheet(
         concepts: life.conceptsMet,
         simpleWording: _simpleWording,
@@ -442,6 +462,9 @@ class _LifeSimPageState extends State<LifeSimPage> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      // Without this a tall sheet runs under the status bar and its
+      // heading is unreadable.
+      useSafeArea: true,
       // Deliberately not dismissible by tapping the scrim or swiping down.
       // Every other sheet in this file is a menu the player can back out
       // of freely; this one is the actual teaching moment, and a swipe-off
@@ -474,6 +497,11 @@ class _LifeSimPageState extends State<LifeSimPage> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      // Without this a tall sheet runs under the status bar and its
+      // heading is unreadable.
+      useSafeArea: true,
+      // A visible grab bar, so the way out is on screen.
+      showDragHandle: true,
       builder: (_) => _PersonSheet(life: life, person: person),
     );
   }
@@ -489,6 +517,11 @@ class _LifeSimPageState extends State<LifeSimPage> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      // Without this a tall sheet runs under the status bar and its
+      // heading is unreadable.
+      useSafeArea: true,
+      // A visible grab bar, so the way out is on screen.
+      showDragHandle: true,
       builder: (_) => _VolunteerSheet(age: life.age),
     );
     if (place == null || !mounted) return;
@@ -501,6 +534,11 @@ class _LifeSimPageState extends State<LifeSimPage> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      // Without this a tall sheet runs under the status bar and its
+      // heading is unreadable.
+      useSafeArea: true,
+      // A visible grab bar, so the way out is on screen.
+      showDragHandle: true,
       builder: (_) => _SkillsSheet(life: life),
     );
   }
@@ -3852,6 +3890,14 @@ class _PowersSheetState extends State<_PowersSheet> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                  ),
+                  // Reported as a screen with no way out. A swipe closed it,
+                  // but nothing on screen said so.
+                  IconButton(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: const Icon(Icons.close_rounded),
+                    color: Colors.white70,
+                    tooltip: 'Close',
                   ),
                 ],
               ),

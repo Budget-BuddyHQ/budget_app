@@ -251,9 +251,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
-    final error = await SupabaseService.instance.deleteOwnAccount();
-
-    if (navigator.canPop()) navigator.pop(); // the spinner
+    // try/finally, so a throw on the way through cannot leave the player
+    // staring at a spinner with no way back. `deleteOwnAccount` returns its
+    // errors as text, but the calls around it can still throw.
+    String? error;
+    try {
+      error = await SupabaseService.instance.deleteOwnAccount();
+    } catch (failure) {
+      error = 'Could not delete your account. Please try again.';
+      debugPrint('Account deletion threw: $failure');
+    } finally {
+      if (navigator.canPop()) navigator.pop(); // the spinner
+    }
     if (!context.mounted) return;
 
     if (error != null) {
