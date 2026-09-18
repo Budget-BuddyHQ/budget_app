@@ -45,6 +45,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'support/app_fonts.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_debrief.dart';
 
 /// Renders every main screen to a PNG so the layout can be *looked at*.
 ///
@@ -285,7 +286,7 @@ void main() {
         archetype: LifeEndingArchetype.legacyBuilder,
       ),
     ),
-    'epilogue': () => const LifeEpilogueScreen(
+    'epilogue': () => LifeEpilogueScreen(
       summary: LifeSummary(
         name: 'Alexandria Montgomery-Whitfield',
         gender: Gender.nonBinary,
@@ -302,6 +303,24 @@ void main() {
         relationships: ['Jordan', 'Priya', 'Marcus', 'Grandma Lucille'],
         goldReward: 512,
         archetype: LifeEndingArchetype.legacyBuilder,
+        // With the end-of-run debrief, which is the tallest thing on this
+        // screen and the newest.
+        debrief: debriefLife(
+          const LifeRunFacts(
+            age: 84,
+            netWorth: 128400,
+            cash: 9000,
+            investments: 110000,
+            emergencyFund: 9400,
+            debt: 0,
+            health: 62,
+            happiness: 76,
+            conceptsMet: 11,
+            died: false,
+            everStarved: false,
+            budgetSet: true,
+          ),
+        ),
       ),
     ),
   };

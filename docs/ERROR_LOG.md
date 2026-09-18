@@ -2565,3 +2565,51 @@ most useful thing in the set for the age that is actually buying them.
 **Files.** `life_sim_models.dart`, `life_events_traps.dart`,
 `player_profile.dart`, `life_sim_controller.dart`, `life_sim_page.dart`,
 `test/child_safety_test.dart`.
+
+### The end of a run said what happened, never what you did
+
+**Asked for as:** more of a debrief after a life, and a check on whether the
+Coach actually grades a run. It did not. The Coach reads a player's whole
+history for its own tab, and the epilogue showed the ending, five stats, the
+gold and the ranked breakdown. Somebody who retired at 68 with no emergency
+fund, everything in cash and money owed got the same screen as somebody who
+did none of that.
+
+**Fix.** `life_debrief.dart`, a pure-Dart grader for one finished life. Four
+areas out of 100 (saving, debt, growth, learning), a letter for the run, and
+findings that each carry evidence out of that run, one thing to do next time,
+and the concept where the Academy teaches one. `LifeSummary` carries it, built
+at the moment the life ends because the controller is disposed before the
+epilogue builds, and the epilogue shows it for graded runs only.
+
+**Files.** `life_debrief.dart` (new), `life_ending.dart`,
+`life_epilogue_screen.dart`, `test/life_debrief_test.dart` (new), plus the
+epilogue fixtures in the layout sweep and the render harness, which had been
+building a summary with no debrief in it.
+
+---
+
+### Sheets under the status bar, and one with no way out
+
+**Reported as:** a screenshot of the money-ideas sheet with its heading behind
+the clock, and no exit button.
+
+**Cause.** Eight sheets in the life sim pass `isScrollControlled: true` and
+none passed `useSafeArea`, so a tall one runs to the very top of the screen.
+The powers sheet also had no visible way to close: a swipe worked, nothing
+said so.
+
+**Fix.** `useSafeArea: true` on all eight, `showDragHandle: true` on the
+dismissible ones, and an explicit close button on the powers sheet. The one
+deliberately non-dismissible sheet (the money lesson) keeps "Got it" as its
+only exit, by design, and gets no handle so it does not look swipeable.
+
+**Swept for the same shape.** Every `barrierDismissible: false` dialog and
+`canPop: false` route was checked for an exit. The life sim and React
+Challenge route back through a confirm dialog, Brawl's pause dialog has
+Resume and Quit, and the case-roll dialog has Skip. One real hole: account
+deletion showed a blocking spinner and only dismissed it on the normal path,
+so a throw anywhere in the call left the player stuck on a spinner forever.
+It is a try/finally now.
+
+**Files.** `life_sim_page.dart`, `profile_screen.dart`.
