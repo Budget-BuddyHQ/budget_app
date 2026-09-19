@@ -1,7 +1,7 @@
 # Budget Buddy
 
-A Flutter app that teaches financial literacy through play, for ages 4 to
-21+.
+A Flutter app that teaches financial literacy through play, for 6th graders
+and up: middle school, high school, college and beyond.
 
 ## How it teaches (not just what it contains)
 
