@@ -53,7 +53,6 @@ const Map<String, int> kTownScenarioMinAge = <String, int>{
   'notice_job_ad': 13, // the one that asks for your bank details
   'pawn_phone_value': 13, // depreciation, learned on your own phone
   'cafe_round': 13, // splitting a bill with friends, unsupervised
-
   // --- 16: employed, and banked ----------------------------------------
   'job_first_payslip': 16,
   'job_tips_week': 16,
@@ -64,7 +63,6 @@ const Map<String, int> kTownScenarioMinAge = <String, int>{
   'bank_atm_fee': 16,
   'pawn_ring': 16,
   'clinic_sick_day': 16, // costs a day's pay, which needs there to be pay
-
   // --- 18: your name on the paperwork ----------------------------------
   'bank_overdraft': 18,
   'bank_overdraft_fee': 18,
@@ -74,6 +72,29 @@ const Map<String, int> kTownScenarioMinAge = <String, int>{
   'clinic_bill_shock': 18,
   'pawn_quick_cash': 18, // rent short, payday nine days away
   'notice_room_share': 18,
+
+  // --- what the life sim grew: study, a home, a pet, a body -------------
+  'gym_free_week': 13,
+  'gym_trainer': 16,
+  'gym_new_year': 16,
+  'campus_grant_loan': 16,
+  'campus_part_time': 16,
+  'campus_course_choice': 16,
+  'campus_essay_deadline': 16,
+  'housing_rent_or_buy': 18,
+  'housing_deposit': 18,
+  'housing_bills': 18,
+  'housing_flatmate': 18,
+  'pet_insurance': 16,
+  'pet_adopt_or_buy': 13,
+  'pet_holiday': 13,
+  'school_open_day': 13,
+  'school_second_hand_books': 13,
+  'home_moving_day': 18,
+  'bank_car_loan': 18,
+  'bank_mortgage_rate': 18,
+  'job_promotion_case': 16,
+  'pawn_sell_scooter': 16,
 };
 
 /// The age [scenarioId] becomes available. Unlisted scenarios are for anyone.

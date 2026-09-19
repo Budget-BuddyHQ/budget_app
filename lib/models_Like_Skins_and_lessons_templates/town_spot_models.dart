@@ -55,7 +55,20 @@ enum TownSpotKind {
   clinic('Clinic', Icons.local_hospital_rounded, Color(0xFFFF8A80)),
   library('Library', Icons.menu_book_rounded, Color(0xFF80CBC4)),
   pawnShop('Pawn Shop', Icons.watch_rounded, Color(0xFFCE93D8)),
-  park('The Park', Icons.park_rounded, Color(0xFF66BB6A));
+  park('The Park', Icons.park_rounded, Color(0xFF66BB6A)),
+
+  // --- The next four: what the life sim grew -------------------------------
+  //
+  // A life is now school, a career, a home, a pet and a body, and the town had
+  // twelve buildings and none of them was about any of those. Each of these is
+  // where one of them is walked to, and each teaches the money idea that part
+  // of a life is about: a membership you may not use, the total cost of a
+  // course, the cost of a home that is not the price, and what a pet costs
+  // every year after the day it comes home.
+  gym('Gym', Icons.fitness_center_rounded, Color(0xFFFF8A65)),
+  campus('Campus Office', Icons.workspace_premium_rounded, Color(0xFF9FA8DA)),
+  housing('Housing Office', Icons.apartment_rounded, Color(0xFF4DB6AC)),
+  petShop('Pet Shop', Icons.pets_rounded, Color(0xFFF48FB1));
 
   const TownSpotKind(this.label, this.icon, this.accent);
   final String label;
@@ -593,6 +606,177 @@ const List<TownSpot> kTownSpots = <TownSpot>[
             'things out is the quietest saving there is.',
         xp: 10,
         literacy: 8,
+      ),
+    ],
+  ),
+
+  // --- The next four ----------------------------------------------------------
+  //
+  // Tile positions are set by `tool/make_town_map.py` (the first town) and
+  // `tool/add_map_two_places.py` (the second), which put a building there, and
+  // then snapped to a doorstep by `tool/place_town_spots.py` and
+  // `tool/assign_town_buildings.py`.
+  TownSpot(
+    id: 'spot_gym',
+    kind: TownSpotKind.gym,
+    title: 'Gym',
+    prompt:
+        'A membership is \$20 a month. A single class is \$5. The park next '
+        'door has a running track, and it is free.',
+    tileX: 43,
+    tileY: 31,
+    tileX2: 33,
+    tileY2: 23,
+    choices: [
+      TownChoice(
+        label: 'Join for the month (\$20)',
+        outcome:
+            'A month of the gym, paid upfront. Most people go a lot in week '
+            'one and less each week after. A membership only pays if you use '
+            'it, and buying it feels like doing it.',
+        gold: -20,
+        xp: 6,
+        literacy: 6,
+      ),
+      TownChoice(
+        label: 'Pay for one class (\$5)',
+        outcome:
+            'You paid only for what you used. That is the honest way to buy '
+            'something you are not sure you will keep doing.',
+        gold: -5,
+        xp: 10,
+        literacy: 10,
+      ),
+      TownChoice(
+        label: 'Run on the free track',
+        outcome:
+            'Free, and it counts just the same. What a gym adds is a place '
+            'and a reason to turn up, which some people need and some do not.',
+        xp: 8,
+        literacy: 6,
+      ),
+    ],
+  ),
+  TownSpot(
+    id: 'spot_campus',
+    kind: TownSpotKind.campus,
+    title: 'Campus Office',
+    prompt:
+        'A poster says tuition is due Friday. Beside it is a form for a '
+        'scholarship that closes the same day.',
+    tileX: 18,
+    tileY: 7,
+    tileX2: 41,
+    tileY2: 26,
+    choices: [
+      TownChoice(
+        label: 'Fill in the scholarship form',
+        outcome:
+            'An hour of paperwork for money you never pay back. '
+            'Scholarships go unclaimed every year because people assume they '
+            'will not win one.',
+        xp: 12,
+        literacy: 14,
+      ),
+      TownChoice(
+        label: 'Ask what the whole course costs',
+        outcome:
+            'Tuition is charged every year and courses run for several. The '
+            'total is the number to compare, and the fee on the poster is '
+            'only the first bill.',
+        xp: 10,
+        literacy: 12,
+      ),
+      TownChoice(
+        label: 'Ask about a student loan',
+        outcome:
+            'A loan lets you study now and pay later, with interest on top. '
+            'That is fine if the course leads to work that pays, and costly '
+            'if it does not, so ask what it leads to first.',
+        xp: 8,
+        literacy: 10,
+      ),
+    ],
+  ),
+  TownSpot(
+    id: 'spot_housing',
+    kind: TownSpotKind.housing,
+    title: 'Housing Office',
+    prompt:
+        'A board lists homes to rent and homes to buy. Some are small and '
+        'cheap, and some are big and cost far more. What matters most when '
+        'you choose one?',
+    tileX: 29,
+    tileY: 33,
+    tileX2: 19,
+    tileY2: 20,
+    choices: [
+      TownChoice(
+        label: 'The rent or the price',
+        outcome:
+            'It matters, and it is only part of it. Bills, repairs, tax and '
+            'getting to work are paid on top, every month, for as long as you '
+            'live there.',
+        xp: 8,
+        literacy: 8,
+      ),
+      TownChoice(
+        label: 'How close it is to work and school',
+        outcome:
+            'A cheaper home far away can cost more once the fares and the '
+            'hours are counted. Time is a bill too, and it is the one people '
+            'forget to add up.',
+        xp: 10,
+        literacy: 10,
+      ),
+      TownChoice(
+        label: 'What it costs to run each month',
+        outcome:
+            'This is the number people skip and the one that decides whether '
+            'you can afford the place. A home is the price plus a running '
+            'cost, and the running cost never stops.',
+        xp: 12,
+        literacy: 12,
+      ),
+    ],
+  ),
+  TownSpot(
+    id: 'spot_pet',
+    kind: TownSpotKind.petShop,
+    title: 'Pet Shop',
+    prompt:
+        'A puppy costs \$200 to adopt. The bowl, the food, the vet and the '
+        'walks all come after that.',
+    tileX: 20,
+    tileY: 12,
+    tileX2: 31,
+    tileY2: 7,
+    choices: [
+      TownChoice(
+        label: 'Add up a year of running costs',
+        outcome:
+            'Food, vet visits and supplies cost more each year than the price '
+            'tag did. The sticker is only the first bill.',
+        xp: 10,
+        literacy: 12,
+      ),
+      TownChoice(
+        label: 'Volunteer at the shelter first',
+        outcome:
+            'You met the work before you signed up for it. Trying something '
+            'before you buy it is worth more than any review.',
+        xp: 12,
+        literacy: 8,
+      ),
+      TownChoice(
+        label: 'Adopt one (\$15 today)',
+        outcome:
+            'A big yes, and a long bill. The running costs come back every '
+            'year for as long as they live, which is why it is a decision '
+            'and not a purchase.',
+        gold: -15,
+        xp: 12,
+        literacy: 6,
       ),
     ],
   ),

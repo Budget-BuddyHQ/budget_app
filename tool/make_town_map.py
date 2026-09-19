@@ -194,19 +194,23 @@ PLACEMENTS = [
     # source, so the town reads as the same town, only larger.
     ("gym", 6, 41, 26),      # b06  5x5 — east of the avenue, door to the south
     ("campus", 4, 16, 3),    # b04  7x4 — the pale stone hall, north of the market
-    ("housing", 7, 3, 33),   # b07  4x6 — an orange house on the west lane
+    ("housing", 7, 27, 28),  # b07  4x6 — an orange house beside the south avenue
+    # The cottage-and-stall that used to be a prop far down the southern lane. It
+    # is the pet shop now, and it moved to where the square is a short walk away:
+    # at (13, 43) it was 32 tiles from the centre, and the town is meant to be
+    # walkable from it (`town_map_test`).
+    ("pet", 11, 18, 9),      # b11  6x3 — cottage and an animal stall
 ]
 
 # The buildings added for the newer parts of a life. Scenery is cleared from
 # around these and only these.
-NEW_BUILDINGS = {"gym", "campus", "housing"}
+NEW_BUILDINGS = {"gym", "campus", "housing", "pet"}
 
 # Smaller set pieces. These are what stop the town reading as six buildings
 # marooned in a field: a stall and a cottage give the square neighbours, and
 # the fence runs imply fields nobody had to draw.
 PROPS = [
     (10, 18, 17),  # b10 3x5 — awninged food stall, north-west of the square
-    (11, 13, 43),  # b11 6x3 — cottage and fruit stand, southern lane
     (3, 14, 27),   # b03 8x5 — long bench under an awning
     (9, 8, 19),    # b09 15x1 — fence run, west field
     (9, 8, 38),    # b09 15x1 — fence run, south field
