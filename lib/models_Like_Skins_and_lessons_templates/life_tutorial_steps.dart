@@ -7,8 +7,8 @@ import 'tutorial_steps.dart';
 /// **Why a second tour.** The main tour ([kTutorialSteps]) introduces the app
 /// — eleven steps, one per surface, each answering "what is this tab for".
 /// It has exactly one step on Life, and Life is the main game: a whole
-/// screen with an age button, four money boxes, a stat row, a chain-flag
-/// strip, four sub-menus and a door to the town. "Press the big Age button"
+/// screen with an age button, four money boxes, four stat bars, a chain-flag
+/// strip, four tabs and a door to the town. "Press the big Age button"
 /// is the right amount of detail when you are being shown around a tab, and
 /// nowhere near enough when you are standing in the game.
 ///
@@ -36,7 +36,8 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
         'year gives you something to decide.',
     bullets: [
       'Nothing here is a quiz — there is no single right answer.',
-      'Every choice tells you afterwards what it was called and why.',
+      'Every choice tells you afterwards what it was called and why. Stuck? '
+          'Surprise me picks for you.',
       'When the run ends it is recorded, and you start a new one.',
     ],
     teaches:
@@ -115,14 +116,18 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
   ),
   TutorialStep(
     id: 'life_menus',
-    title: 'Career, People, Do, Money',
+    title: 'Occupation, Assets, People, Activities',
     tagline:
-        'The four buttons along the bottom. These are the things you choose '
+        'The four tabs either side of the Age button, above the four bars for '
+        'Happiness, Health, Smarts and Looks. These are the things you choose '
         'to do, rather than the things that happen to you.',
     bullets: [
-      'Career: look for work, ask for a raise, study for a better job.',
-      'Do: spend a year on something — practise a skill, take a job, rest.',
-      'Money: open savings, invest, pay down debt, set a budget.',
+      'Occupation: study, apply for a job, work harder, ask for a raise or '
+          'a promotion. Some jobs need a degree.',
+      'Assets: homes, cars and pets, what you owe on them, and your budget '
+          'and savings.',
+      'People: family, friends and a partner. Spend time with them or the '
+          'closeness fades. Activities: sports, clubs, dating and travel.',
     ],
     teaches:
         'Half of a financial life is what you decide to do between the events.',

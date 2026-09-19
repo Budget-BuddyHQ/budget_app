@@ -90,7 +90,35 @@ MoneySnapshot buildMoneySnapshot(UserStats stats) {
     cascadeWantsShare: _cascadeShare(stats, stats.cascadeWantsTotal),
     cascadeSavesShare: _cascadeShare(stats, stats.cascadeSavesTotal),
     distinctEndings: stats.lifeRecords.endingsSeen.length,
+    lives: _readLives(stats),
   );
+}
+
+/// Graded lives that kept their detail, newest first.
+///
+/// A life filed before the detail existed is left out rather than read as "no
+/// degree, no home, nothing owned", which is what its missing numbers would say.
+/// An ungraded practice run is left out for the reason net worth already leaves
+/// it out: it was played to see something, not to do well.
+List<LifeReading> _readLives(UserStats stats) {
+  return [
+    for (final record in stats.lifeRecords.newestFirst)
+      if (record.graded && record.detail != null)
+        LifeReading(
+          age: record.age,
+          netWorth: record.netWorth,
+          happiness: record.happiness,
+          degrees: record.detail!.degrees,
+          borrowedForSchool: record.detail!.borrowedForSchool,
+          promotions: record.detail!.promotions,
+          workYears: record.detail!.workYears,
+          assetsValue: record.detail!.assetsValue,
+          loansOwed: record.detail!.loansOwed,
+          ownedHome: record.detail!.ownedHome,
+          hadPartner: record.detail!.hadPartner,
+          children: record.detail!.children,
+        ),
+  ];
 }
 
 /// One kind's share of everything a player has ever allocated in Coin Cascade.
@@ -100,7 +128,8 @@ MoneySnapshot buildMoneySnapshot(UserStats stats) {
 /// run look like a budgeting decision.
 double _cascadeShare(UserStats stats, int part) {
   final allocated =
-      stats.cascadeNeedsTotal + stats.cascadeWantsTotal +
+      stats.cascadeNeedsTotal +
+      stats.cascadeWantsTotal +
       stats.cascadeSavesTotal;
   if (allocated <= 0) return 0;
   return part / allocated;

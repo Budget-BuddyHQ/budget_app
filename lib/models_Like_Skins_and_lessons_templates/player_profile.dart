@@ -65,6 +65,12 @@ enum AgeBand {
     AgeBand.undisclosed => LifeStage.firstJob,
   };
 
+  /// Whether this account is old enough for Life, the main game.
+  ///
+  /// Nine and up, for now. Life is not filtered by band; this is the only gate
+  /// and the advisory before the first life is the only warning.
+  bool get canPlayLife => this != AgeBand.under9;
+
   /// Under-13 accounts get the conservative default: no leaderboard presence.
   bool get isMinorUnder13 => this == AgeBand.under9 || this == AgeBand.age9to12;
 

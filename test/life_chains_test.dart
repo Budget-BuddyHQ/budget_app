@@ -159,7 +159,11 @@ void main() {
 
   group('the controller carries flags', () {
     /// Ages up until [id] is the current event, then returns it.
-    LifeEvent? reachEvent(LifeSimController life, String id, {int maxYears = 90}) {
+    LifeEvent? reachEvent(
+      LifeSimController life,
+      String id, {
+      int maxYears = 90,
+    }) {
       for (var i = 0; i < maxYears && !life.finished; i++) {
         if (life.currentEvent?.id == id) return life.currentEvent;
         if (life.currentEvent != null) life.chooseOption(0);
@@ -196,7 +200,7 @@ void main() {
     /// reach the deeper beats at all: `chain_index_payoff` needs choice 0 at
     /// the opener (invest) and then choice 1 or 2 at the crash (hold), so
     /// no single constant index walks that path.
-    Set<String> play(int seed, {int? pick}) {
+    Set<String> play(int seed, {int? pick, Map<String, int> steer = const {}}) {
       final rng = Random(seed * 31 + 7);
       final life = LifeSimController(random: Random(seed), initialAge: 0);
       final fired = <String>{};
@@ -205,7 +209,9 @@ void main() {
         if (event != null) {
           fired.add(event.id);
           life.chooseOption(
-            pick != null
+            steer.containsKey(event.id)
+                ? steer[event.id]!
+                : pick != null
                 ? pick.clamp(0, event.choices.length - 1)
                 : rng.nextInt(event.choices.length),
           );
@@ -245,6 +251,23 @@ void main() {
       final seen = <String>{};
       for (var seed = 0; seed < 400; seed++) {
         seen.addAll(play(seed));
+      }
+      // The last beat of a long chain is the rarest thing in the game: to see
+      // `chain_index_regret` a life must be offered the index fund (about one
+      // life in twelve), invest, and then sell in the crash, and by luck that
+      // was two lives in fifteen hundred. Every batch of new events makes it
+      // rarer, so a sweep of random lives goes red without anything being
+      // wrong. So the beats a random player almost never reaches get a player
+      // who walks the path on purpose. What is being guarded is that the path
+      // exists and is open, and that is a claim about content, not about luck.
+      const paths = <Map<String, int>>[
+        {'chain_index_start': 0, 'chain_index_crash': 0}, // invest, then sell
+        {'chain_index_start': 0, 'chain_index_crash': 1}, // invest, then hold
+      ];
+      for (final steer in paths) {
+        for (var seed = 0; seed < 400; seed++) {
+          seen.addAll(play(seed, steer: steer));
+        }
       }
       final unreachable = kLifeEventsChains
           .map((e) => e.id)

@@ -2224,6 +2224,18 @@ values from `lib/config/public_supabase_config.dart`.
 
 ---
 
+### Interest does not accrue in years with no income
+
+**Found while** tracing the debt spiral. `_applyBudget` returns early when the
+year's income is zero, and the unemployed branch in `ageUp` never charges
+interest, so a balance is frozen for as long as the character is out of work.
+That is more generous than life. It is left alone deliberately: the layoff rule
+made unemployment more common, and charging interest through it would make the
+new neglect consequence much heavier than the simulation was tuned for. If the
+economy is retuned, this is the first thing to revisit.
+
+---
+
 ## How to add an entry
 
 Write the **Investigation** section as it happened, wrong turns included. The
@@ -2613,3 +2625,156 @@ so a throw anywhere in the call left the player stuck on a spinner forever.
 It is a try/finally now.
 
 **Files.** `life_sim_page.dart`, `profile_screen.dart`.
+
+---
+
+### A life sim where every button could be tapped forever
+
+**Asked for as:** *"make sure that in the menu of the main game the player
+cannot spam the same option like working out to become happy."*
+
+**Investigation.** The named case was the smallest of several. Every repeatable
+action was listed and asked the same question: what does the tenth press in one
+year give? Working out, studying, going out, the library and the doctor all
+paid full every time. Worse were the two that were money: **a side job could be
+run forever, which is unlimited income**, and **Work Harder and Ask For A Raise
+had no age gate and no limit at all**, so a salary could be ground to any
+number by tapping. None of them were `LifeAction` values, which is why no gate
+had ever been applied to them.
+
+**Fix.** `life_effort.dart`: one table, `EffortRules.tiers`, where the length of
+each list is the yearly limit and the values are what each use pays (`[1, .5,
+.25]` fades, `[1.0]` is once). The controller routes every action through
+`_yield`, `_spend` and `_scaled`, so a gain fades while a cost never does. The
+menu rows say what is left ("1 use left, pays 25% now"). `invest`, `findJob`
+and `payDownDebt` are unlimited on purpose and named as such in the test.
+
+**Verified by.** `life_effort_test.dart`, including a completeness test that
+fails when a new `LifeAction` is added without a budget, which is the way this
+would come back.
+
+**What it cost.** `budget_teaching_test.dart` failed straight after: it had been
+reaching high Smarts by calling `visitLibrary` forty and sixty times. The suite
+had been *relying* on the exploit. It uses `debugSetStats` now, and the rule for
+future tests is to set a state rather than spam their way into it.
+
+---
+
+### Health and happiness were meters nothing read
+
+**Asked for as:** *"make punishments if you're not happy or if you're not
+healthy, like you are going to have to skip out on work."*
+
+**Root cause.** A character at 8 Health and 5 Happiness collected exactly the
+paycheck of one at 90 and 90. The stats were decoration for the money game.
+
+**Fix.** `life_wellbeing.dart`: `assessWorkStrain(health, happiness)` gives a
+share of the year's weeks missed. Weeks missed dock the paycheck by exactly that
+share, two serious years in a row cost the job, and a banner warns before any of
+it lands. Children get a gentler sentence and lose school ground rather than
+work. Recovery resets the count, so it is a lesson and not a trap.
+
+**Verified by.** A 400-life simulation, not an argument about thresholds. A bot
+that never looks after itself was laid off in 62% of lives. A bot that does one
+healthy thing a year (a workout when run down, the doctor when bad) was laid
+off in 10%, and one that keeps at it in 0 to 4%. The gradient is the point, so
+the thresholds were left where they were.
+
+**What it cost.** The first tests asserted on `life.log` and found "Age 31.",
+because `log` is only the latest banner line. The feed is `life.history`.
+
+---
+
+### The map paid in gold once and in life money never
+
+**Asked for as:** *"make the map get you money too."*
+
+**Root cause.** Town coins paid account gold and only once ever, so a life spent
+walking the town earned nothing inside the life. `life_town_income.dart` now
+turns them into life money at four to one, restocks the map every year, and
+keeps a yearly allowance (240 at full rate, then a quarter) so the town is a
+side income and not a printing press. Account gold stays once-ever, so the
+outside-the-game economy cannot be farmed from inside the game.
+
+**Also.** Networking is a real system now: contacts with a strength, a referral
+chance that grows with it, and contacts kept out of the loneliness calculation
+so that having colleagues cannot hide having no friends.
+
+**Files.** `life_town_income.dart`, `life_network.dart`, `relationship.dart`,
+`adventure_world_screen.dart`, `life_sim_controller.dart`, and one test file
+each.
+
+---
+
+### A run said what happened and never when or why
+
+**Asked for as:** *"a more impressive and detailed debrief after each run, for
+anybody doing the main game."*
+
+**Fix.** A life remembers itself: a year-by-year net-worth curve, the decisions
+that moved real money with what the other option would have done, and a tally
+(weeks missed, layoffs, raises, referrals, interest, shocks covered). The
+debrief is built from that: six areas, a story (turning point, best call, money
+left on the table, biggest hit), findings that each carry evidence from the run,
+and a challenge for next time. It shows for every run, marked as practice when
+the run was not graded.
+
+**Bug on the way.** Findings were ordered by the order the rules ran in, so a
+life with many findings could cut off the costly one. A laid-off life did not
+say so. Findings carry a `priority` now and `shown()` guarantees a strength
+slot so a debrief is never only faults.
+
+**Bug on the way.** Overflow of 7.9px at 320 wide: "Your challenge for next
+time" was outside its `Expanded`.
+
+---
+
+### Debt that compounded to a million with no way to pay it
+
+**Symptom.** None reported. Found by simulating 400 lives to check whether the
+new work-strain rule was too harsh, and reading the wrong number: average net
+worth was about -200,000 for a passive bot and -554,000 for a careful one.
+
+**Investigation, wrong turn first.** The obvious reading was that the new
+systems (networking costs, docked pay) were bankrupting people. Switching the
+strain rule off gave -382,000, so that reading was wrong: it had been there
+before. Medians said otherwise than means (a median of +1,110 while the 10th
+percentile was -1.8 million), which meant a minority of lives were absurd. Three
+of them were traced year by year. All three began with **one bill of 265 to 895
+at age 22 to 24, on a salary of 380 to 500**, and then never recovered: cash was
+zero every year, the debt grew by 18%, and by seventy it was 1.2 to 1.6 million.
+
+Reading `_applyBudget` showed why. The 20% savings slice went into an
+emergency fund that earns nothing **while the debt beside it grew at 18%**.
+The only thing that ever reduced a balance was 30% of leftover cash, and a
+budget leaves none. And a search for repay, payoff and pay down across the
+controller, the models and the page found nothing: **there was no way to pay a
+debt at all.** Meanwhile the debrief told players to "pay it down before you
+spend on wants".
+
+**Root cause.** Three things stacked. The fund was filled before the lender was
+paid. Nothing player-facing existed to retire a balance. And compounding was
+unbounded relative to income, so arithmetic took over from teaching.
+
+**Fix.** (1) The lender is paid before the fund: interest on what was owed
+coming into the year is taken from pay first, and only what the pay cannot cover
+is added to the balance. (2) A **Pay back what you owe** row in the Money menu
+(`payDownDebt`), cash first then savings, unlimited because it converts money
+one for one. (3) Past ten years of pay the balance stops growing and the feed
+says why; below that it compounds exactly as before. (4) A `paid_it_down`
+strength finding, and the two debrief lines now point at the row.
+
+**Result, 300 lives per bot.** Passive: 10th percentile net worth -587,536 to
+-5,853. One healthy habit a year: -1,796,309 to -5,774. Careful and using the
+button: -2,054,825 to +5,898, with 7% ending in debt.
+
+**Verified by.** `life_debt_test.dart` (22, with exact arithmetic on each rule)
+and six widget tests for the row, including 320 and 360 wide. Then a mutation
+check: with the ceiling disabled, three of them fail, including the
+whole-life regression. A guard test that has never failed proves nothing.
+
+**What it cost.** It needs thirty simulated years of compounding to show, and
+nobody plays 300 lives by hand. The advice in the debrief was unreachable and
+nothing noticed, because a sentence cannot fail a test. A means-only report hid
+it for as long as it did. Reporting percentiles is now the way a simulation is
+read here.

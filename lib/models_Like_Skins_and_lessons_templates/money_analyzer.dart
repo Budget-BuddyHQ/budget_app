@@ -84,6 +84,59 @@ extension MoneyDimensionInfo on MoneyDimension {
   };
 }
 
+/// One finished, graded life, as the Coach reads it.
+///
+/// **Why the Coach reads lives at all.** Net worth at the end of a life says how
+/// it went and nothing about why. Since a life became school, work, a home and a
+/// household, the reasons are in the record: whether it was studied for, whether
+/// that was borrowed, whether the work led up a ladder, what was owned and owed
+/// at the end. Those are the things a player can change on the next one, so those
+/// are what the Coach compares across lives.
+///
+/// Only lives that kept this detail become a reading. A life filed before the
+/// detail existed is not "a life with no degree", it is a life nobody wrote that
+/// down for, and counting it as one would have the Coach say something untrue.
+class LifeReading {
+  const LifeReading({
+    required this.age,
+    required this.netWorth,
+    required this.happiness,
+    this.degrees = 0,
+    this.borrowedForSchool = 0,
+    this.promotions = 0,
+    this.workYears = 0,
+    this.assetsValue = 0,
+    this.loansOwed = 0,
+    this.ownedHome = false,
+    this.hadPartner = false,
+    this.children = 0,
+  });
+
+  final int age;
+  final int netWorth;
+  final int happiness;
+  final int degrees;
+  final int borrowedForSchool;
+  final int promotions;
+  final int workYears;
+  final int assetsValue;
+
+  /// Loans and borrowed cash together, at the end.
+  final int loansOwed;
+  final bool ownedHome;
+  final bool hadPartner;
+  final int children;
+
+  /// Studied on borrowed money and still owed something when it ended.
+  bool get schoolDebtLeft => borrowedForSchool >= 1500 && loansOwed > 0;
+
+  /// Owed more than was owned.
+  bool get underwater => loansOwed > 0 && loansOwed > assetsValue;
+
+  /// Long enough at work for a promotion to have been reasonable, and none came.
+  bool get stalled => workYears >= 12 && promotions == 0;
+}
+
 /// Everything the analyser is allowed to look at.
 ///
 /// A flat snapshot rather than the controllers themselves, so the rules take
@@ -112,7 +165,14 @@ class MoneySnapshot {
     this.cascadeWantsShare = 0,
     this.cascadeSavesShare = 0,
     this.distinctEndings = 0,
+    this.lives = const <LifeReading>[],
   });
+
+  /// Graded lives that kept their detail, newest first.
+  ///
+  /// This is what lets the Coach say *why* a life went the way it did, and not
+  /// only that the number moved. See [LifeReading].
+  final List<LifeReading> lives;
 
   /// The sentinel the habit store uses when nothing has ever been logged.
   ///
@@ -532,8 +592,8 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
                     'Worth knowing what it costs: the runs that reach an '
                     'unusual ending finish poorer, and that is a real '
                     'trade rather than a mistake. Try one run where you '
-                    'chase an ending *and* open the Money menu early — the '
-                    'two are not opposites.',
+                    'chase an ending *and* set your budget in the Assets tab '
+                    'early — the two are not opposites.',
                 concept: FinanceConcept.opportunityCost,
               )
             : MoneyFinding(
@@ -545,9 +605,9 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
                     'Last three finished at '
                     '${snap.pastLifeNetWorths.take(3).join(', ')}.',
                 action:
-                    'Next run, open the Money menu in the first ten years '
-                    'instead of the last ten. Almost all of the difference '
-                    'is made early.',
+                    'Next run, set your budget in the Assets tab in the first '
+                    'ten years instead of the last ten. Almost all of the '
+                    'difference is made early.',
                 concept: FinanceConcept.compoundGrowth,
               ),
       );
@@ -621,8 +681,7 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
           concept: FinanceConcept.budgetRule,
         ),
       );
-    } else if (snap.cascadeSavesShare >= 0.2 &&
-        snap.cascadeWantsShare <= 0.3) {
+    } else if (snap.cascadeSavesShare >= 0.2 && snap.cascadeWantsShare <= 0.3) {
       findings.add(
         MoneyFinding(
           id: 'split_healthy',
@@ -689,6 +748,172 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
         concept: FinanceConcept.opportunityCost,
       ),
     );
+  }
+
+  // ---------------------------------------------------------------------
+  // Lives, read for what they were made of.
+  //
+  // Each of these needs at least two lives and looks for the same thing showing
+  // up more than once, because one life is a story and two are a pattern. Every
+  // one is worded so that a fair trade is not called a mistake: borrowing for a
+  // qualification and paying it off is fine, and the finding is for the loans
+  // that were still there at the end.
+  // ---------------------------------------------------------------------
+  final recent = snap.lives.take(4).toList();
+
+  if (recent.length >= 2) {
+    final indebted = recent.where((l) => l.schoolDebtLeft).length;
+    if (indebted >= 2) {
+      findings.add(
+        MoneyFinding(
+          id: 'school_debt_pattern',
+          kind: MoneyFindingKind.fix,
+          dimension: MoneyDimension.saving,
+          title: 'Your studying keeps ending in debt',
+          evidence:
+              '$indebted of your last ${recent.length} lives borrowed for '
+              'school and were still paying it back at the end.',
+          action:
+              'Next run, look at what a course pays before you enrol, or '
+              'start with a trade or a state school. Then put spare money on '
+              'the loan in the Assets tab in your first working years.',
+          concept: FinanceConcept.interestCost,
+        ),
+      );
+    }
+
+    final underwater = recent.where((l) => l.underwater).length;
+    if (underwater >= 2) {
+      findings.add(
+        MoneyFinding(
+          id: 'owing_more_than_owning',
+          kind: MoneyFindingKind.fix,
+          dimension: MoneyDimension.saving,
+          title: 'You keep finishing owing more than you own',
+          evidence:
+              '$underwater of your last ${recent.length} lives ended with '
+              'more borrowed than owned.',
+          action:
+              'Pay the loan with the highest rate first, and buy the cheaper '
+              'car. A loan on something that loses value is the one that '
+              'outlasts it.',
+          concept: FinanceConcept.sunkCost,
+        ),
+      );
+    }
+
+    final stalled = recent.where((l) => l.stalled).length;
+    if (stalled >= 2) {
+      findings.add(
+        MoneyFinding(
+          id: 'careers_stall',
+          kind: MoneyFindingKind.watch,
+          dimension: MoneyDimension.exposure,
+          title: 'Your careers stay on one rung',
+          evidence:
+              '$stalled of your last ${recent.length} lives worked twelve '
+              'years or more without one promotion.',
+          action:
+              'Use Work Harder in the Occupation tab, then ask for the '
+              'promotion. If it still will not come, the job board is where a '
+              'higher ladder is advertised.',
+          concept: FinanceConcept.incomeVsWealth,
+        ),
+      );
+    }
+
+    final ended = recent.where((l) => l.age >= 40).toList();
+    if (ended.length >= 3 && ended.every((l) => !l.ownedHome)) {
+      findings.add(
+        MoneyFinding(
+          id: 'never_owned_a_home',
+          kind: MoneyFindingKind.watch,
+          dimension: MoneyDimension.exposure,
+          title: 'None of these lives owned a home',
+          evidence:
+              'Your last ${ended.length} full lives all ended without one.',
+          action:
+              'Renting is a real choice. Try one life where you buy a starter '
+              'home in your thirties, and compare the loan with the rent you '
+              'would have paid. The Assets tab shows both.',
+          concept: FinanceConcept.opportunityCost,
+        ),
+      );
+    }
+  }
+
+  // Did studying pay, across the lives that have both kinds to compare?
+  final compared = snap.lives.take(8).toList();
+  final studied = compared.where((l) => l.degrees >= 1).toList();
+  final notStudied = compared.where((l) => l.degrees == 0).toList();
+  if (compared.length >= 3 && studied.isNotEmpty && notStudied.isNotEmpty) {
+    int average(List<LifeReading> list) =>
+        (list.fold<int>(0, (sum, l) => sum + l.netWorth) / list.length).round();
+    final withQualification = average(studied);
+    final without = average(notStudied);
+    if (withQualification >= without + 500) {
+      findings.add(
+        MoneyFinding(
+          id: 'studying_paid',
+          kind: MoneyFindingKind.strength,
+          dimension: MoneyDimension.learning,
+          title: 'Studying has paid off for you',
+          evidence:
+              'Lives with a qualification finished at an average of '
+              '$withQualification. Lives without finished at $without.',
+          action:
+              'It is a bet and it has come off. Keep checking what a course '
+              'costs and what it leads to before you take the next one.',
+          concept: FinanceConcept.opportunityCost,
+        ),
+      );
+    } else if (withQualification + 500 <= without) {
+      findings.add(
+        MoneyFinding(
+          id: 'studying_has_not_paid',
+          kind: MoneyFindingKind.watch,
+          dimension: MoneyDimension.learning,
+          title: 'Studying has not paid back yet',
+          evidence:
+              'Lives with a qualification finished at an average of '
+              '$withQualification. Lives without finished at $without.',
+          action:
+              'Look at what a course leads to, not only that it is hard. A '
+              'trade with a job waiting can beat a degree with none, and '
+              'starting to earn earlier is worth real money.',
+          concept: FinanceConcept.opportunityCost,
+        ),
+      );
+    }
+  }
+
+  // Money that was not the point. Richer lives that were not happier ones.
+  if (compared.length >= 3) {
+    final worths = compared.map((l) => l.netWorth).toList()..sort();
+    final median = worths[worths.length ~/ 2];
+    final richAndFlat = compared
+        .where(
+          (l) => l.netWorth > 0 && l.netWorth >= median && l.happiness < 45,
+        )
+        .length;
+    if (richAndFlat >= 2) {
+      findings.add(
+        MoneyFinding(
+          id: 'rich_and_flat',
+          kind: MoneyFindingKind.watch,
+          dimension: MoneyDimension.exposure,
+          title: 'Some of your richest lives were not happy ones',
+          evidence:
+              '$richAndFlat of your ${compared.length} recent lives finished '
+              'well off and under 45 out of 100 in happiness.',
+          action:
+              'Money is a tool for the rest of it. Give one life more time in '
+              'the Relationships and Activities tabs, and see what it does to '
+              'the ending as well as the number.',
+          concept: FinanceConcept.incomeVsWealth,
+        ),
+      );
+    }
   }
 
   // Worst first. Within a kind, keep the order the rules produced them in,

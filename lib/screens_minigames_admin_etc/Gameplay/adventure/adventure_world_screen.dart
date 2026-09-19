@@ -218,6 +218,24 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   /// exhausting and would make the pickpocket routine rather than a shock.
   Future<void> _talkTo(TownNpc npc) async {
     if (_sheetOpen) return;
+    // Speaking to somebody is how contacts are made: people who know you are
+    // how most work is found. The line is shown after the conversation, so the
+    // toast is not lost behind the sheet. See `life_network.dart`.
+    final contactLine = widget.life?.meetTownContact(npc.name);
+    await _converse(npc);
+    if (contactLine != null && mounted) {
+      GameToast.show(
+        context,
+        title: 'Contact',
+        message: contactLine,
+        icon: Icons.groups_rounded,
+        accent: const Color(0xFF58C7FF),
+      );
+    }
+  }
+
+  Future<void> _converse(TownNpc npc) async {
+    if (_sheetOpen) return;
     _sheetOpen = true;
 
     final controller = context.read<UserStatsController>();
@@ -311,6 +329,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     if (delta == 0) return;
 
     widget.life?.applyTownOutcome(gold: delta, xp: 2, literacy: 1);
+    _applyAfterFrame(() {});
     await context.read<UserStatsController>().applyChallengePayload(
       <String, dynamic>{
         'gold_earned': delta > 0 ? delta : 0,
@@ -334,6 +353,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
       xp: mission.rewardLiteracy * 2,
       literacy: mission.rewardLiteracy,
     );
+    _applyAfterFrame(() {});
     if (!mounted) return;
     GameToast.show(
       context,
@@ -344,26 +364,62 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     );
   }
 
+  /// Whether a coin is already gone.
+  ///
+  /// In a life this is **per year and per life**, kept by the life itself, so
+  /// the town restocks every birthday and a new life starts with every coin on
+  /// the map. Outside a life it is the account's own one-time list, as before.
+  /// Coins used to be account-only, which is why after the first life the map
+  /// had nothing left to pay anybody. See `life_town_income.dart`.
+  bool _coinTaken(({int x, int y, int value}) coin) {
+    final id = _coinId(coin);
+    final life = widget.life;
+    return life != null
+        ? life.townCoinTaken(id)
+        : _collectedCoinIds.contains(id);
+  }
+
   Future<void> _collectCoin(String coinId, int value) async {
-    if (!mounted || _collectedCoinIds.contains(coinId)) {
+    if (!mounted) return;
+    final life = widget.life;
+
+    // Life money first. It is what the run is about, and it is the only part
+    // that repeats: 0 means this coin was already picked up this year.
+    var lifePaid = 0;
+    if (life != null) {
+      lifePaid = life.takeTownCoin(coinId, value);
+      if (lifePaid == 0) return;
+    } else if (_collectedCoinIds.contains(coinId)) {
       return;
     }
+
+    // Account gold stays a once-ever reward, or the leaderboard's gold column
+    // becomes a treadmill. It is the *life money* that restocks.
+    final firstTime = !_collectedCoinIds.contains(coinId);
     _applyAfterFrame(() {
-      _coinsFound += value;
-      _collectedCoinIds.add(coinId);
+      if (firstTime) {
+        _coinsFound += value;
+        _collectedCoinIds.add(coinId);
+      }
     });
-    await context.read<UserStatsController>().applyChallengePayload(
-      <String, dynamic>{
-        'gold_earned': value,
-        'spending_habits': <String, dynamic>{
-          'town_collected_coins': _collectedCoinIds.toList(),
+    if (firstTime) {
+      await context.read<UserStatsController>().applyChallengePayload(
+        <String, dynamic>{
+          'gold_earned': value,
+          'spending_habits': <String, dynamic>{
+            'town_collected_coins': _collectedCoinIds.toList(),
+          },
         },
-      },
-    );
+      );
+    }
     if (!mounted) return;
     GameToast.show(
       context,
-      message: '+$value gold',
+      message: life != null
+          ? (firstTime
+                ? '+$lifePaid coins  ·  +$value gold'
+                : '+$lifePaid coins')
+          : '+$value gold',
       icon: Icons.paid_rounded,
       accent: const Color(0xFFFFD45C),
     );
@@ -609,7 +665,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
                     onExit: _onExitNpc,
                   ),
                 for (final coin in townCoinsFor(_townMap))
-                  if (!_collectedCoinIds.contains(_coinId(coin)))
+                  if (!_coinTaken(coin))
                     TownCoinComponent(
                       value: coin.value,
                       tileX: coin.x,
@@ -636,7 +692,13 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
                           child: _ObjectiveBar(
                             visitedCount: _visited.length,
                             totalCount: kTownSpots.length,
-                            coinsFound: _coinsFound,
+                            coinsFound:
+                                widget.life?.townEarnedThisYear ?? _coinsFound,
+                            coinsNote: widget.life == null
+                                ? null
+                                : widget.life!.townAllowanceSpent
+                                ? 'this year, fading'
+                                : 'this year',
                             today: _today,
                           ),
                         ),
@@ -722,11 +784,17 @@ class _ObjectiveBar extends StatelessWidget {
     required this.totalCount,
     required this.coinsFound,
     required this.today,
+    this.coinsNote,
   });
 
   final int visitedCount;
   final int totalCount;
   final int coinsFound;
+
+  /// Words after the amount, when it is life money. "this year" is what makes
+  /// the number read as an income rather than a score, and "fading" is the
+  /// honest thing to say once the year's allowance is spent.
+  final String? coinsNote;
 
   /// What the town is like this visit. See [TownCondition] for why the map
   /// had to say this out loud rather than only behave differently.
@@ -776,12 +844,16 @@ class _ObjectiveBar extends StatelessWidget {
             const SizedBox(width: 12),
             const Icon(Icons.paid_rounded, color: Color(0xFFFFD45C), size: 16),
             const SizedBox(width: 4),
-            Text(
-              '$coinsFound',
-              style: AppTheme.numeric(
-                color: const Color(0xFFFFD45C),
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
+            Flexible(
+              child: Text(
+                coinsNote == null ? '$coinsFound' : '$coinsFound $coinsNote',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTheme.numeric(
+                  color: const Color(0xFFFFD45C),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],

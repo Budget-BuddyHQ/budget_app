@@ -4,16 +4,87 @@ import 'package:flutter/material.dart'
     show
         Colors,
         EdgeInsets,
+        FontWeight,
         Offset,
         Paint,
         PaintingStyle,
         Radius,
         RRect,
         Rect,
-        StrokeCap;
+        Shadow,
+        StrokeCap,
+        TextDirection,
+        TextPainter,
+        TextSpan,
+        TextStyle;
 
 import '../../../constants/app_assets.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_spot_models.dart';
+
+/// Draws a short name on the map, in a dark pill so it reads over any tile.
+///
+/// **Asked for as:** *"make the map have titles of what the circles are."* The
+/// markers were coloured circles with nothing said about them, so the only way
+/// to learn that one was the bank was to walk into it. A place should say what
+/// it is before you get there.
+///
+/// [centre] is where the middle of the pill goes, in the component's own
+/// coordinates. Painters are cached by text because a label is drawn every frame
+/// and laying out text every frame is the sort of thing that shows up in a
+/// profile.
+void paintMapLabel(
+  Canvas canvas,
+  String text,
+  Offset centre, {
+  double fontSize = 7.5,
+  Color? accent,
+  double alpha = 1,
+}) {
+  final painter = _labelPainters.putIfAbsent(
+    '$text|$fontSize',
+    () => TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w800,
+          height: 1.0,
+          shadows: const [Shadow(color: Color(0xFF000000), blurRadius: 1.5)],
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout(),
+  );
+  const padX = 3.5;
+  const padY = 1.8;
+  final pill = Rect.fromCenter(
+    center: centre,
+    width: painter.width + padX * 2,
+    height: painter.height + padY * 2,
+  );
+  final radius = Radius.circular(pill.height / 2);
+  canvas.drawRRect(
+    RRect.fromRectAndRadius(pill, radius),
+    Paint()..color = const Color(0xFF0B1F14).withValues(alpha: 0.78 * alpha),
+  );
+  if (accent != null) {
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(pill, radius),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.9
+        ..color = accent.withValues(alpha: 0.9 * alpha),
+    );
+  }
+  painter.paint(
+    canvas,
+    Offset(centre.dx - painter.width / 2, centre.dy - painter.height / 2),
+  );
+}
+
+final Map<String, TextPainter> _labelPainters = <String, TextPainter>{};
 
 /// Where the town's joystick sits, in one place.
 ///
@@ -222,6 +293,7 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
           ..strokeWidth = 1.8
           ..color = Colors.white,
       );
+      _paintTitle(canvas, centre, haloRadius);
       super.render(canvas);
       return;
     }
@@ -240,7 +312,20 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
           ..color = Colors.white,
       );
     }
+    _paintTitle(canvas, centre, haloRadius);
     super.render(canvas);
+  }
+
+  /// The name of the place, under its circle. Dimmer once you have been, so a
+  /// finished town reads as finished, and dimmer again while it is locked.
+  void _paintTitle(Canvas canvas, Offset centre, double haloRadius) {
+    paintMapLabel(
+      canvas,
+      spot.title,
+      Offset(centre.dx, centre.dy + haloRadius + 9),
+      accent: spot.kind.accent,
+      alpha: isLocked ? 0.6 : (isVisited(spot.id) ? 0.85 : 1),
+    );
   }
 }
 
@@ -335,6 +420,13 @@ class TownNpcComponent extends SimpleNpc with Sensor<Player> {
       Offset(size.x / 2, -5),
       3,
       Paint()..color = const Color(0xFFFFD45C),
+    );
+    paintMapLabel(
+      canvas,
+      npc.name,
+      Offset(size.x / 2, -14),
+      fontSize: 6.5,
+      alpha: 0.9,
     );
     super.render(canvas);
   }

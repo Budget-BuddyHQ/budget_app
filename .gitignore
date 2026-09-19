@@ -63,3 +63,6 @@ supabase.env.json
 # Generated villager frames
 assets/images/humans/
 docs
+
+# Scratch output from Claude sessions (screenshots, drafts). Local only.
+Claude outputs/

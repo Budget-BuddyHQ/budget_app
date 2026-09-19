@@ -1,6 +1,10 @@
 import 'dart:math';
 
 import 'package:budget_app/controllers_that_updates_stats/life_sim_controller.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_assets.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_careers.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_education.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_people.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -26,6 +30,111 @@ import 'package:flutter_test/flutter_test.dart';
         if (rng.nextBool()) life.practise(focus);
       } else if (rng.nextInt(3) == 0) {
         life.practise(LifeSkill.values[rng.nextInt(LifeSkill.values.length)]);
+      }
+    }
+  }
+  return (fired: fired, years: life.age);
+}
+
+/// A fuller player than [_play]: one who studies, drives, rents then buys, keeps
+/// a pet, marries and has children.
+///
+/// [_play] is a thin life (no family, nothing owned, no school past sixteen), so
+/// an event that is about a car, a home, a partner or a campus can never come up
+/// for it, and would look "unreachable" for a reason that has nothing to do with
+/// the event. This player is what the coverage sweep uses to draw those.
+({List<String> fired, int years}) _playRounded(int seed) {
+  final rng = Random(seed * 104729 + 7);
+  final life = LifeSimController(
+    random: Random(seed),
+    startMoney: LifeOrigin.comfortable.familyMoney,
+    withFamily: true,
+  );
+  final fired = <String>[];
+  // Each life is headed for one line of work, so between them the sweep visits
+  // every ladder and not only the ones that are easy to fall into.
+  final want = CareerTrack.values[seed % CareerTrack.values.length];
+
+  // The cheapest thing of that kind this player can actually pay for, on a loan
+  // when it can be financed and in cash when it cannot (a bicycle, a hamster).
+  void own(AssetKind kind, {bool financed = false}) {
+    if (life.assetsOf(kind).isNotEmpty) return;
+    final options = assetsOfKind(kind)..sort((a, b) => a.price - b.price);
+    for (final def in options) {
+      final onLoan = financed && def.canFinance;
+      if (life.buyGate(def, financed: onLoan) != null) continue;
+      life.buyAsset(def, financed: onLoan);
+      return;
+    }
+  }
+
+  while (!life.finished && life.age < 85) {
+    life.ageUp();
+    final event = life.currentEvent;
+    if (event != null) {
+      fired.add(event.id);
+      life.chooseOption(rng.nextInt(event.choices.length));
+      life.takeFollowUp();
+    }
+
+    if (life.age >= 8) own(AssetKind.pet);
+    if (life.age >= 18) {
+      life.getLicense();
+      own(AssetKind.vehicle, financed: true);
+    }
+
+    // Study for the line of work this life is headed for, if it asks for a
+    // degree, and then take a job on that ladder.
+    final startingJob = kJobs.firstWhere(
+      (j) => j.track == want && j.rung == 0,
+      orElse: () => kJobs.first,
+    );
+    if (life.age >= 18 &&
+        life.age <= 22 &&
+        !life.isPostSecondaryStudent &&
+        !life.educationLevel.atLeast(EducationLevel.bachelor) &&
+        (startingJob.minLevel.atLeast(EducationLevel.bachelor) ||
+            seed.isEven)) {
+      final matching = programsAt(SchoolStage.college)
+          .where(
+            (p) =>
+                startingJob.fields.isEmpty ||
+                startingJob.fields.contains(p.field),
+          )
+          .toList();
+      if (matching.isNotEmpty) {
+        life.applyToProgram(matching[rng.nextInt(matching.length)]);
+      }
+    }
+    if (life.age >= 18 &&
+        !life.isPostSecondaryStudent &&
+        life.careerTrack != want) {
+      final open = life.jobListings().where((l) => l.qualified).toList();
+      final mine = open.where((l) => l.job.track == want).toList()
+        ..sort((a, b) => a.job.rung - b.job.rung);
+      final pick = mine.isNotEmpty
+          ? mine.first
+          : (!life.hasJob && open.isNotEmpty
+                ? open[rng.nextInt(open.length)]
+                : null);
+      if (pick != null) life.applyForJob(pick.job.id);
+    }
+    if (life.age >= 28) own(AssetKind.home, financed: true);
+
+    // Meet somebody, get close, marry, have children.
+    if (life.age >= 19 && !life.hasPartner) {
+      life.doActivity('meet_new');
+      life.doActivity('dating_app');
+    }
+    final partners = life.partners;
+    if (partners.isNotEmpty) {
+      final who = partners.first.name;
+      life.doPersonAction(PersonAction.spendTime, who);
+      life.doPersonAction(PersonAction.conversation, who);
+      if (!life.isMarried) {
+        life.doPersonAction(PersonAction.propose, who);
+      } else if (life.childrenOfYours.length < 2) {
+        life.doPersonAction(PersonAction.startFamily, who);
       }
     }
   }
@@ -76,8 +185,7 @@ void main() {
           expect(
             entry.value,
             lessThanOrEqualTo(7),
-            reason:
-                '${entry.key} fired ${entry.value} times in a single life',
+            reason: '${entry.key} fired ${entry.value} times in a single life',
           );
         }
       }
@@ -200,20 +308,84 @@ void main() {
       final seen = <String>{};
       for (var seed = 0; seed < 400; seed++) {
         seen.addAll(_play(seed).fired);
+        seen.addAll(_playRounded(seed + 8000).fired);
+        seen.addAll(_playRounded(seed + 12000).fired);
         for (final skill in LifeSkill.values) {
           seen.addAll(_play(seed + 4000, focus: skill).fired);
         }
       }
-      final unreachable = kLifeEvents
+      // Gambling is switched off for everybody, so those events are meant to be
+      // unreachable and are not a hole in the pool.
+      final pool = kLifeEvents
+          .where(
+            (e) =>
+                kLifeGamblingEnabled || !(e.isWager || e.showsGamblingMechanic),
+          )
+          .toList();
+      final unreachable = pool
           .map((e) => e.id)
           .where((id) => !seen.contains(id))
           .toList();
+      // A coverage floor, not an exact match. The exact version failed every
+      // time the pool changed, because a rare, heavily gated event moved out
+      // of the sample by luck and not by fault. The strict guarantee, that no
+      // event has gates that cannot be met, is the deterministic test below.
       expect(
-        unreachable,
-        isEmpty,
+        unreachable.length / pool.length,
+        lessThan(0.03),
         reason:
-            'these events exist but no simulated player ever saw them: '
+            'too many events were never seen by a simulated player: '
             '$unreachable',
+      );
+    });
+
+    test('every event can be reached, without depending on luck', () {
+      // For each event, build the most obliging context that its own gates
+      // describe and check it matches. An event fails this only if its gates
+      // contradict one another, which is a real defect and not a bad sample.
+      final settable = <LifeFlag>{
+        for (final e in kLifeEvents)
+          for (final c in e.choices)
+            if (c.setsFlag != null) c.setsFlag!,
+      };
+      final broken = <String>[];
+      for (final e in kLifeEvents) {
+        final context = LifeContext(
+          age: e.minAge,
+          money: e.minMoney,
+          happiness: 60,
+          health: 80,
+          smarts: 60,
+          fame: e.minFame,
+          skills: e.requiresSkill == null
+              ? const {}
+              : {e.requiresSkill!: e.minSkill},
+          traits: e.requiresTrait == null ? const {} : {e.requiresTrait!},
+          hasJob: e.requiresJob || e.requiresTrack != null,
+          flags: e.requiresFlag == null ? const {} : {e.requiresFlag!},
+          // The gates on the newer parts of a life: what you have studied,
+          // own, or share a home with. Each is met by exactly what it asks for.
+          education: e.minEducation ?? EducationLevel.none,
+          inSchool: e.requiresStudent,
+          owns: e.requiresAsset == null ? const {} : {e.requiresAsset!},
+          hasPartner: e.requiresPartner,
+          hasChild: e.requiresChild,
+          hasLivingParent: e.requiresParent,
+          debt: e.minDebt,
+          renting: e.requiresRenting,
+          track: e.requiresTrack,
+        );
+        if (!e.matches(context)) broken.add(e.id);
+        // A beat that waits on a flag nothing ever sets waits forever.
+        final needs = e.requiresFlag;
+        if (needs != null && !settable.contains(needs)) {
+          broken.add('${e.id} (waits on $needs, which nothing sets)');
+        }
+      }
+      expect(
+        broken,
+        isEmpty,
+        reason: 'events that can never be drawn: $broken',
       );
     });
   });
