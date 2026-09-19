@@ -405,7 +405,14 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
     return OrientationScope(
       orientations: orientationScope,
       child: PopScope(
-
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          final leave = await _confirmExit();
+          if (leave && context.mounted) {
+            Navigator.of(context).pop(result);
+          }
+        },
         child: Scaffold(
           backgroundColor: AppTheme.deepForest,
           appBar: AppBar(

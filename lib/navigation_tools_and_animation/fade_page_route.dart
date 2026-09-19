@@ -5,6 +5,7 @@ class FadePageRoute<T> extends PageRouteBuilder<T> {
     required WidgetBuilder builder,
     Duration duration = const Duration(milliseconds: 320),
     bool showLoadingAccent = true,
+    super.settings,
   }) : super(
          transitionDuration: duration,
          reverseTransitionDuration: duration,
