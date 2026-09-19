@@ -12,14 +12,15 @@ questions, 57 town scenarios, 40 cited sources, 24 skins, 16 finance concepts.
 
 ## 1. Please briefly describe what your app does. *(400 words max)*
 
-Budget Buddy teaches financial literacy to people aged 4 to 21 by letting them
-practise money decisions instead of reading about them.
+Budget Buddy teaches financial literacy to students from 6th grade through
+young adulthood by letting them practise money decisions instead of reading
+about them.
 
 The main game is a life simulator. You start at birth and age up a year at a
 time, and each year hands you a real decision: split your first paycheck
 between needs, wants and savings; decide whether an emergency fund is worth the
 month you would spend building it; work out whether a 22% store card is a deal.
-There are 196 events, and they chain — buying a second-hand guitar can lead to
+There are nearly 300 events, and they chain — buying a second-hand guitar can lead to
 busking, a viral clip, a label advance and arena years, or it can lead to the
 guitar going under the bed, which is what usually happens. Runs can end badly:
 you can go hungry, get ill, or retire at eighty having quietly compounded a
@@ -31,7 +32,7 @@ through actually understanding something.
 Around that sits an Academy of 89 lessons and 187 quiz questions, every claim
 backed by one of 40 cited sources (Federal Reserve, CFPB, IRS, BLS) so students
 can check that what the app told them is true. There is an explorable town with
-57 money scenarios, a stock-market board that trades on live quotes, four
+16 places and nearly 80 money scenarios, a stock-market board that trades on live quotes, four
 arcade mini-games, a daily habit tracker, and a budget-and-habit analyser that
 reads the player's own logged behaviour and returns specific findings rather
 than a score.
@@ -156,8 +157,8 @@ no way to remind you is losing the thing streaks are for, so 2.0 should build
 it properly and put the switch back.
 
 **Accessibility.** Colour contrast is audited by test, but screen-reader labels
-are incomplete and text scaling above 1.3x is not covered. An app for ages 4 to
-21 that a child with low vision cannot use is not finished.
+are incomplete and text scaling above 1.3x is not covered. An app for students from 6th
+grade up that a young person with low vision cannot use is not finished.
 
 **Offline-first sync.** Progress is local plus Supabase, but losing connection
 mid-lesson currently loses that session's cloud write. A proper outbox queue
