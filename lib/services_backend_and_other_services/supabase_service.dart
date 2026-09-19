@@ -962,7 +962,6 @@ class LeaderboardEntry {
   };
 }
 
-  const CurrentUserProfile({required this.role, required this.avatarUrl});
 class SupabaseService {
   SupabaseService._();
 
@@ -989,7 +988,6 @@ class SupabaseService {
   /// failed would be the worst possible lie to tell them, because by then it
   /// may well have succeeded.
   static const Duration _supabaseDeleteTimeout = Duration(seconds: 20);
-
 
   static const String schemaSql = '''
 create table if not exists public.user_stats (
@@ -1187,31 +1185,6 @@ alter view public.leaderboard set (security_invoker = false);
     yield* client.auth.onAuthStateChange;
   }
 
-  Future<bool> isCurrentUserDisabled() async {
-    final client = _existingClient;
-    final user = client?.auth.currentUser;
-
-    if (client == null || user == null) {
-      return false;
-    }
-
-    try {
-      final response = await client
-          .from('profiles')
-          .select('disabled')
-          .eq('id', user.id)
-          .maybeSingle()
-          .timeout(_supabaseReadTimeout);
-
-      return response?['disabled'] == true;
-    } catch (error) {
-      debugPrint(
-        'Supabase disabled lookup failed, allowing cached app: $error',
-      );
-      return false;
-    }
-  }
-
   late final String _profileImageBucket;
 
   Future<void> initialize({
@@ -1255,18 +1228,6 @@ alter view public.leaderboard set (security_invoker = false);
     }
   }
 
-          .maybeSingle()
-          .timeout(_supabaseReadTimeout);
-            .maybeSingle()
-            .timeout(_supabaseReadTimeout);
-          .from(userStatsTable)
-          .select('spending_habits')
-          .maybeSingle()
-          .timeout(_supabaseReadTimeout);
-      final habits = _readMap(response?['spending_habits']);
-      avatarUrl = _readString(habits['profile_image_url']) ?? avatarUrl;
-      debugPrint('Supabase user stats avatar lookup failed: $error');
-    return CurrentUserProfile(role: role, avatarUrl: avatarUrl);
   Future<AuthResponse> signUp({
     required String email,
     required String password,
@@ -2452,6 +2413,12 @@ Map<String, double> _readDoubleMap(dynamic value) {
         : double.tryParse('$mapValue') ?? 0;
     return MapEntry(key, number);
   });
+}
+
+/// A trimmed string, or null when there is nothing in it.
+String? _readString(dynamic value) {
+  final text = (value ?? '').toString().trim();
+  return text.isEmpty ? null : text;
 }
 
 List<LedgerTransaction> _readTransactions(dynamic value) {
