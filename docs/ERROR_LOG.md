@@ -14,6 +14,169 @@ Sessions are newest-first.
 
 ---
 
+## Session — 2026-09-19
+
+One request became a rebuild: make the main game a real BitLife-style life, with
+school, a career ladder, homes and cars and pets, a family, and options in place
+of dice. Most of that is feature work and is recorded in the code and its tests.
+These are the faults found on the way, and two reports that arrived in the
+middle of it.
+
+### 1. Finance Brawl stopped spawning on wave ten
+
+**Symptom.** *"The user gets to wave 10 and then nothing spawns and the user is
+just stuck there."*
+
+**Investigation.** Every fifth wave is a boss wave, so ten is the first one a
+player reaches that has a boss and is far enough in to have met every enemy.
+The spawner adds minions while `cleared + alive < minionTarget`, and brings the
+boss in only when `_debtsCleared == minionTarget` with the field empty.
+`_debtsCleared` is capped at the wave's whole quota, which is one more than
+`minionTarget` because it also counts the boss. Subscription Creep has
+`swarmCount: 5`: one spawn adds five enemies. So a swarm arriving with one place
+left in the quota carries the count past it. When those are killed the counter
+ends one above the number the boss is waiting for, no more minions are allowed
+because the quota is met, and the boss waits for a value that can no longer be
+reached. An empty field, and nothing coming.
+
+Reading the checkpoint quiz turned up a second fault. A perfect quiz advanced
+the wave in `_nextQuizQuestion`, opened the upgrade sheet, and `_selectUpgrade`
+advanced it again. Waves were skipped, and with them whichever boss stood on the
+skipped number.
+
+**Root cause.** An equality test on a counter that a lump-sum spawner can jump
+over, and a reset written in two places.
+
+**Fix.** `brawl_wave_rules.dart` holds the rules as pure functions. A swarm is
+trimmed to the room the wave has left. The boss comes when the minions are used
+up, not when a counter hits one number. The wave advances in one place. The
+boss-attack lookup no longer falls back to `_liabilities.first`, which throws on
+an empty field, and a tick that throws stops the ticker for good.
+
+**Verified by.** `brawl_wave_rules_test.dart`: the counts, every wave from 1 to
+60 played out with every spawn a swarm, a boss wave always producing its boss,
+and the real screen advancing exactly one wave per checkpoint through wave 13.
+
+**What it cost.** The rules lived inline in the tick beside the drawing code, so
+the only way to test them was to play to wave ten and be unlucky with a swarm at
+the wrong moment, about one boss wave in ten. Every existing Brawl test built the
+widget and inspected a list.
+
+### 2. Finance Brawl felt janky: weird hitboxes, and a joystick that stops
+
+**Symptom.** A player tester: *"the hitboxes are weird and sometimes the joystick
+will just stop."*
+
+**Investigation.** Neither is a thing a unit test sees, so the art was measured.
+The tree sprite is a canopy on a trunk: its opaque pixels are the bottom 47% of
+the frame. It was drawn centred on its collision circle, so the circle sat about
+46 units above the tree you could see. The fighter stopped against empty grass
+and walked through the trunk. Every enemy is drawn in a square twice its radius
+and was hit-tested at the whole radius, but sprites fill between 59% and 100% of
+their frame, so the empty corners hurt and shots vanished a few pixels short.
+Movement tested x and then y separately, which catches and lets go on a round
+obstacle and gives no way out of one. Obstacles could touch, leaving pockets.
+
+The stick was a pan gesture. A pan starts after the touch slop, about eighteen
+pixels, so the stick anchored eighteen pixels from where the thumb landed and
+nothing moved until then. It also had to win a gesture arena, which a system
+gesture can take mid-drag, after which a new pan has to cross the slop again.
+`onAppBackgrounded` reset the knob and not the vector, so a thumb on the stick
+when the app left kept the fighter running. The loop dropped any frame over a
+tenth of a second, so on a phone struggling with a busy wave the game stopped.
+Contact threw six sparks per touching enemy per frame, each with a fresh paint
+object, which is what made a crowded wave stutter.
+
+**Root cause.** Collision numbers that were never derived from the art, an input
+model that depended on a gesture arena, and several separate paths that let go of
+the stick only partly.
+
+**Fix.** `BrawlEnemy.hitScale`, measured per archetype and re-measured by a test.
+`kBrawlTreeArtShift` draws the tree where it is solid. `moveAndSlide` pushes out
+along the surface. The stick is a pointer listener owned by one finger, anchored
+at the touch, with strength that rises with travel, released by cancel,
+background, a quiz card, and game over. Frames over 0.05s are played short and not
+dropped. Sparks are thrown on a beat. Obstacles keep a fighter's width between
+their edges.
+
+**Verified by.** `brawl_hitbox_test.dart` (31 tests) reads the real PNGs, drives the
+real screen with real fingers, and checks a random walk through a field never ends
+inside anything.
+
+**What it cost.** A hitbox is a number that comes out of a picture and nothing in
+the suite looked at the pictures.
+
+### 3. Tests that sample random lives went red when the event pool grew
+
+**Symptom.** Adding about a hundred events failed three unrelated tests:
+`every event in the pool can fire for somebody`, `every chain event is reachable`
+and `a life that uses the button ends better than one that ignores it`.
+
+**Investigation.** None of them was a content bug. The coverage sweep used a thin
+simulated player who never studies, owns nothing and never marries, so events
+gated on a car, a home or a partner could not come up for it. The chain test
+needed one life in about seven hundred to be offered an index fund, invest, and
+then sell in the crash. The debt test summed 25 net worths, and one lucky life
+(seed 13) swung the total by 31,000 in the wrong direction while the payer came
+out ahead in 14 of the 25 lives and behind in 3.
+
+**Fix.** A fuller simulated player for the coverage sweep. A steered player for the
+rarest chain beat, since what is guarded is that the path is open. And the debt test
+counts lives instead of adding money, so one outlier cannot vote. The deterministic
+test that every event's gates can be met was extended to the new gates.
+
+**What it cost.** A sampling test's sensitivity falls with every batch of new
+content. The remedy that keeps them meaningful is a better sample or a directed one,
+never a lower bar.
+
+### 4. A past life could not be opened, and the Coach read one number
+
+**Symptom.** *"When they click on one of these past runs it pulls their
+diagnostic,"* and *"upgrade the coach tab based on the new changes."*
+
+**Root cause.** A finished life kept a name, an age and a net worth. The
+diagnostic was graded once, on the ending screen, and thrown away, and the Coach
+compared lives by that one number, which cannot say whether a degree paid or a loan
+outlasted the car it bought.
+
+**Fix.** A record keeps what its debrief was graded on (`LifeRunFacts`), for the newest
+five lives, and grades it again on tap, so a corrected rule reads an old life by the new
+wording. Every record keeps a small `LifeDetail` (degrees, borrowed for school,
+promotions, what was owned and owed, home, partner, children). Lives filed before that
+existed open to a note that says so, and are left out of the Coach's reading, because
+"no degree" is not what their missing numbers mean. The Coach gained six rules that
+read lives against each other, and a card on its screen.
+
+**Verified by.** `life_record_story_test.dart`, `coach_lives_test.dart`, and pictures.
+
+### 5. The header cut job titles, and the feed was a wall of names
+
+**Symptom.** Careers became ladders, so "Management Trainee" appeared as
+"Managem…" on a 393px phone, and a family of ten put four rows of name chips above the
+story of the year.
+
+**Fix.** The header's second line is two lines: the age, then the job on its own. The
+feed shows who is in your life as one tappable line that opens the People sheet.
+
+### 6. The town had twelve places and a life had grown past them
+
+**Symptom.** *"The map still isn't enough so please add more,"* and *"make the map have
+titles of what the circles are."*
+
+**Fix.** Every circle carries its name. Four places were added for the newer parts of a
+life: a gym, a campus office, a housing office and a pet shop, with four encounters
+each, and seven encounters were added to existing buildings about study, a home, loans
+and a promotion. The first town is composed by `tool/make_town_map.py`, which gained the
+four buildings and clears scenery from around them. The second is not composed, so
+`tool/add_map_two_places.py` stamps the same prefabs into it from a saved untouched copy,
+and is idempotent.
+
+**What it cost.** The second town has 13 buildings and the layout test wants each place to
+have its own, so places cannot be added there without drawing buildings. Two were nearly
+placed 32 tiles from the square, past the walk limit the test enforces.
+
+---
+
 ## Session — 2026-09-06
 
 Reported in one message: eleven separate things, one of which turned out to be
