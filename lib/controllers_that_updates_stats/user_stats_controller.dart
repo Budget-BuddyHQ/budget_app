@@ -217,7 +217,6 @@ class UserStatsController extends ChangeNotifier {
         return _authFailure('That sign-in did not complete. Please try again.');
       }
 
-        await client.auth.signOut();
       return await _finishAuthenticatedFlow(
         user,
         successMessage: 'Welcome back to Budget Buddy.',
