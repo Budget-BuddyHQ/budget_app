@@ -1235,10 +1235,13 @@ class _NextLessonFocusCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          colors: [Color(0xFF173B2F), Color(0xFF0F2B22)],
         ),
         borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0x444BD2A3)),
         boxShadow: const [
           BoxShadow(
+            color: Color(0x33000000),
             blurRadius: 20,
             offset: Offset(0, 10),
           ),
@@ -1253,6 +1256,7 @@ class _NextLessonFocusCard extends StatelessWidget {
               Text(
                 isComplete ? 'Path complete' : 'Continue where you left off',
                 style: GoogleFonts.pixelifySans(
+                  color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1262,6 +1266,7 @@ class _NextLessonFocusCard extends StatelessWidget {
                 isComplete
                     ? 'You finished the current academy path. Revisit any unit or add the next chapter when you are ready.'
                     : '${nextLesson!.title} • ${nextUnit?.title ?? 'Academy'} • ${nextLesson!.estimatedMinutes} min',
+                style: const TextStyle(color: Color(0xFFC3D8CE), height: 1.45),
               ),
               const SizedBox(height: 14),
               Wrap(
@@ -1287,8 +1292,10 @@ class _NextLessonFocusCard extends StatelessWidget {
             onPressed: onOpenNext,
             style: FilledButton.styleFrom(
               backgroundColor: isComplete
+                  ? const Color(0xFF2A4A3D)
                   : const Color(0xFF2F9E68),
               foregroundColor: isComplete
+                  ? const Color(0xFFC3D8CE)
                   : Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
             ),
@@ -1351,6 +1358,7 @@ class _FocusPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: chip.fill,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accent.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1646,6 +1654,7 @@ class _UnitCard extends StatelessWidget {
             child: LinearProgressIndicator(
               minHeight: 9,
               value: progress,
+              backgroundColor: Colors.white24,
               valueColor: AlwaysStoppedAnimation<Color>(accent),
             ),
           ),

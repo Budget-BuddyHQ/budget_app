@@ -32,6 +32,7 @@ migrate_working_dir/
 /coverage/
 
 # Desktop & Mobile Ephemeral Files (Machine-Specific)
+/linux/flutter/ephemeral/
 /windows/flutter/ephemeral/
 /macos/Flutter/ephemeral/
 /ios/Flutter/ephemeral/

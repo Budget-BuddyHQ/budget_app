@@ -29,7 +29,6 @@ import '../../widgets_custom_lotties/habit_progress_grids.dart';
 import '../../widgets_custom_lotties/game_toast.dart';
 import '../../widgets_custom_lotties/idle_hover_icon.dart';
 import '../../widgets_custom_lotties/vivid_backdrop.dart';
-import '../admin/admin_screen.dart';
 import '../auth/auth_screen.dart';
 import '../onboarding/tutorial_screen.dart';
 import 'feedback_screen.dart';
@@ -56,6 +55,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _logout(BuildContext context) async {
     await context.read<UserStatsController>().signOut();
+    if (!context.mounted) return;
 
     GameToast.show(
       context,
@@ -313,210 +313,266 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context, controller, settings, _) {
         final stats = controller.stats;
         final user = SupabaseService.instance.currentUser;
-            final profileData = snapshot.data;
-            final avatarUrl = stats.profileImageUrl.isNotEmpty
-                ? stats.profileImageUrl
-                : remoteAvatarUrl;
-              backgroundColor: AppTheme.deepForest,
-                    ),
-                        const CloudSyncBanner(),
-                        _ProfileHero(
-                          stats: stats,
-                          avatarUrl: avatarUrl,
-                          isUploadingPhoto: _isUploadingPhoto,
-                          onUploadTap: user == null
-                              ? null
-                              : () => _pickAndUploadPhoto(
-                                  context,
-                                  controller,
-                                  user,
-                                ),
-                        ),
-                        _ProfileInsightCard(stats: stats),
-                        const SizedBox(height: 12),
-                        _BadgeShowcase(stats: stats),
-                        const SizedBox(height: 12),
-                        const _MoneyHabitsProfileCard(),
-                        const SizedBox(height: 12),
-                        const _FriendsCard(),
-                        const SizedBox(height: 12),
-                        // The Notifications toggle used to live here,
-                        // promising "quest reminders and reward alerts".
-                        //
-                        // It controlled nothing. No notification package is
-                        // wired up, so the switch saved a boolean and no
-                        // reminder has ever been sent. A setting that lies is
-                        // worse than a missing feature anywhere; in an app
-                        // whose users are as young as four, and whose whole
-                        // argument is "check what we tell you", it is not
-                        // defensible at all. The preference itself is kept in
-                        // `AppSettingsController` so the switch can come back
-                        // the day it is real -- see the 2.0 list in
-                        // docs/CAC_SUBMISSION_ANSWERS.md.
-                          subtitle:
-                              'Live across buttons, nav, and reward effects.',
-                            value: settings.soundEnabled,
-                            activeThumbColor: const Color(0xFF4BD2A3),
-                            onChanged: (value) async {
-                              await settings.setSoundEnabled(value);
-                        _SettingsCard(
-                          title: 'Music',
-                          subtitle:
-                              'A calm loop under the app. Separate from sound.',
-                          icon: Icons.music_note_rounded,
-                          trailing: Switch.adaptive(
-                            value: settings.musicEnabled,
-                            activeThumbColor: const Color(0xFF4BD2A3),
-                            onChanged: (value) async {
-                              HapticFeedback.lightImpact();
-                              await settings.setMusicEnabled(value);
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _SettingsCard(
-                          title: 'Replay Tutorial',
-                          subtitle: 'Take Buddy\'s tour of every page again.',
-                          icon: Icons.school_rounded,
-                          onTap: () => _replayTutorial(context),
-                          trailing: const Icon(
-                            Icons.chevron_right_rounded,
-                            color: Color(0xFFB7F7D7),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        // Reachable from inside the app, not only from the
-                        // store listing. Play's Families policy wants it here,
-                        // and somebody who agreed at sign-up should be able to
-                        // go back and read what they agreed to.
-                        _SettingsCard(
-                          title: 'Privacy Policy',
-                          subtitle: stats.privacyAcceptedAt == null
-                              ? 'What we store, and what we never collect.'
-                              : 'Accepted '
-                                    '${_shortDate(stats.privacyAcceptedAt!)} '
-                                    '· version ${stats.privacyAcceptedVersion}',
-                          icon: Icons.privacy_tip_rounded,
-                          onTap: () => _openPrivacyPolicy(context),
-                          trailing: const Icon(
-                            Icons.open_in_new_rounded,
-                            size: 18,
-                            color: Color(0xFFB7F7D7),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        // Directly above "About You", which is where the age
-                        // is set. Reported twice as *"I'm still not seeing the
-                        // age separated for the app"* -- and the age band was
-                        // by then deciding six separate things, stated to the
-                        // player in one sentence at sign-up they saw once.
-                        // A setting whose effects are invisible reads as a
-                        // setting that does nothing.
-                        AgeScalingCard(
-                          onChangeAge: () =>
-                              _editPersonalDetails(context, stats),
-                        ),
-                        const SizedBox(height: 12),
-                        _SettingsCard(
-                          title: 'About You',
-                          subtitle: _personalDetailsSummary(stats),
-                          icon: Icons.badge_rounded,
-                          onTap: () => _editPersonalDetails(context, stats),
-                          trailing: const Icon(
-                            Icons.chevron_right_rounded,
-                            color: Color(0xFFB7F7D7),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                          // Masked, never the full address.
-                          //
-                          // this app is for kids, and a profile screen is
-                          // one of the most screenshotted bits of any app.
-                          // printing a full email there puts a real contact
-                          // detail into every screenshot and
-                          // every over-the-shoulder glance. The masked form
-                          // still answers the only question this row exists to
-                          // answer: which account am I signed into.
-                          subtitle: user?.email == null
-                              ? 'Signed in as ${stats.username}.'
-                              : _maskEmail(user!.email!),
-                              color: Color(0xFFB7F7D7),
-                            ),
-                        ),
-                        if (kFeedbackEnabled) ...[
-                          const SizedBox(height: 12),
-                          _SettingsCard(
-                            title: 'Send Feedback',
-                            subtitle: 'Report a bug, share an idea, or say hi.',
-                            icon: Icons.mail_rounded,
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const FeedbackScreen(),
-                                ),
-                              );
-                            },
-                            trailing: const Icon(
-                              Icons.chevron_right_rounded,
-                              color: Color(0xFFB7F7D7),
-                            ),
-                          ),
-                        ],
 
-                              ),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x33F55353),
-                                  blurRadius: 20,
-                                  offset: Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                                const Icon(
-                                  Icons.logout_rounded,
-                                  color: Colors.white,
-                                ),
-                                const SizedBox(width: 10),
-                                  style: GoogleFonts.pixelifySans(
+        return Scaffold(
+          backgroundColor: AppTheme.deepForest,
+          bottomNavigationBar: widget.onNavSelected == null
+              ? null
+              : CustomBottomNav(
+                  activeIndex: widget.activeTabIndex,
+                  onSelected: widget.onNavSelected!,
+                ),
+          body: Stack(
+            children: [
+              const _ProfileBackdrop(),
+              SafeArea(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 126),
+                  children: [
+                    const CloudSyncBanner(),
+                    _ProfileHero(
+                      stats: stats,
+                      avatarUrl: stats.profileImageUrl,
+                      isUploadingPhoto: _isUploadingPhoto,
+                      onUploadTap: user == null
+                          ? null
+                          : () =>
+                                _pickAndUploadPhoto(context, controller, user),
+                    ),
+                    const SizedBox(height: 18),
+                    _ProfileInsightCard(stats: stats),
+                    const SizedBox(height: 12),
+                    _BadgeShowcase(stats: stats),
+                    const SizedBox(height: 12),
+                    const _MoneyHabitsProfileCard(),
+                    const SizedBox(height: 12),
+                    const _FriendsCard(),
+                    const SizedBox(height: 12),
+                    // The Notifications toggle used to live here,
+                    // promising "quest reminders and reward alerts".
+                    //
+                    // It controlled nothing. No notification package is
+                    // wired up, so the switch saved a boolean and no
+                    // reminder has ever been sent. A setting that lies is
+                    // worse than a missing feature anywhere; in an app
+                    // whose users are as young as four, and whose whole
+                    // argument is "check what we tell you", it is not
+                    // defensible at all. The preference itself is kept in
+                    // `AppSettingsController` so the switch can come back
+                    // the day it is real -- see the 2.0 list in
+                    // docs/CAC_SUBMISSION_ANSWERS.md.
+                    _SettingsCard(
+                      title: 'Sound',
+                      subtitle: 'Live across buttons, nav, and reward effects.',
+                      icon: Icons.volume_up_rounded,
+                      trailing: Switch.adaptive(
+                        value: settings.soundEnabled,
+                        activeThumbColor: const Color(0xFF4BD2A3),
+                        onChanged: (value) async {
+                          HapticFeedback.lightImpact();
+                          await settings.setSoundEnabled(value);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _SettingsCard(
+                      title: 'Music',
+                      subtitle:
+                          'A calm loop under the app. Separate from sound.',
+                      icon: Icons.music_note_rounded,
+                      trailing: Switch.adaptive(
+                        value: settings.musicEnabled,
+                        activeThumbColor: const Color(0xFF4BD2A3),
+                        onChanged: (value) async {
+                          HapticFeedback.lightImpact();
+                          await settings.setMusicEnabled(value);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _SettingsCard(
+                      title: 'Replay Tutorial',
+                      subtitle: 'Take Buddy\'s tour of every page again.',
+                      icon: Icons.school_rounded,
+                      onTap: () => _replayTutorial(context),
+                      trailing: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Color(0xFFB7F7D7),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Reachable from inside the app, not only from the
+                    // store listing. Play's Families policy wants it here,
+                    // and somebody who agreed at sign-up should be able to
+                    // go back and read what they agreed to.
+                    _SettingsCard(
+                      title: 'Privacy Policy',
+                      subtitle: stats.privacyAcceptedAt == null
+                          ? 'What we store, and what we never collect.'
+                          : 'Accepted '
+                                '${_shortDate(stats.privacyAcceptedAt!)} '
+                                '· version ${stats.privacyAcceptedVersion}',
+                      icon: Icons.privacy_tip_rounded,
+                      onTap: () => _openPrivacyPolicy(context),
+                      trailing: const Icon(
+                        Icons.open_in_new_rounded,
+                        size: 18,
+                        color: Color(0xFFB7F7D7),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Directly above "About You", which is where the age
+                    // is set. Reported twice as *"I'm still not seeing the
+                    // age separated for the app"* -- and the age band was
+                    // by then deciding six separate things, stated to the
+                    // player in one sentence at sign-up they saw once.
+                    // A setting whose effects are invisible reads as a
+                    // setting that does nothing.
+                    AgeScalingCard(
+                      onChangeAge: () => _editPersonalDetails(context, stats),
+                    ),
+                    const SizedBox(height: 12),
+                    _SettingsCard(
+                      title: 'About You',
+                      subtitle: _personalDetailsSummary(stats),
+                      icon: Icons.badge_rounded,
+                      onTap: () => _editPersonalDetails(context, stats),
+                      trailing: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Color(0xFFB7F7D7),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _SettingsCard(
+                      title: 'Account',
+                      // Masked, never the full address.
+                      //
+                      // this app is for kids, and a profile screen is
+                      // one of the most screenshotted bits of any app.
+                      // printing a full email there puts a real contact
+                      // detail into every screenshot and
+                      // every over-the-shoulder glance. The masked form
+                      // still answers the only question this row exists to
+                      // answer: which account am I signed into.
+                      subtitle: user?.email == null
+                          ? 'Signed in as ${stats.username}.'
+                          : _maskEmail(user!.email!),
+                      icon: Icons.manage_accounts_rounded,
+                      trailing: Text(
+                        stats.levelTitle,
+                        style: const TextStyle(
+                          color: Color(0xFFB7F7D7),
+                          fontWeight: FontWeight.w700,
                         ),
-                        const SizedBox(height: 14),
-                        // Deliberately a quiet text link and not a red button.
-                        //
-                        // Play requires this to exist and to be reachable
-                        // without leaving the app. It does not require it to
-                        // be the most eye-catching thing on the screen, and
-                        // giving permanent deletion the same visual weight as
-                        // Log Out -- directly under Log Out -- is how a nine
-                        // year old deletes their account by aiming badly. The
-                        // confirmation does the real work; this just declines
-                        // to advertise.
-                        Center(
-                          child: TextButton(
-                            onPressed: () => _deleteAccount(context),
-                            style: TextButton.styleFrom(
-                              foregroundColor: const Color(0xFFFF9B8A),
+                      ),
+                    ),
+                    if (kFeedbackEnabled) ...[
+                      const SizedBox(height: 12),
+                      _SettingsCard(
+                        title: 'Send Feedback',
+                        subtitle: 'Report a bug, share an idea, or say hi.',
+                        icon: Icons.mail_rounded,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const FeedbackScreen(),
                             ),
-                            child: Text(
-                              'Delete my account',
-                              style: GoogleFonts.quicksand(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                decoration: TextDecoration.underline,
-                                decorationColor: const Color(0x66FF9B8A),
-                              ),
-                            ),
+                          );
+                        },
+                        trailing: const Icon(
+                          Icons.chevron_right_rounded,
+                          color: Color(0xFFB7F7D7),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 22),
+                    _LogoutButton(onTap: () => _logout(context)),
+                    const SizedBox(height: 14),
+                    // Deliberately a quiet text link and not a red button.
+                    //
+                    // Play requires this to exist and to be reachable
+                    // without leaving the app. It does not require it to
+                    // be the most eye-catching thing on the screen, and
+                    // giving permanent deletion the same visual weight as
+                    // Log Out -- directly under Log Out -- is how a nine
+                    // year old deletes their account by aiming badly. The
+                    // confirmation does the real work; this just declines
+                    // to advertise.
+                    Center(
+                      child: TextButton(
+                        onPressed: () => _deleteAccount(context),
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFFFF9B8A),
+                        ),
+                        child: Text(
+                          'Delete my account',
+                          style: GoogleFonts.quicksand(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            decoration: TextDecoration.underline,
+                            decorationColor: const Color(0x66FF9B8A),
                           ),
                         ),
+                      ),
                     ),
+                  ],
+                ),
               ),
+            ],
+          ),
         );
       },
     );
   }
 }
 
+/// The red "Log Out" button under the settings.
+class _LogoutButton extends StatelessWidget {
+  const _LogoutButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Ink(
+        height: 58,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFE86A55), Color(0xFFC94545)],
+          ),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.logout_rounded, color: Colors.white),
+              const SizedBox(width: 10),
+              Text(
+                'Log Out',
+                style: GoogleFonts.pixelifySans(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileHero extends StatelessWidget {
   const _ProfileHero({
     required this.stats,
     required this.avatarUrl,
@@ -1183,6 +1239,7 @@ String _maskEmail(String email) {
   return '$head${'•' * (local.length - 4)}$tail$domain';
 }
 
+class _SettingsCard extends StatelessWidget {
   const _SettingsCard({
     required this.title,
     required this.subtitle,
@@ -1245,42 +1302,7 @@ String _maskEmail(String email) {
   }
 }
 
-  const _AdminCard({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.panelStrong,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.amber.withValues(alpha: 0.18)),
-      ),
-      child: ListTile(
-        leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: Colors.amber.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Icon(Icons.admin_panel_settings, color: Colors.amber),
-        ),
-        title: const Text(
-          'Admin Panel',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
-        ),
-        subtitle: Text(
-          'Moderation and account controls.',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.62)),
-        ),
-        onTap: onTap,
-      ),
-    );
-  }
-}
-
+class _ProfileBackdrop extends StatelessWidget {
   const _ProfileBackdrop();
 
   @override
@@ -1306,6 +1328,7 @@ String _maskEmail(String email) {
       vignetteOpacity: 0.55,
     );
   }
+}
 
 /// Renders a profile photo from either a remote URL or a local file path,
 /// so the picture still shows when cloud storage isn't available.
