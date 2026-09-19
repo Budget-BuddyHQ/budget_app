@@ -534,126 +534,139 @@ class _CoachCard extends StatelessWidget {
         16 * scale,
         14 * scale,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Buddy, in the pose the step asks for, wearing the skin the
-              // player has equipped. The mentor is what makes the tour feel
-              // like being shown around rather than being read a manual —
-              // and being shown around by the turtle you picked is better
-              // still. See [MentorImage].
-              MentorImage(
-                pose: step.mascot,
-                size: 64 * scale,
-                errorBuilder: (_, _, _) => SizedBox(width: 64 * scale),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: EdgeInsets.zero,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: 0,
+                maxHeight: constraints.maxHeight,
               ),
-              SizedBox(width: 12 * scale),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      step.title,
-                      style: TextStyle(
-                        color: step.accent,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 17 * scale,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Buddy, in the pose the step asks for, wearing the skin the
+                      // player has equipped. The mentor is what makes the tour feel
+                      // like being shown around rather than being read a manual —
+                      // and being shown around by the turtle you picked is better
+                      // still. See [MentorImage].
+                      MentorImage(
+                        pose: step.mascot,
+                        size: 64 * scale,
+                        errorBuilder: (_, _, _) => SizedBox(width: 64 * scale),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      step.tagline,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.86),
-                        height: 1.35,
-                        fontSize: 12.5 * scale,
-                        fontWeight: FontWeight.w600,
+                      SizedBox(width: 12 * scale),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              step.title,
+                              style: TextStyle(
+                                color: step.accent,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 17 * scale,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              step.tagline,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.86),
+                                height: 1.35,
+                                fontSize: 12.5 * scale,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12 * scale),
-          // One bullet, not all of them. The full-screen version listed three
-          // per step and nobody reads three bullets standing in front of the
-          // thing they describe.
-          if (step.bullets.isNotEmpty)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                PixelKitIcon(AppAssets.kitIconCheck, size: 14),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    step.bullets.first,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.74),
-                      fontSize: 12 * scale,
-                      height: 1.3,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    ],
                   ),
-                ),
-              ],
+                  SizedBox(height: 12 * scale),
+                  // One bullet, not all of them. The full-screen version listed three
+                  // per step and nobody reads three bullets standing in front of the
+                  // thing they describe.
+                  if (step.bullets.isNotEmpty)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        PixelKitIcon(AppAssets.kitIconCheck, size: 14),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            step.bullets.first,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.74),
+                              fontSize: 12 * scale,
+                              height: 1.3,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  SizedBox(height: 14 * scale),
+                  Row(
+                    children: [
+                      // Flexible, and the first thing to give way. On a 393px phone
+                      // with the Back button showing, a default-padded TextButton
+                      // pair plus a 116px Next overflowed this row by 39px — Material
+                      // buttons carry a 64px minimum and a 48px tap target on top of
+                      // their padding, so four ordinary-looking children came to
+                      // 372px inside 333. The counter is also the least important
+                      // thing here, which is why it is the one that shrinks.
+                      Flexible(
+                        child: Text(
+                          '${index + 1} / $total',
+                          maxLines: 1,
+                          overflow: TextOverflow.clip,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.5),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      if (onBack != null)
+                        TextButton(
+                          onPressed: onBack,
+                          style: _compactText(Colors.white60),
+                          child: const Text('Back'),
+                        ),
+                      TextButton(
+                        onPressed: onSkip,
+                        style: _compactText(Colors.white38),
+                        child: const Text('Skip'),
+                      ),
+                      const SizedBox(width: 6),
+                      // Up to 104px, less when the row is cramped. A fixed width here
+                      // still overflowed a 320px phone by 0.8px on the last step —
+                      // and a rigid primary button is the wrong thing to hold fixed
+                      // when the alternative is a red overflow banner across it.
+                      Flexible(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 104),
+                          child: PixelButton(
+                            label: index == total - 1 ? 'Done' : 'Next',
+                            height: 42 * scale,
+                            onPressed: onNext,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          SizedBox(height: 14 * scale),
-          Row(
-            children: [
-              // Flexible, and the first thing to give way. On a 393px phone
-              // with the Back button showing, a default-padded TextButton
-              // pair plus a 116px Next overflowed this row by 39px — Material
-              // buttons carry a 64px minimum and a 48px tap target on top of
-              // their padding, so four ordinary-looking children came to
-              // 372px inside 333. The counter is also the least important
-              // thing here, which is why it is the one that shrinks.
-              Flexible(
-                child: Text(
-                  '${index + 1} / $total',
-                  maxLines: 1,
-                  overflow: TextOverflow.clip,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              if (onBack != null)
-                TextButton(
-                  onPressed: onBack,
-                  style: _compactText(Colors.white60),
-                  child: const Text('Back'),
-                ),
-              TextButton(
-                onPressed: onSkip,
-                style: _compactText(Colors.white38),
-                child: const Text('Skip'),
-              ),
-              const SizedBox(width: 6),
-              // Up to 104px, less when the row is cramped. A fixed width here
-              // still overflowed a 320px phone by 0.8px on the last step —
-              // and a rigid primary button is the wrong thing to hold fixed
-              // when the alternative is a red overflow banner across it.
-              Flexible(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 104),
-                  child: PixelButton(
-                    label: index == total - 1 ? 'Done' : 'Next',
-                    height: 42 * scale,
-                    onPressed: onNext,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }

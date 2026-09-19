@@ -64,7 +64,8 @@ void main() {
         expect(
           step.bullets,
           isNotEmpty,
-          reason: '${step.id} has no bullets — a step with nothing to do on '
+          reason:
+              '${step.id} has no bullets — a step with nothing to do on '
               'it is a step that should be merged away',
         );
         for (final bullet in step.bullets) {
@@ -273,10 +274,7 @@ void main() {
     }
 
     Widget shell() => MediaQuery(
-      data: const MediaQueryData(
-        disableAnimations: true,
-        size: Size(393, 852),
-      ),
+      data: const MediaQueryData(disableAnimations: true, size: Size(393, 852)),
       child: MultiProvider(
         providers: [
           ChangeNotifierProvider<UserStatsController>(
@@ -443,7 +441,8 @@ void main() {
       expect(
         width / size.width,
         lessThan(0.4),
-        reason: 'the card takes ${(width / size.width * 100).round()}% of a '
+        reason:
+            'the card takes ${(width / size.width * 100).round()}% of a '
             '1440px window',
       );
       expect(width, lessThanOrEqualTo(540));
@@ -458,7 +457,8 @@ void main() {
       expect(
         width / size.width,
         greaterThan(0.7),
-        reason: 'the card uses only ${(width / size.width * 100).round()}% of '
+        reason:
+            'the card uses only ${(width / size.width * 100).round()}% of '
             'a 375px phone, wasting the only space there is',
       );
       expect(width, lessThanOrEqualTo(size.width));
@@ -541,7 +541,8 @@ void main() {
       expect(
         card.top,
         greaterThan(200),
-        reason: 'the card is pinned near the top of a 900px window while the '
+        reason:
+            'the card is pinned near the top of a 900px window while the '
             'spotlight is on the bottom bar',
       );
       expect(
@@ -587,10 +588,7 @@ void main() {
 
         await tester.pumpWidget(
           MediaQuery(
-            data: MediaQueryData(
-              size: viewport.value,
-              disableAnimations: true,
-            ),
+            data: MediaQueryData(size: viewport.value, disableAnimations: true),
             child: MaterialApp(
               home: Scaffold(
                 body: CoachMarkOverlay(
@@ -611,13 +609,21 @@ void main() {
           final card = tester.getRect(find.byType(PixelFrame).first);
           final where = '${viewport.key}, step $step';
 
-          expect(card.top, greaterThanOrEqualTo(-0.5), reason: 'off the top: $where');
+          expect(
+            card.top,
+            greaterThanOrEqualTo(-0.5),
+            reason: 'off the top: $where',
+          );
           expect(
             card.bottom,
             lessThanOrEqualTo(viewport.value.height + 0.5),
             reason: 'off the bottom: $where',
           );
-          expect(card.left, greaterThanOrEqualTo(-0.5), reason: 'off the left: $where');
+          expect(
+            card.left,
+            greaterThanOrEqualTo(-0.5),
+            reason: 'off the left: $where',
+          );
           expect(
             card.right,
             lessThanOrEqualTo(viewport.value.width + 0.5),
@@ -641,7 +647,8 @@ void main() {
           expect(
             card.overlaps(band.deflate(1)),
             isFalse,
-            reason: 'the card sits on top of the bottom bar it is '
+            reason:
+                'the card sits on top of the bottom bar it is '
                 'describing: $where',
           );
 
@@ -678,6 +685,55 @@ void main() {
       'desktop window': Size(957, 742),
       'wide desktop': Size(1440, 900),
     };
+
+    testWidgets('stays within bounds when the system text scale is large', (
+      tester,
+    ) async {
+      const viewport = Size(393, 852);
+      tester.view.physicalSize = viewport;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final errors = <String>[];
+      final previous = FlutterError.onError;
+      FlutterError.onError = (details) =>
+          errors.add(details.exceptionAsString());
+
+      try {
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(
+              size: viewport,
+              disableAnimations: true,
+              textScaler: TextScaler.linear(1.4),
+            ),
+            child: MaterialApp(
+              home: Scaffold(
+                body: CoachMarkOverlay(
+                  steps: kTutorialSteps,
+                  onFinished: () {},
+                  onWantTab: (_) async {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        for (var step = 0; step < kTutorialSteps.length; step++) {
+          await tester.tap(
+            find.text(step == kTutorialSteps.length - 1 ? 'Done' : 'Next'),
+          );
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.pump(const Duration(milliseconds: 300));
+        }
+      } finally {
+        FlutterError.onError = previous;
+      }
+
+      expect(errors, isEmpty, reason: errors.join('; '));
+    });
 
     for (final viewport in viewports.entries) {
       testWidgets('no overflow on ${viewport.key}', (tester) async {
