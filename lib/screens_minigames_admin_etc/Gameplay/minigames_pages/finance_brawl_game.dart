@@ -3,6 +3,8 @@ import 'dart:math';
 import 'dart:ui' as ui;
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../../models_Like_Skins_and_lessons_templates/brawl_enemies.dart';
+import '../../../models_Like_Skins_and_lessons_templates/brawl_movement.dart';
+import '../../../models_Like_Skins_and_lessons_templates/brawl_wave_rules.dart';
 import '../../../models_Like_Skins_and_lessons_templates/reading_grade.dart';
 import '../../../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import 'package:flutter/material.dart';
@@ -389,6 +391,13 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   Offset? _touchMoveAnchor;
   Offset _touchMoveVector = Offset.zero;
   Offset _touchMoveKnob = Offset.zero;
+
+  /// The finger that owns the stick, or null when nobody is holding it.
+  ///
+  /// A second finger landing (a thumb resting on the screen, a palm) must not
+  /// take the stick over or let it go, so events from any other pointer are
+  /// ignored. See [_onStickDown].
+  int? _stickPointer;
 
   int _debtsCleared = 0;
   int _debtsNeededForLevelUp = 6;
@@ -1710,9 +1719,14 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     _loadEnemySprites();
 
     const Offset playerStartPos = Offset(800, 800);
-    const double minTreeRockDistance =
-        55.0; // _treeRadius (35) + _rockRadius (20)
-    const double minRockRockDistance = 40.0; // _rockRadius (20) * 2
+    // Obstacles are kept far enough apart that the fighter can always walk
+    // between any two of them: the fighter is 48 across, so their edges are at
+    // least 60 apart. They used to be allowed to touch, which made pockets a
+    // fighter could walk into and not back out of.
+    const double passWidth = 60.0;
+    const double minTreeTreeDistance = 35.0 + 35.0 + passWidth;
+    const double minTreeRockDistance = 35.0 + 20.0 + passWidth;
+    const double minRockRockDistance = 20.0 + 20.0 + passWidth;
 
     // Generate Tree Positions
     for (int i = 0; i < 20; i++) {
@@ -1729,9 +1743,13 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
         );
 
         // Ensure distance from player safe zone
-        if ((pos - playerStartPos).distance > 150) {
-          isValidPosition = true;
+        if ((pos - playerStartPos).distance <= 150) continue;
+        if (_treePositions.any(
+          (other) => (pos - other).distance < minTreeTreeDistance,
+        )) {
+          continue;
         }
+        isValidPosition = true;
       }
 
       if (isValidPosition) {
@@ -1808,10 +1826,16 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       return;
     }
 
-    final double dt = (elapsed.inMicroseconds / 1000000.0) - _totalElapsedTime;
+    double dt = (elapsed.inMicroseconds / 1000000.0) - _totalElapsedTime;
     _totalElapsedTime = elapsed.inMicroseconds / 1000000.0;
 
-    if (dt <= 0 || dt > 0.1) return;
+    if (dt <= 0) return;
+    // A slow frame is played as a shorter one, not thrown away. Skipping every
+    // frame over a tenth of a second meant that on a phone struggling with a
+    // busy wave the whole game stopped, and a thumb still on the stick saw
+    // nothing move, which is "the joystick just stops". The first frame after a
+    // pause is also long, and is clamped the same way.
+    if (dt > 0.05) dt = 0.05;
 
     setState(() {
       // 1. Keyboard Movement Vectors
@@ -1833,35 +1857,36 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
           _pressedKeys.contains(LogicalKeyboardKey.keyD)) {
         dx += 1.0;
       }
+      // A stick nobody is holding must not push. Every path that lets go resets
+      // it, and this is the backstop for one that was missed.
+      if (_stickPointer == null) _touchMoveVector = Offset.zero;
       dx += _touchMoveVector.dx;
       dy += _touchMoveVector.dy;
 
-      if (dx != 0 || dy != 0) {
-        double len = sqrt(dx * dx + dy * dy);
-        Offset dynamicStep = Offset(dx / len, dy / len) * _playerSpeed * dt;
+      // Strength is the length of the input, up to 1: a full push from a key,
+      // a partial one from a thumb that is not all the way out.
+      final inputLength = sqrt(dx * dx + dy * dy);
+      final Offset walk = inputLength == 0
+          ? Offset.zero
+          : Offset(dx, dy) /
+                inputLength *
+                min(1.0, inputLength) *
+                _playerSpeed *
+                dt;
 
-        Offset targetX = Offset(
-          (_playerPos.dx + dynamicStep.dx).clamp(
-            _playerRadius,
-            _mapWidth - _playerRadius,
-          ),
-          _playerPos.dy,
-        );
-        if (!_isCollidingWithObstacles(targetX, _playerRadius)) {
-          _playerPos = targetX;
-        }
-
-        Offset targetY = Offset(
-          _playerPos.dx,
-          (_playerPos.dy + dynamicStep.dy).clamp(
-            _playerRadius,
-            _mapHeight - _playerRadius,
-          ),
-        );
-        if (!_isCollidingWithObstacles(targetY, _playerRadius)) {
-          _playerPos = targetY;
-        }
-      }
+      // Slides along what it meets instead of testing each axis in turn, and
+      // with no walk at all it still frees a fighter that is inside something.
+      _playerPos = moveAndSlide(
+        from: _playerPos,
+        step: walk,
+        radius: _playerRadius,
+        mapWidth: _mapWidth,
+        mapHeight: _mapHeight,
+        trees: _treePositions,
+        treeRadius: _treeRadius,
+        rocks: _rockPositions,
+        rockRadius: _rockRadius,
+      );
 
       // 1b. Handle Treasure Chest Collection
       for (int i = _chests.length - 1; i >= 0; i--) {
@@ -1902,7 +1927,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
 
           for (int mIdx = _liabilities.length - 1; mIdx >= 0; mIdx--) {
             final mob = _liabilities[mIdx];
-            if ((shieldPos - mob.pos).distance < (mob.radius + 14.0)) {
+            if ((shieldPos - mob.pos).distance < (mob.hitRadius + 14.0)) {
               if (_shieldDamageCooldown >= 0.15) {
                 mob.principalRemaining -= (20.0 + (_emergencyFundLevel * 15.0));
                 _spawnExplosion(mob.pos, const Color(0xFF85EFAC));
@@ -1944,11 +1969,12 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
         if (_lastBossAttackTime >= bossAttackCooldown) {
           _lastBossAttackTime = 0.0;
 
-          final boss = _liabilities.firstWhere(
-            (mob) => mob.isBoss,
-            orElse: () => _liabilities.first,
-          );
-          if (boss.isBoss) {
+          // A boss that is no longer there is not an error. This used to fall
+          // back to `_liabilities.first`, which throws inside the tick when the
+          // field is empty, and a tick that throws stops the game.
+          final bosses = _liabilities.where((mob) => mob.isBoss);
+          final boss = bosses.isEmpty ? null : bosses.first;
+          if (boss != null) {
             Offset direction = _playerPos - boss.pos;
             double dist = direction.distance;
 
@@ -1972,39 +1998,31 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       }
 
       // 4. Spawning Debts / Boss Market Crises
-      if (_wave % 5 == 0) {
-        int minionTarget = max(0, _debtsNeededForLevelUp - 1);
-        int spawnedOrAliveMinions =
-            _debtsCleared + _liabilities.where((m) => !m.isBoss).length;
-
-        // ONLY spawn regular minions if we haven't reached the minion quota
-        if (spawnedOrAliveMinions < minionTarget) {
+      //
+      // The rules live in `brawl_wave_rules.dart`. The boss used to wait for a
+      // counter to equal one exact number, and a swarm could carry the counter
+      // past it, which left wave ten with nothing to fight and nothing coming.
+      final aliveMinions = _liabilities.where((m) => !m.isBoss).length;
+      final step = nextWaveStep(
+        wave: _wave,
+        cleared: _debtsCleared,
+        aliveMinions: aliveMinions,
+        bossPresent: _liabilities.any((m) => m.isBoss),
+      );
+      if (!isBossWave(_wave)) _bossActive = false;
+      switch (step) {
+        case WaveStep.spawnMinion:
           _lastSpawnTime += dt;
-          double spawnInterval = max(0.2, 1.5 - (_wave * 0.12));
+          final spawnInterval = max(0.2, 1.5 - (_wave * 0.12));
           if (_lastSpawnTime >= spawnInterval) {
             _lastSpawnTime = 0;
-            _spawnLiability();
+            _spawnLiability(aliveMinions: aliveMinions);
           }
-        }
-        // ONLY spawn the boss when all regular minions have been spawned AND killed
-        else if (!_bossActive &&
-            _liabilities.isEmpty &&
-            _debtsCleared == minionTarget) {
+        case WaveStep.spawnBoss:
           _bossActive = true;
           _spawnMarketCrashBoss();
-        }
-      } else {
-        _bossActive = false;
-        int spawnedOrAlive = _debtsCleared + _liabilities.length;
-
-        if (spawnedOrAlive < _debtsNeededForLevelUp) {
-          _lastSpawnTime += dt;
-          double spawnInterval = max(0.2, 1.5 - (_wave * 0.12));
-          if (_lastSpawnTime >= spawnInterval) {
-            _lastSpawnTime = 0;
-            _spawnLiability();
-          }
-        }
+        case WaveStep.wait:
+          break;
       }
 
       // 5. Projectiles Movement
@@ -2038,7 +2056,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
           for (final treePos in _treePositions) {
             final offsetToMob = mob.pos - treePos;
             final distToTree = offsetToMob.distance;
-            final minAllowedDist = (_treeRadius * 0.75) + mob.radius;
+            final minAllowedDist = (_treeRadius * 0.75) + mob.hitRadius;
 
             if (distToTree < minAllowedDist && distToTree > 0) {
               // 1. Push mob out so it sits cleanly on the edge
@@ -2062,7 +2080,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
           for (final rockPos in _rockPositions) {
             final offsetToMob = mob.pos - rockPos;
             final distToRock = offsetToMob.distance;
-            final minAllowedDist = (_rockRadius * 0.75) + mob.radius;
+            final minAllowedDist = (_rockRadius * 0.75) + mob.hitRadius;
 
             if (distToRock < minAllowedDist && distToRock > 0) {
               // 1. Push mob out so it sits cleanly on the edge
@@ -2087,7 +2105,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
         }
 
         // Drains Bank Balance when touching player directly
-        if (dist < (_playerRadius + mob.radius)) {
+        if (dist < (_playerRadius + mob.hitRadius)) {
           int drain = (mob.drainRate * dt).ceil();
           _bankBalance -= drain;
           if (_bankBalance <= 0) {
@@ -2097,7 +2115,15 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
           double mobDrain = ((35.0 * 2) * dt);
 
           mob.principalRemaining -= mobDrain;
-          _spawnExplosion(mob.pos, mob.color);
+          // Sparks on a beat, not one burst per enemy per frame. Ten enemies in
+          // contact threw six particles each, sixty times a second, and every
+          // particle was painted with a fresh paint object. That is what made a
+          // crowded wave stutter on a phone.
+          mob.sparkTimer -= dt;
+          if (mob.sparkTimer <= 0) {
+            mob.sparkTimer = 0.12;
+            _spawnExplosion(mob.pos, mob.color);
+          }
           if (mob.principalRemaining <= 0) {
             _onLiabilityCleared(i, mob);
           }
@@ -2128,7 +2154,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
             final mob = _liabilities[mIdx];
             double dist = (coin.pos - mob.pos).distance;
 
-            if (dist < (mob.radius + coin.radius)) {
+            if (dist < (mob.hitRadius + coin.radius)) {
               // A piercing coin must not tick the same debt every frame while
               // it travels through it, so each coin remembers what it has
               // already hit.
@@ -2199,7 +2225,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   /// noise while it is doing it.
   BrawlEnemy? _lastEnemySeen;
 
-  void _spawnLiability() {
+  void _spawnLiability({int aliveMinions = 0}) {
     if (!mounted) return;
 
     double angle = _rand.nextDouble() * pi * 2;
@@ -2230,8 +2256,18 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     // Swarms share one spawn point so they arrive together and read as a
     // group -- subscription creep is only a lesson if you see five of them at
     // once.
-    for (var i = 0; i < archetype.swarmCount; i++) {
-      final spread = archetype.swarmCount == 1 ? 0.0 : (i - 2) * 34.0;
+    //
+    // Trimmed to what the wave has room for. Five specks spawned with one place
+    // left in the quota carried the count past it, and on a boss wave that meant
+    // the boss never came.
+    final count = swarmToSpawn(
+      wave: _wave,
+      cleared: _debtsCleared,
+      aliveMinions: aliveMinions,
+      swarm: archetype.swarmCount,
+    );
+    for (var i = 0; i < count; i++) {
+      final spread = count == 1 ? 0.0 : (i - (count - 1) / 2) * 34.0;
       final hp = baseHp * archetype.hpScale;
 
       _liabilities.add(
@@ -2250,6 +2286,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
           rewardGold: archetype.goldReward,
           isEnemyTwo: archetype.isElite,
           archetypeId: archetype.id,
+          hitScale: archetype.hitScale,
         ),
       );
     }
@@ -2290,6 +2327,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
         drainRate: (750.0 + (_wave * 80.0)) * bossMultiplier,
         rewardGold: 150,
         isBoss: true,
+        hitScale: kBrawlBossHitScale,
       ),
     );
 
@@ -2444,6 +2482,13 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     _selectedAnswerIndex = null;
     _isAnswerSubmitted = false;
     _isQuizOpen = true;
+    // A finger still down on the stick when the card lands would have its later
+    // moves go to a screen that is not being played. Let go now, so the stick
+    // starts clean on the next touch.
+    _stickPointer = null;
+    _touchMoveAnchor = null;
+    _touchMoveVector = Offset.zero;
+    _touchMoveKnob = Offset.zero;
   }
 
   void _submitQuizAnswer() {
@@ -2475,7 +2520,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       _debtsCleared = 0;
       _wave++;
       _bossActive = false;
-      _debtsNeededForLevelUp = 6 + (_wave * 3);
+      _debtsNeededForLevelUp = debtQuota(_wave);
 
       // A perfect round lets you pick an upgrade.
       if (_quizCorrectCount == total) {
@@ -2637,6 +2682,35 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     ];
   }
 
+  /// The wave the run is on, for tests.
+  @visibleForTesting
+  int get waveForTest => _wave;
+
+  /// Plays one checkpoint through the real code: opens the quiz, answers every
+  /// question right or wrong, and takes the first upgrade if one is offered.
+  ///
+  /// A seam rather than a copy of the logic, so a test exercises the same path a
+  /// player does. The bug this was added for (a perfect checkpoint advancing the
+  /// wave twice) lived in the seam between the quiz and the upgrade sheet, which
+  /// is exactly where a test that skips one of them cannot look.
+  @visibleForTesting
+  void runCheckpointForTest({required bool perfect}) {
+    _triggerQuizGate();
+    final total = _activeQuizQuestions.length;
+    for (var i = 0; i < total; i++) {
+      final question = _activeQuizQuestions[_quizQuestionIndex];
+      final right = question.shuffledOptions.indexOf(
+        question.correctOptionText,
+      );
+      _selectedAnswerIndex = perfect
+          ? right
+          : (right + 1) % question.shuffledOptions.length;
+      _submitQuizAnswer();
+      _nextQuizQuestion();
+    }
+    if (_isUpgradeChoiceOpen) _selectUpgrade(_getUpgradeOptions().first);
+  }
+
   /// The upgrade pool, for tests.
   ///
   /// The levels live in this `State` and the level-up sheet only appears
@@ -2681,10 +2755,10 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       choice.action();
       _isUpgradeChoiceOpen = false;
 
-      _debtsCleared = 0;
-      _wave++;
-      _bossActive = false;
-      _debtsNeededForLevelUp = 6 + (_wave * 3);
+      // The wave was already advanced when the quiz closed (see
+      // `_nextQuizQuestion`). It used to be advanced again here, so a perfect
+      // checkpoint skipped a wave, and with it every boss that fell on the
+      // skipped number.
 
       GameToast.show(
         context,
@@ -2698,6 +2772,8 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
 
   void _endGame() {
     _isGameOver = true;
+    _stickPointer = null;
+    _touchMoveVector = Offset.zero;
     _ticker.stop();
   }
 
@@ -2733,36 +2809,75 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     }
   }
 
-  void _startTouchMove(DragStartDetails details) {
+  /// The stick is a raw pointer listener rather than a pan gesture.
+  ///
+  /// A pan only starts once the finger has travelled the touch slop, about
+  /// eighteen pixels, so the stick anchored eighteen pixels away from where the
+  /// thumb actually landed and nothing happened until then. It also has to win a
+  /// gesture arena, which a system gesture or a competing recogniser can take
+  /// away mid-drag, and after that a fresh pan has to cross the slop again. A
+  /// pointer listener anchors where the thumb lands, answers at once, and starts
+  /// over the instant a new touch arrives.
+  void _onStickDown(PointerDownEvent event) {
+    // The first finger owns the stick. A second one is somebody's palm.
+    if (_stickPointer != null) return;
+    _stickPointer = event.pointer;
     _keyboardFocusNode.requestFocus();
     setState(() {
-      _touchMoveAnchor = details.localPosition;
+      _touchMoveAnchor = event.localPosition;
       _touchMoveVector = Offset.zero;
       _touchMoveKnob = Offset.zero;
     });
   }
 
-  void _updateTouchMove(DragUpdateDetails details) {
-    final anchor = _touchMoveAnchor ?? details.localPosition;
-    final delta = details.localPosition - anchor;
-    final distance = delta.distance;
-    final vector = distance <= 6 ? Offset.zero : delta / distance;
+  void _onStickMove(PointerMoveEvent event) {
+    if (event.pointer != _stickPointer) return;
+    final anchor = _touchMoveAnchor ?? event.localPosition;
+    final reading = StickReading.from(event.localPosition - anchor);
     setState(() {
-      _touchMoveVector = vector;
-      _touchMoveKnob = vector * min(distance, 38.0);
+      _touchMoveVector = reading.vector;
+      _touchMoveKnob = reading.knob;
     });
   }
 
-  void _stopTouchMove([DragEndDetails? _]) {
-    if (_touchMoveAnchor == null && _touchMoveVector == Offset.zero) {
-      return;
-    }
+  void _onStickUp(PointerEvent event) {
+    if (event.pointer != _stickPointer) return;
+    _releaseStick();
+  }
+
+  /// Lets go of the stick, whatever the reason: a finger lifted, the system took
+  /// the touch, the app went to the background, a card covered the screen, the
+  /// run ended. Every one of those has to end the same way, with the fighter
+  /// standing still.
+  void _releaseStick() {
+    _stickPointer = null;
+    if (_touchMoveAnchor == null && _touchMoveVector == Offset.zero) return;
+    if (!mounted) return;
     setState(() {
       _touchMoveAnchor = null;
       _touchMoveVector = Offset.zero;
       _touchMoveKnob = Offset.zero;
     });
   }
+
+  /// The stick's current reading, for tests.
+  @visibleForTesting
+  Offset get stickVectorForTest => _touchMoveVector;
+
+  /// Whether the stick is held, for tests.
+  @visibleForTesting
+  bool get stickHeldForTest => _stickPointer != null;
+
+  /// Where the fighter is, for tests.
+  @visibleForTesting
+  Offset get playerPosForTest => _playerPos;
+
+  /// The trees and rocks the arena was generated with, for tests.
+  @visibleForTesting
+  List<Offset> get treesForTest => List.unmodifiable(_treePositions);
+
+  @visibleForTesting
+  List<Offset> get rocksForTest => List.unmodifiable(_rockPositions);
 
   @override
   Widget build(BuildContext context) {
@@ -2773,6 +2888,11 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
 
     return Focus(
       focusNode: _keyboardFocusNode,
+      // A key that is down when focus goes elsewhere never sends its key-up, and
+      // the fighter would keep walking that way.
+      onFocusChange: (hasFocus) {
+        if (!hasFocus) _pressedKeys.clear();
+      },
       onKeyEvent: (FocusNode node, KeyEvent event) {
         if (event is KeyDownEvent) {
           _pressedKeys.add(event.logicalKey);
@@ -2853,12 +2973,12 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                 ),
 
                 Positioned.fill(
-                  child: GestureDetector(
+                  child: Listener(
                     behavior: HitTestBehavior.translucent,
-                    onPanStart: _startTouchMove,
-                    onPanUpdate: _updateTouchMove,
-                    onPanEnd: _stopTouchMove,
-                    onPanCancel: _stopTouchMove,
+                    onPointerDown: _onStickDown,
+                    onPointerMove: _onStickMove,
+                    onPointerUp: _onStickUp,
+                    onPointerCancel: _onStickUp,
                   ),
                 ),
 
@@ -3077,7 +3197,10 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   @override
   void onAppBackgrounded() {
     _pressedKeys.clear();
-    _touchMoveKnob = Offset.zero;
+    // The knob was reset here and the vector was not, so a thumb on the stick
+    // when the app left kept the fighter running the way it had been pointing
+    // until the next touch. All of the stick lets go, not part of it.
+    _releaseStick();
     if (_isGameOver || _isSavingAndExiting || _pauseDialogOpen) return;
     _showPauseDialog(context);
   }
@@ -4037,6 +4160,7 @@ class _FinancialLiability {
     this.isBoss = false,
     this.isEnemyTwo = true,
     this.archetypeId = '',
+    this.hitScale = 0.8,
   });
 
   String name;
@@ -4059,6 +4183,16 @@ class _FinancialLiability {
   /// were the same object on screen. Empty for the systemic-risk boss, which
   /// is not an archetype and keeps its own art.
   String archetypeId;
+
+  /// How much of the drawn circle counts. See `BrawlEnemy.hitScale`.
+  double hitScale;
+
+  /// The radius that is tested when something touches this. Smaller than
+  /// [radius], which is how big it is drawn, because no sprite fills its frame.
+  double get hitRadius => radius * hitScale;
+
+  /// Counts down between the sparks thrown while this is touching the player.
+  double sparkTimer = 0;
 }
 
 class _CoinProjectile {
@@ -4269,9 +4403,11 @@ class _BrawlPainter extends CustomPainter {
     for (final rock in rockPositions) {
       if (rockImage != null) {
         final Rect rockRect = Rect.fromCenter(
-          center: rock,
-          width: rockRadius * 2.4, // Adjust size multiplier as needed
-          height: rockRadius * 2.4,
+          // Drawn so the part of the picture that is a rock sits on the circle
+          // that is solid, not a few pixels off it.
+          center: rock + kBrawlRockArtShift,
+          width: rockRadius * kBrawlRockArtScale,
+          height: rockRadius * kBrawlRockArtScale,
         );
         paintImage(
           canvas: canvas,
@@ -4289,8 +4425,12 @@ class _BrawlPainter extends CustomPainter {
 
     for (final tree in treePositions) {
       if (treeImage != null) {
+        // The picture is a canopy on a trunk and almost all of its opaque pixels
+        // are in the lower half of the frame. Drawn centred on the collision
+        // circle, the circle sat about 46 units above the tree you could see:
+        // the fighter stopped against empty grass and walked through the trunk.
         final Rect treeRect = Rect.fromCenter(
-          center: tree,
+          center: tree + kBrawlTreeArtShift,
           width: treeRadius * 5,
           height: treeRadius * 5.9,
         );
@@ -4405,11 +4545,12 @@ class _BrawlPainter extends CustomPainter {
       }
     }
 
+    final particlePaint = Paint();
     for (final part in particles) {
       canvas.drawCircle(
         part.pos,
         2.5,
-        Paint()
+        particlePaint
           ..color = part.color.withValues(
             alpha: (part.life / 0.22).clamp(0.0, 1.0),
           ),

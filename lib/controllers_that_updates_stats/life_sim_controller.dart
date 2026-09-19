@@ -1,15 +1,36 @@
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show Icons;
 
 import '../models_Like_Skins_and_lessons_templates/concept_powers.dart';
 import '../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
+import '../models_Like_Skins_and_lessons_templates/life_activities.dart';
+import '../models_Like_Skins_and_lessons_templates/life_assets.dart';
+import '../models_Like_Skins_and_lessons_templates/life_careers.dart';
+import '../models_Like_Skins_and_lessons_templates/life_education.dart';
+import '../models_Like_Skins_and_lessons_templates/life_people.dart';
+import '../models_Like_Skins_and_lessons_templates/life_effort.dart';
+import '../models_Like_Skins_and_lessons_templates/life_network.dart';
+import '../models_Like_Skins_and_lessons_templates/life_run_record.dart';
+import '../models_Like_Skins_and_lessons_templates/life_town_income.dart';
+import '../models_Like_Skins_and_lessons_templates/life_wellbeing.dart';
 import '../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import '../models_Like_Skins_and_lessons_templates/relationship.dart';
 import '../models_Like_Skins_and_lessons_templates/volunteer_places.dart';
 import '../models_Like_Skins_and_lessons_templates/outing_rules.dart';
 import '../models_Like_Skins_and_lessons_templates/ranked_run.dart';
 import '../models_Like_Skins_and_lessons_templates/reading_grade.dart';
+
+// The controller is one class, and it grew past what one file can be read as.
+// These parts are extensions on it, so they share its private state and none of
+// them is a second controller. Each is one part of a life: school, work,
+// property, people, and the things you choose to do with a year.
+part 'life_sim_school.dart';
+part 'life_sim_work.dart';
+part 'life_sim_assets.dart';
+part 'life_sim_people.dart';
+part 'life_sim_activities.dart';
 
 /// The rules engine for **Life**, the main game.
 ///
@@ -31,10 +52,15 @@ class LifeSimController extends ChangeNotifier {
     this.name = 'Alex Morgan',
     this.gender = Gender.nonBinary,
     this.origin = LifeOrigin.workingClass,
-    this.allowWagering = true,
+    bool allowWagering = true,
     this.plainWordsOnly = false,
-    this.hideGamblingMechanics = false,
-  }) : _random = random ?? Random(),
+    bool hideGamblingMechanics = false,
+    // Start with a family already around you. Off by default so a test that
+    // wants an empty list of people gets one; the real game turns it on.
+    bool withFamily = false,
+  }) : _allowWagering = allowWagering,
+       _hideGamblingMechanics = hideGamblingMechanics,
+       _random = random ?? Random(),
        startAge = initialAge,
        _age = initialAge,
        _money = startMoney,
@@ -55,6 +81,9 @@ class LifeSimController extends ChangeNotifier {
       'Tap Age to live your first year.',
       kind: LifeLogKind.milestone,
     );
+    _startEducation();
+    if (withFamily) _seedFamily();
+    _recordYear();
   }
 
   final Random _random;
@@ -261,6 +290,49 @@ class LifeSimController extends ChangeNotifier {
     );
   }
 
+  /// Test seam: put the character in a known state without playing there.
+  ///
+  /// **Why this exists.** Several tests reached a high Smarts or a low Health by
+  /// tapping an action forty times in one year. That was reaching the state by
+  /// the exact exploit `EffortRules` closes, so once the action fades, the test
+  /// has to say what it means, which is "a character with 95 Smarts", instead
+  /// of grinding for it.
+  @visibleForTesting
+  void debugSetStats({
+    int? smarts,
+    int? health,
+    int? happiness,
+    int? looks,
+    int? money,
+    int? salary,
+    String? job,
+  }) {
+    if (smarts != null) _smarts = _clamp(smarts);
+    if (health != null) _health = _clamp(health);
+    if (happiness != null) _happiness = _clamp(happiness);
+    if (looks != null) _looks = _clamp(looks);
+    if (money != null) _money = money;
+    if (salary != null) _salary = salary;
+    if (job != null) _job = job;
+    notifyListeners();
+  }
+
+  /// Test seam: put a specific event in front of the player.
+  @visibleForTesting
+  void debugSetEvent(LifeEvent event) {
+    _currentEvent = event;
+  }
+
+  /// Test seam: drop whatever event the year drew without applying it.
+  ///
+  /// A test about money needs the only money to be the money it is about, and
+  /// an event's first option can cost anything. Now that a cost is borrowed
+  /// rather than erased, one stray event moves the debt.
+  @visibleForTesting
+  void debugClearEvent() {
+    _currentEvent = null;
+  }
+
   /// Test seam: start partway into a hungry stretch.
   @visibleForTesting
   void debugSetHunger(int years) {
@@ -363,14 +435,26 @@ class LifeSimController extends ChangeNotifier {
   void _applyBudget() {
     // Worth Asking and Read The Slip both land here -- one because you found
     // out what the job pays, one because the slip was wrong. Same lever.
-    final income = (_salary * (1 + powerStrength(PowerEffect.betterPay)))
-        .round();
-    if (income <= 0) return;
+    final gross =
+        (_salary * (1 + powerStrength(PowerEffect.betterPay)) * _payShare)
+            .round();
+    if (gross <= 0) {
+      _settleLoans(0);
+      return;
+    }
+    _incomeTotal += gross;
+    // Loan payments come out of the pay before it is split, which is how a
+    // mortgage or a student loan behaves. What is left is what the 50/30/20
+    // divides.
+    final income = gross - _settleLoans(gross);
 
     final needsBudget = (income * _needsPct / 100).round();
     final wantsBudget = (income * _wantsPct / 100).round();
     final savingsBudget = (income * _savingsPct / 100).round();
     final actualNeeds = _livingCost();
+    final spareNeeds = needsBudget > actualNeeds
+        ? needsBudget - actualNeeds
+        : 0;
 
     _money += income;
     _money -= needsBudget + wantsBudget;
@@ -395,8 +479,10 @@ class LifeSimController extends ChangeNotifier {
       _budgetSet
           ? '${_paycheckOpener(income)} Needs $needsBudget, wants '
                 '$wantsBudget, savings $savingsBudget.'
+                '${spareNeeds > 0 ? ' Living cost $actualNeeds, so $spareNeeds stayed yours.' : ''}'
           : '${_paycheckOpener(income)} Split on the default 50/30/20 — '
-                'open Money to choose your own.',
+                'open Money to choose your own.'
+                '${spareNeeds > 0 ? ' Living cost $actualNeeds, so $spareNeeds stayed yours.' : ''}',
       kind: LifeLogKind.money,
     );
 
@@ -419,6 +505,14 @@ class LifeSimController extends ChangeNotifier {
         _goHungry(shortfall: shortfall);
       }
     } else {
+      // The part of the needs slice that living did not cost is still yours.
+      //
+      // It used to be deducted and never returned: on a 1,552 salary the 50%
+      // needs slice was 776 against a real cost of 180, so about 600 a year
+      // simply disappeared. Nothing in a paycheck ever reached spendable cash,
+      // which is why a player could watch 4,000 in coins run down to 0 and be
+      // unable to get it back up while earning more every year.
+      if (spareNeeds > 0) _money += spareNeeds;
       _eatWell();
     }
 
@@ -430,6 +524,7 @@ class LifeSimController extends ChangeNotifier {
       final moved = (income * autoRate).round();
       if (moved > 0) {
         _emergencyFund += moved;
+        _savedTotal += moved;
         _money -= moved;
         _setLog(
           'Automatic moved $moved into savings before you saw it.',
@@ -479,9 +574,34 @@ class LifeSimController extends ChangeNotifier {
     // You cannot put aside money you do not have. Whatever is actually
     // there goes to savings; anything beyond it becomes debt, which the
     // game already models and already charges interest on.
+    // The lender is paid before the fund is.
+    //
+    // Interest on what was already owed coming into the year comes out of
+    // the pooled cash first, so the savings slice reaches the fund only
+    // after it. This used to be the other way round: the 20% slice went into
+    // an emergency fund earning nothing while the debt beside it compounded
+    // at 18% with no way to pay it. A single 265 borrowed at 22 on a 380
+    // salary became 1.3 million by seventy in about one life in ten, in a
+    // 300-life simulation, even for a bot that budgeted and looked after
+    // itself. That is the lesson turned into a caricature, and it left a
+    // player with no move at all. What the lender takes now is interest
+    // only, so the balance stops growing but does not shrink until the
+    // player pays it down on purpose. Interest the pay cannot cover is
+    // added to the balance, which is how a small income with a big debt
+    // still gets worse.
+    final owedComingIn = _debt;
+    final debtRate = 0.18 * (1 - powerStrength(PowerEffect.slowerDebt));
+    var paidLender = 0;
+    if (owedComingIn > 0 && _money > 0) {
+      final due = (owedComingIn * debtRate).round();
+      paidLender = due.clamp(0, _money);
+      _money -= paidLender;
+    }
+
     final canSave = savingsBudget.clamp(0, _money < 0 ? 0 : _money);
     if (canSave > 0) {
       _emergencyFund += canSave;
+      _savedTotal += canSave;
       _money -= canSave;
     }
     if (_money < 0) {
@@ -500,15 +620,28 @@ class LifeSimController extends ChangeNotifier {
       // so the cost of carrying it is felt, not hidden. Debt Brake and Good
       // Standing cut the rate rather than the balance -- understanding what
       // interest is does not make what you borrowed go away.
-      final rate = 0.18 * (1 - powerStrength(PowerEffect.slowerDebt));
-      final interest = (_debt * rate).round();
-      _debt += interest;
+      final interest = (_debt * debtRate).round();
+      // Whatever the lender already took out of this year's pay is not
+      // added to what is owed.
+      final unpaid = interest - paidLender;
+      // Past ten years of pay the balance stops growing. A debt that size is
+      // never coming out of that income, and letting it compound regardless
+      // produced endings like owing 1,300,000 on a 380 salary, which is
+      // arithmetic and not a lesson. Below the line it compounds exactly as
+      // it always did, which is the part that teaches.
+      final room = (_salary * 10 - _debt).clamp(0, unpaid);
+      final capped = room < unpaid;
+      final charged = paidLender + room;
+      _interestPaid += charged;
+      _debt += room;
       final payment = (_money * 0.3).round();
       final paid = payment.clamp(0, _debt);
       _money -= paid;
       _debt -= paid;
       _setLog(
-        'Debt cost you $interest in interest this year. '
+        'Debt cost you $charged in interest this year'
+        '${paidLender > 0 ? ', $paidLender of it taken from your pay' : ''}. '
+        '${capped ? 'The balance has stopped growing because you already owe ten years of pay. ' : ''}'
         '${_debt > 0 ? 'Still owing $_debt.' : 'Finally paid off.'}',
         kind: LifeLogKind.money,
       );
@@ -533,6 +666,23 @@ class LifeSimController extends ChangeNotifier {
     final fromCash = remaining.clamp(0, _money);
     _money -= fromCash;
     remaining -= fromCash;
+
+    // Remembered, because how a shock was paid for is the whole point of an
+    // emergency fund and the debrief should be able to say so.
+    _shocksHit++;
+    final covered = remaining <= 0;
+    if (covered) _shocksCovered++;
+    _moments.add(
+      LifeMoment(
+        age: _age,
+        kind: LifeMomentKind.shock,
+        title: reason,
+        chose: covered ? 'Paid from savings' : 'Borrowed to pay',
+        moneyDelta: -amount,
+        covered: covered,
+        concept: FinanceConcept.emergencyFund,
+      ),
+    );
 
     if (remaining > 0) {
       _debt += remaining;
@@ -614,6 +764,24 @@ class LifeSimController extends ChangeNotifier {
     traits: _traits,
     hasJob: _salary > 0,
     flags: _flags,
+    education: _edu.level,
+    inSchool: _edu.inSchool,
+    owns: {for (final a in _assets) a.def.kind},
+    hasPartner: _people.any(
+      (p) =>
+          p.isAlive &&
+          (p.kind == RelationshipKind.partner ||
+              p.kind == RelationshipKind.spouse),
+    ),
+    hasChild: _people.any((p) => p.kind == RelationshipKind.child && p.isAlive),
+    hasLivingParent: _people.any(
+      (p) => p.isAlive && (p.role == 'Mother' || p.role == 'Father'),
+    ),
+    debt: _debt + loanBalance,
+    renting:
+        _rentalId != 'family' &&
+        !_assets.any((a) => a.def.kind == AssetKind.home),
+    track: currentJob?.track,
   );
 
   /// What has happened to this character that a later event can be about.
@@ -624,6 +792,72 @@ class LifeSimController extends ChangeNotifier {
   /// be meaningless.
   final Set<LifeFlag> _flags = <LifeFlag>{};
 
+  // ---- School, work, property and people ------------------------------------
+  //
+  // The state for the parts in `life_sim_school.dart` and its siblings. It lives
+  // here because a class cannot spread its fields across files, and because the
+  // controller is the one thing that survives from one year to the next.
+
+  final EducationState _edu = EducationState();
+
+  /// The catalogue job held, when it came from the board or a promotion. Null
+  /// for a job an event handed out, which has no ladder.
+  String? _jobId;
+
+  /// How well the job is going, 0 to 100. The bar on the Occupation screen.
+  int _performance = 60;
+  int _yearsInRole = 0;
+  int _lowPerformanceYears = 0;
+
+  /// Years worked in each line of work, which is what makes a higher rung
+  /// appear on the board.
+  final Map<CareerTrack, int> _experience = <CareerTrack, int>{};
+
+  final List<Loan> _loans = <Loan>[];
+  final List<OwnedAsset> _assets = <OwnedAsset>[];
+  int _nextUid = 1;
+
+  /// Where the character lives if they do not own the place. See `kRentals`.
+  String _rentalId = 'family';
+  bool _hasLicense = false;
+
+  /// Uses so far this year of each catalogue activity, by id.
+  final Map<String, int> _activityUses = <String, int>{};
+
+  /// Times each person has been dealt with this year, so one friend cannot be
+  /// farmed.
+  final Map<String, int> _touchesThisYear = <String, int>{};
+
+  /// Something for the screen to open after a decision card. See
+  /// [LifeFollowUp].
+  LifeFollowUp _pendingFollowUp = LifeFollowUp.none;
+
+  /// Decision cards the controller made itself: a graduation, a move, a loss.
+  /// Waiting to be put in front of the player, oldest first.
+  final List<LifeEvent> _queuedEvents = <LifeEvent>[];
+
+  // Sport, and the tallies the debrief reads.
+  LifeSport? _sport;
+  int _sportStanding = 0;
+  int _seasons = 0;
+  int _promotions = 0;
+  int _degreesEarned = 0;
+  int _studentBorrowed = 0;
+  int _assetsBought = 0;
+  int? _lastChildAge;
+
+  /// What the screen should open now that a decision card has landed, then
+  /// forgets it. Called once after each choice.
+  LifeFollowUp takeFollowUp() {
+    final next = _pendingFollowUp;
+    _pendingFollowUp = LifeFollowUp.none;
+    return next;
+  }
+
+  /// Notifies listeners. The part files are extensions, and `notifyListeners`
+  /// is protected, so they go through this.
+  void _changed() => notifyListeners();
+
   /// Read-only view, for the UI and for tests that assert a chain advanced.
   Set<LifeFlag> get flags => Set.unmodifiable(_flags);
 
@@ -631,8 +865,10 @@ class LifeSimController extends ChangeNotifier {
   bool get finished => _retired || _dead;
 
   /// Names only, for the epilogue and anything else that just wants a list.
-  List<String> get relationships =>
-      _people.where((p) => p.isPresent).map((p) => p.name).toList();
+  List<String> get relationships => _people
+      .where((p) => p.isPresent && !p.kind.isProfessional)
+      .map((p) => p.name)
+      .toList();
 
   /// The people themselves, closest first, including anyone drifted away —
   /// losing touch is a thing that happened in this life, and hiding the row
@@ -649,7 +885,12 @@ class LifeSimController extends ChangeNotifier {
   /// fire on a happiness threshold alone, which made it reachable by
   /// overworking and gave it nothing to do with people.
   int get connection {
-    final present = _people.where((p) => p.isPresent).toList();
+    // Professional contacts are left out. A long list of people who know your
+    // name is not the same as somebody who would turn up, and this number is
+    // what the loneliness endings read.
+    final present = _people
+        .where((p) => p.isPresent && !p.kind.isProfessional)
+        .toList();
     if (present.isEmpty) return 0;
     final total = present.fold<int>(0, (sum, p) => sum + p.closeness);
     return (total / present.length).round();
@@ -707,7 +948,8 @@ class LifeSimController extends ChangeNotifier {
   /// times and the gambling row unlocks. Defaults true so tests and the
   /// standalone town keep their existing behaviour; the real screen passes
   /// the account's answer.
-  final bool allowWagering;
+  bool get allowWagering => _allowWagering && kLifeGamblingEnabled;
+  final bool _allowWagering;
 
   /// Whether this player needs grown-up financial vocabulary kept back.
   ///
@@ -731,7 +973,9 @@ class LifeSimController extends ChangeNotifier {
   ///
   /// Set from `AgeBand.hidesGamblingMechanics`, so it follows the account and
   /// not the character's age. See [LifeEvent.showsGamblingMechanic].
-  final bool hideGamblingMechanics;
+  bool get hideGamblingMechanics =>
+      _hideGamblingMechanics || !kLifeGamblingEnabled;
+  final bool _hideGamblingMechanics;
 
   LifeStage get stage => LifeStageInfo.forAge(_age);
 
@@ -739,7 +983,13 @@ class LifeSimController extends ChangeNotifier {
   /// distinction made literal. The emergency fund counts (it is yours);
   /// debt subtracts, so a high salary financed by borrowing does not read
   /// as wealth.
-  int get netWorth => _money + _investments + _emergencyFund - _debt;
+  int get netWorth =>
+      _money +
+      _investments +
+      _emergencyFund +
+      assetsValue -
+      _debt -
+      loanBalance;
 
   /// Whether this run ever reached the starvation threshold.
   ///
@@ -748,6 +998,200 @@ class LifeSimController extends ChangeNotifier {
   /// that nearly killed you is not a plan that worked.
   bool get everStarved => _everStarved;
   bool _everStarved = false;
+
+  // --- Work, people and the town -----------------------------------------
+  //
+  // Three systems added together: neglect costs shifts (life_wellbeing),
+  // people are a network that passes on leads (life_network), and the map is
+  // a small income (life_town_income). Their state lives here because the
+  // controller is the one thing that survives from year to year.
+
+  /// Consecutive years that missed enough work to count. See
+  /// [kYearsToLoseJob].
+  int _strainYears = 0;
+
+  /// The share of this year's pay still earned. 1.0 unless work was missed.
+  double _payShare = 1.0;
+
+  int _weeksMissedTotal = 0;
+  int _yearsStrained = 0;
+  int _timesLaidOff = 0;
+  int _raisesEarned = 0;
+  int _referrals = 0;
+  int _contactsMade = 0;
+
+  /// Townspeople already spoken to this year, so a chat warms a contact once a
+  /// year and not once a tap.
+  final Set<String> _townChatsThisYear = <String>{};
+
+  /// Map coins picked up this year. Restocked every [ageUp].
+  final Set<String> _townCoinsThisYear = <String>{};
+  int _townEarnedThisYear = 0;
+  int _townEarnedTotal = 0;
+
+  /// How the character is holding up at work, from health and happiness.
+  WorkStrain get workStrain =>
+      assessWorkStrain(health: _health, happiness: _happiness);
+
+  /// Whether another year like the last one loses the job.
+  bool get jobAtRisk =>
+      hasJob &&
+      _strainYears >= 1 &&
+      workStrain.missedShare >= kSeriousMissedShare;
+
+  /// The line to show above the stats, or null. Only for a working adult: a
+  /// child's low health is a school matter and is handled quietly.
+  String? get strainNotice {
+    if (isDependent || !hasJob || finished) return null;
+    return strainWarning(workStrain, jobAtRisk: jobAtRisk);
+  }
+
+  /// Who you know and how warm it is. See `life_network.dart`.
+  NetworkReading get networkReading => readNetwork(_people);
+
+  /// Professional contacts, closest first.
+  List<Relationship> get contacts => [
+    for (final person in people)
+      if (person.kind.isProfessional && person.isPresent) person,
+  ];
+
+  int get weeksMissedTotal => _weeksMissedTotal;
+  int get yearsStrained => _yearsStrained;
+  int get timesLaidOff => _timesLaidOff;
+  int get raisesEarned => _raisesEarned;
+  int get referrals => _referrals;
+  int get contactsMade => _contactsMade;
+
+  /// Life money the map paid this year, after the yearly allowance.
+  int get townEarnedThisYear => _townEarnedThisYear;
+  int get townEarnedTotal => _townEarnedTotal;
+
+  /// Whether this year's town allowance is used up, for the map to say so.
+  bool get townAllowanceSpent => TownIncome.isSpent(_townEarnedThisYear);
+
+  /// Whether this coin has already been picked up this year.
+  bool townCoinTaken(String id) => _townCoinsThisYear.contains(id);
+
+  // --- What this life remembers about itself ------------------------------
+  //
+  // The controller used to hold only the present and throw the past away every
+  // year, which is why the end of a run could say what a life *was* and never
+  // what the player *did*. See life_run_record.dart.
+
+  /// One point a year, keyed by age so a second write in the same year (a
+  /// choice made after ageing up) replaces the first instead of adding a twin.
+  final Map<int, LifeYearPoint> _curve = <int, LifeYearPoint>{};
+
+  /// Decisions and shocks that moved real money.
+  final List<LifeMoment> _moments = <LifeMoment>[];
+
+  int _adultYears = 0;
+  int _workYears = 0;
+  int _yearsUnemployed = 0;
+  int _studentYears = 0;
+  int _incomeTotal = 0;
+  int _savedTotal = 0;
+  int _interestPaid = 0;
+  int _debtRepaid = 0;
+  int _shocksHit = 0;
+  int _shocksCovered = 0;
+  int _sideJobs = 0;
+  int? _firstJobAge;
+
+  void _recordYear() {
+    _curve[_age] = LifeYearPoint(
+      age: _age,
+      netWorth: netWorth,
+      happiness: _happiness,
+      health: _health,
+    );
+  }
+
+  /// The life's money, one point a year, oldest first.
+  List<LifeYearPoint> get yearCurve {
+    final points = _curve.values.toList()
+      ..sort((a, b) => a.age.compareTo(b.age));
+    return List<LifeYearPoint>.unmodifiable(points);
+  }
+
+  /// Everything that moved real money, in the order it happened.
+  List<LifeMoment> get moments => List<LifeMoment>.unmodifiable(_moments);
+
+  /// The running totals, with the peak and the low read off the curve.
+  LifeRunTally get runTally {
+    LifeYearPoint? peak;
+    LifeYearPoint? low;
+    for (final point in _curve.values) {
+      if (peak == null || point.netWorth > peak.netWorth) peak = point;
+      if (low == null || point.netWorth < low.netWorth) low = point;
+    }
+    return LifeRunTally(
+      adultYears: _adultYears,
+      workYears: _workYears,
+      yearsUnemployed: _yearsUnemployed,
+      studentYears: _studentYears,
+      weeksMissed: _weeksMissedTotal,
+      timesLaidOff: _timesLaidOff,
+      raises: _raisesEarned,
+      referrals: _referrals,
+      contactsMade: _contactsMade,
+      townEarned: _townEarnedTotal,
+      sideJobs: _sideJobs,
+      incomeTotal: _incomeTotal,
+      savedTotal: _savedTotal,
+      interestPaid: _interestPaid,
+      debtRepaid: _debtRepaid,
+      degreesEarned: _degreesEarned,
+      studentBorrowed: _studentBorrowed,
+      promotions: _promotions,
+      assetsBought: _assetsBought,
+      shocksHit: _shocksHit,
+      shocksCovered: _shocksCovered,
+      firstJobAge: _firstJobAge,
+      peakNetWorth: peak?.netWorth ?? 0,
+      peakAge: peak?.age,
+      lowNetWorth: low?.netWorth ?? 0,
+      lowAge: low?.age,
+    );
+  }
+
+  /// The whole memory, for the debrief.
+  LifeRunRecord get runRecord =>
+      LifeRunRecord(curve: yearCurve, moments: moments, tally: runTally);
+
+  /// Remembers a decision and what the options not taken would have done.
+  ///
+  /// Only what moved real money, or would have. A choice about nothing is not a
+  /// moment, and the list is capped so a very long life cannot grow it without
+  /// bound.
+  void _rememberDecision(LifeEvent event, int index) {
+    final choice = event.choices[index];
+    LifeChoice? better;
+    LifeChoice? worse;
+    for (var i = 0; i < event.choices.length; i++) {
+      if (i == index) continue;
+      final other = event.choices[i];
+      if (better == null || other.money > better.money) better = other;
+      if (worse == null || other.money < worse.money) worse = other;
+    }
+    final regret = better == null ? 0 : better.money - choice.money;
+    final edge = worse == null ? 0 : choice.money - worse.money;
+    if (choice.money.abs() < 40 && regret < 40 && edge < 40) return;
+    if (_moments.length >= 80) return;
+    _moments.add(
+      LifeMoment(
+        age: _age,
+        kind: LifeMomentKind.decision,
+        title: event.prompt,
+        chose: choice.label,
+        moneyDelta: choice.money,
+        betterDelta: better?.money,
+        betterOption: better?.label,
+        worseDelta: worse?.money,
+        concept: choice.teaches,
+      ),
+    );
+  }
 
   /// The finished run, as the ranked scorer takes it.
   RankedResult get rankedResult => RankedResult(
@@ -778,22 +1222,53 @@ class LifeSimController extends ChangeNotifier {
       return;
     }
     _age++;
+    // What last year's effort was, read before the tallies are cleared. Grades,
+    // performance and a team's standing all follow it.
+    final studied = _takenThisYear[LifeAction.study] ?? 0;
+    final workedHard = _takenThisYear[LifeAction.workHarder] ?? 0;
+    final trained = _activityUses['train'] ?? 0;
     // A new year is a fresh allowance for every on-demand action. See
     // `_yield` — without this, the diminishing return would be permanent
     // rather than annual, and a long life would end with nothing left to do.
     _takenThisYear.clear();
+    _activityUses.clear();
+    _touchesThisYear.clear();
+    // The town restocks and everybody you spoke to has forgotten you did.
+    _townChatsThisYear.clear();
+    _townCoinsThisYear.clear();
+    _townEarnedThisYear = 0;
+    if (!isDependent) {
+      _adultYears++;
+      if (_salary > 0) {
+        _workYears++;
+      } else if (_edu.inSchool) {
+        // A student is not unemployed, and the debrief should not say so.
+        _studentYears++;
+      } else {
+        _yearsUnemployed++;
+      }
+    }
     // re-rolled every year so whether the town is open changes as you go,
     // not fixed at birth
     _weather = WeatherInfo.roll(_random);
 
     _expirePowers();
 
+    _payShare = 1.0;
+    // School comes first in the year: tuition falls due before anything is
+    // earned, and a graduation can change what the year's job hunt looks like.
+    _advanceSchooling(studied);
     if (!isDependent) {
+      // Running yourself down costs shifts, and shifts are pay. Read from the
+      // stats as they stand *now*, so what the player did all year decides it.
+      if (_salary > 0) _applyWorkStrain();
       if (_salary > 0) {
         // Earning years run through the budget, so the split the player
         // chose is what actually governs the year.
         _applyBudget();
       } else {
+        // Loans keep asking whether or not there is a paycheck.
+        _settleLoans(0);
         // Out of work, but not out of options. Odd jobs, family, whatever
         // support exists -- something covers most of the basics.
         //
@@ -827,29 +1302,59 @@ class LifeSimController extends ChangeNotifier {
       // are adding.
       final rate = 1.07 + powerStrength(PowerEffect.fasterGrowth);
       _investments = (_investments * rate).round();
+      _applyWorkYear(workedHard);
+      _ageAssets();
     } else {
       // Somebody else is feeding you.
       _eatWell();
+      // A part-time job at sixteen is pay, and it is the young person's own.
+      if (_salary > 0) {
+        final earned = (_salary * _payShare).round();
+        _money += earned;
+        _incomeTotal += earned;
+      }
+      _applyWorkYear(workedHard);
+      _ageAssets();
+      // A child who is unwell misses school, which is the same lesson at a
+      // smaller size. Gentle on purpose: a little behind, nothing worse.
+      if (_health < 35) {
+        _smarts = _clamp(_smarts - 2);
+        _setLog(
+          'You missed a lot of school being unwell and fell a little behind.',
+          kind: LifeLogKind.learning,
+        );
+      }
     }
+
+    _playSeason(trained);
 
     _applyIllness();
     if (_dead) {
+      _recordYear();
       notifyListeners();
       return;
     }
 
     _applyAgeing();
     if (_dead) {
+      _recordYear();
       notifyListeners();
       return;
     }
 
     _driftRelationships();
+    _agePeople();
+    _maybeReferral();
     _maybeFinancialShock();
+    _queueAgeCards();
 
     // Milestones give the feed texture on years with no event.
     final milestone = _milestoneFor(_age);
-    _currentEvent = _drawEvent();
+    // A card the game made for this moment goes first: a graduation, a move, a
+    // loss. Everything else is a draw from the pool.
+    _currentEvent = _queuedEvents.isNotEmpty
+        ? _queuedEvents.removeAt(0)
+        : _drawEvent();
 
     // **No filler line when something actually happened this year.**
     //
@@ -872,6 +1377,7 @@ class LifeSimController extends ChangeNotifier {
       // feed does not get one, or it would keep showing last year's.
       _log = 'Age $_age.';
     }
+    _recordYear();
     notifyListeners();
   }
 
@@ -915,6 +1421,7 @@ class LifeSimController extends ChangeNotifier {
     if (_people.isEmpty) return;
     for (var i = 0; i < _people.length; i++) {
       final person = _people[i];
+      if (!person.isAlive) continue;
       if (person.lastSeenAge == _age) continue;
       final loss = (kBaseYearlyDrift * person.kind.driftRate).round();
       _people[i] = person.copyWith(
@@ -923,9 +1430,10 @@ class LifeSimController extends ChangeNotifier {
     }
 
     // Loneliness is felt, not just recorded. A small yearly cost once the
-    // people around you have faded, so the stat and the story agree.
-    final present = _people.where((p) => p.isPresent).length;
-    if (present == 0 && _people.isNotEmpty) {
+    // people around you have faded, so the stat and the story agree. Contacts
+    // do not count either way: having only colleagues is not company.
+    final personal = _people.where((p) => !p.kind.isProfessional).toList();
+    if (personal.isNotEmpty && personal.every((p) => !p.isPresent)) {
       _happiness = _clamp(_happiness - 2);
     }
   }
@@ -1056,7 +1564,12 @@ class LifeSimController extends ChangeNotifier {
     };
     // Clear Eyes, The Split, Second Thought and the rest all pull this lever.
     // Understanding what you actually need is, mechanically, a discount.
-    return (base * (1 - powerStrength(PowerEffect.cheaperLiving))).round();
+    final essentials = (base * (1 - powerStrength(PowerEffect.cheaperLiving)))
+        .round();
+    // Rent is a need, so it lives here and comes out of the needs slice of the
+    // budget, which is where a person would put it. Owning a home replaces
+    // rent with a mortgage and upkeep, which are paid separately.
+    return essentials + housingCost + childCost;
   }
 
   // ---- Hunger -----------------------------------------------------------
@@ -1339,6 +1852,50 @@ class LifeSimController extends ChangeNotifier {
     return eligible.last;
   }
 
+  /// Moves the money an event choice asks for.
+  ///
+  /// Gains land as cash. A cost used to be `max(0, cash + delta)`, which
+  /// quietly destroys whatever the cash could not cover: a 900 bill against 400
+  /// in cash left 0 and the other 500 simply vanished, so the numbers on screen
+  /// stopped adding up and nothing ever said why. It is the same mistake the
+  /// yearly budget made, and it read to a player as money that crashed to zero
+  /// for no reason.
+  ///
+  /// A cost is now paid the way a person pays for something they chose: from
+  /// cash first, then from savings, and only then borrowed. A child is the
+  /// exception, because the family covers what a child cannot.
+  void _applyEventMoney(int delta) {
+    if (delta >= 0) {
+      _money += delta;
+      return;
+    }
+    final cost = -delta;
+    if (isDependent) {
+      _money = max(0, _money - cost);
+      return;
+    }
+    final fromCash = cost.clamp(0, _money);
+    _money -= fromCash;
+    var left = cost - fromCash;
+    final fromFund = left.clamp(0, _emergencyFund);
+    _emergencyFund -= fromFund;
+    left -= fromFund;
+    if (left > 0) {
+      _debt += left;
+      _setLog(
+        'That cost $cost and your cash could not cover it, so $left of it is '
+        'now borrowed.',
+        kind: LifeLogKind.shock,
+      );
+    } else if (fromFund > 0) {
+      _setLog(
+        'That cost $cost. Your cash ran out, so $fromFund came out of '
+        'savings.',
+        kind: LifeLogKind.money,
+      );
+    }
+  }
+
   /// Resolves the current event with the chosen option's effects.
   void chooseOption(int index) {
     final event = _currentEvent;
@@ -1346,14 +1903,29 @@ class LifeSimController extends ChangeNotifier {
       return;
     }
     final choice = event.choices[index];
-    _money = max(0, _money + choice.money);
+    _rememberDecision(event, index);
+    _applyEventMoney(choice.money);
+    if (choice.moveTo != null) _moveIn(choice.moveTo!);
+    if (choice.followUp != LifeFollowUp.none) {
+      _pendingFollowUp = choice.followUp;
+    }
     _happiness = _clamp(_happiness + choice.happiness);
     _health = _clamp(_health + choice.health);
     _smarts = _clamp(_smarts + choice.smarts);
     _looks = _clamp(_looks + choice.looks);
     if (choice.setJob != null) {
-      _job = choice.setJob!;
-      _salary = choice.setSalary ?? _salary;
+      // An event can hand out a job, a better one, or take the job away. It
+      // can never quietly demote: with pay now reaching the thousands, an
+      // event that offers a 400 job must not replace a 2,000 one.
+      final offered = choice.setSalary ?? _salary;
+      if (!hasJob || offered > _salary || offered == 0) {
+        _job = choice.setJob!;
+        _salary = offered;
+        _jobId = null;
+        _yearsInRole = 0;
+        _performance = 60;
+        if (_salary > 0) _firstJobAge ??= _age;
+      }
     }
     _fame = (_fame + choice.fame).clamp(0, 100);
     final gained = choice.skill;
@@ -1399,6 +1971,7 @@ class LifeSimController extends ChangeNotifier {
       _teach(lesson);
     }
     _currentEvent = null;
+    _recordYear();
     notifyListeners();
   }
 
@@ -1436,6 +2009,17 @@ class LifeSimController extends ChangeNotifier {
     LifeAction.doctor: 0,
     LifeAction.practise: 4,
     LifeAction.spendTime: 0,
+    LifeAction.workHarder: 14,
+    LifeAction.askForRaise: 14,
+    LifeAction.network: 16,
+    LifeAction.payDownDebt: 16,
+    LifeAction.applyJob: 16,
+    LifeAction.applyPromotion: 16,
+    LifeAction.applyCollege: 17,
+    LifeAction.conversation: 4,
+    LifeAction.compliment: 4,
+    LifeAction.askMoney: 6,
+    LifeAction.date: 18,
   };
 
   /// Whether this is something the town has a building for.
@@ -1492,6 +2076,11 @@ class LifeSimController extends ChangeNotifier {
   /// you cannot do yet is how the early years teach that a life has stages.
   String? gateFor(LifeAction action) {
     if (finished) return 'This life is over';
+    // Off for everybody, on request, through one switch. Asked before age
+    // because no age makes it available.
+    if (action == LifeAction.gamble && !allowWagering) {
+      return 'Not part of Life for now';
+    }
     final minAge = _minimumAge[action] ?? 0;
     if (_age < minAge) {
       return switch (action) {
@@ -1506,6 +2095,17 @@ class LifeSimController extends ChangeNotifier {
         LifeAction.invest => 'You need to be 16 to open an account',
         LifeAction.gamble => 'You have to be 18',
         LifeAction.practise => 'You are still a baby',
+        LifeAction.workHarder ||
+        LifeAction.askForRaise => 'You are too young to work',
+        LifeAction.network => 'Networking events start at 16',
+        LifeAction.payDownDebt => 'You have no debts of your own yet',
+        LifeAction.applyJob ||
+        LifeAction.applyPromotion => 'You are too young to work',
+        LifeAction.applyCollege => 'You need to be 17 to apply',
+        LifeAction.conversation ||
+        LifeAction.compliment => 'You are still a baby',
+        LifeAction.askMoney => 'You are too little to ask for money',
+        LifeAction.date => 'You have to be 18',
         _ => 'Not yet',
       };
     }
@@ -1517,43 +2117,51 @@ class LifeSimController extends ChangeNotifier {
   /// How many times each action has been taken in the current year.
   final Map<LifeAction, int> _takenThisYear = <LifeAction, int>{};
 
+  /// One action's allowance for this year, for the menu to show.
+  ///
+  /// The rules live in [EffortRules]; this only supplies how many times the
+  /// current year has already used.
+  ActionBudget budgetFor(LifeAction action) =>
+      EffortRules.budget(action, _takenThisYear[action] ?? 0);
+
+  /// Why [action] cannot be done right now, or null when it can.
+  ///
+  /// The age gate ([gateFor]) and this year's budget, in one answer, because a
+  /// row in a menu only needs to know whether to grey out and what to say.
+  /// Age wins when both apply: telling somebody they have "done enough of that
+  /// this year" about something they are too young to do at all is a lie.
+  String? unavailableFor(LifeAction action) {
+    final gate = gateFor(action);
+    if (gate != null) return gate;
+    if (budgetFor(action).exhausted) {
+      return 'Done for this year. Age up and it counts again.';
+    }
+    return null;
+  }
+
   /// How much of an action's effect still lands, given how often it has
   /// already been used this year.
   ///
   /// **The exploit this closes.** Reported as *"they can spam the gym"*, and
-  /// it was true of every on-demand action: `exercise()` gave +8 Health and
-  /// +3 Looks with no per-year limit at all, so a player could sit on one
-  /// year and tap it until both stats were maxed. Same for studying,
-  /// volunteering and the library. Any game where the optimal move is to
-  /// press one button repeatedly has stopped being a game about choices,
-  /// and this one is *supposed* to be about trade-offs between them.
+  /// then, when the same fix was needed for everything else, as *"make sure
+  /// the player cannot spam the same option"*. Only `exercise` had the curve.
+  /// It is a table now, in `life_effort.dart`, and every repeatable action
+  /// reads it. See [EffortRules] for the whole argument.
   ///
-  /// Diminishing rather than a hard cap, on purpose. A hard "once per year"
+  /// Diminishing rather than a hard cap, on purpose: a hard "once per year"
   /// reads as the game refusing you and invites save-scumming the year; a
-  /// fading return reads as the truth it actually models — the first
-  /// workout of a year changes you, the fifth barely registers.
-  ///
-  /// 100%, 50%, 25%, then nothing. The fourth attempt says so out loud
-  /// rather than silently doing nothing, because a button that appears to
-  /// work and does not is the worse failure — that exact bug is already in
-  /// this log twice.
-  double _yield(LifeAction action) {
-    final taken = _takenThisYear[action] ?? 0;
-    return switch (taken) {
-      0 => 1.0,
-      1 => 0.5,
-      2 => 0.25,
-      _ => 0.0,
-    };
-  }
+  /// fading return reads as the truth it models.
+  double _yield(LifeAction action) =>
+      EffortRules.yieldAt(action, _takenThisYear[action] ?? 0);
 
   /// Records a use and reports whether it did anything.
   ///
-  /// Callers that get `false` should tell the player why rather than
-  /// quietly no-op.
+  /// Callers that get `false` should return without applying any effect. The
+  /// player is told why in the feed rather than the button quietly doing
+  /// nothing, because a button that appears to work and does not is the worse
+  /// failure. That exact bug is in this project's log twice already.
   bool _spend(LifeAction action) {
     final rate = _yield(action);
-    _takenThisYear[action] = (_takenThisYear[action] ?? 0) + 1;
     if (rate <= 0) {
       _setLog(
         'You have already done that as much as one year has room for. '
@@ -1563,12 +2171,17 @@ class LifeSimController extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+    _takenThisYear[action] = (_takenThisYear[action] ?? 0) + 1;
     return true;
   }
 
-  /// Scales a stat gain by this year's remaining yield, never below 1 when
-  /// the action still counts — a "+0 Health" message reads as broken.
+  /// Scales a gain by this year's remaining yield, never below 1 while the
+  /// action still counts, because "+0 Health" reads as broken.
+  ///
+  /// Costs (zero or negative amounts) are never softened. A course costs the
+  /// same the third time you take it in a year, which is the point.
   int _scaled(LifeAction action, int amount) {
+    if (amount <= 0) return amount;
     final rate = _yield(action);
     if (rate >= 1) return amount;
     final scaled = (amount * rate).round();
@@ -1580,15 +2193,25 @@ class LifeSimController extends ChangeNotifier {
   /// Study to raise Smarts.
   void study() {
     if (!allows(LifeAction.study)) return;
-    _smarts = _clamp(_smarts + 6);
+    final gain = _scaled(LifeAction.study, 6);
+    if (!_spend(LifeAction.study)) return;
+    _smarts = _clamp(_smarts + gain);
     _happiness = _clamp(_happiness - 2);
     if (!isDependent) {
       _money = max(0, _money - 30);
     }
+    // A student's grades move now, not only at the end of the year, so the bar
+    // on the school card answers the button that was just pressed.
+    var gradeNote = '';
+    if (_edu.inSchool) {
+      final bump = max(1, (gain * 0.7).round());
+      _edu.grades = (_edu.grades + bump).clamp(0, 100);
+      gradeNote = ' Grades +$bump.';
+    }
     _setLog(
       isDependent
-          ? 'Hit the books after school: +6 Smarts.'
-          : 'Took a course: +6 Smarts, -30 coins.',
+          ? 'Hit the books after school: +$gain Smarts.$gradeNote'
+          : 'Took a course: +$gain Smarts, -30 coins.$gradeNote',
       kind: LifeLogKind.learning,
     );
     notifyListeners();
@@ -1602,16 +2225,18 @@ class LifeSimController extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    final joy = _scaled(LifeAction.goOut, 6);
+    if (!_spend(LifeAction.goOut)) return;
     if (!isDependent) {
       _money -= 40;
     }
     // Six, not ten, for the same reason as the library: the park is a place
     // on the map, and an afternoon booked from a menu is the lesser version
     // of one you walked to.
-    _happiness = _clamp(_happiness + 6);
+    _happiness = _clamp(_happiness + joy);
     _setLog(
-      'Had a good afternoon: +6 Happiness. The park in town is better, and '
-      'free.',
+      'Had a good afternoon: +$joy Happiness. The park in town is better, '
+      'and free.',
       kind: LifeLogKind.life,
     );
     notifyListeners();
@@ -1622,7 +2247,8 @@ class LifeSimController extends ChangeNotifier {
   /// only becomes reachable after actually putting the hours in.
   void practise(LifeSkill skill) {
     if (!allows(LifeAction.practise)) return;
-    final gain = 4 + (_smarts ~/ 25);
+    final gain = _scaled(LifeAction.practise, 4 + (_smarts ~/ 25));
+    if (!_spend(LifeAction.practise)) return;
     _skills[skill] = ((_skills[skill] ?? 0) + gain).clamp(0, 100);
     _happiness = _clamp(_happiness - 2);
     if (!isDependent) {
@@ -1663,186 +2289,11 @@ class LifeSimController extends ChangeNotifier {
   // than only a big "age" button.
   // ---------------------------------------------------------------------
 
-  /// Put in extra effort at work. Costs happiness now for a shot at a
-  /// raise — the trade being taught is that effort is spent, not free.
-  void workHarder() {
-    if (finished) return;
-    if (!hasJob) {
-      _setLog('You need a job first.', kind: LifeLogKind.career);
-      notifyListeners();
-      return;
-    }
-    _happiness = _clamp(_happiness - 5);
-    _health = _clamp(_health - 2);
-    // Smarter characters convert effort into money more reliably.
-    final succeeded = _random.nextInt(100) < 35 + (_smarts ~/ 4);
-    if (succeeded) {
-      final bump = 200 + _random.nextInt(400);
-      _salary += bump;
-      _setLog(
-        'Put in the extra hours — your salary went up by $bump.',
-        kind: LifeLogKind.career,
-      );
-    } else {
-      _setLog(
-        'Put in the extra hours. Nobody noticed. It happens.',
-        kind: LifeLogKind.career,
-      );
-    }
-    notifyListeners();
-  }
-
-  /// Ask outright. Higher chance than [workHarder] pays off, but a failed
-  /// ask costs more happiness — asking has a real downside.
-  void askForRaise() {
-    if (finished) return;
-    if (!hasJob) {
-      _setLog(
-        'You need a job before you can ask for a raise.',
-        kind: LifeLogKind.career,
-      );
-      notifyListeners();
-      return;
-    }
-    final succeeded = _random.nextInt(100) < 30 + (_smarts ~/ 5);
-    if (succeeded) {
-      final bump = 400 + _random.nextInt(600);
-      _salary += bump;
-      _happiness = _clamp(_happiness + 6);
-      _setLog(
-        'You asked, and got it: salary up $bump. Asking is free.',
-        kind: LifeLogKind.career,
-      );
-    } else {
-      _happiness = _clamp(_happiness - 8);
-      _setLog(
-        'They said no. Worth asking — it only cost you a bad day.',
-        kind: LifeLogKind.career,
-      );
-    }
-    notifyListeners();
-  }
-
-  /// Entry-level jobs, cheapest first. Smarts decides how far up the list
-  /// you can reach; the roll decides which of those you actually land.
-  ///
-  /// **These salaries are deliberately modest.** The economy this game runs
-  /// on is small — the careers events hand out pay between 260 and 520 a
-  /// year, and a year of essentials costs 110 to 180 — so a job market
-  /// paying in the thousands would make every expense in the game
-  /// irrelevant within a decade. A simulated run on the first draft of this
-  /// table (900-3000) had banked a 6,378 emergency fund by thirty, which is
-  /// a game with no tension and therefore no lesson.
-  ///
-  /// The ceiling here also sits at the *bottom* of what the career-ladder
-  /// events pay, on purpose: walking into a job should always be worse than
-  /// earning one through the music/sports/business ladders, or those
-  /// ladders stop being worth climbing.
-  static const List<({String title, int salary, int minSmarts})> _jobMarket = [
-    (title: 'Supermarket Cashier', salary: 240, minSmarts: 0),
-    (title: 'Warehouse Picker', salary: 260, minSmarts: 0),
-    (title: 'Barista', salary: 275, minSmarts: 0),
-    (title: 'Delivery Driver', salary: 310, minSmarts: 20),
-    (title: 'Care Assistant', salary: 340, minSmarts: 30),
-    (title: 'Office Administrator', salary: 380, minSmarts: 42),
-    (title: 'Junior Technician', salary: 440, minSmarts: 56),
-    (title: 'Trainee Accountant', salary: 500, minSmarts: 68),
-    (title: 'Junior Developer', salary: 560, minSmarts: 80),
-  ];
-
   /// The youngest age at which the job market will look at you.
   static const int jobHuntingAge = 16;
 
   /// Whether looking for work is currently possible at all.
   bool get canJobHunt => !finished && _age >= jobHuntingAge && !hasJob;
-
-  /// Apply for work.
-  ///
-  /// **Why this exists.** Only eight of the ~130 events could hand out a
-  /// job, each behind its own age/skill gate *and* behind the player
-  /// picking that specific branch. Simulating lives showed most characters
-  /// reaching forty still listed as "Newborn" on zero salary — which meant
-  /// `canBudget` never became true, so the budget split, the emergency
-  /// fund, the paycheck line and the debt model were all unreachable for
-  /// the majority of players. The entire thing the app exists to teach was
-  /// gated behind a lottery.
-  ///
-  /// So getting work is a *decision* now, not a draw. Smarts widens the
-  /// list you can pick from, which is the one place in this game where
-  /// studying visibly pays for itself.
-  ///
-  /// **Two channels, and they are not the same.** [viaJobBoard] is the town's
-  /// notice board: you walked there, the cards are pinned up, and somebody is
-  /// standing behind the counter. Without it this is the version you do from
-  /// the sofa — a search, a form, and a wait.
-  ///
-  /// Both are real ways people find work and the app should not pretend
-  /// otherwise, so neither is blocked. But turning up in person is better,
-  /// which is also true, and here it is worth one extra roll on the job
-  /// market: the pick keeps the best of three instead of the best of two. On
-  /// a table where Smarts widens what is open to you, that is a meaningful
-  /// nudge without being a different mechanic.
-  ///
-  /// Returns false when the character cannot look for work right now.
-  bool findJob({bool viaJobBoard = false}) {
-    if (!canJobHunt || !allows(LifeAction.findJob)) return false;
-
-    final open = _jobMarket
-        .where((j) => _smarts >= j.minSmarts)
-        .toList(growable: false);
-    // The floor entries have minSmarts 0, so this cannot be empty — but a
-    // future edit to the table could make it so, and an empty pick would
-    // throw in the player's face rather than just being a bad job market.
-    if (open.isEmpty) {
-      _setLog(
-        'Nothing you are qualified for is going right now. Study and try '
-        'again.',
-        kind: LifeLogKind.career,
-      );
-      notifyListeners();
-      return false;
-    }
-
-    // Bias toward the better end of what is open, so raising Smarts is felt
-    // rather than merely permitted: keep the best of several rolls. A third
-    // roll for turning up in person -- see [viaJobBoard].
-    var pick = 0;
-    for (var i = 0; i < (viaJobBoard ? 3 : 2); i++) {
-      final roll = _random.nextInt(open.length);
-      if (roll > pick) pick = roll;
-    }
-    final job = open[pick];
-
-    _job = job.title;
-    _salary = job.salary;
-    _happiness = _clamp(_happiness + 6);
-    _setLog(
-      viaJobBoard
-          ? 'Saw the card on the board in town and asked. Hired as a '
-                '${job.title} on ${job.salary} a year. Open Money to split '
-                'that before it splits itself.'
-          : 'Applied online and got it. Hired as a ${job.title} on '
-                '${job.salary} a year. Open Money to split that before it '
-                'splits itself.',
-      kind: LifeLogKind.career,
-    );
-    _teach(FinanceConcept.budgetRule);
-    notifyListeners();
-    return true;
-  }
-
-  /// Walk away from a job. Salary goes to zero immediately.
-  void quitJob() {
-    if (finished || !hasJob) return;
-    _job = 'Unemployed';
-    _salary = 0;
-    _happiness = _clamp(_happiness + 4);
-    _setLog(
-      'You quit. Freedom now, no paycheck next year.',
-      kind: LifeLogKind.career,
-    );
-    notifyListeners();
-  }
 
   /// A check-up. Costs money, buys health back — the cheapest healthcare
   /// is the kind you get before you need it.
@@ -1854,14 +2305,16 @@ class LifeSimController extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    final healed = _scaled(LifeAction.doctor, 12);
+    if (!_spend(LifeAction.doctor)) return;
     if (!isDependent) {
       _money -= cost;
     }
-    _health = _clamp(_health + 12);
+    _health = _clamp(_health + healed);
     _setLog(
       isDependent
-          ? 'A parent took you for a check-up: +12 Health.'
-          : 'Check-up done: +12 Health, -$cost coins.',
+          ? 'A parent took you for a check-up: +$healed Health.'
+          : 'Check-up done: +$healed Health, -$cost coins.',
       kind: LifeLogKind.health,
     );
     notifyListeners();
@@ -1875,10 +2328,12 @@ class LifeSimController extends ChangeNotifier {
     // it from the menu is the version you do without leaving the house —
     // which is worth something and worth less. Walking there and picking the
     // free course pays the full amount through [applyTownOutcome].
-    _smarts = _clamp(_smarts + 2);
+    final gain = _scaled(LifeAction.library, 2);
+    if (!_spend(LifeAction.library)) return;
+    _smarts = _clamp(_smarts + gain);
     _setLog(
-      'Read at home for the afternoon: +2 Smarts. The library in town is '
-      'worth the walk.',
+      'Read at home for the afternoon: +$gain Smarts. The library in town '
+      'is worth the walk.',
       kind: LifeLogKind.learning,
     );
     notifyListeners();
@@ -1906,29 +2361,105 @@ class LifeSimController extends ChangeNotifier {
   /// smarts. XP is having done something at all, so it is a small lift in
   /// happiness — going out is good for you, and it is the smallest of the
   /// three because turning up is the easiest part.
-  void applyTownOutcome({
+  ///
+  /// **Returns the life money actually credited.** Earnings run through
+  /// [TownIncome], so the town pays at full rate up to a yearly allowance and a
+  /// quarter beyond it. Spending is never softened. The map uses the return
+  /// value to say what a visit was really worth.
+  int applyTownOutcome({
     required int gold,
     required int xp,
     required int literacy,
     bool hires = false,
   }) {
-    if (finished) return;
+    if (finished) return 0;
     // The job board actually employing you is the point of it being a job
     // board. Silently ignored when the character is too young or already
     // working — `findJob` checks both and returns false, and the town's own
     // outcome text still lands, so nothing looks broken.
     if (hires) findJob(viaJobBoard: true);
-    _money += gold;
+    final credited = gold > 0 ? _creditTown(gold) : gold;
+    _money += credited;
     if (literacy > 0) _smarts = _clamp(_smarts + (literacy / 4).round());
     if (xp > 0) _happiness = _clamp(_happiness + (xp / 5).round());
     notifyListeners();
+    return credited;
+  }
+
+  /// Passes [gross] through the yearly allowance and books what is left.
+  int _creditTown(int gross) {
+    final paid = TownIncome.payFor(_townEarnedThisYear, gross);
+    _townEarnedThisYear += paid;
+    _townEarnedTotal += paid;
+    return paid;
+  }
+
+  /// Picks up a coin from the town map, for life money.
+  ///
+  /// **Returns what it paid**, 0 when this coin has already been taken this
+  /// year. Coins used to pay account gold and only ever once, so after the first
+  /// life the map had nothing to give anybody. They restock every year now, at a
+  /// value that means something on the scale of the life they are found in.
+  /// See [TownIncome].
+  int takeTownCoin(String id, int faceValue) {
+    if (finished || _townCoinsThisYear.contains(id)) return 0;
+    _townCoinsThisYear.add(id);
+    final paid = _creditTown(TownIncome.coinWorth(faceValue));
+    _money += paid;
+    notifyListeners();
+    return paid;
+  }
+
+  /// Speaking to somebody in town. They become a contact, and each year you
+  /// talk again warms it a little.
+  ///
+  /// Returns a line for the map to show, or null when nothing changed. Under
+  /// 14 it does nothing: contacts are about work, and a child chatting to a
+  /// stranger in a town square is not a career move.
+  String? meetTownContact(String name) {
+    if (finished || _age < 14) return null;
+    final existing = _personNamed(name);
+    if (existing == null) {
+      _people.add(
+        Relationship(
+          name: name,
+          kind: RelationshipKind.colleague,
+          // A chat is not a friendship, so they arrive cooler than somebody
+          // met properly.
+          closeness: 45,
+          metAtAge: _age,
+          lastSeenAge: _age,
+        ),
+      );
+      _contactsMade++;
+      _townChatsThisYear.add(name);
+      notifyListeners();
+      return 'You got talking to $name. They are one of your contacts now.';
+    }
+    if (!existing.kind.isProfessional) return null;
+    if (_townChatsThisYear.contains(name)) return null;
+    _townChatsThisYear.add(name);
+    _updatePerson(
+      name,
+      existing.copyWith(
+        closeness: (existing.closeness + 8).clamp(0, 100),
+        lastSeenAge: _age,
+      ),
+    );
+    notifyListeners();
+    return '$name remembered you. Staying in touch keeps a contact warm.';
   }
 
   /// A side job. Real money for a real cost in time and energy — the only
   /// income source available before a career event fires.
   void workSideJob() {
     if (!allows(LifeAction.sideJob)) return;
-    final earned = 40 + _random.nextInt(60);
+    // The pay fades with the year's shifts. Without it this was an
+    // infinite-money button: happiness clamps at zero, so no tap ever cost
+    // anything more than the one before, and the leaderboard ranks net worth.
+    final earned = _scaled(LifeAction.sideJob, 40 + _random.nextInt(60));
+    if (!_spend(LifeAction.sideJob)) return;
+    _sideJobs++;
     _money += earned;
     _happiness = _clamp(_happiness - 4);
     _health = _clamp(_health - 2);
@@ -1961,9 +2492,13 @@ class LifeSimController extends ChangeNotifier {
     if (open.isEmpty) return;
     final chosen = place != null && open.contains(place) ? place : open.first;
 
-    _happiness = _clamp(_happiness + chosen.happiness);
-    _smarts = _clamp(_smarts + chosen.smarts);
-    _health = _clamp(_health + chosen.health);
+    final joy = _scaled(LifeAction.volunteer, chosen.happiness);
+    final learned = _scaled(LifeAction.volunteer, chosen.smarts);
+    final fitter = _scaled(LifeAction.volunteer, chosen.health);
+    if (!_spend(LifeAction.volunteer)) return;
+    _happiness = _clamp(_happiness + joy);
+    _smarts = _clamp(_smarts + learned);
+    _health = _clamp(_health + fitter);
     if (chosen.teaches != null) _teach(chosen.teaches!);
     _setLog(chosen.outcome, kind: LifeLogKind.life);
     notifyListeners();
@@ -1979,6 +2514,7 @@ class LifeSimController extends ChangeNotifier {
     if (!allows(LifeAction.gamble)) return;
     const stake = 100;
     if (_money < stake) return;
+    if (!_spend(LifeAction.gamble)) return;
     // Deliberately worse than even money, like every real version of this.
     final won = _random.nextInt(100) < 42;
     if (won) {
@@ -2007,7 +2543,10 @@ class LifeSimController extends ChangeNotifier {
   void spendTimeWith(String person) {
     if (finished) return;
     final existing = _personNamed(person);
-    _happiness = _clamp(_happiness + 8);
+    final joy = _scaled(LifeAction.spendTime, 8);
+    final closer = _scaled(LifeAction.spendTime, 12);
+    if (!_spend(LifeAction.spendTime)) return;
+    _happiness = _clamp(_happiness + joy);
     if (existing != null) {
       // Time is the thing that actually repairs a relationship, and it moves
       // closeness more than twice as far as a gift does. That comparison is
@@ -2015,13 +2554,13 @@ class LifeSimController extends ChangeNotifier {
       _updatePerson(
         person,
         existing.copyWith(
-          closeness: (existing.closeness + 12).clamp(0, 100),
+          closeness: (existing.closeness + closer).clamp(0, 100),
           lastSeenAge: _age,
         ),
       );
     }
     _setLog(
-      'Spent the day with $person: +8 Happiness. Cost: nothing.',
+      'Spent the day with $person: +$joy Happiness. Cost: nothing.',
       kind: LifeLogKind.people,
     );
     notifyListeners();
@@ -2037,27 +2576,252 @@ class LifeSimController extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    final joy = _scaled(LifeAction.buyGift, 5);
+    final closer = _scaled(LifeAction.buyGift, 5);
+    if (!_spend(LifeAction.buyGift)) return;
     _money -= cost;
-    _happiness = _clamp(_happiness + 5);
+    _happiness = _clamp(_happiness + joy);
     final existing = _personNamed(person);
     if (existing != null) {
       _updatePerson(
         person,
         existing.copyWith(
-          closeness: (existing.closeness + 5).clamp(0, 100),
+          closeness: (existing.closeness + closer).clamp(0, 100),
           lastSeenAge: _age,
         ),
       );
     }
     _setLog(
-      'Bought $person a gift: +5 Happiness, -$cost coins.',
+      'Bought $person a gift: +$joy Happiness, -$cost coins.',
       kind: LifeLogKind.people,
     );
     notifyListeners();
   }
 
+  /// Go somewhere people in your line of work go.
+  ///
+  /// Costs a little money and an evening, twice a year, and the second time
+  /// pays half as well. Most of the time you meet somebody. Sometimes you stand
+  /// by the snacks and go home, which is also what happens.
+  void attendNetworkingEvent() {
+    if (!allows(LifeAction.network)) return;
+    const cost = 25;
+    if (!isDependent && _money < cost) {
+      _setLog('Not enough coins to get in.', kind: LifeLogKind.money);
+      notifyListeners();
+      return;
+    }
+    final rate = _yield(LifeAction.network);
+    if (!_spend(LifeAction.network)) return;
+    if (!isDependent) _money -= cost;
+
+    // Charisma helps, which is the one place it earns money directly.
+    final charisma = (_skills[LifeSkill.charisma] ?? 0) / 100;
+    final chance = 0.75 * rate + charisma * 0.15;
+    if (_random.nextDouble() < chance) {
+      final name = freshContactName(_random, {for (final p in _people) p.name});
+      _people.add(
+        Relationship(
+          name: name,
+          kind: RelationshipKind.colleague,
+          closeness: 50,
+          metAtAge: _age,
+          lastSeenAge: _age,
+        ),
+      );
+      _contactsMade++;
+      _smarts = _clamp(_smarts + 1);
+      _setLog(
+        'Went to an evening for people in your line of work and got talking '
+        'to $name. You swapped numbers. New contact.',
+        kind: LifeLogKind.people,
+      );
+    } else {
+      _setLog(
+        'Went along, stood near the snacks and left with nobody new. It '
+        'takes a few tries.',
+        kind: LifeLogKind.people,
+      );
+    }
+    notifyListeners();
+  }
+
+  /// Coffee with a contact. Keeps them warm, which is the only thing that does.
+  ///
+  /// Contacts fade faster than family, so a network you never touch stops being
+  /// one. This is what touching it costs: a few coins and an hour. It shares
+  /// the networking budget, so it is the same evenings either way.
+  void coffeeWith(String person) {
+    if (finished) return;
+    final existing = _personNamed(person);
+    if (existing == null || !existing.kind.isProfessional) return;
+    if (!allows(LifeAction.network)) return;
+    const cost = 10;
+    if (!isDependent && _money < cost) {
+      _setLog('Not enough coins for the coffees.', kind: LifeLogKind.money);
+      notifyListeners();
+      return;
+    }
+    final closer = _scaled(LifeAction.network, 12);
+    if (!_spend(LifeAction.network)) return;
+    if (!isDependent) _money -= cost;
+    _happiness = _clamp(_happiness + 2);
+    _updatePerson(
+      person,
+      existing.copyWith(
+        closeness: (existing.closeness + closer).clamp(0, 100),
+        lastSeenAge: _age,
+      ),
+    );
+    _setLog(
+      'Coffee with $person. Catching up costs almost nothing and keeps '
+      'the contact warm.',
+      kind: LifeLogKind.people,
+    );
+    notifyListeners();
+  }
+
+  /// Applies a year of missed work, and the consequences of a second one.
+  void _applyWorkStrain() {
+    final strain = assessWorkStrain(health: _health, happiness: _happiness);
+    _payShare = strain.payShare;
+
+    if (!strain.missesWork) {
+      _strainYears = 0;
+      return;
+    }
+
+    _weeksMissedTotal += strain.weeksMissed;
+    _yearsStrained++;
+
+    if (strain.isSerious) {
+      _strainYears++;
+      if (_strainYears >= kYearsToLoseJob) {
+        final lost = _job;
+        _job = 'Unemployed';
+        _salary = 0;
+        _strainYears = 0;
+        _timesLaidOff++;
+        _payShare = 1.0;
+        _happiness = _clamp(_happiness - 6);
+        _setLog(
+          'After a second year of missed work, your employer let you go '
+          'from your job as a $lost. Your health and your mood are part of '
+          'holding a job.',
+          kind: LifeLogKind.shock,
+        );
+        return;
+      }
+    } else {
+      _strainYears = 0;
+    }
+
+    final cut = (_salary * strain.missedShare).round();
+    _setLog(
+      'You missed about ${strain.weeksMissed} '
+      '${strain.weeksMissed == 1 ? 'week' : 'weeks'} of work through '
+      '${strain.cause}, and were paid for fewer of them: about $cut less.',
+      kind: LifeLogKind.career,
+    );
+  }
+
+  /// Once a year, somebody who knows you might pass on a lead.
+  ///
+  /// Rolls only when there is a network to roll for, so a life with no contacts
+  /// draws nothing from the random stream at all. Odds come from
+  /// [NetworkReading.referralChance].
+  void _maybeReferral() {
+    if (finished || _age < jobHuntingAge) return;
+    final reading = networkReading;
+    if (reading.contacts == 0) return;
+    if (_random.nextDouble() >= reading.referralChance) return;
+
+    // The warmest contact is the one who says your name.
+    final introducer = contacts.first.name;
+    final kind = pickReferralKind(hasJob: hasJob, random: _random);
+
+    switch (kind) {
+      case ReferralKind.jobLead:
+        if (!findJob(referredBy: introducer)) return;
+      case ReferralKind.goodWord:
+        // A share of pay, like every other raise. It was a flat 150 to 349,
+        // which on a 240 salary was a raise of up to 145%.
+        final percent = 3 + _random.nextInt(6);
+        final bump = max(1, (_salary * percent / 100).round());
+        _salary += bump;
+        _raisesEarned++;
+        _referrals++;
+        _setLog(
+          '$introducer mentioned you to your manager. Word of mouth did what a '
+          'year of good work had not: salary up $bump, which is $percent%.',
+          kind: LifeLogKind.career,
+        );
+      case ReferralKind.gig:
+        final earned = 60 + _random.nextInt(100);
+        _money += earned;
+        _referrals++;
+        _setLog(
+          '$introducer sent a one-off job your way: +$earned coins. '
+          'Somebody had to know you existed.',
+          kind: LifeLogKind.career,
+        );
+    }
+    _happiness = _clamp(_happiness + 3);
+  }
+
   /// True once the character actually holds a paying job.
   bool get hasJob => _salary > 0 && _job != 'Newborn' && _job != 'Unemployed';
+
+  /// Pay back what was borrowed, from cash first and then from savings.
+  ///
+  /// Borrowing costs about 18% a year here and a savings pot earns nothing, so
+  /// clearing the debt is the better use of the money once a small cushion is
+  /// kept. There was no way to do this at all: the only thing that ever reduced
+  /// a balance was 30% of whatever cash happened to be lying around at year's
+  /// end, which for a player on a budget was nothing. The debrief kept telling
+  /// people to pay their debt down, with no button to do it.
+  ///
+  /// Returns how much was actually paid.
+  int payDownDebt([int? amount]) {
+    if (!allows(LifeAction.payDownDebt) || _debt <= 0) return 0;
+    final wanted = (amount ?? _debt).clamp(1, _debt);
+    final fromCash = wanted.clamp(0, _money);
+    final fromFund = (wanted - fromCash).clamp(0, _emergencyFund);
+    final paid = fromCash + fromFund;
+    if (paid <= 0) {
+      _setLog(
+        'You have nothing to pay it with yet. Cash and savings are both empty.',
+        kind: LifeLogKind.money,
+      );
+      notifyListeners();
+      return 0;
+    }
+    _money -= fromCash;
+    _emergencyFund -= fromFund;
+    _debt -= paid;
+    _debtRepaid += paid;
+    final saved = (paid * 0.18).round();
+    final from = fromFund > 0
+        ? (fromCash > 0
+              ? '$fromCash from cash and $fromFund from savings'
+              : '$fromFund from savings')
+        : '$fromCash from cash';
+    if (_debt <= 0) {
+      _happiness = _clamp(_happiness + 4);
+      _setLog(
+        'You paid off everything you owed ($from). That is about $saved a year you will not lose to interest.',
+        kind: LifeLogKind.money,
+      );
+    } else {
+      _setLog(
+        'You paid back $paid ($from). Still owing $_debt, but about $saved less a year goes to interest.',
+        kind: LifeLogKind.money,
+      );
+    }
+    _teach(FinanceConcept.interestCost);
+    notifyListeners();
+    return paid;
+  }
 
   /// Move cash into investments, which compound each year.
   void invest(int amount) {
@@ -2079,6 +2843,7 @@ class LifeSimController extends ChangeNotifier {
     if (_dead) return;
     _retired = true;
     _currentEvent = null;
+    _recordYear();
     notifyListeners();
   }
 

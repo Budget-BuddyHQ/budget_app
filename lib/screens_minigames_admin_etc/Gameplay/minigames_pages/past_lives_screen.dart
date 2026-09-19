@@ -3,10 +3,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
+import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_record.dart';
 import '../../../utils/number_format.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
+import 'past_life_screen.dart';
 
 /// Every life you've finished, and the three you did best at.
 ///
@@ -323,97 +325,147 @@ class _RecordRow extends StatelessWidget {
       if (identical(book.wisest, record)) LifeBest.concepts,
     };
 
-    return Container(
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-        border: Border.all(
-          color: crowns.isEmpty
-              ? Colors.white.withValues(alpha: 0.10)
-              : PastLivesScreen._gold.withValues(alpha: 0.38),
+    final radius = BorderRadius.circular(AppTheme.radiusMedium);
+    final hasStory = record.facts != null;
+
+    // Opens the life's own diagnostic. Every row is tappable, and the ones that
+    // kept their story say so, because a row that looks like a plain card is a
+    // row nobody thinks to press.
+    return Semantics(
+      button: true,
+      label:
+          '${record.name.isEmpty ? 'Unnamed' : record.name}, '
+          '${archetype?.label ?? 'unknown ending'}. Opens how this life went.',
+      child: Material(
+        color: Colors.transparent,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: radius,
+            border: Border.all(
+              color: crowns.isEmpty
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : PastLivesScreen._gold.withValues(alpha: 0.38),
+            ),
+          ),
+          child: InkWell(
+            key: ValueKey('open-life-${record.finishedAt.toIso8601String()}'),
+            borderRadius: radius,
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => PastLifeScreen(record: record, book: book),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(13),
+              child: _rowBody(record, archetype, accent, crowns, hasStory),
+            ),
+          ),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: Icon(
-                  archetype?.icon ?? Icons.person_rounded,
-                  color: accent,
-                  size: 18,
-                ),
+    );
+  }
+
+  Widget _rowBody(
+    LifeRecord record,
+    LifeEndingArchetype? archetype,
+    Color accent,
+    Set<LifeBest> crowns,
+    bool hasStory,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(11),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    FittedLabel(
-                      record.name.isEmpty ? 'Unnamed' : record.name,
-                      style: GoogleFonts.pixelifySans(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
+              child: Icon(
+                archetype?.icon ?? Icons.person_rounded,
+                color: accent,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FittedLabel(
+                    record.name.isEmpty ? 'Unnamed' : record.name,
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
                     ),
-                    FittedLabel(
-                      archetype?.label ?? 'Unknown ending',
-                      style: GoogleFonts.quicksand(
-                        color: accent,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w800,
-                      ),
+                  ),
+                  FittedLabel(
+                    archetype?.label ?? 'Unknown ending',
+                    style: GoogleFonts.quicksand(
+                      color: accent,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              if (crowns.isNotEmpty)
-                Icon(
-                  Icons.workspace_premium_rounded,
-                  color: PastLivesScreen._gold,
-                  size: 19,
-                ),
-            ],
+            ),
+            const SizedBox(width: 8),
+            if (crowns.isNotEmpty)
+              Icon(
+                Icons.workspace_premium_rounded,
+                color: PastLivesScreen._gold,
+                size: 19,
+              ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.white.withValues(alpha: 0.6),
+              size: 22,
+            ),
+          ],
+        ),
+        const SizedBox(height: 9),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            _Stat(
+              icon: Icons.cake_rounded,
+              text: record.died
+                  ? 'died at ${record.age}'
+                  : 'retired at ${record.age}',
+            ),
+            _Stat(
+              icon: Icons.savings_rounded,
+              text: '${groupedNumber(record.netWorth)} net',
+            ),
+            _Stat(
+              icon: Icons.school_rounded,
+              text: '${record.conceptsMet} ideas',
+            ),
+            if (record.goldEarned > 0)
+              _Stat(
+                icon: Icons.monetization_on_rounded,
+                text: '+${record.goldEarned} gold',
+              ),
+          ],
+        ),
+        const SizedBox(height: 9),
+        Text(
+          hasStory ? 'Tap to see how this life went' : 'Tap for the summary',
+          style: GoogleFonts.quicksand(
+            color: Colors.white.withValues(alpha: 0.72),
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
           ),
-          const SizedBox(height: 9),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              _Stat(
-                icon: Icons.cake_rounded,
-                text: record.died
-                    ? 'died at ${record.age}'
-                    : 'retired at ${record.age}',
-              ),
-              _Stat(
-                icon: Icons.savings_rounded,
-                text: '${groupedNumber(record.netWorth)} net',
-              ),
-              _Stat(
-                icon: Icons.school_rounded,
-                text: '${record.conceptsMet} ideas',
-              ),
-              if (record.goldEarned > 0)
-                _Stat(
-                  icon: Icons.monetization_on_rounded,
-                  text: '+${record.goldEarned} gold',
-                ),
-            ],
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
