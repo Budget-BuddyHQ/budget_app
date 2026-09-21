@@ -27,6 +27,7 @@ import 'life_advisory.dart';
 import 'life_assets_sheet.dart';
 import 'life_character_sheet.dart';
 import 'life_epilogue_screen.dart';
+import 'life_money_flow_sheet.dart';
 import 'life_occupation_sheet.dart';
 import 'life_people_sheet.dart';
 import 'life_ui_kit.dart';
@@ -188,9 +189,14 @@ class _LifeSimPageState extends State<LifeSimPage> {
   void dispose() {
     for (final id in const <String>[
       'life_money',
+      'life_costs',
       'life_event',
       'life_town',
       'life_menus',
+      'life_menu_work',
+      'life_menu_assets',
+      'life_menu_people',
+      'life_menu_activities',
       'life_age',
     ]) {
       TutorialTargets.unregister(id);
@@ -281,9 +287,16 @@ class _LifeSimPageState extends State<LifeSimPage> {
 
   void _registerTourTargets() {
     TutorialTargets.register('life_money', _tourMoneyKey);
+    // The "Where does my money go?" row is inside the money panel.
+    TutorialTargets.register('life_costs', _tourMoneyKey);
     TutorialTargets.register('life_event', _tourEventKey);
     TutorialTargets.register('life_town', _tourTownKey);
     TutorialTargets.register('life_menus', _tourMenuKey);
+    // One step per menu, all pointing at the tab bar they live in.
+    TutorialTargets.register('life_menu_work', _tourMenuKey);
+    TutorialTargets.register('life_menu_assets', _tourMenuKey);
+    TutorialTargets.register('life_menu_people', _tourMenuKey);
+    TutorialTargets.register('life_menu_activities', _tourMenuKey);
     TutorialTargets.register('life_age', _tourAgeKey);
   }
 
@@ -1000,6 +1013,7 @@ class _LifeFeed extends StatelessWidget {
           onOpenBudget: onOpenBudget,
           onOpenMoney: onOpenMoney,
           onOpenConcepts: onOpenConcepts,
+          onOpenWhereItGoes: () => openMoneyFlow(context, life),
         ),
         const SizedBox(height: 12),
         // Above the cost, not after it: running yourself down costs shifts,

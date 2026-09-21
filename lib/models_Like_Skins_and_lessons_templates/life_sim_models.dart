@@ -9,6 +9,7 @@ import 'life_events_adult.dart';
 import 'life_events_home_money.dart';
 import 'life_events_later_life.dart';
 import 'life_events_school_work.dart';
+import 'life_events_shocks.dart';
 import 'life_events_childhood.dart';
 import 'life_events_stardom.dart';
 import 'life_events_toddler.dart';
@@ -3703,4 +3704,7 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ...kLifeEventsSchoolWork,
   ...kLifeEventsHomeMoney,
   ...kLifeEventsLaterLife,
+  // The bad days, which the yearly draw makes sure arrive. See
+  // `life_events_shocks.dart`.
+  ...kLifeEventsShocks,
 ];

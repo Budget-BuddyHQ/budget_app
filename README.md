@@ -3427,7 +3427,7 @@ the pool.
 flutter analyze && flutter test
 ```
 
-1,280 tests covering responsive layout at eight viewports (including the Life
+2,580 tests covering responsive layout at eight viewports (including the Life
 sim itself, Feedback, and the Adventure map-pending screen), the money
 panel at seven widths, the life-event chain wiring, price-chart zoom/pan/scrub,
 chart painters against pathological input, working-order accounting, the Life

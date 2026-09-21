@@ -40,9 +40,14 @@ class LifeMoneyPanel extends StatelessWidget {
     required this.onOpenBudget,
     required this.onOpenMoney,
     required this.onOpenConcepts,
+    this.onOpenWhereItGoes,
   });
 
   final LifeSimController life;
+
+  /// Opens "Where does my money go?": the year, itemised. Null hides the
+  /// strip, for the places this panel is drawn that have nowhere to open it.
+  final VoidCallback? onOpenWhereItGoes;
 
   /// Opens the budget sheet. Wired to the strip that appears the first year
   /// a salary exists — the moment budgeting becomes a real decision.
@@ -143,6 +148,10 @@ class LifeMoneyPanel extends StatelessWidget {
               canJobHunt: life.canJobHunt,
               onOpenMoney: onOpenMoney,
             ),
+          if (onOpenWhereItGoes != null) ...[
+            const SizedBox(height: 8),
+            _WhereItGoesStrip(onTap: onOpenWhereItGoes!),
+          ],
           const SizedBox(height: 8),
           _ConceptsStrip(met: life.conceptsMet, onTap: onOpenConcepts),
         ],
@@ -164,7 +173,10 @@ class LifeMoneyPanel extends StatelessWidget {
       life.investments,
       const Color(0xFFE9C46A),
     ),
-    _TileData('\u{1F4B3}', 'Owed', life.debt, const Color(0xFFFF8FB1)),
+    // Everything owed, loans included. It was `life.debt` alone, so a student
+    // with a 900 loan read "Owed 0" beside a net worth of -500, and nothing on
+    // the panel said where the minus came from.
+    _TileData('\u{1F4B3}', 'Owed', life.totalOwed, const Color(0xFFFF8FB1)),
   ];
 }
 
@@ -482,6 +494,61 @@ class _RunwayLine extends StatelessWidget {
 ///
 /// Unmet ideas are shown as dim slots rather than hidden, because the empty
 /// slots are the invitation.
+/// A full-width row under the four boxes that opens the itemised year.
+///
+/// **Why it is a row and not an icon.** A ten-year-old asked what was taking
+/// their money and could not find where the game said. A button that says the
+/// question in their words is the answer to it.
+class _WhereItGoesStrip extends StatelessWidget {
+  const _WhereItGoesStrip({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Where does my money go?',
+      child: InkWell(
+        key: const ValueKey('where-it-goes'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFD45C).withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: const Color(0xFFFFD45C).withValues(alpha: 0.4),
+            ),
+          ),
+          child: Row(
+            children: [
+              const LifeEmoji('\u{1F50D}', size: 13),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FittedLabel(
+                  'Where does my money go?',
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.white70,
+                size: 18,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ConceptsStrip extends StatelessWidget {
   const _ConceptsStrip({required this.met, required this.onTap});
 

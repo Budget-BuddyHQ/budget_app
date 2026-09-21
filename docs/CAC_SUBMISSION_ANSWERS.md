@@ -4,8 +4,8 @@ Drafts for the entry form. Every number here is measured from the repo, not
 estimated. **Read the notes before pasting** — two of these answers are yours
 to make true, not mine.
 
-Counts as of 2 September 2026: 83,300 lines of Dart across 135 files,
-1,280 automated tests, 196 life events, 89 lessons in 13 units, 187 quiz
+Counts as of 21 September 2026: 118,000 lines of Dart across 196 files,
+2,580 automated tests, 292 life events, 89 lessons in 13 units, 198 quiz
 questions, 57 town scenarios, 40 cited sources, 24 skins, 16 finance concepts.
 
 ---
@@ -29,7 +29,7 @@ have met one in play you can arm it as a "money idea" that changes the
 simulation for the next several years — so the route to a strong run runs
 through actually understanding something.
 
-Around that sits an Academy of 89 lessons and 187 quiz questions, every claim
+Around that sits an Academy of 89 lessons and 198 quiz questions, every claim
 backed by one of 40 cited sources (Federal Reserve, CFPB, IRS, BLS) so students
 can check that what the app told them is true. There is an explorable town with
 16 places and nearly 80 money scenarios, a stock-market board that trades on live quotes, four

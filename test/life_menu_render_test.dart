@@ -225,9 +225,68 @@ void main() {
       await tester.tap(find.text('Mind and body'));
       await tester.pumpAndSettle();
       final before = life.health;
-      await tester.tap(find.text('Go for a run'));
+      await tester.tap(find.text('Eat well for a while'));
       await tester.pumpAndSettle();
       expect(life.health, before + 5);
+    });
+
+    // Asked for as: *"remove things that can be done in the open world from the
+    // menu, like hiking, meditation and going outside."* The catalogue still
+    // holds them, at a place; the menu lists what has none.
+    testWidgets('what belongs to the town is not in the menu, and it says so', (
+      tester,
+    ) async {
+      await show(tester, adult());
+      await tab(tester, 'Activities');
+      await tester.tap(find.text('Mind and body'));
+      await tester.pumpAndSettle();
+      for (final gone in const [
+        'Go for a run',
+        'Go for a hike',
+        'Meditate',
+        'Stretch and breathe',
+        'Read a good book',
+        'Go to the gym',
+        'See the doctor',
+      ]) {
+        expect(find.text(gone), findsNothing, reason: '$gone is still listed');
+      }
+      // Somebody who goes looking is told where it went, not left with a gap.
+      expect(
+        find.byKey(const ValueKey('activities-town-note')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('done in town'), findsOneWidget);
+    });
+
+    // A player at 15 health is "too unwell to leave the house", which is the
+    // moment a doctor is needed. A clinic they may not walk to would be a trap.
+    testWidgets('somebody too unwell to go out can still see a doctor', (
+      tester,
+    ) async {
+      final life = adult()..debugSetStats(health: 10);
+      expect(life.outingPermission.allowed, isFalse);
+      await show(tester, life);
+      await tab(tester, 'Activities');
+      await tester.tap(find.text('Mind and body'));
+      await tester.pumpAndSettle();
+      expect(find.text('See the doctor'), findsOneWidget);
+      final before = life.health;
+      await tester.tap(find.text('See the doctor'));
+      await tester.pumpAndSettle();
+      expect(life.health, greaterThan(before));
+    });
+
+    testWidgets('and somebody well enough to go out is sent to the clinic', (
+      tester,
+    ) async {
+      final life = adult();
+      expect(life.outingPermission.allowed, isTrue);
+      await show(tester, life);
+      await tab(tester, 'Activities');
+      await tester.tap(find.text('Mind and body'));
+      await tester.pumpAndSettle();
+      expect(find.text('See the doctor'), findsNothing);
     });
 
     testWidgets('a person can be talked to, and the bar moves', (tester) async {

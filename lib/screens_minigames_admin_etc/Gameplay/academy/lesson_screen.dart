@@ -134,12 +134,14 @@ class _LessonScreenState extends State<LessonScreen> {
 
     final unit = _progressionService.getUnit(lesson.unitId)!;
 
+    var aboveAgeConfirmed = false;
     if (isAboveReaderStage(
       unit.ageStage,
       _statsController.stats.ageBand.maxPlausibleStage,
     )) {
       final proceed = await _confirmAboveAge(unit);
       if (!proceed || !mounted) return;
+      aboveAgeConfirmed = true;
     }
 
     await Navigator.of(context).push(
@@ -148,6 +150,7 @@ class _LessonScreenState extends State<LessonScreen> {
           lesson: lesson,
           unit: unit,
           progressionService: _progressionService,
+          quizAboveAgeConfirmed: aboveAgeConfirmed,
         ),
       ),
     );

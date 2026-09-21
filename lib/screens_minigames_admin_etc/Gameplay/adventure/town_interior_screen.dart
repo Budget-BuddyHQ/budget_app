@@ -6,6 +6,8 @@ import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_conditions.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_spot_models.dart';
+import '../../../controllers_that_updates_stats/life_sim_controller.dart';
+import '../../../controllers_that_updates_stats/life_town_things.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/pixel_frame_animation.dart';
@@ -37,9 +39,15 @@ class TownInteriorScreen extends StatefulWidget {
     this.lifeAge,
     this.today,
     this.settled = false,
+    this.life,
   });
 
   final TownSpot spot;
+
+  /// The life being lived, when this was entered from a run. Its character can
+  /// do things in the building (hike, work out, see the doctor) that are no
+  /// longer in the menu. Null when the town is being wandered on its own.
+  final LifeSimController? life;
 
   /// Whether this exact encounter has already paid out.
   ///
@@ -185,6 +193,17 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
                         onLeave: () => Navigator.of(context).pop(),
                       );
 
+                final withThings = widget.life == null
+                    ? panel
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          panel,
+                          _ThingsToDo(spot: spot, life: widget.life!),
+                        ],
+                      );
+
                 if (wide) {
                   // Both columns centred, and the panel capped.
                   //
@@ -205,7 +224,7 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
                             constraints: const BoxConstraints(maxWidth: 460),
                             child: SingleChildScrollView(
                               padding: const EdgeInsets.fromLTRB(4, 12, 14, 14),
-                              child: panel,
+                              child: withThings,
                             ),
                           ),
                         ),
@@ -228,7 +247,7 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
                     Expanded(
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.fromLTRB(14, 8, 14, 16),
-                        child: panel,
+                        child: withThings,
                       ),
                     ),
                   ],
@@ -988,6 +1007,170 @@ class _LeaveButton extends StatelessWidget {
         child: const Padding(
           padding: EdgeInsets.all(8),
           child: Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
+        ),
+      ),
+    );
+  }
+}
+
+/// What the character can do in this building, apart from talking.
+///
+/// Hiking, the gym, the doctor and the library were rows in the Activities menu.
+/// They are done here instead: the point of walking to the park is that the park
+/// is where park things happen. Each row is the same action it always was, with
+/// the same limits, and the result appears as a line under the list.
+class _ThingsToDo extends StatefulWidget {
+  const _ThingsToDo({required this.spot, required this.life});
+
+  final TownSpot spot;
+  final LifeSimController life;
+
+  @override
+  State<_ThingsToDo> createState() => _ThingsToDoState();
+}
+
+class _ThingsToDoState extends State<_ThingsToDo> {
+  String? _result;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: widget.life,
+      builder: (context, _) {
+        final things = widget.life.thingsToDoAt(widget.spot.kind);
+        if (things.isEmpty) return const SizedBox.shrink();
+        return Container(
+          key: const ValueKey('things-to-do'),
+          margin: const EdgeInsets.only(top: 12),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF14261F),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: widget.spot.kind.accent.withValues(alpha: 0.4),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Things to do here',
+                style: GoogleFonts.pixelifySans(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (final t in things) ...[
+                _ThingRow(
+                  thing: t,
+                  accent: widget.spot.kind.accent,
+                  onDone: () => setState(() => _result = widget.life.log),
+                ),
+                const SizedBox(height: 8),
+              ],
+              if (_result != null)
+                Text(
+                  _result!,
+                  key: const ValueKey('things-result'),
+                  style: const TextStyle(
+                    color: Color(0xFFB7F7D7),
+                    fontSize: 12.5,
+                    height: 1.35,
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ThingRow extends StatelessWidget {
+  const _ThingRow({
+    required this.thing,
+    required this.accent,
+    required this.onDone,
+  });
+
+  final TownThing thing;
+  final Color accent;
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    final why = thing.gate();
+    final enabled = why == null;
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: '${thing.title}. ${enabled ? thing.blurb : why}',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: ValueKey('thing-${thing.id}'),
+          borderRadius: BorderRadius.circular(14),
+          onTap: enabled
+              ? () {
+                  thing.perform();
+                  onDone();
+                }
+              : null,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: enabled ? 0.07 : 0.03),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  thing.icon,
+                  color: enabled ? accent : Colors.white38,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        thing.title,
+                        style: TextStyle(
+                          color: enabled ? Colors.white : Colors.white60,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                      Text(
+                        enabled ? thing.blurb : why,
+                        style: TextStyle(
+                          color: Colors.white.withValues(
+                            alpha: enabled ? 0.75 : 0.6,
+                          ),
+                          fontSize: 11.5,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (thing.cost > 0 && enabled) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '-${thing.cost}',
+                    style: AppTheme.numeric(
+                      color: const Color(0xFFFFD45C),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );

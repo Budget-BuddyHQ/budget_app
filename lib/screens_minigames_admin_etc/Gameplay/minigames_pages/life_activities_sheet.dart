@@ -158,6 +158,7 @@ class ActivityListSheet extends StatelessWidget {
           accent: category.accent,
           subtitle: category.blurb,
           children: [
+            if (_townNote != null) _townNote!,
             for (final row in classics) row,
             for (final a in open) _row(context, a),
             if (locked.isNotEmpty) ...[
@@ -167,6 +168,55 @@ class ActivityListSheet extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  /// Says where the things that are not listed here have gone.
+  ///
+  /// A row that vanishes with no word is a bug report waiting to happen. Hiking,
+  /// the gym, the doctor and the library are done in town now, and this is how a
+  /// player who goes looking for them finds out.
+  Widget? get _townNote {
+    final canGoOut = life.outingPermission.allowed;
+    final text = switch (category) {
+      // Somebody who cannot leave the house still needs a doctor. See
+      // [_classics].
+      ActivityCategory.mindBody when !canGoOut =>
+        '${life.outingPermission.message} Hiking, running and the gym are done '
+            'in town, so they wait. The doctor still comes to you.',
+      ActivityCategory.mindBody =>
+        'Hiking, running, meditating, reading, the gym and the doctor are done '
+            'in town now. Tap the compass at the top to walk there: the park, '
+            'the library, the gym and the clinic are on the map.',
+      ActivityCategory.social =>
+        'Going out is done in town now. Walk to the park or the cafe from the '
+            'compass at the top.',
+      ActivityCategory.learning =>
+        'Reading and the museum are done at the library in town. Tap the '
+            'compass at the top to walk there.',
+      _ => null,
+    };
+    if (text == null) return null;
+    return LifeCard(
+      key: const ValueKey('activities-town-note'),
+      accent: category.accent,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.explore_rounded, color: category.accent, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -216,41 +266,25 @@ class ActivityListSheet extends StatelessWidget {
     }
 
     return switch (category) {
-      ActivityCategory.mindBody => [
-        classic(
-          icon: Icons.fitness_center_rounded,
-          title: 'Go to the gym',
-          detail: 'Free. +8 Health, +3 Looks.',
-          action: LifeAction.exercise,
-          onTap: life.exercise,
-        ),
-        classic(
-          icon: Icons.medical_services_rounded,
-          title: 'See a doctor',
-          detail:
-              'A check-up. +12 Health. The cheapest care is the kind you get before you need it.',
-          action: LifeAction.doctor,
-          cost: 60,
-          onTap: life.visitDoctor,
-        ),
-        classic(
-          icon: Icons.local_library_rounded,
-          title: 'Visit the library',
-          detail: 'Read at home. +2 Smarts. The library in town pays double.',
-          action: LifeAction.library,
-          onTap: life.visitLibrary,
-        ),
-      ],
+      // The gym and the library are in town now, and so is the doctor, except
+      // for somebody who cannot leave the house. Below 16 health you are "too
+      // unwell to leave", which is exactly when a doctor is what you need, and a
+      // clinic you are not allowed to walk to would be a trap. So the menu keeps
+      // the one row that has no other way in.
+      ActivityCategory.mindBody =>
+        life.outingPermission.allowed
+            ? const <Widget>[]
+            : [
+                classic(
+                  icon: Icons.medical_services_rounded,
+                  title: 'See the doctor',
+                  detail: 'A check-up at home. +12 Health.',
+                  action: LifeAction.doctor,
+                  cost: 60,
+                  onTap: life.visitDoctor,
+                ),
+              ],
       ActivityCategory.social => [
-        classic(
-          icon: Icons.celebration_rounded,
-          title: 'Go out',
-          detail:
-              'An afternoon out. +6 Happiness. The park in town is better, and free.',
-          action: LifeAction.goOut,
-          cost: 40,
-          onTap: life.haveFun,
-        ),
         classic(
           icon: Icons.volunteer_activism_rounded,
           title: 'Volunteer',

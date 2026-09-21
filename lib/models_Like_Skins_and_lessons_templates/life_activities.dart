@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'finance_concepts.dart';
 import 'life_sim_models.dart';
+import 'town_spot_models.dart';
 
 /// What a player can choose to do with a year, beyond the big decisions.
 ///
@@ -101,6 +102,7 @@ class ActivityDef {
     this.earnsMax = 0,
     this.partnerChance = 0,
     this.teaches,
+    this.place,
   });
 
   final String id;
@@ -143,6 +145,17 @@ class ActivityDef {
 
   final FinanceConcept? teaches;
 
+  /// The building in town where this is done, or null when it is done from the
+  /// menu.
+  ///
+  /// **Asked for as:** *"you're still able to do hiking in the menu, where I want
+  /// the user to do it in the open world."* A walk in the park is not a button.
+  /// An activity with a place is left out of the Activities menu and offered
+  /// inside that building on the town map, through the same yearly limits and
+  /// the same effects, so nothing about how much it gives has changed, only
+  /// where you go to do it.
+  final TownSpotKind? place;
+
   int get cap => tiers.length;
   bool get earns => earnsMax != 0 || earnsMin != 0;
 }
@@ -160,6 +173,7 @@ const List<ActivityDef> kActivities = <ActivityDef>[
     minAge: 8,
     health: 5,
     happiness: 1,
+    place: TownSpotKind.park,
   ),
   ActivityDef(
     id: 'hike',
@@ -172,6 +186,7 @@ const List<ActivityDef> kActivities = <ActivityDef>[
     tiers: <double>[1.0, 0.5],
     health: 4,
     happiness: 3,
+    place: TownSpotKind.park,
   ),
   ActivityDef(
     id: 'meditate',
@@ -183,6 +198,7 @@ const List<ActivityDef> kActivities = <ActivityDef>[
     minAge: 12,
     happiness: 5,
     smarts: 1,
+    place: TownSpotKind.park,
   ),
   ActivityDef(
     id: 'stretch',
@@ -194,6 +210,7 @@ const List<ActivityDef> kActivities = <ActivityDef>[
     minAge: 10,
     health: 3,
     happiness: 3,
+    place: TownSpotKind.park,
   ),
   ActivityDef(
     id: 'eat_well',
@@ -218,6 +235,7 @@ const List<ActivityDef> kActivities = <ActivityDef>[
     minAge: 7,
     smarts: 3,
     happiness: 2,
+    place: TownSpotKind.library,
   ),
   ActivityDef(
     id: 'haircut',
@@ -258,6 +276,7 @@ const List<ActivityDef> kActivities = <ActivityDef>[
     minAge: 8,
     happiness: 4,
     friendsBoost: 3,
+    place: TownSpotKind.park,
   ),
   ActivityDef(
     id: 'party',
@@ -297,6 +316,7 @@ const List<ActivityDef> kActivities = <ActivityDef>[
     tiers: <double>[1.0, 0.5],
     happiness: 5,
     friendsBoost: 3,
+    place: TownSpotKind.cafe,
   ),
   ActivityDef(
     id: 'fair',
@@ -309,6 +329,7 @@ const List<ActivityDef> kActivities = <ActivityDef>[
     tiers: <double>[1.0, 0.5],
     happiness: 3,
     meetsFriend: true,
+    place: TownSpotKind.market,
   ),
   ActivityDef(
     id: 'club_chess',
@@ -439,6 +460,7 @@ const List<ActivityDef> kActivities = <ActivityDef>[
     cost: 30,
     tiers: <double>[1.0, 0.5],
     happiness: 6,
+    place: TownSpotKind.park,
   ),
   ActivityDef(
     id: 'day_trip',
@@ -452,6 +474,7 @@ const List<ActivityDef> kActivities = <ActivityDef>[
     tiers: <double>[1.0, 0.5],
     happiness: 6,
     smarts: 1,
+    place: TownSpotKind.park,
   ),
   ActivityDef(
     id: 'weekend',
@@ -495,6 +518,7 @@ const List<ActivityDef> kActivities = <ActivityDef>[
     tiers: <double>[1.0, 0.5],
     smarts: 2,
     happiness: 2,
+    place: TownSpotKind.library,
   ),
   ActivityDef(
     id: 'language',
@@ -573,9 +597,17 @@ ActivityDef? activityById(String id) {
   return null;
 }
 
+/// What the Activities menu lists: everything that is not done at a place in
+/// town.
 List<ActivityDef> activitiesIn(ActivityCategory category) => [
   for (final a in kActivities)
-    if (a.category == category) a,
+    if (a.category == category && a.place == null) a,
+];
+
+/// The activities done at [kind] in town.
+List<ActivityDef> activitiesAt(TownSpotKind kind) => [
+  for (final a in kActivities)
+    if (a.place == kind) a,
 ];
 
 // ---------------------------------------------------------------------------
