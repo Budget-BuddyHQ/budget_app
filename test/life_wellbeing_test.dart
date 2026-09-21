@@ -204,8 +204,13 @@ void main() {
       for (var i = 0; i < 6; i++) {
         year(life, health: 39);
       }
-      expect(life.hasJob, isTrue);
-      expect(life.timesLaidOff, 0);
+      // About the *strain* rule, and only that. A year's event can take a job
+      // away for its own reasons ("your boss asks to see you", see
+      // `life_events_shocks.dart`), and with the unlucky dice this life draws
+      // one in its sixth year. So this asks whether being run down cost the
+      // job, not whether the job is still there.
+      expect(life.jobAtRisk, isFalse);
+      expect(feed(life), isNot(contains('let you go')));
     });
   });
 

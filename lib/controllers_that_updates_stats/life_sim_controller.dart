@@ -12,6 +12,7 @@ import '../models_Like_Skins_and_lessons_templates/life_education.dart';
 import '../models_Like_Skins_and_lessons_templates/life_people.dart';
 import '../models_Like_Skins_and_lessons_templates/life_effort.dart';
 import '../models_Like_Skins_and_lessons_templates/life_network.dart';
+import '../models_Like_Skins_and_lessons_templates/life_events_shocks.dart';
 import '../models_Like_Skins_and_lessons_templates/life_run_record.dart';
 import '../models_Like_Skins_and_lessons_templates/life_town_income.dart';
 import '../models_Like_Skins_and_lessons_templates/life_wellbeing.dart';
@@ -31,6 +32,7 @@ part 'life_sim_work.dart';
 part 'life_sim_assets.dart';
 part 'life_sim_people.dart';
 part 'life_sim_activities.dart';
+part 'life_sim_money_flow.dart';
 
 /// The rules engine for **Life**, the main game.
 ///
@@ -1767,11 +1769,25 @@ class LifeSimController extends ChangeNotifier {
   /// Years a repeatable event must sit out before it can come round again.
   static const int _repeatCooldownYears = 6;
 
+  /// Years drawn since the last money shock, for the "one is due" rule in
+  /// [_drawEvent]. Only counts years lived as an adult.
+  int _yearsSinceShock = 0;
+
   LifeEvent? _drawEvent() {
     final ctx = context;
 
-    // ~25% of years are quiet, so events feel like events.
-    if (_random.nextInt(4) == 0) {
+    // A shock is *due* once an adult has gone [kShockGraceYears] without one.
+    // Asked for as "make sure disasters happen, like your boss cutting you from
+    // your job": left to the weighted draw, 140 of 300 simulated working lives
+    // never lost a job to a layoff card and most had no named disaster at all.
+    // A child has nothing to lose, so the rule does not run for one.
+    final adult = !isDependent && _age >= 20;
+    final shockDue = adult && _yearsSinceShock >= kShockGraceYears;
+
+    // ~25% of years are quiet, so events feel like events. Never the year a
+    // shock is due: the point is that it arrives.
+    if (!shockDue && _random.nextInt(4) == 0) {
+      if (adult) _yearsSinceShock++;
       return null;
     }
 
@@ -1809,7 +1825,18 @@ class LifeSimController extends ChangeNotifier {
           .toList(growable: false);
     }
     if (eligible.isEmpty) {
+      if (adult) _yearsSinceShock++;
       return null;
+    }
+
+    if (shockDue) {
+      final shocks = [
+        for (final e in eligible)
+          if (kShockEventIds.contains(e.id)) e,
+      ];
+      // Only when something is eligible. A shock that needs a job or a car does
+      // not fire at somebody who has neither, and the draw carries on as usual.
+      if (shocks.isNotEmpty) eligible = shocks;
     }
 
     final total = eligible.fold<double>(0, (sum, e) => sum + _drawWeight(e));
@@ -1819,6 +1846,11 @@ class LifeSimController extends ChangeNotifier {
 
     _seen.add(chosen.id);
     _lastFiredAge[chosen.id] = _age;
+    if (adult) {
+      _yearsSinceShock = kShockEventIds.contains(chosen.id)
+          ? 0
+          : _yearsSinceShock + 1;
+    }
     return chosen;
   }
 
@@ -1919,6 +1951,9 @@ class LifeSimController extends ChangeNotifier {
       // event that offers a 400 job must not replace a 2,000 one.
       final offered = choice.setSalary ?? _salary;
       if (!hasJob || offered > _salary || offered == 0) {
+        // A card that takes the job away is a layoff like any other, and the
+        // debrief counts them.
+        if (hasJob && offered == 0) _timesLaidOff++;
         _job = choice.setJob!;
         _salary = offered;
         _jobId = null;
@@ -2039,6 +2074,15 @@ class LifeSimController extends ChangeNotifier {
   ///
   /// So the menu keeps every door and pays less for using them. Going in
   /// person is better; staying in is still allowed. That is also true.
+  ///
+  /// **Since revised for the open-air ones.** Asked for as *"remove things that
+  /// can be done in the open world from the menu, like hiking, meditation and
+  /// going outside"*, the Activities menu no longer lists the gym, the library,
+  /// going out, or anything with a `place` (see `ActivityDef.place`). Those are
+  /// done inside the building (`life_town_things.dart`). The controller methods
+  /// and [allows] are unchanged, so nothing is *blocked*, and the doctor stays
+  /// in the menu for somebody who is too unwell to leave the house, because a
+  /// clinic you are not allowed to walk to would be a trap.
   static bool hasTownEquivalent(LifeAction action) =>
       townBonusFor(action) != null;
 

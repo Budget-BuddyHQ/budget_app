@@ -168,10 +168,10 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'The shelf label says CHIPS — \$4. There is also a bigger bag for '
         '\$6 that holds three times as much.',
-    tileX: 11,
+    tileX: 14,
     tileY: 13,
-    tileX2: 9,
-    tileY2: 14,
+    tileX2: 10,
+    tileY2: 17,
     choices: [
       TownChoice(
         label: 'Buy the \$4 bag',
@@ -207,10 +207,10 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'A teller waves you over. "Want to open a savings account? Money in '
         'here grows a little every year on its own."',
-    tileX: 37,
+    tileX: 36,
     tileY: 12,
-    tileX2: 43,
-    tileY2: 3,
+    tileX2: 42,
+    tileY2: 10,
     choices: [
       TownChoice(
         label: 'Deposit 20 coins',
@@ -243,10 +243,10 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     kind: TownSpotKind.school,
     title: 'School',
     prompt: 'The library is open and nobody is using the money-skills shelf.',
-    tileX: 10,
-    tileY: 37,
-    tileX2: 6,
-    tileY2: 42,
+    tileX: 11,
+    tileY: 35,
+    tileX2: 10,
+    tileY2: 33,
     choices: [
       TownChoice(
         label: 'Read for an hour',
@@ -271,10 +271,10 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'Two cards are pinned up. One pays 15 coins today. One pays 40 coins '
         'but takes all weekend.',
-    tileX: 36,
+    tileX: 37,
     tileY: 36,
-    tileX2: 41,
-    tileY2: 32,
+    tileX2: 40,
+    tileY2: 17,
     choices: [
       TownChoice(
         label: 'Ask about the proper job on the card',
@@ -318,10 +318,10 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'Your budget notebook is open on the kitchen table, a few days '
         'behind.',
-    tileX: 23,
+    tileX: 29,
     tileY: 44,
-    tileX2: 25,
-    tileY2: 40,
+    tileX2: 43,
+    tileY2: 33,
     choices: [
       TownChoice(
         label: 'Fill in the missing days',
@@ -346,10 +346,10 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'A hand-written note is pinned here: "Whoever keeps track of the '
         'small stuff ends up with the big stuff. — a neighbour"',
-    tileX: 37,
-    tileY: 20,
-    tileX2: 39,
-    tileY2: 17,
+    tileX: 40,
+    tileY: 28,
+    tileX2: 31,
+    tileY2: 21,
     choices: [
       TownChoice(
         label: 'Take the note',
@@ -370,9 +370,9 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'Loose apples are \$2 a bag at one stall and \$3 at the next, where '
         'they look better. Neither has a price per kilo.',
-    tileX: 29,
-    tileY: 19,
-    tileX2: 19,
+    tileX: 9,
+    tileY: 10,
+    tileX2: 12,
     tileY2: 5,
     choices: [
       TownChoice(
@@ -411,10 +411,10 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'A hot chocolate is \$4.50. You have been in three times this week '
         'already.',
-    tileX: 22,
-    tileY: 31,
-    tileX2: 17,
-    tileY2: 32,
+    tileX: 18,
+    tileY: 22,
+    tileX2: 26,
+    tileY2: 42,
     choices: [
       TownChoice(
         label: 'Get one — it is only \$4.50',
@@ -452,10 +452,10 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'You have had a cough for two weeks. The visit is \$40, or free if '
         'you wait nine days for the community slot.',
-    tileX: 22,
-    tileY: 18,
-    tileX2: 0,
-    tileY2: 18,
+    tileX: 7,
+    tileY: 33,
+    tileX2: 18,
+    tileY2: 16,
     choices: [
       TownChoice(
         label: 'Pay the \$40 and be seen today',
@@ -493,10 +493,10 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'A free course on Saturday mornings: six weeks, three hours each. '
         'The paid version online is \$180 and you can do it whenever.',
-    tileX: 8,
-    tileY: 18,
-    tileX2: 0,
-    tileY2: 24,
+    tileX: 30,
+    tileY: 20,
+    tileX2: 16,
+    tileY2: 5,
     choices: [
       TownChoice(
         label: 'Sign up for the free one',
@@ -534,10 +534,10 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'The console you paid \$300 for last year. They offer \$85 for it, or '
         '\$60 now as a loan you can buy back for \$80.',
-    tileX: 28,
-    tileY: 38,
-    tileX2: 34,
-    tileY2: 43,
+    tileX: 17,
+    tileY: 32,
+    tileX2: 9,
+    tileY2: 5,
     choices: [
       TownChoice(
         label: 'Sell it for \$85',
@@ -576,10 +576,10 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     prompt:
         'An afternoon free. The park costs nothing; the arcade across the '
         'road is \$12 for the same three hours.',
-    tileX: 21,
-    tileY: 33,
-    tileX2: 22,
-    tileY2: 32,
+    tileX: 23,
+    tileY: 34,
+    tileX2: 24,
+    tileY2: 27,
     choices: [
       TownChoice(
         label: 'Stay in the park',
@@ -625,7 +625,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         'door has a running track, and it is free.',
     tileX: 43,
     tileY: 31,
-    tileX2: 33,
+    tileX2: 34,
     tileY2: 23,
     choices: [
       TownChoice(
@@ -706,7 +706,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         'A board lists homes to rent and homes to buy. Some are small and '
         'cheap, and some are big and cost far more. What matters most when '
         'you choose one?',
-    tileX: 29,
+    tileX: 28,
     tileY: 33,
     tileX2: 19,
     tileY2: 20,
@@ -1006,9 +1006,16 @@ TownMap townMapForLife(String lifeName, String origin) {
   return TownMap.values[hash % TownMap.values.length];
 }
 
+/// Where a life starts: two tiles in front of its own front door.
+///
+/// The house's marker stands on the doorstep, which is right under the door, so
+/// the tile *on* it has a wall one row overhead and the character spawns with
+/// their head in the house. Two tiles south is the same doorstep seen from the
+/// street, with clear ground above, and it is also off the marker, so entering
+/// the town does not open your own house before you have moved.
 ({int x, int y}) townSpawnTile(TownMap map) {
   final home = kTownSpots.firstWhere((s) => s.kind == TownSpotKind.home);
-  return (x: home.xOn(map), y: home.yOn(map));
+  return (x: home.xOn(map), y: home.yOn(map) + 2);
 }
 
 /// Coin pickups scattered on confirmed-walkable tiles across the open

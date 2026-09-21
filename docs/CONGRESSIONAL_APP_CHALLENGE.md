@@ -8,7 +8,7 @@ stick when you have to spend money to learn them.*
 **Built in:** Flutter/Dart, with Supabase for accounts, cloud save and
 leaderboards, and live market data from Finnhub and Twelve Data.
 
-**Scale:** ~83,300 lines of Dart across 135 files, 1,280 automated tests,
+**Scale:** ~118,000 lines of Dart across 196 files, 2,580 automated tests,
 `flutter analyze` clean.
 
 ---
@@ -213,7 +213,7 @@ setting.
 ### Everything that can be pure Dart is
 The life simulation, the match-3 engine, the quiz banks, the town scenarios and
 the habit model have no Flutter dependency and take an injectable `Random`.
-That is why 1,280 tests run in under thirty seconds and why the rules can be
+That is why 2,580 tests run in a few minutes and why the rules can be
 tested as *rules* rather than through a UI.
 
 ### The art is generated and checked

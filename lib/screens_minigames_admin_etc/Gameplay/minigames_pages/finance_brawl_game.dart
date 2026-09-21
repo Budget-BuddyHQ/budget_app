@@ -4,9 +4,8 @@ import 'dart:ui' as ui;
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../../../models_Like_Skins_and_lessons_templates/brawl_enemies.dart';
 import '../../../models_Like_Skins_and_lessons_templates/brawl_movement.dart';
+import '../../../models_Like_Skins_and_lessons_templates/brawl_question_pool.dart';
 import '../../../models_Like_Skins_and_lessons_templates/brawl_wave_rules.dart';
-import '../../../models_Like_Skins_and_lessons_templates/reading_grade.dart';
-import '../../../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -476,6 +475,9 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   bool _isUpgradeChoiceOpen = false;
 
   int _quizCorrectCount = 0;
+
+  /// Ids of the checkpoint questions already asked this run.
+  final Set<String> _askedThisRun = <String>{};
   int _quizQuestionIndex = 0;
   int? _selectedAnswerIndex;
   bool _isAnswerSubmitted = false;
@@ -2444,25 +2446,37 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     // maturity dates to keep liquidity while earning higher rates". Every
     // test passed, because nothing tested the game that kept its own bank.
     final band = context.read<UserStatsController>().stats.ageBand;
-    final all = <FinanceQuestion>[..._questionBank, ..._extraBrawlQuestions];
+    final native = <BrawlItem>[
+      for (final q in [..._questionBank, ..._extraBrawlQuestions])
+        BrawlItem.native(
+          question: q.question,
+          options: q.options,
+          correctIndex: q.correctIndex,
+          explanation: q.explanation,
+        ),
+    ];
 
-    var pooledQuestions = all.where((q) {
-      if (readingGrade(q.question) > band.maxReadingGrade) return false;
-      // A topic check as well as a grade. "What is a CD Ladder?" is four
-      // words and scores as easy prose; it is still meaningless to an
-      // eight-year-old, and the grade alone cannot see that.
-      if (band.blocksAdultTopics && mentionsAdultTopic(q.question)) {
-        return false;
-      }
-      return true;
-    }).toList();
+    // Who may be asked what is decided in `brawl_question_pool.dart`. Younger
+    // players are asked only the Academy's questions for their age, and never the
+    // Brawl's own bank, which is written for teenagers and adults. A ten-year-old
+    // was being asked about Roth IRAs.
+    var pool = brawlPool(band: band, native: native);
 
-    // Never leave the player staring at a checkpoint with nothing in it. A
-    // question slightly too hard beats a gate that cannot be passed.
-    if (pooledQuestions.length < 3) pooledQuestions = all;
+    // Never leave the player staring at a checkpoint with nothing in it.
+    if (pool.length < 3) pool = native;
 
-    pooledQuestions = pooledQuestions..shuffle(_rand);
-    var chosenRawQuestions = pooledQuestions.take(3).toList();
+    // Questions not yet asked this run come first, so a checkpoint is not the
+    // one from three waves ago. Once the pool has been used up it starts over.
+    final unseen = pool.where((q) => !_askedThisRun.contains(q.id)).toList();
+    if (unseen.length >= 3) {
+      pool = unseen;
+    } else {
+      _askedThisRun.clear();
+    }
+
+    pool = pool..shuffle(_rand);
+    final chosenRawQuestions = pool.take(3).toList();
+    _askedThisRun.addAll(chosenRawQuestions.map((q) => q.id));
 
     _activeQuizQuestions = chosenRawQuestions.map((q) {
       List<String> optionsCopy = List<String>.from(q.options);
@@ -2681,6 +2695,12 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       ),
     ];
   }
+
+  /// The questions on the current checkpoint card, for tests.
+  @visibleForTesting
+  List<String> get checkpointQuestionsForTest => [
+    for (final q in _activeQuizQuestions) q.question,
+  ];
 
   /// The wave the run is on, for tests.
   @visibleForTesting

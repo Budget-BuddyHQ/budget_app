@@ -483,6 +483,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
           lifeAge: widget.life?.age,
           today: _today,
           settled: settled,
+          life: widget.life,
         ),
       ),
     );

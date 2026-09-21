@@ -144,7 +144,7 @@ class _ActivityMenu extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Nothing here costs anything. Pick something to do.',
+          'The games here are free. Pick one.',
           style: AppTheme.numeric(
             color: Colors.white.withValues(alpha: 0.85),
             fontSize: 13.5,

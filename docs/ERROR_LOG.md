@@ -2941,3 +2941,47 @@ nobody plays 300 lives by hand. The advice in the debrief was unreachable and
 nothing noticed, because a sentence cannot fail a test. A means-only report hid
 it for as long as it did. Reporting percentiles is now the way a simulation is
 read here.
+
+## 21 September 2026: what a ten-year-old ran into, and what the town got wrong
+
+Five things came out of watching a ten-year-old play, none of them found by a test.
+
+### The Brawl asked a child about bear markets
+
+**Reported as:** *"my brother is 10 and he is getting questions he should not even be facing."*
+
+**Root cause.** Finance Brawl carries its own question bank, written for teenagers and adults (Roth IRAs, tax-loss harvesting, CD ladders, IPOs). Below thirteen it was screened by a reading grade and a short word list. Reading grade measures how long the words are, not whether a child has ever met the thing, so "What is a bear market?" is short, plain and meaningless to a ten-year-old, and it passed.
+
+**Fix.** `brawl_question_pool.dart`. Players under thirteen are never shown the Brawl's own bank at all; they get the Academy's questions from units somebody hand-assigned an age to, only the ones written for ten and under. Teens get the bank screened by a longer topic list, adults get everything. A run does not repeat a question until the pool is used up.
+
+**Verified by.** `brawl_question_pool_test.dart` (11), including two that run the real game screen through twelve checkpoints as a nine-to-twelve player and read every question served.
+
+### Cafes on grass, and a library on the outer wall
+
+**Reported as:** *"we got a cafe in the middle of the grass."*
+
+**Root cause.** The test that guarded the markers called any six connected solid tiles a building. A tree is nine, a hedge is more and a rope fence along a lawn is nineteen, so a cafe beside an oak and a library on the end of a fence both passed. The second town paints most of its buildings into the ground layer, where they are not solid at all, so no flood fill could find them, and two markers on it (the clinic and the library) were standing on the outer wall at x = 0.
+
+**Fix.** All sixteen markers on both maps moved to real doorsteps, found by rendering the map with the marker drawn in and looking. `test/support/town_landmarks.dart` says what each marker stands in front of; the layout test holds the markers to it (one tile away, not a tree or fence, no two share a building, none within three tiles of another, none on a wall or the map edge). The spawn moved to two tiles south of the house marker, because the doorstep has a wall overhead.
+
+**What it cost.** The old guard passed for months because it measured something plausible. It needed a person to look at a picture.
+
+### Hiking in a menu
+
+**Asked for as:** *"remove things that can be done in the open world from the menu: hiking, meditation, going outside."* Activities with a `place` (`ActivityDef.place`) are no longer listed in the Activities menu; each building lists what can be done in it (`life_town_things.dart`, "Things to do here" in `TownInteriorScreen`), with the same effects, prices and yearly limits. The menu says where they went.
+
+**The trap found on the way.** The outing rules lock the town when health is 15 or less ("too unwell to leave the house"), which is exactly when a doctor is needed. With the doctor moved to the clinic, an ill character could not reach one. The doctor stays in the menu for somebody who cannot go out.
+
+### Almost nobody was ever let go
+
+**Asked for as:** *"make sure disasters, or BitLife events about finance, happen, like your boss cutting you from your job."*
+
+**Measured first.** 300 simulated working lives from 22 to 62: **140 never met a layoff card**, and the money shocks that did happen were nearly all illness bills paid with one line of text. There was no fire, no flood, no crash.
+
+**Fix.** Seven new repeatable cards (`life_events_shocks.dart`) and a rule in `_drawEvent`: an adult who goes six years without a shock is dealt one. After it, 26 of 300 never met a layoff card, and a life meets a boss letting somebody go about once. Every card teaches, none is a free way out, and none is drawn for a child.
+
+**A side effect worth knowing about.** The tests' `FixedRandom.unlucky()` picks the *last* eligible event, so appending events shifts what every "unlucky" life meets. One strain test began failing because its sixth year now drew the layoff card; it now asks about the strain rule and not about whether the job survived.
+
+### "Owed 0" beside a net worth of minus 500
+
+The Owed box on the money panel showed `debt` only. Loans (a student loan, a car) were subtracted from net worth but not listed, so a student read "Owed 0" under a negative net worth with nothing saying where the minus came from. It shows `totalOwed` now, and a new "Where does my money go?" row opens the whole year itemised (`life_sim_money_flow.dart`), checked against a real year by a test.
