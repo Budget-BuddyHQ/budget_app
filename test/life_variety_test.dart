@@ -343,10 +343,16 @@ void main() {
       // For each event, build the most obliging context that its own gates
       // describe and check it matches. An event fails this only if its gates
       // contradict one another, which is a real defect and not a bad sample.
+      //
+      // Ownership-backed flags (hasPet, hasCar, ownsHome, hasStudentLoan)
+      // never appear as a literal setsFlag: a card grants the asset instead
+      // and `LifeSimController._effectiveFlags` reads the flag back from
+      // what is owned. See `kOwnershipBackedFlags`.
       final settable = <LifeFlag>{
         for (final e in kLifeEvents)
           for (final c in e.choices)
             if (c.setsFlag != null) c.setsFlag!,
+        ...kOwnershipBackedFlags,
       };
       final broken = <String>[];
       for (final e in kLifeEvents) {

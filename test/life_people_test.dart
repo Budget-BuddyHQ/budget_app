@@ -108,7 +108,12 @@ void main() {
       expect(of(friend()), contains(PersonAction.askMoney));
       expect(
         of(partner()),
-        containsAll([PersonAction.date, PersonAction.propose]),
+        containsAll([
+          PersonAction.date,
+          PersonAction.propose,
+          PersonAction.startFamily,
+        ]),
+        reason: 'a family does not require a wedding first',
       );
       expect(
         of(partner().copyWith(kind: RelationshipKind.spouse)),

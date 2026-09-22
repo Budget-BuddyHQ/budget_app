@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'finance_concepts.dart';
+import 'life_assets.dart';
 import 'life_sim_models.dart';
 
 /// The years where money decisions get expensive.
@@ -111,17 +112,20 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
     minAge: 25,
     minMoney: 400,
     weight: 0.7,
+    forbidsAsset: AssetKind.home,
     choices: [
       LifeChoice(
-        label: 'Buy',
+        label: 'Buy (210 coins down, the rest on a mortgage)',
         outcome:
             'The payment is similar and the costs are not: repairs, insurance '
             'and tax are yours now. What you gain is that the payment stops '
-            'rising every year.',
-        money: -350,
+            'rising every year. It is on the Assets tab, with the loan '
+            'beside it.',
+        money: -210,
         happiness: 6,
         smarts: 4,
-        setsFlag: LifeFlag.ownsHome,
+        grantsAsset: 'home_flat',
+        grantsFinanced: true,
       ),
       LifeChoice(
         label: 'Keep renting and keep the savings liquid',
@@ -198,9 +202,9 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
             'You release the difference in cash and your monthly costs drop. '
             'A house is only an asset while you can afford to keep it — '
             'selling one is a decision, not a defeat.',
-        money: 4200,
         happiness: -2,
         smarts: 6,
+        sellsAsset: AssetKind.home,
         clearsFlag: LifeFlag.ownsHome,
         teaches: FinanceConcept.incomeVsWealth,
       ),

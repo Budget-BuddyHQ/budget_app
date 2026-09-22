@@ -3046,6 +3046,75 @@ class _ThisYearPanel extends StatelessWidget {
       target: 3.0,
     );
 
+    // Asked for as: the Life menu is "hard to navigate... unlike Finance
+    // Brawl, which is quite addicting." This panel was the worst offender —
+    // a full card of weather, family and a consequence box, shown at full
+    // size on *every* year whether or not any of it was worth a second
+    // look. Most years nothing here is: the weather is fine, the family is
+    // whatever it always is, and the character can go out. So the common
+    // case is one line — the same weight as [_PeopleStrip] below it — and
+    // the full card, with the two fact tiles and the explanation, is kept
+    // for the year it is actually earning its space: one where the
+    // character *cannot* go out, and the reason is worth a sentence rather
+    // than an icon.
+    if (outing.allowed) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: PixelFrameStyle.slate.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              weather.icon,
+              size: 15,
+              color: AppTheme.legibleOn(
+                weather.accent,
+                PixelFrameStyle.slate.surface,
+                target: 3.0,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: FittedLabel(
+                weather.label,
+                style: GoogleFonts.quicksand(
+                  color: Colors.white.withValues(alpha: 0.82),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Icon(
+              Icons.family_restroom_rounded,
+              size: 15,
+              color: const Color(0xFF85EFAC),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: FittedLabel(
+                strictness.label,
+                style: GoogleFonts.quicksand(
+                  color: Colors.white.withValues(alpha: 0.82),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Icon(
+              Icons.directions_walk_rounded,
+              size: 15,
+              color: outingChip.ink,
+            ),
+          ],
+        ),
+      );
+    }
+
     return PixelPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3102,18 +3171,14 @@ class _ThisYearPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
-                  outing.allowed
-                      ? Icons.directions_walk_rounded
-                      : (outing.reason?.icon ?? Icons.lock_rounded),
+                  outing.reason?.icon ?? Icons.lock_rounded,
                   size: 15,
                   color: outingChip.ink,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    outing.allowed
-                        ? 'You can head into town whenever you like.'
-                        : outing.message,
+                    outing.message,
                     style: GoogleFonts.quicksand(
                       color: Colors.white.withValues(alpha: 0.86),
                       fontSize: 11.5,

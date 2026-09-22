@@ -765,7 +765,7 @@ class LifeSimController extends ChangeNotifier {
     skills: _skills,
     traits: _traits,
     hasJob: _salary > 0,
-    flags: _flags,
+    flags: _effectiveFlags(),
     education: _edu.level,
     inSchool: _edu.inSchool,
     owns: {for (final a in _assets) a.def.kind},
@@ -861,7 +861,47 @@ class LifeSimController extends ChangeNotifier {
   void _changed() => notifyListeners();
 
   /// Read-only view, for the UI and for tests that assert a chain advanced.
-  Set<LifeFlag> get flags => Set.unmodifiable(_flags);
+  Set<LifeFlag> get flags => Set.unmodifiable(_effectiveFlags());
+
+  /// The story flags, with the ones that stand for something the character
+  /// *owns* read from what they own.
+  ///
+  /// **Reported as:** saying yes to a friend who wanted to share a flat, and then
+  /// seeing on the Assets tab that the character still lived with their parents.
+  /// The card set a flag and the screen read a different record. A 400-life audit
+  /// found the same split for a dog, a car, a home and a student loan: hundreds of
+  /// lives told a story about owning something that the Assets tab denied.
+  ///
+  /// So `hasPet` is "owns a dog", `hasCar` is "owns a car", `ownsHome` is "owns a
+  /// home", `hasStudentLoan` is "owes one", and `rentsWithFriend` only lasts while
+  /// the character still lives in the shared house. Cards that used to set these
+  /// now change what is owned instead (see [LifeChoice.grantsAsset]), and a dog
+  /// bought in the shop starts the same story as one adopted on a card.
+  Set<LifeFlag> _effectiveFlags() {
+    final f = <LifeFlag>{..._flags};
+    void backed(LifeFlag flag, bool real) {
+      if (real) {
+        f.add(flag);
+      } else {
+        f.remove(flag);
+      }
+    }
+
+    backed(LifeFlag.hasPet, _assets.any((a) => a.def.id == 'pet_dog'));
+    backed(
+      LifeFlag.hasCar,
+      _assets.any(
+        (a) => a.def.kind == AssetKind.vehicle && a.def.id != 'veh_bike',
+      ),
+    );
+    backed(LifeFlag.ownsHome, ownsHome);
+    backed(
+      LifeFlag.hasStudentLoan,
+      _loans.any((l) => l.kind == LoanKind.student && l.balance > 0),
+    );
+    if (_rentalId != 'shared' || ownsHome) f.remove(LifeFlag.rentsWithFriend);
+    return f;
+  }
 
   /// True when the run is over for any reason — retired or died.
   bool get finished => _retired || _dead;
@@ -1937,7 +1977,8 @@ class LifeSimController extends ChangeNotifier {
     final choice = event.choices[index];
     _rememberDecision(event, index);
     _applyEventMoney(choice.money);
-    if (choice.moveTo != null) _moveIn(choice.moveTo!);
+    if (choice.moveTo != null && !ownsHome) _moveIn(choice.moveTo!);
+    _applyStoryState(choice);
     if (choice.followUp != LifeFollowUp.none) {
       _pendingFollowUp = choice.followUp;
     }

@@ -408,6 +408,7 @@ List<PersonAction> personActionsFor(
         ...base,
         PersonAction.date,
         if (playerAge >= 21) PersonAction.propose,
+        PersonAction.startFamily,
       ];
     case RelationshipKind.spouse:
       return [...base, PersonAction.date, PersonAction.startFamily];

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:budget_app/controllers_that_updates_stats/life_sim_controller.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_education.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_event_chains.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +23,28 @@ Set<LifeFlag> _flagsClearedBy(LifeEvent e) => {
   for (final c in e.choices)
     if (c.clearsFlag != null) c.clearsFlag!,
 };
+
+/// Stands in for the sheet a follow-up would open. `chain_study_loan`'s
+/// "take the loan" choice no longer sets `hasStudentLoan` directly — it
+/// opens a college application, and the loan is only real once a simulated
+/// life actually enrols, same as a player. Without this, no simulated life
+/// could ever reach `chain_study_repay`.
+void _resolveFollowUp(LifeSimController life) {
+  switch (life.takeFollowUp()) {
+    case LifeFollowUp.openCollege:
+      for (final program in programsAt(SchoolStage.college)) {
+        if (life.programGate(program) == null) {
+          life.applyToProgram(program);
+          break;
+        }
+      }
+    case LifeFollowUp.openTrades:
+    case LifeFollowUp.openJobs:
+    case LifeFollowUp.openHousing:
+    case LifeFollowUp.none:
+      break;
+  }
+}
 
 LifeContext _ctx({
   int age = 30,
@@ -47,8 +70,14 @@ void main() {
       // A continuation gated on a flag nothing ever sets is dead content —
       // and invisibly so, because a beat that never fires looks exactly
       // like a beat that keeps losing the roll.
+      //
+      // Ownership-backed flags (hasPet, hasCar, ownsHome, hasStudentLoan)
+      // never appear as a literal setsFlag: a card grants the asset instead
+      // and `LifeSimController._effectiveFlags` reads the flag back from
+      // what is owned. See `kOwnershipBackedFlags`.
       final settable = <LifeFlag>{
         for (final e in kLifeEvents) ..._flagsSetBy(e),
+        ...kOwnershipBackedFlags,
       };
       for (final event in _continuations) {
         expect(
@@ -74,8 +103,12 @@ void main() {
         for (final e in kLifeEvents)
           if (e.requiresFlag != null) e.requiresFlag!,
       };
+      // Ownership-backed flags close via selling/paying off the asset
+      // (sellsAsset, removesAsset, paysOffStudentLoan), never a literal
+      // clearsFlag. See `kOwnershipBackedFlags`.
       final cleared = <LifeFlag>{
         for (final e in kLifeEvents) ..._flagsClearedBy(e),
+        ...kOwnershipBackedFlags,
       };
       for (final flag in gating) {
         expect(
@@ -215,6 +248,7 @@ void main() {
                 ? pick.clamp(0, event.choices.length - 1)
                 : rng.nextInt(event.choices.length),
           );
+          _resolveFollowUp(life);
         }
         life.ageUp();
       }
@@ -225,9 +259,16 @@ void main() {
       // The whole point of the draw's open-chain boost: once a thread is
       // open the game should want to close it, rather than leaving a
       // storyline hanging behind 120 unrelated events.
+      //
+      // Sample size matters here: a dog is now a real, aging asset with a
+      // 12-year lifespan (see `_ageAssets`), so its hasPet window is bounded
+      // instead of open for the rest of the character's life. That is a
+      // narrower, more honest window than before, and 120 seeds landed close
+      // enough to the 50% line to flip on it; 400 reads the same rate more
+      // reliably rather than papering over the narrower window.
       var started = 0;
       var continued = 0;
-      for (var seed = 0; seed < 120; seed++) {
+      for (var seed = 0; seed < 400; seed++) {
         final fired = play(seed);
         if (fired.contains('chain_pet_adopt')) {
           started++;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'finance_concepts.dart';
+import 'life_assets.dart';
 import 'life_sim_models.dart';
 
 /// Multi-year storylines: events that only exist because of an earlier
@@ -52,7 +53,8 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
             'first thing you have ever paid for every single day.',
         money: -60,
         happiness: 14,
-        setsFlag: LifeFlag.hasPet,
+        grantsAsset: 'pet_dog',
+        grantsAssetName: 'Biscuit',
         teaches: FinanceConcept.needsVsWants,
       ),
       LifeChoice(
@@ -63,7 +65,8 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         money: -60,
         happiness: 12,
         smarts: 5,
-        setsFlag: LifeFlag.hasPet,
+        grantsAsset: 'pet_dog',
+        grantsAssetName: 'Biscuit',
         teaches: FinanceConcept.opportunityCost,
       ),
       LifeChoice(
@@ -80,17 +83,17 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
   LifeEvent(
     id: 'chain_pet_vet',
     prompt:
-        'Biscuit has stopped eating. The vet can operate, but it is 700 '
+        'Your dog has stopped eating. The vet can operate, but it is 700 '
         'coins and she needs an answer today.',
     icon: Icons.medical_services_rounded,
-    weight: 1.6,
+    weight: 7.0,
     requiresFlag: LifeFlag.hasPet,
     forbidsFlag: LifeFlag.petGone,
     choices: [
       LifeChoice(
         label: 'Pay it',
         outcome:
-            'He is groggy for a week and then he is Biscuit again. This is '
+            'He is groggy for a week and then he is himself again. This is '
             'the bill an emergency fund exists for — the one you cannot '
             'schedule and would not skip.',
         money: -700,
@@ -112,10 +115,11 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
   ),
   LifeEvent(
     id: 'chain_pet_old',
-    prompt: 'Biscuit is grey around the muzzle now and sleeps most of the day.',
+    prompt:
+        'Your dog is grey around the muzzle now and sleeps most of the day.',
     icon: Icons.pets_rounded,
-    minAge: 20,
-    weight: 1.1,
+    minAge: 9,
+    weight: 5.5,
     requiresFlag: LifeFlag.hasPet,
     forbidsFlag: LifeFlag.petGone,
     choices: [
@@ -127,6 +131,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
             'going to show up in a net worth.',
         money: -240,
         happiness: -6,
+        removesAsset: AssetKind.pet,
         clearsFlag: LifeFlag.hasPet,
         setsFlag: LifeFlag.petGone,
       ),
@@ -548,8 +553,8 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
   LifeEvent(
     id: 'chain_car_buy',
     prompt:
-        'You can afford a car. A tidy used one is 1,800; the shiny one on '
-        'finance is 240 a month for five years.',
+        'You can afford a car. A tidy used one is 450 cash; the newer family '
+        'car is 1,100, or 110 down and the rest on a five-year loan.',
     icon: Icons.directions_car_rounded,
     minAge: 17,
     weight: 1.3,
@@ -560,22 +565,24 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
             'Less impressive, entirely yours, and no payment lands in a bad '
             'month. Owning the cheap thing outright beats renting the '
             'expensive one.',
-        money: -1800,
+        money: -450,
         happiness: 7,
         smarts: 5,
-        setsFlag: LifeFlag.hasCar,
+        grantsAsset: 'veh_used',
         teaches: FinanceConcept.opportunityCost,
       ),
       LifeChoice(
         label: 'Finance the shiny one',
         outcome:
-            '240 a month for sixty months is 14,400 for a car worth half '
-            'that by the end. A monthly price is a very effective way of '
-            'not telling you the total.',
-        money: -1440,
+            'A loan for the rest, over five years, costs more than the price '
+            'of the car, and the car is worth less every year. A monthly '
+            'price is a very effective way of not telling you the total. The '
+            'Assets tab shows the loan.',
+        money: -110,
         happiness: 12,
         looks: 4,
-        setsFlag: LifeFlag.hasCar,
+        grantsAsset: 'veh_family',
+        grantsFinanced: true,
         teaches: FinanceConcept.interestCost,
       ),
       LifeChoice(
@@ -613,9 +620,9 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         outcome:
             'No repairs, no insurance, no fuel. Getting rid of a thing that '
             'costs money every month is a pay rise you give yourself.',
-        money: 500,
         happiness: -5,
         smarts: 6,
+        sellsAsset: AssetKind.vehicle,
         clearsFlag: LifeFlag.hasCar,
         setsFlag: LifeFlag.carGone,
         teaches: FinanceConcept.lifestyleCreep,
@@ -636,15 +643,17 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
     minAge: 18,
     maxAge: 40,
     weight: 1.2,
+    forbidsAsset: AssetKind.home,
     choices: [
       LifeChoice(
         label: 'Move in together',
         outcome:
             'Rent halved, and you are now jointly liable for all of it — '
-            'which is the part of "splitting" the lease does not split.',
-        money: 400,
+            'which is the part of "splitting" the lease does not split. The '
+            'Assets tab shows where you live now.',
         happiness: 9,
         addRelationship: 'Sam',
+        moveTo: 'shared',
         setsFlag: LifeFlag.rentsWithFriend,
         teaches: FinanceConcept.needsVsWants,
       ),
@@ -653,8 +662,8 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         outcome:
             'More expensive, and nobody else can make your rent late. You '
             'are paying for control.',
-        money: -300,
         happiness: 3,
+        moveTo: 'studio',
         teaches: FinanceConcept.opportunityCost,
       ),
     ],
@@ -713,13 +722,14 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
     weight: 1.3,
     choices: [
       LifeChoice(
-        label: 'Take the loan',
+        label: 'Apply for the course and borrow what you need',
         outcome:
             'Borrowing to buy something that raises what you can earn is the '
             'one kind of debt that can pay for itself — as long as it '
-            'actually does.',
-        smarts: 12,
-        setsFlag: LifeFlag.hasStudentLoan,
+            'actually does. The application opens next, and the loan is only '
+            'real once you enrol.',
+        smarts: 4,
+        followUp: LifeFollowUp.openCollege,
         teaches: FinanceConcept.incomeVsWealth,
       ),
       LifeChoice(
@@ -758,10 +768,9 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         outcome:
             'Years of interest you will never pay. The freedom of owing '
             'nobody anything is worth more than the arithmetic says.',
-        money: -2200,
         happiness: 8,
         smarts: 5,
-        clearsFlag: LifeFlag.hasStudentLoan,
+        paysOffStudentLoan: true,
         setsFlag: LifeFlag.loanRepaid,
         teaches: FinanceConcept.interestCost,
       ),
@@ -770,7 +779,6 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         outcome:
             'Reasonable *if* the investment beats the loan rate and you '
             'actually invest it. Most people who say this spend it instead.',
-        money: -600,
         smarts: 7,
         teaches: FinanceConcept.compoundGrowth,
       ),

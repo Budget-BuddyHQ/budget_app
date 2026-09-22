@@ -940,11 +940,18 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
-/// A circular real-photo thumbnail for a habit, matching the reference
-/// app's course-icon look — falls back to a plain icon tile when the habit
-/// has no [HabitTemplate.photoUrl] yet (most of the catalog, still) or when
-/// the network image fails to load, so a bad/offline URL degrades instead
-/// of breaking the card.
+/// A circular thumbnail for a habit.
+///
+/// **Asked for as:** *"finishing adding the images to the daily screens."*
+/// Only 6 of the 16 cards had a picture at all, and each of those was a
+/// hotlinked Wikimedia photo — a stock image dropped into a hand-drawn pixel
+/// game, and one that needed the network to show at all. Every habit now has
+/// its own badge, drawn in the app's own palette by
+/// `tool/make_habit_icons.py`, bundled with the app rather than fetched.
+///
+/// [HabitTemplate.photoUrl] still exists and is still tried, for a real photo
+/// a future habit is given on purpose, but it is no longer what most of the
+/// catalog leans on, and nothing here depends on the network to render.
 class _HabitPhoto extends StatelessWidget {
   const _HabitPhoto({required this.habit, required this.size});
 
@@ -953,21 +960,27 @@ class _HabitPhoto extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final photoUrl = habit.photoUrl;
-    if (photoUrl == null) {
-      return _iconFallback();
-    }
     return ClipOval(
-      child: Image.network(
-        photoUrl,
+      child: Image.asset(
+        'assets/images/money_habits/${habit.id}.png',
         width: size,
         height: size,
         fit: BoxFit.cover,
-        loadingBuilder: (context, child, progress) {
-          if (progress == null) return child;
-          return _iconFallback();
+        errorBuilder: (context, error, stack) {
+          final photoUrl = habit.photoUrl;
+          if (photoUrl == null) return _iconFallback();
+          return Image.network(
+            photoUrl,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) return child;
+              return _iconFallback();
+            },
+            errorBuilder: (context, error, stack) => _iconFallback(),
+          );
         },
-        errorBuilder: (context, error, stack) => _iconFallback(),
       ),
     );
   }
@@ -1798,7 +1811,6 @@ class _JarNextStep extends StatelessWidget {
     );
   }
 }
-
 
 /// One tab in the Daily strip: an icon *beside* a word, inside a pill.
 ///

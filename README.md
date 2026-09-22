@@ -3405,6 +3405,44 @@ a critter. Naming one family made the other twenty look like they were not in
 the pool.
 *Files:* `customize_screen.dart`
 
+### The story and the screen kept two different memories of the same fact
+
+Reported as *"sometimes when the friend would come and ask me to live
+together and then I say yes but then in the assets, I still see that I still
+live under my parents"* — plus other cases the report couldn't put a finger
+on.
+
+*The shape of the bug.* The "Move in together" choice set
+`LifeFlag.rentsWithFriend` and nothing else. The Assets tab reads a
+completely different field — `rentalId`, the one `moveGate`/`_moveIn`
+maintain — and "take the dog home", "buy a car", "buy a house" and "take the
+loan" all made the same mistake: setting a flag that *described* an asset
+instead of creating one. Two independent records of one fact drift the moment
+only one of them is updated, and a story card is exactly that: one update.
+
+*How big it actually was.* A 400-life, 90-year random-choice simulation
+(`life_contradiction_test.dart`) that checks the story against the Assets and
+People screens after every single choice found the same split for a pet, a
+car, home ownership and a student loan — hundreds of simulated lives told a
+story about owning something the Assets tab denied.
+
+*Fix.* Cards now change what is owned. `LifeChoice.grantsAsset` /
+`sellsAsset` / `removesAsset` / `paysOffStudentLoan` route through the same
+asset and loan machinery a shop purchase already used, so a dog adopted on a
+card and a dog bought in the shop start the same record. The flags that used
+to be an independent source of truth — `hasPet`, `hasCar`, `ownsHome`,
+`hasStudentLoan`, `rentsWithFriend` — are now *read back* from what is
+actually owned (`LifeSimController._effectiveFlags`), so nothing can set one
+without the other again, no matter which future card does the setting. Two
+smaller faults fell out of the same audit: accepting a "get a place of your
+own" card after already buying a home silently moved a homeowner back into a
+rental (`chooseOption` now skips `moveTo` once `ownsHome`), and the roommate
+card was still being offered to a homeowner in the first place
+(`LifeEvent.forbidsAsset`).
+*Files:* `life_sim_assets.dart`, `life_sim_controller.dart`,
+`life_sim_models.dart`, `life_event_chains.dart`, `life_events_adult.dart`,
+`life_contradiction_test.dart`
+
 ## Where to read next
 
 * **`docs/CONGRESSIONAL_APP_CHALLENGE.md`** — the submission write-up: what the
