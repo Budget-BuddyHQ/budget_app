@@ -101,6 +101,106 @@ extension LifeSimAssets on LifeSimController {
     return true;
   }
 
+  // ---- What a story card changes ---------------------------------------------------
+
+  /// Applies the parts of a choice that are about what the character owns or owes.
+  /// See [LifeChoice.grantsAsset] for why these are not just flags.
+  void _applyStoryState(LifeChoice choice) {
+    final grant = choice.grantsAsset;
+    if (grant != null) {
+      _grantAsset(
+        grant,
+        name: choice.grantsAssetName,
+        financed: choice.grantsFinanced,
+      );
+    }
+    final sells = choice.sellsAsset;
+    if (sells != null) {
+      final asset = _newestOf(sells);
+      if (asset != null) sellAsset(asset.uid);
+    }
+    final gone = choice.removesAsset;
+    if (gone != null) {
+      final asset = _newestOf(gone);
+      if (asset != null) _dropAsset(asset);
+    }
+    if (choice.paysOffStudentLoan) _payOffStudentLoans();
+  }
+
+  /// The most recently acquired asset of [kind]. A bicycle does not count as the
+  /// car that was sold.
+  OwnedAsset? _newestOf(AssetKind kind) {
+    OwnedAsset? found;
+    for (final a in _assets) {
+      if (a.def.kind != kind) continue;
+      if (kind == AssetKind.vehicle && a.def.id == 'veh_bike') continue;
+      found = a;
+    }
+    return found;
+  }
+
+  void _grantAsset(String id, {String? name, bool financed = false}) {
+    final def = assetById(id);
+    if (def == null) return;
+    // One home. A second is bought from the Assets tab, on purpose.
+    if (def.kind == AssetKind.home && ownsHome) return;
+    final uid = _nextUid++;
+    int? loanUid;
+    if (financed && def.canFinance) {
+      final loan = Loan(
+        uid: _nextUid++,
+        kind: def.kind == AssetKind.home ? LoanKind.mortgage : LoanKind.car,
+        label: def.kind == AssetKind.home ? 'Mortgage' : 'Car loan',
+        balance: def.loanAmount,
+        rate: def.loanRate,
+        years: def.loanYears,
+        assetUid: uid,
+      );
+      loanUid = loan.uid;
+      _loans.add(loan);
+    }
+    _assets.add(
+      OwnedAsset(
+        uid: uid,
+        def: def,
+        value: def.price,
+        boughtAtAge: _age,
+        loanUid: loanUid,
+        name: name,
+      ),
+    );
+    _assetsBought++;
+    // Whoever was taught to drive for this card can drive.
+    if (def.needsLicense) _hasLicense = true;
+    // Owning the place replaces renting it, exactly as buying does.
+    if (def.kind == AssetKind.home && _rentalId != kFamilyHome.id) {
+      _rentalId = kFamilyHome.id;
+    }
+  }
+
+  /// Loses an asset with nothing coming back, and settles whatever was owed on it.
+  void _dropAsset(OwnedAsset asset) {
+    final loan = _loanByUid(asset.loanUid);
+    if (loan != null) {
+      _loans.remove(loan);
+      _applyEventMoney(-loan.balance);
+    }
+    _assets.remove(asset);
+  }
+
+  void _payOffStudentLoans() {
+    var owed = 0;
+    for (final loan
+        in _loans.where((l) => l.kind == LoanKind.student).toList()) {
+      owed += loan.balance;
+      _loans.remove(loan);
+    }
+    if (owed > 0) {
+      _applyEventMoney(-owed);
+      _teach(FinanceConcept.interestCost);
+    }
+  }
+
   // ---- Where to live -----------------------------------------------------------
 
   String? moveGate(RentalDef place) {

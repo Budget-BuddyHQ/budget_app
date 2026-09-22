@@ -5,6 +5,7 @@ import 'package:budget_app/controllers_that_updates_stats/app_settings_controlle
 import 'package:budget_app/controllers_that_updates_stats/life_sim_controller.dart';
 import 'package:budget_app/controllers_that_updates_stats/user_stats_controller.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_sim_models.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/outing_rules.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart';
 import 'package:budget_app/services_backend_and_other_services/supabase_service.dart';
 import 'package:budget_app/themes_colors/app_theme.dart';
@@ -143,6 +144,42 @@ void main() {
       await show(tester, adult(), size: const Size(320, 568));
       expect(tester.takeException(), isNull);
     });
+
+    // Asked for as: the Life menu is "hard to navigate... unlike Finance
+    // Brawl." The "This year" card was a full panel — weather, family, and
+    // a consequence box — shown at full size on every single year, whether
+    // or not any of it was worth a second look. Most years nothing is.
+    testWidgets(
+      'the "this year" card is one line when nothing stops you going out',
+      (tester) async {
+        final life = adult();
+        expect(life.outingPermission.allowed, isTrue);
+        await show(tester, life);
+        // The full card's own heading and boxed explanation are gone...
+        expect(find.text('This year'), findsNothing);
+        expect(
+          find.text('You can head into town whenever you like.'),
+          findsNothing,
+        );
+        // ...and the facts it held are still on screen, just compact.
+        expect(find.text(life.weather.label), findsOneWidget);
+        expect(find.text(life.strictness.label), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'and is the full card, with why, when you actually cannot go out',
+      (tester) async {
+        final child = LifeSimController(
+          random: FixedRandom.unlucky(),
+          initialAge: 6,
+        );
+        expect(child.outingPermission.allowed, isFalse);
+        await show(tester, child);
+        expect(find.text('This year'), findsOneWidget);
+        expect(find.text(child.outingPermission.message), findsOneWidget);
+      },
+    );
   });
 
   group('the tabs open real screens', () {

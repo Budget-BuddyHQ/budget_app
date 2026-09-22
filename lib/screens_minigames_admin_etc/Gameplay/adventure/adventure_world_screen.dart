@@ -703,6 +703,8 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
                             today: _today,
                           ),
                         ),
+                        const SizedBox(width: 10),
+                        const _DemoBadge(),
                       ],
                     ),
                   ),
@@ -1376,6 +1378,46 @@ class _AdventureBackButton extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Says this town is not the finished game.
+///
+/// **Why it exists.** The open world is an early piece of what "BitLife plus
+/// more" is meant to become — the Life feed is the polished loop, and the
+/// town is where that gets built out next. Nothing on screen said so, which
+/// let a small, quiet map read as the finished idea rather than the start of
+/// one.
+class _DemoBadge extends StatelessWidget {
+  const _DemoBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label:
+          'This town is an early demo. More places and things to do are '
+          'on the way.',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: const Color(0xFFFFC857), width: 1.5),
+        ),
+        child: Text(
+          'DEMO',
+          // Quicksand, not Pixelify: Pixelify's capitals have confusable pairs
+          // at every size (see `caps_legibility_test.dart`), and four letters
+          // in all-caps has no lowercase neighbour to disambiguate them by.
+          style: AppTheme.caps(
+            color: const Color(0xFFFFC857),
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
           ),
         ),
       ),

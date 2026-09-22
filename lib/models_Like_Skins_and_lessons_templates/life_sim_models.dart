@@ -200,11 +200,48 @@ class LifeChoice {
     this.clearsFlag,
     this.followUp = LifeFollowUp.none,
     this.moveTo,
+    this.grantsAsset,
+    this.grantsAssetName,
+    this.grantsFinanced = false,
+    this.sellsAsset,
+    this.removesAsset,
+    this.paysOffStudentLoan = false,
   });
 
   final String label;
   final String outcome;
   final int money;
+
+  /// An asset (by catalogue id) this choice puts in the character's hands.
+  ///
+  /// **Why it exists.** A story card said "take him home" and set a flag, and the
+  /// Assets tab went on saying the character owned nothing. A player who agreed to
+  /// share a flat with a friend was still shown living with their parents. The
+  /// flag and the screen were two separate records of the same fact, and nothing
+  /// kept them in step. Now the choice changes what is owned, and the story flags
+  /// that stand for owning something are read from what is owned (see
+  /// `LifeSimController.flags`), so they cannot drift again.
+  ///
+  /// It costs nothing by itself: the choice's own [money] is what was paid.
+  final String? grantsAsset;
+
+  /// What the character calls it. A dog has a name.
+  final String? grantsAssetName;
+
+  /// Whether it comes with the catalogue's loan for it (a car on finance, a home
+  /// with a mortgage). The down payment is the choice's [money].
+  final bool grantsFinanced;
+
+  /// Sells the newest thing of this kind at its real sale value, settling any
+  /// loan on it from the proceeds. For "sell the car" and "sell the house".
+  final AssetKind? sellsAsset;
+
+  /// Takes the newest thing of this kind away with nothing coming back: the old
+  /// dog that dies, the car that is written off.
+  final AssetKind? removesAsset;
+
+  /// Clears every student loan from cash, savings or debt.
+  final bool paysOffStudentLoan;
 
   /// A screen to open once this choice has landed. The choice itself is only
   /// data, so "apply to college" is expressed as a request to open the sheet
@@ -413,6 +450,20 @@ enum LifeFlag {
   hasChild,
 }
 
+/// Flags that mean "you own something" and are read back from the
+/// Assets/loan ledger instead of being set directly by a card — see
+/// `LifeSimController._effectiveFlags`. A card grants, sells or removes the
+/// asset (`LifeChoice.grantsAsset`/`sellsAsset`/`removesAsset`/
+/// `paysOffStudentLoan`) and one of these becomes true or false as a side
+/// effect, so nothing in `kLifeEvents` ever needs a literal `setsFlag` or
+/// `clearsFlag` for them.
+const Set<LifeFlag> kOwnershipBackedFlags = {
+  LifeFlag.hasPet,
+  LifeFlag.hasCar,
+  LifeFlag.ownsHome,
+  LifeFlag.hasStudentLoan,
+};
+
 extension LifeFlagInfo on LifeFlag {
   /// A short label for the "what is going on in your life" strip, or null
   /// for flags that are bookkeeping rather than something the player would
@@ -560,6 +611,7 @@ class LifeEvent {
     this.requiresTrack,
     this.minDebt = 0,
     this.requiresRenting = false,
+    this.forbidsAsset,
   });
 
   final String id;
@@ -579,6 +631,10 @@ class LifeEvent {
   final CareerTrack? requiresTrack;
   final int minDebt;
   final bool requiresRenting;
+
+  /// Never draw this while the character owns something of this kind. "A friend
+  /// suggests splitting a flat" is not offered to somebody who owns their home.
+  final AssetKind? forbidsAsset;
 
   /// Whether this event asks the player to stake money on an uncertain
   /// outcome.
@@ -665,6 +721,7 @@ class LifeEvent {
     if (requiresStudent && !c.inSchool) return false;
     if (forbidsStudent && c.inSchool) return false;
     if (requiresAsset != null && !c.owns.contains(requiresAsset)) return false;
+    if (forbidsAsset != null && c.owns.contains(forbidsAsset)) return false;
     if (requiresPartner && !c.hasPartner) return false;
     if (requiresChild && !c.hasChild) return false;
     if (requiresParent && !c.hasLivingParent) return false;

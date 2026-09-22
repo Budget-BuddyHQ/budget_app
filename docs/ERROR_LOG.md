@@ -2985,3 +2985,57 @@ Five things came out of watching a ten-year-old play, none of them found by a te
 ### "Owed 0" beside a net worth of minus 500
 
 The Owed box on the money panel showed `debt` only. Loans (a student loan, a car) were subtracted from net worth but not listed, so a student read "Owed 0" under a negative net worth with nothing saying where the minus came from. It shows `totalOwed` now, and a new "Where does my money go?" row opens the whole year itemised (`life_sim_money_flow.dart`), checked against a real year by a test.
+
+### Ten of sixteen habit cards had no picture, and the six that did were hotlinked
+
+**Asked for as:** *"finishing adding the images to the daily screens."*
+
+**What was there.** Only 6 of the 16 Money Habits cards had a `photoUrl` at all, and
+every one was a Wikimedia URL fetched over the network — a stock photo of a coffee
+cup or a shopping cart dropped into a hand-drawn pixel game, and a screen that
+needed the network to look finished.
+
+**Fix.** `tool/make_habit_icons.py` draws all sixteen as flat pixel badges in the
+app's own palette (pulled from `app_theme.dart`, the same source `make_ui_kit.py`
+uses): an outlined circle in the habit's category colour with a hand-composed
+glyph. `_HabitPhoto` (`money_habits_screen.dart`) now loads
+`assets/images/money_habits/<id>.png` first and only falls back to the old
+network photo, then the Material icon, if that is missing — nothing in the
+catalogue depends on the network to render any more.
+
+**A test bug, not an app bug, on the way there.** A throwaway render test showed
+every icon slot blank even after several `pump()` calls and `pumpAndSettle()`. The
+cause was the test, not `_HabitPhoto`: real PNG decoding runs on a genuine
+`Future`, which the widget-test fake clock does not advance — `pump()` cannot
+make it finish. `screen_render_test.dart`'s own `shoot()` already knew this
+(`tester.runAsync(() => Future.delayed(...))` before reading the frame); the
+throwaway test skipped it and read a frame from before the image had decoded. An
+isolated widget test (one `Image.asset`, no screen around it) confirmed no
+exception and the correct size before this was traced, which is what pointed at
+timing rather than the widget.
+
+**Files.** `tool/make_habit_icons.py` (new), `assets/images/money_habits/*.png`
+(16, new), `money_habits_screen.dart`, `pubspec.yaml`.
+
+### The "This year" card was a full panel on every single year
+
+**Asked for as:** the Life menu is *"quite confusing, like hard to navigate...
+unlike Finance Brawl, which is quite addicting."* A background-agent audit of
+the menu (from a parallel session) found the sharpest cause: the feed opened
+with up to six always-open panels — weather/family, money, a strain warning, a
+flags strip, a people strip, a network chip — before a single line of the
+year's actual story. Most of those already collapse to nothing when they have
+nothing to say (`_StrainBanner`, `_YourLifeStrip`); the weather/family card did
+not, and it was the largest of the six.
+
+**Fix.** `_ThisYearPanel` now renders one compact line — weather icon, family
+icon, a walking-or-locked icon — for the common case, where the character can
+go out and neither the weather nor the family situation is stopping them. The
+full card, with the two fact tiles and a full sentence of explanation, is kept
+for the year that actually needs it: the one where the character *cannot* go
+out, which is exactly the case the panel exists to surface rather than leaving
+it as an unexplained locked button. Money's own panel was left alone — the
+code already explains why it gets the prominent slot, and that reasoning still
+holds.
+
+**Files.** `life_sim_page.dart` (`_ThisYearPanel`), `test/life_menu_render_test.dart`.
