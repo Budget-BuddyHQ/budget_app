@@ -707,6 +707,15 @@ class _StockMarketPageState extends State<StockMarketPage>
                       avgChangePercent: avgChangePercent,
                       portfolioTip: portfolioTip,
                       onGoToTrade: () => _tabController.animateTo(1),
+                      // Asked for as: tap a holding — like Apple — and see its
+                      // chart and news, not just the two numbers this row has
+                      // room for. Reuses the same lookup `_openSearchResult`
+                      // already does for a typed-in symbol.
+                      onOpenSymbol: (symbol, company) => _openSearchResult(
+                        context: context,
+                        match: SymbolMatch(symbol: symbol, company: company),
+                        stats: stats,
+                      ),
                     ),
                     _TradeTab(
                       status: market.status,
@@ -738,6 +747,13 @@ class _StockMarketPageState extends State<StockMarketPage>
                     _OrdersTab(
                       transactions: stats.transactions,
                       workingOrders: stats.workingOrders,
+                      // Same drill-down as a holding: what a past trade was,
+                      // and a way straight to that stock's live chart.
+                      onOpenSymbol: (symbol) => _openSearchResult(
+                        context: context,
+                        match: SymbolMatch(symbol: symbol, company: symbol),
+                        stats: stats,
+                      ),
                       onCancel: (order) async {
                         final result = await statsController.cancelWorkingOrder(
                           order.id,
@@ -1263,6 +1279,9 @@ class _TradeTabState extends State<_TradeTab> {
               costBasis: widget.stats.costBasis['stock_${quote.symbol}'] ?? 0,
               onBuy: () => widget.onBuy(quote),
               onSell: () => widget.onSell(quote),
+              onOpen: () => widget.onOpenMatch(
+                SymbolMatch(symbol: quote.symbol, company: quote.company),
+              ),
             ),
             const SizedBox(height: 14),
           ],
@@ -1375,6 +1394,7 @@ class _PortfolioTab extends StatelessWidget {
     required this.avgChangePercent,
     required this.portfolioTip,
     required this.onGoToTrade,
+    required this.onOpenSymbol,
   });
 
   final List<_TradeQuote> quotes;
@@ -1384,6 +1404,11 @@ class _PortfolioTab extends StatelessWidget {
   final double avgChangePercent;
   final String portfolioTip;
   final VoidCallback onGoToTrade;
+
+  /// Opens a holding's own chart, company background and news — the same
+  /// ticket Trade's Buy/Sell buttons open, reached here by tapping the
+  /// position itself rather than starting an order.
+  final void Function(String symbol, String company) onOpenSymbol;
 
   @override
   Widget build(BuildContext context) {
@@ -1492,6 +1517,7 @@ class _PortfolioTab extends StatelessWidget {
               quote: h.quote,
               ownedLots: h.ownedLots,
               metrics: h.metrics,
+              onTap: () => onOpenSymbol(h.quote.symbol, h.quote.company),
             ),
             const SizedBox(height: 12),
           ],
@@ -1505,6 +1531,7 @@ class _HoldingRow extends StatelessWidget {
     required this.quote,
     required this.ownedLots,
     required this.metrics,
+    required this.onTap,
   });
 
   final _TradeQuote quote;
@@ -1517,6 +1544,9 @@ class _HoldingRow extends StatelessWidget {
   })
   metrics;
 
+  /// Tap the position to see its chart, background and news.
+  final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) {
     final isProfitable = metrics.totalProfitLoss >= 0;
@@ -1525,27 +1555,65 @@ class _HoldingRow extends StatelessWidget {
         : const Color(0xFFFF8A80);
     final plSign = isProfitable ? '+' : '';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: quote.accent.withValues(alpha: 0.28)),
-      ),
-      child: Row(
-        children: [
-          SymbolBadge(
-            symbol: quote.symbol,
-            icon: quote.icon,
-            accent: quote.accent,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      borderRadius: BorderRadius.circular(22),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: quote.accent.withValues(alpha: 0.28)),
+        ),
+        child: Row(
+          children: [
+            SymbolBadge(
+              symbol: quote.symbol,
+              icon: quote.icon,
+              accent: quote.accent,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${quote.symbol} • ${formatShares(ownedLots)} sh',
+                    style: AppTheme.numeric(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Avg ${metrics.averageCost.toStringAsFixed(1)}g',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: 54,
+              height: 32,
+              child: MiniSparkline(
+                values: quote.history.map((v) => v.toDouble()).toList(),
+                color: quote.accent,
+                strokeWidth: 1.8,
+                // Pulsing last-price dot, so a holding reads as live rather
+                // than a frozen thumbnail between the 30s price polls.
+                livePulse: true,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${quote.symbol} • ${formatShares(ownedLots)} sh',
+                  '${metrics.currentValue.round()}g',
                   style: AppTheme.numeric(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -1553,51 +1621,17 @@ class _HoldingRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Avg ${metrics.averageCost.toStringAsFixed(1)}g',
+                  '$plSign${metrics.totalProfitLoss.round()}g ($plSign${metrics.profitLossPercent.toStringAsFixed(1)}%)',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: plColor,
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
             ),
-          ),
-          SizedBox(
-            width: 54,
-            height: 32,
-            child: MiniSparkline(
-              values: quote.history.map((v) => v.toDouble()).toList(),
-              color: quote.accent,
-              strokeWidth: 1.8,
-              // Pulsing last-price dot, so a holding reads as live rather
-              // than a frozen thumbnail between the 30s price polls.
-              livePulse: true,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${metrics.currentValue.round()}g',
-                style: AppTheme.numeric(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                '$plSign${metrics.totalProfitLoss.round()}g ($plSign${metrics.profitLossPercent.toStringAsFixed(1)}%)',
-                style: TextStyle(
-                  color: plColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -2129,6 +2163,7 @@ class _StockCard extends StatefulWidget {
     required this.costBasis,
     required this.onBuy,
     required this.onSell,
+    required this.onOpen,
   });
 
   final _TradeQuote quote;
@@ -2136,6 +2171,12 @@ class _StockCard extends StatefulWidget {
   final int costBasis;
   final VoidCallback onBuy;
   final VoidCallback onSell;
+
+  /// Asked for as: "click on a stock like Apple and see a detailed history,
+  /// news, etc." Opens the same ticket Buy/Sell do — chart, company
+  /// background and news are all in there already — just without presetting
+  /// a side, for a player who only wants to look.
+  final VoidCallback onOpen;
 
   @override
   State<_StockCard> createState() => _StockCardState();
@@ -2183,40 +2224,51 @@ class _StockCardState extends State<_StockCard> {
               // Expanded inside a Column that has no height constraint — this
               // card lives in a ListView — fails to lay out at all, leaving a
               // render box with no size for the next paint to trip over.
-              final headerInfo = Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SymbolBadge(
-                    symbol: quote.symbol,
-                    icon: quote.icon,
-                    accent: quote.accent,
-                    size: 48,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${quote.symbol} • ${quote.company}',
-                          style: AppTheme.numeric(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
+              final headerInfo = InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: widget.onOpen,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SymbolBadge(
+                        symbol: quote.symbol,
+                        icon: quote.icon,
+                        accent: quote.accent,
+                        size: 48,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${quote.symbol} • ${quote.company}',
+                              style: AppTheme.numeric(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              quote.sector,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.66),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          quote.sector,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.66),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.white.withValues(alpha: 0.4),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               );
 
               final badges = Wrap(
@@ -2752,6 +2804,7 @@ class _StockOrder {
     required this.isCover,
     required this.amount,
     required this.createdAt,
+    required this.description,
   });
 
   final String symbol;
@@ -2760,6 +2813,7 @@ class _StockOrder {
   final bool isCover;
   final int amount;
   final DateTime createdAt;
+  final String description;
 
   String get actionLabel => switch ((isBuy, isShort, isCover)) {
     (true, false, false) => 'Buy',
@@ -2829,6 +2883,10 @@ _StockOrder? _parseStockOrder(LedgerTransaction transaction) {
     isCover: parsed.isCover,
     amount: transaction.amount.abs(),
     createdAt: transaction.createdAt,
+    // Already written when the trade was recorded (exact quantity and price
+    // at the time) and, until now, thrown away the moment this list-row
+    // model was built from it.
+    description: transaction.description,
   );
 }
 
@@ -2837,11 +2895,15 @@ class _OrdersTab extends StatelessWidget {
     required this.transactions,
     required this.workingOrders,
     required this.onCancel,
+    required this.onOpenSymbol,
   });
 
   final List<LedgerTransaction> transactions;
   final List<WorkingOrder> workingOrders;
   final ValueChanged<WorkingOrder> onCancel;
+
+  /// Opens the traded stock's own chart and news, from its detail sheet.
+  final ValueChanged<String> onOpenSymbol;
 
   @override
   Widget build(BuildContext context) {
@@ -2900,7 +2962,10 @@ class _OrdersTab extends StatelessWidget {
           )
         else
           for (final order in orders) ...[
-            _OrderRow(order: order),
+            _OrderRow(
+              order: order,
+              onTap: () => _showOrderDetail(context, order, onOpenSymbol),
+            ),
             const SizedBox(height: 10),
           ],
       ],
@@ -3003,9 +3068,13 @@ class _WorkingOrderRow extends StatelessWidget {
 }
 
 class _OrderRow extends StatelessWidget {
-  const _OrderRow({required this.order});
+  const _OrderRow({required this.order, required this.onTap});
 
   final _StockOrder order;
+
+  /// Asked for as: "same for the transaction history" — tap a past trade to
+  /// see the rest of it. See [_showOrderDetail].
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -3023,67 +3092,217 @@ class _OrderRow extends StatelessWidget {
         '${date.hour.toString().padLeft(2, '0')}:'
         '${date.minute.toString().padLeft(2, '0')}';
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            style?.icon ?? Icons.show_chart_rounded,
-            color: style?.accent ?? Colors.white70,
-            size: 22,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              style?.icon ?? Icons.show_chart_rounded,
+              color: style?.accent ?? Colors.white70,
+              size: 22,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    order.symbol,
+                    style: GoogleFonts.pixelifySans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    dateLabel,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  order.symbol,
+                  order.actionLabel,
                   style: GoogleFonts.pixelifySans(
-                    color: Colors.white,
+                    color: sideColor,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  dateLabel,
+                  '${order.amount}g • Filled',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: Colors.white.withValues(alpha: 0.6),
                     fontSize: 11,
                   ),
                 ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                order.actionLabel,
-                style: GoogleFonts.pixelifySans(
-                  color: sideColor,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '${order.amount}g • Filled',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-        ],
+            const SizedBox(width: 4),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.white.withValues(alpha: 0.35),
+              size: 18,
+            ),
+          ],
+        ),
       ),
     );
   }
+}
+
+/// What a past trade actually was, since the list row only has room for the
+/// side and the total. The full sentence — the exact quantity and price at
+/// the time — was written down when the trade filled and thrown away the
+/// moment this screen turned it into a row; it is still sitting in
+/// [LedgerTransaction.description] the whole time. "View live chart & news"
+/// hands off to the same ticket a holding or a Trade Board card opens.
+void _showOrderDetail(
+  BuildContext context,
+  _StockOrder order,
+  ValueChanged<String> onOpenSymbol,
+) {
+  final style = _kSymbolStyle[order.symbol];
+  final sideColor = order.isShort
+      ? const Color(0xFFFFD166)
+      : order.isCover
+      ? const Color(0xFF8BC6FF)
+      : order.isBuy
+      ? const Color(0xFF85EFAC)
+      : const Color(0xFFFF8A80);
+  final date = order.createdAt.toLocal();
+  final dateLabel =
+      '${date.month}/${date.day}/${date.year} at '
+      '${date.hour.toString().padLeft(2, '0')}:'
+      '${date.minute.toString().padLeft(2, '0')}';
+
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: const Color(0xFF10241E),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: sideColor.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    style?.icon ?? Icons.show_chart_rounded,
+                    color: sideColor,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${order.actionLabel} ${order.symbol}',
+                        style: GoogleFonts.pixelifySans(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        dateLabel,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.55),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                order.description,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  fontSize: 13.5,
+                  height: 1.4,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Total',
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+                ),
+                Text(
+                  '${order.amount}g',
+                  style: AppTheme.numeric(
+                    color: sideColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Navigator.of(sheetContext).pop();
+                  onOpenSymbol(order.symbol);
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF58C7FF),
+                  foregroundColor: const Color(0xFF06251A),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                icon: const Icon(Icons.show_chart_rounded),
+                label: Text(
+                  'View ${order.symbol}\'s live chart & news',
+                  style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _PnlTab extends StatelessWidget {

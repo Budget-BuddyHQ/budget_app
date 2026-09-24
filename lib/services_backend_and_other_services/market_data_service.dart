@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import '../config/runtime_env.dart';
 import '../utils/number_format.dart';
 
-/// A real-world stock quote from Finnhub.
+// real stock quote from finnhub
 @immutable
 class LiveQuote {
   const LiveQuote({
@@ -36,26 +36,18 @@ class LiveQuote {
 
   bool get isUp => change >= 0;
 
-  /// Finnhub returns all-zero payloads for unknown symbols rather than a 404.
+  // finnhub sends all-zero payloads for bad symbols instead of a 404
   bool get isValid => current > 0;
 
-  /// A tiny **chronological** fallback shape for an inline sparkline, built
-  /// from numbers the quote endpoint already returns — no extra API calls.
-  ///
-  /// Deliberately only the three points whose order in time is known:
-  /// yesterday's close → today's open → the current price. An earlier version
-  /// also spliced in [low] and [high], which made every stock render the exact
-  /// same silhouette (low is always the minimum and high always the maximum, so
-  /// the line always dipped to the floor then spiked to the ceiling). Real
-  /// intraday shape comes from [MarketDataService.seriesFor].
+  // quick fallback sparkline shape, no extra api call. only 3 points that
+  // are actually in chronological order (close, open, now). used to also
+  // throw in low/high but that made every stock look identical (dip then
+  // spike). real shape comes from MarketDataService.seriesFor
   List<double> get miniSeries => [previousClose, open, current];
 }
 
-/// One hit from Finnhub's symbol-search endpoint.
-///
-/// This is what makes the Trade tab's search work like Webull's: the player
-/// types any ticker or company name and gets real matches from the whole US
-/// market, not just the handful of symbols hard-coded in [kLiveSymbols].
+// one hit from finnhub's symbol search. lets the trade tab search work
+// like a real broker app instead of just the hardcoded symbol list
 @immutable
 class SymbolMatch {
   const SymbolMatch({required this.symbol, required this.company});
@@ -64,8 +56,8 @@ class SymbolMatch {
   final String company;
 }
 
-/// Rich metadata from Twelve Data's `/quote` endpoint, used by the stock
-/// card's company info dropdown.
+// extra metadata from twelve data's /quote endpoint, for the company
+// info dropdown on the stock card
 @immutable
 class TwelveDataQuoteDetails {
   const TwelveDataQuoteDetails({
@@ -122,8 +114,7 @@ class TwelveDataQuoteDetails {
   }
 }
 
-/// Company background from Finnhub's `/stock/profile2` — the "who is this
-/// company" info shown on a stock's About section.
+// company background from finnhub's /stock/profile2, the About section
 @immutable
 class CompanyProfile {
   const CompanyProfile({
@@ -151,7 +142,7 @@ class CompanyProfile {
   final String exchange;
   final String country;
 
-  /// In millions of dollars, Finnhub's unit.
+  // millions of dollars, thats finnhub's unit
   final double marketCapitalization;
   final String ipoDate;
 
@@ -167,7 +158,7 @@ class CompanyProfile {
   }
 }
 
-/// One Finnhub `/company-news` article.
+// one finnhub /company-news article
 @immutable
 class CompanyNewsItem {
   const CompanyNewsItem({
@@ -187,8 +178,8 @@ class CompanyNewsItem {
   final DateTime publishedAt;
 }
 
-/// One OHLC bar. [Candle] is what both the line chart and the candlestick
-/// chart draw from — a line just uses [close].
+// one ohlc bar, both the line chart and candlestick chart use this
+// (line chart just uses close)
 @immutable
 class Candle {
   const Candle({
@@ -215,7 +206,7 @@ class Candle {
       close > 0;
 }
 
-/// Chart timeframes, mirroring the row of range buttons in a real broker app.
+// chart timeframes, same row of buttons a real broker app has
 enum ChartRange {
   day1('1D', '5min', 78),
   day5('5D', '30min', 65),
@@ -233,18 +224,15 @@ enum ChartRange {
 
   final String label;
 
-  /// Twelve Data `interval` parameter.
+  // twelve data's interval param
   final String interval;
 
-  /// How many bars to request.
+  // how many bars to ask for
   final int points;
 }
 
-/// Which real-world tickers the Market Board can trade.
-///
-/// [common] ones are shown by default (household names a teenager already
-/// recognises); the rest only surface once the player searches for them —
-/// same idea as Webull's "most common stocks, then search reveals more."
+// real tickers the market board can trade. common ones show by default,
+// rest only show up once you search for them
 @immutable
 class LiveSymbol {
   const LiveSymbol(this.symbol, this.company, {this.common = false});
@@ -273,21 +261,17 @@ const List<LiveSymbol> kLiveSymbols = <LiveSymbol>[
   LiveSymbol('AMD', 'AMD'),
 ];
 
-/// How many in-game coins one US dollar of share price is worth.
-///
-/// Real quotes come back in dollars; the Market Board trades in coins. Keeping
-/// coins distinct from dollars (rather than the old 1:1) makes it read as game
-/// currency — a $337 share costs ~3,370 coins — and is why buying *fractions*
-/// of a share matters: a few thousand coins is a slice of one pricey share.
+// coins per real dollar of share price. used to be 1:1 but that didnt
+// feel like game currency, this way a $337 share = ~3370 coins
 const int kCoinsPerDollar = 10;
 
-/// Converts a real-world dollar price into coins.
+// dollars -> coins
 int coinsForUsd(double usd) => (usd * kCoinsPerDollar).round();
 
-/// Converts in-game coins back to the real-world dollar amount they track.
+// coins -> dollars
 double usdForCoins(num coins) => coins / kCoinsPerDollar;
 
-/// Formats a coin amount as the real money it represents, e.g. `$338.20`.
+// coin amount as real money, like "$338.20"
 String usdLabel(num coins) {
   final usd = usdForCoins(coins);
   if (usd.abs() >= 100000) {
@@ -296,11 +280,10 @@ String usdLabel(num coins) {
   return '\$${usd.toStringAsFixed(2)}';
 }
 
-/// Formats a coin amount with a thousands separator, e.g. `3,382g`.
+// coin amount w/ thousands separator, "3,382g"
 String coinLabel(num coins) => '${groupedNumber(coins.round())}g';
 
-/// Formats a (possibly fractional) share count without a trailing `.0`:
-/// `2` → "2", `0.5` → "0.5", `1.25` → "1.25".
+// share count without a trailing .0, so 2 not 2.0, but 1.25 stays 1.25
 String formatShares(num shares) {
   final value = shares.toDouble();
   if (value == value.roundToDouble()) {
@@ -312,32 +295,18 @@ String formatShares(num shares) {
       .replaceAll(RegExp(r'\.$'), '');
 }
 
-/// Why live data is unavailable, so the UI can explain rather than just fail.
+// why live data isnt available, so the ui can explain instead of just fail
 enum LiveMarketStatus {
-  /// Never attempted yet.
-  idle,
-
-  /// Request in flight.
-  loading,
-
-  /// Real quotes available.
-  ready,
-
-  /// No FINNHUB_API_KEY configured. This is a normal, supported state —
-  /// the app is fully playable without one.
-  noApiKey,
-
-  /// Network failure, timeout, or Finnhub returned an error.
-  unavailable,
+  idle, // never tried yet
+  loading, // request in flight
+  ready, // got real quotes
+  noApiKey, // no key configured, totally fine, app still works without one
+  unavailable, // network fail/timeout/finnhub error
 }
 
-/// Fetches real market quotes from Finnhub — this is now the data source the
-/// Market Board trades against directly (see stock_market_page.dart).
-///
-/// Still optional by design: a teammate can clone the repo and run it with
-/// zero setup. When no key is present the service reports
-/// [LiveMarketStatus.noApiKey] and the Market Board shows a message asking
-/// for one instead of a trade list — the rest of the app is unaffected.
+// pulls real quotes from finnhub, this is what the market board trades
+// against. still optional, no key = app still runs fine, board just
+// shows a "add a key" message instead of live prices
 class MarketDataService extends ChangeNotifier {
   MarketDataService({http.Client? client}) : _client = client ?? http.Client();
 
@@ -358,8 +327,8 @@ class MarketDataService extends ChangeNotifier {
   // still run the app with no Supabase project at all.
   // ---------------------------------------------------------------------
 
-  /// Base URL of the `market` edge function, or null when Supabase is not
-  /// configured — in which case the direct-key path below is used.
+  // url of the market edge function, null if supabase isnt configured
+  // (falls back to hitting the vendor directly)
   String? get _proxyBase {
     final url = readRuntimeEnv('SUPABASE_URL');
     if (url == null) return null;
@@ -371,9 +340,8 @@ class MarketDataService extends ChangeNotifier {
     return '$origin/functions/v1/market';
   }
 
-  /// The anon key doubles as the bearer token for the function. It is already
-  /// public by design — the point of the proxy is that the *market* keys are
-  /// not.
+  // anon key doubles as the bearer token, its meant to be public. the
+  // whole point of the proxy is keeping the ACTUAL market api keys private
   String? get _proxyToken {
     final key = readRuntimeEnv('SUPABASE_ANON_KEY');
     final trimmed = key?.trim();
@@ -383,7 +351,7 @@ class MarketDataService extends ChangeNotifier {
     return trimmed;
   }
 
-  /// True when quotes can be fetched without a key in the client.
+  // can fetch quotes without a key on the client
   bool get usesProxy => _proxyBase != null && _proxyToken != null;
 
   Uri? _proxyUri(Map<String, String> query) {
@@ -418,77 +386,38 @@ class MarketDataService extends ChangeNotifier {
     return response;
   }
 
-  /// Finnhub's free tier allows 60 calls/minute and one refresh costs one call
-  /// per tracked symbol. A 20s floor lets the board poll live (~3 refreshes a
-  /// minute) while staying well inside the limit.
-  /// The floor between two fetches **of the same symbol**.
-  ///
-  /// Short on purpose. The rate limit is not enforced here any more — it is
-  /// enforced by [liveBatchSize], which caps how many calls a tick can make
-  /// however many symbols are asked for. This only stops a symbol being
-  /// fetched twice in the same breath by two overlapping ticks.
-  ///
-  /// It used to be 20s and used to be a single clock for the whole board,
-  /// which is why batching alone did not help at first: every pinned symbol
-  /// was refused by its own throttle five seconds after the batch that had
-  /// just fetched it, so the holdings the player was watching still updated
-  /// only once every twenty seconds.
+  // min gap between 2 fetches of the SAME symbol. short on purpose, the
+  // real rate limit is enforced by liveBatchSize below, this just stops
+  // a symbol getting double-fetched by overlapping ticks
   static const Duration _minRefreshInterval = Duration(seconds: 4);
 
-  /// How often the Market Board asks for a new batch **through the proxy**.
-  ///
-  /// Two seconds, for all sixteen symbols at once. That is possible because
-  /// the edge function caches vendor responses for twelve seconds, so the
-  /// board's poll rate and Finnhub's 60-call minute are no longer the same
-  /// constraint: the app asks this often, and the vendor is asked at most
-  /// five times a minute per symbol.
-  ///
-  /// It also collapses sixteen HTTP calls into one, which is what makes the
-  /// board feel live rather than merely poll often — sixteen sequential
-  /// requests took several seconds to walk through on their own.
+  // how often the board asks for a new batch THROUGH the proxy. can be
+  // this fast (2s, all 16 symbols) cause the edge function caches vendor
+  // responses for 12s, so finnhub only actually gets hit ~5x/min per symbol
   static const Duration proxyPollInterval = Duration(seconds: 2);
 
-  /// How often the board polls when there is no proxy in front of it.
-  ///
-  /// **Why this went from 20s to 5s without breaking the rate limit.** The
-  /// board used to refresh *every* tracked symbol on every tick — sixteen
-  /// sequential HTTP calls, which against a 60-call minute caps the whole
-  /// board at one update per sixteen seconds and takes several seconds to
-  /// walk through. Most of those sixteen are scrolled off the screen at any
-  /// moment, so almost all of that budget was being spent on prices nobody
-  /// was looking at.
-  ///
-  /// Now each tick refreshes a small batch instead — see [refreshBatch]. Four
-  /// calls every five seconds is 48 a minute, comfortably inside the limit,
-  /// and the symbols actually in front of the player are in every batch. What
-  /// they are looking at updates twelve times more often than before; what
-  /// they are not rotates through in the background.
-  ///
-  /// Without a cache to hide behind, every request is a vendor call and the
-  /// 60-call minute is the hard ceiling again — so this stays slow and
-  /// batched. This is the local-development path; a released build has the
-  /// proxy.
+  // poll interval with no proxy (local dev only, real builds use the proxy).
+  // refreshes a small batch per tick instead of all 16 at once, see
+  // refreshBatch. 4 calls every 5s = 48/min, under finnhub's 60/min limit,
+  // and whatevers actually on screen gets refreshed way more often
   static const Duration livePollInterval = Duration(seconds: 5);
 
-  /// How many symbols one tick is allowed to fetch.
-  ///
-  /// Four against a 60-call minute at [livePollInterval] leaves headroom for
-  /// the candle and news calls that share the same budget.
+  // symbols one tick can fetch, leaves headroom for candle/news calls
+  // sharing the same rate limit
   static const int liveBatchSize = 4;
 
   final http.Client _client;
 
   final Map<String, LiveQuote> _quotes = <String, LiveQuote>{};
 
-  /// When each symbol was last fetched, for the per-symbol throttle.
+  // last fetch time per symbol, for the per-symbol throttle
   final Map<String, DateTime> _lastFetchPerSymbol = <String, DateTime>{};
 
   final Map<String, TwelveDataQuoteDetails> _details =
       <String, TwelveDataQuoteDetails>{};
 
-  /// Real intraday closes per symbol, powering the inline card sparklines.
-  /// Without this the cards can only draw the 3-point quote fallback, which
-  /// carries almost no shape.
+  // real intraday closes per symbol for the sparklines. without this the
+  // cards only get the 3-point fallback which barely looks like anything
   final Map<String, List<double>> _series = <String, List<double>>{};
   DateTime? _lastSeriesFetch;
 
@@ -505,25 +434,19 @@ class MarketDataService extends ChangeNotifier {
       .whereType<LiveQuote>()
       .toList(growable: false);
 
-  /// Any cached quote, including one pulled in by a search rather than by the
-  /// scheduled [refresh] of [kLiveSymbols].
+  // any cached quote, including ones pulled in from search
   LiveQuote? quoteFor(String symbol) => _quotes[symbol];
 
   TwelveDataQuoteDetails? detailsFor(String symbol) => _details[symbol];
 
-  /// Test-only: populates [quotes] without a network call, so widget tests
-  /// can exercise the ticker tape / trending strip / card list, which
-  /// otherwise never render in a test (no live fetch ever completes, so
-  /// [quotes] stays empty and that whole UI branch goes untested).
+  // test only, fills quotes without a real network call so widget tests
+  // can actually exercise the ticker/trending/card list ui
   @visibleForTesting
   void seedQuotesForTest(Iterable<LiveQuote> quotes) {
     for (final quote in quotes) {
       _quotes[quote.symbol] = quote;
-      // Also seed an intraday series. Without this `seriesFor` returns the
-      // 3-point fallback, `_MiniPriceCard` bails out with "No chart data
-      // yet", and the whole charted branch of the trade cards goes
-      // unexercised by the layout sweep — which is exactly where a
-      // small-screen overflow hid.
+      // seed a fake intraday series too, otherwise seriesFor falls back
+      // to the 3-point version and the charted card ui never gets tested
       _series[quote.symbol] = <double>[
         for (var i = 0; i < 24; i++)
           quote.previousClose +
@@ -534,8 +457,8 @@ class MarketDataService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Real intraday closes for [symbol] (oldest first), or the quote-derived
-  /// 3-point fallback when no candle key is configured or the fetch failed.
+  // real intraday closes (oldest first), or the 3-point fallback if theres
+  // no candle key or the fetch failed
   List<double> seriesFor(String symbol) {
     final cached = _series[symbol];
     if (cached != null && cached.length >= 2) {
@@ -544,14 +467,12 @@ class MarketDataService extends ChangeNotifier {
     return _quotes[symbol]?.miniSeries ?? const <double>[];
   }
 
-  /// True once at least one symbol has real intraday shape to draw.
+  // at least one symbol has real intraday shape to draw
   bool get hasIntradaySeries => _series.isNotEmpty;
 
-  /// Fetches real intraday closes for [symbols] so the cards draw a true
-  /// shape rather than a 3-point sketch.
-  ///
-  /// Twelve Data's free tier allows 8 requests/minute, so this is throttled and
-  /// deliberately fetches only the handful of symbols actually on screen.
+  // fetches real closes for symbols so cards draw an actual shape not just
+  // 3 points. throttled cause twelve data's free tier is 8 req/min, only
+  // fetches whats actually on screen
   Future<void> refreshSeries(List<String> symbols, {bool force = false}) async {
     if ((_candleApiKey == null && !usesProxy) || symbols.isEmpty) {
       return;
@@ -578,8 +499,8 @@ class MarketDataService extends ChangeNotifier {
     }
   }
 
-  /// True when quotes are obtainable at all — either through the proxy or a
-  /// local key. The UI keys its "add an API key" empty state off this.
+  // can get quotes at all, proxy or local key. ui checks this for the
+  // "add an api key" empty state
   bool get hasApiKey => usesProxy || _apiKey != null;
 
   String? get _apiKey {
@@ -588,8 +509,8 @@ class MarketDataService extends ChangeNotifier {
       return null;
     }
     final trimmed = raw.trim();
-    // The .example ships a placeholder; treat any placeholder-looking value
-    // as "not configured" so a half-filled env file behaves like no key.
+    // .example ships a placeholder, treat placeholder-looking text as
+    // no key so a half filled env file doesnt break things
     if (trimmed.isEmpty ||
         trimmed.toUpperCase().contains('OPTIONAL') ||
         trimmed.toUpperCase().contains('YOUR_')) {
@@ -598,41 +519,23 @@ class MarketDataService extends ChangeNotifier {
     return trimmed;
   }
 
-  /// Where the round-robin has got to, so successive batches walk the list
-  /// rather than re-fetching the same few.
+  // where the rotation is at, so batches walk the list instead of
+  // refetching the same handful every time
   int _rotation = 0;
 
-  /// Refreshes a handful of symbols: the ones the player is looking at, plus
-  /// the next few in rotation.
-  ///
-  /// [pinned] are always included — the stocks on screen and the ones they
-  /// own. Everything else takes its turn, so a symbol scrolled out of view
-  /// still updates, just not on every tick.
-  ///
-  /// This is what replaced refreshing all sixteen at once. The old shape
-  /// spent its entire rate budget on prices nobody was watching and made the
-  /// board look frozen; this spends it on the four the player can actually
-  /// see.
+  // refreshes a few symbols: whats pinned/owned + the next few in rotation.
+  // replaced refreshing all 16 at once, which burned the whole rate limit
+  // on stocks nobody was even looking at
   Future<void> refreshBatch({Iterable<String> pinned = const <String>[]}) =>
       refresh(only: selectBatch(pinned: pinned));
 
-  /// Which symbols the next batch will ask for.
-  ///
-  /// Split out from [refreshBatch] so the selection can be tested without a
-  /// network call. It used to be inline, and the tests for it went through
-  /// `refreshBatch` — which meant they made real HTTP requests, took seconds,
-  /// and failed intermittently in a full run with "Proxy request failed with
-  /// 404". A unit test for *which four strings come out of a list* has no
-  /// business touching the internet.
-  ///
-  /// Advances the rotation, so calling it twice gives two different batches —
-  /// which is the behaviour worth testing.
+  // picks which symbols the next batch asks for. split out from
+  // refreshBatch so it can be unit tested without hitting the network.
+  // calling it twice gives 2 different batches (rotation advances)
   Set<String> selectBatch({Iterable<String> pinned = const <String>[]}) {
     final known = kLiveSymbols.map((s) => s.symbol).toSet();
-    // **Capped, including the pinned ones.** A player holding ten stocks
-    // would otherwise pin ten symbols into every five-second tick — 120 calls
-    // a minute against a limit of 60. The pinned ones get the batch first and
-    // rotate among themselves when there are more of them than seats.
+    // capped even for pinned ones, otherwise holding 10 stocks = 10
+    // symbols every 5s tick = 120 calls/min against a 60 limit
     final wanted = <String>{};
     final owned = pinned.where(known.contains).toList();
     for (var i = 0; wanted.length < liveBatchSize && i < owned.length; i++) {
@@ -649,10 +552,8 @@ class MarketDataService extends ChangeNotifier {
     return wanted;
   }
 
-  /// Fetches quotes for [only], or for every symbol in [kLiveSymbols].
-  ///
-  /// Respects [_minRefreshInterval] unless [force] is set. Never throws — all
-  /// failures land in [status] so the caller can render an explanation.
+  // fetches quotes for only (or everything). respects the min refresh
+  // interval unless force is set. never throws, failures just show in status
   Future<void> refresh({bool force = false, Set<String>? only}) async {
     final key = _apiKey;
     if (key == null && !usesProxy) {
@@ -661,9 +562,8 @@ class MarketDataService extends ChangeNotifier {
       return;
     }
 
-    // The throttle is per symbol now, not one clock for the whole board.
-    // A single `_lastFetch` meant a four-symbol batch blocked the next
-    // four-symbol batch even though they share no symbols at all.
+    // throttle is per-symbol now, one shared clock used to block unrelated
+    // batches from each other for no reason
     final now = DateTime.now();
     final targets = <LiveSymbol>[
       for (final entry in kLiveSymbols)
@@ -676,9 +576,8 @@ class MarketDataService extends ChangeNotifier {
     ];
     if (targets.isEmpty) return;
 
-    // Only announce loading on the first fill. A spinner every five seconds
-    // is worse than a slightly stale number — it makes a working board look
-    // like a struggling one.
+    // only show loading on first fill, a spinner every 5s makes a working
+    // board look broken
     if (_quotes.isEmpty) {
       _status = LiveMarketStatus.loading;
       _errorDetail = null;
@@ -686,11 +585,8 @@ class MarketDataService extends ChangeNotifier {
     }
 
     try {
-      // Sequential rather than parallel: the free tier throttles by request
-      // rate, and six quick sequential calls stay comfortably inside it while
-      // a burst of six can trip a 429.
-      // One request for the lot where there is a proxy, falling back to
-      // one-at-a-time only when there is not.
+      // one at a time not parallel, a burst of calls can trip a 429 on
+      // the free tier. batched into one request when theres a proxy tho
       var fetched = <String, LiveQuote>{};
       final batched = usesProxy ? await _fetchAllQuotes(targets) : null;
       if (batched != null) {
@@ -709,18 +605,16 @@ class MarketDataService extends ChangeNotifier {
       }
 
       if (fetched.isEmpty) {
-        // Only a real failure when nothing at all is cached. A batch that
-        // came back empty while fifteen good quotes are already on screen is
-        // a blip, not an outage, and blanking the board over it would be a
-        // worse lie than the stale price.
+        // only a real failure if NOTHING is cached. an empty batch while
+        // 15 good quotes are already showing is a blip, not an outage
         if (_quotes.isEmpty) {
           _status = LiveMarketStatus.unavailable;
           _errorDetail ??= 'No quotes returned.';
         }
       } else {
-        // Merged, not replaced. Clearing was safe when every refresh fetched
-        // the whole list; with batches it would delete the fifteen symbols
-        // this tick did not ask for.
+        // merge, dont replace. used to clear first when every refresh got
+        // the whole list, but with batches that wouldve wiped out everything
+        // this tick didnt ask for
         _quotes.addAll(fetched);
         _lastFetch = DateTime.now();
         _status = LiveMarketStatus.ready;
@@ -734,16 +628,9 @@ class MarketDataService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Every tracked symbol in one request, via the proxy's `quotes` op.
-  ///
-  /// Returns null when there is no proxy — the caller falls back to fetching
-  /// one at a time, which is the only thing that works against Finnhub
-  /// directly.
-  ///
-  /// **Partial results are kept.** A symbol the function could not reach
-  /// comes back as null in the map and is simply left out; the rest are
-  /// merged. Blanking fifteen good prices because a sixteenth timed out
-  /// would be a worse board than a slightly stale one.
+  // every symbol in one request via the proxy's quotes op. null = no
+  // proxy, caller falls back to one-at-a-time. keeps partial results,
+  // one bad symbol doesnt blank out the 15 good ones
   Future<Map<String, LiveQuote>?> _fetchAllQuotes(
     List<LiveSymbol> wanted,
   ) async {
@@ -855,12 +742,9 @@ class MarketDataService extends ChangeNotifier {
     }
   }
 
-  /// Searches the whole US market for [query].
-  ///
-  /// Finnhub's `/search` is free, unlike its historical-candle endpoint. This
-  /// is what lets the Trade tab find WDC, Vanguard funds, or anything else
-  /// that is not one of the pre-listed [kLiveSymbols]. Never throws — a
-  /// failure just yields no matches.
+  // searches the whole us market. finnhub's /search is free (unlike
+  // candles), lets trade tab find any stock not just the pre-listed ones.
+  // never throws, just returns no matches on failure
   Future<List<SymbolMatch>> searchSymbols(String query) async {
     final key = _apiKey;
     final trimmed = query.trim();
@@ -909,8 +793,8 @@ class MarketDataService extends ChangeNotifier {
         }
         final symbol = (entry['symbol'] ?? '').toString().trim();
         final description = (entry['description'] ?? '').toString().trim();
-        // Skip options, warrants, and foreign listings — their symbols carry
-        // dots or dashes and cannot be quoted on the free tier anyway.
+        // skip options/warrants/foreign listings, dotted/dashed symbols
+        // cant be quoted on the free tier anyway
         if (symbol.isEmpty ||
             description.isEmpty ||
             symbol.contains('.') ||
@@ -931,8 +815,8 @@ class MarketDataService extends ChangeNotifier {
     }
   }
 
-  /// Fetches (and caches) a quote for a symbol that is not in [kLiveSymbols],
-  /// so a searched-for stock becomes tradeable.
+  // fetches + caches a quote for a symbol not in kLiveSymbols, so a
+  // searched-for stock becomes tradeable
   Future<LiveQuote?> fetchQuoteFor(String symbol, {String? company}) async {
     final key = _apiKey;
     if (key == null && !usesProxy) {
@@ -1019,9 +903,8 @@ class MarketDataService extends ChangeNotifier {
     }
   }
 
-  /// True once a historical-data key is configured. Finnhub moved its
-  /// `/stock/candle` endpoint behind a paid plan, so timeframes and
-  /// candlestick bars come from Twelve Data's free tier instead.
+  // historical data key configured. finnhub put /stock/candle behind a
+  // paywall so candles come from twelve data's free tier instead
   bool get hasCandleKey => usesProxy || _candleApiKey != null;
 
   String? get _candleApiKey {
@@ -1040,34 +923,23 @@ class MarketDataService extends ChangeNotifier {
 
   final Map<String, ({DateTime at, List<Candle> bars})> _candleCache = {};
 
-  /// In-flight requests, so two widgets asking for the same series at the
-  /// same moment share one network call instead of racing.
+  // in-flight requests so 2 widgets asking for the same series at once
+  // share one call instead of racing each other
   final Map<String, Future<List<Candle>>> _candleInFlight = {};
 
-  /// How long a cached series stays good.
-  ///
-  /// Keyed off the bar size, not one blanket number: a 1-day chart is built
-  /// from 5-minute bars and genuinely moves, while 1M/3M/1Y are daily and
-  /// weekly bars that cannot change again until the market closes. Caching
-  /// those for an hour is not staleness, it is correctness.
+  // how long a cached series is good for, based on bar size. 1D chart
+  // moves constantly (5min bars) but 1M/1Y are daily/weekly bars that
+  // literally cant change til market closes, so 1hr cache there is fine
   static Duration _candleTtl(ChartRange range) => switch (range) {
     ChartRange.day1 => const Duration(minutes: 2),
     ChartRange.day5 => const Duration(minutes: 10),
     _ => const Duration(hours: 1),
   };
 
-  /// Historical OHLC bars for [symbol] over [range].
-  ///
-  /// Returns an empty list when no key is configured or the request fails —
-  /// the chart then falls back to the quote-derived mini series so the trade
-  /// screen still renders something real.
-  ///
-  /// **Cached.** Every tap of 1D/5D/1M/3M/1Y used to be an uncached network
-  /// round trip, including tapping straight back to a range just viewed —
-  /// so flipping between timeframes meant waiting on Twelve Data each time,
-  /// against a free tier that allows 8 requests a minute. Switching to an
-  /// already-loaded range is now instant, and the rate limit is far harder
-  /// to hit.
+  // historical ohlc bars for symbol/range. empty list if no key or the
+  // request fails, chart falls back to the mini series. cached now, every
+  // timeframe tap used to be an uncached round trip which was slow and
+  // ate into the 8 req/min limit fast
   Future<List<Candle>> fetchCandles(String symbol, ChartRange range) async {
     final cacheKey = '$symbol:${range.name}';
     final cached = _candleCache[cacheKey];
@@ -1164,7 +1036,7 @@ class MarketDataService extends ChangeNotifier {
         }
       }
 
-      // Twelve Data returns newest-first; charts read left-to-right in time.
+      // twelve data returns newest first, charts need oldest first
       return candles.reversed.toList(growable: false);
     } catch (error) {
       debugPrint('Candle fetch failed: $error');
@@ -1174,31 +1046,20 @@ class MarketDataService extends ChangeNotifier {
 
   final Map<String, CompanyProfile> _profiles = <String, CompanyProfile>{};
 
-  /// Symbols whose profile fetch is already in flight, so a list rebuilding
-  /// mid-fetch does not queue a second request for the same company.
+  // symbols already fetching a profile, so a rebuild doesnt double-request
   final Set<String> _profilesInFlight = <String>{};
 
-  /// The logo URL for [symbol] if a profile has already been fetched.
-  ///
-  /// Synchronous and never triggers a request, so a list row can call it
-  /// during `build` without turning a scroll into a burst of network calls.
-  /// Returns null until [primeLogos] has done the work.
+  // logo url if we already fetched it. sync, never triggers a request,
+  // safe to call in build(). null until primeLogos has run
   String? logoUrlFor(String symbol) {
     final url = _profiles[symbol]?.logoUrl;
     return (url == null || url.isEmpty) ? null : url;
   }
 
-  /// Fetches profiles for [symbols] in the background so their logos are
-  /// available to the next rebuild.
-  ///
-  /// **Why this is throttled.** The Market Board shows real company logos,
-  /// and only six were bundled as assets — every other ticker fell back to a
-  /// generic Material glyph even though `/stock/profile2` returns a logo URL
-  /// for all of them. Fetching them is the fix, but the naive version is a
-  /// request per visible row on every scroll, against a free tier that allows
-  /// 60 calls a minute. So: skip anything already cached or in flight, cap
-  /// each call to a handful of new symbols, and stay silent on failure —
-  /// a missing logo is a cosmetic downgrade, not an error worth surfacing.
+  // fetches profiles in the bg so logos are ready for the next rebuild.
+  // throttled cause naive would be a request per row per scroll against
+  // a 60 call/min limit. skips cached/in-flight, caps to a few new symbols,
+  // fails silently, a missing logo is just cosmetic
   Future<void> primeLogos(Iterable<String> symbols, {int limit = 6}) async {
     final wanted = <String>[];
     for (final symbol in symbols) {
@@ -1214,18 +1075,16 @@ class MarketDataService extends ChangeNotifier {
     try {
       await Future.wait(wanted.map(fetchCompanyProfile));
     } catch (_) {
-      // Swallowed on purpose — see above.
+      // swallowed on purpose, see above
     } finally {
       _profilesInFlight.removeAll(wanted);
     }
     notifyListeners();
   }
 
-  /// Static company background — logo, industry, description, market cap.
-  /// Finnhub's free-tier `/stock/profile2`, same key as quotes/search.
-  /// Cached indefinitely per session: a company's profile does not change
-  /// minute to minute, so there is no reason to ever re-fetch it twice for
-  /// the same symbol in one run.
+  // static company background, logo/industry/description/market cap.
+  // finnhub free tier /stock/profile2. cached for the whole session,
+  // this stuff doesnt change minute to minute
   Future<CompanyProfile?> fetchCompanyProfile(String symbol) async {
     final cached = _profiles[symbol];
     if (cached != null) {
@@ -1295,11 +1154,9 @@ class MarketDataService extends ChangeNotifier {
   _newsCache = {};
   static const Duration _newsCacheTtl = Duration(minutes: 15);
 
-  /// Recent headlines for [symbol]. Finnhub's free-tier `/company-news`,
-  /// same key as quotes/search. Cached 15 minutes per symbol — news doesn't
-  /// need the 20s quote-refresh cadence, and this is the single biggest
-  /// lever against burning through a shared proxy cache budget with a lot
-  /// of players opening the same popular tickers.
+  // recent headlines, finnhub free tier /company-news. cached 15 min per
+  // symbol, news doesnt need to be as fresh as quotes, saves a ton of
+  // proxy budget when lots of players open the same popular stock
   Future<List<CompanyNewsItem>> fetchCompanyNews(String symbol) async {
     final cached = _newsCache[symbol];
     if (cached != null &&
@@ -1409,8 +1266,7 @@ class MarketDataService extends ChangeNotifier {
     }
   }
 
-  /// Finnhub returns descriptions in caps ("WESTERN DIGITAL CORP"), which
-  /// reads as shouting next to the rest of the UI.
+  // finnhub sends descriptions in all caps, looks like yelling otherwise
   static String _titleCase(String input) {
     return input
         .toLowerCase()
