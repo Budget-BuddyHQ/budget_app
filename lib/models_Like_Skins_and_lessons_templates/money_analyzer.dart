@@ -1,67 +1,39 @@
 import 'finance_concepts.dart';
 
-/// Reads what somebody has actually done in this app and tells them one
-/// useful thing about it.
-///
-/// **Why this is not another stats screen.** The app already counts plenty:
-/// gold, XP, literacy points, jar fill, lives played. None of that is advice.
-/// A number tells you where you are; it does not tell you which single thing
-/// to change, and "here are eleven metrics" is how most money apps quietly
-/// hand the hard part back to the user.
-///
-/// So every finding here has three parts and is useless without all of them:
-///
-/// * **evidence** — a number out of *their* data, not a generic claim. "You
-///   pinned six habits and have logged two of them" is arguing with somebody
-///   about their own week, which is a much harder position to shrug off than
-///   "consistency is important".
-/// * **an action** — exactly one, small enough to do today. Findings that end
-///   in "consider reviewing your spending" are decoration.
-/// * **a concept, where there is one** — so the finding can hand off to the
-///   lesson that explains it, and through that to the lesson's source. The
-///   Academy already refuses to ship an uncited fact; advice should not get a
-///   free pass either.
-///
-/// **Why it is pure Dart.** No Flutter, no controllers, no storage. The whole
-/// thing is [MoneySnapshot] in, `List<MoneyFinding>` out, so the rules can be
-/// tested as rules — including the ones that are only reachable for a player
-/// with an odd history, which is exactly the population a UI test never
-/// reaches.
+// looks at what someone actually did in the app and gives ONE useful
+// takeaway, not another stats screen. every finding has: a real number
+// from their own data, one small action, and a concept to link back to
+// the academy lesson. pure dart, no flutter/storage, so its easy to test
 
-/// How seriously to take a finding.
+// how serious a finding is
 enum MoneyFindingKind {
-  /// Something they are already doing well. Present because an analyser that
-  /// only ever lists faults gets closed and not reopened, and because naming
-  /// the thing that is working tells them what to protect.
+  // theyre already doing this well, worth calling out
   strength,
 
-  /// A pattern worth watching. True, not yet costing them anything.
+  // worth watching, not costing them anything yet
   watch,
 
-  /// Something actively going wrong, with a number attached.
+  // actually going wrong, with a number to back it up
   fix,
 }
 
-/// The areas the analyser scores separately.
-///
-/// Kept apart on purpose: somebody can be extremely consistent and save
-/// nothing, or save well and understand none of it. Rolling those into one
-/// "money score" would hide the only interesting part, which is *which* of
-/// them is the weak one.
+// the areas we score separately, cause you can be consistent and broke,
+// or good with money and not understand any of it. one score wouldve
+// hidden which part is actually the weak one
 enum MoneyDimension {
-  /// Do they turn up? Logging days, gaps, streaks.
+  // do they show up? logging days, gaps, streaks
   consistency,
 
-  /// Is money actually moving? Saved totals, jar progress.
+  // is money actually moving, not just habit points
   saving,
 
-  /// Do they finish what they start? Habits pinned against habits logged.
+  // do they finish what they start
   followThrough,
 
-  /// Do they understand it? Lessons done, quiz accuracy by concept.
+  // do they get it? lesson + quiz accuracy
   learning,
 
-  /// Are they meeting the decisions at all? Town, lives, breadth of play.
+  // are they actually engaging with decisions, town/lives/variety
   exposure,
 }
 
@@ -74,7 +46,7 @@ extension MoneyDimensionInfo on MoneyDimension {
     MoneyDimension.exposure => 'Trying things',
   };
 
-  /// What a low score in this area actually means, in one line.
+  // what a low score here actually means
   String get weakness => switch (this) {
     MoneyDimension.consistency => 'You come back in bursts, then stop.',
     MoneyDimension.saving => 'The habits are happening, the money is not.',
@@ -84,18 +56,9 @@ extension MoneyDimensionInfo on MoneyDimension {
   };
 }
 
-/// One finished, graded life, as the Coach reads it.
-///
-/// **Why the Coach reads lives at all.** Net worth at the end of a life says how
-/// it went and nothing about why. Since a life became school, work, a home and a
-/// household, the reasons are in the record: whether it was studied for, whether
-/// that was borrowed, whether the work led up a ladder, what was owned and owed
-/// at the end. Those are the things a player can change on the next one, so those
-/// are what the Coach compares across lives.
-///
-/// Only lives that kept this detail become a reading. A life filed before the
-/// detail existed is not "a life with no degree", it is a life nobody wrote that
-/// down for, and counting it as one would have the Coach say something untrue.
+// one finished life, how the coach reads it. net worth alone doesnt say
+// WHY a life went well or bad, so this tracks school/work/debt/home stuff
+// too so the coach can point at something the player can actually change
 class LifeReading {
   const LifeReading({
     required this.age,
@@ -121,27 +84,24 @@ class LifeReading {
   final int workYears;
   final int assetsValue;
 
-  /// Loans and borrowed cash together, at the end.
+  // loans + borrowed cash combined, at the end
   final int loansOwed;
   final bool ownedHome;
   final bool hadPartner;
   final int children;
 
-  /// Studied on borrowed money and still owed something when it ended.
+  // borrowed for school and still owed money when the life ended
   bool get schoolDebtLeft => borrowedForSchool >= 1500 && loansOwed > 0;
 
-  /// Owed more than was owned.
+  // owed more than they owned
   bool get underwater => loansOwed > 0 && loansOwed > assetsValue;
 
-  /// Long enough at work for a promotion to have been reasonable, and none came.
+  // worked long enough that a promotion shouldve happened, and didnt
   bool get stalled => workYears >= 12 && promotions == 0;
 }
 
-/// Everything the analyser is allowed to look at.
-///
-/// A flat snapshot rather than the controllers themselves, so the rules take
-/// plain numbers and can be exercised without Supabase, storage or a widget
-/// tree. Built by [MoneySnapshot.from] on the UI side.
+// everything the analyser can see. flat numbers, not the actual controllers,
+// so the rules can run without supabase/storage/widgets attached
 class MoneySnapshot {
   const MoneySnapshot({
     this.loggedDaysLast14 = 0,
@@ -168,15 +128,10 @@ class MoneySnapshot {
     this.lives = const <LifeReading>[],
   });
 
-  /// Graded lives that kept their detail, newest first.
-  ///
-  /// This is what lets the Coach say *why* a life went the way it did, and not
-  /// only that the number moved. See [LifeReading].
+  // graded lives w/ full detail, newest first
   final List<LifeReading> lives;
 
-  /// The sentinel the habit store uses when nothing has ever been logged.
-  ///
-  /// Not zero, and not null: zero means "logged today", which is the opposite.
+  // sentinel for "never logged anything". cant be 0, thats "logged today"
   static const int neverLogged = 999;
 
   final int loggedDaysLast14;
@@ -185,8 +140,7 @@ class MoneySnapshot {
 
   final int pinnedHabits;
 
-  /// Distinct habits that actually appear in the last fortnight's log — the
-  /// number that matters against [pinnedHabits].
+  // distinct habits actually logged in the last 2 weeks vs pinnedHabits
   final int habitsLoggedLast14;
 
   final double moneySaved;
@@ -196,11 +150,10 @@ class MoneySnapshot {
   final int lessonsCompleted;
   final int lessonsAvailable;
 
-  /// Best accuracy per concept, 0..1. Absent means never assessed, which is
-  /// deliberately different from scoring zero.
+  // best accuracy per concept 0..1. missing = never tested, not a 0
   final Map<FinanceConcept, double> conceptAccuracy;
 
-  /// Net worth at the end of each finished life, newest first.
+  // net worth at the end of each finished life, newest first
   final List<int> pastLifeNetWorths;
 
   final int townSpotsVisited;
@@ -209,39 +162,24 @@ class MoneySnapshot {
   final int challengesStarted;
   final int challengesFinished;
 
-  /// Coin Cascade runs finished, and how the board was actually divided.
-  ///
-  /// **Why an arcade game feeds the coach at all.** Coin Cascade is the one
-  /// place in this app where a player allocates money under pressure without
-  /// being asked to. Nothing on that screen says "budget" while it is being
-  /// played — needs clear bills, wants raise them, savings win — so the split
-  /// that comes out is behaviour rather than an answer to a question about
-  /// behaviour. That makes it the most honest number the app holds, and the
-  /// only one worth checking a quiz score against.
-  ///
-  /// Shares are 0..1, averaged over finished runs.
+  // coin cascade runs + how the board got split. this game is basically
+  // 50/30/20 with no labels on it, so its the most honest behavior data
+  // we have, way better than a quiz answer. shares are 0..1, averaged
   final int cascadeRuns;
   final int cascadeLevelsCleared;
   final double cascadeWantsShare;
   final double cascadeSavesShare;
 
-  /// Enough runs to talk about a pattern rather than an off day.
+  // enough runs to be a pattern, not just one bad day
   bool get hasCascadeHistory => cascadeRuns >= 2;
 
-  /// How many different life endings have been reached.
-  ///
-  /// **Why the analyser needs to know.** Net worth is the obvious measure of
-  /// a life and it is not the only one somebody plays for. A player working
-  /// through the endings deliberately gets poorer runs on purpose — and being
-  /// told "your lives are not getting richer" for doing the thing the game
-  /// rewards is the fastest way to teach somebody that the coach is not
-  /// paying attention.
+  // different life endings reached. someone chasing endings on purpose
+  // gets poorer runs, dont want to scold them for that
   final int distinctEndings;
 
   bool get hasEverLogged => daysSinceLastLog < neverLogged;
 
-  /// True for somebody with essentially no history, where every rule below
-  /// would fire at once and none of them would be useful.
+  // basically no history yet, every rule below would fire and be useless
   bool get isNewcomer =>
       !hasEverLogged &&
       pinnedHabits == 0 &&
@@ -249,7 +187,7 @@ class MoneySnapshot {
       pastLifeNetWorths.isEmpty;
 }
 
-/// One thing the analyser noticed.
+// one thing the analyser noticed
 class MoneyFinding {
   const MoneyFinding({
     required this.id,
@@ -261,26 +199,25 @@ class MoneyFinding {
     this.concept,
   });
 
-  /// Stable key. Safe to log or persist against; never reuse one.
+  // stable key, safe to log/persist. never reuse one
   final String id;
   final MoneyFindingKind kind;
   final MoneyDimension dimension;
 
-  /// What was noticed, as a short phrase.
+  // short phrase, what was noticed
   final String title;
 
-  /// The number out of their own data that says so.
+  // the number from their data backing it up
   final String evidence;
 
-  /// One thing to do, small enough to do today.
+  // one thing to do, small enough for today
   final String action;
 
-  /// The idea behind it, where there is one — the hook into the Academy and
-  /// its citations.
+  // hooks into the academy lesson, if theres one
   final FinanceConcept? concept;
 }
 
-/// The whole read-out: a score per area, and the findings behind them.
+// the full readout, score per area + findings behind them
 class MoneyReport {
   const MoneyReport({
     required this.scores,
@@ -288,18 +225,16 @@ class MoneyReport {
     required this.isNewcomer,
   });
 
-  /// 0..100 per area. See [MoneyDimension] for why these are not averaged
-  /// into one number.
+  // 0..100 per area, kept separate on purpose (see MoneyDimension)
   final Map<MoneyDimension, int> scores;
 
-  /// Ordered: what is going wrong first, then what to watch, then what is
-  /// going right. Somebody who reads one line should read the useful one.
+  // ordered worst first so the useful line is the one they actually read
   final List<MoneyFinding> findings;
 
-  /// True when there is not enough history to say anything honest yet.
+  // not enough history yet to say anything honest
   final bool isNewcomer;
 
-  /// The weakest area, or null when nothing has been scored.
+  // weakest area, null if nothing scored yet
   MoneyDimension? get weakest {
     if (scores.isEmpty) return null;
     var worst = scores.entries.first;
@@ -309,17 +244,12 @@ class MoneyReport {
     return worst.key;
   }
 
-  /// The single line to show if there is only room for one.
+  // single line to show if theres only room for one
   MoneyFinding? get headline => findings.isEmpty ? null : findings.first;
 }
 
-/// Turns a [MoneySnapshot] into a [MoneyReport].
-///
-/// Every rule below is written to be *quiet on thin data*. A player three
-/// minutes into the app has no consistency, no savings and no lessons, and
-/// firing all five faults at them is both true and useless — so the rules
-/// that need history check for it first and [MoneyReport.isNewcomer] short-
-/// circuits the lot.
+// turns a snapshot into a report. rules stay quiet on thin data, a
+// brand new player shouldnt get hit with 5 "youre failing" findings at once
 MoneyReport analyseMoney(MoneySnapshot snap) {
   final findings = <MoneyFinding>[];
 
@@ -374,12 +304,9 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
     );
   }
 
-  // ---- Finishing --------------------------------------------------------
-  //
-  // The classic. Pinning a habit is free and feels like progress; logging one
-  // is neither. A big gap between the two is the most common shape of failure
-  // in every habit app there has ever been, and it is invisible unless
-  // somebody puts the two numbers side by side.
+  // ---- Finishing -----
+  // pinning a habit is free, logging it isnt. big gap between the two
+  // is the classic habit-app failure and its invisible unless you compare
   var followThrough = 100;
   if (snap.pinnedHabits >= 3) {
     followThrough = _score(snap.habitsLoggedLast14, snap.pinnedHabits);
@@ -420,12 +347,9 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
     );
   }
 
-  // ---- Money moving -----------------------------------------------------
-  //
-  // The one this app is most at risk of getting wrong. Habit points, jar fill
-  // and streaks are all satisfying and none of them is money — it is entirely
-  // possible to be a model user of this app and be no better off, and if that
-  // is happening the analyser has to be the thing that says so.
+  // ---- Money moving -----
+  // habit points and streaks feel good but arent actual money. someone
+  // couldve been a model user and still be no better off, catch that here
   final saving = _score(snap.moneySaved.round(), 200);
   if (snap.choicesKept >= 10 && snap.moneySaved < 5) {
     findings.add(
@@ -462,7 +386,7 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
     );
   }
 
-  // ---- Understanding ----------------------------------------------------
+  // ---- Understanding -----
   final learning = snap.lessonsAvailable == 0
       ? 0
       : _score(snap.lessonsCompleted, (snap.lessonsAvailable * 0.4).round());
@@ -504,7 +428,7 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
     );
   }
 
-  // ---- Trying things ----------------------------------------------------
+  // ---- Trying things -----
   final exposure = snap.townSpotsAvailable == 0
       ? 0
       : _score(snap.townSpotsVisited, snap.townSpotsAvailable);
@@ -531,16 +455,8 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
     final newest = snap.pastLifeNetWorths.first;
     final previous = snap.pastLifeNetWorths[1];
     if (newest > previous) {
-      // Even "you did better" assumes richer is the goal.
-      //
-      // The flat-lives branch below already checks whether somebody is
-      // collecting endings rather than chasing money. This branch needed the
-      // same check for the same reason: a player working through the endings
-      // sees net worth swing wildly between runs, and congratulating them on
-      // a number they were not aiming at is the coach talking past them. It
-      // is a smaller mistake than the scolding one — nobody minds being
-      // praised — but it is the same failure to read what the player is
-      // actually doing.
+      // "you did better" still assumes richer = the goal, which isnt
+      // true if theyre chasing endings on purpose. check for that too
       final chasingEndings =
           snap.distinctEndings >= 3 &&
           snap.distinctEndings >= snap.pastLifeNetWorths.length - 1;
@@ -567,13 +483,8 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
         ),
       );
     } else if (snap.pastLifeNetWorths.length >= 3) {
-      // Are they collecting endings rather than chasing money?
-      //
-      // Three or more distinct endings across a handful of lives is not
-      // somebody failing to get rich — it is somebody exploring the game on
-      // purpose, and poorer runs are the *cost* of that rather than a
-      // mistake. Scolding them for it would be the coach reading a number
-      // without reading the player.
+      // 3+ different endings = exploring on purpose, not failing to get
+      // rich. dont scold for that
       final exploring =
           snap.distinctEndings >= 3 &&
           snap.distinctEndings >= snap.pastLifeNetWorths.length - 1;
@@ -614,25 +525,12 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
     }
   }
 
-  // ---------------------------------------------------------------------
-  // Cross-domain rules.
-  //
-  // Everything above reads one area and reports on it. These read *two* and
-  // report on the gap, which is where the findings a player cannot get from
-  // looking at their own screens live. They are added last so that when two
-  // rules describe the same behaviour, the specific cross-domain one is the
-  // later, more interesting sentence rather than a duplicate of a simpler
-  // one above it.
-  // ---------------------------------------------------------------------
+  // ---- Cross-domain rules -----
+  // these compare TWO areas instead of one, catches stuff no single
+  // screen can see on its own. added last so they win over duplicates
 
-  // Knowing it and doing it are different, and only one of them is a skill.
-  //
-  // This is the finding this whole section exists for. A player who scores
-  // well on needs-versus-wants and then spends over a third of an unlabelled
-  // board on wants has not failed to learn the definition — they have learnt
-  // *only* the definition. No single screen in this app can see that: the
-  // Academy sees a good score, the arcade sees a finished run, and the gap
-  // between them is invisible to both.
+  // knowing the definition vs actually doing it are different skills.
+  // good quiz score + bad cascade split = they only learned the definition
   final splitKnowledge = <FinanceConcept>[
     FinanceConcept.needsVsWants,
     FinanceConcept.budgetRule,
@@ -699,12 +597,8 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
       );
     }
 
-    // The same shape showing up in two independent systems.
-    //
-    // One high-wants arcade run is a bad afternoon. High wants *and* lives
-    // that are not getting richer is the same decision being made twice, in
-    // two places built by different rules, and that is worth saying out loud
-    // because neither screen can say it alone.
+    // same bad pattern showing up in 2 unrelated systems is worth flagging,
+    // one high-wants run alone doesnt mean much but this does
     if (snap.cascadeWantsShare >= 0.4 &&
         snap.pastLifeNetWorths.length >= 3 &&
         snap.pastLifeNetWorths.first <= snap.pastLifeNetWorths[2]) {
@@ -728,8 +622,7 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
     }
   }
 
-  // Reading without practising, which is the opposite failure and just as
-  // real. Someone can finish half the Academy and never make one decision.
+  // opposite problem: reading tons of lessons but never actually playing
   if (snap.lessonsCompleted >= 4 &&
       snap.cascadeRuns == 0 &&
       snap.pastLifeNetWorths.isEmpty) {
@@ -750,15 +643,10 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
     );
   }
 
-  // ---------------------------------------------------------------------
-  // Lives, read for what they were made of.
-  //
-  // Each of these needs at least two lives and looks for the same thing showing
-  // up more than once, because one life is a story and two are a pattern. Every
-  // one is worded so that a fair trade is not called a mistake: borrowing for a
-  // qualification and paying it off is fine, and the finding is for the loans
-  // that were still there at the end.
-  // ---------------------------------------------------------------------
+  // ---- Lives, for what they were actually made of -----
+  // needs 2+ lives showing the same thing. one life is a story, two is a
+  // pattern. borrowing for school + paying it off is fine, only debt left
+  // at the end counts against them
   final recent = snap.lives.take(4).toList();
 
   if (recent.length >= 2) {
@@ -842,7 +730,7 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
     }
   }
 
-  // Did studying pay, across the lives that have both kinds to compare?
+  // did studying actually pay off, comparing lives with/without a degree
   final compared = snap.lives.take(8).toList();
   final studied = compared.where((l) => l.degrees >= 1).toList();
   final notStudied = compared.where((l) => l.degrees == 0).toList();
@@ -887,7 +775,7 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
     }
   }
 
-  // Money that was not the point. Richer lives that were not happier ones.
+  // rich lives that werent actually happy ones
   if (compared.length >= 3) {
     final worths = compared.map((l) => l.netWorth).toList()..sort();
     final median = worths[worths.length ~/ 2];
@@ -916,9 +804,7 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
     }
   }
 
-  // Worst first. Within a kind, keep the order the rules produced them in,
-  // which runs roughly from habit to money to understanding — the order
-  // somebody can actually act on.
+  // worst first, otherwise keep the order the rules fired in
   const rank = <MoneyFindingKind, int>{
     MoneyFindingKind.fix: 0,
     MoneyFindingKind.watch: 1,
@@ -940,7 +826,7 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
   );
 }
 
-/// `value` against `target`, as 0..100.
+// value vs target, scaled to 0..100
 int _score(num value, num target) {
   if (target <= 0) return 0;
   final ratio = value / target;

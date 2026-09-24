@@ -3039,3 +3039,34 @@ code already explains why it gets the prominent slot, and that reasoning still
 holds.
 
 **Files.** `life_sim_page.dart` (`_ThisYearPanel`), `test/life_menu_render_test.dart`.
+
+### Most Academy quizzes came up empty, and even an adult lost four of them
+
+**Found by playing the app.** Opening Unit 1's Quick Quiz showed the generic
+placeholder sentence, no question, and a "Complete Lesson" button that still
+paid out full XP and gold. Measured across every quiz and unit-test node for
+every age band: adults hit **4 of 26 completely empty**, teens 8-16 of 26, and
+under-9 22 of 26.
+
+**Root cause.** `AgeBand.minQuizStage` is a floor that exists so an older
+reader is never handed a question written for a six-year-old and feels talked
+down to. Unit 1, "Money Is Real", and Unit 2 are tagged `earlyChildhood` /
+`youngKids` on purpose — they are written for the youngest players — so
+*every* question in them sits below an adult's floor, and `ageAppropriateQuestions`
+returned nothing for the whole node. Nobody designed "an adult cannot pass
+Unit 1", and units chain by prerequisite, so this blocked progress for anyone
+above the youngest band on the first two units of the curriculum.
+
+**Fix.** `ageAppropriateQuestions` now applies the ceiling and the adult-topic
+block first — never relaxed, and still returns empty for the case the original
+comment documented on purpose (a young reader on an advanced or adult-topic
+unit gets the reading and no test). The floor is applied only within what
+already cleared those two, and is dropped again if it would empty the node out,
+so the pool an older reader sees is never smaller than every question that
+unit could possibly show them.
+
+**Verified by.** New tests in `quiz_bank_test.dart`: an adult never meets an
+empty quiz/test node (0/26, was 4/26), and a young reader still gets nothing on
+an advanced unit (ceiling unchanged). Full suite green.
+
+**Files.** `quiz_bank.dart` (`ageAppropriateQuestions`), `quiz_bank_test.dart`.

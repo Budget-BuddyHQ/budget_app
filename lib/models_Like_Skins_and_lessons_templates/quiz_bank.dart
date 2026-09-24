@@ -2864,7 +2864,8 @@ const List<QuizQuestion> _unit10Practice = <QuizQuestion>[
   QuizQuestion(
     id: 'u10p5',
     skillId: QuizSkills.earlyMoneyBasics,
-    prompt: 'A grown-up pays with a card instead of coins. Did they spend money?',
+    prompt:
+        'A grown-up pays with a card instead of coins. Did they spend money?',
     options: [
       'No, cards are free',
       'Only if the shop gives them a receipt',
@@ -2894,7 +2895,8 @@ const List<QuizQuestion> _unit10Practice = <QuizQuestion>[
   QuizQuestion(
     id: 'u10p7',
     skillId: QuizSkills.earlySaving,
-    prompt: 'You spend all your coins today. What do you have to spend tomorrow?',
+    prompt:
+        'You spend all your coins today. What do you have to spend tomorrow?',
     options: [
       'The same amount as today',
       'Twice as much',
@@ -2924,13 +2926,9 @@ const List<QuizQuestion> _unit10Practice = <QuizQuestion>[
   QuizQuestion(
     id: 'u10p9',
     skillId: QuizSkills.earlySaving,
-    prompt: 'You get two coins each week. How many will you have after three weeks if you save them all?',
-    options: [
-      'Two',
-      'Three',
-      'Six',
-      'Nine',
-    ],
+    prompt:
+        'You get two coins each week. How many will you have after three weeks if you save them all?',
+    options: ['Two', 'Three', 'Six', 'Nine'],
     correctIndex: 2,
     explanation:
         'Two coins, three times, is six coins. Saving a small amount over and '
@@ -3151,13 +3149,9 @@ const List<QuizQuestion> _unit11Practice = <QuizQuestion>[
   QuizQuestion(
     id: 'u11p4',
     skillId: QuizSkills.simpleSavingsPlan,
-    prompt: 'You get 10 coins a week and want a game that costs 40 coins. About how long will it take if you save every coin?',
-    options: [
-      'Two weeks',
-      'Four weeks',
-      'Ten weeks',
-      'Forty weeks',
-    ],
+    prompt:
+        'You get 10 coins a week and want a game that costs 40 coins. About how long will it take if you save every coin?',
+    options: ['Two weeks', 'Four weeks', 'Ten weeks', 'Forty weeks'],
     correctIndex: 1,
     explanation:
         'Forty coins, ten a week, is four weeks. Working out how long a goal '
@@ -3166,7 +3160,8 @@ const List<QuizQuestion> _unit11Practice = <QuizQuestion>[
   QuizQuestion(
     id: 'u11p5',
     skillId: QuizSkills.simpleSavingsPlan,
-    prompt: 'You are saving for a bike, and a smaller thing you want goes on sale. What does buying it cost you?',
+    prompt:
+        'You are saving for a bike, and a smaller thing you want goes on sale. What does buying it cost you?',
     options: [
       'Nothing, because it is on sale',
       'Only the price on the label',
@@ -3181,7 +3176,8 @@ const List<QuizQuestion> _unit11Practice = <QuizQuestion>[
   QuizQuestion(
     id: 'u11p6',
     skillId: QuizSkills.allowanceEarning,
-    prompt: 'Your friend says you should buy the same thing they did. What is the best thing to do first?',
+    prompt:
+        'Your friend says you should buy the same thing they did. What is the best thing to do first?',
     options: [
       'Buy it, so you both have one',
       'Ask yourself whether you actually want it',
@@ -3196,7 +3192,8 @@ const List<QuizQuestion> _unit11Practice = <QuizQuestion>[
   QuizQuestion(
     id: 'u11p7',
     skillId: QuizSkills.wantsVsNeeds,
-    prompt: 'Your shoes still fit and are not broken, but a new pair looks nicer. The new pair is a:',
+    prompt:
+        'Your shoes still fit and are not broken, but a new pair looks nicer. The new pair is a:',
     options: [
       'Want',
       'Need',
@@ -3211,7 +3208,8 @@ const List<QuizQuestion> _unit11Practice = <QuizQuestion>[
   QuizQuestion(
     id: 'u11p8',
     skillId: QuizSkills.simpleSavingsPlan,
-    prompt: 'What does it mean to keep some of your money instead of spending all of it?',
+    prompt:
+        'What does it mean to keep some of your money instead of spending all of it?',
     options: [
       'You are not allowed to spend it ever again',
       'You are wasting it by not using it',
@@ -3706,33 +3704,67 @@ const List<QuizQuestion> _investingSourcedPractice = <QuizQuestion>[
 /// body when there is no quiz. A young reader on the retirement unit gets the
 /// reading and no test, which is the right outcome — the alternative is
 /// testing them on vesting.
+///
+/// **The one direction that was not supposed to go empty.** Every band also
+/// has a *floor* (`AgeBand.minQuizStage`) so a teenager is not handed the
+/// six-year-old's question and feel talked down to. Unit 1, "Money Is Real",
+/// is tagged `earlyChildhood` because it is written for the very youngest
+/// players — and an adult's floor is `middleSchool`, so *every* question in
+/// it sat below the floor. Measured: 4 of 26 quiz/test nodes across the whole
+/// curriculum came up completely empty for an adult, including the first two
+/// units everybody passes through on the way in. The screen has no message
+/// for that case — it silently shows the placeholder blurb and a "Complete
+/// Lesson" button that pays out as if a quiz had been taken, with no
+/// questions asked at all.
+///
+/// So the floor is relaxed, not removed, when it is the only thing standing
+/// between an older reader and *some* quiz: the ceiling and the adult-topic
+/// block are checked first and are never relaxed (that is the direction the
+/// comment above protects, and it still returns empty), and only once a unit
+/// clears both is the floor applied — dropped again if it would otherwise
+/// leave nothing, so the pool an older reader actually sees is never smaller
+/// than "every question this unit could possibly show them."
 List<QuizQuestion> ageAppropriateQuestions(
   List<QuizQuestion> source,
   AgeBand band,
 ) {
   if (source.isEmpty) return source;
 
-  // Floor one: who the question was written for.
+  bool passesTopicAndCeiling(QuizQuestion question) {
+    final stage = kQuestionStage[question.id];
+    if (stage != null && stage.index > band.maxQuizStage.index) return false;
+    if (band.blocksAdultTopics &&
+        (mentionsAdultTopic(question.prompt) ||
+            question.options.any(mentionsAdultTopic))) {
+      return false;
+    }
+    return true;
+  }
+
+  // Floor one: who the question was written for, checked as a ceiling only
+  // here — a reader never sees a stage written above their own. This is the
+  // floor from `questionFitsStage`'s stage half.
   //
-  // Taken from the unit that owns it, which is a human judgement about
-  // audience rather than a syllable count — see `question_stage.dart` for
-  // why reading grade could never have caught a 401(k) question reaching a
-  // six-year-old. This is the fix for *"the questions are a bit shift"*.
-  //
-  // Floor two: adult topics, prompt *and* options, because a question can
-  // ask something innocent and offer four answers naming instruments —
-  // "Which of these grows fastest?" with an ETF, an IRA and a CD ladder
-  // among the choices.
-  final allowed = <QuizQuestion>[
+  // Floor two: adult topics, prompt *and* options, because a question can ask
+  // something innocent and offer four answers naming instruments — "Which of
+  // these grows fastest?" with an ETF, an IRA and a CD ladder among the
+  // choices. This one is never relaxed.
+  final safe = <QuizQuestion>[
     for (final question in source)
-      if (questionFitsStage(question.id, band) &&
-          !(band.blocksAdultTopics &&
-              (mentionsAdultTopic(question.prompt) ||
-                  question.options.any(mentionsAdultTopic))))
-        question,
+      if (passesTopicAndCeiling(question)) question,
   ];
 
-  if (allowed.isEmpty) return const <QuizQuestion>[];
+  if (safe.isEmpty) return const <QuizQuestion>[];
+
+  // The "not patronisingly easy" floor, applied only within what already
+  // cleared the ceiling — and dropped again if it would empty the unit out.
+  final notBelowFloor = <QuizQuestion>[
+    for (final question in safe)
+      if ((kQuestionStage[question.id]?.index ?? band.minQuizStage.index) >=
+          band.minQuizStage.index)
+        question,
+  ];
+  final allowed = notBelowFloor.isNotEmpty ? notBelowFloor : safe;
 
   final fitted = <QuizQuestion>[];
   for (final question in allowed) {

@@ -119,11 +119,18 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
             )
           : null,
       appBar: AppBar(
-        // default toolbar height, no extra title padding. this screen sits
-        // *under* MainNavigation's global top bar when its a tab, so 70px
-        // toolbar + 12px title inset stacked a whole second header's worth
-        // of empty space below the first one. thats what that gap between
-        // "Daily" and the content was
+        // Collapsing the toolbar (not just trimming its padding) when this
+        // is a tab. The "default toolbar height, no extra title padding"
+        // version still cost a full ~56px toolbar row *plus* this 52px tab
+        // strip stacked under MainNavigation's own ~60px top bar — three
+        // bands of chrome before any real content, which is the "top bit is
+        // very expanded" complaint. The title was redundant with that top
+        // bar's already-highlighted "Daily" pill, so as a tab there is
+        // nothing worth spending the toolbar row on: it collapses to 0 and
+        // only the tab strip below remains. Pushed as a standalone route
+        // there is no pill above saying "Daily" for the title to duplicate,
+        // so the full toolbar (and its title) comes back.
+        toolbarHeight: asTab ? 0 : kToolbarHeight,
         backgroundColor: AppTheme.deepForest,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -131,17 +138,12 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
         // as a tab theres nothing to go back *to* so the arrow would just
         // be a dead button
         automaticallyImplyLeading: !asTab,
-        title: Text(
-          // As a tab this screen *is* Daily — the top strip's Daily button
-          // opens it. Titling it "Money Habits" under a strip that says
-          // "Daily" was the confusion in its purest form: the label you
-          // tapped and the heading you landed on disagreed, and neither
-          // named the plan the tab actually leads with. Pushed as a route it
-          // keeps the old name, because then it really was opened as the
-          // habit tracker.
-          asTab ? 'Daily' : 'Money Habits',
-          style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
-        ),
+        title: asTab
+            ? null
+            : Text(
+                'Money Habits',
+                style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+              ),
         // A taller strip than `kTextTabBarHeight`, because these tabs are a
         // pill with an icon *beside* a word rather than a Material label with
         // an icon stacked over it. See [_HabitTab].
