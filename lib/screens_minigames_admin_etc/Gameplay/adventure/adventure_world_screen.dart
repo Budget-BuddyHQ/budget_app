@@ -218,6 +218,24 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
   /// exhausting and would make the pickpocket routine rather than a shock.
   Future<void> _talkTo(TownNpc npc) async {
     if (_sheetOpen) return;
+    // Speaking to somebody is how contacts are made: people who know you are
+    // how most work is found. The line is shown after the conversation, so the
+    // toast is not lost behind the sheet. See `life_network.dart`.
+    final contactLine = widget.life?.meetTownContact(npc.name);
+    await _converse(npc);
+    if (contactLine != null && mounted) {
+      GameToast.show(
+        context,
+        title: 'Contact',
+        message: contactLine,
+        icon: Icons.groups_rounded,
+        accent: const Color(0xFF58C7FF),
+      );
+    }
+  }
+
+  Future<void> _converse(TownNpc npc) async {
+    if (_sheetOpen) return;
     _sheetOpen = true;
 
     final controller = context.read<UserStatsController>();
@@ -250,6 +268,10 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      // Without this a sheet is capped at half the screen and the
+      // content underneath is simply unreachable.
+      isScrollControlled: true,
+      useSafeArea: true,
       builder: (_) => _NpcDialogueSheet(
         npc: npc,
         line: line,
@@ -264,7 +286,8 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
                 age: age,
                 lessonsFinished: controller.stats.completedLessons.length,
               ),
-        canClaim: mission != null &&
+        canClaim:
+            mission != null &&
             missionComplete(
               mission,
               coinsSaved: widget.life?.emergencyFund ?? 0,
@@ -288,6 +311,10 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     final accepted = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
+      // Without this a sheet is capped at half the screen and the
+      // content underneath is simply unreachable.
+      isScrollControlled: true,
+      useSafeArea: true,
       isDismissible: isDeclinable(action.kind),
       enableDrag: isDeclinable(action.kind),
       builder: (_) => _NpcEncounterSheet(npc: npc, action: action),
@@ -302,6 +329,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     if (delta == 0) return;
 
     widget.life?.applyTownOutcome(gold: delta, xp: 2, literacy: 1);
+    _applyAfterFrame(() {});
     await context.read<UserStatsController>().applyChallengePayload(
       <String, dynamic>{
         'gold_earned': delta > 0 ? delta : 0,
@@ -325,6 +353,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
       xp: mission.rewardLiteracy * 2,
       literacy: mission.rewardLiteracy,
     );
+    _applyAfterFrame(() {});
     if (!mounted) return;
     GameToast.show(
       context,
@@ -335,26 +364,62 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     );
   }
 
+  /// Whether a coin is already gone.
+  ///
+  /// In a life this is **per year and per life**, kept by the life itself, so
+  /// the town restocks every birthday and a new life starts with every coin on
+  /// the map. Outside a life it is the account's own one-time list, as before.
+  /// Coins used to be account-only, which is why after the first life the map
+  /// had nothing left to pay anybody. See `life_town_income.dart`.
+  bool _coinTaken(({int x, int y, int value}) coin) {
+    final id = _coinId(coin);
+    final life = widget.life;
+    return life != null
+        ? life.townCoinTaken(id)
+        : _collectedCoinIds.contains(id);
+  }
+
   Future<void> _collectCoin(String coinId, int value) async {
-    if (!mounted || _collectedCoinIds.contains(coinId)) {
+    if (!mounted) return;
+    final life = widget.life;
+
+    // Life money first. It is what the run is about, and it is the only part
+    // that repeats: 0 means this coin was already picked up this year.
+    var lifePaid = 0;
+    if (life != null) {
+      lifePaid = life.takeTownCoin(coinId, value);
+      if (lifePaid == 0) return;
+    } else if (_collectedCoinIds.contains(coinId)) {
       return;
     }
+
+    // Account gold stays a once-ever reward, or the leaderboard's gold column
+    // becomes a treadmill. It is the *life money* that restocks.
+    final firstTime = !_collectedCoinIds.contains(coinId);
     _applyAfterFrame(() {
-      _coinsFound += value;
-      _collectedCoinIds.add(coinId);
+      if (firstTime) {
+        _coinsFound += value;
+        _collectedCoinIds.add(coinId);
+      }
     });
-    await context.read<UserStatsController>().applyChallengePayload(
-      <String, dynamic>{
-        'gold_earned': value,
-        'spending_habits': <String, dynamic>{
-          'town_collected_coins': _collectedCoinIds.toList(),
+    if (firstTime) {
+      await context.read<UserStatsController>().applyChallengePayload(
+        <String, dynamic>{
+          'gold_earned': value,
+          'spending_habits': <String, dynamic>{
+            'town_collected_coins': _collectedCoinIds.toList(),
+          },
         },
-      },
-    );
+      );
+    }
     if (!mounted) return;
     GameToast.show(
       context,
-      message: '+$value gold',
+      message: life != null
+          ? (firstTime
+                ? '+$lifePaid coins  ·  +$value gold'
+                : '+$lifePaid coins')
+          : '+$value gold',
       icon: Icons.paid_rounded,
       accent: const Color(0xFFFFD45C),
     );
@@ -375,13 +440,20 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     // lock **names the unit**, because a door that is simply shut teaches
     // nothing and reads as a bug — the point is to send somebody to a lesson,
     // not to keep them out of a building.
-    final completed = context.read<UserStatsController>().stats.completedLessons
+    final completed = context
+        .read<UserStatsController>()
+        .stats
+        .completedLessons
         .toSet();
     if (!isSpotUnlocked(spot.kind, completed)) {
       final unlock = unlockFor(spot.kind)!;
       await showModalBottomSheet<void>(
         context: context,
         backgroundColor: Colors.transparent,
+        // Without this a sheet is capped at half the screen and the
+        // content underneath is simply unreachable.
+        isScrollControlled: true,
+        useSafeArea: true,
         builder: (_) => _LockedSpotSheet(
           spot: spot,
           unlock: unlock,
@@ -411,6 +483,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
           lifeAge: widget.life?.age,
           today: _today,
           settled: settled,
+          life: widget.life,
         ),
       ),
     );
@@ -542,7 +615,12 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
               ),
               player: _buildPlayer(playerSheet),
               playerControllers: [
-                Joystick(directional: JoystickDirectional()),
+                Joystick(
+                  directional: JoystickDirectional(
+                    size: TownJoystickLayout.size,
+                    margin: TownJoystickLayout.margin,
+                  ),
+                ),
                 Keyboard(
                   config: KeyboardConfig(
                     acceptedKeys: [
@@ -588,14 +666,13 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
                     onExit: _onExitNpc,
                   ),
                 for (final coin in townCoinsFor(_townMap))
-                    if (!_collectedCoinIds.contains(_coinId(coin)))
-                      TownCoinComponent(
-                        value: coin.value,
-                        tileX: coin.x,
-                        tileY: coin.y,
-                        onCollect: (value) =>
-                            _collectCoin(_coinId(coin), value),
-                      ),
+                  if (!_coinTaken(coin))
+                    TownCoinComponent(
+                      value: coin.value,
+                      tileX: coin.x,
+                      tileY: coin.y,
+                      onCollect: (value) => _collectCoin(_coinId(coin), value),
+                    ),
               ],
               cameraConfig: CameraConfig(zoom: 1.6, moveOnlyMapArea: true),
             ),
@@ -616,10 +693,18 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
                           child: _ObjectiveBar(
                             visitedCount: _visited.length,
                             totalCount: kTownSpots.length,
-                            coinsFound: _coinsFound,
+                            coinsFound:
+                                widget.life?.townEarnedThisYear ?? _coinsFound,
+                            coinsNote: widget.life == null
+                                ? null
+                                : widget.life!.townAllowanceSpent
+                                ? 'this year, fading'
+                                : 'this year',
                             today: _today,
                           ),
                         ),
+                        const SizedBox(width: 10),
+                        const _DemoBadge(),
                       ],
                     ),
                   ),
@@ -702,11 +787,17 @@ class _ObjectiveBar extends StatelessWidget {
     required this.totalCount,
     required this.coinsFound,
     required this.today,
+    this.coinsNote,
   });
 
   final int visitedCount;
   final int totalCount;
   final int coinsFound;
+
+  /// Words after the amount, when it is life money. "this year" is what makes
+  /// the number read as an income rather than a score, and "fading" is the
+  /// honest thing to say once the year's allowance is spent.
+  final String? coinsNote;
 
   /// What the town is like this visit. See [TownCondition] for why the map
   /// had to say this out loud rather than only behave differently.
@@ -756,12 +847,16 @@ class _ObjectiveBar extends StatelessWidget {
             const SizedBox(width: 12),
             const Icon(Icons.paid_rounded, color: Color(0xFFFFD45C), size: 16),
             const SizedBox(width: 4),
-            Text(
-              '$coinsFound',
-              style: AppTheme.numeric(
-                color: const Color(0xFFFFD45C),
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
+            Flexible(
+              child: Text(
+                coinsNote == null ? '$coinsFound' : '$coinsFound $coinsNote',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTheme.numeric(
+                  color: const Color(0xFFFFD45C),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
@@ -891,6 +986,102 @@ class _TalkButton extends StatelessWidget {
   }
 }
 
+/// Every town bottom sheet, at its wordiest, for the layout sweep.
+///
+/// These are private widgets inside a Bonfire screen, and a test cannot drive
+/// that screen to the point of opening one (the map needs a real game loop
+/// and a map file). They are also exactly where the overflow was reported, so
+/// `test/town_sheet_layout_test.dart` builds them through here instead. Each
+/// is filled from the real catalogues, picking the longest text in each, so
+/// the sweep measures the worst case rather than a convenient one.
+@visibleForTesting
+Map<String, Widget> debugTownSheets() {
+  T longestBy<T>(Iterable<T> items, int Function(T) length) =>
+      items.reduce((a, b) => length(b) > length(a) ? b : a);
+
+  final npc = longestBy(
+    kTownNpcs,
+    (n) => longestBy(n.lines, (l) => l.length).length,
+  );
+  final line = longestBy(npc.lines, (l) => l.length);
+  final mission = longestBy(
+    kTownMissions,
+    (m) => m.brief.length + m.title.length,
+  );
+  final action = longestBy(
+    kNpcActions,
+    (a) => a.detail.length + a.headline.length,
+  );
+  final unlock = longestBy(kTownUnlocks, (u) => u.why.length);
+  final spot = kTownSpots.firstWhere((s) => s.kind == unlock.spotKind);
+
+  return <String, Widget>{
+    'neighbour with a mission': _NpcDialogueSheet(
+      npc: npc,
+      line: line,
+      mission: mission,
+      progress: 0.5,
+      canClaim: true,
+      onClaim: () {},
+    ),
+    'neighbour, no mission': _NpcDialogueSheet(npc: npc, line: line),
+    'encounter': _NpcEncounterSheet(npc: npc, action: action),
+    'locked building': _LockedSpotSheet(
+      spot: spot,
+      unlock: unlock,
+      progress: 0,
+    ),
+  };
+}
+
+/// The frame every town bottom sheet sits in.
+///
+/// **The bug this fixes.** Each sheet was a fixed-height `Column` in a plain
+/// `showModalBottomSheet`, which caps a sheet at half the screen. The town
+/// map locks landscape, so the *normal* case here is a phone about 460
+/// logical pixels tall. A neighbour handing out a mission, or a locked
+/// building explaining its unlock, ran off the bottom: Flutter painted the
+/// yellow overflow stripes across the reward line, and the button below it
+/// could not be reached at all.
+///
+/// So a sheet now takes as much height as it needs up to 88% of the screen,
+/// scrolls inside that, and keeps its last row clear of the gesture bar.
+class _TownSheet extends StatelessWidget {
+  const _TownSheet({required this.child, this.border});
+
+  final Widget child;
+
+  /// The encounter sheet tints its edge by what kind of encounter it is.
+  final Color? border;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppTheme.panelStrong,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppTheme.radiusXLarge),
+          ),
+          border: border == null
+              ? null
+              : Border.all(color: border!, width: 1.5),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _NpcDialogueSheet extends StatelessWidget {
   const _NpcDialogueSheet({
     required this.npc,
@@ -919,14 +1110,7 @@ class _NpcDialogueSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-      decoration: const BoxDecoration(
-        color: AppTheme.panelStrong,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppTheme.radiusXLarge),
-        ),
-      ),
+    return _TownSheet(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1201,6 +1385,46 @@ class _AdventureBackButton extends StatelessWidget {
   }
 }
 
+/// Says this town is not the finished game.
+///
+/// **Why it exists.** The open world is an early piece of what "BitLife plus
+/// more" is meant to become — the Life feed is the polished loop, and the
+/// town is where that gets built out next. Nothing on screen said so, which
+/// let a small, quiet map read as the finished idea rather than the start of
+/// one.
+class _DemoBadge extends StatelessWidget {
+  const _DemoBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label:
+          'This town is an early demo. More places and things to do are '
+          'on the way.',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: const Color(0xFFFFC857), width: 1.5),
+        ),
+        child: Text(
+          'DEMO',
+          // Quicksand, not Pixelify: Pixelify's capitals have confusable pairs
+          // at every size (see `caps_legibility_test.dart`), and four letters
+          // in all-caps has no lowercase neighbour to disambiguate them by.
+          style: AppTheme.caps(
+            color: const Color(0xFFFFC857),
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 Future<SpriteAnimation> _npcIdleAnimation(TownNpcLook look) async {
   final paths = switch (look) {
     TownNpcLook.taxer => AppAssets.taxerIdleFrames,
@@ -1273,28 +1497,27 @@ Future<SpriteAnimation> _loadRowFrames(
   ], stepTime: stepTime);
 }
 
-/// The side-on walk cycle.
+/// The side-on walk cycle: all eight columns, in order.
 ///
-/// **What was wrong, and it was not the drawing.** Every villager sheet has
-/// eight side-facing columns but only *four distinct poses* — measured across
-/// all 38 sheets, column 0 was pixel-identical to 4, 1 to 3, and 5 to 7. And
-/// 5-7 were not the other half of the stride, they were the same poses drawn
-/// 16% bulkier (7,820 opaque pixels at 79.5px wide against 6,740 at 65px).
+/// **Why it skipped frames before, and why it does not now.** The old side
+/// rows were never a walk. Columns 0 and 4 had face-on legs on a profile
+/// body, 1 and 3 were the same pose, and 5-7 were 1-3 with the leg band
+/// flipped, which pointed the shoes backwards. No frame had the legs apart,
+/// so the cycle `[1, 2, 3, 5, 6, 7]` shuffled on the spot with the feet
+/// flipping direction — reported as the left/right walk "not working".
+/// Five in-place patches to those frames each fixed one measurement and left
+/// the walk just as broken.
 ///
-/// So this cycle used to run slim-pass, slim-up, slim-pass, fat-pass, fat-up,
-/// fat-pass: **the same leg leading the whole way round**, with the body
-/// swelling and shrinking twice a second. That is what "the character is
-/// clanking" was, and it is why redrawing individual frames never fixed it —
-/// the frames were fine, the second half of the cycle was missing.
-///
-/// `tool/fix_side_walk_cycle.py` rebuilds columns 5-7 as copies of 1-2 with
-/// only the *leg band* mirrored, so the torso is pixel-identical between the
-/// halves (no swell, by construction) and the legs alternate (which is the
-/// part that reads as walking). Columns 0 and 4 stay out: they draw
-/// front-facing legs on a profile body, so the walk would snap face-on twice
-/// per cycle.
-const List<int> kSideWalkFrames = <int>[1, 2, 3, 5, 6, 7];
-const int kSideIdleFrame = 1;
+/// `tool/redraw_side_walk.py` now draws the side rows from scratch: the body
+/// from one frame, identical in all eight, and the legs drawn per frame for
+/// a real stride — heel strike, weight, passing, push-off, toe-off, lift,
+/// swing, reach — with the other leg half a cycle behind, toes always
+/// forward, and feet on one ground line. Every column is a good frame, so
+/// every column plays.
+const List<int> kSideWalkFrames = <int>[0, 1, 2, 3, 4, 5, 6, 7];
+
+/// Standing still sideways: the passing pose, both feet under the body.
+const int kSideIdleFrame = 2;
 
 class _AdventureMapPendingScreen extends StatelessWidget {
   const _AdventureMapPendingScreen();
@@ -1352,7 +1575,6 @@ class _AdventureMapPendingScreen extends StatelessWidget {
   }
 }
 
-
 /// A mission, shown under whatever the person just said.
 class _MissionBlock extends StatelessWidget {
   const _MissionBlock({
@@ -1369,9 +1591,7 @@ class _MissionBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = canClaim
-        ? AppTheme.greenPrimary
-        : const Color(0xFFFFD45C);
+    final accent = canClaim ? AppTheme.greenPrimary : const Color(0xFFFFD45C);
 
     return Container(
       margin: const EdgeInsets.only(top: 14),
@@ -1437,9 +1657,7 @@ class _MissionBlock extends StatelessWidget {
                 icon: const Icon(Icons.check_rounded),
                 label: Text(
                   'Collect ${mission.rewardGold} gold',
-                  style: GoogleFonts.pixelifySans(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
                 ),
               ),
             )
@@ -1486,15 +1704,8 @@ class _NpcEncounterSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final choosable = isDeclinable(action.kind);
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-      decoration: BoxDecoration(
-        color: AppTheme.panelStrong,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppTheme.radiusXLarge),
-        ),
-        border: Border.all(color: _accent.withValues(alpha: 0.4), width: 1.5),
-      ),
+    return _TownSheet(
+      border: _accent.withValues(alpha: 0.4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1616,14 +1827,7 @@ class _LockedSpotSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = spot.kind.accent;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-      decoration: const BoxDecoration(
-        color: AppTheme.panelStrong,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppTheme.radiusXLarge),
-        ),
-      ),
+    return _TownSheet(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

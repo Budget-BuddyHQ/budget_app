@@ -77,10 +77,15 @@ void main() {
       );
 
       expect(week.length, 7);
-      expect(
-        week.map((e) => e.kept).toList(),
-        <bool>[false, false, false, false, true, true, true],
-      );
+      expect(week.map((e) => e.kept).toList(), <bool>[
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+      ]);
       expect(week.last.day, day(2));
       expect(week.first.day, DateTime(2026, 8, 27));
     });
@@ -188,10 +193,14 @@ void main() {
         ),
         const Size(430, 932),
       );
-      // The top strip's button says Daily; the heading under it used to say
-      // Money Habits, which is the disagreement this fixes.
-      expect(find.widgetWithText(AppBar, 'Daily'), findsOneWidget);
+      // The top strip's own "Daily" pill is already highlighted, so as a tab
+      // the toolbar has nothing worth repeating it for and collapses to
+      // nothing — no second "Daily" stacked under the first.
+      expect(find.widgetWithText(AppBar, 'Daily'), findsNothing);
+      expect(find.widgetWithText(AppBar, 'Money Habits'), findsNothing);
 
+      // Pushed as its own route there is no pill above naming it, so the
+      // heading comes back.
       await pumpAt(tester, const MoneyHabitsScreen(), const Size(430, 932));
       expect(find.widgetWithText(AppBar, 'Money Habits'), findsOneWidget);
     });

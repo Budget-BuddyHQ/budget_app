@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:budget_app/controllers_that_updates_stats/life_sim_controller.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_tutorial_steps.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/reading_grade.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/tutorial_steps.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -38,6 +39,40 @@ void main() {
         expect(step.tagline.length, greaterThan(40), reason: step.id);
         expect(step.bullets.length, greaterThanOrEqualTo(2), reason: step.id);
         expect(step.teaches.length, greaterThan(20), reason: step.id);
+      }
+    });
+
+    test('every menu and the money question have a step of their own', () {
+      // Asked for as *"he wants a tutorial for the menus and everything"*, after
+      // ten-year-olds could not say what was taking their money.
+      expect(
+        kLifeTutorialSteps.map((s) => s.id).toSet(),
+        containsAll(<String>[
+          'life_costs',
+          'life_bars',
+          'life_surprises',
+          'life_menu_work',
+          'life_menu_assets',
+          'life_menu_people',
+          'life_menu_activities',
+        ]),
+      );
+    });
+
+    test('and is written for a ten-year-old to read', () {
+      for (final step in kLifeTutorialSteps) {
+        final text = [step.tagline, ...step.bullets, step.teaches].join(' ');
+        expect(
+          readingGrade(text),
+          lessThanOrEqualTo(8),
+          reason:
+              '${step.id} reads at grade ${readingGrade(text).toStringAsFixed(1)}',
+        );
+        expect(
+          mentionsAdultTopic(text),
+          isFalse,
+          reason: '${step.id} uses a word a child has not met',
+        );
       }
     });
 

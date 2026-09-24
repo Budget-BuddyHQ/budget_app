@@ -29,7 +29,8 @@ class CoachReportView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stats = context.watch<UserStatsController>().stats;
-    final report = analyseMoney(snapshot ?? buildMoneySnapshot(stats));
+    final snap = snapshot ?? buildMoneySnapshot(stats);
+    final report = analyseMoney(snap);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -46,6 +47,7 @@ class CoachReportView extends StatelessWidget {
           _ScoreGrid(scores: report.scores),
           const SizedBox(height: 18),
         ],
+        _LivesCard(lives: snap.lives),
         for (final finding in report.findings) ...[
           _FindingCard(finding: finding),
           const SizedBox(height: 12),
@@ -117,6 +119,164 @@ class _CoachHeader extends StatelessWidget {
               height: 1.4,
               fontSize: 13,
               fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// What the finished lives say when they are read together.
+///
+/// **Why this is on the Coach.** The main game is now school, work, a home and a
+/// household, and each life ends with a diagnostic of its own. None of them can
+/// say what is true across several. This is the row of numbers that can: how
+/// many lives were studied for, how many ended owning a home, how many ended
+/// owing. The findings below it are the same reading, in words.
+///
+/// Hidden until at least one life has kept its detail, because a row of zeroes
+/// for a player who has only older lives would say they had never studied or
+/// owned anything, which nobody knows.
+class _LivesCard extends StatelessWidget {
+  const _LivesCard({required this.lives});
+
+  final List<LifeReading> lives;
+
+  @override
+  Widget build(BuildContext context) {
+    if (lives.isEmpty) return const SizedBox.shrink();
+
+    final total = lives.length;
+    final studied = lives.where((l) => l.degrees > 0).length;
+    final homes = lives.where((l) => l.ownedHome).length;
+    final owing = lives.where((l) => l.loansOwed > 0).length;
+    final promoted = lives.where((l) => l.promotions > 0).length;
+
+    final chip = AppTheme.tintedChip(const Color(0xFF69C6FF), alpha: 0.12);
+
+    return Container(
+      key: const ValueKey('coach-lives-card'),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: chip.fill,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: chip.ink.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.timeline_rounded, size: 18, color: chip.ink),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FittedLabel(
+                  'Your lives, read together',
+                  style: GoogleFonts.pixelifySans(
+                    color: chip.ink,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // Two across on a phone and four on a wide screen, so a tile is
+              // never squeezed narrower than its own label.
+              final columns = constraints.maxWidth >= 520 ? 4 : 2;
+              const gap = 8.0;
+              final width =
+                  (constraints.maxWidth - gap * (columns - 1)) / columns;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  _LifeStat(
+                    width: width,
+                    value: '$studied of $total',
+                    label: 'lives studied',
+                  ),
+                  _LifeStat(
+                    width: width,
+                    value: '$promoted of $total',
+                    label: 'were promoted',
+                  ),
+                  _LifeStat(
+                    width: width,
+                    value: '$homes of $total',
+                    label: 'ended owning a home',
+                  ),
+                  _LifeStat(
+                    width: width,
+                    value: '$owing of $total',
+                    label: 'ended owing money',
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          Text(
+            total == 1
+                ? 'Read from the one life that kept its detail. A pattern '
+                      'needs two.'
+                : 'Read from your newest $total lives that kept their detail.',
+            style: GoogleFonts.quicksand(
+              color: AppTheme.textMuted,
+              fontSize: 11.5,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LifeStat extends StatelessWidget {
+  const _LifeStat({
+    required this.width,
+    required this.value,
+    required this.label,
+  });
+
+  final double width;
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FittedLabel(
+            value,
+            style: AppTheme.numeric(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          FittedLabel(
+            label,
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.78),
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],

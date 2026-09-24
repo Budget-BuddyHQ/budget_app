@@ -34,30 +34,7 @@ Future<void> main() async {
     await SystemChrome.setPreferredOrientations(kAppOrientations);
   }
 
-  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
-    try {
-      await windowManager.ensureInitialized();
-      const options = WindowOptions(
-        size: Size(1000, 800),
-        // Was 450x400. Dragging the window narrower than the declared
-        // minimum doesn't reflow the framework's layout — it keeps laying
-        // out for the minimum and the surplus is simply clipped, which read
-        // as "the Market Board breaks on smaller screens" (content cut off
-        // on the right, no overflow error anywhere because nothing actually
-        // overflowed). Every screen is layout-tested down to 320x568, so the
-        // floor can safely sit below the sizes people actually drag to.
-        minimumSize: Size(340, 480),
-        center: true,
-      );
-
-      windowManager.waitUntilReadyToShow(options, () async {
-        await windowManager.show();
-        await windowManager.focus();
-      });
-    } catch (error) {
-      debugPrint('Window manager failed: $error');
-    }
-  }
+  await _configureDesktopWindow();
 
   // No hardcoded fallback on purpose: real credentials belong only in
   // supabase.env.json (gitignored, see supabase.env.json.example) or in
@@ -67,7 +44,6 @@ Future<void> main() async {
   final supabaseUrl = readRuntimeEnv('SUPABASE_URL') ?? '';
   final supabaseAnonKey = readRuntimeEnv('SUPABASE_ANON_KEY') ?? '';
   final profileImageBucket = readRuntimeEnv('SUPABASE_PROFILE_IMAGE_BUCKET');
-
   await SupabaseService.instance.initialize(
     supabaseUrl: supabaseUrl,
     supabaseAnonKey: supabaseAnonKey,
@@ -169,7 +145,6 @@ class _AppBootstrapGate extends StatelessWidget {
       stream: service.authStateChanges(),
       builder: (context, snapshot) {
         final user = service.currentUser;
-
         // Tapping the emailed reset link signs the player in on a recovery
         // session. Without this branch the gate treated that like a normal
         // sign-in and dropped them straight into the dashboard — so the
@@ -181,36 +156,19 @@ class _AppBootstrapGate extends StatelessWidget {
         }
 
         if (user == null) {
-          if (!service.isSupabaseConnected) {
-            return const DashboardShell();
-          }
-          return const WelcomeScreen();
+          // With no backend configured the app runs local-only, straight into
+          // the game. With one, a signed-out player starts at the welcome page.
+          return service.isSupabaseConnected
+              ? const WelcomeScreen()
+              : const DashboardShell();
         }
 
-        return FutureBuilder<bool>(
-          key: ValueKey(user.id),
-          future: service.isCurrentUserDisabled(),
-          builder: (context, snap) {
-            if (snap.connectionState == ConnectionState.waiting) {
-              return const TemporaryLoadingScreen(
-                message: 'Checking account...',
-              );
+        return Consumer<UserStatsController>(
+          builder: (context, controller, _) {
+            if (controller.isLoading) {
+              return const _AdventureSaveLoadingScreen();
             }
-
-            final isDisabled = snap.data == true;
-
-            if (isDisabled) {
-              return const _DisabledScreen();
-            }
-
-            return Consumer<UserStatsController>(
-              builder: (context, controller, _) {
-                if (controller.isLoading) {
-                  return const _AdventureSaveLoadingScreen();
-                }
-                return const DashboardShell();
-              },
-            );
+            return const DashboardShell();
           },
         );
       },
@@ -227,32 +185,29 @@ class _AdventureSaveLoadingScreen extends StatelessWidget {
   }
 }
 
-class _DisabledScreen extends StatelessWidget {
-  const _DisabledScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.deepForest,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Your account has been disabled.\nContact support.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white, fontSize: 16),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () async {
-                await SupabaseService.instance.signOut();
-              },
-              child: const Text('Log Out'),
-            ),
-          ],
-        ),
-      ),
+/// Sizes the desktop window. Only Windows goes through the window manager;
+/// every other platform keeps the size the operating system gives it.
+Future<void> _configureDesktopWindow() async {
+  if (kIsWeb || defaultTargetPlatform != TargetPlatform.windows) return;
+  try {
+    await windowManager.ensureInitialized();
+    const options = WindowOptions(
+      size: Size(1000, 800),
+      // Was 450x400. Dragging the window narrower than the declared
+      // minimum doesn't reflow the framework's layout — it keeps laying
+      // out for the minimum and the surplus is simply clipped, which read
+      // as "the Market Board breaks on smaller screens" (content cut off
+      // on the right, no overflow error anywhere because nothing actually
+      // overflowed). Every screen is layout-tested down to 320x568, so the
+      // floor can safely sit below the sizes people actually drag to.
+      minimumSize: Size(340, 480),
+      center: true,
     );
+    await windowManager.waitUntilReadyToShow(options, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  } catch (error) {
+    debugPrint('Window manager failed: $error');
   }
 }

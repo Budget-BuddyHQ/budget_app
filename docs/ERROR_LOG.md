@@ -14,6 +14,169 @@ Sessions are newest-first.
 
 ---
 
+## Session — 2026-09-19
+
+One request became a rebuild: make the main game a real BitLife-style life, with
+school, a career ladder, homes and cars and pets, a family, and options in place
+of dice. Most of that is feature work and is recorded in the code and its tests.
+These are the faults found on the way, and two reports that arrived in the
+middle of it.
+
+### 1. Finance Brawl stopped spawning on wave ten
+
+**Symptom.** *"The user gets to wave 10 and then nothing spawns and the user is
+just stuck there."*
+
+**Investigation.** Every fifth wave is a boss wave, so ten is the first one a
+player reaches that has a boss and is far enough in to have met every enemy.
+The spawner adds minions while `cleared + alive < minionTarget`, and brings the
+boss in only when `_debtsCleared == minionTarget` with the field empty.
+`_debtsCleared` is capped at the wave's whole quota, which is one more than
+`minionTarget` because it also counts the boss. Subscription Creep has
+`swarmCount: 5`: one spawn adds five enemies. So a swarm arriving with one place
+left in the quota carries the count past it. When those are killed the counter
+ends one above the number the boss is waiting for, no more minions are allowed
+because the quota is met, and the boss waits for a value that can no longer be
+reached. An empty field, and nothing coming.
+
+Reading the checkpoint quiz turned up a second fault. A perfect quiz advanced
+the wave in `_nextQuizQuestion`, opened the upgrade sheet, and `_selectUpgrade`
+advanced it again. Waves were skipped, and with them whichever boss stood on the
+skipped number.
+
+**Root cause.** An equality test on a counter that a lump-sum spawner can jump
+over, and a reset written in two places.
+
+**Fix.** `brawl_wave_rules.dart` holds the rules as pure functions. A swarm is
+trimmed to the room the wave has left. The boss comes when the minions are used
+up, not when a counter hits one number. The wave advances in one place. The
+boss-attack lookup no longer falls back to `_liabilities.first`, which throws on
+an empty field, and a tick that throws stops the ticker for good.
+
+**Verified by.** `brawl_wave_rules_test.dart`: the counts, every wave from 1 to
+60 played out with every spawn a swarm, a boss wave always producing its boss,
+and the real screen advancing exactly one wave per checkpoint through wave 13.
+
+**What it cost.** The rules lived inline in the tick beside the drawing code, so
+the only way to test them was to play to wave ten and be unlucky with a swarm at
+the wrong moment, about one boss wave in ten. Every existing Brawl test built the
+widget and inspected a list.
+
+### 2. Finance Brawl felt janky: weird hitboxes, and a joystick that stops
+
+**Symptom.** A player tester: *"the hitboxes are weird and sometimes the joystick
+will just stop."*
+
+**Investigation.** Neither is a thing a unit test sees, so the art was measured.
+The tree sprite is a canopy on a trunk: its opaque pixels are the bottom 47% of
+the frame. It was drawn centred on its collision circle, so the circle sat about
+46 units above the tree you could see. The fighter stopped against empty grass
+and walked through the trunk. Every enemy is drawn in a square twice its radius
+and was hit-tested at the whole radius, but sprites fill between 59% and 100% of
+their frame, so the empty corners hurt and shots vanished a few pixels short.
+Movement tested x and then y separately, which catches and lets go on a round
+obstacle and gives no way out of one. Obstacles could touch, leaving pockets.
+
+The stick was a pan gesture. A pan starts after the touch slop, about eighteen
+pixels, so the stick anchored eighteen pixels from where the thumb landed and
+nothing moved until then. It also had to win a gesture arena, which a system
+gesture can take mid-drag, after which a new pan has to cross the slop again.
+`onAppBackgrounded` reset the knob and not the vector, so a thumb on the stick
+when the app left kept the fighter running. The loop dropped any frame over a
+tenth of a second, so on a phone struggling with a busy wave the game stopped.
+Contact threw six sparks per touching enemy per frame, each with a fresh paint
+object, which is what made a crowded wave stutter.
+
+**Root cause.** Collision numbers that were never derived from the art, an input
+model that depended on a gesture arena, and several separate paths that let go of
+the stick only partly.
+
+**Fix.** `BrawlEnemy.hitScale`, measured per archetype and re-measured by a test.
+`kBrawlTreeArtShift` draws the tree where it is solid. `moveAndSlide` pushes out
+along the surface. The stick is a pointer listener owned by one finger, anchored
+at the touch, with strength that rises with travel, released by cancel,
+background, a quiz card, and game over. Frames over 0.05s are played short and not
+dropped. Sparks are thrown on a beat. Obstacles keep a fighter's width between
+their edges.
+
+**Verified by.** `brawl_hitbox_test.dart` (31 tests) reads the real PNGs, drives the
+real screen with real fingers, and checks a random walk through a field never ends
+inside anything.
+
+**What it cost.** A hitbox is a number that comes out of a picture and nothing in
+the suite looked at the pictures.
+
+### 3. Tests that sample random lives went red when the event pool grew
+
+**Symptom.** Adding about a hundred events failed three unrelated tests:
+`every event in the pool can fire for somebody`, `every chain event is reachable`
+and `a life that uses the button ends better than one that ignores it`.
+
+**Investigation.** None of them was a content bug. The coverage sweep used a thin
+simulated player who never studies, owns nothing and never marries, so events
+gated on a car, a home or a partner could not come up for it. The chain test
+needed one life in about seven hundred to be offered an index fund, invest, and
+then sell in the crash. The debt test summed 25 net worths, and one lucky life
+(seed 13) swung the total by 31,000 in the wrong direction while the payer came
+out ahead in 14 of the 25 lives and behind in 3.
+
+**Fix.** A fuller simulated player for the coverage sweep. A steered player for the
+rarest chain beat, since what is guarded is that the path is open. And the debt test
+counts lives instead of adding money, so one outlier cannot vote. The deterministic
+test that every event's gates can be met was extended to the new gates.
+
+**What it cost.** A sampling test's sensitivity falls with every batch of new
+content. The remedy that keeps them meaningful is a better sample or a directed one,
+never a lower bar.
+
+### 4. A past life could not be opened, and the Coach read one number
+
+**Symptom.** *"When they click on one of these past runs it pulls their
+diagnostic,"* and *"upgrade the coach tab based on the new changes."*
+
+**Root cause.** A finished life kept a name, an age and a net worth. The
+diagnostic was graded once, on the ending screen, and thrown away, and the Coach
+compared lives by that one number, which cannot say whether a degree paid or a loan
+outlasted the car it bought.
+
+**Fix.** A record keeps what its debrief was graded on (`LifeRunFacts`), for the newest
+five lives, and grades it again on tap, so a corrected rule reads an old life by the new
+wording. Every record keeps a small `LifeDetail` (degrees, borrowed for school,
+promotions, what was owned and owed, home, partner, children). Lives filed before that
+existed open to a note that says so, and are left out of the Coach's reading, because
+"no degree" is not what their missing numbers mean. The Coach gained six rules that
+read lives against each other, and a card on its screen.
+
+**Verified by.** `life_record_story_test.dart`, `coach_lives_test.dart`, and pictures.
+
+### 5. The header cut job titles, and the feed was a wall of names
+
+**Symptom.** Careers became ladders, so "Management Trainee" appeared as
+"Managem…" on a 393px phone, and a family of ten put four rows of name chips above the
+story of the year.
+
+**Fix.** The header's second line is two lines: the age, then the job on its own. The
+feed shows who is in your life as one tappable line that opens the People sheet.
+
+### 6. The town had twelve places and a life had grown past them
+
+**Symptom.** *"The map still isn't enough so please add more,"* and *"make the map have
+titles of what the circles are."*
+
+**Fix.** Every circle carries its name. Four places were added for the newer parts of a
+life: a gym, a campus office, a housing office and a pet shop, with four encounters
+each, and seven encounters were added to existing buildings about study, a home, loans
+and a promotion. The first town is composed by `tool/make_town_map.py`, which gained the
+four buildings and clears scenery from around them. The second is not composed, so
+`tool/add_map_two_places.py` stamps the same prefabs into it from a saved untouched copy,
+and is idempotent.
+
+**What it cost.** The second town has 13 buildings and the layout test wants each place to
+have its own, so places cannot be added there without drawing buildings. Two were nearly
+placed 32 tiles from the square, past the walk limit the test enforces.
+
+---
+
 ## Session — 2026-09-06
 
 Reported in one message: eleven separate things, one of which turned out to be
@@ -2106,6 +2269,85 @@ both the point, and a truncated comparison is worse than a two-line one.
 
 ---
 
+### Fifteen turtles that match the logo
+
+**The ask.** The person the app is being built for said the turtle skins do
+not match the main turtle — the one in the Budget Buddy logo — and supplied a
+sheet of fifteen new ones drawn in the logo's style
+(`assets/images/bb characters.png`), each with a name and a motto underneath.
+
+They were right. The four original turtle skins are chunky pixel sprites; the
+logo is a soft outlined illustration. The mascot and its costumes looked like
+two different characters.
+
+**Why a script instead of fifteen manual crops.** The sheet is a flat RGB
+image on cream, with the names baked in. `tool/import_buddy_turtles.py`
+measures the grid from where ink starts and stops against the background,
+separates the art rows from the name rows by the gap between them, and reads
+each skin's accent colour out of its own name pill.
+
+**Why flood fill and not a colour key.** A colour key deletes every cream
+pixel, including the ones that belong to the art — the Space turtle's white
+suit, Forest's flower petals, the whites of every eye. Filling inward from the
+edge of each cell only removes background connected to the outside. The
+anti-aliased edge ring is then un-mixed from the cream, or every turtle would
+wear a pale halo on the app's dark green screens.
+
+**Smooth art needed its own filter.** `AvatarSprite` drew every skin with
+`FilterQuality.none`, correct for pixel art and wrong for illustrations, whose
+outlines stair-step when scaled nearest-neighbour. `AvatarSkin.isPixelArt`
+now decides.
+
+**Town walk sheets.** `town_player_skin_test` requires every non-villager skin
+to have a sheet, or the player walks into town as the default villager.
+`make_town_sheets.py` gained a `front_only` mode for these: its back-view trick
+blanks a face box measured on the *pixel* turtle, and on an illustration that
+box lands on the shell and the coin.
+
+**Files.** `tool/import_buddy_turtles.py` (new), 15 skins under
+`assets/images/turtles/buddy/`, 15 town sheets, `avatar_skin.dart`,
+`avatar_sprite.dart`, `app_assets.dart`, `tool/make_town_sheets.py`,
+`pubspec.yaml`.
+
+**Open.** Every new turtle — and the logo — carries a Bitcoin (₿) coin. For a
+money-education app aimed at students that can read as recommending crypto.
+Not changed, because it is the client's brand art; raised with the team.
+
+---
+
+### A contrast helper that proved legibility against a colour no pixel shows
+
+**Found by** the contrast audit as soon as the new skins landed:
+
+```
+Customize: "R" #EF8C9B on #403F38 = 4.48:1 (needs 4.5)
+```
+
+The Pink Dream skin's rarity letter. The easy fix was to nudge Pink Dream's
+accent until it passed, and that would have been wrong: the letter already
+went through `AppTheme.tintedChip`, which exists precisely so that chip text is
+proven legible against its chip. If a helper built for this fails, the next
+accent fails too.
+
+**The measurement.** `tintedChip` blends its fill in floating point. Against
+that exact fill, (63.62, 62.72, 55.54), the pink ink cleared **4.500:1** —
+precisely the target, which is where `legibleOn`'s walk stops. But a screen
+paints whole 8-bit channels, (64, 63, 56), and against the fill actually
+painted the same ink measures **4.478:1**.
+
+So the helper was proving legibility against a colour that never reaches the
+screen. It only matters at the threshold — and the threshold is exactly where
+this algorithm always lands.
+
+**Fix.** `AppTheme.flatten`, documented as "what the eye actually receives",
+now returns whole 8-bit channels. Every chip's ink is measured against the
+pixel that is really painted, and a colour sitting on the boundary walks one
+more step instead of failing by rounding.
+
+**Files.** `app_theme.dart`.
+
+---
+
 ---
 
 ## Open — found, not fixed
@@ -2145,6 +2387,18 @@ values from `lib/config/public_supabase_config.dart`.
 
 ---
 
+### Interest does not accrue in years with no income
+
+**Found while** tracing the debt spiral. `_applyBudget` returns early when the
+year's income is zero, and the unemployed branch in `ageUp` never charges
+interest, so a balance is frozen for as long as the character is out of work.
+That is more generous than life. It is left alone deliberately: the layoff rule
+made unemployment more common, and charging interest through it would make the
+new neglect consequence much heavier than the simulation was tuned for. If the
+economy is retuned, this is the first thing to revisit.
+
+---
+
 ## How to add an entry
 
 Write the **Investigation** section as it happened, wrong turns included. The
@@ -2156,3 +2410,663 @@ crossings-per-second than for the synthesis that replaced it.
 If a fault could not be seen by reading the code, say so in **What it cost**,
 and add the measurement as a test. Most of this file is faults that read
 perfectly.
+
+### One skin slot doing two jobs
+
+**Reported as:** the new Budget Buddy turtles and the player skins "serve 2
+different purposes", but only one could be worn at a time.
+
+**What was wrong.** `equipped_skin` held both the character you walk the town
+and fight as, and the turtle that explains lessons. Picking a villager replaced
+the guide; picking a Buddy turtle sent a still illustration walking into town,
+which is why fifteen front-only town sheets had been generated for them.
+
+**Fix.** `SkinSlot { player, mascot }` on `AvatarSkin` (turtles are mascots).
+`UserStats.equippedMascot` reads `equipped_mascot`, and on old saves falls back
+to a turtle found in `equipped_skin`, so nobody loses their choice;
+`equippedSkin` only ever returns a player skin. Buy, case and equip write to the
+slot the skin belongs to. Both defaults are always owned.
+
+The guide now follows the mascot: `TutorialMascot.assetFor` keeps drawn poses
+for the four pixel turtles and uses the Buddy turtle's own art otherwise, with
+smooth filtering. Customize shows the mascot as the hero with the player
+beneath it, and lists the collection as Turtle Mascots / Player Skins with one
+equipped mark per slot. The Play Life card and "How to play" tile use the
+mascot; the home avatar fallback, town, Brawl and leaderboard stay on the
+player. The achievement celebration was left alone: it already plays the
+animated classic-turtle sheet.
+
+Turtle town sheets (19) were deleted and `town_player_skin_test` now covers
+player skins only.
+
+**Found while fixing:** the body toggle, moved into the player row, used a 20%
+green wash whose lightness came from the panel behind it — the contrast audit
+measured the label at 2.68:1. The selected chip is now opaque.
+
+**Files.** `avatar_skin.dart`, `supabase_service.dart`,
+`user_stats_controller.dart`, `customize_screen.dart`, `tutorial_steps.dart`,
+`mentor_image.dart`, `main_game_page.dart`, `home_screen.dart`,
+`app_assets.dart`, `tool/make_town_sheets.py`, `test/skin_slots_test.dart`
+(new), `test/town_player_skin_test.dart`.
+
+---
+
+### An age card promising a gate the code no longer had
+
+**What was wrong.** Commit 5ec5ab6 removed the under-13 check from
+`openSkinCase`, but `AgeBand.allowsRandomisedRewards` stayed, the age card
+still told under-9s "No random case for you", and three tests kept passing
+because they tested the getter, not the case. A safety claim that is not true
+is worse than none.
+
+**Fix.** Aligned with the committed behaviour: removed the getter, the
+`rewards` age fact and its icon; the card now lists five systems. Docs in
+`leak_patrol_unlock.dart` and on `buySkinDirectly` (whose doc comment had also
+drifted onto `completeMission`) were corrected. `child_safety_test` now checks
+that no band is told anything about the case; the odds-disclosure test stays.
+
+**Files.** `player_profile.dart`, `age_scaling_facts.dart`,
+`age_scaling_card.dart`, `leak_patrol_unlock.dart`,
+`user_stats_controller.dart`, `test/child_safety_test.dart`,
+`test/age_visibility_test.dart`.
+
+---
+
+### The life seed did not decide the life
+
+**What was wrong.** The character sheet shows a seed and derives name, origin
+and map from it, but `LifeSimPage` built `LifeSimController` with an unseeded
+`Random()`, so two lives with the same seed had different events.
+
+**Fix.** `random: Random(character.seed.value)`. A test replays 60 years twice
+from one seed with the same choices and requires identical events and money.
+
+**Files.** `life_sim_page.dart`, `test/skin_slots_test.dart`.
+
+---
+
+### Auth gate left skipped
+
+`kDevSkipAuthGate` was `true`, which skips sign-in in a release build. Set to
+`false`. (`kShowDevTools` has no call site, so it shows nothing either way.)
+
+**Files.** `dev_preview_flags.dart`.
+
+### Leak Patrol: six holes off screen, and a start screen nobody could parse
+
+**Reported as:** two screenshots and "this UI is so confusing", with a request
+that it work when the resolution changes.
+
+**The board.** The grid was a fixed three columns of near-square cells, sized
+from the board's width only, inside a grid that cannot scroll. On a ~974x746
+window each cell came out ~310px tall; three rows needed ~980px and the board
+had ~550px, so six of the nine holes were laid out below the screen — still
+spawning leaks that could never be seen or tapped. The sprite was a fixed 46px
+and the label a fixed 10.5pt, so a thing rising in a big cell was a caption on
+a hole with the creature clipped away.
+
+`LeakBoardLayout.fit` now picks the largest square cell that fits both width
+and height (3x3 for nine holes; 3x2 or 2x3 for six), the board is only as big
+as its holes, and everything inside a hole (sprite, label, rim, burst,
+floating number) scales from the cell. On a short, wide window (a phone held
+sideways) the score and tip panel move to a left column so the board keeps
+the full height — stacked, the holes there were 16px.
+
+**Nothing above the board changes height any more.** The streak bar and the
+explanation banner appeared and disappeared above the board, resizing it
+between the player looking and tapping. Both now live in one fixed-height
+panel.
+
+**The confusing parts.** The in-game banner showed only an item's explanation
+("A charge for not having money...") with no item name, verdict or cost; it
+now says "Leak caught: …  +9", "That was a real bill: …  −12" or "A leak got
+away: …", then why. Before the first tap it states the rule. The HUD's SAVED
+showed saved-minus-lost (it could read "saved -4"); it is COINS now, and WRONG
+is MISTAKES. The intro opened on a riddle ("Tap the money leaving. Leave the
+money you owe."); it now defines a leak, gives three numbered steps with their
+consequences, labels the example cards LEAK / REAL BILL with what the tap is
+worth, sits on a dark panel instead of raw over the map, is capped at 560px
+wide, and keeps Start pinned under the panel instead of below the fold.
+
+**Why no test caught it.** `responsive_layout_test` only renders the start
+screen; the board does not exist until Start is pressed.
+`test/leak_patrol_layout_test.dart` (new) presses Start at nine window sizes
+from 568x320 to 1920x1080 and requires every hole fully on screen, at least
+44px, non-overlapping, with each creature and label inside its own hole.
+
+**Test harness trap, found on the way.** The new test hung for ten minutes per
+size: an `expect` failed while `FlutterError.onError` was still overridden,
+and the binding waits forever for an error it was told to handle. The override
+is now restored before any assertion.
+
+**Files.** `leak_patrol_page.dart`, `test/leak_patrol_layout_test.dart` (new).
+
+### The left/right walk was never a walk cycle
+
+**Reported as:** "the walking animation is not working and the sprites are
+still misdrawn — please fix the left and right walking animation", after
+several earlier rounds of fixes.
+
+**What the frames actually were.** Rendered large, the west row of every
+villager sheet held three leg poses at most. Columns 0 and 4 drew face-on legs
+on a profile body (with a stray hip line left by an earlier edit); 1 and 3 were
+the same pose; 5-7 were 1-3 with the leg band flipped by
+`fix_side_walk_cycle.py`, which **pointed the shoes backwards**. No frame had
+the legs apart. The cycle `[1, 2, 3, 5, 6, 7]` shuffled on the spot with the
+feet flipping direction every half second.
+
+**Why five fixes did not fix it.** `narrow_side_profile`, `redraw_side_profile`,
+`normalize_walk_baseline` and `fix_side_walk_cycle` each patched one measured
+property of frames that were never a stride. Each test passed; the walk was
+still broken. The tests measured body mass and pixel differences, not whether
+the legs ever took a step.
+
+**Fix.** `tool/redraw_side_walk.py` redraws rows 2 and 3 of all 38 sheets from
+scratch: the body from column 1, identical in every frame except a one-block
+dip when both feet are planted, and legs drawn per frame on the sheet's 5px
+grid for an eight-step stride (heel strike, weight, passing, push-off,
+toe-off, lift, swing, reach), the second leg half a cycle behind and a shade
+darker, toes forward, feet on one ground line, in each sheet's own trouser
+colour. East is west mirrored. It is dry by default and was checked on a 4x
+close-up and at the 34px size the town draws before `--write`. The game now
+plays all eight columns and idles on column 2 (feet under the body).
+
+The three superseded scripts now exit with a message instead of running, so
+nobody re-applies an old patch to the new frames.
+
+**Tests.** `town_map_test` "side walk cycle" now checks, on every sheet: all
+eight frames play; every frame's feet are on the same ground line; the body is
+pixel-identical across frames; the legs change on every step; east mirrors
+west; and the standing shoe points forward.
+
+**Files.** `tool/redraw_side_walk.py` (new), 38 `villager_*.png` sheets,
+`adventure_world_screen.dart` (`kSideWalkFrames`, `kSideIdleFrame`),
+`test/town_map_test.dart`, and guards in `tool/fix_side_walk_cycle.py`,
+`tool/narrow_side_profile.py`, `tool/redraw_side_profile.py`.
+
+### The town joystick fought tap-to-walk
+
+**Reported as:** "the joystick is broken".
+
+**Cause.** Bonfire hands every touch-down to both the joystick and the
+player's `TapGesture`, and `onTapDownScreen` fires for all of them. The
+tap-to-walk added to `TownPlayer` therefore also ran for a thumb on the
+joystick, setting a walk path to the spot under the thumb — the bottom-left
+of the screen. From then on the path and the stick pulled the character in
+different directions: it steered wrong, stuck, or drifted to the corner.
+
+**Fix.** `TownJoystickLayout` holds the joystick's size and margin in one
+place; the `Joystick` is built from it, and `TownJoystickLayout.owns` covers
+the same area Bonfire uses to start a drag (its circle plus 50px, plus 20px
+spare). `onTapDownScreen` ignores touches there and any tap while the stick
+is held, and `onJoystickChangeDirectional` cancels a tap-to-walk path the
+moment the stick (or a movement key) moves. It also uses the event's own
+world position instead of converting the screen position a second time.
+
+**Tests.** `test/town_joystick_test.dart`: on portrait, landscape and tablet
+sizes, the stick's centre and every point Bonfire would grab belong to the
+joystick; the open map does not.
+
+**Files.** `town_components.dart`, `adventure_world_screen.dart`.
+
+---
+
+### Music playing after the app was closed
+
+**Reported as:** close the app on a phone, press a volume button, and the
+music plays.
+
+**Cause.** Nothing checked whether the app was still on screen before
+starting sound, and four paths let the loop run in the background:
+
+* `handleAppPaused` disposed sixteen effect players one at a time and stopped
+  the music **last**, so the loop kept going through all of that — and if the
+  process was suspended part-way, it never stopped.
+* `handleAppResumed` rebuilt the same sixteen players before restarting the
+  music; leaving the app during that still restarted it.
+* `startMusic` assigns its player only after `play()` returns, so a pause that
+  arrived during that await found nothing to stop.
+* `AppLifecycleState.hidden` was not treated as backgrounded, and the observer
+  was attached only after start-up had finished.
+
+**Fix.** `AppSoundService` tracks whether the app is in the foreground and a
+lifecycle epoch. `hidden`, `paused` and `detached` all count as backgrounded
+(`inactive`, the notification shade, does not). The pause handler stops the
+music first. `startMusic` and `play` refuse while backgrounded; `startMusic`
+re-checks after each await and throws away a player whose app has left. The
+resume handler stops if the app leaves again part-way, and the observer is
+attached at the start of `initialize`. A music request made in the background
+is remembered and starts when the app returns.
+
+**Tests.** `test/audio_lifecycle_test.dart`: music will not start once the
+app is hidden, paused or detached (and the request is kept); `inactive` does
+not stop it; resuming allows sound again; effects are silent in the
+background.
+
+**Files.** `app_sound_service.dart`.
+
+### Town sheets overflowed on a phone in landscape
+
+**Reported as:** screenshots of the neighbour's mission sheet and the Pawn
+Shop's locked sheet with Flutter's yellow stripes across them, "BOTTOM
+OVERFLOWED BY 104 PIXELS" and by 28.
+
+**Cause.** Each sheet was a fixed-height `Column` in a plain
+`showModalBottomSheet`, which caps a sheet at half the screen. The town locks
+landscape, so the normal case is about 460 logical pixels tall. The reward
+line and the button under it were off the bottom and could not be reached.
+
+**Fix.** One `_TownSheet` frame for all three sheets: at most 88% of the
+screen, scrollable inside that, with the last row clear of the gesture bar.
+The call sites pass `isScrollControlled` and `useSafeArea`.
+
+**Why nothing caught it.** The layout sweep renders whole screens, and these
+sheets only exist after you walk up to a person or a locked door.
+`test/town_sheet_layout_test.dart` builds them through a test seam and checks
+four phone sizes.
+
+**Files.** `adventure_world_screen.dart`, `test/town_sheet_layout_test.dart`.
+
+---
+
+### The app kept playing itself after you left it
+
+**Reported as:** leaving the app, or holding something down, and the app
+carrying on.
+
+**Cause.** No game screen watched the app lifecycle. Flutter stops animations
+by itself because it stops producing frames, but timers and held input are
+not animations. So Leak Patrol's round ran out in the background, Coin
+Cascade's bills kept dropping, the Market Board polled the network every two
+seconds in somebody's pocket, and the ticker tape scrolled thirty times a
+second for nobody. A key held down when the app went away never sent its
+key-up, and a thumb on the Brawl joystick never sent its pan-end, so the
+character kept running.
+
+**Fix.** `PausesInBackground`, one mixin that adds and removes the observer
+and calls `onAppBackgrounded` / `onAppForegrounded`. `hidden`, `paused` and
+`detached` count as away; `inactive` does not, because that is the
+notification shade over a visible app. Leak Patrol and Coin Cascade stop and
+restart their clocks, the Market Board stops polling and refreshes on return,
+and Finance Brawl clears held keys and the joystick and opens its own pause
+dialog so you come back paused rather than dead.
+
+**Files.** `pauses_in_background.dart` (new), `leak_patrol_page.dart`,
+`coin_cascade_page.dart`, `stock_market_page.dart`, `finance_brawl_game.dart`,
+`test/background_pause_test.dart`.
+
+---
+
+### The park was a menu
+
+**Reported as:** a request for real things to do inside the dialogue boxes.
+
+Every other building in town poses a question; the park was three sentences
+and three buttons, in the one place a player walks to for fun. It now opens
+with two games that run inside the panel. **Coin Rush** is an action round
+where coins and fees fall together and tapping a fee costs, so tapping
+everything loses. **Price Dash** is unit price against a clock. Both scale
+with the account's age band, both pay through the town's existing reward
+path, and the conversation is still one tap away and still pays what it did.
+
+**Found while building it.** The first draft of the Price Dash table had the
+small pack cheaper in six of ten questions, which teaches the opposite of
+what the game says afterwards. It is seven of ten to the bigger pack now, and
+the three exceptions are exactly the packs labelled value, bonus and party
+box. A test holds that split.
+
+**Files.** `park_activity_models.dart` (new), `park_activity_panel.dart`
+(new), `town_interior_screen.dart`, `test/park_activity_test.dart`,
+`test/responsive_layout_test.dart`.
+
+---
+
+### An eight-year-old could reach the loot box events
+
+**Found during a child-safety pass before submission.**
+
+`t_loot_box` and `t_skin_gamble` put a paid game of chance on screen. They are
+deliberately not wagers — their outcomes are scripted and they state the real
+odds — so the wagering gate did not hide them, and they gated on the
+character's age of 10 and 13. A small child can tap a character to 13 in
+about a minute, which is the same character-age-versus-account-age mistake
+the wagering gate already exists to fix.
+
+**Fix.** `LifeEvent.showsGamblingMechanic`, gated by
+`AgeBand.hidesGamblingMechanics`, which is true only for the 4-to-8 band. The
+9-to-12 band keeps both, because a loot box with its odds written out is the
+most useful thing in the set for the age that is actually buying them.
+
+**Files.** `life_sim_models.dart`, `life_events_traps.dart`,
+`player_profile.dart`, `life_sim_controller.dart`, `life_sim_page.dart`,
+`test/child_safety_test.dart`.
+
+### The end of a run said what happened, never what you did
+
+**Asked for as:** more of a debrief after a life, and a check on whether the
+Coach actually grades a run. It did not. The Coach reads a player's whole
+history for its own tab, and the epilogue showed the ending, five stats, the
+gold and the ranked breakdown. Somebody who retired at 68 with no emergency
+fund, everything in cash and money owed got the same screen as somebody who
+did none of that.
+
+**Fix.** `life_debrief.dart`, a pure-Dart grader for one finished life. Four
+areas out of 100 (saving, debt, growth, learning), a letter for the run, and
+findings that each carry evidence out of that run, one thing to do next time,
+and the concept where the Academy teaches one. `LifeSummary` carries it, built
+at the moment the life ends because the controller is disposed before the
+epilogue builds, and the epilogue shows it for graded runs only.
+
+**Files.** `life_debrief.dart` (new), `life_ending.dart`,
+`life_epilogue_screen.dart`, `test/life_debrief_test.dart` (new), plus the
+epilogue fixtures in the layout sweep and the render harness, which had been
+building a summary with no debrief in it.
+
+---
+
+### Sheets under the status bar, and one with no way out
+
+**Reported as:** a screenshot of the money-ideas sheet with its heading behind
+the clock, and no exit button.
+
+**Cause.** Eight sheets in the life sim pass `isScrollControlled: true` and
+none passed `useSafeArea`, so a tall one runs to the very top of the screen.
+The powers sheet also had no visible way to close: a swipe worked, nothing
+said so.
+
+**Fix.** `useSafeArea: true` on all eight, `showDragHandle: true` on the
+dismissible ones, and an explicit close button on the powers sheet. The one
+deliberately non-dismissible sheet (the money lesson) keeps "Got it" as its
+only exit, by design, and gets no handle so it does not look swipeable.
+
+**Swept for the same shape.** Every `barrierDismissible: false` dialog and
+`canPop: false` route was checked for an exit. The life sim and React
+Challenge route back through a confirm dialog, Brawl's pause dialog has
+Resume and Quit, and the case-roll dialog has Skip. One real hole: account
+deletion showed a blocking spinner and only dismissed it on the normal path,
+so a throw anywhere in the call left the player stuck on a spinner forever.
+It is a try/finally now.
+
+**Files.** `life_sim_page.dart`, `profile_screen.dart`.
+
+---
+
+### A life sim where every button could be tapped forever
+
+**Asked for as:** *"make sure that in the menu of the main game the player
+cannot spam the same option like working out to become happy."*
+
+**Investigation.** The named case was the smallest of several. Every repeatable
+action was listed and asked the same question: what does the tenth press in one
+year give? Working out, studying, going out, the library and the doctor all
+paid full every time. Worse were the two that were money: **a side job could be
+run forever, which is unlimited income**, and **Work Harder and Ask For A Raise
+had no age gate and no limit at all**, so a salary could be ground to any
+number by tapping. None of them were `LifeAction` values, which is why no gate
+had ever been applied to them.
+
+**Fix.** `life_effort.dart`: one table, `EffortRules.tiers`, where the length of
+each list is the yearly limit and the values are what each use pays (`[1, .5,
+.25]` fades, `[1.0]` is once). The controller routes every action through
+`_yield`, `_spend` and `_scaled`, so a gain fades while a cost never does. The
+menu rows say what is left ("1 use left, pays 25% now"). `invest`, `findJob`
+and `payDownDebt` are unlimited on purpose and named as such in the test.
+
+**Verified by.** `life_effort_test.dart`, including a completeness test that
+fails when a new `LifeAction` is added without a budget, which is the way this
+would come back.
+
+**What it cost.** `budget_teaching_test.dart` failed straight after: it had been
+reaching high Smarts by calling `visitLibrary` forty and sixty times. The suite
+had been *relying* on the exploit. It uses `debugSetStats` now, and the rule for
+future tests is to set a state rather than spam their way into it.
+
+---
+
+### Health and happiness were meters nothing read
+
+**Asked for as:** *"make punishments if you're not happy or if you're not
+healthy, like you are going to have to skip out on work."*
+
+**Root cause.** A character at 8 Health and 5 Happiness collected exactly the
+paycheck of one at 90 and 90. The stats were decoration for the money game.
+
+**Fix.** `life_wellbeing.dart`: `assessWorkStrain(health, happiness)` gives a
+share of the year's weeks missed. Weeks missed dock the paycheck by exactly that
+share, two serious years in a row cost the job, and a banner warns before any of
+it lands. Children get a gentler sentence and lose school ground rather than
+work. Recovery resets the count, so it is a lesson and not a trap.
+
+**Verified by.** A 400-life simulation, not an argument about thresholds. A bot
+that never looks after itself was laid off in 62% of lives. A bot that does one
+healthy thing a year (a workout when run down, the doctor when bad) was laid
+off in 10%, and one that keeps at it in 0 to 4%. The gradient is the point, so
+the thresholds were left where they were.
+
+**What it cost.** The first tests asserted on `life.log` and found "Age 31.",
+because `log` is only the latest banner line. The feed is `life.history`.
+
+---
+
+### The map paid in gold once and in life money never
+
+**Asked for as:** *"make the map get you money too."*
+
+**Root cause.** Town coins paid account gold and only once ever, so a life spent
+walking the town earned nothing inside the life. `life_town_income.dart` now
+turns them into life money at four to one, restocks the map every year, and
+keeps a yearly allowance (240 at full rate, then a quarter) so the town is a
+side income and not a printing press. Account gold stays once-ever, so the
+outside-the-game economy cannot be farmed from inside the game.
+
+**Also.** Networking is a real system now: contacts with a strength, a referral
+chance that grows with it, and contacts kept out of the loneliness calculation
+so that having colleagues cannot hide having no friends.
+
+**Files.** `life_town_income.dart`, `life_network.dart`, `relationship.dart`,
+`adventure_world_screen.dart`, `life_sim_controller.dart`, and one test file
+each.
+
+---
+
+### A run said what happened and never when or why
+
+**Asked for as:** *"a more impressive and detailed debrief after each run, for
+anybody doing the main game."*
+
+**Fix.** A life remembers itself: a year-by-year net-worth curve, the decisions
+that moved real money with what the other option would have done, and a tally
+(weeks missed, layoffs, raises, referrals, interest, shocks covered). The
+debrief is built from that: six areas, a story (turning point, best call, money
+left on the table, biggest hit), findings that each carry evidence from the run,
+and a challenge for next time. It shows for every run, marked as practice when
+the run was not graded.
+
+**Bug on the way.** Findings were ordered by the order the rules ran in, so a
+life with many findings could cut off the costly one. A laid-off life did not
+say so. Findings carry a `priority` now and `shown()` guarantees a strength
+slot so a debrief is never only faults.
+
+**Bug on the way.** Overflow of 7.9px at 320 wide: "Your challenge for next
+time" was outside its `Expanded`.
+
+---
+
+### Debt that compounded to a million with no way to pay it
+
+**Symptom.** None reported. Found by simulating 400 lives to check whether the
+new work-strain rule was too harsh, and reading the wrong number: average net
+worth was about -200,000 for a passive bot and -554,000 for a careful one.
+
+**Investigation, wrong turn first.** The obvious reading was that the new
+systems (networking costs, docked pay) were bankrupting people. Switching the
+strain rule off gave -382,000, so that reading was wrong: it had been there
+before. Medians said otherwise than means (a median of +1,110 while the 10th
+percentile was -1.8 million), which meant a minority of lives were absurd. Three
+of them were traced year by year. All three began with **one bill of 265 to 895
+at age 22 to 24, on a salary of 380 to 500**, and then never recovered: cash was
+zero every year, the debt grew by 18%, and by seventy it was 1.2 to 1.6 million.
+
+Reading `_applyBudget` showed why. The 20% savings slice went into an
+emergency fund that earns nothing **while the debt beside it grew at 18%**.
+The only thing that ever reduced a balance was 30% of leftover cash, and a
+budget leaves none. And a search for repay, payoff and pay down across the
+controller, the models and the page found nothing: **there was no way to pay a
+debt at all.** Meanwhile the debrief told players to "pay it down before you
+spend on wants".
+
+**Root cause.** Three things stacked. The fund was filled before the lender was
+paid. Nothing player-facing existed to retire a balance. And compounding was
+unbounded relative to income, so arithmetic took over from teaching.
+
+**Fix.** (1) The lender is paid before the fund: interest on what was owed
+coming into the year is taken from pay first, and only what the pay cannot cover
+is added to the balance. (2) A **Pay back what you owe** row in the Money menu
+(`payDownDebt`), cash first then savings, unlimited because it converts money
+one for one. (3) Past ten years of pay the balance stops growing and the feed
+says why; below that it compounds exactly as before. (4) A `paid_it_down`
+strength finding, and the two debrief lines now point at the row.
+
+**Result, 300 lives per bot.** Passive: 10th percentile net worth -587,536 to
+-5,853. One healthy habit a year: -1,796,309 to -5,774. Careful and using the
+button: -2,054,825 to +5,898, with 7% ending in debt.
+
+**Verified by.** `life_debt_test.dart` (22, with exact arithmetic on each rule)
+and six widget tests for the row, including 320 and 360 wide. Then a mutation
+check: with the ceiling disabled, three of them fail, including the
+whole-life regression. A guard test that has never failed proves nothing.
+
+**What it cost.** It needs thirty simulated years of compounding to show, and
+nobody plays 300 lives by hand. The advice in the debrief was unreachable and
+nothing noticed, because a sentence cannot fail a test. A means-only report hid
+it for as long as it did. Reporting percentiles is now the way a simulation is
+read here.
+
+## 21 September 2026: what a ten-year-old ran into, and what the town got wrong
+
+Five things came out of watching a ten-year-old play, none of them found by a test.
+
+### The Brawl asked a child about bear markets
+
+**Reported as:** *"my brother is 10 and he is getting questions he should not even be facing."*
+
+**Root cause.** Finance Brawl carries its own question bank, written for teenagers and adults (Roth IRAs, tax-loss harvesting, CD ladders, IPOs). Below thirteen it was screened by a reading grade and a short word list. Reading grade measures how long the words are, not whether a child has ever met the thing, so "What is a bear market?" is short, plain and meaningless to a ten-year-old, and it passed.
+
+**Fix.** `brawl_question_pool.dart`. Players under thirteen are never shown the Brawl's own bank at all; they get the Academy's questions from units somebody hand-assigned an age to, only the ones written for ten and under. Teens get the bank screened by a longer topic list, adults get everything. A run does not repeat a question until the pool is used up.
+
+**Verified by.** `brawl_question_pool_test.dart` (11), including two that run the real game screen through twelve checkpoints as a nine-to-twelve player and read every question served.
+
+### Cafes on grass, and a library on the outer wall
+
+**Reported as:** *"we got a cafe in the middle of the grass."*
+
+**Root cause.** The test that guarded the markers called any six connected solid tiles a building. A tree is nine, a hedge is more and a rope fence along a lawn is nineteen, so a cafe beside an oak and a library on the end of a fence both passed. The second town paints most of its buildings into the ground layer, where they are not solid at all, so no flood fill could find them, and two markers on it (the clinic and the library) were standing on the outer wall at x = 0.
+
+**Fix.** All sixteen markers on both maps moved to real doorsteps, found by rendering the map with the marker drawn in and looking. `test/support/town_landmarks.dart` says what each marker stands in front of; the layout test holds the markers to it (one tile away, not a tree or fence, no two share a building, none within three tiles of another, none on a wall or the map edge). The spawn moved to two tiles south of the house marker, because the doorstep has a wall overhead.
+
+**What it cost.** The old guard passed for months because it measured something plausible. It needed a person to look at a picture.
+
+### Hiking in a menu
+
+**Asked for as:** *"remove things that can be done in the open world from the menu: hiking, meditation, going outside."* Activities with a `place` (`ActivityDef.place`) are no longer listed in the Activities menu; each building lists what can be done in it (`life_town_things.dart`, "Things to do here" in `TownInteriorScreen`), with the same effects, prices and yearly limits. The menu says where they went.
+
+**The trap found on the way.** The outing rules lock the town when health is 15 or less ("too unwell to leave the house"), which is exactly when a doctor is needed. With the doctor moved to the clinic, an ill character could not reach one. The doctor stays in the menu for somebody who cannot go out.
+
+### Almost nobody was ever let go
+
+**Asked for as:** *"make sure disasters, or BitLife events about finance, happen, like your boss cutting you from your job."*
+
+**Measured first.** 300 simulated working lives from 22 to 62: **140 never met a layoff card**, and the money shocks that did happen were nearly all illness bills paid with one line of text. There was no fire, no flood, no crash.
+
+**Fix.** Seven new repeatable cards (`life_events_shocks.dart`) and a rule in `_drawEvent`: an adult who goes six years without a shock is dealt one. After it, 26 of 300 never met a layoff card, and a life meets a boss letting somebody go about once. Every card teaches, none is a free way out, and none is drawn for a child.
+
+**A side effect worth knowing about.** The tests' `FixedRandom.unlucky()` picks the *last* eligible event, so appending events shifts what every "unlucky" life meets. One strain test began failing because its sixth year now drew the layoff card; it now asks about the strain rule and not about whether the job survived.
+
+### "Owed 0" beside a net worth of minus 500
+
+The Owed box on the money panel showed `debt` only. Loans (a student loan, a car) were subtracted from net worth but not listed, so a student read "Owed 0" under a negative net worth with nothing saying where the minus came from. It shows `totalOwed` now, and a new "Where does my money go?" row opens the whole year itemised (`life_sim_money_flow.dart`), checked against a real year by a test.
+
+### Ten of sixteen habit cards had no picture, and the six that did were hotlinked
+
+**Asked for as:** *"finishing adding the images to the daily screens."*
+
+**What was there.** Only 6 of the 16 Money Habits cards had a `photoUrl` at all, and
+every one was a Wikimedia URL fetched over the network — a stock photo of a coffee
+cup or a shopping cart dropped into a hand-drawn pixel game, and a screen that
+needed the network to look finished.
+
+**Fix.** `tool/make_habit_icons.py` draws all sixteen as flat pixel badges in the
+app's own palette (pulled from `app_theme.dart`, the same source `make_ui_kit.py`
+uses): an outlined circle in the habit's category colour with a hand-composed
+glyph. `_HabitPhoto` (`money_habits_screen.dart`) now loads
+`assets/images/money_habits/<id>.png` first and only falls back to the old
+network photo, then the Material icon, if that is missing — nothing in the
+catalogue depends on the network to render any more.
+
+**A test bug, not an app bug, on the way there.** A throwaway render test showed
+every icon slot blank even after several `pump()` calls and `pumpAndSettle()`. The
+cause was the test, not `_HabitPhoto`: real PNG decoding runs on a genuine
+`Future`, which the widget-test fake clock does not advance — `pump()` cannot
+make it finish. `screen_render_test.dart`'s own `shoot()` already knew this
+(`tester.runAsync(() => Future.delayed(...))` before reading the frame); the
+throwaway test skipped it and read a frame from before the image had decoded. An
+isolated widget test (one `Image.asset`, no screen around it) confirmed no
+exception and the correct size before this was traced, which is what pointed at
+timing rather than the widget.
+
+**Files.** `tool/make_habit_icons.py` (new), `assets/images/money_habits/*.png`
+(16, new), `money_habits_screen.dart`, `pubspec.yaml`.
+
+### The "This year" card was a full panel on every single year
+
+**Asked for as:** the Life menu is *"quite confusing, like hard to navigate...
+unlike Finance Brawl, which is quite addicting."* A background-agent audit of
+the menu (from a parallel session) found the sharpest cause: the feed opened
+with up to six always-open panels — weather/family, money, a strain warning, a
+flags strip, a people strip, a network chip — before a single line of the
+year's actual story. Most of those already collapse to nothing when they have
+nothing to say (`_StrainBanner`, `_YourLifeStrip`); the weather/family card did
+not, and it was the largest of the six.
+
+**Fix.** `_ThisYearPanel` now renders one compact line — weather icon, family
+icon, a walking-or-locked icon — for the common case, where the character can
+go out and neither the weather nor the family situation is stopping them. The
+full card, with the two fact tiles and a full sentence of explanation, is kept
+for the year that actually needs it: the one where the character *cannot* go
+out, which is exactly the case the panel exists to surface rather than leaving
+it as an unexplained locked button. Money's own panel was left alone — the
+code already explains why it gets the prominent slot, and that reasoning still
+holds.
+
+**Files.** `life_sim_page.dart` (`_ThisYearPanel`), `test/life_menu_render_test.dart`.
+
+### Most Academy quizzes came up empty, and even an adult lost four of them
+
+**Found by playing the app.** Opening Unit 1's Quick Quiz showed the generic
+placeholder sentence, no question, and a "Complete Lesson" button that still
+paid out full XP and gold. Measured across every quiz and unit-test node for
+every age band: adults hit **4 of 26 completely empty**, teens 8-16 of 26, and
+under-9 22 of 26.
+
+**Root cause.** `AgeBand.minQuizStage` is a floor that exists so an older
+reader is never handed a question written for a six-year-old and feels talked
+down to. Unit 1, "Money Is Real", and Unit 2 are tagged `earlyChildhood` /
+`youngKids` on purpose — they are written for the youngest players — so
+*every* question in them sits below an adult's floor, and `ageAppropriateQuestions`
+returned nothing for the whole node. Nobody designed "an adult cannot pass
+Unit 1", and units chain by prerequisite, so this blocked progress for anyone
+above the youngest band on the first two units of the curriculum.
+
+**Fix.** `ageAppropriateQuestions` now applies the ceiling and the adult-topic
+block first — never relaxed, and still returns empty for the case the original
+comment documented on purpose (a young reader on an advanced or adult-topic
+unit gets the reading and no test). The floor is applied only within what
+already cleared those two, and is dropped again if it would empty the node out,
+so the pool an older reader sees is never smaller than every question that
+unit could possibly show them.
+
+**Verified by.** New tests in `quiz_bank_test.dart`: an adult never meets an
+empty quiz/test node (0/26, was 4/26), and a young reader still gets nothing on
+an advanced unit (ceiling unchanged). Full suite green.
+
+**Files.** `quiz_bank.dart` (`ageAppropriateQuestions`), `quiz_bank_test.dart`.

@@ -17,6 +17,7 @@ import '../../../widgets_custom_lotties/pixel_kit.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_seed.dart';
 import 'package:flutter/services.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
+import 'life_debrief_view.dart';
 
 /// The recap shown when a [LifeSummary] life ends — replaces what used to be
 /// a silent `Navigator.pop()` straight back to Home. Purely presentational;
@@ -118,6 +119,31 @@ class LifeEpilogueScreen extends StatelessWidget {
               ],
               const SizedBox(height: 18),
               _LifeRecapCard(summary: summary),
+              // The debrief: what this run says about how it was played, told as a
+              // story and not only graded. The stats above say what happened;
+              // this says what the player did, which is the part that carries
+              // into the next run and into a real decision.
+              if (summary.debrief != null) ...[
+                const SizedBox(height: 16),
+                LifeDebriefView(
+                  debrief: summary.debrief!,
+                  // Everybody gets the debrief, because the lessons are the
+                  // same however the run was played. A practice run just says
+                  // so, and stays out of the Coach's history.
+                  practice: !graded,
+                  thisNetWorth: summary.netWorth,
+                  netWorthsOfEveryLife: [
+                    for (final record
+                        in context
+                            .watch<UserStatsController>()
+                            .stats
+                            .lifeRecords
+                            .newestFirst)
+                      record.netWorth,
+                  ],
+                  seedText: seed?.display,
+                ),
+              ],
               if (summary.relationships.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 _RelationshipsCard(relationships: summary.relationships),
@@ -774,7 +800,6 @@ class _EndingsPanel extends StatelessWidget {
     );
   }
 }
-
 
 /// The seed this life was rolled from, ready to copy.
 class _SeedCard extends StatelessWidget {

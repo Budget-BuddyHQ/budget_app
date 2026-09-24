@@ -432,142 +432,178 @@ void main() {
   });
 
   group('side walk cycle', () {
-    // Columns 0 and 4 used to be skipped: the old sheets drew those two
-    // neutral poses with front-facing legs on a profile body, so the walk
-    // snapped face-on twice per cycle. `tool/redraw_villagers.py` redrew
-    // every sheet with a true eight-frame profile loop, so the workaround is
-    // gone — and this asserts it stays gone, because reintroducing the skip
-    // would silently shorten the cycle again.
-    test('skips the front-facing neutral frames', () {
-      // Columns 0 and 4 draw front-facing legs on a profile body, so the walk
-      // would snap face-on twice per cycle. A procedural redraw briefly made
-      // those frames true profiles and the skip was removed; the hand-drawn
-      // original was then chosen over the redraw, so the skip is back and
-      // this is what stops it being removed again by accident.
-      expect(kSideWalkFrames, isNot(contains(0)));
-      expect(kSideWalkFrames, isNot(contains(4)));
+    // The side rows are drawn by `tool/redraw_side_walk.py`: one body, and
+    // legs drawn per frame for a real eight-step stride. These hold the
+    // properties the old hand-edited frames kept losing, on every sheet.
+    test('plays all eight frames, in order', () {
+      expect(AppAssets.villagerSheetColumns, 8);
+      expect(kSideWalkFrames, List<int>.generate(8, (i) => i));
     });
 
-    test('idles on a profile pose, not the front-facing one', () {
-      // Frame 0 is the front-on stance, so an idle character facing west
-      // would stand with their legs pointing at the camera.
-      expect(kSideIdleFrame, 1);
+    test('idles on the passing pose, feet under the body', () {
+      expect(kSideIdleFrame, 2);
+      expect(kSideWalkFrames, contains(kSideIdleFrame));
     });
 
-    test('is a whole number of half-cycles', () {
-      // One entry per leg per step, so an odd count would make the
-      // character limp — the same leg would lead twice in a row at the
-      // loop point.
-      expect(kSideWalkFrames.length.isEven, isTrue);
-      expect(kSideWalkFrames, isNotEmpty);
-    });
+    const cellW = 104;
+    const cellH = 162;
+    const west = 2;
+    const east = 3;
 
-    test('every frame is a real column of the sheet', () {
-      for (final column in kSideWalkFrames) {
-        expect(column, inInclusiveRange(0, AppAssets.villagerSheetColumns - 1));
-      }
-      expect(kSideWalkFrames.toSet().length, kSideWalkFrames.length);
-    });
-
-    /// Reads one villager sheet and returns its raw RGBA bytes.
+    /// Every villager sheet, decoded to raw RGBA.
     ///
     /// `dart:ui` rather than the `image` package: decoding a PNG is the only
-    /// thing needed here and it is not worth a dependency the app does not
-    /// otherwise have.
-    Future<(ByteData, int)> loadSheet() async {
-      final bytes = File(
-        'assets/self_made_skins/villager_female_aurora_prime.png',
-      ).readAsBytesSync();
-      final codec = await ui.instantiateImageCodec(bytes);
-      final frame = await codec.getNextFrame();
-      final data = await frame.image.toByteData(
-        format: ui.ImageByteFormat.rawRgba,
-      );
-      return (data!, frame.image.width);
+    /// thing needed here and it is not worth a dependency.
+    Future<Map<String, (ByteData, int)>> loadSheets(WidgetTester tester) async {
+      final sheets = <String, (ByteData, int)>{};
+      await tester.runAsync(() async {
+        final files =
+            Directory('assets/self_made_skins')
+                .listSync()
+                .whereType<File>()
+                .where((f) => f.path.contains('villager_'))
+                .toList()
+              ..sort((a, b) => a.path.compareTo(b.path));
+        for (final file in files) {
+          final codec = await ui.instantiateImageCodec(file.readAsBytesSync());
+          final frame = await codec.getNextFrame();
+          final data = await frame.image.toByteData(
+            format: ui.ImageByteFormat.rawRgba,
+          );
+          sheets[file.path] = (data!, frame.image.width);
+        }
+      });
+      return sheets;
     }
 
-    testWidgets('both halves of the stride are the same size character', (
-      tester,
-    ) async {
-      // **The bug this exists for.** Columns 5-7 used to be the same poses as
-      // 1-3 drawn 16% bulkier — 7,820 opaque pixels at 79.5px wide against
-      // 6,740 at 65px. Animated together the character swelled and shrank
-      // twice a second, which is what got reported as clanking, and no amount
-      // of redrawing an individual frame could fix it because every frame was
-      // fine on its own.
-      //
-      // `tool/fix_side_walk_cycle.py` rebuilds 5-7 from 1-2 with only the leg
-      // band mirrored, so the bodies are identical by construction. This
-      // measures that they still are.
-      late ByteData data;
-      late int stride;
-      await tester.runAsync(() async {
-        final (d, w) = await loadSheet();
-        data = d;
-        stride = w;
+    int pixel(ByteData data, int stride, int row, int col, int x, int y) =>
+        data.getUint32(((row * cellH + y) * stride + col * cellW + x) * 4);
+
+    int alpha(ByteData data, int stride, int row, int col, int x, int y) =>
+        pixel(data, stride, row, col, x, y) & 0xFF;
+
+    testWidgets('every frame stands on the same ground line', (tester) async {
+      // A foot that sinks or floats by a few pixels between frames is the
+      // "accordion" the walk used to have. At least one foot is planted in
+      // every frame, so every frame's lowest pixel is the ground.
+      final sheets = await loadSheets(tester);
+      expect(sheets, isNotEmpty);
+      sheets.forEach((path, sheet) {
+        final (data, stride) = sheet;
+        for (var col = 0; col < 8; col++) {
+          var lowest = -1;
+          for (var y = cellH - 1; y >= 0 && lowest < 0; y--) {
+            for (var x = 0; x < cellW; x++) {
+              if (alpha(data, stride, west, col, x, y) > 10) {
+                lowest = y;
+                break;
+              }
+            }
+          }
+          expect(
+            lowest,
+            154,
+            reason: '$path west frame $col is off the ground',
+          );
+        }
       });
+    });
 
-      const cellW = 104;
-      const cellH = 162;
-
-      int opaquePixels(int column, int row) {
-        var count = 0;
-        for (var y = 0; y < cellH; y++) {
-          for (var x = 0; x < cellW; x++) {
-            final px = ((row * cellH + y) * stride + column * cellW + x) * 4;
-            if (data.getUint8(px + 3) > 10) count++;
+    testWidgets('the body never changes shape, only the legs', (tester) async {
+      // The old frames redrew the head differently in each column, which is
+      // the "shifting pixels". Frames 1-3 and 5-7 carry no dip, so above the
+      // hip they must be the same picture; 0 and 4 share the dip.
+      final sheets = await loadSheets(tester);
+      sheets.forEach((path, sheet) {
+        final (data, stride) = sheet;
+        for (final (a, b, hipY) in const [
+          (1, 5, 115),
+          (2, 6, 115),
+          (3, 7, 115),
+          (0, 4, 120),
+        ]) {
+          for (var y = 0; y < hipY; y++) {
+            for (var x = 0; x < cellW; x++) {
+              if (pixel(data, stride, west, a, x, y) !=
+                  pixel(data, stride, west, b, x, y)) {
+                fail(
+                  '$path: body differs between frames $a and $b at ($x, $y)',
+                );
+              }
+            }
           }
         }
-        return count;
-      }
-
-      for (final row in <int>[2, 3]) {
-        final slim = opaquePixels(1, row);
-        final other = opaquePixels(5, row);
-        expect(
-          (slim - other).abs() / slim,
-          lessThan(0.03),
-          reason:
-              'row $row: the halves of the stride differ by '
-              '${((slim - other).abs() / slim * 100).round()}% in body mass — '
-              'the character will swell as it walks',
-        );
-      }
-    });
-
-    testWidgets('the two halves are not the identical frame', (tester) async {
-      // The other way this can go wrong: making them the same size by making
-      // them the same picture, which removes the swell and the walk with it.
-      late ByteData data;
-      late int stride;
-      await tester.runAsync(() async {
-        final (d, w) = await loadSheet();
-        data = d;
-        stride = w;
       });
-
-      var differences = 0;
-      for (var y = 112; y < 162; y++) {
-        for (var x = 0; x < 104; x++) {
-          final a = ((2 * 162 + y) * stride + 1 * 104 + x) * 4;
-          final b = ((2 * 162 + y) * stride + 5 * 104 + x) * 4;
-          if (data.getUint32(a) != data.getUint32(b)) differences++;
-        }
-      }
-      expect(
-        differences,
-        greaterThan(50),
-        reason:
-            'the legs are identical in both halves — the character is '
-            'gliding, not walking',
-      );
     });
 
-    test('the idle pose is one of the good frames', () {
-      // Standing still facing sideways used to show column 0 — the worst
-      // instance of the bug, because it held the bad pose indefinitely
-      // instead of flashing past it.
-      expect(kSideWalkFrames, contains(kSideIdleFrame));
+    testWidgets('the legs move on every step', (tester) async {
+      // The other way a walk dies: frames that are the same picture. Every
+      // step to the next frame has to change the legs.
+      final sheets = await loadSheets(tester);
+      sheets.forEach((path, sheet) {
+        final (data, stride) = sheet;
+        for (var col = 0; col < 8; col++) {
+          final next = (col + 1) % 8;
+          var differences = 0;
+          for (var y = 110; y < cellH; y++) {
+            for (var x = 0; x < cellW; x++) {
+              if (pixel(data, stride, west, col, x, y) !=
+                  pixel(data, stride, west, next, x, y)) {
+                differences++;
+              }
+            }
+          }
+          expect(
+            differences,
+            greaterThan(50),
+            reason: '$path: frames $col and $next have the same legs',
+          );
+        }
+      });
+    });
+
+    testWidgets('walking east is walking west, mirrored', (tester) async {
+      // Mirrored so the two directions can never disagree about the stride
+      // or which way the toes point.
+      final sheets = await loadSheets(tester);
+      sheets.forEach((path, sheet) {
+        final (data, stride) = sheet;
+        for (var col = 0; col < 8; col++) {
+          for (var y = 0; y < cellH; y++) {
+            for (var x = 0; x < cellW; x++) {
+              if (pixel(data, stride, west, col, x, y) !=
+                  pixel(data, stride, east, col, cellW - 1 - x, y)) {
+                fail('$path frame $col: east is not the mirror of west');
+              }
+            }
+          }
+        }
+      });
+    });
+
+    testWidgets('toes point the way the character faces', (tester) async {
+      // Flipping the leg band turned the shoes backwards for half the old
+      // cycle. Facing west, the front of the planted shoe is its left end,
+      // so the shoe row reaches further left than the leg above it.
+      final sheets = await loadSheets(tester);
+      sheets.forEach((path, sheet) {
+        final (data, stride) = sheet;
+        int leftmost(int col, int y) {
+          for (var x = 0; x < cellW; x++) {
+            if (alpha(data, stride, west, col, x, y) > 10) return x;
+          }
+          return cellW;
+        }
+
+        // Frame 2 has a single planted leg straight under the hip.
+        const shoeY = 147;
+        const shinY = 137;
+        expect(
+          leftmost(kSideIdleFrame, shoeY),
+          lessThan(leftmost(kSideIdleFrame, shinY)),
+          reason: '$path: the standing shoe points backwards',
+        );
+      });
     });
   });
 }

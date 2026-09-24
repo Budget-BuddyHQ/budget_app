@@ -408,9 +408,8 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
         canPop: false,
         onPopInvokedWithResult: (didPop, result) async {
           if (didPop) return;
-
-          final shouldPop = await _confirmExit();
-          if (shouldPop && context.mounted) {
+          final leave = await _confirmExit();
+          if (leave && context.mounted) {
             Navigator.of(context).pop(result);
           }
         },

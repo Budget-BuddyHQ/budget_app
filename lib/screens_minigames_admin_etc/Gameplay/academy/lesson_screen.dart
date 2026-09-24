@@ -134,12 +134,14 @@ class _LessonScreenState extends State<LessonScreen> {
 
     final unit = _progressionService.getUnit(lesson.unitId)!;
 
+    var aboveAgeConfirmed = false;
     if (isAboveReaderStage(
       unit.ageStage,
       _statsController.stats.ageBand.maxPlausibleStage,
     )) {
       final proceed = await _confirmAboveAge(unit);
       if (!proceed || !mounted) return;
+      aboveAgeConfirmed = true;
     }
 
     await Navigator.of(context).push(
@@ -148,6 +150,7 @@ class _LessonScreenState extends State<LessonScreen> {
           lesson: lesson,
           unit: unit,
           progressionService: _progressionService,
+          quizAboveAgeConfirmed: aboveAgeConfirmed,
         ),
       ),
     );
@@ -1235,13 +1238,13 @@ class _NextLessonFocusCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF15392D), Color(0xFF0F2A21)],
+          colors: [Color(0xFF173B2F), Color(0xFF0F2B22)],
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Color(0x554BD2A3)),
+        border: Border.all(color: const Color(0x444BD2A3)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x30000000),
+            color: Color(0x33000000),
             blurRadius: 20,
             offset: Offset(0, 10),
           ),
@@ -1256,7 +1259,7 @@ class _NextLessonFocusCard extends StatelessWidget {
               Text(
                 isComplete ? 'Path complete' : 'Continue where you left off',
                 style: GoogleFonts.pixelifySans(
-                  color: Color(0xFFF7FFFB),
+                  color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1266,7 +1269,7 @@ class _NextLessonFocusCard extends StatelessWidget {
                 isComplete
                     ? 'You finished the current academy path. Revisit any unit or add the next chapter when you are ready.'
                     : '${nextLesson!.title} • ${nextUnit?.title ?? 'Academy'} • ${nextLesson!.estimatedMinutes} min',
-                style: const TextStyle(color: Color(0xFFB9D1C6), height: 1.45),
+                style: const TextStyle(color: Color(0xFFC3D8CE), height: 1.45),
               ),
               const SizedBox(height: 14),
               Wrap(
@@ -1292,10 +1295,10 @@ class _NextLessonFocusCard extends StatelessWidget {
             onPressed: onOpenNext,
             style: FilledButton.styleFrom(
               backgroundColor: isComplete
-                  ? const Color(0xFF274337)
+                  ? const Color(0xFF2A4A3D)
                   : const Color(0xFF2F9E68),
               foregroundColor: isComplete
-                  ? const Color(0xFFB9D1C6)
+                  ? const Color(0xFFC3D8CE)
                   : Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
             ),
@@ -1358,7 +1361,7 @@ class _FocusPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: chip.fill,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: accent.withValues(alpha: 0.28)),
+        border: Border.all(color: accent.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

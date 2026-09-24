@@ -171,7 +171,7 @@ class UserStats {
     return UserStats(
       id: userId,
       username: 'Username3189',
-      gold: 999999,
+      gold: 2000,
       xp: 850,
       literacyPoints: 850,
       personalityType: 'Spender',
@@ -179,8 +179,9 @@ class UserStats {
         'risk_tolerance': 'balanced',
         'confidence_score': 2.0,
         'missed_questions': <String>[],
-        'equipped_skin': 'classic_turtle',
-        'unlocked_skins': <String>['classic_turtle'],
+        'equipped_skin': kDefaultPlayerSkinId,
+        'equipped_mascot': kDefaultMascotSkinId,
+        'unlocked_skins': <String>[kDefaultMascotSkinId, kDefaultPlayerSkinId],
       },
       transactions: <LedgerTransaction>[
         LedgerTransaction(
@@ -258,12 +259,28 @@ class UserStats {
 
   double get levelProgress => (xp % 120) / 120;
 
+  /// The **player** skin: who you walk around town and fight as.
+  ///
+  /// This key used to hold whatever you last equipped, turtle or villager,
+  /// because there was only one slot. Saves written then can hold a turtle
+  /// here. That is read as "no player skin chosen yet" rather than rewritten,
+  /// so no existing save is changed by upgrading — the turtle moves to
+  /// [equippedMascot] on read, and the player slot shows the default villager.
   String get equippedSkin {
-    final value = spendingHabits['equipped_skin']?.toString().trim();
-    if (value == null || value.isEmpty || !isRegisteredSkinId(value)) {
-      return budgetBuddySkins.first.id;
-    }
-    return value;
+    final value = spendingHabits['equipped_skin']?.toString().trim() ?? '';
+    return fitsSlot(value, SkinSlot.player) ? value : kDefaultPlayerSkinId;
+  }
+
+  /// The **mascot**: the turtle that guides and explains.
+  ///
+  /// Falls back to a turtle left in the old single slot, so a player who had
+  /// equipped Guild Runner before the split still has Guild Runner as their
+  /// guide afterwards.
+  String get equippedMascot {
+    final value = spendingHabits['equipped_mascot']?.toString().trim() ?? '';
+    if (fitsSlot(value, SkinSlot.mascot)) return value;
+    final legacy = spendingHabits['equipped_skin']?.toString().trim() ?? '';
+    return fitsSlot(legacy, SkinSlot.mascot) ? legacy : kDefaultMascotSkinId;
   }
 
   List<String> get unlockedSkins {
@@ -276,14 +293,16 @@ class UserStats {
           )
           .toSet()
           .toList(growable: false);
-      if (normalized.isNotEmpty) {
-        if (!normalized.contains(budgetBuddySkins.first.id)) {
-          return <String>[budgetBuddySkins.first.id, ...normalized];
-        }
-        return normalized;
-      }
+      // Both defaults are always owned. Before the split only the turtle was,
+      // so an old save reading the default villager into its player slot
+      // would otherwise show that villager equipped and locked at once.
+      return <String>{
+        kDefaultMascotSkinId,
+        kDefaultPlayerSkinId,
+        ...normalized,
+      }.toList(growable: false);
     }
-    return <String>[budgetBuddySkins.first.id];
+    return const <String>[kDefaultMascotSkinId, kDefaultPlayerSkinId];
   }
 
   /// Ids of [LifeEndingArchetype]s the player has actually reached in Life.
@@ -666,6 +685,7 @@ class UserStats {
     }
     return const <String>{};
   }
+
   int get cascadeNeedsTotal => _readInt(spendingHabits['cascade_needs_total']);
   int get cascadeWantsTotal => _readInt(spendingHabits['cascade_wants_total']);
   int get cascadeSavesTotal => _readInt(spendingHabits['cascade_saves_total']);
@@ -769,6 +789,7 @@ class UserStats {
         ...spendingHabits,
         'username': username,
         'equipped_skin': equippedSkin,
+        'equipped_mascot': equippedMascot,
         'unlocked_skins': unlockedSkins,
       },
       'transaction_ledger': transactions
@@ -933,21 +954,12 @@ class LeaderboardEntry {
     // The grade and the age, because they are what the score is made of. A
     // fortune at thirty-five and a comfortable eighty can total the same and
     // are not the same run.
-    LeaderboardMetric.ranked => rankedScore > 0
-        ? '${rankedGrade.isEmpty ? 'Scored' : rankedGrade} • lived to '
-              '$rankedAge'
-        : 'No ranked life yet',
+    LeaderboardMetric.ranked =>
+      rankedScore > 0
+          ? '${rankedGrade.isEmpty ? 'Scored' : rankedGrade} • lived to '
+                '$rankedAge'
+          : 'No ranked life yet',
   };
-}
-
-@immutable
-class CurrentUserProfile {
-  const CurrentUserProfile({required this.role, required this.avatarUrl});
-
-  final String role;
-  final String avatarUrl;
-
-  bool get isAdmin => role.trim().toLowerCase() == 'admin';
 }
 
 class SupabaseService {
@@ -976,19 +988,6 @@ class SupabaseService {
   /// failed would be the worst possible lie to tell them, because by then it
   /// may well have succeeded.
   static const Duration _supabaseDeleteTimeout = Duration(seconds: 20);
-  static const Set<String> _ownerAdminEmails = <String>{
-    'brucksheferaw@gmail.com',
-  };
-  static bool isKnownAdminEmail(String? email) {
-    return _ownerAdminEmails.contains(email?.trim().toLowerCase());
-  }
-
-  static bool hasAdminMetadata(User? user) {
-    final role =
-        _roleFromMetadata(user?.appMetadata) ??
-        _roleFromMetadata(user?.userMetadata);
-    return role?.trim().toLowerCase() == 'admin';
-  }
 
   static const String schemaSql = '''
 create table if not exists public.user_stats (
@@ -1186,31 +1185,6 @@ alter view public.leaderboard set (security_invoker = false);
     yield* client.auth.onAuthStateChange;
   }
 
-  Future<bool> isCurrentUserDisabled() async {
-    final client = _existingClient;
-    final user = client?.auth.currentUser;
-
-    if (client == null || user == null) {
-      return false;
-    }
-
-    try {
-      final response = await client
-          .from('profiles')
-          .select('disabled')
-          .eq('id', user.id)
-          .maybeSingle()
-          .timeout(_supabaseReadTimeout);
-
-      return response?['disabled'] == true;
-    } catch (error) {
-      debugPrint(
-        'Supabase disabled lookup failed, allowing cached app: $error',
-      );
-      return false;
-    }
-  }
-
   late final String _profileImageBucket;
 
   Future<void> initialize({
@@ -1252,70 +1226,6 @@ alter view public.leaderboard set (security_invoker = false);
       debugPrint('Supabase init failed, using cached data: $error');
       _isSupabaseConnected = false;
     }
-  }
-
-  Future<CurrentUserProfile?> getCurrentUserProfile() async {
-    final client = _existingClient;
-    final user = client?.auth.currentUser;
-
-    if (client == null || user == null) {
-      return null;
-    }
-
-    final email = user.email?.trim().toLowerCase();
-    var role =
-        _roleFromMetadata(user.appMetadata) ??
-        _roleFromMetadata(user.userMetadata) ??
-        (SupabaseService.isKnownAdminEmail(email) ? 'admin' : '');
-    var avatarUrl =
-        _readString(user.userMetadata?['avatar_url']) ??
-        _readString(user.userMetadata?['profile_image_url']) ??
-        '';
-
-    try {
-      final response = await client
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .maybeSingle()
-          .timeout(_supabaseReadTimeout);
-      role = _readString(response?['role']) ?? role;
-    } catch (error) {
-      debugPrint('Supabase profile role lookup failed by id: $error');
-    }
-
-    if (role.trim().isEmpty && email != null && email.isNotEmpty) {
-      try {
-        final response = await client
-            .from('profiles')
-            .select('role')
-            .eq('email', email)
-            .maybeSingle()
-            .timeout(_supabaseReadTimeout);
-        role = _readString(response?['role']) ?? role;
-      } catch (error) {
-        debugPrint('Supabase profile role lookup failed by email: $error');
-      }
-    }
-
-    try {
-      final response = await client
-          .from(userStatsTable)
-          .select('spending_habits')
-          .eq('id', user.id)
-          .maybeSingle()
-          .timeout(_supabaseReadTimeout);
-      final habits = _readMap(response?['spending_habits']);
-      avatarUrl = _readString(habits['profile_image_url']) ?? avatarUrl;
-    } catch (error) {
-      debugPrint('Supabase user stats avatar lookup failed: $error');
-    }
-
-    if (role.trim().isEmpty && avatarUrl.trim().isEmpty) {
-      return null;
-    }
-
-    return CurrentUserProfile(role: role, avatarUrl: avatarUrl);
   }
 
   Future<AuthResponse> signUp({
@@ -2414,16 +2324,8 @@ enum LeaderboardMetric {
   /// two players on the same numbers cannot be ordered differently depending
   /// on whether the network was up.
   List<String> get orderColumns => switch (this) {
-    LeaderboardMetric.literacy => const [
-      'literacy_points',
-      'xp',
-      'gold',
-    ],
-    LeaderboardMetric.gold => const [
-      'gold',
-      'literacy_points',
-      'xp',
-    ],
+    LeaderboardMetric.literacy => const ['literacy_points', 'xp', 'gold'],
+    LeaderboardMetric.gold => const ['gold', 'literacy_points', 'xp'],
     // Ties on the score break toward the player who got there *later* in
     // life, because surviving longer for the same total is the harder run —
     // see `scoreRankedRun`, where survival is a multiplier for the same
@@ -2513,21 +2415,10 @@ Map<String, double> _readDoubleMap(dynamic value) {
   });
 }
 
+/// A trimmed string, or null when there is nothing in it.
 String? _readString(dynamic value) {
-  final stringValue = value?.toString().trim();
-  if (stringValue == null || stringValue.isEmpty) {
-    return null;
-  }
-  return stringValue;
-}
-
-String? _roleFromMetadata(Map<String, dynamic>? metadata) {
-  if (metadata == null) {
-    return null;
-  }
-  return _readString(metadata['role']) ??
-      _readString(metadata['app_role']) ??
-      _readString(metadata['user_role']);
+  final text = (value ?? '').toString().trim();
+  return text.isEmpty ? null : text;
 }
 
 List<LedgerTransaction> _readTransactions(dynamic value) {

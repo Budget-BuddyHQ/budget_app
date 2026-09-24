@@ -12,6 +12,7 @@ import '../../../services_backend_and_other_services/app_sound_service.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/pixel_kit.dart';
+import '../../../navigation_tools_and_animation/pauses_in_background.dart';
 
 /// Coin Cascade — the arcade's game for everybody.
 ///
@@ -73,7 +74,8 @@ class CoinCascadePage extends StatefulWidget {
   State<CoinCascadePage> createState() => _CoinCascadePageState();
 }
 
-class _CoinCascadePageState extends State<CoinCascadePage> {
+class _CoinCascadePageState extends State<CoinCascadePage>
+    with PausesInBackground {
   late CoinCascadeGame _game;
 
   /// Cell the player has picked, waiting for its partner.
@@ -180,6 +182,11 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
       _rushSecondsLeft = kCascadeRush.seconds;
     });
 
+    _startRushClocks();
+  }
+
+  /// The Rush clocks, started fresh or restarted after the app comes back.
+  void _startRushClocks() {
     _rushTicker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       setState(() => _rushSecondsLeft--);
@@ -192,6 +199,28 @@ class _CoinCascadePageState extends State<CoinCascadePage> {
       // loss condition as the ladder, arriving on a clock instead of a turn.
       _checkFinished();
     });
+  }
+
+  /// A Rush that was running when the app went away.
+  ///
+  /// The clocks used to keep firing in the background, so a player who took a
+  /// call came back to a finished run they never played.
+  bool _rushPausedInBackground = false;
+
+  @override
+  void onAppBackgrounded() {
+    if (_isRush && !_finished && _rushTicker != null) {
+      _rushPausedInBackground = true;
+      _stopRushClocks();
+    }
+  }
+
+  @override
+  void onAppForegrounded() {
+    if (!_rushPausedInBackground) return;
+    _rushPausedInBackground = false;
+    if (_finished || !_isRush) return;
+    _startRushClocks();
   }
 
   void _stopRushClocks() {

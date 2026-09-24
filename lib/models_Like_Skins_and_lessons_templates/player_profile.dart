@@ -65,9 +65,14 @@ enum AgeBand {
     AgeBand.undisclosed => LifeStage.firstJob,
   };
 
+  /// Whether this account is old enough for Life, the main game.
+  ///
+  /// Nine and up, for now. Life is not filtered by band; this is the only gate
+  /// and the advisory before the first life is the only warning.
+  bool get canPlayLife => this != AgeBand.under9;
+
   /// Under-13 accounts get the conservative default: no leaderboard presence.
-  bool get isMinorUnder13 =>
-      this == AgeBand.under9 || this == AgeBand.age9to12;
+  bool get isMinorUnder13 => this == AgeBand.under9 || this == AgeBand.age9to12;
 
   /// Whether money explainers should use the simplest wording (see
   /// `FinanceConcept.explainerFor`).
@@ -106,8 +111,16 @@ enum AgeBand {
   /// they are the most valuable events in the pack for exactly the age group
   /// this flag protects. Their outcomes are scripted, so nothing is being
   /// wagered to read them.
-  bool get allowsWagering =>
-      this != AgeBand.under9 && this != AgeBand.age9to12;
+  bool get allowsWagering => this != AgeBand.under9 && this != AgeBand.age9to12;
+
+  /// Whether paid games of chance are kept off this player's screen entirely.
+  ///
+  /// Only the youngest band. A loot box explained with its real odds is one
+  /// of the most useful things a twelve-year-old can be shown, because it is
+  /// the thing actually taking their money. An eight-year-old does not need
+  /// to see the mechanic at all, and the events that carry it gate on the
+  /// *character's* age, which a child can run up in ten taps.
+  bool get hidesGamblingMechanics => this == AgeBand.under9;
 
   /// A single representative number for this bucket, used only where a plain
   /// integer is needed (e.g. mirroring into a numeric database column) — the
@@ -217,7 +230,6 @@ class ProfileKeys {
   static const String onboardingComplete = 'personal_details_complete';
 }
 
-
 /// Which questions a band should actually be asked.
 ///
 /// **The feature this whole split exists for.** One bank of 177 questions
@@ -293,28 +305,6 @@ extension AgeBandReading on AgeBand {
   /// being asked a question from someone else's life.
   bool get blocksAdultTopics =>
       this == AgeBand.under9 || this == AgeBand.age9to12;
-
-  /// Whether this player may open a randomised reward case.
-  ///
-  /// **This is the loot box question, and it was ungated.**
-  /// `openSkinCase()` charges 180 gold and returns a weighted-random skin
-  /// from four rarity tiers. That is a loot box by any definition, and there
-  /// was no age check anywhere on the path to it — a four-year-old could
-  /// spend earned currency on a randomised rarity pull.
-  ///
-  /// Google Play's Families policy requires that content accessible to
-  /// children be appropriate for children, and its developer programme policy
-  /// requires loot box odds be disclosed before purchase. The second is now
-  /// done for everybody (see `skinCaseRarityOdds`, surfaced in the UI). The
-  /// first is this: under-13s do not get the random pull at all.
-  ///
-  /// **They are not locked out of skins.** They buy the one they want, for
-  /// the same gold, through `buySkinDirectly`. The reward is identical; what
-  /// is removed is the gamble — which is the part that does not belong in
-  /// front of an eight-year-old, and which they were never going to
-  /// understand as a cost anyway.
-  bool get allowsRandomisedRewards =>
-      this != AgeBand.under9 && this != AgeBand.age9to12;
 
   /// What to tell the player about why the questions changed.
   String get readingBlurb => switch (this) {

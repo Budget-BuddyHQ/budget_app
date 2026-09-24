@@ -39,24 +39,32 @@ class CoachScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // As a tab this sits *under* MainNavigation's top bar, which already
+    // shows "Coach" as the highlighted pill — and CoachReportView leads
+    // with its own "What your money habits say" header inside the body.
+    // A second "Your Coach" toolbar between those two was a third label for
+    // the same page, and the ~56px it cost was pure stacked-header chrome
+    // (the "top bit is very expanded" complaint). Pushed as a standalone
+    // route there is no pill above to duplicate and no way back without it,
+    // so the real AppBar returns.
+    final asTab = onNavSelected != null;
     return Scaffold(
       backgroundColor: AppTheme.deepForest,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        // Only when pushed as a route. Inside the IndexedStack there is
-        // nothing to pop back to, and a back arrow that does nothing is
-        // worse than no arrow.
-        automaticallyImplyLeading: Navigator.of(context).canPop(),
-        title: Text(
-          'Your Coach',
-          style: GoogleFonts.pixelifySans(
-            color: AppTheme.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
+      appBar: asTab
+          ? null
+          : AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              centerTitle: true,
+              automaticallyImplyLeading: Navigator.of(context).canPop(),
+              title: Text(
+                'Your Coach',
+                style: GoogleFonts.pixelifySans(
+                  color: AppTheme.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
       bottomNavigationBar: onNavSelected == null
           ? null
           : CustomBottomNav(

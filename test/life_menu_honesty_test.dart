@@ -37,6 +37,8 @@ void main() {
       // Sanity on the table itself: an action nobody can ever take is a dead
       // menu row, and one nobody is ever blocked from does not need a gate.
       for (final action in LifeAction.values) {
+        // Off for everybody, on request, so nobody is allowed it at any age.
+        if (action == LifeAction.gamble && !kLifeGamblingEnabled) continue;
         final allowedSomewhere = <int>[
           for (var age = 0; age <= 80; age++) age,
         ].any((age) => at(age).allows(action));
@@ -200,6 +202,7 @@ void main() {
     test('an adult can do everything', () {
       final grown = at(30);
       for (final action in LifeAction.values) {
+        if (action == LifeAction.gamble && !kLifeGamblingEnabled) continue;
         expect(
           grown.allows(action),
           isTrue,

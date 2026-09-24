@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/town_spot_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/town_landmarks.dart';
+
 /// Where the town's markers actually sit on the map.
 ///
 /// **What went wrong.** The coordinates were hand-placed and drifted. Measured
@@ -19,7 +21,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   _mapIdentity();
 
-  _buildingAssignment();
+  _landmarks();
 
   /// One parsed map: its size and the set of solid tiles.
   ({int width, int height, Set<(int, int)> solid}) loadMap(String name) {
@@ -41,47 +43,16 @@ void main() {
     );
   }
 
-  /// Solid tiles belonging to a cluster of six or more.
-  ///
-  /// The size floor is what separates a building from scenery. Trees, fences
-  /// and bins are solid too, and a marker snapped to the side of a hedge is a
-  /// different wrong answer rather than a fix.
-  Set<(int, int)> buildingsIn(
-    int width,
-    int height,
-    Set<(int, int)> solid,
-  ) {
-    final seen = <(int, int)>{};
-    final out = <(int, int)>{};
-    for (final start in solid) {
-      if (seen.contains(start)) continue;
-      final queue = <(int, int)>[start];
-      final cluster = <(int, int)>{start};
-      seen.add(start);
-      while (queue.isNotEmpty) {
-        final (x, y) = queue.removeLast();
-        for (final n in <(int, int)>[(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]) {
-          if (solid.contains(n) && seen.add(n)) {
-            cluster.add(n);
-            queue.add(n);
-          }
-        }
-      }
-      if (cluster.length >= 6) out.addAll(cluster);
-    }
-    return out;
-  }
-
   group('map.json', () {
     late final map = loadMap('map.json');
-    late final built = buildingsIn(map.width, map.height, map.solid);
 
     test('every spot stands on a tile you can walk on', () {
       for (final spot in kTownSpots) {
         expect(
           map.solid.contains((spot.tileX, spot.tileY)),
           isFalse,
-          reason: '${spot.id} is inside a wall at (${spot.tileX}, '
+          reason:
+              '${spot.id} is inside a wall at (${spot.tileX}, '
               '${spot.tileY})',
         );
       }
@@ -94,19 +65,22 @@ void main() {
       }
     });
 
-    test('every spot is beside a building, not floating on a road', () {
+    test('every spot stands at the front of the thing it is named for', () {
+      // The old version of this counted any six solid tiles as a building, and
+      // a tree is nine. So a cafe planted beside an oak, or a library on the end
+      // of a fence, passed, and the report was "a cafe in the middle of the
+      // grass". `kTownLandmarks` names what each marker stands in front of, and
+      // this holds it to that.
       for (final spot in kTownSpots) {
-        final touching = <(int, int)>[
-          (spot.tileX + 1, spot.tileY),
-          (spot.tileX - 1, spot.tileY),
-          (spot.tileX, spot.tileY + 1),
-          (spot.tileX, spot.tileY - 1),
-        ].any(built.contains);
+        final landmark = kTownLandmarks[TownMap.village]![spot.id]!;
+        final distance =
+            (landmark.x - spot.tileX).abs() + (landmark.y - spot.tileY).abs();
         expect(
-          touching,
-          isTrue,
-          reason: '${spot.id} at (${spot.tileX}, ${spot.tileY}) has no '
-              'building next to it — run tool/place_town_spots.py',
+          distance,
+          1,
+          reason:
+              '${spot.id} at (${spot.tileX}, ${spot.tileY}) is not beside '
+              '${landmark.what} at (${landmark.x}, ${landmark.y})',
         );
       }
     });
@@ -139,14 +113,20 @@ void main() {
       final queue = <(int, int)>[start];
       while (queue.isNotEmpty) {
         final (x, y) = queue.removeLast();
-        for (final n in <(int, int)>[(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]) {
+        for (final n in <(int, int)>[
+          (x + 1, y),
+          (x - 1, y),
+          (x, y + 1),
+          (x, y - 1),
+        ]) {
           if (free.contains(n) && seen.add(n)) queue.add(n);
         }
       }
       expect(
         seen.length / free.length,
         greaterThan(0.99),
-        reason: 'the walkable area is split into pieces — '
+        reason:
+            'the walkable area is split into pieces — '
             '${seen.length} of ${free.length} reachable from one corner',
       );
     });
@@ -169,7 +149,8 @@ void main() {
       expect(
         walkable / (map.width * map.height),
         greaterThan(0.7),
-        reason: 'only ${(walkable / (map.width * map.height) * 100).round()}% '
+        reason:
+            'only ${(walkable / (map.width * map.height) * 100).round()}% '
             'is walkable — the collider mapping has over-fired again',
       );
     });
@@ -205,130 +186,197 @@ void main() {
       expect(
         best / free.length,
         greaterThan(0.95),
-        reason: 'the largest reachable region is only '
+        reason:
+            'the largest reachable region is only '
             '${(best / free.length * 100).round()}% of the walkable space',
       );
     });
   });
 }
 
-/// Every marker gets its own building — on both maps.
+/// Every marker stands at a real building, and no two share one — on both maps.
 ///
-/// **Why "next to a building" was not enough.** `place_town_spots.py` snapped
-/// all twelve markers to a walkable tile touching a solid cluster, and it
-/// worked: measured, every one of the 24 positions sat exactly one tile from
-/// a building. The town still looked wrong, and the report was "I'm having a
-/// cafe in the middle of the road".
+/// **What this replaced.** A flood fill that called any six solid tiles a
+/// "building". A tree is nine, a hedge is more, and a rope fence along a lawn is
+/// nineteen, so the test passed a library on the end of a fence and a cafe beside
+/// an oak. The second town was worse: its buildings are painted into the ground
+/// layer and are mostly not solid at all, so no fill of solid tiles could find
+/// them. What was reported was *"we got a cafe in the middle of the grass"*, and
+/// on that map two of the markers were standing on the outer wall.
 ///
-/// Nothing stopped two markers snapping to the *same* building. On the second
-/// map nine of twelve shared, with the bank, the notice board and the market
-/// stalls all on one house — so walking up to a building told you nothing
-/// about what was inside it, and a marker on the far wall of a house you had
-/// mentally assigned to something else reads exactly like a marker floating
-/// in a road.
-///
-/// `tool/assign_town_buildings.py` solves it as an assignment problem instead
-/// of twelve independent snaps. This holds the result.
-void _buildingAssignment() {
-  group('every town marker has its own building', () {
+/// So `test/support/town_landmarks.dart` says, by hand, what each marker stands
+/// in front of, read off the rendered maps (`tool/README.md` has the recipe), and
+/// this holds the markers to it: beside that thing, and the thing is not a tree,
+/// a bush or a fence.
+void _landmarks() {
+  // Tile ids the tileset uses for trees, bushes and fences. A landmark made of
+  // these is scenery, and a marker planted beside scenery is the bug.
+  const scenery = <int>{
+    286, 288, // bushes
+    291, 292, 293, 294, 295, 296, 297, 298, 299, // trees
+    304, 305, 306, 307, // fence posts
+    398, 399, 400, 401, 402, // rope fence
+  };
+
+  group('every town marker stands at a real building', () {
     for (final map in TownMap.values) {
-      test('on ${map.name}', () async {
-        final data = jsonDecode(
-          await File('assets/images/maps/${map.asset.split('/').last}')
-              .readAsString(),
-        ) as Map<String, dynamic>;
+      group('on ${map.name}', () {
+        late final Map<String, dynamic> data;
+        late final Map<(int, int), List<({String layer, int id})>> tiles;
+        late final Set<(int, int)> solid;
 
-        final solid = <({int x, int y})>{};
-        for (final layer in data['layers'] as List) {
-          if (layer['collider'] != true) continue;
-          for (final tile in layer['tiles'] as List) {
-            solid.add((
-              x: int.parse(tile['x'].toString()),
-              y: int.parse(tile['y'].toString()),
-            ));
-          }
-        }
-
-        // Flood-fill the solid tiles into buildings. Six tiles is the floor
-        // that separates a house from a tree — snapping a shop marker to a
-        // hedge is a different wrong answer, not a fix.
-        final seen = <({int x, int y})>{};
-        final owner = <({int x, int y}), int>{};
-        var next = 0;
-        for (final start in solid) {
-          if (!seen.add(start)) continue;
-          final queue = <({int x, int y})>[start];
-          final group = <({int x, int y})>[];
-          while (queue.isNotEmpty) {
-            final cell = queue.removeLast();
-            group.add(cell);
-            for (final d in const [(1, 0), (-1, 0), (0, 1), (0, -1)]) {
-              final n = (x: cell.x + d.$1, y: cell.y + d.$2);
-              if (solid.contains(n) && seen.add(n)) queue.add(n);
+        setUpAll(() {
+          data =
+              jsonDecode(
+                    File(
+                      'assets/images/maps/${map.asset.split('/').last}',
+                    ).readAsStringSync(),
+                  )
+                  as Map<String, dynamic>;
+          tiles = {};
+          solid = {};
+          for (final layer in data['layers'] as List) {
+            for (final tile in layer['tiles'] as List) {
+              final key = (
+                int.parse(tile['x'].toString()),
+                int.parse(tile['y'].toString()),
+              );
+              tiles.putIfAbsent(key, () => []).add((
+                layer: layer['name'] as String,
+                id: int.parse(tile['id'].toString()),
+              ));
+              if (layer['collider'] == true) solid.add(key);
             }
           }
-          if (group.length >= 6) {
-            for (final cell in group) {
-              owner[cell] = next;
+        });
+
+        test('every marker has a named landmark', () {
+          for (final spot in kTownSpots) {
+            expect(
+              kTownLandmarks[map]![spot.id],
+              isNotNull,
+              reason: '${spot.id} has no landmark on ${map.name}',
+            );
+          }
+        });
+
+        test('and stands right beside it', () {
+          for (final spot in kTownSpots) {
+            final landmark = kTownLandmarks[map]![spot.id]!;
+            final x = spot.xOn(map);
+            final y = spot.yOn(map);
+            expect(
+              (landmark.x - x).abs() + (landmark.y - y).abs(),
+              1,
+              reason:
+                  '${spot.id} at ($x, $y) on ${map.name} is not beside '
+                  '${landmark.what} at (${landmark.x}, ${landmark.y})',
+            );
+          }
+        });
+
+        test('and the landmark is not a tree, a bush or a fence', () {
+          for (final spot in kTownSpots) {
+            if (spot.kind == TownSpotKind.park) continue; // open ground
+            final landmark = kTownLandmarks[map]![spot.id]!;
+            final ids = [
+              for (final t in tiles[(landmark.x, landmark.y)] ?? const []) t.id,
+            ];
+            expect(
+              ids.any(scenery.contains),
+              isFalse,
+              reason:
+                  '${spot.id} on ${map.name} stands beside ${landmark.what}, '
+                  'which is scenery, not a building',
+            );
+          }
+        });
+
+        test('and on the first town it is drawn above the floor', () {
+          // The first town keeps every building in layers of its own. The
+          // second paints most of them into the ground, so this check would
+          // fail there for the right art.
+          if (map != TownMap.village) return;
+          for (final spot in kTownSpots) {
+            final landmark = kTownLandmarks[map]![spot.id]!;
+            final above = [
+              for (final t in tiles[(landmark.x, landmark.y)] ?? const [])
+                if (!const {'floor', 'texture', 'terrain'}.contains(t.layer)) t,
+            ];
+            expect(
+              above,
+              isNotEmpty,
+              reason:
+                  '${spot.id} stands beside ${landmark.what} at '
+                  '(${landmark.x}, ${landmark.y}), and nothing is drawn there',
+            );
+          }
+        });
+
+        test('no two markers share a landmark', () {
+          final byName = <String, String>{};
+          final byTile = <(int, int), String>{};
+          for (final spot in kTownSpots) {
+            final landmark = kTownLandmarks[map]![spot.id]!;
+            expect(
+              byName[landmark.what],
+              isNull,
+              reason:
+                  '${spot.id} and ${byName[landmark.what]} are both at '
+                  '${landmark.what} on ${map.name}',
+            );
+            byName[landmark.what] = spot.id;
+            expect(
+              byTile[(landmark.x, landmark.y)],
+              isNull,
+              reason:
+                  '${spot.id} and ${byTile[(landmark.x, landmark.y)]} share '
+                  'a tile of the same wall on ${map.name}',
+            );
+            byTile[(landmark.x, landmark.y)] = spot.id;
+          }
+        });
+
+        test('and none is crowded onto another', () {
+          // A marker's sensor is two tiles across. Three apart is the least
+          // that keeps walking up to one from opening its neighbour.
+          for (final a in kTownSpots) {
+            for (final b in kTownSpots) {
+              if (a.id.compareTo(b.id) >= 0) continue;
+              final dx = (a.xOn(map) - b.xOn(map)).abs();
+              final dy = (a.yOn(map) - b.yOn(map)).abs();
+              expect(
+                dx > dy ? dx : dy,
+                greaterThanOrEqualTo(3),
+                reason: '${a.id} and ${b.id} are too close on ${map.name}',
+              );
             }
-            next++;
           }
-        }
+        });
 
-        // Which buildings each marker touches. A doorstep can belong to two
-        // buildings at once, so "the first one I find" is not an assignment —
-        // an earlier version of this test did that and failed on a placement
-        // that was actually correct.
-        final touches = <String, Set<int>>{};
-        for (final spot in kTownSpots) {
-          final x = spot.xOn(map);
-          final y = spot.yOn(map);
-          final found = <int>{};
-          for (final d in const [(1, 0), (-1, 0), (0, 1), (0, -1)]) {
-            final id = owner[(x: x + d.$1, y: y + d.$2)];
-            if (id != null) found.add(id);
+        test('and none is on a wall or on the edge of the map', () {
+          final width = data['mapWidth'] as int;
+          final height = data['mapHeight'] as int;
+          for (final spot in kTownSpots) {
+            final x = spot.xOn(map);
+            final y = spot.yOn(map);
+            expect(
+              solid.contains((x, y)),
+              isFalse,
+              reason: '${spot.id} is in a wall',
+            );
+            expect(
+              x,
+              inInclusiveRange(2, width - 3),
+              reason: '${spot.id} is on the edge',
+            );
+            expect(
+              y,
+              inInclusiveRange(2, height - 3),
+              reason: '${spot.id} is on the edge',
+            );
           }
-          expect(
-            found,
-            isNotEmpty,
-            reason:
-                '${spot.id} at ($x,$y) on ${map.name} touches no building — '
-                'that is the marker-in-a-road bug',
-          );
-          touches[spot.id] = found;
-        }
-
-        // The real property: can every marker be given a building of its
-        // own? That is a bipartite matching, and asserting it directly means
-        // the test passes for *any* valid placement rather than only the one
-        // the tool happened to produce.
-        final matchedBy = <int, String>{};
-        bool augment(String spotId, Set<int> seen) {
-          for (final building in touches[spotId]!) {
-            if (!seen.add(building)) continue;
-            final holder = matchedBy[building];
-            if (holder == null || augment(holder, seen)) {
-              matchedBy[building] = spotId;
-              return true;
-            }
-          }
-          return false;
-        }
-
-        final unmatched = <String>[];
-        for (final spot in kTownSpots) {
-          if (!augment(spot.id, <int>{})) unmatched.add(spot.id);
-        }
-
-        expect(
-          unmatched,
-          isEmpty,
-          reason:
-              'on ${map.name} these markers cannot be given a building of '
-              'their own: $unmatched. Two different places sharing one house '
-              'is why the town read as random. Re-run '
-              'tool/assign_town_buildings.py --write',
-        );
+        });
       });
     }
   });
@@ -363,7 +411,8 @@ void _mapIdentity() {
       expect(
         seen.length,
         TownMap.values.length,
-        reason: 'every life is landing in the same town — the hash is not '
+        reason:
+            'every life is landing in the same town — the hash is not '
             'spreading, so the second map would never be seen',
       );
     });

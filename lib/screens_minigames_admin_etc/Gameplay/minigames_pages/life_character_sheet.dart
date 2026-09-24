@@ -476,11 +476,7 @@ class _ChoiceTile extends StatelessWidget {
 }
 
 class _OriginTile extends StatelessWidget {
-  const _OriginTile({
-    required this.origin,
-    required this.selected,
-    this.onTap,
-  });
+  const _OriginTile({required this.origin, required this.selected, this.onTap});
 
   final LifeOrigin origin;
   final bool selected;

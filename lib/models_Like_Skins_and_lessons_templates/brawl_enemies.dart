@@ -47,6 +47,7 @@ class BrawlEnemy {
     this.minWave = 1,
     this.swarmCount = 1,
     this.isElite = false,
+    this.hitScale = 0.8,
   });
 
   final String id;
@@ -75,7 +76,26 @@ class BrawlEnemy {
 
   /// Elites are rarer, tougher, and worth more.
   final bool isElite;
+
+  /// How much of the drawn circle actually counts when something touches it, 0
+  /// to 1.
+  ///
+  /// **Why this exists.** Every enemy is drawn in a square as wide as its radius
+  /// twice over, and contact used to be tested against the whole radius. But no
+  /// sprite fills its square: a subscription speck fills about 59% of it, a
+  /// credit card 84% by 59%. Whatever the picture did not cover still hurt, and
+  /// shots vanished a few pixels short of the thing they were aimed at. That is
+  /// what "the hitboxes are weird" was.
+  ///
+  /// Each value is the mean of the sprite's opaque width and height as a share of
+  /// its frame, measured off the art and trimmed a little so contact is generous
+  /// to the player. `brawl_hitbox_test.dart` re-measures the PNGs, so redrawing
+  /// a sprite without changing this fails a test instead of feeling wrong again.
+  final double hitScale;
 }
+
+/// The systemic-risk boss's own, measured the same way from `brawl_boss.png`.
+const double kBrawlBossHitScale = 0.8;
 
 /// The roster.
 ///
@@ -93,6 +113,7 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     speedScale: 1.15,
     hpScale: 0.9,
     goldReward: 5,
+    hitScale: 0.70,
   ),
   BrawlEnemy(
     id: 'medical_bill',
@@ -104,6 +125,7 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     hpScale: 1.1,
     speedScale: 0.95,
     goldReward: 6,
+    hitScale: 0.72,
   ),
 
   // --- wave 2: the ones that punish inattention -------------------------
@@ -123,6 +145,7 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     // The whole point. One is trivial; five is the biggest health pool on
     // screen, and the player has to notice that themselves.
     swarmCount: 5,
+    hitScale: 0.58,
   ),
   BrawlEnemy(
     id: 'payday_loan',
@@ -139,6 +162,7 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     radius: 21,
     goldReward: 9,
     minWave: 2,
+    hitScale: 0.72,
   ),
 
   // --- wave 3: the long ones -------------------------------------------
@@ -156,6 +180,7 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     radius: 34,
     goldReward: 11,
     minWave: 3,
+    hitScale: 0.78,
   ),
   BrawlEnemy(
     id: 'overdraft_fee',
@@ -170,6 +195,7 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     radius: 22,
     goldReward: 8,
     minWave: 3,
+    hitScale: 0.70,
   ),
 
   // --- wave 5+: the heavy ones -----------------------------------------
@@ -188,6 +214,7 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     goldReward: 20,
     minWave: 5,
     isElite: true,
+    hitScale: 0.95,
   ),
   BrawlEnemy(
     id: 'subprime_mortgage',
@@ -203,6 +230,7 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     goldReward: 16,
     minWave: 5,
     isElite: true,
+    hitScale: 0.95,
   ),
 
   // --- wave 7+: the ones that are not really debts ----------------------
@@ -220,6 +248,7 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     radius: 30,
     goldReward: 13,
     minWave: 7,
+    hitScale: 0.80,
   ),
   BrawlEnemy(
     id: 'too_good_offer',
@@ -235,12 +264,15 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     goldReward: 18,
     minWave: 7,
     isElite: true,
+    hitScale: 0.88,
   ),
 ];
 
 /// Archetypes that can appear on [wave].
-List<BrawlEnemy> enemiesForWave(int wave) =>
-    [for (final e in kBrawlEnemies) if (wave >= e.minWave) e];
+List<BrawlEnemy> enemiesForWave(int wave) => [
+  for (final e in kBrawlEnemies)
+    if (wave >= e.minWave) e,
+];
 
 /// Picks the next archetype to spawn.
 ///
@@ -255,8 +287,14 @@ BrawlEnemy pickEnemy(int wave, double roll) {
   final available = enemiesForWave(wave);
   if (available.isEmpty) return kBrawlEnemies.first;
 
-  final elites = [for (final e in available) if (e.isElite) e];
-  final regular = [for (final e in available) if (!e.isElite) e];
+  final elites = [
+    for (final e in available)
+      if (e.isElite) e,
+  ];
+  final regular = [
+    for (final e in available)
+      if (!e.isElite) e,
+  ];
 
   final wantElite = roll > 0.8 && elites.isNotEmpty;
   final pool = wantElite ? elites : (regular.isEmpty ? available : regular);

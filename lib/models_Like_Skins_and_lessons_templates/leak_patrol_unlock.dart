@@ -26,11 +26,9 @@
 ///
 /// # How you get it
 ///
-/// It is an epic in the skin case, and under-13s — who cannot open the case
-/// at all, by `AgeBand.allowsRandomisedRewards` — can buy it outright with
-/// `buySkinDirectly` for the same gold. So the lock is reachable by every
-/// band without anybody having to gamble for it, which was the whole point of
-/// that split.
+/// It is an epic in the skin case, and anyone can also buy it outright with
+/// `buySkinDirectly` for the same gold. So the lock is reachable without
+/// anybody having to gamble for it.
 library;
 
 const String kLeakPatrolSkinId = 'mushroom_goomba';

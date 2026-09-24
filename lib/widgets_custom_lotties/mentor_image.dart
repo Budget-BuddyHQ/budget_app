@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/app_assets.dart';
+import '../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import '../controllers_that_updates_stats/user_stats_controller.dart';
 import '../models_Like_Skins_and_lessons_templates/tutorial_steps.dart';
 
@@ -47,7 +48,8 @@ class MentorImage extends StatelessWidget {
   /// providers, so this must never be the thing that throws.
   static String equippedSkinOf(BuildContext context) {
     try {
-      return context.watch<UserStatsController>().stats.equippedSkin;
+      // The mascot slot, not the player skin: the guide is always a turtle.
+      return context.watch<UserStatsController>().stats.equippedMascot;
     } on ProviderNotFoundException {
       return 'classic_turtle';
     }
@@ -61,7 +63,11 @@ class MentorImage extends StatelessWidget {
       pose.assetFor(skinId),
       width: size,
       height: size,
-      filterQuality: FilterQuality.none,
+      // The Budget Buddy turtles are smooth illustrations, and nearest-
+      // neighbour scaling stair-steps their outlines.
+      filterQuality: skinFromId(skinId).isPixelArt
+          ? FilterQuality.none
+          : FilterQuality.medium,
       // A skin whose art is missing falls back to the classic pose rather
       // than to a broken-image icon: the generated sets are derived files,
       // and a build that skipped `tool/make_mentor_skins.py` should lose the

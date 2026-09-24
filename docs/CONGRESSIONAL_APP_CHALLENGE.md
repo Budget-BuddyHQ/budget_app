@@ -1,6 +1,6 @@
 # Budget Buddy — Congressional App Challenge submission
 
-**What it is:** a financial-literacy app for ages 4 to 21+, built as a game.
+**What it is:** a financial-literacy app for 6th graders and up, built as a game.
 Eleven screens, a 13-unit sourced curriculum, three arcade games, a life
 simulation and a walkable town — all built around one idea: *money lessons
 stick when you have to spend money to learn them.*
@@ -8,7 +8,7 @@ stick when you have to spend money to learn them.*
 **Built in:** Flutter/Dart, with Supabase for accounts, cloud save and
 leaderboards, and live market data from Finnhub and Twelve Data.
 
-**Scale:** ~83,300 lines of Dart across 135 files, 1,280 automated tests,
+**Scale:** ~118,000 lines of Dart across 196 files, 2,580 automated tests,
 `flutter analyze` clean.
 
 ---
@@ -60,10 +60,10 @@ The design rules that make it teach rather than entertain:
 
 Three games where the money idea *is* the rule, not a quiz attached to one.
 
-**Coin Cascade** (match-3, ages 4+) — needs pay your bills down, wants score
+**Coin Cascade** (match-3, easy to pick up at any age) — needs pay your bills down, wants score
 best and raise them, savings are the only thing that reaches the goal, coins
 buy extra moves. Chase the biggest matches and you lose. That is 50/30/20 with
-the numbers taken out, and it is playable by someone who cannot read yet.
+the numbers taken out, and it is quick to learn without reading anything first.
 Seven levels change *what you have to think about*: bills arriving every three
 moves, coins worth double on a short budget, wants costing double.
 
@@ -213,7 +213,7 @@ setting.
 ### Everything that can be pure Dart is
 The life simulation, the match-3 engine, the quiz banks, the town scenarios and
 the habit model have no Flutter dependency and take an injectable `Random`.
-That is why 1,280 tests run in under thirty seconds and why the rules can be
+That is why 2,580 tests run in a few minutes and why the rules can be
 tested as *rules* rather than through a UI.
 
 ### The art is generated and checked

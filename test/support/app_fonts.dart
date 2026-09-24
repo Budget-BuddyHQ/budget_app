@@ -39,6 +39,31 @@ Future<void> loadAppFonts() async {
           ..addFont(Future<ByteData>.value(ByteData.view(bytes.buffer))))
         .load();
   }
+  await _loadMaterialIcons();
+}
+
+/// Registers the icon font, so a picture taken in a test shows icons.
+///
+/// **Why.** Without it every `Icon` in a test renders as an empty box, so the
+/// pictures the layout suites save look broken in a way the real app is not, and
+/// a person reviewing them cannot judge whether an icon is the right one or in
+/// the right place. Layout is unaffected either way: an `Icon` is a fixed-size
+/// box whatever glyph is drawn in it.
+///
+/// Read from the Flutter SDK the tests are running under, and skipped quietly
+/// when it cannot be found, because the pictures are a convenience and a test
+/// must never fail for want of one.
+Future<void> _loadMaterialIcons() async {
+  final root = Platform.environment['FLUTTER_ROOT'];
+  if (root == null) return;
+  final file = File(
+    '$root/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
+  );
+  if (!file.existsSync()) return;
+  final bytes = file.readAsBytesSync();
+  await (FontLoader('MaterialIcons')
+        ..addFont(Future<ByteData>.value(ByteData.view(bytes.buffer))))
+      .load();
 }
 
 /// `{google_fonts family key}: {file in assets/fonts}`.
