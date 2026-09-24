@@ -133,7 +133,11 @@ class _ConfettiOverlayState extends State<_ConfettiOverlay>
       return const SizedBox.shrink();
     }
 
-    return Positioned.fill(
+    // A full-size box, not `Positioned.fill`. This sits inside an
+    // `IgnorePointer` inside an overlay entry, and `Positioned` is only legal
+    // directly under a `Stack`. Release builds ignore the mistake; a debug build
+    // throws "Incorrect use of ParentDataWidget" the first time confetti plays.
+    return SizedBox.expand(
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, _) => CustomPaint(

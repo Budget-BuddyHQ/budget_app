@@ -212,39 +212,9 @@ class UserStatsController extends ChangeNotifier {
         password: password,
         captchaToken: captchaToken,
       );
-
       final user = response.user;
-
       if (user == null) {
         return _authFailure('That sign-in did not complete. Please try again.');
-      }
-
-      final client = Supabase.instance.client;
-
-      final profile = await client
-          .from('profiles')
-          .select('disabled')
-          .eq('id', user.id)
-          .maybeSingle();
-
-      final isDisabled = profile?['disabled'] == true;
-
-      if (isDisabled) {
-        await client.auth.signOut();
-
-        _isSaving = false;
-        _statusMessage = 'This account has been disabled.';
-        notifyListeners();
-
-        return const StatsActionResult(
-          success: false,
-          message: 'Your account has been disabled. Contact support.',
-          syncState: SyncState(
-            synced: false,
-            usedCache: true,
-            message: 'User disabled',
-          ),
-        );
       }
 
       return await _finishAuthenticatedFlow(
@@ -1723,18 +1693,6 @@ class UserStatsController extends ChangeNotifier {
     );
   }
 
-  /// Buys one specific skin outright, with no randomness.
-  ///
-  /// **The replacement for the case, not a consolation prize.** Under-13s
-  /// cannot open a randomised case (see `AgeBand.allowsRandomisedRewards`),
-  /// and locking them out of cosmetics entirely would punish them for their
-  /// age. They pay the same 180 gold and get the skin they actually chose —
-  /// which is, if anything, the better deal, and is a fair thing for the app
-  /// to be modelling.
-  ///
-  /// Available to everyone. An adult who would rather buy the one they want
-  /// than gamble for it should be able to, and an app about money has no
-  /// business making the gamble the only route.
   /// Marks an NPC mission finished and pays it.
   ///
   /// Idempotent: claiming twice pays once. The claim button is driven by a
@@ -1781,6 +1739,14 @@ class UserStatsController extends ChangeNotifier {
     });
   }
 
+  /// Buys one specific skin outright, with no randomness.
+  ///
+  /// **The alternative to the case, not a consolation prize.** A player pays
+  /// the same 180 gold and gets the skin they actually chose, so the random
+  /// pull is never the only route to a cosmetic — which is a fair thing for an
+  /// app about money to be modelling.
+  ///
+  /// Available to everyone, at every age.
   Future<SkinCaseResult> buySkinDirectly(String skinId) async {
     const skinCost = 180;
     final skin = skinFromId(skinId);
@@ -1822,7 +1788,8 @@ class UserStatsController extends ChangeNotifier {
       literacyPoints: _stats.literacyPoints + 8,
       spendingHabits: <String, dynamic>{
         ..._stats.spendingHabits,
-        'equipped_skin': skinId,
+        // Into its own slot. A bought turtle must not take off your villager.
+        skin.isMascot ? 'equipped_mascot' : 'equipped_skin': skinId,
         'unlocked_skins': <String>{
           ..._stats.unlockedSkins,
           skinId,
@@ -1891,7 +1858,10 @@ class UserStatsController extends ChangeNotifier {
       literacyPoints: _stats.literacyPoints + (isNewUnlock ? 8 : 4),
       spendingHabits: <String, dynamic>{
         ..._stats.spendingHabits,
-        'equipped_skin': isNewUnlock ? awardedSkin.id : _stats.equippedSkin,
+        // A new unlock goes on in its own slot and leaves the other alone.
+        if (isNewUnlock)
+          awardedSkin.isMascot ? 'equipped_mascot' : 'equipped_skin':
+              awardedSkin.id,
         'unlocked_skins': nextUnlocked,
       },
       transactions: <LedgerTransaction>[
@@ -1940,7 +1910,13 @@ class UserStatsController extends ChangeNotifier {
       );
     }
 
-    if (_stats.equippedSkin == skinId) {
+    // Compared against the slot this skin belongs in. With one slot, a
+    // turtle and a villager could not both be worn; now each has its own.
+    final skin = skinFromId(skinId);
+    final current = skin.isMascot
+        ? _stats.equippedMascot
+        : _stats.equippedSkin;
+    if (current == skinId) {
       return const StatsActionResult(
         success: true,
         message: 'That skin is already equipped.',
@@ -1955,7 +1931,7 @@ class UserStatsController extends ChangeNotifier {
     final nextStats = _stats.copyWith(
       spendingHabits: <String, dynamic>{
         ..._stats.spendingHabits,
-        'equipped_skin': skinId,
+        skin.isMascot ? 'equipped_mascot' : 'equipped_skin': skinId,
         'unlocked_skins': _stats.unlockedSkins,
       },
       updatedAt: DateTime.now().toUtc(),
@@ -1963,7 +1939,9 @@ class UserStatsController extends ChangeNotifier {
 
     return _saveStats(
       nextStats,
-      savingMessage: 'Equipping your new turtle style...',
+      savingMessage: skin.isMascot
+          ? 'Swapping your guide turtle...'
+          : 'Changing your look...',
     );
   }
 

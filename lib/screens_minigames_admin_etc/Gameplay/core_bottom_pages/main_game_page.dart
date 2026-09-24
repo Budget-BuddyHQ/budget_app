@@ -21,6 +21,7 @@ import '../../../widgets_custom_lotties/day_night_sky.dart';
 import '../../../widgets_custom_lotties/avatar_sprite.dart';
 import '../../../widgets_custom_lotties/map_backdrop.dart';
 import '../../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
+import '../../../models_Like_Skins_and_lessons_templates/tutorial_steps.dart';
 
 /// The "MAIN GAME" pill: a gold wash with a gold label, made legible.
 ///
@@ -177,7 +178,8 @@ class MainGamePage extends StatelessWidget {
                   const SizedBox(height: 20),
                   _LifeHeroCard(
                     onPlay: () => _playLife(context),
-                    skin: skinFromId(stats.equippedSkin),
+                    // The guide turtle, not the player skin: this card is Buddy's.
+                    skin: skinFromId(stats.equippedMascot),
                   ),
                   const SizedBox(height: 16),
                   // Three tiles rather than three full-width rows of prose.
@@ -210,9 +212,8 @@ class MainGamePage extends StatelessWidget {
                             accent: const Color(0xFF69C6FF),
                             // Waving in whichever turtle they have on.
                             art: _TileArt.image(
-                              AppAssets.turtleMentorPose(
-                                'wave',
-                                stats.equippedSkin,
+                              TutorialMascot.wave.assetFor(
+                                stats.equippedMascot,
                               ),
                             ),
                             onTap: () => _replayLifeTour(context),

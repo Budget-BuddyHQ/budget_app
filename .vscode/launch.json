@@ -8,8 +8,7 @@
       "flutterMode": "debug",
       "deviceId": "windows",
       "toolArgs": [
-        "--dart-define-from-file=supabase.env.json",
-        "--web-port=8080"
+        "--dart-define-from-file=supabase.env.json"
       ]
     }
   ]

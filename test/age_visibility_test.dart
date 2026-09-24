@@ -12,9 +12,8 @@ import 'package:budget_app/widgets_custom_lotties/age_scaling_card.dart';
 /// whether it works.
 ///
 /// **The report, twice, in the same words:** *"I'm still not seeing the age
-/// separated for the app."* By then the band was deciding six things — which
-/// questions are served, whether adult topics are held back, whether the
-/// random skin case exists, whether wagers appear, whether the wording is
+/// separated for the app."* By then the band was deciding five things — which
+/// questions are served, whether adult topics are held back, whether wagers appear, whether the wording is
 /// plain, and how fast Leak Patrol runs — and the player was told about it in
 /// one sentence at sign-up, which they saw once.
 ///
@@ -59,22 +58,6 @@ void main() {
       final young = questionsPerBand[AgeBand.under9]!;
       final adult = questionsPerBand[AgeBand.adult18plus]!;
       expect(young, lessThan(adult));
-    });
-
-    test('the loot box line matches the actual gate', () {
-      for (final band in AgeBand.values) {
-        final rewards = ageScalingFacts(
-          band,
-        ).firstWhere((f) => f.icon == AgeScalingIcon.rewards);
-
-        expect(
-          rewards.detail.contains('No random case'),
-          !band.allowsRandomisedRewards,
-          reason:
-              '${band.label} is told the wrong thing about the skin case, '
-              'which is the one claim here with a store policy behind it',
-        );
-      }
     });
 
     test('the wagering line matches the actual gate', () {
@@ -126,7 +109,7 @@ void main() {
 
       expect(find.text('Matched to your age'), findsOneWidget);
       expect(find.textContaining('9 to 12'), findsOneWidget);
-      expect(find.textContaining('6 things change'), findsOneWidget);
+      expect(find.textContaining('5 things change'), findsOneWidget);
     });
 
     testWidgets('opening it shows every fact', (tester) async {
@@ -141,16 +124,6 @@ void main() {
           reason: '"${fact.title}" is missing from the open card',
         );
       }
-    });
-
-    testWidgets('an under-9 is told the case is closed to them', (
-      tester,
-    ) async {
-      await tester.pumpWidget(host(AgeBand.under9));
-      await tester.tap(find.text('Matched to your age'));
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('No random case'), findsOneWidget);
     });
 
     testWidgets('a player with no age set is offered the way to set it', (
@@ -208,16 +181,16 @@ void main() {
       const surfaces = <String, String>{
         'the Academy quiz':
             'lib/screens_minigames_admin_etc/Gameplay/academy/'
-                'lesson_detail_screen.dart',
+            'lesson_detail_screen.dart',
         'the Brawl checkpoint':
             'lib/screens_minigames_admin_etc/Gameplay/minigames_pages/'
-                'finance_brawl_game.dart',
+            'finance_brawl_game.dart',
         'the life sim character sheet':
             'lib/screens_minigames_admin_etc/Gameplay/minigames_pages/'
-                'life_character_sheet.dart',
+            'life_character_sheet.dart',
         'the Market Board':
             'lib/screens_minigames_admin_etc/Gameplay/minigames_pages/'
-                'stock_market_page.dart',
+            'stock_market_page.dart',
         'the Coach':
             'lib/screens_minigames_admin_etc/coach/coach_report_view.dart',
       };

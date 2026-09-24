@@ -119,11 +119,18 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
             )
           : null,
       appBar: AppBar(
-        // default toolbar height, no extra title padding. this screen sits
-        // *under* MainNavigation's global top bar when its a tab, so 70px
-        // toolbar + 12px title inset stacked a whole second header's worth
-        // of empty space below the first one. thats what that gap between
-        // "Daily" and the content was
+        // Collapsing the toolbar (not just trimming its padding) when this
+        // is a tab. The "default toolbar height, no extra title padding"
+        // version still cost a full ~56px toolbar row *plus* this 52px tab
+        // strip stacked under MainNavigation's own ~60px top bar — three
+        // bands of chrome before any real content, which is the "top bit is
+        // very expanded" complaint. The title was redundant with that top
+        // bar's already-highlighted "Daily" pill, so as a tab there is
+        // nothing worth spending the toolbar row on: it collapses to 0 and
+        // only the tab strip below remains. Pushed as a standalone route
+        // there is no pill above saying "Daily" for the title to duplicate,
+        // so the full toolbar (and its title) comes back.
+        toolbarHeight: asTab ? 0 : kToolbarHeight,
         backgroundColor: AppTheme.deepForest,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -131,17 +138,12 @@ class _MoneyHabitsScreenState extends State<MoneyHabitsScreen>
         // as a tab theres nothing to go back *to* so the arrow would just
         // be a dead button
         automaticallyImplyLeading: !asTab,
-        title: Text(
-          // As a tab this screen *is* Daily — the top strip's Daily button
-          // opens it. Titling it "Money Habits" under a strip that says
-          // "Daily" was the confusion in its purest form: the label you
-          // tapped and the heading you landed on disagreed, and neither
-          // named the plan the tab actually leads with. Pushed as a route it
-          // keeps the old name, because then it really was opened as the
-          // habit tracker.
-          asTab ? 'Daily' : 'Money Habits',
-          style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
-        ),
+        title: asTab
+            ? null
+            : Text(
+                'Money Habits',
+                style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+              ),
         // A taller strip than `kTextTabBarHeight`, because these tabs are a
         // pill with an icon *beside* a word rather than a Material label with
         // an icon stacked over it. See [_HabitTab].
@@ -940,11 +942,18 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
-/// A circular real-photo thumbnail for a habit, matching the reference
-/// app's course-icon look — falls back to a plain icon tile when the habit
-/// has no [HabitTemplate.photoUrl] yet (most of the catalog, still) or when
-/// the network image fails to load, so a bad/offline URL degrades instead
-/// of breaking the card.
+/// A circular thumbnail for a habit.
+///
+/// **Asked for as:** *"finishing adding the images to the daily screens."*
+/// Only 6 of the 16 cards had a picture at all, and each of those was a
+/// hotlinked Wikimedia photo — a stock image dropped into a hand-drawn pixel
+/// game, and one that needed the network to show at all. Every habit now has
+/// its own badge, drawn in the app's own palette by
+/// `tool/make_habit_icons.py`, bundled with the app rather than fetched.
+///
+/// [HabitTemplate.photoUrl] still exists and is still tried, for a real photo
+/// a future habit is given on purpose, but it is no longer what most of the
+/// catalog leans on, and nothing here depends on the network to render.
 class _HabitPhoto extends StatelessWidget {
   const _HabitPhoto({required this.habit, required this.size});
 
@@ -953,21 +962,27 @@ class _HabitPhoto extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final photoUrl = habit.photoUrl;
-    if (photoUrl == null) {
-      return _iconFallback();
-    }
     return ClipOval(
-      child: Image.network(
-        photoUrl,
+      child: Image.asset(
+        'assets/images/money_habits/${habit.id}.png',
         width: size,
         height: size,
         fit: BoxFit.cover,
-        loadingBuilder: (context, child, progress) {
-          if (progress == null) return child;
-          return _iconFallback();
+        errorBuilder: (context, error, stack) {
+          final photoUrl = habit.photoUrl;
+          if (photoUrl == null) return _iconFallback();
+          return Image.network(
+            photoUrl,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) return child;
+              return _iconFallback();
+            },
+            errorBuilder: (context, error, stack) => _iconFallback(),
+          );
         },
-        errorBuilder: (context, error, stack) => _iconFallback(),
       ),
     );
   }
@@ -1798,7 +1813,6 @@ class _JarNextStep extends StatelessWidget {
     );
   }
 }
-
 
 /// One tab in the Daily strip: an icon *beside* a word, inside a pill.
 ///

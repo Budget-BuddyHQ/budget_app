@@ -10,6 +10,7 @@ class AppSettingsController extends ChangeNotifier {
       'budget_buddy_last_feedback_prompt';
   static const String _launchCountKey = 'budget_buddy_launch_count';
   static const String _tutorialSeenKey = 'budget_buddy_tutorial_seen';
+  static const String _lifeAdvisoryKey = 'life_advisory_seen';
   static const String _plainWordsNoticeKey =
       'budget_buddy_plain_words_notice_seen';
   static const String _lifeTourSeenKey = 'budget_buddy_life_tour_seen';
@@ -114,6 +115,7 @@ class AppSettingsController extends ChangeNotifier {
     _tutorialSeen = _preferences?.getBool(_tutorialSeenKey) ?? false;
     _plainWordsNoticeSeen =
         _preferences?.getBool(_plainWordsNoticeKey) ?? false;
+    _lifeAdvisorySeen = _preferences?.getBool(_lifeAdvisoryKey) ?? false;
     _lifeTourSeen = _preferences?.getBool(_lifeTourSeenKey) ?? false;
 
     _initialized = true;
@@ -147,6 +149,22 @@ class AppSettingsController extends ChangeNotifier {
   }
 
   bool _plainWordsNoticeSeen = false;
+
+  /// Whether this player has read what Life contains.
+  ///
+  /// Life is for ages nine and up and nothing in it is filtered by the account's
+  /// age, so the one honest thing to do instead is say what is in it, once,
+  /// before the first life starts.
+  bool _lifeAdvisorySeen = false;
+  bool get hasSeenLifeAdvisory => _lifeAdvisorySeen;
+
+  Future<void> markLifeAdvisorySeen() async {
+    if (_lifeAdvisorySeen) return;
+    _lifeAdvisorySeen = true;
+    notifyListeners();
+    _preferences ??= await SharedPreferences.getInstance();
+    await _preferences?.setBool(_lifeAdvisoryKey, true);
+  }
 
   /// Whether a young player has been told that grown-up money is held back.
   ///

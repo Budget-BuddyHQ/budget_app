@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 """Builds town walk sheets for the skins that are not villagers.
 
+# Turtles do not walk any more
+
+Turtles are mascots now, a separate slot from the player skin, so they
+never walk the town and have no sheet here. The still-image path below is
+kept for any future player skin that ships as a single picture.
+
 # The bug this fixes
 
 `adventure_world_screen.dart` picks the player's sprite like this:
@@ -96,10 +102,6 @@ FACE_BOX = (190, 145, 460, 350)
 
 # skin id -> how to build it.
 SKINS = {
-    'classic_turtle': {'still': 'assets/images/turtles/classic.png'},
-    'coin_shell': {'still': 'assets/images/turtles/coin_shell.png'},
-    'explorer_turtle': {'still': 'assets/images/turtles/explorer.png'},
-    'guild_runner': {'still': 'assets/images/turtles/guild_runner.png'},
     'mushroom_goomba': {
         # This one has real frames already. Synthesising a back view for a
         # character that has one drawn would be strictly worse.
@@ -224,10 +226,17 @@ def build(skin_id, spec):
     palette = (
         palette_map(spec['still'])
         if 'still' in spec and spec['still'] != CLASSIC
+        and not spec.get('front_only')
         else ({} if 'still' in spec else None)
     )
 
-    if 'still' in spec:
+    if spec.get('front_only'):
+        front = Image.open(spec['still']).convert('RGBA')
+        souths = [front] * COLUMNS
+        norths = [front] * NORTH_FRAMES
+        wests = [front] * COLUMNS
+        easts = [front] * COLUMNS
+    elif 'still' in spec:
         front = Image.open(spec['still']).convert('RGBA')
         souths = [front] * COLUMNS
         norths = [back_view(front, palette)] * NORTH_FRAMES

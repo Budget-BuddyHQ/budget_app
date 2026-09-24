@@ -16,12 +16,11 @@ import 'reading_grade.dart';
 ///  * whether questions naming mortgages, IRAs or APR are held back at all
 ///    (`kAdultOnlyTopics` — the gap a reading score cannot close, because
 ///    "What is a CD Ladder?" is four words and grade 2.9),
-///  * whether the randomised skin case exists for them,
 ///  * whether the life sim will offer them a wager,
 ///  * whether the life sim and Market Board speak in plain words,
 ///  * how fast Leak Patrol runs.
 ///
-/// Six systems, and the player was told about it in one sentence at sign-up
+/// Five systems, and the player was told about it in one sentence at sign-up
 /// that they saw once. **Age scaling nobody can see is indistinguishable from
 /// age scaling that does not exist** — and it is one of the strongest things
 /// in this app.
@@ -55,7 +54,11 @@ class AgeScalingFact {
   final String detail;
 }
 
-enum AgeScalingIcon { reading, topics, rewards, wager, wording, speed }
+// There used to be a `rewards` fact here, telling under-13s the skin case
+// was closed to them. The team removed that gate (the case is open to every
+// age, with its odds shown before any gold is spent), and a card that
+// promises a restriction the app does not apply is worse than no card.
+enum AgeScalingIcon { reading, topics, wager, wording, speed }
 
 /// The facts for [band], in the order they matter to the player.
 List<AgeScalingFact> ageScalingFacts(AgeBand band) {
@@ -85,15 +88,6 @@ List<AgeScalingFact> ageScalingFacts(AgeBand band) {
                 'is short.'
           : 'Nothing is held back. Tax, credit and investing questions are '
                 'all in the mix.',
-    ),
-    AgeScalingFact(
-      icon: AgeScalingIcon.rewards,
-      title: 'The skin case',
-      detail: band.allowsRandomisedRewards
-          ? 'You can open the random case, and it shows its real odds before '
-                'you spend anything.'
-          : 'No random case for you — you buy the skin you want, for the same '
-                'gold. Same reward, no gamble.',
     ),
     AgeScalingFact(
       icon: AgeScalingIcon.wager,

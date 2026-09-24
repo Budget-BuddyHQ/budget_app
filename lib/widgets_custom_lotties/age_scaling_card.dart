@@ -54,7 +54,6 @@ class _AgeScalingCardState extends State<AgeScalingCard> {
   IconData _iconFor(AgeScalingIcon icon) => switch (icon) {
     AgeScalingIcon.reading => Icons.menu_book_rounded,
     AgeScalingIcon.topics => Icons.shield_moon_rounded,
-    AgeScalingIcon.rewards => Icons.casino_rounded,
     AgeScalingIcon.wager => Icons.balance_rounded,
     AgeScalingIcon.wording => Icons.chat_bubble_rounded,
     AgeScalingIcon.speed => Icons.speed_rounded,

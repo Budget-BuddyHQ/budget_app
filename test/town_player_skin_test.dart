@@ -27,7 +27,8 @@ void main() {
       // The regression, stated once: a skin that resolves to neither its own
       // villager sheet nor a town sheet is a player wearing somebody else.
       for (final skin in budgetBuddySkins) {
-        if (skin.isHuman) continue;
+        // Villagers have their own sheets; turtles are mascots and never walk.
+        if (skin.isHuman || skin.isMascot) continue;
         expect(
           AppAssets.townSheet(skin.id),
           isNotNull,
@@ -128,7 +129,7 @@ void main() {
       final cellH = AppAssets.villagerCellHeight.round();
 
       final bytes = await File(
-        AppAssets.townSheet('classic_turtle')!,
+        AppAssets.townSheet('mushroom_goomba')!,
       ).readAsBytes();
       final codec = await instantiateImageCodec(bytes);
       final image = (await codec.getNextFrame()).image;

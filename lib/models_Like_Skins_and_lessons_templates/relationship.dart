@@ -10,9 +10,33 @@ enum RelationshipKind {
   family('Family', Icons.home_rounded, Color(0xFFFF8FB1), 0.6),
   friend('Friend', Icons.people_alt_rounded, Color(0xFF69C6FF), 1.0),
   partner('Partner', Icons.favorite_rounded, Color(0xFFFF6B9D), 1.3),
-  mentor('Mentor', Icons.school_rounded, Color(0xFFB388FF), 1.5);
+  mentor('Mentor', Icons.school_rounded, Color(0xFFB388FF), 1.5),
+
+  /// Somebody you married. Drifts more slowly than a partner, because a
+  /// household is built around turning up.
+  spouse('Spouse', Icons.favorite_rounded, Color(0xFFFF4F8B), 1.0),
+
+  /// Your own child. Like family, they forgive a lot of neglect, and unlike
+  /// anybody else they cost money every year until they are grown.
+  child('Child', Icons.child_care_rounded, Color(0xFFFFB86B), 0.6),
+
+  /// Somebody met through work, a networking event or around town.
+  ///
+  /// Not a friend, and it should not read as one: nothing in `connection` (the
+  /// number the endings use for loneliness) counts them. They exist for a
+  /// different reason, which is that people who know you are how most work is
+  /// found. See `life_network.dart`.
+  colleague('Contact', Icons.badge_rounded, Color(0xFF58C7FF), 1.2);
 
   const RelationshipKind(this.label, this.icon, this.accent, this.driftRate);
+
+  /// Whether this tie is about work rather than about the person.
+  ///
+  /// Professional ties feed the network and its referrals, and are left out of
+  /// the loneliness measure: a long list of contacts is not the same thing as
+  /// somebody who would turn up.
+  bool get isProfessional =>
+      this == RelationshipKind.colleague || this == RelationshipKind.mentor;
 
   final String label;
   final IconData icon;
@@ -51,10 +75,46 @@ class Relationship {
     required this.closeness,
     required this.metAtAge,
     this.lastSeenAge,
+    this.role = '',
+    this.ageOffset = 0,
+    this.passedAge,
   });
 
   final String name;
   final RelationshipKind kind;
+
+  /// What this person is to you, in a word: Mother, Brother, Best friend,
+  /// Daughter. Empty for people met before roles existed, in which case the
+  /// kind's own label stands in.
+  ///
+  /// **Why kind was not enough.** A list that says "Family" three times does
+  /// not read as a family tree. The kind decides how the tie behaves; the role
+  /// says who it is.
+  final String role;
+
+  /// How much older this person is than you. Negative for somebody younger, so
+  /// a child born when you were 26 carries -26 and is 4 when you are 30.
+  ///
+  /// Zero means unknown, which is right for a friend: nobody keeps track.
+  final int ageOffset;
+
+  /// The age *you* were when this person died, or null while they are alive.
+  ///
+  /// A person who has died stays in the list, under a heading of their own.
+  /// Removing the row would hide something that happened to you, which is the
+  /// same reason a friend who drifted away stays.
+  final int? passedAge;
+
+  bool get isAlive => passedAge == null;
+
+  String get roleLabel => role.isEmpty ? kind.label : role;
+
+  /// How old they are when you are [playerAge], or null when unknown.
+  int? ageWhen(int playerAge) {
+    if (ageOffset == 0) return null;
+    final at = passedAge ?? playerAge;
+    return at + ageOffset;
+  }
 
   /// 0 to 100. Starts around 60 for somebody who has just arrived.
   final int closeness;
@@ -64,12 +124,21 @@ class Relationship {
   /// The age at which you last did something with them, or null if never.
   final int? lastSeenAge;
 
-  Relationship copyWith({int? closeness, int? lastSeenAge}) => Relationship(
+  Relationship copyWith({
+    int? closeness,
+    int? lastSeenAge,
+    RelationshipKind? kind,
+    String? role,
+    int? passedAge,
+  }) => Relationship(
     name: name,
-    kind: kind,
+    kind: kind ?? this.kind,
     closeness: closeness ?? this.closeness,
     metAtAge: metAtAge,
     lastSeenAge: lastSeenAge ?? this.lastSeenAge,
+    role: role ?? this.role,
+    ageOffset: ageOffset,
+    passedAge: passedAge ?? this.passedAge,
   );
 
   /// A word for where this stands, for the menu row.
@@ -77,6 +146,7 @@ class Relationship {
   /// Plain language on purpose — "Drifting" tells a nine-year-old what is
   /// happening to a friendship in a way that "Closeness: 34" does not.
   String get status {
+    if (!isAlive) return 'Passed away';
     if (closeness >= 80) return 'Close';
     if (closeness >= 55) return 'Good';
     if (closeness >= 30) return 'Drifting';
@@ -85,6 +155,7 @@ class Relationship {
   }
 
   Color get statusColour {
+    if (!isAlive) return const Color(0xFF9AA5B1);
     if (closeness >= 80) return const Color(0xFF85EFAC);
     if (closeness >= 55) return const Color(0xFF9CCC65);
     if (closeness >= 30) return const Color(0xFFF2C66D);
@@ -96,7 +167,7 @@ class Relationship {
   /// Below 15 they are a name you used to know. They stay in the list rather
   /// than being deleted — losing touch with somebody is a thing that happened
   /// to you, and quietly removing the row would hide it.
-  bool get isPresent => closeness >= 15;
+  bool get isPresent => isAlive && closeness >= 15;
 }
 
 /// How much closeness is lost per year with no contact at all.

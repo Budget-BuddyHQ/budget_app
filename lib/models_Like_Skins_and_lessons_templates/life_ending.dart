@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../controllers_that_updates_stats/life_sim_controller.dart';
 import 'life_sim_models.dart';
+import 'life_debrief.dart';
+import 'finance_concepts.dart';
 
 /// A distinct "how this life turned out" outcome, shown on
 /// [LifeEpilogueScreen] once a run ends. Deliberately built from stats the
@@ -214,9 +216,44 @@ class LifeSummary {
     required this.goldReward,
     required this.archetype,
     this.conceptsMet = 0,
+    this.debrief,
+    this.facts,
   });
 
   factory LifeSummary.fromController(LifeSimController life) {
+    // Built once and used twice: the debrief grades it now, and the record
+    // keeps it so the same grading can be re-run from Past Lives later.
+    final facts = LifeRunFacts(
+      age: life.age,
+      netWorth: life.netWorth,
+      cash: life.money,
+      investments: life.investments,
+      emergencyFund: life.emergencyFund,
+      debt: life.debt,
+      health: life.health,
+      happiness: life.happiness,
+      conceptsMet: life.conceptsMet.length,
+      conceptsAvailable: FinanceConcept.values.length,
+      died: life.dead,
+      everStarved: life.everStarved,
+      budgetSet: life.budgetSet,
+      savingsPct: life.savingsPct,
+      wantsPct: life.wantsPct,
+      // What the life remembered as it went, so the debrief can tell the
+      // story of the run and not only grade where it ended.
+      record: life.runRecord,
+      connection: life.connection,
+      networkStrength: life.networkReading.strength,
+      contacts: life.networkReading.contacts,
+      educationRank: life.educationLevel.index,
+      educationLabel: life.educationLevel.label,
+      assetsValue: life.assetsValue,
+      loanBalance: life.loanBalance,
+      ownsHome: life.ownsHome,
+      hasPartner: life.hasPartner,
+      children: life.childrenOfYours.length,
+      jobTitle: life.job,
+    );
     return LifeSummary(
       name: life.name,
       gender: life.gender,
@@ -233,6 +270,10 @@ class LifeSummary {
       relationships: life.relationships,
       goldReward: life.goldReward,
       conceptsMet: life.conceptsMet.length,
+      // Graded from this run's own numbers, at the moment it ends, because
+      // the controller is disposed before the epilogue builds.
+      debrief: debriefLife(facts),
+      facts: facts,
       archetype: resolveLifeEnding(
         connection: life.connection,
         died: life.dead,
@@ -258,6 +299,14 @@ class LifeSummary {
   final int looks;
   final List<String> relationships;
   final int goldReward;
+
+  /// What this run's debrief was graded on, kept so a record of it can be
+  /// graded again later. Null only for a summary built by hand.
+  final LifeRunFacts? facts;
+
+  /// How this run was played, graded area by area. Null only for a summary
+  /// built by hand in a test or a render harness.
+  final LifeDebrief? debrief;
   final LifeEndingArchetype archetype;
 
   /// How many distinct money ideas this life ran into. Carried on the

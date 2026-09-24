@@ -4,22 +4,23 @@ Drafts for the entry form. Every number here is measured from the repo, not
 estimated. **Read the notes before pasting** — two of these answers are yours
 to make true, not mine.
 
-Counts as of 2 September 2026: 83,300 lines of Dart across 135 files,
-1,280 automated tests, 196 life events, 89 lessons in 13 units, 187 quiz
+Counts as of 21 September 2026: 118,000 lines of Dart across 196 files,
+2,580 automated tests, 292 life events, 89 lessons in 13 units, 198 quiz
 questions, 57 town scenarios, 40 cited sources, 24 skins, 16 finance concepts.
 
 ---
 
 ## 1. Please briefly describe what your app does. *(400 words max)*
 
-Budget Buddy teaches financial literacy to people aged 4 to 21 by letting them
-practise money decisions instead of reading about them.
+Budget Buddy teaches financial literacy to students from 6th grade through
+young adulthood by letting them practise money decisions instead of reading
+about them.
 
 The main game is a life simulator. You start at birth and age up a year at a
 time, and each year hands you a real decision: split your first paycheck
 between needs, wants and savings; decide whether an emergency fund is worth the
 month you would spend building it; work out whether a 22% store card is a deal.
-There are 196 events, and they chain — buying a second-hand guitar can lead to
+There are nearly 300 events, and they chain — buying a second-hand guitar can lead to
 busking, a viral clip, a label advance and arena years, or it can lead to the
 guitar going under the bed, which is what usually happens. Runs can end badly:
 you can go hungry, get ill, or retire at eighty having quietly compounded a
@@ -28,10 +29,10 @@ have met one in play you can arm it as a "money idea" that changes the
 simulation for the next several years — so the route to a strong run runs
 through actually understanding something.
 
-Around that sits an Academy of 89 lessons and 187 quiz questions, every claim
+Around that sits an Academy of 89 lessons and 198 quiz questions, every claim
 backed by one of 40 cited sources (Federal Reserve, CFPB, IRS, BLS) so students
 can check that what the app told them is true. There is an explorable town with
-57 money scenarios, a stock-market board that trades on live quotes, four
+16 places and nearly 80 money scenarios, a stock-market board that trades on live quotes, four
 arcade mini-games, a daily habit tracker, and a budget-and-habit analyser that
 reads the player's own logged behaviour and returns specific findings rather
 than a score.
@@ -156,8 +157,8 @@ no way to remind you is losing the thing streaks are for, so 2.0 should build
 it properly and put the switch back.
 
 **Accessibility.** Colour contrast is audited by test, but screen-reader labels
-are incomplete and text scaling above 1.3x is not covered. An app for ages 4 to
-21 that a child with low vision cannot use is not finished.
+are incomplete and text scaling above 1.3x is not covered. An app for students from 6th
+grade up that a young person with low vision cannot use is not finished.
 
 **Offline-first sync.** Progress is local plus Supabase, but losing connection
 mid-lesson currently loses that session's cloud write. A proper outbox queue

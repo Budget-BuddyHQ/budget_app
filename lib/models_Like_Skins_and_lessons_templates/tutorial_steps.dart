@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../constants/app_assets.dart';
+import 'avatar_skin.dart';
 import '../navigation_tools_and_animation/app_tab_index.dart';
 
 /// Which mentor-turtle pose a tutorial step shows.
@@ -44,8 +45,22 @@ enum TutorialMascot {
   /// Falls back to the classic turtle for any skin without its own guide set
   /// — see [AppAssets.mentorSkinIds]. [asset] is kept as the unskinned form
   /// for the places that have no account to read from.
-  String assetFor(String skinId) =>
-      AppAssets.turtleMentorPose(poseId, skinId);
+  String assetFor(String skinId) {
+    // Turtles with drawn poses keep them. Those were generated for the
+    // classic turtle and its three recolours, and they are the only guide art
+    // with a pose per step.
+    if (skinId == kDefaultMascotSkinId ||
+        AppAssets.mentorSkinIds.contains(skinId)) {
+      return AppAssets.turtleMentorPose(poseId, skinId);
+    }
+    // A turtle with no poses — the fifteen Budget Buddy turtles — guides as
+    // itself. Falling back to the classic pixel turtle would put a different
+    // character in every tip than the one the player chose.
+    if (fitsSlot(skinId, SkinSlot.mascot)) {
+      return skinFromId(skinId).previewAsset;
+    }
+    return asset;
+  }
 }
 
 /// One screen of the guided tour.

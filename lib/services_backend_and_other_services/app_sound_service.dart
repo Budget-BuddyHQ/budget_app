@@ -227,6 +227,49 @@ class AppSoundService {
   static AudioPlayer? _music;
   static bool _musicWanted = false;
 
+  /// Whether the app is on screen.
+  ///
+  /// **The bug this exists for:** close the app on a phone, press a volume
+  /// button, and the music is playing. Nothing on the way to a play call
+  /// checked whether the app was still visible, and several paths could
+  /// start the loop *after* the app had gone to the background:
+  ///
+  ///  * [handleAppPaused] disposed sixteen effect players one at a time and
+  ///    only then stopped the music, so the loop kept running for that whole
+  ///    stretch — and if the process was suspended part-way, it never stopped.
+  ///  * [handleAppResumed] rebuilt the same sixteen players before restarting
+  ///    the loop. Leave the app during that and the restart still ran,
+  ///    starting music in a backgrounded app.
+  ///  * [startMusic] assigns its player only after `play()` returns. A pause
+  ///    arriving during that await found no player to stop, and the one
+  ///    being built went on to play.
+  ///  * `AppLifecycleState.hidden` was not treated as backgrounded at all.
+  ///
+  /// So every start now refuses while this is false, and re-checks it after
+  /// each await.
+  static bool _inForeground = true;
+
+  /// Bumped on every trip to the foreground or background, so an async start
+  /// that began before one can tell it is stale and back out.
+  static int _lifecycleEpoch = 0;
+
+  static bool _staleSince(int epoch) =>
+      !_inForeground || epoch != _lifecycleEpoch;
+
+  @visibleForTesting
+  static bool get debugInForeground => _inForeground;
+
+  @visibleForTesting
+  static bool get debugHasMusicPlayer => _music != null;
+
+  @visibleForTesting
+  static bool get debugMusicWanted => _musicWanted;
+
+  /// Drives the lifecycle handling exactly as the platform would.
+  @visibleForTesting
+  static void debugLifecycleChanged(AppLifecycleState state) =>
+      _AudioLifecycleObserver().didChangeAppLifecycleState(state);
+
   static bool get _canUseAssetPlayers => true;
 
   /// Starts the ambient loop, or does nothing if it is already running.
@@ -253,6 +296,9 @@ class AppSoundService {
   static Future<void> startMusic() async {
     _musicWanted = true;
     if (!musicEnabled || !enabled) return;
+    // Remembered, not started: [handleAppResumed] starts it on the way back.
+    if (!_inForeground) return;
+    final epoch = _lifecycleEpoch;
 
     final existing = _music;
     if (existing != null) {
@@ -262,6 +308,10 @@ class AppSoundService {
       // somebody has been half-hearing for ten minutes.
       try {
         await existing.resume();
+        if (_staleSince(epoch)) {
+          await _disposeMusic();
+          return;
+        }
         if (existing.state == PlayerState.playing) return;
       } catch (error) {
         debugPrint('Music resume failed, rebuilding: $error');
@@ -280,7 +330,18 @@ class AppSoundService {
       }
       await player.setReleaseMode(ReleaseMode.loop);
       await player.setVolume(_musicVolume);
+      if (_staleSince(epoch)) {
+        await player.dispose();
+        return;
+      }
       await player.play(AssetSource(_musicAsset));
+      // The app may have left while `play` was in flight, and a pause during
+      // that await could not see this player to stop it.
+      if (_staleSince(epoch)) {
+        await player.stop();
+        await player.dispose();
+        return;
+      }
       _music = player;
     } catch (error) {
       debugPrint('Background music unavailable: $error');
@@ -327,6 +388,9 @@ class AppSoundService {
   static Future<void> initialize() => _initFuture ??= _initialize();
 
   static Future<void> _initialize() async {
+    // First, not after the players are built: a player who backgrounds the
+    // app while it is still starting up has to be heard.
+    _attachLifecycleObserver();
     _preferences ??= await SharedPreferences.getInstance();
     // `?? enabled` rather than `?? false`. Hardcoding the fallback here is
     // what made the field default above meaningless: a fresh install has no
@@ -356,8 +420,6 @@ class AppSoundService {
     for (final effect in _players.keys.toList()) {
       await _configurePlayer(_players[effect]!);
     }
-
-    _attachLifecycleObserver();
 
     // Last, not first. See [_initFuture].
     _playersReady = true;
@@ -397,26 +459,37 @@ class AppSoundService {
     final observer = _AudioLifecycleObserver();
     binding.addObserver(observer);
     _lifecycleObserver = observer;
+    final current = binding.lifecycleState;
+    if (current != null && _isBackground(current)) {
+      _inForeground = false;
+    }
   }
 
   /// Rebuilds the effect players and restarts the loop after a resume.
   static Future<void> handleAppResumed() async {
-    if (!_playersReady) return;
-    for (final effect in _players.keys.toList()) {
-      await _rebuildPlayer(effect);
+    _inForeground = true;
+    final epoch = ++_lifecycleEpoch;
+    if (_playersReady) {
+      for (final effect in _players.keys.toList()) {
+        // Left again part-way through: stop, and do not start the music.
+        if (epoch != _lifecycleEpoch) return;
+        await _rebuildPlayer(effect);
+      }
     }
-    if (_musicWanted) {
+    if (_musicWanted && epoch == _lifecycleEpoch) {
       await startMusic();
     }
   }
 
-  /// Stops and disposes players when the app is backgrounded or closed.
+  /// Silences everything when the app is hidden, backgrounded or closed.
   ///
-  /// Keeps `_musicWanted` so a resume can restart the loop if the user had
-  /// previously requested music.
+  /// The music is stopped **first**, before any effect player is touched.
+  /// Keeps `_musicWanted` so a resume can restart the loop.
   static Future<void> handleAppPaused() async {
+    _inForeground = false;
+    _lifecycleEpoch++;
+    await _disposeMusic();
     if (!_playersReady) return;
-    // Dispose effect players.
     for (final effect in _players.keys.toList()) {
       final old = _players.remove(effect);
       if (old != null) {
@@ -428,10 +501,17 @@ class AppSoundService {
         }
       }
     }
-
-    // Dispose music but do not clear `_musicWanted` so resume can restart it.
-    await _disposeMusic();
   }
+
+  /// Every state in which the app is not on screen.
+  ///
+  /// `inactive` is left out on purpose: it is the notification shade or an
+  /// incoming-call banner over a still-visible app, and cutting the music for
+  /// that would stop it every time somebody checks a notification.
+  static bool _isBackground(AppLifecycleState state) =>
+      state == AppLifecycleState.hidden ||
+      state == AppLifecycleState.paused ||
+      state == AppLifecycleState.detached;
 
   /// Throws away one effect's player and builds a configured replacement.
   static Future<void> _rebuildPlayer(AppSoundEffect effect) async {
@@ -463,7 +543,7 @@ class AppSoundService {
   }
 
   static Future<void> play(AppSoundEffect effect) async {
-    if (!enabled) {
+    if (!enabled || !_inForeground) {
       return;
     }
 
@@ -570,8 +650,7 @@ class _AudioLifecycleObserver with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(AppSoundService.handleAppResumed());
-    } else if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
+    } else if (AppSoundService._isBackground(state)) {
       unawaited(AppSoundService.handleAppPaused());
     }
   }
