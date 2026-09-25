@@ -2,7 +2,7 @@ name: budget_app
 description: "Budget Buddy: a game that teaches financial literacy through play, for 6th grade and up."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.0+3
 
 environment:
   sdk: ^3.10.4
