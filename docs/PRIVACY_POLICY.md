@@ -216,7 +216,7 @@ app rather than only here.
 
 ## Contact
 
-**Email:** `[ADD A CONTACT ADDRESS BEFORE PUBLISHING]`
+**Email:** `budgetbuddyhq@gmail.com`
 
 A privacy policy has to give a real way to reach a human. Use an address you
 are willing to publish — a project address rather than a personal one is
