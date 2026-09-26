@@ -6,7 +6,7 @@
          every development build and only shows up in a real release APK/AAB. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="budget_app"
+        android:label="Budget Buddy"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

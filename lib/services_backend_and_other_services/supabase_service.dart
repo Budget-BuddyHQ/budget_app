@@ -1368,20 +1368,25 @@ alter view public.leaderboard set (security_invoker = false);
           .timeout(_supabaseDeleteTimeout);
     } catch (error) {
       debugPrint('Supabase account deletion failed: $error');
-      // 42883 is undefined_function -- the migration has not been run against
-      // this project yet. Worth its own message, because the fix is one SQL
-      // file and the generic "try again" would send somebody hunting for a
-      // network problem that is not there.
-      // Match on the precise Postgres code only. The previous check also
-      // matched any error whose text mentioned the function name -- which
-      // includes practically every internal error raised *inside* it too
-      // (Postgres appends a "PL/pgSQL function delete_own_account() line N"
-      // context to those), so a real bug inside the function (like the
-      // user_id/id column mismatch this migration just fixed) was being
-      // silently misreported as "never set up" instead of surfacing as a
-      // real failure worth investigating.
+      // PGRST202 ("Could not find the function ... in the schema cache") is
+      // PostgREST's own signal that the RPC target does not exist at all --
+      // the migration has not been run against this project yet. Worth its
+      // own message, because the fix is one SQL file and the generic "try
+      // again" would send somebody hunting for a network problem that is not
+      // there.
+      //
+      // This used to check for the Postgres code 42883 instead, on the
+      // theory that "undefined_function" meant the function was missing --
+      // but 42883 is also what Postgres raises for "operator does not
+      // exist" (operators are functions internally), which is exactly what
+      // `where id = uid` threw once the id/user_id column bug above was
+      // fixed and left a text/uuid comparison behind. That real, in-function
+      // bug was being misreported as "never set up on the server" purely
+      // because it happened to share a SQLSTATE with the missing-function
+      // case. PGRST202 only ever means "the function truly is not there."
       final text = error.toString();
-      if (text.contains('42883')) {
+      if (text.contains('PGRST202') ||
+          text.contains('Could not find the function')) {
         return 'Account deletion is not set up on the server yet. Email '
             'budgetbuddyhq@gmail.com and we will remove it by hand.';
       }

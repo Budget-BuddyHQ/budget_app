@@ -45,8 +45,15 @@ begin
   -- players with a friend entry pointing at an account that no longer exists.
   delete from public.friendships where user_id = uid or friend_id = uid;
 
-  delete from public.user_stats where id = uid;
-  delete from public.app_feedback where user_id = uid;
+  -- `user_stats.id` and `app_feedback.user_id` are both `text` (the app also
+  -- stores non-uuid ids like the local guest placeholder 'user_123' there),
+  -- not `uuid` like `uid`. Postgres has no `text = uuid` operator, so without
+  -- the cast both of these throw `42883 operator does not exist` and abort
+  -- the whole function -- silently, from the caller's point of view, because
+  -- the client-side error handling reported it as the same generic failure
+  -- as the earlier wrong-column-name bug this line already fixed once.
+  delete from public.user_stats where id = uid::text;
+  delete from public.app_feedback where user_id = uid::text;
 
   -- Last, because everything above is keyed on it: removing the auth row
   -- first would leave the rest orphaned if any statement after it failed.

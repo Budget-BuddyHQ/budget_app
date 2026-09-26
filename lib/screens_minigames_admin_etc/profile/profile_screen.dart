@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
 import '../../config/dev_preview_flags.dart';
 import '../../constants/app_assets.dart';
+import '../../constants/privacy_policy.dart';
 import '../../controllers_that_updates_stats/app_settings_controller.dart';
 import '../../controllers_that_updates_stats/money_habit_controller.dart';
 import '../../controllers_that_updates_stats/user_stats_controller.dart';
@@ -187,13 +188,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// Opens the published policy in the device browser.
   Future<void> _openPrivacyPolicy(BuildContext context) async {
     HapticFeedback.lightImpact();
-    final uri = Uri.parse("https://budget-buddy-website-one.vercel.app/policy");
+    final uri = Uri.parse(kPrivacyPolicyUrl);
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened && context.mounted) {
       GameToast.show(
         context,
         title: 'Could not open the policy',
-        message: "https://budget-buddy-website-one.vercel.app/policy",
+        message: kPrivacyPolicyUrl,
         icon: Icons.link_off_rounded,
         accent: const Color(0xFFFFC36B),
       );
