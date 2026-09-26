@@ -186,14 +186,31 @@ PLACEMENTS = [
     # round it on grass, which is exactly why "the tests are green" is not
     # the same as "the map is right".
     ("home", 7, 28, 39),     # b07  4x6 — orange house, clear front door
+    # ---- The next four: what the life sim grew ---------------------------
+    #
+    # The town had twelve places and the life had school, a career ladder, a
+    # home, cars, pets and a body. These give the newer parts of a life
+    # somewhere to be walked to. Each is another building lifted from the same
+    # source, so the town reads as the same town, only larger.
+    ("gym", 6, 41, 26),      # b06  5x5 — east of the avenue, door to the south
+    ("campus", 4, 16, 3),    # b04  7x4 — the pale stone hall, north of the market
+    ("housing", 7, 27, 28),  # b07  4x6 — an orange house beside the south avenue
+    # The cottage-and-stall that used to be a prop far down the southern lane. It
+    # is the pet shop now, and it moved to where the square is a short walk away:
+    # at (13, 43) it was 32 tiles from the centre, and the town is meant to be
+    # walkable from it (`town_map_test`).
+    ("pet", 11, 18, 9),      # b11  6x3 — cottage and an animal stall
 ]
+
+# The buildings added for the newer parts of a life. Scenery is cleared from
+# around these and only these.
+NEW_BUILDINGS = {"gym", "campus", "housing", "pet"}
 
 # Smaller set pieces. These are what stop the town reading as six buildings
 # marooned in a field: a stall and a cottage give the square neighbours, and
 # the fence runs imply fields nobody had to draw.
 PROPS = [
     (10, 18, 17),  # b10 3x5 — awninged food stall, north-west of the square
-    (11, 13, 43),  # b11 6x3 — cottage and fruit stand, southern lane
     (3, 14, 27),   # b03 8x5 — long bench under an awning
     (9, 8, 19),    # b09 15x1 — fence run, west field
     (9, 8, 38),    # b09 15x1 — fence run, south field
@@ -289,8 +306,26 @@ def compose(prefabs, border):
         pf = prefabs[idx]
         stamp(pf, ox, oy)
         spots[label] = (pf, ox, oy)
+    # Scenery must not be planted on top of a building. The trees are placed by
+    # hand and a new building can land on one, which does not look like a bug
+    # until a roof has a trunk growing through it.
+    blocked = set()
+    for label, idx, ox, oy in PLACEMENTS:
+        if label not in NEW_BUILDINGS:
+            continue   # the original six keep the scenery they were drawn with
+        pf = prefabs[idx]
+        for dx in range(-1, pf["w"] + 1):
+            for dy in range(-1, pf["h"] + 2):   # a row below, for the doorstep
+                blocked.add((ox + dx, oy + dy))
     for idx, ox, oy in PROPS + DECOR:
-        stamp(prefabs[idx], ox, oy)
+        pf = prefabs[idx]
+        if any(
+            (ox + dx, oy + dy) in blocked
+            for dx in range(pf["w"])
+            for dy in range(pf["h"])
+        ):
+            continue
+        stamp(pf, ox, oy)
 
     # The border ring, copied rather than invented — it is the one part of
     # the map where "looks about right" is not good enough, because a single

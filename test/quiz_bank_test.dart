@@ -1,9 +1,67 @@
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/lesson.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/lesson_data.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/player_profile.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/quiz_bank.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/reading_grade.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  group('nobody meets an empty quiz they cannot avoid', () {
+    // Reported by playing the app: a played-through quiz screen showed a
+    // one-line placeholder and a "Complete Lesson" button with no question on
+    // it. Root cause was `AgeBand.minQuizStage` — the floor that keeps an
+    // older reader from feeling patronised by an early-childhood question —
+    // zeroing out a whole node when *every* question in it was tagged for the
+    // youngest band. Unit 1, "Money Is Real", is written for the very
+    // youngest players on purpose, and every band above them still passes
+    // through it, since units chain by prerequisite.
+    //
+    // The floor is still real for the *other* direction (a young reader must
+    // never see an advanced or adult-topic unit's quiz) — the second test
+    // below holds that.
+    test('an adult never meets a quiz or unit test with nothing in it', () {
+      final empty = <String>[];
+      for (final unit in lessonUnits) {
+        for (final lesson in unit.lessons) {
+          if (lesson.type == LessonNodeType.lesson) continue;
+          final raw = quizFor(lesson.id);
+          if (raw.isEmpty) continue; // not a real assessment node
+          if (ageAppropriateQuestions(raw, AgeBand.adult18plus).isEmpty) {
+            empty.add('${unit.id}/${lesson.id}');
+          }
+        }
+      }
+      expect(
+        empty,
+        isEmpty,
+        reason:
+            'these nodes have questions but none pass the adult floor: $empty',
+      );
+    });
+
+    test(
+      'a young reader still gets nothing on an advanced, adult-topic unit',
+      () {
+        // The ceiling this fix must never touch: an under-9 reader must never
+        // be handed a question written for an older stage or naming an adult
+        // topic, even when relaxing the floor elsewhere.
+        final advanced = lessonUnits.firstWhere(
+          (u) => u.ageStage.index >= AgeStage.highSchool.index,
+        );
+        for (final lesson in advanced.lessons) {
+          if (lesson.type == LessonNodeType.lesson) continue;
+          for (final q in ageAppropriateQuestions(
+            quizFor(lesson.id),
+            AgeBand.under9,
+          )) {
+            expect(mentionsAdultTopic(q.prompt), isFalse, reason: q.id);
+            expect(q.options.any(mentionsAdultTopic), isFalse, reason: q.id);
+          }
+        }
+      },
+    );
+  });
+
   group('answer key', () {
     test('is not gameable by always picking one position', () {
       // Regression guard: the original bank had 30 of 34 answers at index 1,

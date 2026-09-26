@@ -17,7 +17,7 @@ import '../../../widgets_custom_lotties/pixel_kit.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_seed.dart';
 import 'package:flutter/services.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
-import '../../../models_Like_Skins_and_lessons_templates/life_debrief.dart';
+import 'life_debrief_view.dart';
 
 /// The recap shown when a [LifeSummary] life ends — replaces what used to be
 /// a silent `Navigator.pop()` straight back to Home. Purely presentational;
@@ -119,16 +119,30 @@ class LifeEpilogueScreen extends StatelessWidget {
               ],
               const SizedBox(height: 18),
               _LifeRecapCard(summary: summary),
-              // The debrief: what this run says about how it was played.
-              //
-              // The stats above say what happened. This says what the player
-              // did, which is the part that carries into the next run and
-              // into a real decision. Graded runs only, for the same reason
-              // the Coach ignores ungraded ones: somebody wrecking a life on
-              // purpose is not asking to be marked on it.
-              if (graded && summary.debrief != null) ...[
+              // The debrief: what this run says about how it was played, told as a
+              // story and not only graded. The stats above say what happened;
+              // this says what the player did, which is the part that carries
+              // into the next run and into a real decision.
+              if (summary.debrief != null) ...[
                 const SizedBox(height: 16),
-                _DebriefCard(debrief: summary.debrief!),
+                LifeDebriefView(
+                  debrief: summary.debrief!,
+                  // Everybody gets the debrief, because the lessons are the
+                  // same however the run was played. A practice run just says
+                  // so, and stays out of the Coach's history.
+                  practice: !graded,
+                  thisNetWorth: summary.netWorth,
+                  netWorthsOfEveryLife: [
+                    for (final record
+                        in context
+                            .watch<UserStatsController>()
+                            .stats
+                            .lifeRecords
+                            .newestFirst)
+                      record.netWorth,
+                  ],
+                  seedText: seed?.display,
+                ),
               ],
               if (summary.relationships.isNotEmpty) ...[
                 const SizedBox(height: 16),
@@ -145,216 +159,6 @@ class LifeEpilogueScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// The end-of-run debrief, from `life_debrief.dart`.
-///
-/// Four areas graded out of 100, a letter for the run as a whole, and the
-/// findings behind them, worst first. Every line carries a number out of the
-/// run that just finished, because "save more next time" is advice anybody
-/// could have given before the player pressed start.
-class _DebriefCard extends StatelessWidget {
-  const _DebriefCard({required this.debrief});
-
-  final LifeDebrief debrief;
-
-  Color _kindColour(LifeFindingKind kind) => switch (kind) {
-    LifeFindingKind.fix => const Color(0xFFFF8474),
-    LifeFindingKind.watch => const Color(0xFFFFD45C),
-    LifeFindingKind.strength => const Color(0xFF85EFAC),
-  };
-
-  IconData _kindIcon(LifeFindingKind kind) => switch (kind) {
-    LifeFindingKind.fix => Icons.error_rounded,
-    LifeFindingKind.watch => Icons.info_rounded,
-    LifeFindingKind.strength => Icons.check_circle_rounded,
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    // Three at most. A debrief nobody finishes reading is a stat screen with
-    // extra words on it.
-    final shown = debrief.findings.take(3).toList(growable: false);
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppTheme.greenPrimary.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: AppTheme.greenPrimary.withValues(alpha: 0.5),
-                  ),
-                ),
-                child: Text(
-                  debrief.grade,
-                  style: AppTheme.numeric(
-                    color: AppTheme.greenPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Coach read this run',
-                      style: GoogleFonts.pixelifySans(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      debrief.headline,
-                      style: AppTheme.numeric(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 12.5,
-                        height: 1.4,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          for (final area in LifeArea.values) ...[
-            _AreaBar(label: area.label, score: debrief.scores[area] ?? 0),
-            const SizedBox(height: 8),
-          ],
-          const SizedBox(height: 8),
-          for (final finding in shown)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Icon(
-                      _kindIcon(finding.kind),
-                      size: 17,
-                      color: _kindColour(finding.kind),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          finding.title,
-                          style: AppTheme.numeric(
-                            color: _kindColour(finding.kind),
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          finding.evidence,
-                          style: AppTheme.numeric(
-                            color: Colors.white.withValues(alpha: 0.88),
-                            fontSize: 12.5,
-                            height: 1.4,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          finding.action,
-                          style: AppTheme.numeric(
-                            color: Colors.white.withValues(alpha: 0.66),
-                            fontSize: 12.5,
-                            height: 1.4,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// One graded area, as a labelled bar.
-class _AreaBar extends StatelessWidget {
-  const _AreaBar({required this.label, required this.score});
-
-  final String label;
-  final int score;
-
-  @override
-  Widget build(BuildContext context) {
-    final colour = score >= 60
-        ? const Color(0xFF85EFAC)
-        : score >= 35
-        ? const Color(0xFFFFD45C)
-        : const Color(0xFFFF8474);
-
-    return Row(
-      children: [
-        SizedBox(
-          width: 86,
-          child: Text(
-            label,
-            style: AppTheme.numeric(
-              color: Colors.white.withValues(alpha: 0.78),
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: score / 100,
-              minHeight: 8,
-              backgroundColor: Colors.white.withValues(alpha: 0.08),
-              valueColor: AlwaysStoppedAnimation<Color>(colour),
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 30,
-          child: Text(
-            '$score',
-            textAlign: TextAlign.right,
-            style: AppTheme.numeric(
-              color: colour,
-              fontSize: 12.5,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

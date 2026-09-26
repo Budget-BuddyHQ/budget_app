@@ -120,7 +120,11 @@ void main() {
       final life = LifeSimController(random: Random(3), initialAge: 20);
       life.debugAddPerson('Sam', kind: kind);
       var years = 0;
-      while (life.people.single.isPresent && years < 200 && !life.finished) {
+      // By name: a life meets other people over the years, so the list is not
+      // one entry long and `.single` would test the event pool, not the drift.
+      bool samPresent() =>
+          life.people.firstWhere((p) => p.name == 'Sam').isPresent;
+      while (samPresent() && years < 200 && !life.finished) {
         if (life.currentEvent != null) life.chooseOption(0);
         life.ageUp();
         years++;

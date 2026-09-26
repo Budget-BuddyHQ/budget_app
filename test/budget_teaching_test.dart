@@ -65,8 +65,13 @@ void main() {
       // actual claim worth locking down.
       final saver = _employed(salary: 1000, seed: 11)
         ..setBudget(needs: 50, wants: 30, savings: 20);
+      // The spender puts that 20% into *wants*, which is genuinely consumed.
+      // It used to go into needs, which only looked like a loss because the
+      // part of the needs slice that living did not cost used to vanish. It
+      // now comes back as cash, so over-budgeting needs is not a way to lose
+      // money and could not stand in for spending.
       final spender = _employed(salary: 1000, seed: 11)
-        ..setBudget(needs: 70, wants: 30, savings: 0);
+        ..setBudget(needs: 50, wants: 50, savings: 0);
 
       for (var year = 0; year < 6; year++) {
         saver.ageUp();
@@ -145,7 +150,9 @@ void main() {
     test('carrying debt accrues interest and surfaces the lesson', () {
       final life = _employed(salary: 100);
       life.setBudget(needs: 100, wants: 0, savings: 0);
-      life.applyShock(5000, 'Huge bill');
+      // More than the 500 in cash, so some of it is borrowed, but well inside
+      // ten years of pay, which is where compounding stops.
+      life.applyShock(800, 'Huge bill');
       final owed = life.debt;
       expect(owed, greaterThan(0));
 
@@ -418,10 +425,8 @@ void main() {
         var total = 0;
         const runs = 60;
         for (var seed = 0; seed < runs; seed++) {
-          final life = LifeSimController(random: Random(seed), initialAge: 30);
-          for (var i = 0; i < 40 && life.smarts < smarts; i++) {
-            life.visitLibrary();
-          }
+          final life = LifeSimController(random: Random(seed), initialAge: 30)
+            ..debugSetStats(smarts: smarts);
           life.findJob();
           total += life.salary;
         }
@@ -441,10 +446,10 @@ void main() {
       // the music/sports/business events, or those ladders stop mattering.
       var best = 0;
       for (var seed = 0; seed < 200; seed++) {
-        final life = LifeSimController(random: Random(seed), initialAge: 30);
-        for (var i = 0; i < 60; i++) {
-          life.visitLibrary();
-        }
+        // The cleverest character there can be, so this bounds the top of the
+        // entry-level table rather than whatever a few library visits reach.
+        final life = LifeSimController(random: Random(seed), initialAge: 30)
+          ..debugSetStats(smarts: 100);
         life.findJob();
         if (life.salary > best) best = life.salary;
       }

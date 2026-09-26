@@ -15,15 +15,14 @@ library;
 
 /// Where the policy is published.
 ///
-/// GitHub Pages served from this repo's `/docs` folder, which is why
-/// `docs/privacy-policy.html` exists alongside the Markdown one. Free, stable,
-/// and owned by the same account as the app — which matters, because a store
-/// listing whose privacy link 404s gets the listing taken down.
-///
-/// To turn it on: repository Settings -> Pages -> Source: `main`, folder
-/// `/docs`. The URL below is what that produces.
-const String kPrivacyPolicyUrl =
-    'https://cwqjduingvevagrxbwts.supabase.co/functions/v1/pages/privacy-policy';
+/// Hosted on the Budget Buddy marketing site (Vercel), not the Supabase
+/// `pages` edge function that still serves the password-reset landing page.
+/// That function's copy of this policy still had a placeholder contact
+/// address (`[ADD A CONTACT ADDRESS BEFORE PUBLISHING]`); the marketing
+/// site's `/policy` route is the one with a real address filled in
+/// (`budgetbuddyhq@gmail.com`), so it is the one the store listing and the
+/// in-app link should both point at.
+const String kPrivacyPolicyUrl = 'https://budget-buddy-website-one.vercel.app/policy';
 
 /// The version a player is agreeing to when they tick the box.
 ///

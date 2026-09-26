@@ -202,7 +202,13 @@ void main() {
       expect(find.textContaining('never set a budget'), findsOneWidget);
     });
 
-    testWidgets('an ungraded run does not', (tester) async {
+    testWidgets('an ungraded run gets it too, marked as practice', (
+      tester,
+    ) async {
+      // Asked for as "a detailed debrief after each run for anybody doing the
+      // main game". The lessons in a life are the same however it was played,
+      // so an ungraded run is debriefed too. It just says plainly that it does
+      // not feed the Coach, which is the reason the flag exists.
       tester.view.physicalSize = const Size(430, 932);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -217,13 +223,21 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 200));
 
-      expect(
-        find.text('Coach read this run'),
-        findsNothing,
-        reason:
-            'somebody wrecking a life on purpose is not asking to be '
-            'marked on it',
+      expect(find.text('Coach read this run'), findsOneWidget);
+      expect(find.textContaining('Practice run'), findsOneWidget);
+    });
+
+    testWidgets('a graded run carries no practice note', (tester) async {
+      tester.view.physicalSize = const Size(430, 932);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        host(LifeEpilogueScreen(summary: summaryWith(withDebrief: true))),
       );
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.textContaining('Practice run'), findsNothing);
     });
   });
 }

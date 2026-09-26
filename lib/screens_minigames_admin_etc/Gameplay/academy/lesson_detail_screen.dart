@@ -24,11 +24,21 @@ class LessonDetailScreen extends StatefulWidget {
     required this.lesson,
     required this.unit,
     required this.progressionService,
+    this.quizAboveAgeConfirmed = false,
   });
 
   final Lesson lesson;
   final LessonUnit unit;
   final ProgressionService progressionService;
+
+  /// Whether the player already clicked "Read it anyway" on the age-gate
+  /// dialog in [LessonScreen] for this unit.
+  ///
+  /// That dialog already told them this unit assumes an older age group.
+  /// Making them read the exact same warning a second time here would just
+  /// be noise, so this only changes whether the quiz can be served at all —
+  /// see [_quiz].
+  final bool quizAboveAgeConfirmed;
 
   @override
   State<LessonDetailScreen> createState() => _LessonDetailScreenState();
@@ -51,12 +61,18 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   /// Filtered to the player's age band. The bank spans Flesch-Kincaid reading
   /// grades -2.4 to 18.4 and was previously served identically to everybody,
   /// so a six-year-old met questions written for an adult and vice versa.
-  /// See [ageAppropriateQuestions] — it never returns an empty list, because
-  /// a quiz that is slightly too hard beats a quiz with nothing in it.
-  late final List<QuizQuestion> _quiz = ageAppropriateQuestions(
-    quizFor(widget.lesson.id),
-    context.read<UserStatsController>().stats.ageBand,
-  );
+  ///
+  /// [widget.quizAboveAgeConfirmed] skips that filtering entirely: the player
+  /// already saw and dismissed the "written for an older age group" dialog in
+  /// [LessonScreen] to get here, so the quiz for this unit should match what
+  /// they were just warned about and agreed to read, not go silently empty on
+  /// top of it. See [ageAppropriateQuestions].
+  late final List<QuizQuestion> _quiz = widget.quizAboveAgeConfirmed
+      ? quizFor(widget.lesson.id)
+      : ageAppropriateQuestions(
+          quizFor(widget.lesson.id),
+          context.read<UserStatsController>().stats.ageBand,
+        );
 
   Future<void> _completeLesson({List<QuizQuestion> quiz = const []}) async {
     if (_isSaving) {
@@ -266,7 +282,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                       // different questions. Saying so is the difference
                       // between a system that works and one anybody can see
                       // working.
-                      if (quiz.isNotEmpty)
+                      if (quiz.isNotEmpty && widget.quizAboveAgeConfirmed)
+                        const _AboveAgeQuizNote(margin: EdgeInsets.only(top: 12))
+                      else if (quiz.isNotEmpty)
                         const AgeScaledNote(
                           what: 'Questions',
                           margin: EdgeInsets.only(top: 12),
@@ -446,6 +464,47 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           fontWeight: FontWeight.w700,
           fontSize: 16,
         ),
+      ),
+    );
+  }
+}
+
+/// Reminder shown on a quiz the player already agreed to take above their
+/// usual age band, via the "Read it anyway" dialog in [LessonScreen].
+///
+/// That dialog is the actual warning; this is just a quiet echo of it inside
+/// the quiz itself, so scrolling back up mid-quiz still explains why the
+/// questions look different from usual rather than looking unexplained.
+class _AboveAgeQuizNote extends StatelessWidget {
+  const _AboveAgeQuizNote({this.margin = EdgeInsets.zero});
+
+  final EdgeInsets margin;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: margin,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            size: 13,
+            color: const Color(0xFFFFB84D).withValues(alpha: 0.85),
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              'These questions cover an older age group — you chose to try them anyway.',
+              style: GoogleFonts.quicksand(
+                color: const Color(0xFFFFB84D).withValues(alpha: 0.9),
+                fontSize: 11,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

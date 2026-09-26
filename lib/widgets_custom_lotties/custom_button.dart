@@ -201,6 +201,7 @@ class CustomButtonStyle {
     this.backgroundColor = Colors.transparent,
     this.textColor = const Color(0xFF062017),
     this.borderRadius = AppTheme.radiusLarge,
+    this.border,
     this.boxShadow = const [
       BoxShadow(
         color: Color.fromRGBO(75, 210, 163, 0.30),
@@ -213,6 +214,7 @@ class CustomButtonStyle {
   });
 
   const CustomButtonStyle.secondary({
+    this.gradient,
     this.backgroundColor = const Color(0xFF16362B),
     this.textColor = const Color(0xFFB7F7D7),
     this.borderRadius = AppTheme.radiusLarge,
@@ -231,6 +233,7 @@ class CustomButtonStyle {
   });
 
   const CustomButtonStyle.tertiary({
+    this.gradient,
     this.backgroundColor = const Color(0xFF132A21),
     this.textColor = Colors.white,
     this.borderRadius = AppTheme.radiusLarge,
@@ -257,6 +260,7 @@ class CustomButtonStyle {
     this.backgroundColor = Colors.transparent,
     this.textColor = Colors.white,
     this.borderRadius = AppTheme.radiusLarge,
+    this.border,
     this.boxShadow = const [
       BoxShadow(
         color: Color.fromRGBO(255, 132, 116, 0.26),

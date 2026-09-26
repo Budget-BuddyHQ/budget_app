@@ -1,50 +1,15 @@
 import 'life_sim_models.dart';
 
-/// The seed a life is rolled from.
-///
-/// # Why the family you are born into stopped being a choice
-///
-/// `LifeOrigin` supplies the starting money, and the spread is enormous:
-/// **0 coins for Struggling against 2,500 for Wealthy**, plus smarts and
-/// happiness. It was a free pick on the character sheet — the single largest
-/// advantage in the game, handed over before the first year, with no cost and
-/// no reason.
-///
-/// That is the wrong shape for this app twice over. As a game it means the
-/// leaderboard compares people who started 2,500 coins apart. As a *lesson*
-/// it is worse: nobody chooses the family they are born into, and an app about
-/// money that lets you pick a rich one is teaching the opposite of the thing
-/// it exists to teach.
-///
-/// So the origin is rolled. What stays yours is who you are — your **name**
-/// and your **gender** — which are the two things a person actually does own.
-///
-/// # Why a visible seed rather than a hidden roll
-///
-/// A hidden roll is indistinguishable from the game cheating when a run goes
-/// badly. A seed you can read, copy and type back in makes the randomness
-/// *checkable*: the same seed always produces the same life, so a player can
-/// replay the exact start they just had, or hand it to a friend and compare
-/// what each of them did with it. Same idea as a Minecraft seed, and it turns
-/// "I got unlucky" into a thing you can prove or disprove.
-///
-/// It also gives ranked runs the fair start `ranked_run.dart` already claimed
-/// to have and never enforced.
-///
-/// # Why the odds are not uniform
-///
-/// 35 / 35 / 22 / 8. A uniform roll would make Wealthy a 1-in-4 start, which
-/// quietly teaches that being born comfortable is the normal case. Most lives
-/// begin without a cushion, which is both closer to true and the version of
-/// this game that has anything to say.
+// the seed a life gets rolled from. origin (rich/poor family etc) is
+// randomized, not picked, cause letting ppl choose rich family kinda
+// defeats the point of a money-lessons game. name/gender stay yours tho.
+// seed is visible/typeable so you can replay the same life or share it,
+// like a minecraft seed. odds arent even 25/25/25/25 either, see origin getter
 class LifeSeed {
   const LifeSeed(this.value);
 
-  /// Turns typed text into a seed.
-  ///
-  /// Accepts anything. A player typing "hello" gets a real, reproducible seed
-  /// rather than an error — the point is that the same input gives the same
-  /// life, not that the input looks like a number.
+  // turns typed text into a seed. "hello" still works, doesnt need to look
+  // like a number, same input = same life every time
   factory LifeSeed.parse(String raw) {
     final trimmed = raw.trim();
     if (trimmed.isEmpty) return LifeSeed(DateTime.now().microsecondsSinceEpoch);
@@ -52,9 +17,8 @@ class LifeSeed {
     final asNumber = int.tryParse(trimmed);
     if (asNumber != null) return LifeSeed(asNumber.abs());
 
-    // FNV-1a, not `hashCode`: Dart seeds string hashing per isolate, so a
-    // seed built on it would produce a different life every time the app
-    // restarted — which would make a "seed" that does not reproduce anything.
+    // fnv-1a, NOT dart's hashCode, that ones randomized per app restart
+    // which wouldve made the seed useless
     var hash = 0x811c9dc5;
     for (final unit in trimmed.toLowerCase().codeUnits) {
       hash ^= unit;
@@ -63,20 +27,17 @@ class LifeSeed {
     return LifeSeed(hash);
   }
 
-  /// A fresh, unpredictable seed.
+  // random fresh seed
   factory LifeSeed.fresh() =>
       LifeSeed(DateTime.now().microsecondsSinceEpoch & 0x7fffffff);
 
   final int value;
 
-  /// Short, readable, and easy to read aloud or type back in.
+  // short readable version, easy to say out loud or type back in
   String get display => value.toRadixString(36).toUpperCase().padLeft(6, '0');
 
-  /// Deterministic 0..max-1 from this seed and a channel name.
-  ///
-  /// The channel keeps the draws independent: rolling the origin must not
-  /// change what the map roll returns, or a seed's parts would shift against
-  /// each other whenever one of them was reordered.
+  // deterministic 0..max-1 for this seed + a channel name, so rolling
+  // origin doesnt mess with what the map roll gives you
   int _roll(String channel, int max) {
     var hash = 0x811c9dc5;
     for (final unit in '$value|$channel'.codeUnits) {
@@ -86,9 +47,8 @@ class LifeSeed {
     return max <= 0 ? 0 : hash % max;
   }
 
-  /// The family this seed is born into.
-  ///
-  /// Weighted 35/35/22/8. See the class comment for why it is not uniform.
+  // family this seed is born into. weighted 35/35/22/8, not even odds,
+  // most lives shouldnt start rich
   LifeOrigin get origin {
     const weights = <LifeOrigin, int>{
       LifeOrigin.struggling: 35,
@@ -105,14 +65,14 @@ class LifeSeed {
     return LifeOrigin.workingClass;
   }
 
-  /// A suggested name, which the player is free to replace.
+  // suggested name, player can change it
   String suggestedName(List<String> firstNames, List<String> lastNames) {
     if (firstNames.isEmpty || lastNames.isEmpty) return 'Casey Reyes';
     return '${firstNames[_roll('first', firstNames.length)]} '
         '${lastNames[_roll('last', lastNames.length)]}';
   }
 
-  /// Which of the two towns this life lives in.
+  // which town this life ends up in
   int townIndex(int mapCount) => _roll('town', mapCount);
 
   @override

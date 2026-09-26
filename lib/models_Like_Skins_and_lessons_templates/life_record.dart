@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import 'life_debrief.dart';
 import 'life_ending.dart';
 
 /// One finished life, kept after the epilogue closes.
@@ -28,7 +29,42 @@ class LifeRecord {
     required this.goldEarned,
     required this.finishedAt,
     this.graded = true,
+    this.detail,
+    this.facts,
   });
+
+  /// What this life was made of: school, work, what was owned and who was there.
+  ///
+  /// **Why it is separate from the fields above.** Those five were enough for a
+  /// history list. They said how a life ended and nothing about how it was lived,
+  /// so the Coach could see that net worth went up and not that it went up
+  /// because of a degree, or down because of a loan. Null for a record from
+  /// before this existed, and the Coach reads only records that have it, so an
+  /// old life is not counted as "had no degree".
+  final LifeDetail? detail;
+
+  /// What the debrief was graded on, kept so tapping this life in Past Lives can
+  /// grade it again and show the same diagnostic the epilogue showed.
+  ///
+  /// Only the newest few records keep it (see [LifeRecordBook.keepFactsFor]),
+  /// because it is a few kilobytes each and this lives in a blob that is
+  /// rewritten on nearly every action. An older record keeps [detail], which is
+  /// tiny, and loses the full story.
+  final LifeRunFacts? facts;
+
+  LifeRecord withoutFacts() => LifeRecord(
+    endingId: endingId,
+    name: name,
+    age: age,
+    netWorth: netWorth,
+    happiness: happiness,
+    died: died,
+    conceptsMet: conceptsMet,
+    goldEarned: goldEarned,
+    finishedAt: finishedAt,
+    graded: graded,
+    detail: detail,
+  );
 
   /// Whether this run counts toward the coach's reading of the player.
   ///
@@ -63,6 +99,10 @@ class LifeRecord {
       goldEarned: summary.goldReward,
       finishedAt: finishedAt ?? DateTime.now().toUtc(),
       graded: graded,
+      detail: summary.facts == null
+          ? null
+          : LifeDetail.fromFacts(summary.facts!),
+      facts: summary.facts,
     );
   }
 
@@ -95,6 +135,12 @@ class LifeRecord {
       // existed was played normally, so the absent case has to mean "counts"
       // or the split would silently erase the coach's entire history.
       graded: json['graded'] != false,
+      detail: json['detail'] is Map
+          ? LifeDetail.fromJson(json['detail'] as Map)
+          : null,
+      facts: json['facts'] is Map
+          ? LifeRunFacts.fromJson(json['facts'] as Map)
+          : null,
     );
   }
 
@@ -135,6 +181,106 @@ class LifeRecord {
     'gold': goldEarned,
     'at': finishedAt.toUtc().toIso8601String(),
     'graded': graded,
+    if (detail != null) 'detail': detail!.toJson(),
+    if (facts != null) 'facts': facts!.toJson(),
+  };
+}
+
+/// The handful of numbers that say how a life was lived.
+///
+/// Small on purpose: a dozen ints, kept for every record up to the cap. The full
+/// story lives in [LifeRecord.facts] and is kept for fewer.
+@immutable
+class LifeDetail {
+  const LifeDetail({
+    this.degrees = 0,
+    this.borrowedForSchool = 0,
+    this.promotions = 0,
+    this.workYears = 0,
+    this.assetsValue = 0,
+    this.loansOwed = 0,
+    this.ownedHome = false,
+    this.hadPartner = false,
+    this.children = 0,
+    this.connection,
+    this.educationRank = 0,
+  });
+
+  factory LifeDetail.fromFacts(LifeRunFacts facts) => LifeDetail(
+    degrees: facts.tally.degreesEarned,
+    borrowedForSchool: facts.tally.studentBorrowed,
+    promotions: facts.tally.promotions,
+    workYears: facts.tally.workYears,
+    assetsValue: facts.assetsValue,
+    loansOwed: facts.loanBalance + facts.debt,
+    ownedHome: facts.ownsHome,
+    hadPartner: facts.hasPartner,
+    children: facts.children,
+    connection: facts.connection,
+    educationRank: facts.educationRank,
+  );
+
+  factory LifeDetail.fromJson(Map<dynamic, dynamic> json) {
+    int at(String key) {
+      final value = json[key];
+      if (value is int) return value;
+      if (value is num) return value.round();
+      return int.tryParse('$value') ?? 0;
+    }
+
+    return LifeDetail(
+      degrees: at('dg'),
+      borrowedForSchool: at('sb'),
+      promotions: at('pr'),
+      workYears: at('wy'),
+      assetsValue: at('av'),
+      loansOwed: at('lo'),
+      ownedHome: json['home'] == true,
+      hadPartner: json['pt'] == true,
+      children: at('kids'),
+      connection: json['conn'] == null ? null : at('conn'),
+      educationRank: at('edu'),
+    );
+  }
+
+  /// Qualifications finished over the life.
+  final int degrees;
+
+  /// What was borrowed to pay for school, over the whole life.
+  final int borrowedForSchool;
+
+  /// Promotions won, and years worked.
+  final int promotions;
+  final int workYears;
+
+  /// What was owned when the life ended, and what was still owed, on loans and
+  /// on borrowed cash together.
+  final int assetsValue;
+  final int loansOwed;
+
+  final bool ownedHome;
+  final bool hadPartner;
+  final int children;
+
+  /// How close the people around the player were at the end, 0 to 100, or null
+  /// when it was not measured.
+  final int? connection;
+
+  /// The highest qualification, as an index into `EducationLevel`.
+  final int educationRank;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    if (degrees != 0) 'dg': degrees,
+    if (borrowedForSchool != 0) 'sb': borrowedForSchool,
+    if (promotions != 0) 'pr': promotions,
+    if (workYears != 0) 'wy': workYears,
+    if (assetsValue != 0) 'av': assetsValue,
+    if (loansOwed != 0) 'lo': loansOwed,
+    if (ownedHome) 'home': true,
+    if (hadPartner) 'pt': true,
+    if (children != 0) 'kids': children,
+    if (connection != null) 'conn': connection,
+    if (educationRank != 0) 'edu': educationRank,
   };
 }
 
@@ -154,6 +300,15 @@ class LifeRecordBook {
   /// that payload small. Twenty is far more than the history list shows and
   /// still nothing next to the rest of the blob.
   static const int maxRecords = 20;
+
+  /// How many of the newest lives keep the full story for Past Lives to reopen.
+  ///
+  /// A stored story is a curve, up to two dozen moments and a tally: a few
+  /// kilobytes. Twenty of them would be more than the rest of the player's stats
+  /// put together, in a blob that is rewritten on nearly every action. Five is
+  /// enough to look back on the lives that are still fresh, and every older one
+  /// still has its summary and its [LifeRecord.detail].
+  static const int keepFactsFor = 5;
 
   final List<LifeRecord> records;
 
@@ -183,9 +338,12 @@ class LifeRecordBook {
 
   /// Adds a run and trims to [maxRecords], dropping the oldest.
   LifeRecordBook add(LifeRecord record) {
-    final next = [record, ...newestFirst];
+    final next = [record, ...newestFirst].take(maxRecords).toList();
     return LifeRecordBook(
-      List.unmodifiable(next.take(maxRecords).toList(growable: false)),
+      List.unmodifiable([
+        for (var i = 0; i < next.length; i++)
+          i < keepFactsFor ? next[i] : next[i].withoutFacts(),
+      ]),
     );
   }
 

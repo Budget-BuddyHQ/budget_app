@@ -77,6 +77,26 @@ The spot, NPC, coin and spawn coordinates are duplicated in the script
 the values the app actually uses live in `town_spot_models.dart` and
 `kTownSpawnTile`. **If you move a building, update both.**
 
+### The second town, and the places both towns share
+
+`map_two.json` is **not** composed: it was rebuilt from a flat picture
+(`tool/build_map_two.py`). The four places added for the newer parts of a life
+(a gym, a campus office, a housing office and a pet shop) were stamped into it by
+`tool/add_map_two_places.py`, which lifts the same prefabs out of
+`town_v1_source.json` and writes them from a saved untouched copy,
+`tool/town_v2_source.json`. Run it with `--write`; running it twice gives the same
+map. Solid parts go into the second town's `walls` layer and the window and door
+overlays into a new top layer, `inside`, because nothing in its own layers sits
+above `walls`.
+
+A new place needs, in order: a building in **both** towns (the composer's
+`PLACEMENTS` for the first, `add_map_two_places.py` for the second), a `TownSpot`
+whose tile positions are a doorstep on each, then `tool/place_town_spots.py` and
+`tool/assign_town_buildings.py` (report first, `--write` to apply). The layout test
+wants every place to have a building of its own on both maps, and the second town
+has 17 now, so more places mean more buildings drawn in. Keep a place within 30
+tiles of the square or `town_map_test` will refuse it.
+
 ## Collision
 
 Solid layers are `walls` (the outer ring), `structures`, `Structure Ground`,

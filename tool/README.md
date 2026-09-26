@@ -70,3 +70,27 @@ No per-key `--dart-define=KEY=value` flags needed — the JSON file's keys
 are read straight out of it. See `lib/config/runtime_env_defines.dart` for how
 each key is wired into a real `String.fromEnvironment` constant, and
 `docs/ARCHITECTURE.md` §20 for the full root-cause writeup.
+
+## Placing town markers
+
+`place_town_spots.py` and `assign_town_buildings.py` snapped each marker to "a
+tile touching any six solid tiles". A tree is nine solid tiles and a rope fence
+is nineteen, so they put a cafe beside an oak and a library on the end of a
+fence, and the second town's buildings are painted into the ground and are not
+solid at all. Do not use them to place markers any more.
+
+The markers are placed by looking:
+
+1. Render the map with every marker drawn in (any script that composites the
+   layers of `assets/images/maps/*.json` over `spritesheet.png` will do).
+2. Put each marker on the **doorstep** of the building it is for: the walkable
+   tile straight below the door, not the door itself (that is solid) and not a
+   tile beside a tree, a bush or a fence.
+3. Set `tileX/tileY` (first town) and `tileX2/tileY2` (second town) in
+   `town_spot_models.dart`, and put the door tile in
+   `test/support/town_landmarks.dart`.
+
+`test/town_layout_test.dart` then checks that every marker is walkable and
+reachable, one tile from its landmark, that the landmark is not scenery, that no
+two markers share a building and that none is within three tiles of another.
+The spawn is two tiles south of the house's marker (`townSpawnTile`).

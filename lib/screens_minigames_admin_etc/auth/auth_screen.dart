@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloudflare_turnstile/cloudflare_turnstile.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -41,22 +42,9 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   final TextEditingController _confirmController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
 
-  /// The age band chosen during sign-up.
-  ///
-  /// **Why this is asked here and not later.** It was only settable in
-  /// Profile, buried behind a personal-details sheet, so almost nobody ever
-  /// set it — which meant almost every account was `undisclosed` and the app
-  /// had no idea who it was teaching. It routes which questions you are
-  /// served out of a bank that spans reading grades -2.4 to 18.4, so an
-  /// unanswered question here is the difference between a six-year-old
-  /// meeting "Diversification reduces risk by:" and meeting something they
-  /// can read.
-  ///
-  /// Defaults to null so the player has to choose, and "Rather not say"
-  /// remains one of the choices — a required field with an honest opt-out
-  /// gets answered far more often than an optional one buried two screens
-  /// away, and gating the app behind a personal question would teach children
-  /// to over-share to get features.
+  // age band, asked at signup now instead of buried in profile settings.
+  // used to be almost nobody set it so the app had no idea who it was
+  // teaching. null default + "rather not say" option so its still opt-out
   AgeBand? _ageBand;
   final TurnstileChallengeServer _turnstileServer = TurnstileChallengeServer();
 
@@ -70,29 +58,18 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   bool _isConfiguringTurnstile = false;
   String? _captchaToken;
 
-  /// Set when Turnstile tells us it cannot produce a token here at all —
-  /// a render failure, an error callback, or the script never loading.
-  ///
-  /// **Why this matters more than it looks.** Before it existed, "no token"
-  /// and "no token *yet*" were the same state, so the app waited forever and
-  /// answered every sign-in attempt with "Still checking". A misconfigured
-  /// widget, a Cloudflare outage or a captive-portal wifi all became a
-  /// permanent lockout with no way past it.
-  ///
-  /// The captcha is not the security boundary — Supabase enforces it
-  /// server-side, and rejects a request with a missing or bad token itself.
-  /// So when the challenge is broken the right move is to *try anyway* and
-  /// let the server answer, rather than refuse locally on the client's guess.
+  // true when turnstile just cant produce a token (render fail, script
+  // didnt load etc). without this "no token yet" and "never coming" look
+  // the same and the app just hangs on "still checking" forever. supabase
+  // does the real security check server side anyway, so if this is broken
+  // we just let the request through and let the server reject it
   bool _captchaUnavailable = false;
   WebViewController? _turnstileController;
 
   bool get _isLogin => _mode == AuthMode.login;
   bool get _isTurnstileConfigured => turnstileSiteKey != 'YOUR_SITE_KEY';
-  /// Platforms `webview_flutter` can render the challenge on.
-  ///
-  /// Windows is **not** in this list and never will be: `webview_flutter` is
-  /// federated across Android, iOS and macOS only. Windows gets the same
-  /// experience through WebView2 instead — see [_usesWindowsWebView].
+  // platforms webview_flutter actually works on. windows isnt one of them,
+  // it gets webview2 instead, see _usesWindowsWebView below
   bool get _supportsEmbeddedWebView {
     if (kIsWeb) {
       return false;
@@ -103,12 +80,8 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
         defaultTargetPlatform == TargetPlatform.macOS;
   }
 
-  /// Windows, with WebView2 available.
-  ///
-  /// Turns false only when `WindowsTurnstileView` reports that WebView2 could
-  /// not be initialised, at which point [_usesExternalSecurityCheck] takes
-  /// over and the old browser detour comes back. Losing the embedded widget
-  /// is much better than losing sign-in.
+  // windows w/ webview2 working. false if webview2 couldnt init, then
+  // it falls back to the old browser popup instead
   bool get _usesWindowsWebView =>
       !kIsWeb &&
       defaultTargetPlatform == TargetPlatform.windows &&
@@ -116,19 +89,21 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 
   bool _windowsWebViewFailed = false;
 
-  /// Bumped to demand a fresh Windows challenge. Turnstile tokens are
-  /// single-use, so every submit needs a new one.
+  // bump this to force a fresh windows challenge, tokens are single use
   int _windowsChallengeToken = 0;
 
-  /// The browser detour. Now only reached when WebView2 is unusable.
+  // browser popup fallback, only hit when webview2 doesnt work
   bool get _usesExternalSecurityCheck =>
       !kIsWeb &&
       defaultTargetPlatform == TargetPlatform.windows &&
       _windowsWebViewFailed;
 
-  /// Any in-app challenge, on any platform.
+  // any in-app challenge, whatever platform. web gets its own branch here
+  // because it needs neither webview_flutter (not supported on web) nor
+  // webview2 (windows-only) -- the browser can just embed Cloudflare's
+  // widget directly.
   bool get _hasEmbeddedChallenge =>
-      _supportsEmbeddedWebView || _usesWindowsWebView;
+      _supportsEmbeddedWebView || _usesWindowsWebView || kIsWeb;
 
   String get _turnstileHtml =>
       '''
@@ -160,15 +135,9 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     let widgetId;
 
     function onTurnstileLoad() {
-      // 'flexible', not 'invisible'.
-      //
-      // Cloudflare removed 'invisible' as a *size* -- it is a property of the
-      // widget in the Turnstile dashboard now. Passing it made render() throw
-      //   Invalid value for parameter "size", expected "compact",
-      //   "flexible", or "normal", got "invisible"
-      // so widgetId was never assigned, execute() never ran, no callback ever
-      // fired, and the app blocked every sign-in with "Still checking".
-      // Nobody could log in, on any platform.
+      // has to be 'flexible' not 'invisible', cloudflare moved invisible
+      // to a dashboard setting. passing it here threw and broke login
+      // for literally everyone, learned that one the hard way
       try {
         widgetId = turnstile.render('#turnstile-widget', {
           sitekey: '$turnstileSiteKey',
@@ -205,17 +174,9 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 </html>
 ''';
 
-  /// The challenge as served to the in-app WebView2 view.
-  ///
-  /// Same page as everywhere else, with the token posted back to the loopback
-  /// server rather than handed to a JavaScript channel — WebView2's bridge is
-  /// `window.chrome.webview.postMessage`, and shimming the two named channels
-  /// onto it would be a second delivery path to keep working. The server is
-  /// already there, already receives tokens, and is already tested.
-  ///
-  /// Failures post to `/status` for the same reason: a widget that fails to
-  /// render has to be able to say so, or the app waits forever for a token
-  /// that is never coming. That was the original sign-in outage.
+  // same challenge page as everywhere else but posts the token back to
+  // the loopback server instead of a js channel (webview2's bridge is
+  // different). failures also post to /status so it doesnt hang forever
   String get _embeddedWindowsTurnstileHtml => _turnstileHtml
       .replaceFirst(
         'TokenChannel.postMessage(token);',
@@ -239,11 +200,8 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 700),
     )..forward();
-    // A render failure inside the WebView2 view arrives over the loopback
-    // server rather than a JavaScript channel, so it is wired here. Without
-    // it, a broken widget is indistinguishable from a slow one and the app
-    // waits forever — which is exactly the outage this whole flow already
-    // had once.
+    // webview2 render failures come over the loopback server not a js
+    // channel, wired here so a broken widget doesnt just hang forever
     _turnstileServer.onStatus = (detail) {
       debugPrint('Windows Turnstile status: $detail');
       if (mounted) setState(() => _captchaUnavailable = true);
@@ -265,11 +223,8 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  /// Opens the published policy in the device browser.
-  ///
-  /// External rather than a web view on purpose: this is the document the
-  /// store listing links to, and somebody should be able to see the address
-  /// bar while they read it.
+  // opens privacy policy in the real device browser, not a webview,
+  // so people can actually see the url in the address bar
   Future<void> _openPrivacyPolicy() async {
     final uri = Uri.parse(kPrivacyPolicyUrl);
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -636,12 +591,11 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     );
   }
 
-  /// A token from the in-app WebView2 challenge.
-  ///
-  /// Null means the challenge finished without producing one — expired, or a
-  /// `/status` report unblocked the wait. Either way the app must stop
-  /// treating "waiting" as the answer.
-  void _onWindowsToken(String? token) {
+  // token from the webview2 challenge. null = finished with no token
+  // (expired or errored out), either way stop waiting
+  // shared by every embedded-challenge platform (windows, web) -- nothing
+  // about this handler is windows-specific, it just sets what came back
+  void _onTurnstileToken(String? token) {
     if (!mounted) return;
     setState(() {
       _captchaToken = (token == null || token.isEmpty) ? null : token;
@@ -649,12 +603,8 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     });
   }
 
-  /// WebView2 could not be initialised on this machine.
-  ///
-  /// Almost always a missing WebView2 runtime, which is rare on Windows 10
-  /// and 11 but not impossible on a stripped or offline image. Falling back
-  /// restores the browser detour, which is worse than the embedded widget and
-  /// far better than a player who cannot sign in at all.
+  // webview2 failed to init, usually a missing runtime. rare but happens
+  // on stripped/offline images. falls back to the browser popup
   void _onWindowsWebViewFailed() {
     if (!mounted || _windowsWebViewFailed) return;
     debugPrint('WebView2 unusable; reverting to the browser security check.');
@@ -930,13 +880,61 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                                       },
                                     ),
                                   ],
-                                  if (_usesWindowsWebView &&
+                                  if (kIsWeb && _isTurnstileConfigured)
+                                    CloudFlareTurnstile(
+                                      // Stable identity across rebuilds.
+                                      // This widget sits after the
+                                      // conditionally-shown confirm-password
+                                      // field and terms card, so switching
+                                      // Log In <-> Sign Up shifts its index
+                                      // in the children list. Without a key,
+                                      // Flutter can't tell it's the same
+                                      // widget that moved rather than a
+                                      // different one now sitting here, so it
+                                      // tore the whole challenge (iframe and
+                                      // all) down and rebuilt it from scratch
+                                      // on every toggle -- which is why the
+                                      // widget appeared to just vanish.
+                                      key: const ValueKey('web_turnstile'),
+                                      // real browser, real origin -- pass it
+                                      // straight through rather than
+                                      // hardcoding one like the windows html
+                                      // does, so this works on localhost, a
+                                      // preview URL, or the real domain
+                                      // without editing code each time.
+                                      baseUrl: Uri.base.origin,
+                                      siteKey: turnstileSiteKey,
+                                      onTokenRecived: _onTurnstileToken,
+                                      onTokenExpired: () =>
+                                          _onTurnstileToken(null),
+                                      onError: (error) {
+                                        // Cloudflare's own error code (e.g. a
+                                        // domain not on the widget's allowed
+                                        // list) -- logged rather than shown
+                                        // raw to the player, but visible in
+                                        // the browser console for whoever's
+                                        // debugging a broken web deploy.
+                                        debugPrint(
+                                          'Web Turnstile error: $error',
+                                        );
+                                        if (mounted) {
+                                          setState(
+                                            () => _captchaUnavailable = true,
+                                          );
+                                        }
+                                      },
+                                    )
+                                  else if (_usesWindowsWebView &&
                                       _isTurnstileConfigured)
                                     WindowsTurnstileView(
+                                      // Same positional-shift risk as the web
+                                      // widget above -- keep its state alive
+                                      // across a Log In <-> Sign Up toggle.
+                                      key: const ValueKey('windows_turnstile'),
                                       server: _turnstileServer,
                                       html: _embeddedWindowsTurnstileHtml,
                                       reloadToken: _windowsChallengeToken,
-                                      onToken: _onWindowsToken,
+                                      onToken: _onTurnstileToken,
                                       onUnavailable: () {
                                         if (mounted) {
                                           setState(
@@ -1408,13 +1406,9 @@ class _HiddenTurnstileView extends StatelessWidget {
 }
 
 
-/// "How old are you?", asked once, during sign-up.
-///
-/// A row of chips rather than a dropdown or a date picker. A date of birth is
-/// more precise, more personal, and more work to answer — and the app only
-/// ever needs the band, so asking for the exact day would be collecting data
-/// it has no use for. Chips also let a four-year-old's grown-up tap the right
-/// one without reading a menu.
+// age question, asked once at signup. chips instead of a dob picker,
+// we only need the band not an exact birthday, and chips are easier
+// to tap for a little kid's parent than scrolling a dropdown
 class _AgeBandField extends StatelessWidget {
   const _AgeBandField({required this.selected, required this.onChanged});
 

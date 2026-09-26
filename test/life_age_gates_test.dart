@@ -119,7 +119,9 @@ void main() {
     opensAt(LifeAction.sideJob, 14);
     opensAt(LifeAction.findJob, 16);
     opensAt(LifeAction.invest, 16);
-    opensAt(LifeAction.gamble, 18);
+    // Switched off for everybody for now, so it opens at no age. The age
+    // table still says 18 for the day the switch comes back on.
+    if (kLifeGamblingEnabled) opensAt(LifeAction.gamble, 18);
     opensAt(LifeAction.practise, 4);
 
     test('every action has a decision, none fall through', () {

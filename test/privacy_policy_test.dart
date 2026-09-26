@@ -91,15 +91,20 @@ void main() {
       );
     });
 
-    test('the route matches one the pages function actually serves', () {
-      final leaf = Uri.parse(kPrivacyPolicyUrl).pathSegments.last;
-      final fn = File('supabase/functions/pages/index.ts');
-      expect(fn.existsSync(), isTrue);
+    test('is not the placeholder-contact copy on the Supabase pages function', () {
+      // The pages function still serves a copy of this policy (used for the
+      // password-reset landing page's own footer link), but that copy's
+      // contact address was still `[ADD A CONTACT ADDRESS BEFORE
+      // PUBLISHING]` as of when the marketing-site version replaced it as
+      // the canonical link. If this ever points back at that function, the
+      // placeholder needs filling in first -- this guards against silently
+      // regressing to it.
       expect(
-        fn.readAsStringSync(),
-        contains('case "$leaf":'),
-        reason: 'kPrivacyPolicyUrl ends in /$leaf, which the pages function '
-            'has no route for',
+        kPrivacyPolicyUrl,
+        isNot(contains('supabase.co/functions')),
+        reason: 'kPrivacyPolicyUrl should point at the marketing site, not '
+            'the pages function, unless its placeholder contact address has '
+            'been filled in first',
       );
     });
   });

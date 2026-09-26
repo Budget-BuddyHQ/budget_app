@@ -74,13 +74,19 @@ void main() {
       }
     });
 
-    test('an adult account can still gamble', () {
-      // The other half. A safeguard that switches the feature off for
-      // everybody is not a safeguard, it is a removal.
+    test('an adult account can gamble only while the switch is on', () {
+      // Gambling is off for everybody for now (`kLifeGamblingEnabled`), on
+      // request. This holds both states of the switch so that turning it back
+      // on is one line and does not leave a test asserting the opposite.
       final life = adult();
       final before = life.money;
       life.takeARisk();
-      expect(life.money, isNot(before));
+      if (kLifeGamblingEnabled) {
+        expect(life.money, isNot(before));
+      } else {
+        expect(life.money, before, reason: 'gambling is switched off');
+        expect(life.allows(LifeAction.gamble), isFalse);
+      }
     });
 
     test('wager events never draw for a young account', () {
@@ -123,18 +129,26 @@ void main() {
           final event = life.currentEvent;
           if (event != null) {
             if (event.isWager) seen.add(event.id);
-            life.chooseOption(Random(seed * 3 + life.age).nextInt(
-              event.choices.length,
-            ));
+            life.chooseOption(
+              Random(seed * 3 + life.age).nextInt(event.choices.length),
+            );
           }
           life.ageUp();
         }
       }
-      expect(
-        seen,
-        isNotEmpty,
-        reason: 'no wager event fired for an adult in 200 runs',
-      );
+      if (kLifeGamblingEnabled) {
+        expect(
+          seen,
+          isNotEmpty,
+          reason: 'no wager event fired for an adult in 200 runs',
+        );
+      } else {
+        expect(
+          seen,
+          isEmpty,
+          reason: 'gambling is off for everybody, so no wager should draw',
+        );
+      }
     });
 
     test('the cautionary events are shown to everybody', () {
@@ -145,7 +159,8 @@ void main() {
         expect(
           event.isWager,
           isFalse,
-          reason: '$id is cautionary content, not a wager — hiding it from '
+          reason:
+              '$id is cautionary content, not a wager — hiding it from '
               'young players removes the lesson they most need',
         );
       }
@@ -170,8 +185,9 @@ void main() {
           reason: '${place.id} pays out a figure',
         );
         expect(
-          RegExp(r'(earned|wages|salary|got paid)')
-              .hasMatch(place.outcome.toLowerCase()),
+          RegExp(
+            r'(earned|wages|salary|got paid)',
+          ).hasMatch(place.outcome.toLowerCase()),
           isFalse,
           reason: '${place.id} reads as paid work',
         );

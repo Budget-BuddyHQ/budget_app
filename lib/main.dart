@@ -26,6 +26,7 @@ import 'themes_colors/app_theme.dart';
 import 'widgets_custom_lotties/orientation_scope.dart';
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
   if (!kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.android ||
@@ -33,17 +34,7 @@ Future<void> main() async {
     await SystemChrome.setPreferredOrientations(kAppOrientations);
   }
 
-        // Was 450x400. Dragging the window narrower than the declared
-        // minimum doesn't reflow the framework's layout — it keeps laying
-        // out for the minimum and the surplus is simply clipped, which read
-        // as "the Market Board breaks on smaller screens" (content cut off
-        // on the right, no overflow error anywhere because nothing actually
-        // overflowed). Every screen is layout-tested down to 320x568, so the
-        // floor can safely sit below the sizes people actually drag to.
-        minimumSize: Size(340, 480),
-
-    } catch (error) {
-      debugPrint('Window manager failed: $error');
+  await _configureDesktopWindow();
 
   // No hardcoded fallback on purpose: real credentials belong only in
   // supabase.env.json (gitignored, see supabase.env.json.example) or in
@@ -98,6 +89,7 @@ Future<void> main() async {
     ),
   );
 }
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -163,22 +155,22 @@ class _AppBootstrapGate extends StatelessWidget {
           return const SetNewPasswordScreen();
         }
 
-          if (!service.isSupabaseConnected) {
-            return const DashboardShell();
-          }
+        if (user == null) {
+          // With no backend configured the app runs local-only, straight into
+          // the game. With one, a signed-out player starts at the welcome page.
+          return service.isSupabaseConnected
+              ? const WelcomeScreen()
+              : const DashboardShell();
         }
 
-          future: service.isCurrentUserDisabled(),
-              return const TemporaryLoadingScreen(
-                message: 'Checking account...',
-            return Consumer<UserStatsController>(
-              builder: (context, controller, _) {
-                if (controller.isLoading) {
-                  return const _AdventureSaveLoadingScreen();
-                }
-                return const DashboardShell();
-              },
-            );
+        return Consumer<UserStatsController>(
+          builder: (context, controller, _) {
+            if (controller.isLoading) {
+              return const _AdventureSaveLoadingScreen();
+            }
+            return const DashboardShell();
+          },
+        );
       },
     );
   }
@@ -193,6 +185,29 @@ class _AdventureSaveLoadingScreen extends StatelessWidget {
   }
 }
 
-      backgroundColor: AppTheme.deepForest,
-                await SupabaseService.instance.signOut();
+/// Sizes the desktop window. Only Windows goes through the window manager;
+/// every other platform keeps the size the operating system gives it.
+Future<void> _configureDesktopWindow() async {
+  if (kIsWeb || defaultTargetPlatform != TargetPlatform.windows) return;
+  try {
+    await windowManager.ensureInitialized();
+    const options = WindowOptions(
+      size: Size(1000, 800),
+      // Was 450x400. Dragging the window narrower than the declared
+      // minimum doesn't reflow the framework's layout — it keeps laying
+      // out for the minimum and the surplus is simply clipped, which read
+      // as "the Market Board breaks on smaller screens" (content cut off
+      // on the right, no overflow error anywhere because nothing actually
+      // overflowed). Every screen is layout-tested down to 320x568, so the
+      // floor can safely sit below the sizes people actually drag to.
+      minimumSize: Size(340, 480),
+      center: true,
+    );
+    await windowManager.waitUntilReadyToShow(options, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  } catch (error) {
+    debugPrint('Window manager failed: $error');
+  }
 }

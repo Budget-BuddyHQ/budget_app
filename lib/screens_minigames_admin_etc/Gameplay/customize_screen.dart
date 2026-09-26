@@ -231,10 +231,10 @@ class _CharacterPreviewCard extends StatelessWidget {
 
   final UserStats stats;
 
-  /// The turtle that guides and explains. See [SkinSlot.mascot].
+  // the turtle guide
   final AvatarSkin mascot;
 
-  /// Who you walk around town and fight as. See [SkinSlot.player].
+  // who you actually walk around/fight as
   final AvatarSkin playerSkin;
 
   @override
@@ -312,11 +312,8 @@ class _CharacterPreviewCard extends StatelessWidget {
   }
 }
 
-/// The player skin, shown beneath the mascot rather than instead of it.
-///
-/// With one slot, equipping a villager replaced the turtle in the hero above,
-/// so a screen headed "Your turtle mascot" showed a villager under it. The two
-/// sit together now because they are worn together.
+// player skin, shown under the mascot instead of replacing it. used to
+// swap out the turtle which looked broken, now they show together
 class _PlayerSlotRow extends StatelessWidget {
   const _PlayerSlotRow({required this.stats, required this.skin});
 
@@ -389,7 +386,7 @@ class _PlayerSlotRow extends StatelessWidget {
   }
 }
 
-/// Switches the avatar body. Free and instant — see [VillagerBody].
+// switches the avatar body, free + instant
 class _BodyToggle extends StatelessWidget {
   const _BodyToggle({required this.current});
 
@@ -720,8 +717,7 @@ class _CaseOddsPanel extends StatelessWidget {
   }
 }
 
-/// Small rarity pip in the corner of a skin tile. Common is left unmarked so
-/// the grid does not get noisy — only the notable pulls get a badge.
+// rarity pip on a skin tile. common stays unmarked so the grid isnt noisy
 class _RarityDot extends StatelessWidget {
   const _RarityDot({required this.rarity, required this.accent});
 
@@ -769,8 +765,7 @@ class _RarityDot extends StatelessWidget {
   }
 }
 
-/// The full skin catalogue, grouped by family, with locked entries shown as
-/// dimmed silhouettes so players can see what they are collecting toward.
+// full skin catalogue, locked ones show as dimmed silhouettes
 class _SkinCollection extends StatelessWidget {
   const _SkinCollection({
     required this.unlockedIds,
@@ -782,7 +777,7 @@ class _SkinCollection extends StatelessWidget {
 
   final Set<String> unlockedIds;
 
-  /// One per slot: the mascot and the player skin are both "equipped".
+  // mascot + player skin both count as "equipped"
   final Set<String> equippedIds;
   final double availableWidth;
   final ValueChanged<AvatarSkin> onEquip;
@@ -1063,30 +1058,18 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
   bool _revealed = false;
   bool _skipped = false;
 
-  // Sized so the whole reveal — reel, sprite, name and button — fits on a
-  // phone without the dialog scrolling or clipping the action button.
+  // sized so the whole reveal fits on a phone screen without scrolling
   static const double _itemWidth = 70;
   static const double _itemSpacing = 12;
 
-  /// How many tiles pass the marker before the reel stops.
-  ///
-  /// **Fixed, not derived from where the winner sits in the catalogue.** This
-  /// number, [_rollDuration] and [_rollCurve] are shared with
-  /// `tool/make_sounds.py`, which emits one tick of `case_roll.wav` for each
-  /// tile crossing — so the ratchet you hear *is* the reel you are watching.
-  ///
-  /// The previous version travelled `4 * catalogue + indexOf(winner)` tiles,
-  /// which is a different distance for every skin. No pre-rendered sound can
-  /// follow that, and the reel also showed the same parade of skins in the
-  /// same order on every open. Pinning the distance and shuffling the strip
-  /// around the winner fixes both: each roll looks different and every roll
-  /// ticks identically.
+  // fixed tile count, NOT based on where the winner sits in the catalogue.
+  // this number + duration + curve are shared with make_sounds.py so the
+  // ratchet sound ticks match the actual reel every time
   static const int _rollItems = 72;
   static const Duration _rollDuration = Duration(milliseconds: 4200);
   static const Curve _rollCurve = Cubic(0.16, 0.86, 0.41, 1.0);
 
-  /// Tiles either side of the winner, so the reel is not empty as it settles
-  /// and the player can see what they *nearly* got.
+  // tiles on either side of the winner so it doesnt land on an empty reel
   static const int _rollTail = 6;
 
   double get _itemExtent => _itemWidth + _itemSpacing;

@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 
 import 'finance_concepts.dart';
+import 'life_assets.dart';
+import 'life_careers.dart';
+import 'life_education.dart';
 import 'life_event_chains.dart';
 import 'life_events_adult.dart';
+import 'life_events_home_money.dart';
+import 'life_events_later_life.dart';
+import 'life_events_school_work.dart';
+import 'life_events_shocks.dart';
 import 'life_events_childhood.dart';
 import 'life_events_stardom.dart';
 import 'life_events_toddler.dart';
@@ -15,6 +22,21 @@ import 'life_events_traps.dart';
 ///
 /// Pure data. Rules live in `LifeSimController`; the screen renders what the
 /// controller exposes, so the game can grow without touching UI wiring.
+
+/// Whether Life may contain gambling of any kind: the coin-flip wager, the
+/// wager events, and the loot-box and skin-trading events.
+///
+/// **Off, on request:** *"remove the gambling for now."* One switch so that
+/// "for now" can end with one line instead of a hunt. Everything that gambles
+/// asks this before it asks anything about the player's age.
+const bool kLifeGamblingEnabled = false;
+
+/// The youngest account Life is offered to.
+///
+/// Life is for ages nine and up. Nothing inside it is hidden by the account's
+/// age band any more; what it contains is stated in an advisory before the
+/// first life, and this is the one gate.
+const int kLifeMinimumPlayerAge = 9;
 
 /// One line in the life feed, tagged with the age it happened at.
 @immutable
@@ -176,11 +198,58 @@ class LifeChoice {
     this.teaches,
     this.setsFlag,
     this.clearsFlag,
+    this.followUp = LifeFollowUp.none,
+    this.moveTo,
+    this.grantsAsset,
+    this.grantsAssetName,
+    this.grantsFinanced = false,
+    this.sellsAsset,
+    this.removesAsset,
+    this.paysOffStudentLoan = false,
   });
 
   final String label;
   final String outcome;
   final int money;
+
+  /// An asset (by catalogue id) this choice puts in the character's hands.
+  ///
+  /// **Why it exists.** A story card said "take him home" and set a flag, and the
+  /// Assets tab went on saying the character owned nothing. A player who agreed to
+  /// share a flat with a friend was still shown living with their parents. The
+  /// flag and the screen were two separate records of the same fact, and nothing
+  /// kept them in step. Now the choice changes what is owned, and the story flags
+  /// that stand for owning something are read from what is owned (see
+  /// `LifeSimController.flags`), so they cannot drift again.
+  ///
+  /// It costs nothing by itself: the choice's own [money] is what was paid.
+  final String? grantsAsset;
+
+  /// What the character calls it. A dog has a name.
+  final String? grantsAssetName;
+
+  /// Whether it comes with the catalogue's loan for it (a car on finance, a home
+  /// with a mortgage). The down payment is the choice's [money].
+  final bool grantsFinanced;
+
+  /// Sells the newest thing of this kind at its real sale value, settling any
+  /// loan on it from the proceeds. For "sell the car" and "sell the house".
+  final AssetKind? sellsAsset;
+
+  /// Takes the newest thing of this kind away with nothing coming back: the old
+  /// dog that dies, the car that is written off.
+  final AssetKind? removesAsset;
+
+  /// Clears every student loan from cash, savings or debt.
+  final bool paysOffStudentLoan;
+
+  /// A screen to open once this choice has landed. The choice itself is only
+  /// data, so "apply to college" is expressed as a request to open the sheet
+  /// where that is done, and the page opens it. See [LifeFollowUp].
+  final LifeFollowUp followUp;
+
+  /// A rental to move into, by id. Used by the "time to move out" decision.
+  final String? moveTo;
   final int happiness;
   final int health;
   final int smarts;
@@ -223,6 +292,13 @@ class LifeChoice {
   final LifeFlag? clearsFlag;
 }
 
+/// What a decision card asks the screen to open next.
+///
+/// A [LifeChoice] cannot call anything, which is what keeps a hundred and
+/// ninety events as plain data. "Go to college" is not an effect on a stat, it
+/// is the start of a form, so the choice names the form and the page opens it.
+enum LifeFollowUp { none, openCollege, openTrades, openJobs, openHousing }
+
 /// Something the player can choose to do from a menu.
 ///
 /// Exists so age rules live in one table in `LifeSimController` instead of
@@ -244,6 +320,39 @@ enum LifeAction {
   invest,
   gamble,
   practise,
+
+  /// Extra hours for a shot at a raise. Was not a [LifeAction] at all, which
+  /// is why it had no age gate and no yearly limit and could be tapped forever.
+  workHarder,
+
+  /// Asking outright. Same story as [workHarder].
+  askForRaise,
+
+  /// Meeting people who know people. See `life_network.dart`.
+  network,
+
+  /// Paying back what was borrowed.
+  ///
+  /// Not limited by a yearly budget, for the same reason [invest] is not: it
+  /// is limited by having the money, and it turns cash into less debt one for
+  /// one, so there is nothing in it to farm.
+  payDownDebt,
+
+  /// Applying for a job from the board. A rejection is a real cost of time, so
+  /// there are only so many in a year.
+  applyJob,
+
+  /// Asking for the next rung up.
+  applyPromotion,
+
+  /// Sending an application to a course.
+  applyCollege,
+
+  /// Talking with somebody. See `PersonAction`.
+  conversation,
+  compliment,
+  askMoney,
+  date,
 }
 
 /// A learnable skill. Skills gate career events and scale their payoff — a
@@ -341,6 +450,20 @@ enum LifeFlag {
   hasChild,
 }
 
+/// Flags that mean "you own something" and are read back from the
+/// Assets/loan ledger instead of being set directly by a card — see
+/// `LifeSimController._effectiveFlags`. A card grants, sells or removes the
+/// asset (`LifeChoice.grantsAsset`/`sellsAsset`/`removesAsset`/
+/// `paysOffStudentLoan`) and one of these becomes true or false as a side
+/// effect, so nothing in `kLifeEvents` ever needs a literal `setsFlag` or
+/// `clearsFlag` for them.
+const Set<LifeFlag> kOwnershipBackedFlags = {
+  LifeFlag.hasPet,
+  LifeFlag.hasCar,
+  LifeFlag.ownsHome,
+  LifeFlag.hasStudentLoan,
+};
+
 extension LifeFlagInfo on LifeFlag {
   /// A short label for the "what is going on in your life" strip, or null
   /// for flags that are bookkeeping rather than something the player would
@@ -406,7 +529,39 @@ class LifeContext {
     required this.traits,
     required this.hasJob,
     this.flags = const <LifeFlag>{},
+    this.education = EducationLevel.none,
+    this.inSchool = false,
+    this.owns = const <AssetKind>{},
+    this.hasPartner = false,
+    this.hasChild = false,
+    this.hasLivingParent = false,
+    this.debt = 0,
+    this.renting = false,
+    this.track,
   });
+
+  /// The highest qualification held.
+  final EducationLevel education;
+
+  /// Whether the character is currently studying something.
+  final bool inSchool;
+
+  /// The kinds of thing the character owns.
+  final Set<AssetKind> owns;
+
+  final bool hasPartner;
+  final bool hasChild;
+
+  /// Whether at least one parent is still alive.
+  final bool hasLivingParent;
+
+  /// What is owed, all kinds together.
+  final int debt;
+
+  final bool renting;
+
+  /// The line of work the character is in, if any.
+  final CareerTrack? track;
 
   final int age;
   final int money;
@@ -446,12 +601,40 @@ class LifeEvent {
     this.repeatable = false,
     this.requiresFlag,
     this.forbidsFlag,
+    this.minEducation,
+    this.requiresStudent = false,
+    this.forbidsStudent = false,
+    this.requiresAsset,
+    this.requiresPartner = false,
+    this.requiresChild = false,
+    this.requiresParent = false,
+    this.requiresTrack,
+    this.minDebt = 0,
+    this.requiresRenting = false,
+    this.forbidsAsset,
   });
 
   final String id;
   final String prompt;
   final IconData icon;
   final List<LifeChoice> choices;
+
+  /// Gates on the newer parts of a life. Each is only checked when set, so the
+  /// events written before they existed are unaffected.
+  final EducationLevel? minEducation;
+  final bool requiresStudent;
+  final bool forbidsStudent;
+  final AssetKind? requiresAsset;
+  final bool requiresPartner;
+  final bool requiresChild;
+  final bool requiresParent;
+  final CareerTrack? requiresTrack;
+  final int minDebt;
+  final bool requiresRenting;
+
+  /// Never draw this while the character owns something of this kind. "A friend
+  /// suggests splitting a flat" is not offered to somebody who owns their home.
+  final AssetKind? forbidsAsset;
 
   /// Whether this event asks the player to stake money on an uncertain
   /// outcome.
@@ -532,6 +715,19 @@ class LifeEvent {
     if (requiresJob && !c.hasJob) return false;
     if (requiresFlag != null && !c.flags.contains(requiresFlag)) return false;
     if (forbidsFlag != null && c.flags.contains(forbidsFlag)) return false;
+    if (minEducation != null && !c.education.atLeast(minEducation!)) {
+      return false;
+    }
+    if (requiresStudent && !c.inSchool) return false;
+    if (forbidsStudent && c.inSchool) return false;
+    if (requiresAsset != null && !c.owns.contains(requiresAsset)) return false;
+    if (forbidsAsset != null && c.owns.contains(forbidsAsset)) return false;
+    if (requiresPartner && !c.hasPartner) return false;
+    if (requiresChild && !c.hasChild) return false;
+    if (requiresParent && !c.hasLivingParent) return false;
+    if (requiresTrack != null && c.track != requiresTrack) return false;
+    if (c.debt < minDebt) return false;
+    if (requiresRenting && !c.renting) return false;
     return true;
   }
 }
@@ -3560,4 +3756,12 @@ const List<LifeEvent> kLifeEvents = <LifeEvent>[
   ...kLifeEventsAdult,
   ...kLifeEventsStardom,
   ...kLifeEventsTraps,
+  // The parts of a life that now exist: school and work, what you own and who
+  // you share it with, and the second half.
+  ...kLifeEventsSchoolWork,
+  ...kLifeEventsHomeMoney,
+  ...kLifeEventsLaterLife,
+  // The bad days, which the yearly draw makes sure arrive. See
+  // `life_events_shocks.dart`.
+  ...kLifeEventsShocks,
 ];

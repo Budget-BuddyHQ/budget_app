@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Without this, every network call (Supabase, Finnhub, Twelve Data,
+         Turnstile) fails at the OS level in a release build. Flutter's
+         debug-only manifest (android/app/src/debug/AndroidManifest.xml)
+         grants this for `flutter run`, which is why this was invisible in
+         every development build and only shows up in a real release APK/AAB. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="budget_app"
         android:name="${applicationName}"

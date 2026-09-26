@@ -32,6 +32,7 @@ migrate_working_dir/
 /coverage/
 
 # Desktop & Mobile Ephemeral Files (Machine-Specific)
+/linux/flutter/ephemeral/
 /windows/flutter/ephemeral/
 /macos/Flutter/ephemeral/
 /ios/Flutter/ephemeral/
@@ -63,3 +64,6 @@ supabase.env.json
 # Generated villager frames
 assets/images/humans/
 docs
+
+# Scratch output from Claude sessions (screenshots, drafts). Local only.
+Claude outputs/

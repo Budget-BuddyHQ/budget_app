@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../../controllers_that_updates_stats/life_sim_controller.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
+import '../../../models_Like_Skins_and_lessons_templates/life_education.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_ending.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import '../../../models_Like_Skins_and_lessons_templates/outing_rules.dart';
@@ -14,7 +15,6 @@ import '../../../controllers_that_updates_stats/app_settings_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/concept_powers.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_tutorial_steps.dart';
 import '../../../models_Like_Skins_and_lessons_templates/ranked_run.dart';
-import '../../../models_Like_Skins_and_lessons_templates/relationship.dart';
 import '../../../models_Like_Skins_and_lessons_templates/volunteer_places.dart';
 import '../../../utils/number_format.dart';
 import '../../../themes_colors/app_theme.dart';
@@ -22,14 +22,23 @@ import '../../onboarding/coach_mark.dart';
 import '../../../widgets_custom_lotties/confetti_burst.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../adventure/adventure_world_screen.dart';
+import 'life_activities_sheet.dart';
+import 'life_advisory.dart';
+import 'life_assets_sheet.dart';
 import 'life_character_sheet.dart';
 import 'life_epilogue_screen.dart';
+import 'life_money_flow_sheet.dart';
+import 'life_occupation_sheet.dart';
+import 'life_people_sheet.dart';
+import 'life_ui_kit.dart';
 import '../../../constants/app_assets.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/life_money_panel.dart';
 import '../../../widgets_custom_lotties/pixel_kit.dart';
 import '../../../widgets_custom_lotties/pixel_panel.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_seed.dart';
+import '../../../models_Like_Skins_and_lessons_templates/life_network.dart';
+import '../../../models_Like_Skins_and_lessons_templates/life_wellbeing.dart';
 
 /// **Life** — the main game, in the BitLife format: a scrolling life feed up
 /// top, a fixed bottom menu, and a big central Age button that advances time
@@ -77,6 +86,10 @@ class _LifeSimPageState extends State<LifeSimPage> {
   final GlobalKey _tourMenuKey = GlobalKey();
   final GlobalKey _tourAgeKey = GlobalKey();
 
+  /// Whether a decision card is on screen. It is a pop-up, and a pop-up must
+  /// only ever be opened once for one event.
+  bool _eventDialogOpen = false;
+
   bool _tourRunning = false;
   LifeSimController? _life;
   final ScrollController _feedController = ScrollController();
@@ -106,6 +119,26 @@ class _LifeSimPageState extends State<LifeSimPage> {
   LifeSeed? _seed;
 
   Future<void> _createCharacter() async {
+    // Life is for nine and up. Nothing inside it is filtered by the account's
+    // age any more: this is the one gate, and the advisory below is the one
+    // warning. See `life_advisory.dart`.
+    final band = context.read<UserStatsController>().stats.ageBand;
+    if (!band.canPlayLife) {
+      await showLifeAgeGate(context);
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
+    final settings = context.read<AppSettingsController>();
+    if (!settings.hasSeenLifeAdvisory) {
+      final go = await showLifeAdvisory(context);
+      if (!mounted) return;
+      if (!go) {
+        Navigator.of(context).pop();
+        return;
+      }
+      await settings.markLifeAdvisorySeen();
+      if (!mounted) return;
+    }
     final character = await Navigator.of(context).push<LifeCharacter>(
       MaterialPageRoute(builder: (_) => const LifeCharacterSheet()),
     );
@@ -124,10 +157,6 @@ class _LifeSimPageState extends State<LifeSimPage> {
       await context.read<UserStatsController>().resetTownProgress();
     }
     if (!mounted) return;
-    final band = context.read<UserStatsController>().stats.ageBand;
-    final allowWagering = band.allowsWagering;
-    final plainWords = band.prefersSimpleWording;
-
     setState(() {
       // Whether this run counts, chosen on the character sheet.
       _graded = character.graded;
@@ -146,28 +175,28 @@ class _LifeSimPageState extends State<LifeSimPage> {
         gender: character.gender,
         origin: character.origin,
         startMoney: character.origin.familyMoney,
-        // The *account's* age, not the character's. See
-        // `AgeBand.allowsWagering`.
-        allowWagering: allowWagering,
-        hideGamblingMechanics: band.hidesGamblingMechanics,
-        // Also the account's age. A ten-year-old whose character reaches
-        // thirty was being offered mortgages and down payments, because
-        // events gate on the character's age and nothing was checking who
-        // was actually reading them.
-        plainWordsOnly: plainWords,
+        // Born into a family: a mother, a father, perhaps brothers, sisters and
+        // grandparents. See `life_people.dart`.
+        withFamily: true,
+        // No account-age filters. Gambling is off for everyone through
+        // `kLifeGamblingEnabled`, and the rest is what the advisory describes.
       );
     });
     _maybeStartFirstTour();
-    _maybeShowPlainWordsNotice(plainWords);
   }
 
   @override
   void dispose() {
     for (final id in const <String>[
       'life_money',
+      'life_costs',
       'life_event',
       'life_town',
       'life_menus',
+      'life_menu_work',
+      'life_menu_assets',
+      'life_menu_people',
+      'life_menu_activities',
       'life_age',
     ]) {
       TutorialTargets.unregister(id);
@@ -256,31 +285,18 @@ class _LifeSimPageState extends State<LifeSimPage> {
     );
   }
 
-  void _invest(LifeSimController life) {
-    if (life.money < 100) {
-      GameToast.show(
-        context,
-        title: 'Not enough cash',
-        message: 'You need 100 coins to invest.',
-        icon: Icons.info_outline_rounded,
-        accent: const Color(0xFFFFB084),
-      );
-      return;
-    }
-    life.invest(100);
-  }
-
-  /// Opens one of the four category menus.
-  ///
-  /// This is the structural difference between "a button that does a thing"
-  /// and a life sim: a menu can hold six actions with costs and conditions
-  /// where a bottom-bar slot can only hold one. Actions are built fresh on
-  /// open so their enabled/disabled state reflects the character *now*.
   void _registerTourTargets() {
     TutorialTargets.register('life_money', _tourMoneyKey);
+    // The "Where does my money go?" row is inside the money panel.
+    TutorialTargets.register('life_costs', _tourMoneyKey);
     TutorialTargets.register('life_event', _tourEventKey);
     TutorialTargets.register('life_town', _tourTownKey);
     TutorialTargets.register('life_menus', _tourMenuKey);
+    // One step per menu, all pointing at the tab bar they live in.
+    TutorialTargets.register('life_menu_work', _tourMenuKey);
+    TutorialTargets.register('life_menu_assets', _tourMenuKey);
+    TutorialTargets.register('life_menu_people', _tourMenuKey);
+    TutorialTargets.register('life_menu_activities', _tourMenuKey);
     TutorialTargets.register('life_age', _tourAgeKey);
   }
 
@@ -319,38 +335,6 @@ class _LifeSimPageState extends State<LifeSimPage> {
   /// route: a tour that spotlights the money panel while the player is still
   /// picking a name is pointing at widgets that do not exist yet, and the
   /// overlay would centre every card and explain nothing.
-  /// Tells a young player, once, that some grown-up money is being held back.
-  ///
-  /// **Why say it at all rather than filter silently.** The filter
-  /// (`LifeSimController.plainWordsOnly`) keeps mortgages, vesting schedules
-  /// and down payments out of a ten-year-old's game, which is right — but a
-  /// child who has watched an older sibling play will notice things missing
-  /// and conclude the app is broken, or that they are being punished for
-  /// something. Naming it turns a gap into a promise: *this grows with you.*
-  ///
-  /// It also does the thing the whole age-banding feature was asked to do out
-  /// loud — *"make sure this is explicitly mentioned for everyone
-  /// everywhere"* — at the one moment it is concretely true.
-  void _maybeShowPlainWordsNotice(bool plainWords) {
-    if (!plainWords || !mounted) return;
-    final settings = context.read<AppSettingsController>();
-    if (settings.hasSeenPlainWordsNotice) return;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      settings.markPlainWordsNoticeSeen();
-      GameToast.show(
-        context,
-        title: 'This life is set for your age',
-        message:
-            'Grown-up money — mortgages, loans, tax forms — is kept out for '
-            'now. It turns up as you get older, and nothing here is missing.',
-        icon: Icons.shield_moon_rounded,
-        accent: const Color(0xFF58C7FF),
-      );
-    });
-  }
-
   void _maybeStartFirstTour() {
     if (!mounted || _tourRunning) return;
     final settings = context.read<AppSettingsController>();
@@ -358,40 +342,99 @@ class _LifeSimPageState extends State<LifeSimPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _startTour());
   }
 
-  Future<void> _openMenu(LifeSimController life, _LifeMenu menu) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      // Without this a tall sheet runs under the status bar and its
-      // heading is unreadable.
-      useSafeArea: true,
-      // A visible grab bar, so the way out is on screen.
-      showDragHandle: true,
-      builder: (sheetContext) => _LifeMenuSheet(
-        menu: menu,
-        life: life,
-        onSkills: () {
-          Navigator.of(sheetContext).pop();
-          _openSkills(life);
-        },
-        onVolunteer: () {
-          Navigator.of(sheetContext).pop();
-          _openVolunteer(life);
-        },
-        onPerson: (person) => _openPerson(life, person),
-        onInvest: () {
-          Navigator.of(sheetContext).pop();
-          _invest(life);
-        },
-        onBudget: () => _openBudget(life),
-        onConcepts: () => _openConcepts(life),
-        onPowers: () => _openPowers(life),
-      ),
+  void _openOccupation(LifeSimController life) {
+    HapticFeedback.lightImpact();
+    openOccupation(
+      context,
+      life,
+      onPerson: (person) => openPerson(context, life, person),
     );
   }
 
-  /// The budgeting exercise — the app's core skill, made playable.
+  void _openAssets(LifeSimController life) {
+    HapticFeedback.lightImpact();
+    openAssets(
+      context,
+      life,
+      onBudget: () => _openBudget(life),
+      onPowers: () => _openPowers(life),
+      onConcepts: () => _openConcepts(life),
+    );
+  }
+
+  void _openPeople(LifeSimController life) {
+    HapticFeedback.lightImpact();
+    openPeople(context, life);
+  }
+
+  void _openActivities(LifeSimController life) {
+    HapticFeedback.lightImpact();
+    openActivities(
+      context,
+      life,
+      onVolunteer: () => _openVolunteer(life),
+      onSkills: () => _openSkills(life),
+    );
+  }
+
+  /// Puts the year's decision in front of the player as a pop-up.
+  ///
+  /// **Asked for as:** the BitLife pop-up decision card, *"whenever an event
+  /// occurs, a pop-up modal interrupts the main screen with two to four choices
+  /// and a Surprise Me button."* It used to sit in the feed, where it could be
+  /// scrolled past and where the feed kept moving behind it. It is now the one
+  /// thing on the screen until it is answered.
+  Future<void> _maybeShowEventDialog(LifeSimController life) async {
+    if (!mounted || _eventDialogOpen) return;
+    final event = life.currentEvent;
+    if (event == null) return;
+    _eventDialogOpen = true;
+    final choice = await showDialog<int>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _EventDialog(key: _tourEventKey, event: event),
+    );
+    _eventDialogOpen = false;
+    if (!mounted || choice == null) return;
+    // The world may have moved on while the pop-up was open.
+    if (life.currentEvent != event) return;
+    HapticFeedback.selectionClick();
+    life.chooseOption(choice);
+    // The lesson goes first, and the form it leads to (a college application, the
+    // job board) opens after it, so nothing lands on top of anything.
+    await _drainLesson(life);
+    if (!mounted) return;
+    await _runFollowUp(life);
+  }
+
+  /// Opens the screen a decision asked for. See `LifeFollowUp`.
+  Future<void> _runFollowUp(LifeSimController life) async {
+    switch (life.takeFollowUp()) {
+      case LifeFollowUp.openCollege:
+        await showLifeSheet<void>(
+          context,
+          builder: (_) => ProgramSheet(life: life, stage: SchoolStage.college),
+        );
+      case LifeFollowUp.openTrades:
+        await showLifeSheet<void>(
+          context,
+          builder: (_) => ProgramSheet(life: life, stage: SchoolStage.trade),
+        );
+      case LifeFollowUp.openJobs:
+        await showLifeSheet<void>(
+          context,
+          builder: (_) => JobBoardSheet(life: life),
+        );
+      case LifeFollowUp.openHousing:
+        await showLifeSheet<void>(
+          context,
+          builder: (_) => HousingSheet(life: life),
+        );
+      case LifeFollowUp.none:
+        break;
+    }
+  }
+
   Future<void> _openBudget(LifeSimController life) async {
     HapticFeedback.lightImpact();
     await showModalBottomSheet<void>(
@@ -445,7 +488,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
   /// Called after every interaction that can teach (a choice, a budget, a
   /// shock) rather than watching for changes, so the explainer always lands
   /// *after* the player has seen the outcome — not on top of it.
-  void _drainLesson(LifeSimController life) {
+  Future<void> _drainLesson(LifeSimController life) async {
     // Read before takeLesson() clears the pending concept — both describe
     // the same lesson.
     final isNewConcept = life.pendingLessonIsNew;
@@ -458,7 +501,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
       // look like a celebration).
       ConfettiBurst.show(context);
     }
-    showModalBottomSheet<void>(
+    await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
@@ -491,21 +534,6 @@ class _LifeSimPageState extends State<LifeSimPage> {
   /// worth showing is the *relationship* — how close you are, how long since
   /// you saw them, and which way it is heading. None of that fits on a menu
   /// row, and without it the two actions are just two buttons.
-  Future<void> _openPerson(LifeSimController life, Relationship person) async {
-    HapticFeedback.lightImpact();
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      // Without this a tall sheet runs under the status bar and its
-      // heading is unreadable.
-      useSafeArea: true,
-      // A visible grab bar, so the way out is on screen.
-      showDragHandle: true,
-      builder: (_) => _PersonSheet(life: life, person: person),
-    );
-  }
-
   /// Where to give your time.
   ///
   /// A sheet rather than a menu row, because there is a real decision in it
@@ -561,6 +589,11 @@ class _LifeSimPageState extends State<LifeSimPage> {
       builder: (context, _) {
         final event = life.currentEvent;
         _scrollFeedToEnd();
+        if (event != null && !_eventDialogOpen) {
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _maybeShowEventDialog(life),
+          );
+        }
         return PopScope(
           // A life is *not* saved anywhere — LifeSimController is
           // in-memory only, by design (see its class doc). Backing out
@@ -588,7 +621,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
                 gender: life.gender,
                 age: life.age,
                 stage: life.stage,
-                money: life.money,
+                money: life.netWorth,
                 job: life.job,
               ),
               actions: [
@@ -661,40 +694,33 @@ class _LifeSimPageState extends State<LifeSimPage> {
                   child: _LifeFeed(
                     controller: _feedController,
                     history: life.history,
-                    smarts: life.smarts,
-                    health: life.health,
-                    looks: life.looks,
                     relationships: life.relationships,
                     dead: life.dead,
-                    event: event,
-                    // Choose, then surface the money idea behind that choice
-                    // (if it had one) once the outcome is on screen.
                     weather: life.weather,
                     strictness: life.strictness,
                     outing: life.outingPermission,
                     life: life,
                     onOpenBudget: () => _openBudget(life),
-                    onOpenMoney: () => _openMenu(life, _LifeMenu.assets),
+                    onOpenMoney: () => _openAssets(life),
                     onOpenConcepts: () => _openConcepts(life),
+                    onOpenPeople: () => _openPeople(life),
                     moneyKey: _tourMoneyKey,
-                    eventKey: _tourEventKey,
-                    onChoose: (index) {
-                      life.chooseOption(index);
-                      _drainLesson(life);
-                    },
                   ),
                 ),
                 _BottomMenu(
                   key: _tourMenuKey,
                   ageKey: _tourAgeKey,
                   happiness: life.happiness,
+                  health: life.health,
+                  smarts: life.smarts,
+                  looks: life.looks,
                   blocked: event != null || life.finished,
                   stage: life.stage,
-                  onCareer: () => _openMenu(life, _LifeMenu.career),
-                  onRelationships: () =>
-                      _openMenu(life, _LifeMenu.relationships),
-                  onActivities: () => _openMenu(life, _LifeMenu.activities),
-                  onAssets: () => _openMenu(life, _LifeMenu.assets),
+                  student: life.isStudent && !life.hasJob,
+                  onOccupation: () => _openOccupation(life),
+                  onRelationships: () => _openPeople(life),
+                  onActivities: () => _openActivities(life),
+                  onAssets: () => _openAssets(life),
                   // Ageing can fire an expense shock, which teaches too.
                   onAge: () {
                     life.ageUp();
@@ -788,17 +814,16 @@ class _HeaderBar extends StatelessWidget {
   final int money;
   final String job;
 
-  /// Drops the job segment while it is only restating the life stage.
+  /// The header's second line, as one or two lines of text.
   ///
-  /// Before there is a real career the "job" is a placeholder that means
-  /// the same thing as the stage — a Baby's job is "Newborn", a Child's is
-  /// "Student". Printing both made the line too long for the header and it
-  /// truncated, spending the space on the least informative word.
-  static String _subtitleFor({
+  /// A person with a real job gets their age and then the job on its own line.
+  /// Anybody without one gets the single "Age 8 · Child" it always had.
+  static List<String> _subtitleLines({
     required int age,
     required LifeStage stage,
     required String job,
   }) {
+    final trimmed = job.trim();
     const placeholders = <String>{
       'newborn',
       'baby',
@@ -808,40 +833,10 @@ class _HeaderBar extends StatelessWidget {
       'none',
       '',
     };
-    final trimmed = job.trim();
     if (placeholders.contains(trimmed.toLowerCase())) {
-      return 'Age $age · ${stage.label}';
+      return <String>['Age $age · ${stage.label}'];
     }
-    // Job instead of stage, not as well as. "Age 34 · Adult · Shop Assistant"
-    // wanted 180px in the 106px this column gets on a 320px phone — past even
-    // FittedLabel's scaling floor, so it truncated. And the dropped word was
-    // the useless one: a job title says "adult" more precisely than the word
-    // adult does.
-    //
-    // Then trimmed to a character budget rather than left to scale. This slot
-    // is the app bar's title column beside a name, a balance and two buttons;
-    // at 320px it is about 106px wide and even the shortened line came in two
-    // over. A budget in the *string* fits whatever the layout does, which a
-    // scaling floor does not.
-    return 'Age $age · ${_fitJob(trimmed, age)}';
-  }
-
-  /// Shortens a job title to what the header can actually show.
-  ///
-  /// Cuts on a word boundary where there is one, so "Senior Financial
-  /// Wellness Consultant" becomes "Senior Financial…" rather than "Senior
-  /// Financial We…".
-  static String _fitJob(String job, int age) {
-    // The whole line has to come in under about 19 characters at this size
-    // — measured, not guessed: "Age 34 · Shop Assistant" is 23 and lays out
-    // at 108px against the 106 available. The prefix has already spent nine
-    // of them, and the ellipsis costs one more.
-    final budget = 19 - 'Age $age · '.length;
-    if (job.length <= budget) return job;
-    final cut = job.substring(0, budget - 1);
-    final lastSpace = cut.lastIndexOf(' ');
-    final kept = lastSpace > budget ~/ 2 ? cut.substring(0, lastSpace) : cut;
-    return '$kept…';
+    return <String>['Age $age', trimmed];
   }
 
   @override
@@ -887,22 +882,28 @@ class _HeaderBar extends StatelessWidget {
               // truncated to "Age 0 · Baby · Newb…" for the privilege.
               // Drop the job while it merely restates the life stage; once
               // there is a real one ("Barista"), it earns its place.
-              FittedLabel(
-                _subtitleFor(age: age, stage: stage, job: job),
-                // A lower floor than the default 0.62. This is secondary text
-                // under a name that already has the space it needs, and a
-                // long job title on a narrow phone is better small than cut.
-                minScale: 0.5,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.6),
+              // The age, and under it the job on a line of its own. The title
+              // column is what the app bar has left after the avatar, the balance
+              // and the Town and Retire buttons, and job titles are now ladders
+              // ("Management Trainee"). Run together on one line they were cut to
+              // "Mana…"; on two, each line is short enough to show whole, and the
+              // job scales down a little before it is ever shortened.
+              ..._subtitleLines(age: age, stage: stage, job: job).map(
+                (line) => FittedLabel(
+                  line,
+                  minScale: 0.7,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    height: 1.15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: 0.66),
+                  ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
@@ -912,7 +913,7 @@ class _HeaderBar extends StatelessWidget {
             // past the screen on a 320px phone, and the balance is the one
             // thing in the header that must stay readable.
             ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 96),
+              constraints: const BoxConstraints(maxWidth: 84),
               // The balance is the number this header exists to show, so
               // it gets the face that measures legible rather than the one
               // that looks best on a poster — see `AppTheme.numeric`. The
@@ -926,16 +927,19 @@ class _HeaderBar extends StatelessWidget {
                   groupedNumber(money),
                   style: AppTheme.numeric(
                     color: const Color(0xFFFFD45C),
-                    fontSize: 19,
+                    fontSize: 17,
                     fontWeight: FontWeight.w800,
                     height: 1,
                   ),
                 ),
               ),
             ),
+            // Net worth, not cash. Cash is one of five things this number adds
+            // up, and it can sit at zero while the number beside it grows. It
+            // read as coins that fell to nothing and could not be got back.
             const Text(
-              'coins',
-              style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+              'net worth',
+              style: TextStyle(fontSize: 9, color: AppTheme.textMuted),
             ),
           ],
         ),
@@ -948,13 +952,8 @@ class _LifeFeed extends StatelessWidget {
   const _LifeFeed({
     required this.controller,
     required this.history,
-    required this.smarts,
-    required this.health,
-    required this.looks,
     required this.relationships,
     required this.dead,
-    required this.event,
-    required this.onChoose,
     required this.weather,
     required this.strictness,
     required this.outing,
@@ -962,24 +961,18 @@ class _LifeFeed extends StatelessWidget {
     required this.onOpenBudget,
     required this.onOpenMoney,
     required this.onOpenConcepts,
+    required this.onOpenPeople,
     required this.moneyKey,
-    required this.eventKey,
   });
 
-  /// Anchors for the in-game tour. The feed owns the money panel and the
-  /// event card, so it is the only place that can hand a key to either.
+  /// Anchor for the in-game tour. The feed owns the money panel, so it is the
+  /// only place that can hand a key to it.
   final GlobalKey moneyKey;
-  final GlobalKey eventKey;
 
   final ScrollController controller;
   final List<LifeLogEntry> history;
-  final int smarts;
-  final int health;
-  final int looks;
   final List<String> relationships;
   final bool dead;
-  final LifeEvent? event;
-  final ValueChanged<int> onChoose;
 
   /// This year's conditions, surfaced so the outing rules are visible
   /// rather than only showing up as a locked button.
@@ -994,6 +987,10 @@ class _LifeFeed extends StatelessWidget {
   final VoidCallback onOpenBudget;
   final VoidCallback onOpenMoney;
   final VoidCallback onOpenConcepts;
+
+  /// Opens the People tab's sheet. The feed shows who is in your life as one
+  /// line rather than as a chip for each of them.
+  final VoidCallback onOpenPeople;
 
   @override
   Widget build(BuildContext context) {
@@ -1016,48 +1013,25 @@ class _LifeFeed extends StatelessWidget {
           onOpenBudget: onOpenBudget,
           onOpenMoney: onOpenMoney,
           onOpenConcepts: onOpenConcepts,
+          onOpenWhereItGoes: () => openMoneyFlow(context, life),
         ),
         const SizedBox(height: 12),
-        _MiniStatsRow(smarts: smarts, health: health, looks: looks),
+        // Above the cost, not after it: running yourself down costs shifts,
+        // and the player should be able to see that coming while there is
+        // still a year left to act in. See `life_wellbeing.dart`.
+        _StrainBanner(life: life),
         _YourLifeStrip(flags: life.flags),
         if (relationships.isNotEmpty) ...[
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final person in relationships)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _personChip.fill,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.favorite_rounded,
-                        size: 11,
-                        color: _personChip.ink,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        person,
-                        style: TextStyle(
-                          color: _personChip.ink,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
+          // One line, not a chip per person. A family, a partner, children and
+          // friends is a dozen names, and a dozen chips filled the top of the
+          // feed and pushed the story of the year below the fold. They are all
+          // one tap away, with how close each is, in the People sheet.
+          _PeopleStrip(names: relationships, onTap: onOpenPeople),
+        ],
+        if (life.networkReading.contacts > 0) ...[
+          const SizedBox(height: 10),
+          _NetworkChip(reading: life.networkReading),
         ],
         const SizedBox(height: 14),
         if (history.isEmpty)
@@ -1077,10 +1051,6 @@ class _LifeFeed extends StatelessWidget {
               _AgeHeader(age: history[i].age),
             _FeedLine(text: history[i].text, kind: history[i].kind),
           ],
-        if (event != null) ...[
-          const SizedBox(height: 14),
-          _EventCard(key: eventKey, event: event!, onChoose: onChoose),
-        ],
         if (dead) ...[
           const SizedBox(height: 16),
           Container(
@@ -1120,6 +1090,85 @@ class _LifeFeed extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Who is in your life, as one line that opens the People sheet.
+class _PeopleStrip extends StatelessWidget {
+  const _PeopleStrip({required this.names, required this.onTap});
+
+  final List<String> names;
+  final VoidCallback onTap;
+
+  /// "Aisha and Marcus", "Aisha, Marcus and 7 more". First names only: the
+  /// surname is the player's own, and a line of three full names does not fit.
+  String get _summary {
+    final firsts = [for (final n in names) n.split(' ').first];
+    if (firsts.length == 1) return firsts.first;
+    if (firsts.length == 2) return '${firsts[0]} and ${firsts[1]}';
+    return '${firsts[0]}, ${firsts[1]} and ${firsts.length - 2} more';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final count = names.length;
+    return Semantics(
+      button: true,
+      label:
+          '$count ${count == 1 ? 'person' : 'people'} in your life. '
+          'Opens the people sheet.',
+      child: Material(
+        color: Colors.transparent,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: _personChip.fill,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: InkWell(
+            key: const ValueKey('feed-people-strip'),
+            borderRadius: BorderRadius.circular(14),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.favorite_rounded,
+                    size: 14,
+                    color: _personChip.ink,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FittedLabel(
+                      _summary,
+                      style: TextStyle(
+                        color: _personChip.ink,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$count',
+                    style: AppTheme.numeric(
+                      color: _personChip.ink,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: _personChip.ink,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1209,136 +1258,103 @@ class _YourLifeStrip extends StatelessWidget {
   }
 }
 
-/// The three character stats, as meters rather than as numbers in pills.
+/// The warning that neglect is about to cost shifts.
 ///
-/// Net worth and investments used to sit in this row too. They moved into
-/// [LifeMoneyPanel], which shows the same figures broken out by *where the
-/// money is* — repeating them here would have made money look like one more
-/// stat out of five instead of the subject of the game.
-class _MiniStatsRow extends StatelessWidget {
-  const _MiniStatsRow({
-    required this.smarts,
-    required this.health,
-    required this.looks,
-  });
+/// **Why it is on the main screen.** A penalty the player never saw coming is
+/// a punishment. This is the other half of `life_wellbeing.dart`: it climbs
+/// through "running a little low" and "you will miss about N weeks" before
+/// anything is taken, and every line ends with what to do about it. Nothing is
+/// shown for a child, an unemployed adult, or somebody who is fine.
+class _StrainBanner extends StatelessWidget {
+  const _StrainBanner({required this.life});
 
-  final int smarts;
-  final int health;
-  final int looks;
+  final LifeSimController life;
 
   @override
   Widget build(BuildContext context) {
-    const stats = <(String, String, Color)>[
-      ('\u{1F9E0}', 'Smarts', Color(0xFF69C6FF)),
-      ('\u{2764}', 'Health', Color(0xFFFF8A80)),
-      ('\u{1F31F}', 'Looks', Color(0xFFFF8FB1)),
-    ];
-    final values = <int>[smarts, health, looks];
+    final notice = life.strainNotice;
+    if (notice == null) return const SizedBox.shrink();
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Three across whenever they fit, stacked full-width below that —
-        // measured rather than guessed from a phone breakpoint, for the
-        // same reason [LifeMoneyPanel] measures its own tiles.
-        final width = constraints.maxWidth >= 300
-            ? (constraints.maxWidth - 2 * 8) / 3
-            : constraints.maxWidth;
-        return Wrap(
-          spacing: 8,
-          runSpacing: 8,
+    final severe =
+        life.jobAtRisk || life.workStrain.level == StrainLevel.severe;
+    final accent = severe ? const Color(0xFFFF8474) : const Color(0xFFF2C66D);
+    final chip = AppTheme.tintedChip(accent, alpha: 0.16);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: chip.fill,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: accent.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (var i = 0; i < stats.length; i++)
-              SizedBox(
-                width: width,
-                child: _StatMeter(
-                  emoji: stats[i].$1,
-                  label: stats[i].$2,
-                  color: stats[i].$3,
-                  value: values[i],
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Icon(
+                severe
+                    ? Icons.warning_amber_rounded
+                    : Icons.info_outline_rounded,
+                color: chip.ink,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                notice,
+                style: GoogleFonts.quicksand(
+                  color: chip.ink,
+                  fontSize: 12.5,
+                  height: 1.4,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
+            ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 }
 
-/// One stat as an emoji, a name, a number, and a filled bar.
-///
-/// The bar is what makes it a stat rather than a fact. "46" means nothing
-/// on its own; a bar not quite half full is legible to a four-year-old,
-/// which is the youngest end of this app's audience.
-class _StatMeter extends StatelessWidget {
-  const _StatMeter({
-    required this.emoji,
-    required this.label,
-    required this.color,
-    required this.value,
-  });
+/// Who you know, in one line under the stats.
+class _NetworkChip extends StatelessWidget {
+  const _NetworkChip({required this.reading});
 
-  final String emoji;
-  final String label;
-  final Color color;
-  final int value;
+  final NetworkReading reading;
 
   @override
   Widget build(BuildContext context) {
-    // Opaque, so the figure below can be measured against a known colour
-    // instead of against "whatever the feed put behind this meter".
-    final chip = AppTheme.tintedChip(color, alpha: 0.12, target: 3.0);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
-      decoration: BoxDecoration(
-        color: chip.fill,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              LifeEmoji(emoji, size: 12),
-              const SizedBox(width: 5),
-              Flexible(
-                child: FittedLabel(
-                  label,
-                  style: GoogleFonts.quicksand(
-                    color: AppTheme.textMuted,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+    final chip = AppTheme.tintedChip(const Color(0xFF58C7FF), alpha: 0.16);
+    final count = reading.contacts;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: chip.fill,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.groups_rounded, size: 13, color: chip.ink),
+            const SizedBox(width: 6),
+            Text(
+              'Network: ${reading.label} · $count '
+              '${count == 1 ? 'contact' : 'contacts'}',
+              style: TextStyle(
+                color: chip.ink,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
               ),
-              const SizedBox(width: 5),
-              Text(
-                '$value',
-                style: AppTheme.numeric(
-                  color: chip.ink,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 5),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              // The controller clamps stats to 0..100, so this cannot
-              // exceed 1 today — clamping again means a future stat with a
-              // different ceiling degrades to a full bar instead of
-              // asserting.
-              value: (value / 100).clamp(0.0, 1.0),
-              minHeight: 5,
-              backgroundColor: Colors.white.withValues(alpha: 0.12),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1473,7 +1489,7 @@ class _FeedLine extends StatelessWidget {
 /// whose cost is *not* stated in the label stay untagged: the surprise is
 /// often the lesson, and putting a number on it would give the answer away.
 class _EventCard extends StatelessWidget {
-  const _EventCard({super.key, required this.event, required this.onChoose});
+  const _EventCard({required this.event, required this.onChoose});
 
   final LifeEvent event;
   final ValueChanged<int> onChoose;
@@ -1705,13 +1721,21 @@ class _ChoiceRow extends StatelessWidget {
                 height: 26,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.18),
+                  // An opaque fill and an ink measured against it. A see-through
+                  // tint over the card read at 3.2 to 1 in the contrast audit.
+                  color: AppTheme.tintedChip(
+                    accent,
+                    on: const Color(0xFF10241E),
+                  ).fill,
                   borderRadius: BorderRadius.circular(9),
                 ),
                 child: Text(
                   _letters[index % _letters.length],
                   style: GoogleFonts.pixelifySans(
-                    color: accent,
+                    color: AppTheme.tintedChip(
+                      accent,
+                      on: const Color(0xFF10241E),
+                    ).ink,
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                   ),
@@ -1749,49 +1773,51 @@ class _ChoiceRow extends StatelessWidget {
   }
 }
 
+/// The bar along the bottom: four stat bars and five tabs.
+///
+/// **Asked for as:** the BitLife layout, *"Occupation, Assets, Relationships,
+/// Activities, and a big Age button in the middle, with four stat bars,
+/// Happiness, Health, Smarts and Looks, above them."* Each tab opens a whole
+/// screen, not a short menu.
 class _BottomMenu extends StatelessWidget {
   const _BottomMenu({
     super.key,
     required this.ageKey,
     required this.happiness,
+    required this.health,
+    required this.smarts,
+    required this.looks,
     required this.blocked,
     required this.stage,
-    required this.onCareer,
+    required this.student,
+    required this.onOccupation,
     required this.onRelationships,
     required this.onActivities,
     required this.onAssets,
     required this.onAge,
   });
 
-  /// Anchor for the in-game tour's "press this to age up" step. Passed down
-  /// rather than registered here, because the button is what the step is
-  /// about and the bar around it is a different step.
+  /// Anchor for the in-game tour's "press this to age up" step.
   final GlobalKey ageKey;
 
   final int happiness;
+  final int health;
+  final int smarts;
+  final int looks;
   final bool blocked;
 
-  /// Kept for stage-specific labelling — a child's left slot reads "School"
-  /// rather than "Career", though both open the same menu.
+  /// A child's first tab reads "School" and a working adult's reads
+  /// "Occupation", though both open the same screen.
   final LifeStage stage;
 
-  /// Each of these opens a *menu*, not a single action. That's the whole
-  /// change: five bottom-bar slots could only ever hold five things, so the
-  /// sim was mostly "press Age and react". Four categories holding four to
-  /// six actions each is what makes a turn a decision.
-  final VoidCallback onCareer;
+  /// Whether the character is at school and has no job of their own.
+  final bool student;
+
+  final VoidCallback onOccupation;
   final VoidCallback onRelationships;
   final VoidCallback onActivities;
   final VoidCallback onAssets;
   final VoidCallback onAge;
-
-  static String _moodEmoji(int happiness) => switch (happiness) {
-    >= 80 => '\u{1F604}',
-    >= 60 => '\u{1F642}',
-    >= 40 => '\u{1F610}',
-    >= 20 => '\u{1F641}',
-    _ => '\u{1F62B}',
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -1806,54 +1832,38 @@ class _BottomMenu extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-              child: Row(
-                children: [
-                  // A face that actually changes. The static "very
-                  // satisfied" icon sat next to a 12% bar and said the
-                  // opposite of the number beside it.
-                  LifeEmoji(_moodEmoji(happiness), size: 17),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: LinearProgressIndicator(
-                        value: happiness.clamp(0, 100) / 100,
-                        minHeight: 8,
-                        backgroundColor: Colors.white.withValues(alpha: 0.08),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          Color(0xFFFFD45C),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Happiness $happiness%',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+              child: LifeStatBars(
+                happiness: happiness,
+                health: health,
+                smarts: smarts,
+                looks: looks,
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+              padding: const EdgeInsets.fromLTRB(8, 2, 8, 8),
               child: Row(
                 children: [
                   Expanded(
                     child: _MenuButton(
-                      label:
-                          stage == LifeStage.baby ||
-                              stage == LifeStage.child ||
-                              stage == LifeStage.teen
-                          ? 'School'
-                          : 'Career',
+                      label: student ? 'School' : 'Occupation',
                       icon: Icons.work_rounded,
                       color: const Color(0xFF58C7FF),
-                      onTap: blocked ? null : onCareer,
+                      onTap: blocked ? null : onOccupation,
+                    ),
+                  ),
+                  Expanded(
+                    child: _MenuButton(
+                      label: 'Assets',
+                      icon: Icons.home_work_rounded,
+                      color: const Color(0xFF85EFAC),
+                      onTap: blocked ? null : onAssets,
+                    ),
+                  ),
+                  Expanded(
+                    child: _AgeButton(
+                      key: ageKey,
+                      onTap: blocked ? null : onAge,
                     ),
                   ),
                   Expanded(
@@ -1865,31 +1875,78 @@ class _BottomMenu extends StatelessWidget {
                     ),
                   ),
                   Expanded(
-                    child: _AgeButton(
-                      key: ageKey,
-                      onTap: blocked ? null : onAge,
-                    ),
-                  ),
-                  Expanded(
                     child: _MenuButton(
-                      label: 'Do',
-                      icon: Icons.self_improvement_rounded,
+                      label: 'Activities',
+                      icon: Icons.apps_rounded,
                       color: const Color(0xFFB388FF),
                       onTap: blocked ? null : onActivities,
-                    ),
-                  ),
-                  Expanded(
-                    child: _MenuButton(
-                      label: 'Money',
-                      icon: Icons.trending_up_rounded,
-                      color: const Color(0xFF85EFAC),
-                      onTap: blocked ? null : onAssets,
                     ),
                   ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The year's decision, as a pop-up with a Surprise me button.
+class _EventDialog extends StatelessWidget {
+  const _EventDialog({super.key, required this.event});
+
+  final LifeEvent event;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 24),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 460,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _EventCard(
+                  event: event,
+                  onChoose: (i) => Navigator.of(context).pop(i),
+                ),
+                const SizedBox(height: 10),
+                // Picks for you. It is the same as choosing blind, which is a
+                // fair way to play and sometimes the honest one.
+                TextButton.icon(
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pop(Random().nextInt(event.choices.length)),
+                  icon: const Icon(Icons.casino_rounded, size: 18),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.white.withValues(alpha: 0.12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 10,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  label: Text(
+                    'Surprise me!',
+                    style: GoogleFonts.pixelifySans(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -2227,679 +2284,6 @@ class _SkillRow extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// The four BitLife-style menu categories.
-enum _LifeMenu {
-  career('Career', Icons.work_rounded, Color(0xFF58C7FF)),
-  relationships('People', Icons.favorite_rounded, Color(0xFFFF8FB1)),
-  activities('Activities', Icons.self_improvement_rounded, Color(0xFFB388FF)),
-  assets('Money', Icons.trending_up_rounded, Color(0xFF85EFAC));
-
-  const _LifeMenu(this.label, this.icon, this.accent);
-  final String label;
-  final IconData icon;
-  final Color accent;
-}
-
-/// One row inside a menu: what it does, what it costs, and whether it can
-/// be tapped right now.
-class _LifeAction {
-  const _LifeAction({
-    required this.label,
-    required this.detail,
-    required this.icon,
-    required this.onTap,
-    required this.performs,
-    this.cost,
-    this.disabledReason,
-  });
-
-  final String label;
-  final String detail;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  /// The controller action this row runs, or null for a row that is not a
-  /// gated action at all — "Net worth", "Quit your job", the ideas list.
-  ///
-  /// **Required, and nullable on purpose.** This started as an optional
-  /// field and the optionality was the bug: the Money menu's "Invest 100
-  /// coins" row set `disabledReason` from whether you held 100 coins and
-  /// never asked about age, so a two-year-old got a live-looking button that
-  /// silently did nothing when pressed. Making it `required` means a new row
-  /// cannot be written without answering the question, and `null` is an
-  /// answer somebody had to type rather than a default they inherited.
-  ///
-  /// The gate itself is applied in one place — see [gatedBy] and its single
-  /// call site — so no row has to remember to apply it.
-  final LifeAction? performs;
-
-  /// Coin cost shown as a chip. Null for free actions — and several of the
-  /// best actions here are free on purpose.
-  final int? cost;
-
-  /// When set, the row is greyed out and explains *why* rather than just
-  /// being dead. Local reasons only ("Not enough coins", "You need a job
-  /// first"); the age gate is layered on top by [gatedBy].
-  final String? disabledReason;
-
-  bool get enabled => disabledReason == null;
-
-  /// This row with [life]'s age rules applied over whatever local reason it
-  /// already had.
-  ///
-  /// The age gate wins when both apply: telling a nine-year-old they are
-  /// short of coins, when the real answer is that nine-year-olds cannot do
-  /// this at all, sends them off to earn money for something that still will
-  /// not work.
-  _LifeAction gatedBy(LifeSimController life) {
-    final gate = performs == null ? null : life.gateFor(performs!);
-    if (gate == null) return this;
-    return _LifeAction(
-      label: label,
-      detail: detail,
-      icon: icon,
-      onTap: onTap,
-      performs: performs,
-      cost: cost,
-      disabledReason: gate,
-    );
-  }
-}
-
-/// A category menu. Closes itself after any action so the player sees the
-/// result land in the life feed behind it.
-class _LifeMenuSheet extends StatelessWidget {
-  const _LifeMenuSheet({
-    required this.menu,
-    required this.life,
-    required this.onSkills,
-    required this.onVolunteer,
-    required this.onPerson,
-    required this.onInvest,
-    required this.onBudget,
-    required this.onConcepts,
-    required this.onPowers,
-  });
-
-  final _LifeMenu menu;
-  final LifeSimController life;
-  final VoidCallback onSkills;
-  final VoidCallback onVolunteer;
-  final void Function(Relationship person) onPerson;
-  final VoidCallback onInvest;
-  final VoidCallback onBudget;
-  final VoidCallback onConcepts;
-  final VoidCallback onPowers;
-
-  List<_LifeAction> _actions(BuildContext context) {
-    void run(void Function() action) {
-      action();
-      Navigator.of(context).pop();
-    }
-
-    final young = life.isDependent;
-
-    return [for (final row in _rows(context, run, young)) row.gatedBy(life)];
-  }
-
-  /// The rows themselves, before the age gate.
-  ///
-  /// Split out so [_actions] can apply `gatedBy` to *every* row in one
-  /// expression. Age rules come from the controller and never from here — the
-  /// menu is a view, and duplicating the rules in it meant they went
-  /// unenforced everywhere else and drifted, which is how a three-year-old
-  /// ended up able to hit the books, work out at the gym, walk to the library
-  /// alone and buy index funds.
-  ///
-  /// So a row here only ever states its *local* reason — not enough coins, no
-  /// job to quit — and names what it performs. Nothing in this method calls
-  /// `gateFor`, and nothing in it needs to.
-  List<_LifeAction> _rows(
-    BuildContext context,
-    void Function(void Function()) run,
-    bool young,
-  ) {
-    switch (menu) {
-      case _LifeMenu.career:
-        return [
-          // First in the list on purpose. Without a job there is no salary,
-          // and without a salary the budget, the emergency fund and the
-          // paycheck line — the whole point of the game — never switch on.
-          _LifeAction(
-            // Named for the channel, not the outcome.
-            //
-            // The town has a *notice board* with cards pinned to it, which is
-            // how people actually found work before the internet and still do
-            // in a lot of places. This row is the other way: a search from
-            // wherever you are sitting. Calling them both "Look for work" made
-            // the menu read as a duplicate of the map; naming the channel
-            // makes them two things a person really does, and the town's
-            // version is better because turning up is better.
-            label: 'Search for work online',
-            detail: life.hasJob
-                ? 'You already have a job. Quit first to change track.'
-                : 'Apply from home. Smarts widens what is open to you — and '
-                      'the board in town does better than a form.',
-            icon: Icons.badge_rounded,
-            onTap: () => run(life.findJob),
-            performs: LifeAction.findJob,
-            // Only the "you already have one" half. The age half arrives
-            // from `gatedBy`, which is also where its wording lives.
-            disabledReason: life.hasJob ? 'You already have a job' : null,
-          ),
-          _LifeAction(
-            label: young ? 'Hit the books' : 'Take a course',
-            detail: young
-                ? 'Study after school. +6 Smarts.'
-                : 'Pay to learn something new. +6 Smarts.',
-            icon: Icons.menu_book_rounded,
-            cost: young ? null : 30,
-            onTap: () => run(life.study),
-            performs: LifeAction.study,
-          ),
-          _LifeAction(
-            label: 'Work harder',
-            detail: 'Extra hours for a shot at a raise. Costs happiness.',
-            icon: Icons.trending_up_rounded,
-            onTap: () => run(life.workHarder),
-            performs: null,
-            disabledReason: life.hasJob ? null : 'You need a job first',
-          ),
-          _LifeAction(
-            label: 'Ask for a raise',
-            detail: 'Asking is free. Being told no is not fun.',
-            icon: Icons.record_voice_over_rounded,
-            onTap: () => run(life.askForRaise),
-            performs: null,
-            disabledReason: life.hasJob ? null : 'You need a job first',
-          ),
-          _LifeAction(
-            label: 'Quit your job',
-            detail: 'Freedom now, no paycheck next year.',
-            icon: Icons.logout_rounded,
-            onTap: () => run(life.quitJob),
-            performs: null,
-            disabledReason: life.hasJob ? null : 'You have no job to quit',
-          ),
-        ];
-
-      case _LifeMenu.relationships:
-        final people = life.people;
-        if (people.isEmpty) {
-          return const [];
-        }
-        return [
-          // One row per person, saying where the relationship actually
-          // stands. It used to be two identical rows each — "Spend time
-          // with X" and "Buy X a gift" — with nothing about X anywhere, so
-          // four people meant eight rows that all read the same and none of
-          // which told you that one of them had not been seen in a decade.
-          for (final person in people)
-            _LifeAction(
-              label: person.name,
-              detail: person.isPresent
-                  ? '${person.kind.label} · ${person.status}'
-                        '${person.lastSeenAge == null ? '' : ' · last saw '
-                                  'them at ${person.lastSeenAge}'}'
-                  : 'You lost touch. ${person.kind.label} once.',
-              icon: person.kind.icon,
-              onTap: () {
-                Navigator.of(context).pop();
-                onPerson(person);
-              },
-              performs: null,
-            ),
-        ];
-
-      case _LifeMenu.activities:
-        return [
-          _LifeAction(
-            label: 'Go out',
-            // Said the wrong number for a long time: `haveFun` gives +6, not
-            // +10. The +10 was the value before the town existed, and when
-            // the menu version was reduced to make walking there worth it,
-            // this label was not.
-            detail:
-                'An afternoon out. +6 Happiness. The park in town is '
-                'better, and free.',
-            icon: Icons.celebration_rounded,
-            cost: young ? null : 40,
-            onTap: () => run(life.haveFun),
-            performs: LifeAction.goOut,
-            disabledReason: young || life.money >= 40
-                ? null
-                : 'Not enough coins',
-          ),
-          _LifeAction(
-            label: 'Go to the gym',
-            detail: 'Free. +8 Health, +3 Looks.',
-            icon: Icons.fitness_center_rounded,
-            onTap: () => run(life.exercise),
-            performs: LifeAction.exercise,
-          ),
-          _LifeAction(
-            label: 'Visit the library',
-            // Same again: `visitLibrary` gives +2. Reading at home is the
-            // version you do without leaving the house — worth something,
-            // and worth less than the walk.
-            detail:
-                'Read at home. +2 Smarts. The library in town pays '
-                'double.',
-            icon: Icons.local_library_rounded,
-            onTap: () => run(life.visitLibrary),
-            performs: LifeAction.library,
-          ),
-          _LifeAction(
-            label: 'See a doctor',
-            // Deliberately *not* reduced the way the library and the park
-            // were. Health is load-bearing in the hunger and illness loop --
-            // it is the only reliable way back up from a bad run -- and
-            // making the reachable-from-anywhere version worse would punish
-            // exactly the player who is already in trouble.
-            detail: 'A check-up. +12 Health.',
-            icon: Icons.medical_services_rounded,
-            cost: young ? null : 60,
-            onTap: () => run(life.visitDoctor),
-            performs: LifeAction.doctor,
-            disabledReason: young || life.money >= 60
-                ? null
-                : 'Not enough coins',
-          ),
-          _LifeAction(
-            label: 'Work a side job',
-            detail: 'Earn 40-100 coins. Costs Happiness and Health.',
-            icon: Icons.work_history_rounded,
-            onTap: () => run(life.workSideJob),
-            performs: LifeAction.sideJob,
-          ),
-          _LifeAction(
-            label: 'Volunteer',
-            // Names the trade rather than the reward. It used to read "+9
-            // Happiness, +2 Smarts" for a flat, free, repeatable button —
-            // which made it the most efficient action in the game and the one
-            // with no decision in it.
-            detail:
-                'Give your time somewhere. Costs hours, pays nothing, '
-                'and is worth it.',
-            icon: Icons.volunteer_activism_rounded,
-            onTap: onVolunteer,
-            performs: LifeAction.volunteer,
-          ),
-          // Hidden outright for under-13 accounts, not greyed out.
-          //
-          // A disabled row reading "Gamble 100 coins — you have to be 18" is
-          // still an advert for gambling sitting between the library and the
-          // gym on a four-year-old's screen, and the "18" it names is the
-          // *character's* age, which they reach in about ninety seconds of
-          // tapping. There is nothing here for a young player to be told
-          // about later, so there is nothing to leave a placeholder for.
-          if (life.allowWagering)
-            _LifeAction(
-              label: 'Gamble 100 coins',
-              detail: 'A 42% chance to double it. The odds are against you.',
-              icon: Icons.casino_rounded,
-              cost: 100,
-              onTap: () => run(life.takeARisk),
-              performs: LifeAction.gamble,
-              disabledReason: life.money >= 100 ? null : 'Not enough coins',
-            ),
-          _LifeAction(
-            label: 'Practise a skill',
-            detail: 'Music, sport, business — the career ladders.',
-            icon: Icons.auto_awesome_rounded,
-            onTap: onSkills,
-            performs: LifeAction.practise,
-          ),
-        ];
-
-      case _LifeMenu.assets:
-        return [
-          // Top of the Money menu on purpose: budgeting is the skill this
-          // app exists to teach, so it should be the first thing in here,
-          // above investing.
-          _LifeAction(
-            label: life.budgetSet ? 'Adjust your budget' : 'Set your budget',
-            detail: life.canBudget
-                ? '${life.needsPct}% needs · ${life.wantsPct}% wants · '
-                      '${life.savingsPct}% savings. '
-                      'Emergency fund: ${life.emergencyFund} '
-                      '(${life.emergencyMonths.toStringAsFixed(1)} months).'
-                : 'Split your pay across needs, wants and savings.',
-            icon: Icons.pie_chart_rounded,
-            onTap: () {
-              Navigator.of(context).pop();
-              onBudget();
-            },
-            performs: null,
-            disabledReason: life.canBudget
-                ? null
-                : 'You need a paying job first',
-          ),
-          _LifeAction(
-            label: 'Invest 100 coins',
-            detail: 'Moves cash into investments. Compounds every year.',
-            icon: Icons.savings_rounded,
-            cost: 100,
-            onTap: onInvest,
-            // This is the row the whole `performs` mechanism exists for. It
-            // used to state only `life.money >= 100` and never ask about age,
-            // so a two-year-old holding 150 coins got a button that looked
-            // live and did nothing when pressed — `invest` checks the gate
-            // itself and returns silently. A dead control that looks alive is
-            // worse than a blocked one that explains itself.
-            performs: LifeAction.invest,
-            disabledReason: life.money >= 100 ? null : 'You need 100 coins',
-          ),
-          _LifeAction(
-            label: 'Net worth',
-            detail:
-                'Cash ${life.money} + invested ${life.investments} + fund '
-                '${life.emergencyFund}'
-                '${life.debt > 0 ? ' − debt ${life.debt}' : ''} = '
-                '${life.netWorth}.',
-            icon: Icons.account_balance_wallet_rounded,
-            onTap: () => Navigator.of(context).pop(),
-            performs: null,
-          ),
-          // Directly above the ideas list, because it is what the ideas
-          // list is *for*. Meeting a concept used to end at a chip on a
-          // screen; this is the row that turns it into something.
-          _LifeAction(
-            label: life.activePowers.isEmpty
-                ? 'Use a money idea'
-                : 'Money ideas at work '
-                      '(${life.activePowers.length}/'
-                      '${LifeSimController.maxActivePowers})',
-            detail: life.armablePowers.isEmpty && life.activePowers.isEmpty
-                ? 'Meet an idea first — they show up as your choices raise '
-                      'them.'
-                : life.activePowers.isEmpty
-                ? '${life.armablePowers.length} ready to switch on.'
-                : life.activePowers.map((a) => a.power.name).join(', '),
-            icon: Icons.bolt_rounded,
-            onTap: () {
-              Navigator.of(context).pop();
-              onPowers();
-            },
-            performs: null,
-            disabledReason:
-                life.armablePowers.isEmpty && life.activePowers.isEmpty
-                ? 'No ideas met yet'
-                : null,
-          ),
-          _LifeAction(
-            label: 'Money ideas you have met',
-            detail: life.conceptsMet.isEmpty
-                ? 'Play on — ideas show up as your choices raise them.'
-                : '${life.conceptsMet.length} so far: '
-                      '${life.conceptsMet.take(3).map((c) => c.label).join(', ')}'
-                      '${life.conceptsMet.length > 3 ? '…' : ''}',
-            icon: Icons.school_rounded,
-            onTap: () {
-              Navigator.of(context).pop();
-              onConcepts();
-            },
-            performs: null,
-          ),
-        ];
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final actions = _actions(context);
-    // Stable partition rather than a sort: the order inside each group is
-    // deliberate (Look for work is first in Career because without a job
-    // none of the money systems switch on), and a comparator would scramble
-    // it for no gain.
-    final open = <_LifeAction>[
-      for (final a in actions)
-        if (a.enabled) a,
-    ];
-    final locked = <_LifeAction>[
-      for (final a in actions)
-        if (!a.enabled) a,
-    ];
-    // "When you are older" is only true when age is the *only* thing in the
-    // way. The Money menu at five locks "Set your budget" because there is no
-    // job yet and "Use a money idea" because none have been met — neither of
-    // which growing up fixes on its own, and a heading that says otherwise is
-    // telling a child to wait for something that will not arrive.
-    final onlyAgeLocks = locked.every(
-      (a) => a.performs != null && life.gateFor(a.performs!) != null,
-    );
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
-      decoration: const BoxDecoration(
-        color: AppTheme.panelStrong,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppTheme.radiusXLarge),
-        ),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(menu.icon, color: menu.accent, size: 24),
-                const SizedBox(width: 10),
-                Text(
-                  menu.label,
-                  style: GoogleFonts.pixelifySans(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            if (actions.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                child: Text(
-                  'Nobody yet. People turn up as you live — keep aging up.',
-                  style: GoogleFonts.quicksand(
-                    color: AppTheme.textMuted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              )
-            else ...[
-              for (final action in open) ...[
-                _LifeActionRow(action: action, accent: menu.accent),
-                const SizedBox(height: 8),
-              ],
-              // Everything you cannot do yet, under one heading, at the
-              // bottom.
-              //
-              // The menu used to interleave them, so a five-year-old opening
-              // Activities met eight rows of which seven were grey — reported
-              // as "half of these options are irrelevant", which is the right
-              // reading of a screen that puts one live button fourth in a
-              // list of locks.
-              //
-              // They are not removed, because at that age being told what you
-              // cannot do *is* the content: it is what makes the early years
-              // read as childhood rather than as an adult life with less
-              // money. But the things you can actually do now come first, and
-              // the rest is a list you scroll to rather than one you wade
-              // through.
-              if (locked.isNotEmpty) ...[
-                if (open.isNotEmpty) const SizedBox(height: 6),
-                Padding(
-                  padding: const EdgeInsets.only(left: 2, bottom: 8),
-                  child: Text(
-                    onlyAgeLocks ? 'When you are older' : 'Not yet',
-                    style: GoogleFonts.pixelifySans(
-                      color: AppTheme.textMuted,
-                      fontSize: 12,
-                      letterSpacing: 0.8,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                for (final action in locked) ...[
-                  _LifeActionRow(action: action, accent: menu.accent),
-                  const SizedBox(height: 8),
-                ],
-              ],
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LifeActionRow extends StatelessWidget {
-  const _LifeActionRow({required this.action, required this.accent});
-
-  final _LifeAction action;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: action.enabled ? 1 : 0.45,
-      child: InkWell(
-        onTap: action.enabled ? action.onTap : null,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppTheme.panel,
-            borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-            border: Border.all(color: accent.withValues(alpha: 0.30)),
-          ),
-          child: Row(
-            children: [
-              Icon(action.icon, color: accent, size: 22),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            action.label,
-                            style: GoogleFonts.pixelifySans(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        // Says out loud that the town has a door for this.
-                        //
-                        // Reported as the menu and the map being a confusing
-                        // mix, and they were: the library, the clinic, the
-                        // park and the job board are all *places*, and the
-                        // menu carried a button for each with nothing saying
-                        // they were the same thing. Two routes to one
-                        // outcome is fine — the map is not always open to
-                        // you, and making somebody walk across a town to be
-                        // treated would be a worse game. Two routes with no
-                        // acknowledgement that they meet is what made it
-                        // read as duplication.
-                        if (action.performs != null &&
-                            LifeSimController.hasTownEquivalent(
-                              action.performs!,
-                            )) ...[
-                          const SizedBox(width: 7),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 1,
-                            ),
-                            decoration: BoxDecoration(
-                              color: accent.withValues(alpha: 0.16),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              'better in town',
-                              style: GoogleFonts.quicksand(
-                                color: accent,
-                                fontSize: 9.5,
-                                letterSpacing: 0.4,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    // What the walk is worth, said in the row rather than
-                    // left in a comment.
-                    //
-                    // The badge used to read "in town" and stop there, which
-                    // answers none of the questions a player has. Reported
-                    // three times as the menu and the map duplicating each
-                    // other — they never were duplicates, one just pays more,
-                    // and nothing on screen said which.
-                    if (action.enabled &&
-                        action.performs != null &&
-                        LifeSimController.townBonusFor(action.performs!) !=
-                            null) ...[
-                      Text(
-                        LifeSimController.townBonusFor(action.performs!)!,
-                        style: AppTheme.numeric(
-                          color: accent.withValues(alpha: 0.95),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                    ],
-                    Text(
-                      action.disabledReason ?? action.detail,
-                      style: GoogleFonts.quicksand(
-                        color: action.enabled
-                            ? AppTheme.textMuted
-                            : const Color(0xFFFF8474),
-                        fontSize: 12,
-                        height: 1.3,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (action.cost != null) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFD45C).withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    '-${action.cost}',
-                    style: AppTheme.numeric(
-                      color: const Color(0xFFFFD45C),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -3662,6 +3046,75 @@ class _ThisYearPanel extends StatelessWidget {
       target: 3.0,
     );
 
+    // Asked for as: the Life menu is "hard to navigate... unlike Finance
+    // Brawl, which is quite addicting." This panel was the worst offender —
+    // a full card of weather, family and a consequence box, shown at full
+    // size on *every* year whether or not any of it was worth a second
+    // look. Most years nothing here is: the weather is fine, the family is
+    // whatever it always is, and the character can go out. So the common
+    // case is one line — the same weight as [_PeopleStrip] below it — and
+    // the full card, with the two fact tiles and the explanation, is kept
+    // for the year it is actually earning its space: one where the
+    // character *cannot* go out, and the reason is worth a sentence rather
+    // than an icon.
+    if (outing.allowed) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: PixelFrameStyle.slate.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              weather.icon,
+              size: 15,
+              color: AppTheme.legibleOn(
+                weather.accent,
+                PixelFrameStyle.slate.surface,
+                target: 3.0,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: FittedLabel(
+                weather.label,
+                style: GoogleFonts.quicksand(
+                  color: Colors.white.withValues(alpha: 0.82),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Icon(
+              Icons.family_restroom_rounded,
+              size: 15,
+              color: const Color(0xFF85EFAC),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: FittedLabel(
+                strictness.label,
+                style: GoogleFonts.quicksand(
+                  color: Colors.white.withValues(alpha: 0.82),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Icon(
+              Icons.directions_walk_rounded,
+              size: 15,
+              color: outingChip.ink,
+            ),
+          ],
+        ),
+      );
+    }
+
     return PixelPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3718,18 +3171,14 @@ class _ThisYearPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
-                  outing.allowed
-                      ? Icons.directions_walk_rounded
-                      : (outing.reason?.icon ?? Icons.lock_rounded),
+                  outing.reason?.icon ?? Icons.lock_rounded,
                   size: 15,
                   color: outingChip.ink,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    outing.allowed
-                        ? 'You can head into town whenever you like.'
-                        : outing.message,
+                    outing.message,
                     style: GoogleFonts.quicksand(
                       color: Colors.white.withValues(alpha: 0.86),
                       fontSize: 11.5,
@@ -4291,274 +3740,4 @@ class _Tag extends StatelessWidget {
       ),
     ),
   );
-}
-
-/// One person: where the relationship stands, and the two things you can do.
-///
-/// **Why closeness is a bar and a word, not a number.** "Drifting" is what a
-/// nine-year-old needs to read; the bar is what makes the change visible when
-/// they come back a year later. A bare `34` would do neither.
-///
-/// Stateful because both actions change the person underneath it, and the
-/// sheet has to redraw rather than sit on a stale copy.
-class _PersonSheet extends StatefulWidget {
-  const _PersonSheet({required this.life, required this.person});
-
-  final LifeSimController life;
-  final Relationship person;
-
-  @override
-  State<_PersonSheet> createState() => _PersonSheetState();
-}
-
-class _PersonSheetState extends State<_PersonSheet> {
-  late Relationship _person = widget.person;
-
-  void _refresh() {
-    for (final p in widget.life.people) {
-      if (p.name == _person.name) {
-        setState(() => _person = p);
-        return;
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final life = widget.life;
-    final person = _person;
-    final chip = AppTheme.tintedChip(person.kind.accent, alpha: 0.16);
-    final years = life.age - person.metAtAge;
-    final lastSeen = person.lastSeenAge;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
-      decoration: const BoxDecoration(
-        color: AppTheme.panelStrong,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppTheme.radiusXLarge),
-        ),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(person.kind.icon, color: person.kind.accent, size: 26),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FittedLabel(
-                        person.name,
-                        style: GoogleFonts.pixelifySans(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Text(
-                        years <= 0
-                            ? '${person.kind.label} - you just met'
-                            : '${person.kind.label} - $years '
-                                  'year${years == 1 ? '' : 's'}',
-                        style: GoogleFonts.quicksand(
-                          color: AppTheme.textMuted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: chip.fill,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    person.status,
-                    style: GoogleFonts.pixelifySans(
-                      color: person.statusColour,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                value: person.closeness / 100,
-                minHeight: 9,
-                backgroundColor: Colors.black.withValues(alpha: 0.3),
-                valueColor: AlwaysStoppedAnimation<Color>(person.statusColour),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              person.isPresent
-                  ? 'Closeness fades a little every year you do not see them. '
-                        'Time brings it back faster than anything you can buy.'
-                  : 'You lost touch. It is not too late, but it takes more '
-                        'than a present.',
-              style: GoogleFonts.quicksand(
-                color: AppTheme.textMuted,
-                fontSize: 12,
-                height: 1.4,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (lastSeen != null && lastSeen < life.age) ...[
-              const SizedBox(height: 6),
-              Text(
-                life.age - lastSeen == 1
-                    ? 'Last saw them a year ago.'
-                    : 'Last saw them ${life.age - lastSeen} years ago.',
-                style: GoogleFonts.quicksand(
-                  color: person.statusColour,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            _PersonAction(
-              label: 'Spend the day together',
-              detail:
-                  'Free. +8 Happiness, and the biggest lift to how close you '
-                  'are.',
-              icon: Icons.emoji_people_rounded,
-              accent: const Color(0xFF85EFAC),
-              onTap: () {
-                life.spendTimeWith(person.name);
-                _refresh();
-              },
-            ),
-            const SizedBox(height: 9),
-            _PersonAction(
-              label: 'Buy them a gift',
-              detail:
-                  'Costs 50 coins and moves things less than a day together '
-                  'does. That comparison is the point.',
-              icon: Icons.card_giftcard_rounded,
-              accent: const Color(0xFFFFD45C),
-              cost: 50,
-              disabledReason: life.money >= 50 ? null : 'Not enough coins',
-              onTap: () {
-                life.giveGift(person.name);
-                _refresh();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PersonAction extends StatelessWidget {
-  const _PersonAction({
-    required this.label,
-    required this.detail,
-    required this.icon,
-    required this.accent,
-    required this.onTap,
-    this.cost,
-    this.disabledReason,
-  });
-
-  final String label;
-  final String detail;
-  final IconData icon;
-  final Color accent;
-  final VoidCallback onTap;
-  final int? cost;
-  final String? disabledReason;
-
-  @override
-  Widget build(BuildContext context) {
-    final blocked = disabledReason != null;
-    return Opacity(
-      opacity: blocked ? 0.45 : 1,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-          onTap: blocked ? null : onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppTheme.panel,
-              borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-              border: Border.all(color: accent.withValues(alpha: 0.32)),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: accent, size: 22),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FittedLabel(
-                        label,
-                        style: GoogleFonts.pixelifySans(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        blocked ? disabledReason! : detail,
-                        style: GoogleFonts.quicksand(
-                          color: blocked
-                              ? const Color(0xFFF2C66D)
-                              : AppTheme.textMuted,
-                          fontSize: 11.5,
-                          height: 1.35,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (cost != null) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0x22FFD45C),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      '-$cost',
-                      style: AppTheme.numeric(
-                        color: const Color(0xFFFFD45C),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
