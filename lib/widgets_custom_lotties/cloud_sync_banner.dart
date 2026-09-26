@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers_that_updates_stats/user_stats_controller.dart';
+import '../screens_minigames_admin_etc/auth/auth_screen.dart';
+import '../navigation_tools_and_animation/fade_page_route.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Warns when progress is saving to the device but not reaching Supabase.

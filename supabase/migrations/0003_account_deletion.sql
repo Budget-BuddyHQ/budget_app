@@ -45,7 +45,7 @@ begin
   -- players with a friend entry pointing at an account that no longer exists.
   delete from public.friendships where user_id = uid or friend_id = uid;
 
-  delete from public.user_stats where user_id = uid;
+  delete from public.user_stats where id = uid;
   delete from public.app_feedback where user_id = uid;
 
   -- Last, because everything above is keyed on it: removing the auth row

@@ -1339,13 +1339,22 @@ alter view public.leaderboard set (security_invoker = false);
       // this project yet. Worth its own message, because the fix is one SQL
       // file and the generic "try again" would send somebody hunting for a
       // network problem that is not there.
+      // Match on the precise Postgres code only. The previous check also
+      // matched any error whose text mentioned the function name -- which
+      // includes practically every internal error raised *inside* it too
+      // (Postgres appends a "PL/pgSQL function delete_own_account() line N"
+      // context to those), so a real bug inside the function (like the
+      // user_id/id column mismatch this migration just fixed) was being
+      // silently misreported as "never set up" instead of surfacing as a
+      // real failure worth investigating.
       final text = error.toString();
-      if (text.contains('42883') || text.contains('delete_own_account')) {
-        return 'Account deletion is not set up on the server yet. '
-            'Email us and we will remove it by hand.';
+      if (text.contains('42883')) {
+        return 'Account deletion is not set up on the server yet. Email '
+            'budgetbuddyhq@gmail.com and we will remove it by hand.';
       }
-      return 'Could not delete your account. Check your connection and '
-          'try again.';
+      return 'Could not delete your account. Email budgetbuddyhq@gmail.com '
+          'and we will remove it by hand, or check your connection and try '
+          'again.';
     }
     // Local state goes regardless of what the server said, because the
     // account it belonged to is gone.
