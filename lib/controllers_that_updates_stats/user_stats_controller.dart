@@ -2165,13 +2165,26 @@ class UserStatsController extends ChangeNotifier {
   /// a fixed amount on every buy and down on every sell — so the curve rose
   /// whenever you traded, even while you were losing money. Callers pass the
   /// genuine `cash + market value` so the line can actually fall.
-  Future<void> recordNetWorth(int netWorth) async {
+  Future<void> recordNetWorth(int netWorth, {bool force = false}) async {
     if (netWorth <= 0) {
       return;
     }
-    final series = List<double>.from(realPortfolioHistory);
+    final rawHistory = _stats.portfolioHistory;
+    final rawStamps = _stats.portfolioHistoryAt;
+    final stampOffset = rawHistory.length - rawStamps.length;
+    final series = <double>[];
+    final stamps = <DateTime>[];
+    for (var i = 0; i < rawHistory.length; i++) {
+      final value = rawHistory[i];
+      if (!value.isFinite || value < 1) continue;
+      series.add(value);
+      final stampIndex = i - stampOffset;
+      if (stampIndex >= 0 && stampIndex < rawStamps.length) {
+        stamps.add(rawStamps[stampIndex]);
+      }
+    }
     // Ignore no-op ticks so idle polling can't flood the curve with duplicates.
-    if (series.isNotEmpty && (series.last - netWorth).abs() < 1) {
+    if (!force && series.isNotEmpty && (series.last - netWorth).abs() < 1) {
       return;
     }
     series.add(netWorth.toDouble());
@@ -2181,12 +2194,6 @@ class UserStatsController extends ChangeNotifier {
     // could ever show a real date, which is what "let me see further than a
     // day" was actually asking for.
     final now = DateTime.now().toUtc();
-    final stamps = List<DateTime>.from(_stats.portfolioHistoryAt);
-    // Older saves have values but no stamps. Pad the front so the two lists
-    // line up by index rather than silently mis-pairing every point.
-    while (stamps.length < series.length - 1) {
-      stamps.insert(0, now);
-    }
     stamps.add(now);
 
     // Keep the curve bounded, but drop the *oldest* points rather than

@@ -208,12 +208,17 @@ class _StockMarketPageState extends State<StockMarketPage>
   /// Polls live prices while the board is open, so quotes and charts move
   /// without the player hitting refresh.
   Timer? _livePoll;
+  List<double>? _dailyPortfolioHistory;
+  List<DateTime>? _dailyPortfolioHistoryAt;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _tick(force: true));
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _tick(force: true);
+      await _loadDailyPortfolioHistory();
+    });
     // Two seconds behind the cached proxy, five without one. The proxy makes
     // the difference: it holds vendor responses for twelve seconds, so the
     // board's poll rate stops being the same thing as Finnhub's call limit.
@@ -289,19 +294,26 @@ class _StockMarketPageState extends State<StockMarketPage>
     }
     if (!mounted) return;
 
-    await market.refreshSeries(
-      kLiveSymbols.where((s) => s.common).map((s) => s.symbol).toList(),
-      force: force,
-    );
+    // The initial load reserves Twelve Data's eight free credits for the
+    // actual portfolio history below. Card sparklines are decorative and can
+    // use their lightweight quote fallback until the next regular refresh.
+    if (!force) {
+      await market.refreshSeries(
+        kLiveSymbols.where((s) => s.common).map((s) => s.symbol).toList(),
+      );
+    }
     if (!mounted) return;
 
-    await _settleWorkingOrders();
+    final fills = await _settleWorkingOrders();
     if (!mounted) return;
-    await _recordNetWorth();
+    await _recordNetWorth(force: fills > 0);
+    if (fills > 0) {
+      await _loadDailyPortfolioHistory();
+    }
   }
 
   /// Snapshots cash + live market value onto the equity curve.
-  Future<void> _recordNetWorth() async {
+  Future<void> _recordNetWorth({bool force = false}) async {
     final controller = context.read<UserStatsController>();
     final market = context.read<MarketDataService>();
     final stats = controller.stats;
@@ -313,7 +325,10 @@ class _StockMarketPageState extends State<StockMarketPage>
       if (quote == null || !quote.isValid) continue;
       marketValue += entry.value * coinsForUsd(quote.current);
     }
-    await controller.recordNetWorth((stats.gold + marketValue).round());
+    await controller.recordNetWorth(
+      (stats.gold + marketValue).round(),
+      force: force,
+    );
   }
 
   /// Opens the full-screen order ticket (chart, side, order type, price and
@@ -447,17 +462,123 @@ class _StockMarketPageState extends State<StockMarketPage>
             }
           : const Color(0xFFFFB084),
     );
+    if (result.success && context.mounted) {
+      await _recordNetWorth(force: true);
+      await _loadDailyPortfolioHistory();
+    }
+  }
+
+  /// Rebuilds the tracked portfolio period from daily closes, so days when the
+  /// app was not open still appear on the chart. Holdings and cash are replayed
+  /// backwards through the stock ledger for each date.
+  Future<void> _loadDailyPortfolioHistory() async {
+    if (!mounted) return;
+    final stats = context.read<UserStatsController>().stats;
+    final now = DateTime.now();
+    final trackedAt = <DateTime>[
+      ...stats.portfolioHistoryAt,
+      for (final transaction in stats.transactions)
+        if (_parseStockOrder(transaction) != null) transaction.createdAt,
+    ];
+    final earliestTracking = trackedAt.isEmpty
+        ? now.subtract(const Duration(days: 90))
+        : trackedAt.reduce((first, next) => first.isBefore(next) ? first : next);
+    // Daily candles remain practical through six months. Beyond that Twelve
+    // Data changes to weekly bars, which is too coarse for a portfolio P&L.
+    final historyStart = earliestTracking.isBefore(
+      now.subtract(const Duration(days: 180)),
+    )
+        ? now.subtract(const Duration(days: 180))
+        : earliestTracking;
+    final range = now.difference(historyStart).inDays > 90
+        ? ChartRange.month6
+        : ChartRange.month3;
+    final orders = stats.transactions
+        .map(_parseStockOrder)
+        .whereType<_StockOrder>()
+        .where((order) => order.createdAt.isAfter(historyStart))
+        .toList(growable: false);
+    final symbols = <String>{
+      for (final key in stats.holdings.keys)
+        if (key.startsWith('stock_')) key.substring('stock_'.length),
+      for (final order in orders) order.symbol,
+    }.toList(growable: false);
+    if (symbols.isEmpty) return;
+
+    final market = context.read<MarketDataService>();
+    final series = await Future.wait([
+      for (final symbol in symbols) market.fetchCandles(symbol, range),
+    ]);
+    if (!mounted) return;
+
+    final candlesBySymbol = <String, List<Candle>>{
+      for (var i = 0; i < symbols.length; i++) symbols[i]: series[i],
+    };
+    final days = <DateTime>{
+      for (final candles in candlesBySymbol.values)
+        for (final candle in candles)
+          if (!candle.time.isBefore(historyStart))
+            DateTime(candle.time.year, candle.time.month, candle.time.day),
+    }.toList()..sort();
+    if (days.length < 2) return;
+
+    final values = <double>[];
+    for (final day in days) {
+      final atClose = day.add(const Duration(days: 1));
+      var cash = stats.gold.toDouble();
+      final lots = <String, double>{
+        for (final entry in stats.holdings.entries)
+          if (entry.key.startsWith('stock_')) entry.key.substring(6): entry.value,
+      };
+      // Gold rewards, spending, and stock fills all travel through the same
+      // ledger. Reversing every later transaction gives this day's cash,
+      // rather than treating today's balance as if it existed all period.
+      for (final transaction in stats.transactions) {
+        if (transaction.createdAt.toLocal().isAfter(atClose)) {
+          cash -= transaction.amount;
+        }
+      }
+      for (final order in orders) {
+        if (!order.createdAt.toLocal().isAfter(atClose)) continue;
+        final quantity = _stockOrderQuantity(order);
+        if (quantity <= 0) continue;
+        final direction = order.isBuy
+            ? -1.0
+            : order.isShort
+            ? 1.0
+            : order.isCover
+            ? -1.0
+            : 1.0;
+        lots[order.symbol] = (lots[order.symbol] ?? 0) + direction * quantity;
+      }
+      var value = cash;
+      for (final symbol in symbols) {
+        Candle? candle;
+        for (final candidate in candlesBySymbol[symbol] ?? const <Candle>[]) {
+          if (candidate.time.isAfter(atClose)) break;
+          candle = candidate;
+        }
+        if (candle != null) {
+          value += (lots[symbol] ?? 0) * coinsForUsd(candle.close);
+        }
+      }
+      values.add(value);
+    }
+    setState(() {
+      _dailyPortfolioHistory = values;
+      _dailyPortfolioHistoryAt = days;
+    });
   }
 
   /// Fills any resting orders the live price has crossed. Called after each
   /// price refresh. Pulls a quote for working-order symbols that aren't in the
   /// scheduled watch list so limit orders on searched stocks settle too.
-  Future<void> _settleWorkingOrders() async {
-    if (!mounted) return;
+  Future<int> _settleWorkingOrders() async {
+    if (!mounted) return 0;
     final controller = context.read<UserStatsController>();
     final market = context.read<MarketDataService>();
     final orders = controller.stats.workingOrders;
-    if (orders.isEmpty) return;
+    if (orders.isEmpty) return 0;
 
     final lastBySymbol = <String, int>{};
     for (final order in orders) {
@@ -471,7 +592,7 @@ class _StockMarketPageState extends State<StockMarketPage>
         lastBySymbol[order.symbol] = coinsForUsd(quote.current);
       }
     }
-    if (lastBySymbol.isEmpty || !mounted) return;
+    if (lastBySymbol.isEmpty || !mounted) return 0;
 
     final fills = await controller.settleWorkingOrders(lastBySymbol);
     if (fills > 0 && mounted) {
@@ -485,6 +606,7 @@ class _StockMarketPageState extends State<StockMarketPage>
         accent: const Color(0xFF85EFAC),
       );
     }
+    return fills;
   }
 
   /// Pulls a quote for a symbol found through search (which is almost never
@@ -548,6 +670,16 @@ class _StockMarketPageState extends State<StockMarketPage>
               sum + (stats.holdings['stock_${quote.symbol}'] ?? 0.0),
         );
         final totalAssets = stats.gold + totalMarketValue;
+        final historicalValues = _dailyPortfolioHistory;
+        final historicalTimes = _dailyPortfolioHistoryAt;
+        final portfolioHistory =
+            historicalValues != null && historicalTimes != null
+            ? <double>[...historicalValues, totalAssets.toDouble()]
+            : statsController.realPortfolioHistory;
+        final portfolioHistoryAt =
+            historicalValues != null && historicalTimes != null
+            ? <DateTime>[...historicalTimes, DateTime.now()]
+            : statsController.portfolioHistoryTimes;
         final weightedChange = quotes.fold<double>(0, (sum, quote) {
           final lots = stats.holdings['stock_${quote.symbol}'] ?? 0.0;
           return sum + (quote.changePercent * lots);
@@ -777,15 +909,16 @@ class _StockMarketPageState extends State<StockMarketPage>
                       },
                     ),
                     _PnlTab(
-                      portfolioHistory: statsController.realPortfolioHistory,
-                      portfolioHistoryAt: statsController.portfolioHistoryTimes,
+                      portfolioHistory: portfolioHistory,
+                      portfolioHistoryAt: portfolioHistoryAt,
                       netWorth: totalAssets,
                       totalEarned: totalUnrealised.round(),
                     ),
                     _AnalyticsTab(
                       quotes: quotes,
                       stats: stats,
-                      equityCurve: statsController.realPortfolioHistory,
+                      equityCurve: portfolioHistory,
+                      equityCurveAt: portfolioHistoryAt,
                       totalMarketValue: totalMarketValue,
                       totalUnrealised: totalUnrealised.round(),
                     ),
@@ -2890,6 +3023,16 @@ _StockOrder? _parseStockOrder(LedgerTransaction transaction) {
   );
 }
 
+/// Stock ledger descriptions all record the executed quantity. Keep the
+/// parser here beside [_parseStockOrder] so historical portfolio replay uses
+/// exactly the same set of transactions as the Orders tab.
+double _stockOrderQuantity(_StockOrder order) {
+  final match = RegExp(
+    r'(?:Bought|Closed|Borrowed and sold|Bought back) ([0-9]+(?:\.[0-9]+)?) share',
+  ).firstMatch(order.description);
+  return match == null ? 0 : double.tryParse(match.group(1)!) ?? 0;
+}
+
 class _OrdersTab extends StatelessWidget {
   const _OrdersTab({
     required this.transactions,
@@ -3344,7 +3487,7 @@ class _PnlTab extends StatelessWidget {
       children: [
         const _SectionTitle(
           title: 'P&L',
-          subtitle: 'Your real net worth, recorded every time prices refresh.',
+          subtitle: 'Your real net worth, recorded after price updates and trades.',
         ),
         const SizedBox(height: 14),
         Container(
@@ -3464,7 +3607,12 @@ List<Candle> _flatCandles(
 }) {
   final stamps = times ?? const <DateTime>[];
   final offset = values.length - stamps.length;
-  final now = DateTime.now();
+  // Older saves only have values. Spread those legacy points across days so
+  // the chart communicates their sequence without falsely claiming they all
+  // occurred minutes ago on the current date.
+  final fallbackEnd = stamps.isNotEmpty
+      ? stamps.last.toLocal()
+      : DateTime.now();
   final startingPrice = basePrice ?? (values.isNotEmpty ? values.first : 0.0);
 
   return [
@@ -3472,7 +3620,7 @@ List<Candle> _flatCandles(
       Candle(
         time: (i - offset) >= 0 && (i - offset) < stamps.length
             ? stamps[i - offset].toLocal()
-            : now.subtract(Duration(minutes: values.length - i)),
+            : fallbackEnd.subtract(Duration(days: values.length - i)),
         open: startingPrice,
         high: math.max(startingPrice, values[i]),
         low: math.min(startingPrice, values[i]),
@@ -3593,6 +3741,7 @@ class _AnalyticsTab extends StatelessWidget {
     required this.quotes,
     required this.stats,
     required this.equityCurve,
+    required this.equityCurveAt,
     required this.totalMarketValue,
     required this.totalUnrealised,
   });
@@ -3600,6 +3749,7 @@ class _AnalyticsTab extends StatelessWidget {
   final List<_TradeQuote> quotes;
   final UserStats stats;
   final List<double> equityCurve;
+  final List<DateTime> equityCurveAt;
   final int totalMarketValue;
   final int totalUnrealised;
 
@@ -3763,7 +3913,7 @@ class _AnalyticsTab extends StatelessWidget {
                 border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
               child: InteractivePriceChart(
-                candles: _flatCandles(equityCurve),
+                candles: _flatCandles(equityCurve, times: equityCurveAt),
                 mode: ChartMode.line,
                 accent: const Color(0xFF4993FF),
               ),

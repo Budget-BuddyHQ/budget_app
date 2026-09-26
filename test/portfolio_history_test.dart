@@ -1,5 +1,8 @@
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_ending.dart';
+import 'package:budget_app/controllers_that_updates_stats/user_stats_controller.dart';
+import 'package:budget_app/services_backend_and_other_services/supabase_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Mirrors `_flatCandles`' pairing rule so it can be tested without reaching
 /// into a private helper on a 3,500-line screen.
@@ -19,6 +22,8 @@ List<DateTime?> pairFromEnd(int valueCount, List<DateTime> stamps) {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('net-worth history pairs values with times', () {
     final t0 = DateTime.utc(2026, 8, 20, 9);
 
@@ -62,6 +67,17 @@ void main() {
 
     test('an empty series pairs to an empty list', () {
       expect(pairFromEnd(0, const <DateTime>[]), isEmpty);
+    });
+
+    test('a forced snapshot preserves a trade at unchanged net worth', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final controller = UserStatsController(service: SupabaseService.instance);
+
+      await controller.recordNetWorth(2000);
+      await controller.recordNetWorth(2000, force: true);
+
+      expect(controller.realPortfolioHistory, hasLength(2));
+      expect(controller.portfolioHistoryTimes, hasLength(2));
     });
   });
 
