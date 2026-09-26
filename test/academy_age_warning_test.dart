@@ -9,9 +9,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// A controller carrying a chosen age band, without a save round-trip.
-UserStatsController _controllerForBand(AgeBand band) {
+UserStatsController _controllerForBand(
+  AgeBand band, {
+  List<String> completedLessons = const <String>[],
+}) {
   final controller = UserStatsController(service: SupabaseService.instance);
   final base = UserStats.defaults('test_user');
   controller.seedStatsForTest(
@@ -20,6 +24,7 @@ UserStatsController _controllerForBand(AgeBand band) {
         ...base.spendingHabits,
         ProfileKeys.ageBand: band.id,
         ProfileKeys.onboardingComplete: true,
+        'completed_lessons': completedLessons,
       },
     ),
   );
@@ -90,6 +95,113 @@ void main() {
 
     expect(find.text('Older than you'), findsNothing);
     expect(find.text('Your age group'), findsNothing);
+  });
+
+  testWidgets('skip-ahead warning can be hidden for the current unit', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    tester.view.physicalSize = const Size(1200, 6000);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+
+    final controller = _controllerForBand(AgeBand.age9to12);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_academyFor(controller));
+    await tester.pump();
+
+    final secondLesson = find.text('Things Cost Money');
+    await tester.ensureVisible(secondLesson);
+    await tester.tap(secondLesson);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text("Don't show again for this unit"), findsOneWidget);
+    await tester.tap(find.text("Don't show again for this unit"));
+    await tester.pump();
+    await tester.tap(find.text('Continue Anyway!'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final preferences = await SharedPreferences.getInstance();
+    expect(
+      preferences.getBool('skip_ahead_warning_hidden_unit_10'),
+      isTrue,
+    );
+
+    await tester.pageBack();
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
+    final lockedQuiz = find.text('Quick Quiz').first;
+    await tester.ensureVisible(lockedQuiz);
+    await tester.tap(lockedQuiz);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Skipping ahead?'), findsNothing);
+  });
+
+  testWidgets('age warning can be hidden for the current unit', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    tester.view.physicalSize = const Size(1200, 6000);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+
+    final readerStage = AgeBand.age9to12.maxPlausibleStage!;
+    final olderUnitIndex = lessonUnits.indexWhere(
+      (unit) => unit.ageStage.minAge > readerStage.minAge,
+    );
+    expect(olderUnitIndex, greaterThan(0));
+    final olderUnit = lessonUnits[olderUnitIndex];
+    final completedLessons = lessonUnits
+        .take(olderUnitIndex)
+        .expand((unit) => unit.lessons)
+        .map((lesson) => lesson.id)
+        .toList();
+    final controller = _controllerForBand(
+      AgeBand.age9to12,
+      completedLessons: completedLessons,
+    );
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_academyFor(controller));
+    await tester.pump();
+
+    final firstLesson = find.text(olderUnit.lessons.first.title).last;
+    await tester.ensureVisible(firstLesson);
+    await tester.tap(firstLesson);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final warningDialog = find.byType(AlertDialog);
+    expect(warningDialog, findsOneWidget);
+    expect(
+      find.descendant(
+        of: warningDialog,
+        matching: find.textContaining('Written for '),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text("Don't show again for this unit"), findsOneWidget);
+    await tester.tap(find.text("Don't show again for this unit"));
+    await tester.pump();
+    await tester.tap(find.text('Read it anyway'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final preferences = await SharedPreferences.getInstance();
+    expect(
+      preferences.getBool('above_age_warning_hidden_${olderUnit.id}'),
+      isTrue,
+    );
+
+    await tester.pageBack();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(firstLesson);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(AlertDialog), findsNothing);
   });
 
   test('the warning yardstick is the top of the band, not its middle', () {

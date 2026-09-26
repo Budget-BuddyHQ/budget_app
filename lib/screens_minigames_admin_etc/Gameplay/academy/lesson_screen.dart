@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../constants/app_assets.dart';
 import '../../../custom_made_widgets/unit_row_item.dart';
@@ -163,90 +164,124 @@ class _LessonScreenState extends State<LessonScreen> {
   /// Prompts the user before opening a locked lesson out of sequence.
   /// Returns false if the player chooses to go back or dismisses the sheet.
   Future<bool> _confirmSkipAhead(Lesson lesson) async {
+    final preferences = await SharedPreferences.getInstance();
+    final preferenceKey = 'skip_ahead_warning_hidden_${lesson.unitId}';
+    if (preferences.getBool(preferenceKey) ?? false) return true;
+
+    var dontShowAgain = false;
     final answer = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppTheme.panel,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: Color(0x55FFB84D)),
-        ),
-        title: Row(
-          children: [
-            const Icon(
-              Icons.alt_route_rounded,
-              color: Color(0xFFFFB84D),
-              size: 24,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Skipping ahead?',
-                style: GoogleFonts.pixelifySans(
-                  color: const Color(0xFFFFB84D),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          backgroundColor: AppTheme.panel,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: const BorderSide(color: Color(0x55FFB84D)),
+          ),
+          title: Row(
+            children: [
+              const Icon(
+                Icons.alt_route_rounded,
+                color: Color(0xFFFFB84D),
+                size: 24,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Skipping ahead?',
+                  style: GoogleFonts.pixelifySans(
+                    color: const Color(0xFFFFB84D),
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Lesson chosen:',
+                style: GoogleFonts.quicksand(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '"${lesson.title}"',
+                style: GoogleFonts.quicksand(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Lessons are cumulative, meaning that they build upon each other. Skipping ahead may mean you lose important background knowledge.',
+                style: GoogleFonts.quicksand(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 8),
+              CheckboxListTile(
+                value: dontShowAgain,
+                onChanged: (value) => setDialogState(
+                  () => dontShowAgain = value ?? false,
+                ),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                controlAffinity: ListTileControlAffinity.leading,
+                activeColor: const Color(0xFFFFB84D),
+                checkColor: const Color(0xFF3A2400),
+                title: Text(
+                  "Don't show again for this unit",
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white.withValues(alpha: 0.7),
+              ),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (dontShowAgain) {
+                  await preferences.setBool(preferenceKey, true);
+                }
+                if (dialogContext.mounted) {
+                  Navigator.of(dialogContext).pop(true);
+                }
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFFFB84D),
+                foregroundColor: const Color(0xFF3A2400),
+              ),
+              child: Text(
+                'Continue Anyway!',
+                style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+              ),
             ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Lesson chosen:',
-              style: GoogleFonts.quicksand(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              '"${lesson.title}"',
-              style: GoogleFonts.quicksand(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Lessons are cumulative, meaning that they build upon each other. Skipping ahead may mean you lose important background knowledge.',
-              style: GoogleFonts.quicksand(
-                color: Colors.white.withValues(alpha: 0.85),
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white.withValues(alpha: 0.7),
-            ),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFFFB84D),
-              foregroundColor: const Color(0xFF3A2400),
-            ),
-            child: Text(
-              'Continue Anyway!',
-              style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
       ),
     );
     return answer ?? false;
@@ -255,69 +290,109 @@ class _LessonScreenState extends State<LessonScreen> {
   /// Asks before opening a unit written for an older band. Returns false if
   /// the player backs out or dismisses the sheet.
   Future<bool> _confirmAboveAge(LessonUnit unit) async {
+    final preferences = await SharedPreferences.getInstance();
+    final preferenceKey = 'above_age_warning_hidden_${unit.id}';
+    if (preferences.getBool(preferenceKey) ?? false) return true;
+
+    var dontShowAgain = false;
     final answer = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppTheme.panel,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: Color(0x55FFB84D)),
-        ),
-        title: Row(
-          children: [
-            const Icon(
-              Icons.warning_amber_rounded,
-              color: Color(0xFFFFB84D),
-              size: 24,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Written for ${unit.ageStage.label.toLowerCase()}',
-                style: AppTheme.numeric(
-                  color: const Color(0xFFFFB84D),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          backgroundColor: AppTheme.panel,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: const BorderSide(color: Color(0x55FFB84D)),
+          ),
+          title: Row(
+            children: [
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFFFB84D),
+                size: 24,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Written for ${unit.ageStage.label.toLowerCase()}',
+                  style: AppTheme.numeric(
+                    color: const Color(0xFFFFB84D),
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${unit.title.split(':').last.trim()} assumes money and choices from '
+                'an older age group — things like a salary, taxes, or a workplace '
+                'plan. Nothing is stopping you reading it, but the numbers are a '
+                'preview of later, not a description of now.',
+                style: GoogleFonts.quicksand(
+                  color: Colors.white.withValues(alpha: 0.82),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 8),
+              CheckboxListTile(
+                value: dontShowAgain,
+                onChanged: (value) => setDialogState(
+                  () => dontShowAgain = value ?? false,
+                ),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                controlAffinity: ListTileControlAffinity.leading,
+                activeColor: const Color(0xFFFFB84D),
+                checkColor: const Color(0xFF3A2400),
+                title: Text(
+                  "Don't show again for this unit",
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white.withValues(alpha: 0.7),
+              ),
+              child: const Text(
+                'Go back',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (dontShowAgain) {
+                  await preferences.setBool(preferenceKey, true);
+                }
+                if (dialogContext.mounted) {
+                  Navigator.of(dialogContext).pop(true);
+                }
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFFFB84D),
+                foregroundColor: const Color(0xFF3A2400),
+              ),
+              child: Text(
+                'Read it anyway',
+                style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
               ),
             ),
           ],
         ),
-        content: Text(
-          '${unit.title.split(':').last.trim()} assumes money and choices from '
-          'an older age group — things like a salary, taxes, or a workplace '
-          'plan. Nothing is stopping you reading it, but the numbers are a '
-          'preview of later, not a description of now.',
-          style: GoogleFonts.quicksand(
-            color: Colors.white.withValues(alpha: 0.82),
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white.withValues(alpha: 0.7),
-            ),
-            child: const Text(
-              'Go back',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFFFB84D),
-              foregroundColor: const Color(0xFF3A2400),
-            ),
-            child: Text(
-              'Read it anyway',
-              style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
       ),
     );
     return answer ?? false;

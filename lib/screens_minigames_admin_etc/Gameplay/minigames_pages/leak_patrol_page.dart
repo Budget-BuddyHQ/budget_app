@@ -320,9 +320,8 @@ class _LeakPatrolPageState extends State<LeakPatrolPage>
       ConfettiBurst.show(context);
     }
 
-    await context
-        .read<UserStatsController>()
-        .applyChallengePayload(<String, dynamic>{
+    final controller = context.read<UserStatsController>();
+    await controller.applyChallengePayload(<String, dynamic>{
           'gold_earned': payout,
           'xp_earned': result.caught * 2,
           'literacy_points_earned': result.caught > 0 ? 2 : 0,
@@ -331,6 +330,10 @@ class _LeakPatrolPageState extends State<LeakPatrolPage>
               'Caught ${result.caught}, cancelled ${result.wronglyTapped} real '
               'charges by mistake.',
         });
+    await controller.recordArcadeRun(
+      gameId: 'leak_patrol',
+      score: result.coinsSaved,
+    );
   }
 
   @override

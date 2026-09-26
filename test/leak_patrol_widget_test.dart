@@ -70,7 +70,14 @@ void main() {
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(host());
+    final controller = UserStatsController(service: SupabaseService.instance);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      ChangeNotifierProvider<UserStatsController>.value(
+        value: controller,
+        child: const MaterialApp(home: LeakPatrolPage()),
+      ),
+    );
     await tester.pump();
     await tester.tap(find.text('Start'));
     await tester.pump();
@@ -87,5 +94,6 @@ void main() {
       reason: 'the clock never ended the round',
     );
     expect(find.textContaining('gold'), findsWidgets);
+    expect(controller.stats.arcadePlays('leak_patrol'), 1);
   });
 }
