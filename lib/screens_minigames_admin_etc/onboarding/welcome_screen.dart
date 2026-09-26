@@ -3,10 +3,14 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../constants/app_assets.dart';
+import '../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../widgets_custom_lotties/map_backdrop.dart';
 import '../../navigation_tools_and_animation/fade_page_route.dart';
 import '../auth/auth_screen.dart';
+import '../Gameplay/dashboard/dashboard_shell.dart';
+import 'guest_terms_sheet.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -32,6 +36,23 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   void dispose() {
     _floatController.dispose();
     super.dispose();
+  }
+
+  Future<void> _continueAsGuest(BuildContext context) async {
+    HapticFeedback.lightImpact();
+    final accepted = await GuestTermsSheet.show(context);
+    if (accepted != true || !context.mounted) {
+      return;
+    }
+    final controller = context.read<UserStatsController>();
+    await controller.continueAsGuest();
+    await controller.recordPrivacyAcceptance();
+    if (!context.mounted) {
+      return;
+    }
+    Navigator.of(context).pushReplacement(
+      FadePageRoute<void>(builder: (_) => const DashboardShell()),
+    );
   }
 
   @override
@@ -156,6 +177,19 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             );
                           },
                           primary: false,
+                        ),
+                        const SizedBox(height: 20),
+                        TextButton(
+                          onPressed: () => _continueAsGuest(context),
+                          child: Text(
+                            'Just Looking? Play as a Guest',
+                            style: GoogleFonts.quicksand(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: 0.75),
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
                         ),
                       ],
                     ),

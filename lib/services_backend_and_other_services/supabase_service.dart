@@ -1172,6 +1172,21 @@ alter view public.leaderboard set (security_invoker = false);
   User? get currentUser => _existingClient?.auth.currentUser;
   String? get currentUserId => currentUser?.id;
 
+  // Whether this device has chosen to play as a guest -- a signed-out
+  // session that persists across restarts, unlike the ordinary signed-out
+  // state a brand-new install starts in. Kept as its own flag rather than
+  // inferred from "signed out with cached data present", so a player who
+  // signs out of a real account is never mistaken for a returning guest.
+  static const String _localGuestModeKey = 'budget_buddy_local_guest_mode';
+  bool _isLocalGuest = false;
+  bool get isLocalGuest => _isLocalGuest;
+
+  Future<void> setLocalGuestMode(bool value) async {
+    final preferences = await _ensurePreferences();
+    _isLocalGuest = value;
+    await preferences.setBool(_localGuestModeKey, value);
+  }
+
   /// The raw client, for the rare screen (e.g. Admin) that needs to run its
   /// own queries directly. Null — never throws — when Supabase was never
   /// initialized (no keys configured), same as every other accessor here.
@@ -1198,6 +1213,7 @@ alter view public.leaderboard set (security_invoker = false);
 
     _isReady = true;
     _preferences = await SharedPreferences.getInstance();
+    _isLocalGuest = _preferences?.getBool(_localGuestModeKey) ?? false;
     _profileImageBucket = profileImageBucket?.trim().isNotEmpty == true
         ? profileImageBucket!.trim()
         : defaultProfileImageBucket;
@@ -1473,7 +1489,11 @@ alter view public.leaderboard set (security_invoker = false);
     final fallback = cached ?? UserStats.defaults(userId);
     _memoryCache[userId] = fallback;
 
-    if (!_isSupabaseConnected) {
+    // A guest (or any other non-real id) can never have a row here -- the
+    // table only grants select/insert/update to `authenticated`, and this
+    // id was never signed in. Skip the doomed round-trip rather than log a
+    // permission error on every guest launch.
+    if (!_isSupabaseConnected || !isRealUserId(userId)) {
       return fallback;
     }
 

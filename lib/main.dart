@@ -157,8 +157,11 @@ class _AppBootstrapGate extends StatelessWidget {
 
         if (user == null) {
           // With no backend configured the app runs local-only, straight into
-          // the game. With one, a signed-out player starts at the welcome page.
-          return service.isSupabaseConnected
+          // the game. With one, a signed-out player starts at the welcome
+          // page -- unless this device already chose to play as a guest, in
+          // which case it goes straight back into the game too, same as a
+          // returning signed-in player would.
+          return (service.isSupabaseConnected && !service.isLocalGuest)
               ? const WelcomeScreen()
               : const DashboardShell();
         }

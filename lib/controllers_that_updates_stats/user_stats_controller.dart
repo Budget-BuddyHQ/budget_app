@@ -107,6 +107,16 @@ class UserStatsController extends ChangeNotifier {
   /// When cloud sync last failed, for the "last synced" line in the warning.
   DateTime? get lastCloudSyncFailure => _lastCloudSyncFailure;
   bool get isAuthenticated => _service.currentUser != null;
+
+  // A signed-out player who has deliberately chosen to play without an
+  // account, as opposed to one who simply hasn't reached the welcome screen
+  // yet. See `continueAsGuest`.
+  bool get isGuest => !isAuthenticated && _service.isLocalGuest;
+
+  Future<void> continueAsGuest() async {
+    await _service.setLocalGuestMode(true);
+    notifyListeners();
+  }
   List<AvatarSkin> get unlockedAvatarSkins {
     final unlockedSkinIds = _stats.unlockedSkins.toSet();
     return budgetBuddySkins
@@ -2085,7 +2095,12 @@ class UserStatsController extends ChangeNotifier {
     String? statusMessage,
   }) async {
     _userId = 'user_123';
-    _stats = UserStats.defaults(_userId);
+    // Read back whatever this device already cached for the placeholder
+    // user, rather than blowing it away with the canned starter profile
+    // every cold start. `loadUserStats` already falls back to
+    // `UserStats.defaults()` itself when there is nothing cached, so a
+    // genuinely new device is unaffected.
+    _stats = await _service.loadUserStats(_userId);
     _isLoading = false;
     _isSaving = false;
     _statusMessage = statusMessage;
