@@ -172,7 +172,11 @@ class _MainNavigationState extends State<MainNavigation> {
     if (!_tutorialResolved) {
       return;
     }
-    if (controller.isLoading || !controller.isAuthenticated) {
+    // Used to also require `isAuthenticated`, which meant a guest -- and a
+    // local-only-build player with no account system at all -- never got
+    // asked for an age band. Age-appropriate content filtering matters
+    // exactly as much for either of those as for a signed-in player.
+    if (controller.isLoading) {
       return;
     }
 

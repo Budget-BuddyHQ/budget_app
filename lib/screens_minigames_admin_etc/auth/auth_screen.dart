@@ -16,6 +16,7 @@ import '../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../navigation_tools_and_animation/fade_page_route.dart';
 import '../../constants/app_assets.dart';
 import '../../constants/privacy_policy.dart';
+import '../../services_backend_and_other_services/supabase_service.dart';
 import '../../services_backend_and_other_services/turnstile_challenge_server.dart';
 import 'windows_turnstile_view.dart';
 import '../../widgets_custom_lotties/custom_button.dart';
@@ -57,6 +58,15 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   bool _acceptedTerms = false;
   bool _isConfiguringTurnstile = false;
   String? _captchaToken;
+
+  // Set once sign-up succeeds but needs email confirmation. Non-null keeps
+  // the player on this screen with a "check your email" card and a resend
+  // option, instead of the previous dead end of a single toast and the same
+  // blank form. Cleared on mode switch so it can't linger onto a later
+  // sign-in attempt.
+  String? _pendingConfirmationEmail;
+  bool _resendingConfirmation = false;
+  DateTime? _confirmationResendCooldownUntil;
 
   // true when turnstile just cant produce a token (render fail, script
   // didnt load etc). without this "no token yet" and "never coming" look
@@ -104,6 +114,21 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   // widget directly.
   bool get _hasEmbeddedChallenge =>
       _supportsEmbeddedWebView || _usesWindowsWebView || kIsWeb;
+
+  // True in exactly the window where tapping submit used to produce the
+  // "Still checking, please wait" toast: an embedded challenge is in play,
+  // it hasn't produced a token yet, and the unavailable-fallback hasn't
+  // kicked in either. Disabling the button for this window instead of
+  // reacting to the premature tap means that toast is now unreachable --
+  // the button simply isn't tappable until there is something to submit.
+  // Doesn't apply to the Windows browser-popup fallback, which is meant to
+  // be interactive at submit time.
+  bool get _turnstileStillLoading =>
+      _hasEmbeddedChallenge &&
+      !_usesExternalSecurityCheck &&
+      _isTurnstileConfigured &&
+      (_captchaToken == null || _captchaToken!.isEmpty) &&
+      !_captchaUnavailable;
 
   String get _turnstileHtml =>
       '''
@@ -400,11 +425,59 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     }
 
     if (result.requiresEmailConfirmation) {
+      setState(() {
+        _pendingConfirmationEmail = _emailController.text.trim();
+      });
       return;
     }
 
     Navigator.of(context).pushReplacement(
       FadePageRoute<void>(builder: (_) => const DashboardShell()),
+    );
+  }
+
+  bool get _canResendConfirmation {
+    final until = _confirmationResendCooldownUntil;
+    return !_resendingConfirmation &&
+        (until == null || DateTime.now().isAfter(until));
+  }
+
+  Future<void> _resendConfirmationEmail() async {
+    final email = _pendingConfirmationEmail;
+    if (email == null || !_canResendConfirmation) {
+      return;
+    }
+    HapticFeedback.lightImpact();
+    setState(() => _resendingConfirmation = true);
+
+    final error = await SupabaseService.instance.resendConfirmationEmail(
+      email,
+    );
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _resendingConfirmation = false;
+      // A 60s client-side cooldown regardless of outcome -- Supabase's own
+      // resend limit is roughly this order of magnitude per address, so
+      // this mostly just stops the button from re-triggering the exact rate
+      // limit it's meant to help avoid.
+      _confirmationResendCooldownUntil = DateTime.now().add(
+        const Duration(seconds: 60),
+      );
+    });
+
+    GameToast.show(
+      context,
+      title: error == null ? 'Email sent' : 'Could not resend',
+      message: error ?? 'Check $email for a new confirmation link.',
+      icon: error == null
+          ? Icons.mark_email_read_rounded
+          : Icons.warning_amber_rounded,
+      accent: error == null
+          ? const Color(0xFF85EFAC)
+          : const Color(0xFFFF8A80),
     );
   }
 
@@ -478,6 +551,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       _mode = nextMode;
       _submitting = false;
       _captchaToken = null;
+      _pendingConfirmationEmail = null;
     });
     if (!_usesExternalSecurityCheck) {
       unawaited(_configureTurnstile());
@@ -748,6 +822,15 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                               ),
                             ),
                             const SizedBox(height: 24),
+                            if (_pendingConfirmationEmail != null) ...[
+                              _PendingConfirmationCard(
+                                email: _pendingConfirmationEmail!,
+                                resending: _resendingConfirmation,
+                                canResend: _canResendConfirmation,
+                                onResend: _resendConfirmationEmail,
+                              ),
+                              const SizedBox(height: 20),
+                            ],
                             AnimatedSwitcher(
                               duration: const Duration(milliseconds: 250),
                               switchInCurve: Curves.easeOutCubic,
@@ -956,11 +1039,15 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                             ),
                             const SizedBox(height: 18),
                             CustomButton(
-                              label: _isLogin
+                              label: _turnstileStillLoading
+                                  ? 'Verifying...'
+                                  : _isLogin
                                   ? 'Enter Budget Buddy'
                                   : 'Create Account',
-                              isLoading: _submitting,
-                              onPressed: _submit,
+                              isLoading: _submitting || _turnstileStillLoading,
+                              onPressed: _turnstileStillLoading
+                                  ? null
+                                  : _submit,
                               prefixIcon: Icon(
                                 _isLogin
                                     ? Icons.login_rounded
@@ -1090,6 +1177,89 @@ class _AuthHero extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Shown after sign-up succeeds but needs email confirmation. Replaces what
+/// used to be a single toast and a dead end -- the form stays filled in
+/// behind this, and there is finally a way to ask for a second email.
+class _PendingConfirmationCard extends StatelessWidget {
+  const _PendingConfirmationCard({
+    required this.email,
+    required this.resending,
+    required this.canResend,
+    required this.onResend,
+  });
+
+  final String email;
+  final bool resending;
+  final bool canResend;
+  final VoidCallback onResend;
+
+  @override
+  Widget build(BuildContext context) {
+    const accent = Color(0xFF85EFAC);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: accent.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.mark_email_unread_rounded, color: accent),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Check your email',
+                  style: GoogleFonts.pixelifySans(
+                    color: accent,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'We sent a confirmation link to $email. Open it to finish '
+            'creating your account.',
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: canResend ? onResend : null,
+              style: TextButton.styleFrom(foregroundColor: accent),
+              child: Text(
+                resending
+                    ? 'Sending...'
+                    : canResend
+                    ? 'Resend confirmation email'
+                    : 'Sent -- you can resend again shortly',
+                style: GoogleFonts.quicksand(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  decoration: canResend
+                      ? TextDecoration.underline
+                      : TextDecoration.none,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

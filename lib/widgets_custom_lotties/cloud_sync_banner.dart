@@ -16,8 +16,11 @@ import 'package:google_fonts/google_fonts.dart';
 /// only way to notice was to sign in on another device and find the account
 /// empty.
 ///
-/// Renders nothing in the healthy case, and nothing when signed out — saving
-/// only to the device is the correct behaviour there, not a fault.
+/// Renders nothing in the healthy case. A signed-out guest gets a different
+/// banner from this same widget (see below) rather than nothing at all --
+/// that used to be correct when "signed out" only ever meant "hasn't reached
+/// the welcome screen yet", but guest mode made it a real, possibly
+/// long-lived state worth actually warning about.
 class CloudSyncBanner extends StatelessWidget {
   const CloudSyncBanner({super.key, this.compact = false});
 
@@ -26,11 +29,68 @@ class CloudSyncBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<UserStatsController>();
+
+    if (controller.isGuest) {
+      return _Banner(
+        compact: compact,
+        icon: Icons.person_outline_rounded,
+        accent: const Color(0xFF7FD8F2),
+        title: 'Playing as a guest',
+        body:
+            'Your progress is only on this device -- not everything is '
+            'guaranteed to be saved if you clear app data, switch phones, or '
+            'uninstall. Create a free account any time to keep it safe.',
+        actionLabel: 'Sign Up',
+        onAction: () {
+          Navigator.of(context).push(
+            FadePageRoute<void>(
+              builder: (_) => const AuthScreen(mode: AuthMode.signUp),
+            ),
+          );
+        },
+      );
+    }
+
     if (controller.cloudSyncHealthy) {
       return const SizedBox.shrink();
     }
 
-    const accent = Color(0xFFFFB84D);
+    return _Banner(
+      compact: compact,
+      icon: Icons.cloud_off_rounded,
+      accent: const Color(0xFFFFB84D),
+      title: 'Not syncing to the cloud',
+      body:
+          'Your progress is safe on this device, but the last save did not '
+          'reach the server -- it will not appear if you sign in somewhere '
+          'else. Syncing resumes automatically.',
+      actionLabel: 'Retry',
+      onAction: controller.isSaving ? null : controller.refresh,
+    );
+  }
+}
+
+class _Banner extends StatelessWidget {
+  const _Banner({
+    required this.compact,
+    required this.icon,
+    required this.accent,
+    required this.title,
+    required this.body,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  final bool compact;
+  final IconData icon;
+  final Color accent;
+  final String title;
+  final String body;
+  final String actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(bottom: compact ? 10 : 14),
       padding: EdgeInsets.all(compact ? 12 : 14),
@@ -42,14 +102,14 @@ class CloudSyncBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.cloud_off_rounded, color: accent, size: 20),
+          Icon(icon, color: accent, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Not syncing to the cloud',
+                  title,
                   style: GoogleFonts.pixelifySans(
                     color: accent,
                     fontSize: 13,
@@ -58,9 +118,7 @@ class CloudSyncBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Your progress is safe on this device, but the last save did '
-                  'not reach the server — it will not appear if you sign in '
-                  'somewhere else. Syncing resumes automatically.',
+                  body,
                   style: TextStyle(
                     color: accent.withValues(alpha: 0.85),
                     fontSize: 11.5,
@@ -73,7 +131,7 @@ class CloudSyncBanner extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           TextButton(
-            onPressed: controller.isSaving ? null : controller.refresh,
+            onPressed: onAction,
             style: TextButton.styleFrom(
               foregroundColor: accent,
               padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -81,7 +139,7 @@ class CloudSyncBanner extends StatelessWidget {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: Text(
-              'Retry',
+              actionLabel,
               style: GoogleFonts.pixelifySans(
                 fontWeight: FontWeight.w700,
                 fontSize: 12,

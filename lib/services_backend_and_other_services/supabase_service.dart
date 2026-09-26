@@ -1262,6 +1262,39 @@ alter view public.leaderboard set (security_invoker = false);
     );
   }
 
+  /// Re-sends the sign-up confirmation email. Returns null on success, or a
+  /// player-facing message on failure -- same convention as
+  /// [deleteOwnAccount].
+  ///
+  /// Supabase's own built-in mailer allows only a handful of sends per hour
+  /// per project and is explicitly not meant for production (see
+  /// `supabase/config.toml`), so a rate-limit error here is expected during
+  /// testing, not a sign anything is broken -- the message below says so
+  /// rather than surfacing Supabase's raw error text.
+  Future<String?> resendConfirmationEmail(String email) async {
+    if (!_isSupabaseConnected) {
+      return 'You need to be online to resend the confirmation email.';
+    }
+    try {
+      await Supabase.instance.client.auth.resend(
+        type: OtpType.signup,
+        email: email.trim().toLowerCase(),
+      );
+      return null;
+    } on AuthException catch (error) {
+      debugPrint('Resend confirmation email failed: $error');
+      final message = error.message.toLowerCase();
+      if (message.contains('rate limit') || message.contains('security')) {
+        return 'Too many attempts for now -- wait a few minutes, or check '
+            'your spam folder for the first email.';
+      }
+      return 'Could not resend right now. Try again shortly.';
+    } catch (error) {
+      debugPrint('Resend confirmation email threw: $error');
+      return 'Could not resend right now. Try again shortly.';
+    }
+  }
+
   Future<AuthResponse> signInWithPassword({
     required String email,
     required String password,
@@ -1641,6 +1674,38 @@ alter view public.leaderboard set (security_invoker = false);
       stats: defaultStats,
       syncState: syncState,
       createdProfile: true,
+      migratedLegacyProfile: false,
+    );
+  }
+
+  /// Re-keys a guest's local-only progress onto a freshly-created real
+  /// account, the same shape as the legacy-email migration above
+  /// (`copyWith(id: ...)` + `saveUserStats`) -- called only when
+  /// `loadOrCreateUserStatsForUser` reports `createdProfile: true`, i.e.
+  /// nothing already existed for this id and no legacy-email row matched,
+  /// so this can never clobber a real pre-existing account's history.
+  Future<ProvisionedUserStats> migrateGuestStatsToUser({
+    required UserStats guestStats,
+    required User user,
+    String? preferredUsername,
+  }) async {
+    final resolvedUsername = _resolveUsername(user, preferredUsername);
+    final email = user.email?.trim().toLowerCase();
+    final migratedStats = guestStats.copyWith(
+      id: user.id,
+      username: resolvedUsername,
+      spendingHabits: <String, dynamic>{
+        ...guestStats.spendingHabits,
+        'username': resolvedUsername,
+        if (email != null) 'email': email,
+      },
+      updatedAt: DateTime.now().toUtc(),
+    );
+    final syncState = await saveUserStats(migratedStats);
+    return ProvisionedUserStats(
+      stats: migratedStats,
+      syncState: syncState,
+      createdProfile: false,
       migratedLegacyProfile: false,
     );
   }
