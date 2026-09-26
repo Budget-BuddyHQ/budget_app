@@ -841,7 +841,7 @@ class MarketDataService extends ChangeNotifier {
       return null;
     }
 
-    final proxied = _proxyUri({'op': 'quote', 'symbol': symbol});
+    final proxied = _proxyUri({'op': 'twelve_quote', 'symbol': symbol});
     final directUri = Uri.https('api.twelvedata.com', '/quote', {
       'symbol': symbol,
       'apikey': key ?? '',

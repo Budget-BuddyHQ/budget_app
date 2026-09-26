@@ -21,6 +21,22 @@ class _RecordingClient extends http.BaseClient {
 }
 
 String _quoteBody(http.BaseRequest request) {
+  if (request.url.queryParameters['op'] == 'twelve_quote') {
+    return jsonEncode({
+      'symbol': 'AAPL',
+      'name': 'Apple Inc',
+      'exchange': 'NASDAQ',
+      'close': '190.0',
+      'open': '188.0',
+      'high': '192.0',
+      'low': '186.0',
+      'previous_close': '188.0',
+      'volume': '50000000',
+      'average_volume': '60000000',
+      'market_cap': '3000000000000',
+      'fifty_two_week': {'low': '160.0', 'high': '210.0'},
+    });
+  }
   if (request.url.queryParameters['op'] == 'candles' ||
       request.url.host == 'api.twelvedata.com') {
     return jsonEncode({
@@ -107,6 +123,19 @@ void main() {
           reason: 'a vendor token header went out on ${request.url}',
         );
       }
+    }, skip: proxyConfigured ? false : 'SUPABASE_URL not configured');
+
+    test('company details use the Twelve Data proxy operation', () async {
+      final client = _RecordingClient(_quoteBody);
+      final market = MarketDataService(client: client);
+
+      final details = await market.fetchTwelveDataQuoteDetails('AAPL');
+
+      expect(details, isNotNull);
+      expect(details!.name, 'Apple Inc');
+      expect(client.requests, hasLength(1));
+      expect(client.requests.single.url.queryParameters['op'], 'twelve_quote');
+      expect(client.requests.single.url.queryParameters['symbol'], 'AAPL');
     }, skip: proxyConfigured ? false : 'SUPABASE_URL not configured');
 
     test('falls back to direct calls when Supabase is not configured', () {
