@@ -185,9 +185,18 @@ class MinigamesPage extends StatelessWidget {
   }
 
   Future<void> _openStockMarket(BuildContext context) async {
+    final controller = context.read<UserStatsController>();
     await Navigator.of(
       context,
     ).push(FadePageRoute(builder: (_) => const StockMarketPage()));
+    if (!context.mounted) return;
+
+    final stats = controller.stats;
+    final history = controller.realPortfolioHistory;
+    await controller.recordArcadeRun(
+      gameId: 'market_board',
+      score: history.isEmpty ? stats.gold : history.last.round(),
+    );
   }
 
   Future<void> _openFinanceBrawl(BuildContext context) async {
@@ -576,6 +585,12 @@ class _GameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scoreText = best != null
+        ? '${game.scoreLabel}: $best  •  $plays ${plays == 1 ? 'run' : 'runs'}'
+        : plays == 0
+        ? 'Not played yet'
+        : '$plays ${plays == 1 ? 'run' : 'runs'} played';
+
     return Semantics(
       button: true,
       label: 'Play ${game.title}',
@@ -657,9 +672,7 @@ class _GameCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  best == null
-                      ? 'Not played yet'
-                      : '${game.scoreLabel}: $best  •  $plays ${plays == 1 ? 'run' : 'runs'}',
+                  scoreText,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
