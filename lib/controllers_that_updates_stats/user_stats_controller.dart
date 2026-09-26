@@ -117,6 +117,25 @@ class UserStatsController extends ChangeNotifier {
     await _service.setLocalGuestMode(true);
     notifyListeners();
   }
+
+  /// Wipes a guest's local-only progress and returns to a fresh, un-chosen
+  /// signed-out state. The guest-mode equivalent of "Delete my account" --
+  /// there is no `auth.users` row to delete, so this clears the same local
+  /// cache a real deletion would, and clears the guest flag so the next
+  /// cold start lands back on the welcome screen instead of skipping to it.
+  Future<void> eraseGuestDataAndRestart() async {
+    await _subscription?.cancel();
+    _subscription = null;
+    await _service.clearCachedUserStats(userId: _userId);
+    await _service.setLocalGuestMode(false);
+    _userId = 'user_123';
+    _stats = UserStats.defaults(_userId);
+    _isLoading = false;
+    _isSaving = false;
+    _statusMessage = 'Local progress erased.';
+    notifyListeners();
+  }
+
   List<AvatarSkin> get unlockedAvatarSkins {
     final unlockedSkinIds = _stats.unlockedSkins.toSet();
     return budgetBuddySkins
@@ -1988,10 +2007,38 @@ class UserStatsController extends ChangeNotifier {
     String? preferredUsername,
     required String successMessage,
   }) async {
-    final provisioned = await _service.loadOrCreateUserStatsForUser(
+    // Captured before the provision call touches `_stats` at all -- a guest
+    // signing in to a *pre-existing* real account (not creating a new one)
+    // must never let this local snapshot overwrite that account's real
+    // cloud history, which is exactly why the migration below only runs
+    // when `createdProfile` comes back true.
+    final wasGuest = isGuest;
+    final guestStats = wasGuest ? _stats : null;
+
+    var provisioned = await _service.loadOrCreateUserStatsForUser(
       user: user,
       preferredUsername: preferredUsername,
     );
+
+    var migratedGuestProfile = false;
+    if (guestStats != null && provisioned.createdProfile) {
+      provisioned = await _service.migrateGuestStatsToUser(
+        guestStats: guestStats,
+        user: user,
+        preferredUsername: preferredUsername,
+      );
+      migratedGuestProfile = true;
+    }
+
+    if (wasGuest) {
+      await _service.setLocalGuestMode(false);
+      if (migratedGuestProfile) {
+        // The stale pre-migration snapshot has to go, or the next person to
+        // tap "Continue as Guest" on this device inherits the last guest's
+        // (now-registered) progress.
+        await _service.clearCachedUserStats(userId: 'user_123');
+      }
+    }
 
     _userId = user.id;
     _stats = provisioned.stats;
@@ -2002,7 +2049,9 @@ class UserStatsController extends ChangeNotifier {
 
     await _attachRealtimeStream();
 
-    final message = provisioned.migratedLegacyProfile
+    final message = migratedGuestProfile
+        ? '$successMessage Your guest progress was saved to this account.'
+        : provisioned.migratedLegacyProfile
         ? '$successMessage Your existing profile was linked to this account.'
         : successMessage;
 

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:budget_app/controllers_that_updates_stats/app_settings_controller.dart';
 import 'package:budget_app/controllers_that_updates_stats/daily_plan_controller.dart';
 import 'package:budget_app/controllers_that_updates_stats/money_habit_controller.dart';
@@ -162,5 +164,122 @@ void main() {
     // small thing. If it comes back it has to come back working.
     expect(find.text('Notifications'), findsNothing);
     expect(find.textContaining('Quest reminders'), findsNothing);
+  });
+
+  group('a guest has never signed in, so the bottom of Profile is different', () {
+    // A guest has no `auth.users` row and no session -- offering "Log Out"
+    // would either do nothing or, worse, look like it is doing something.
+    // And "Delete my account" implies there is a server-side account to
+    // delete, which for a guest there is not. Both have to be replaced, not
+    // just hidden.
+    setUp(() async {
+      await SupabaseService.instance.setLocalGuestMode(true);
+    });
+
+    tearDown(() async {
+      // `SupabaseService.instance` outlives this test group.
+      await SupabaseService.instance.setLocalGuestMode(false);
+    });
+
+    testWidgets(
+      'offers creating an account and erasing local data instead',
+      (tester) async {
+        await tester.pumpWidget(wrap(const ProfileScreen()));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // Scroll to the lower of the two guest-only entries -- scrolling
+        // just far enough for the upper one can leave this one sitting past
+        // the bottom edge, unbuilt, the same trap `openDialog` above already
+        // has to work around.
+        final eraseEntry = find.text('Erase local data and start over');
+        await tester.scrollUntilVisible(
+          eraseEntry,
+          280,
+          scrollable: find.byType(Scrollable).first,
+          maxScrolls: 60,
+        );
+        await tester.ensureVisible(eraseEntry);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Create an Account'), findsOneWidget);
+        expect(eraseEntry, findsOneWidget);
+        expect(
+          find.text('Log Out'),
+          findsNothing,
+          reason: 'a guest has no session to sign out of',
+        );
+        expect(
+          find.text('Delete my account'),
+          findsNothing,
+          reason: 'a guest has no server-side account to delete',
+        );
+      },
+    );
+
+    testWidgets('erasing is disabled until the word is typed', (
+      tester,
+    ) async {
+      await tester.pumpWidget(wrap(const ProfileScreen()));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final entry = find.text('Erase local data and start over');
+      await tester.scrollUntilVisible(
+        entry,
+        280,
+        scrollable: find.byType(Scrollable).first,
+        maxScrolls: 60,
+      );
+      await tester.ensureVisible(entry);
+      await tester.pumpAndSettle();
+      await tester.tap(entry);
+      await tester.pumpAndSettle();
+
+      final button = find.widgetWithText(FilledButton, 'Erase and start over');
+      expect(button, findsOneWidget);
+      expect(
+        tester.widget<FilledButton>(button).onPressed,
+        isNull,
+        reason: 'a single tap must not be able to wipe local progress',
+      );
+
+      await tester.enterText(find.byType(TextField), 'RESET');
+      await tester.pump();
+      expect(tester.widget<FilledButton>(button).onPressed, isNotNull);
+    });
+  });
+
+  group('the delete_own_account() SQL function', () {
+    // **The bug this exists to prevent, which had already happened.**
+    //
+    // `user_stats`'s only identity column is `id` -- it has never had a
+    // `user_id` column. The function's cleanup line read `where user_id =
+    // uid`, which Postgres rejects with `42703 undefined_column` the moment
+    // the function runs, so every deletion attempt failed. The client-side
+    // error handling then made it worse: it pattern-matched the raw error
+    // text for `'delete_own_account'`, which appears in the CONTEXT line of
+    // *any* error thrown inside this function, so the real column bug was
+    // being misreported as "account deletion is not set up on the server".
+    //
+    // This is a source check, not a database test, because the migration is
+    // run by hand in the Supabase SQL editor and a wrong column name is
+    // silent until a real user taps delete.
+    final sql = File(
+      'supabase/migrations/0003_account_deletion.sql',
+    ).readAsStringSync();
+
+    test('deletes user_stats by its actual primary key', () {
+      expect(
+        sql.contains('delete from public.user_stats where id = uid'),
+        isTrue,
+        reason: 'user_stats has no user_id column -- keying on it makes '
+            'every account deletion fail with 42703 undefined_column',
+      );
+      expect(
+        sql.contains('user_stats where user_id'),
+        isFalse,
+        reason: 'this is the exact bug that shipped: deleting by a column '
+            'user_stats does not have',
+      );
+    });
   });
 }

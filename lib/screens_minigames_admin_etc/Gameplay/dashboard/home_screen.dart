@@ -16,6 +16,7 @@ import '../../../constants/app_assets.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../services_backend_and_other_services/supabase_service.dart';
 import '../../../widgets_custom_lotties/ambient_lottie_card.dart';
+import '../../../widgets_custom_lotties/cloud_sync_banner.dart';
 import '../../../widgets_custom_lotties/coach_spot.dart';
 import '../../../widgets_custom_lotties/feedback_prompt_sheet.dart';
 import '../../../widgets_custom_lotties/idle_hover_icon.dart';
@@ -135,6 +136,13 @@ class HomeScreen extends StatelessWidget {
                           // the same job — removed so Home has one obvious
                           // primary action instead of two competing ones.
                           const SizedBox(height: 10),
+                          // Renders nothing unless there's actually something
+                          // to say (a guest, or a real account not syncing) —
+                          // see CloudSyncBanner. Shown here, not just tucked
+                          // in Profile, because a guest who never opens
+                          // Profile should still be reminded before they lose
+                          // real progress.
+                          const CloudSyncBanner(compact: true),
                           _TodayCard(onOpen: () => _openDaily(context)),
                           // The coach, on the screen everybody lands on.
                           //

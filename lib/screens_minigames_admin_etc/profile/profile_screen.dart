@@ -31,6 +31,7 @@ import '../../widgets_custom_lotties/idle_hover_icon.dart';
 import '../../widgets_custom_lotties/vivid_backdrop.dart';
 import '../auth/auth_screen.dart';
 import '../onboarding/tutorial_screen.dart';
+import '../onboarding/welcome_screen.dart';
 import 'feedback_screen.dart';
 import 'friend_profile_screen.dart';
 import 'personal_details_sheet.dart';
@@ -280,6 +281,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  /// The guest equivalent of [_deleteAccount] -- same typed-confirmation
+  /// safety bar, different word (RESET rather than DELETE) so it reads as
+  /// its own action rather than a confusing echo of real account deletion.
+  /// No server call: there is no `auth.users` row for a guest, just a local
+  /// cache to clear.
+  Future<void> _eraseGuestData(BuildContext context) async {
+    HapticFeedback.mediumImpact();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => const _EraseGuestDataDialog(),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    await context.read<UserStatsController>().eraseGuestDataAndRestart();
+    if (!context.mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      FadePageRoute<void>(builder: (_) => const WelcomeScreen()),
+      (route) => false,
+    );
+  }
+
   Future<void> _replayTutorial(BuildContext context) async {
     HapticFeedback.lightImpact();
 
@@ -313,6 +336,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context, controller, settings, _) {
         final stats = controller.stats;
         final user = SupabaseService.instance.currentUser;
+        final isGuest = controller.isGuest;
 
         return Scaffold(
           backgroundColor: AppTheme.deepForest,
@@ -487,35 +511,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ],
                     const SizedBox(height: 22),
-                    _LogoutButton(onTap: () => _logout(context)),
-                    const SizedBox(height: 14),
-                    // Deliberately a quiet text link and not a red button.
-                    //
-                    // Play requires this to exist and to be reachable
-                    // without leaving the app. It does not require it to
-                    // be the most eye-catching thing on the screen, and
-                    // giving permanent deletion the same visual weight as
-                    // Log Out -- directly under Log Out -- is how a nine
-                    // year old deletes their account by aiming badly. The
-                    // confirmation does the real work; this just declines
-                    // to advertise.
-                    Center(
-                      child: TextButton(
-                        onPressed: () => _deleteAccount(context),
-                        style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFFFF9B8A),
-                        ),
-                        child: Text(
-                          'Delete my account',
-                          style: GoogleFonts.quicksand(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            decoration: TextDecoration.underline,
-                            decorationColor: const Color(0x66FF9B8A),
+                    if (isGuest) ...[
+                      // A guest has no `auth.users` row and no session to
+                      // sign out of -- "Log Out" here would just be a
+                      // confusing way to say "erase everything", and the
+                      // real "Log Out" trap (unconditionally wiping the
+                      // local cache with no confirmation) is exactly the
+                      // failure mode this branch exists to avoid.
+                      _LogoutButton(
+                        label: 'Create an Account',
+                        icon: Icons.person_add_alt_1_rounded,
+                        colors: const [Color(0xFF4FDB8F), Color(0xFF2FAE6C)],
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.of(context).push(
+                            FadePageRoute<void>(
+                              builder: (_) =>
+                                  const AuthScreen(mode: AuthMode.signUp),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      Center(
+                        child: TextButton(
+                          onPressed: () => _eraseGuestData(context),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFFFF9B8A),
+                          ),
+                          child: Text(
+                            'Erase local data and start over',
+                            style: GoogleFonts.quicksand(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              decoration: TextDecoration.underline,
+                              decorationColor: const Color(0x66FF9B8A),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                    ] else ...[
+                      _LogoutButton(onTap: () => _logout(context)),
+                      const SizedBox(height: 14),
+                      // Deliberately a quiet text link and not a red button.
+                      //
+                      // Play requires this to exist and to be reachable
+                      // without leaving the app. It does not require it to
+                      // be the most eye-catching thing on the screen, and
+                      // giving permanent deletion the same visual weight as
+                      // Log Out -- directly under Log Out -- is how a nine
+                      // year old deletes their account by aiming badly. The
+                      // confirmation does the real work; this just declines
+                      // to advertise.
+                      Center(
+                        child: TextButton(
+                          onPressed: () => _deleteAccount(context),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFFFF9B8A),
+                          ),
+                          child: Text(
+                            'Delete my account',
+                            style: GoogleFonts.quicksand(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              decoration: TextDecoration.underline,
+                              decorationColor: const Color(0x66FF9B8A),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -527,11 +592,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-/// The red "Log Out" button under the settings.
+/// The red "Log Out" button under the settings. Doubles as the guest
+/// "Create an Account" CTA with a different label/icon/colour -- same shape,
+/// because the point is "the one prominent button down here", not the red.
 class _LogoutButton extends StatelessWidget {
-  const _LogoutButton({required this.onTap});
+  const _LogoutButton({
+    required this.onTap,
+    this.label = 'Log Out',
+    this.icon = Icons.logout_rounded,
+    this.colors = const [Color(0xFFE86A55), Color(0xFFC94545)],
+  });
 
   final VoidCallback onTap;
+  final String label;
+  final IconData icon;
+  final List<Color> colors;
 
   @override
   Widget build(BuildContext context) {
@@ -541,9 +616,7 @@ class _LogoutButton extends StatelessWidget {
         height: 58,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          gradient: const LinearGradient(
-            colors: [Color(0xFFE86A55), Color(0xFFC94545)],
-          ),
+          gradient: LinearGradient(colors: colors),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
@@ -554,10 +627,10 @@ class _LogoutButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.logout_rounded, color: Colors.white),
+              Icon(icon, color: Colors.white),
               const SizedBox(width: 10),
               Text(
-                'Log Out',
+                label,
                 style: GoogleFonts.pixelifySans(
                   color: Colors.white,
                   fontSize: 16,
@@ -2115,6 +2188,117 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
           ),
           child: Text(
             'Delete forever',
+            style: GoogleFonts.quicksand(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The guest data-erase dialog: same typed-confirmation shape as
+/// [_DeleteAccountDialog], different word so it reads as its own action.
+class _EraseGuestDataDialog extends StatefulWidget {
+  const _EraseGuestDataDialog();
+
+  @override
+  State<_EraseGuestDataDialog> createState() => _EraseGuestDataDialogState();
+}
+
+class _EraseGuestDataDialogState extends State<_EraseGuestDataDialog> {
+  final TextEditingController _typed = TextEditingController();
+
+  static const String _word = 'RESET';
+
+  bool get _matches => _typed.text.trim().toUpperCase() == _word;
+
+  @override
+  void initState() {
+    super.initState();
+    _typed.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _typed.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppTheme.panelStrong,
+      title: Text(
+        'Erase local progress?',
+        style: GoogleFonts.pixelifySans(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'This cannot be undone. Everything on this device goes: your '
+            'level, coins, skins, lessons, and every life you have played. '
+            'There is no account to keep -- this is the only copy.',
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.88),
+              fontWeight: FontWeight.w600,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Type $_word to confirm.',
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.88),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _typed,
+            autocorrect: false,
+            enableSuggestions: false,
+            style: GoogleFonts.quicksand(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: _word,
+              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+              enabledBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0x33FFFFFF)),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFFFF9B8A)),
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(
+            'Keep playing',
+            style: GoogleFonts.quicksand(
+              color: const Color(0xFFB7F7D7),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        FilledButton(
+          onPressed: _matches ? () => Navigator.of(context).pop(true) : null,
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFF55353),
+            disabledBackgroundColor: const Color(0x33F55353),
+          ),
+          child: Text(
+            'Erase and start over',
             style: GoogleFonts.quicksand(fontWeight: FontWeight.w700),
           ),
         ),
