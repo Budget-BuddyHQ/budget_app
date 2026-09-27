@@ -30,7 +30,17 @@ class _GuestTermsSheetContent extends StatelessWidget {
 
   Future<void> _openPrivacyPolicy(BuildContext context) async {
     final uri = Uri.parse(kPrivacyPolicyUrl);
-    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final opened = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+      // See the identical comment in auth_screen.dart's _openPrivacyPolicy:
+      // web always opens external links via `window.open` in a new tab
+      // regardless of `mode`, and desktop browsers block that unless it is
+      // perfectly synchronous with the click -- mobile is lenient about it,
+      // which is why this worked on phone but not on desktop with a mouse.
+      // `_self` navigates the current tab instead, which is never blocked.
+      webOnlyWindowName: '_self',
+    );
     if (!opened && context.mounted) {
       GameToast.show(
         context,

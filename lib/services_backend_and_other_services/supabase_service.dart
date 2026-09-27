@@ -1259,6 +1259,19 @@ alter view public.leaderboard set (security_invoker = false);
           'username': username.trim(),
       },
       captchaToken: captchaToken,
+      // Without this, Supabase falls back to the project's Site URL for the
+      // confirmation link's redirect -- which happens to also be this same
+      // landing page, but only because the Site URL was set to it as a
+      // safety net for a *different* flow (password reset). Relying on that
+      // fallback rather than asking for it explicitly is how a confirmed
+      // signup ended up not carrying back a session: some paths through
+      // GoTrue only hand the client a `code` to exchange when a redirect was
+      // actually requested, so tapping "Confirm my account" verified the
+      // email server-side but left the device with nothing to exchange,
+      // hence still signed out the next time the app opened. Requesting the
+      // same landing page explicitly is the exact mechanism already proven
+      // to work for [resetPasswordForEmail].
+      emailRedirectTo: passwordResetRedirectUrl,
     );
   }
 
@@ -1279,6 +1292,11 @@ alter view public.leaderboard set (security_invoker = false);
       await Supabase.instance.client.auth.resend(
         type: OtpType.signup,
         email: email.trim().toLowerCase(),
+        // Same reasoning as [signUp]'s emailRedirectTo -- a resend has to
+        // carry the same explicit redirect, or the resent link falls back to
+        // the Site-URL default too and can leave the device signed out again
+        // after confirming.
+        emailRedirectTo: passwordResetRedirectUrl,
       );
       return null;
     } on AuthException catch (error) {

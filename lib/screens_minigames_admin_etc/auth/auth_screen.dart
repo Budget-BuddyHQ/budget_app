@@ -252,7 +252,19 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   // so people can actually see the url in the address bar
   Future<void> _openPrivacyPolicy() async {
     final uri = Uri.parse(kPrivacyPolicyUrl);
-    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final opened = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+      // Web ignores `mode` entirely and always opens external links via
+      // `window.open` in a new tab -- which desktop Chrome/Edge/Firefox
+      // block unless it fires perfectly synchronously with the click.
+      // Mobile browsers are far more lenient about it, which is exactly the
+      // split that was reported: worked on phone, dead on desktop with a
+      // mouse. `_self` makes it navigate the current tab instead, which no
+      // browser's popup blocker touches. Harmless on non-web platforms --
+      // this parameter is a no-op there.
+      webOnlyWindowName: '_self',
+    );
     if (!opened && mounted) {
       GameToast.show(
         context,

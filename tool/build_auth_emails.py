@@ -58,7 +58,7 @@ RULE = '#DCE6E1'
 PAPER = '#FFFFFF'
 GROUND = '#EEF3F0'
 
-PRIVACY = 'https://budget-buddyhq.github.io/budget_app/privacy-policy.html'
+PRIVACY = 'https://budget-buddy-website-one.vercel.app/policy'
 
 
 def shell(title: str, heading: str, lede: str, button: str, body: str,
