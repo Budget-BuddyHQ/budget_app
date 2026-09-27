@@ -249,27 +249,39 @@ void main() {
   });
 
   group('the delete_own_account() SQL function', () {
-    // **The bugs this exists to prevent, both of which had already
-    // happened, back to back.**
+    // **The bugs this exists to prevent -- three of them, found one at a
+    // time because each fix's own test only proved the *previous* bug was
+    // gone, not that nothing else was wrong.**
     //
     // Bug 1: `user_stats`'s only identity column is `id` -- it has never
     // had a `user_id` column. The function's cleanup line read `where
     // user_id = uid`, which Postgres rejects with `42703 undefined_column`
     // the moment the function runs, so every deletion attempt failed.
     //
-    // Bug 2, found only after fixing bug 1: `user_stats.id` and
-    // `app_feedback.user_id` are both `text` (the app stores non-uuid ids
-    // like the local guest placeholder `'user_123'` there too), while `uid`
-    // is declared `uuid`. Postgres has no `text = uuid` operator, so `where
-    // id = uid` still throws -- `42883 operator does not exist` instead of
-    // `42703` -- and the account is still not deleted.
+    // Bug 2, found only after fixing bug 1: comparing `id` (whatever type
+    // it is) to `uid uuid` needs both sides to actually agree, and nothing
+    // here checked that they did.
     //
-    // Both times, the client-side error handling made the real cause harder
-    // to see: it pattern-matched the raw error text for
+    // Bug 3, found only after "fixing" bug 2 the wrong way: the natural
+    // assumption was that `user_stats.id` is `text` -- there's a Dart
+    // constant, `SupabaseService.schemaSql`, that says exactly that. It is
+    // wrong. `select data_type from information_schema.columns` against the
+    // live project says `user_stats.id` is `uuid`, and always was --
+    // `schemaSql` is stale bootstrap SQL that was never actually what ran
+    // against this project. Casting `uid` to `::text` to match `schemaSql`
+    // therefore traded one `42883 operator does not exist` (text = uuid) for
+    // the exact same error the other way round (uuid = text), and deletion
+    // kept failing with an identical symptom throughout. `app_feedback`,
+    // separately, genuinely does have a `text` `user_id` column, so *that*
+    // comparison does still need the cast the other way -- the two columns
+    // are not the same type as each other, only as themselves.
+    //
+    // Every time, the client-side error handling made the real cause harder
+    // to see on top of that: it pattern-matched the raw error text for
     // `'delete_own_account'`, which appears in the CONTEXT line of *any*
-    // error thrown inside this function, so a completely different failure
-    // kept getting reported as "account deletion is not set up on the
-    // server".
+    // error thrown inside this function, so three unrelated failures in a
+    // row all surfaced as the same "account deletion is not set up on the
+    // server" message.
     //
     // This is a source check, not a database test, because the migration is
     // run by hand in the Supabase SQL editor and a wrong column name or type
@@ -278,24 +290,31 @@ void main() {
       'supabase/migrations/0003_account_deletion.sql',
     ).readAsStringSync();
 
-    test('deletes user_stats and app_feedback by their real, text-typed ids', () {
+    test('deletes user_stats and app_feedback by columns of the right type', () {
       expect(
-        sql.contains('delete from public.user_stats where id = uid::text'),
+        sql.contains('delete from public.user_stats where id = uid;'),
         isTrue,
-        reason: 'user_stats.id is text, not uuid -- comparing it to uid '
-            'without a cast throws 42883 operator does not exist',
+        reason: 'user_stats.id is uuid on the live project, same as uid -- '
+            'no cast should be here at all, in either direction',
       );
       expect(
         sql.contains('delete from public.app_feedback where user_id = uid::text'),
         isTrue,
-        reason: 'app_feedback.user_id is text too, and has the same '
-            'text = uuid mismatch if left uncast',
+        reason: 'app_feedback.user_id really is text, unlike user_stats.id, '
+            'and does need the cast',
       );
       expect(
         sql.contains('user_stats where user_id'),
         isFalse,
-        reason: 'this is the first bug that shipped: deleting by a column '
+        reason: 'the first bug that shipped: deleting by a column '
             'user_stats does not have',
+      );
+      expect(
+        sql.contains('user_stats where id = uid::text'),
+        isFalse,
+        reason: 'the second bug that shipped: user_stats.id is uuid, so '
+            'casting uid to text here is backwards and throws the same '
+            'class of error the other way round',
       );
     });
   });

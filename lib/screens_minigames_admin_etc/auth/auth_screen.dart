@@ -1071,13 +1071,26 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                             ),
                             const SizedBox(height: 12),
                             if (_isLogin)
-                              TextButton(
-                                onPressed: _submitPasswordReset,
-                                child: const Text(
-                                  'Forgot your password?',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontWeight: FontWeight.w600,
+                              Opacity(
+                                // Same reasoning as the main button above:
+                                // this used to stay tappable through the
+                                // whole Turnstile load, so a tap while it was
+                                // still loading produced the exact "Still
+                                // checking, tap again" toast the main button
+                                // was fixed to make unreachable -- just on
+                                // this link instead. Disabling it for the
+                                // same window closes that gap.
+                                opacity: _turnstileStillLoading ? 0.5 : 1,
+                                child: TextButton(
+                                  onPressed: _turnstileStillLoading
+                                      ? null
+                                      : _submitPasswordReset,
+                                  child: const Text(
+                                    'Forgot your password?',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ),

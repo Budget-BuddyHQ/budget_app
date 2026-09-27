@@ -989,9 +989,16 @@ class SupabaseService {
   /// may well have succeeded.
   static const Duration _supabaseDeleteTimeout = Duration(seconds: 20);
 
+  // `id` is `uuid`, confirmed against `information_schema.columns` on the
+  // live project -- this constant said `text` for a long time and that was
+  // wrong, not a second valid option. A raw SQL comparison against `id`
+  // (unlike a Postgrest `.eq('id', ...)` call, which coerces a string
+  // automatically) needs the real type or it throws `42883 operator does
+  // not exist`; see `delete_own_account()` in
+  // supabase/migrations/0003_account_deletion.sql for exactly that bug.
   static const String schemaSql = '''
 create table if not exists public.user_stats (
-  id text primary key,
+  id uuid primary key,
   username text not null default 'Username3189',
   gold integer not null default 0,
   xp integer not null default 0,
