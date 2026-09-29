@@ -57,18 +57,18 @@ void main() {
     );
   });
 
-  test('the OFL licence ships with the fonts', () {
+  test('the OFL license ships with the fonts', () {
     // Not a formality. Both faces are SIL Open Font License, which permits
-    // bundling and redistribution and requires the licence to travel with the
+    // bundling and redistribution and requires the license to travel with the
     // font — a store submission that ships the one without the other is
     // distributing them outside their terms.
     for (final family in expected.keys) {
-      final licence = File('assets/fonts/OFL-$family.txt');
-      expect(licence.existsSync(), isTrue, reason: licence.path);
+      final license = File('assets/fonts/OFL-$family.txt');
+      expect(license.existsSync(), isTrue, reason: license.path);
       expect(
-        licence.readAsStringSync(),
+        license.readAsStringSync(),
         contains('SIL Open Font License'),
-        reason: '${licence.path} is not the licence it claims to be',
+        reason: '${license.path} is not the license it claims to be',
       );
     }
   });

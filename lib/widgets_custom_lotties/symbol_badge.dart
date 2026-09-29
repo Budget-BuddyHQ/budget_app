@@ -39,7 +39,7 @@ String? stockLogoAssetFor(String symbol) => kStockLogoSymbols.contains(symbol)
 /// Amazon's) are solid black and would nearly vanish against this app's dark
 /// panels; real trading apps put a white circle behind ticker logos for the
 /// same reason, whatever their own theme. The Material fallback keeps the
-/// accent-tinted treatment instead, because a coloured glyph on white would
+/// accent-tinted treatment instead, because a colored glyph on white would
 /// look like a broken image.
 class SymbolBadge extends StatelessWidget {
   const SymbolBadge({

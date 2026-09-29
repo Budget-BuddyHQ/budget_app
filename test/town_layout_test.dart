@@ -11,7 +11,7 @@ import 'support/town_landmarks.dart';
 /// **What went wrong.** The coordinates were hand-placed and drifted. Measured
 /// against the collider data, the cafe and the clinic sat *four tiles* from
 /// the nearest solid thing and the market and library three, so on screen they
-/// were coloured circles floating in the middle of a road with no building
+/// were colored circles floating in the middle of a road with no building
 /// near them. Nothing could catch that: they were on walkable tiles, inside
 /// the map, and reachable. They were just nowhere.
 ///
@@ -339,7 +339,7 @@ void _landmarks() {
 
         test('and none is crowded onto another', () {
           // A marker's sensor is two tiles across. Three apart is the least
-          // that keeps walking up to one from opening its neighbour.
+          // that keeps walking up to one from opening its neighbor.
           for (final a in kTownSpots) {
             for (final b in kTownSpots) {
               if (a.id.compareTo(b.id) >= 0) continue;

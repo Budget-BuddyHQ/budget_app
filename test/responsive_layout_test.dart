@@ -238,7 +238,7 @@ void main() {
     'Profile': () => const ProfileScreen(),
     // The Coach is the newest screen and the densest: a header, a five-row
     // score grid, a diagnosis panel, a review panel and a card per finding.
-    // Every one of those is text over a coloured box, which is the shape
+    // Every one of those is text over a colored box, which is the shape
     // that overflows first on a 320px phone.
     'Coach': () => const CoachScreen(),
     'Leaderboard': () => const LeaderboardScreen(),

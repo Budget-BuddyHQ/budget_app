@@ -42,7 +42,7 @@ class AvatarSprite extends StatelessWidget {
         width: size,
         height: size,
         fit: fit,
-        // Nearest-neighbour keeps pixel art crisp and makes a smooth
+        // Nearest-neighbor keeps pixel art crisp and makes a smooth
         // illustration stair-step, so it depends on the art. See
         // `AvatarSkin.isPixelArt`.
         filterQuality: skin.isPixelArt
@@ -68,9 +68,9 @@ class AvatarSprite extends StatelessWidget {
     // A plain SizedBox ancestor with tight constraints would force
     // SpriteSheetImage's aspect-corrected inner SizedBox to stretch to that
     // square, which widens the OverflowBox clip window past one cell and
-    // bleeds in slivers of the neighbouring frames. Center loosens whatever
+    // bleeds in slivers of the neighboring frames. Center loosens whatever
     // tight constraint the ancestor imposes so the sprite always lays out at
-    // its own correct aspect ratio, centred in the space it's given.
+    // its own correct aspect ratio, centered in the space it's given.
     return Center(
       child: SpriteSheetImage(
         sheetAsset: skin.sheetAsset(effectiveBody),

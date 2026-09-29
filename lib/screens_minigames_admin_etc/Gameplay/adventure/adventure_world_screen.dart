@@ -590,7 +590,7 @@ class _AdventureWorldScreenState extends State<AdventureWorldScreen> {
     // This used to read `: AppAssets.villagerSheet(null, ...)` — so **every
     // non-villager skin walked the town as the default blue villager**. All
     // four turtles and the Goomba. A player could win Guild Runner, a
-    // 1-in-1,000 legendary, see it on their profile, in the customise grid
+    // 1-in-1,000 legendary, see it on their profile, in the customize grid
     // and in Finance Brawl, then walk in here as a stranger. Nothing threw:
     // the fallback loaded a real sheet, just not theirs.
     //
@@ -1016,7 +1016,7 @@ Map<String, Widget> debugTownSheets() {
   final spot = kTownSpots.firstWhere((s) => s.kind == unlock.spotKind);
 
   return <String, Widget>{
-    'neighbour with a mission': _NpcDialogueSheet(
+    'neighbor with a mission': _NpcDialogueSheet(
       npc: npc,
       line: line,
       mission: mission,
@@ -1024,7 +1024,7 @@ Map<String, Widget> debugTownSheets() {
       canClaim: true,
       onClaim: () {},
     ),
-    'neighbour, no mission': _NpcDialogueSheet(npc: npc, line: line),
+    'neighbor, no mission': _NpcDialogueSheet(npc: npc, line: line),
     'encounter': _NpcEncounterSheet(npc: npc, action: action),
     'locked building': _LockedSpotSheet(
       spot: spot,
@@ -1039,7 +1039,7 @@ Map<String, Widget> debugTownSheets() {
 /// **The bug this fixes.** Each sheet was a fixed-height `Column` in a plain
 /// `showModalBottomSheet`, which caps a sheet at half the screen. The town
 /// map locks landscape, so the *normal* case here is a phone about 460
-/// logical pixels tall. A neighbour handing out a mission, or a locked
+/// logical pixels tall. A neighbor handing out a mission, or a locked
 /// building explaining its unlock, ran off the bottom: Flutter painted the
 /// yellow overflow stripes across the reward line, and the button below it
 /// could not be reached at all.
@@ -1412,7 +1412,7 @@ class _DemoBadge extends StatelessWidget {
           'DEMO',
           // Quicksand, not Pixelify: Pixelify's capitals have confusable pairs
           // at every size (see `caps_legibility_test.dart`), and four letters
-          // in all-caps has no lowercase neighbour to disambiguate them by.
+          // in all-caps has no lowercase neighbor to disambiguate them by.
           style: AppTheme.caps(
             color: const Color(0xFFFFC857),
             fontSize: 12,
@@ -1788,7 +1788,7 @@ class _NpcEncounterSheet extends StatelessWidget {
           // The lesson, shown before the choice as well as after.
           //
           // A scam you only understand *after* it has taken your money is a
-          // punishment; the point is to be recognisable in advance. Naming
+          // punishment; the point is to be recognizable in advance. Naming
           // the tell up front is what makes this teaching rather than a trap.
           Text(
             choosable ? action.outcomeDeclined : action.outcomeAccepted,

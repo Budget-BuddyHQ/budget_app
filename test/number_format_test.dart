@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// Three copies of this grouping loop existed before it was consolidated —
 /// in `LifeMoneyPanel`, `market_data_service` and the Past Lives screen. They
 /// happened to agree; the next edit to any one of them would have broken
-/// that. These pin the behaviour so the shared version can't drift.
+/// that. These pin the behavior so the shared version can't drift.
 void main() {
   group('groupedNumber', () {
     test('leaves short numbers alone', () {

@@ -26,7 +26,7 @@ void main() {
       LifeAction.findJob,
       LifeAction.invest,
       LifeAction.gamble,
-      LifeAction.practise,
+      LifeAction.practice,
     ];
 
     for (final action in forbiddenAtThree) {
@@ -122,7 +122,7 @@ void main() {
     // Switched off for everybody for now, so it opens at no age. The age
     // table still says 18 for the day the switch comes back on.
     if (kLifeGamblingEnabled) opensAt(LifeAction.gamble, 18);
-    opensAt(LifeAction.practise, 4);
+    opensAt(LifeAction.practice, 4);
 
     test('every action has a decision, none fall through', () {
       // A missing entry would silently default to "allowed at any age",

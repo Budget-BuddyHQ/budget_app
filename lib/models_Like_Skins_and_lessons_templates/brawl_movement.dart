@@ -22,12 +22,12 @@ import 'dart:ui';
 ///    tree turns into walking around it.
 
 /// Where to draw the tree sprite, relative to the point its collision circle is
-/// centred on, so that the part of the picture that is a tree lands on the
+/// centered on, so that the part of the picture that is a tree lands on the
 /// circle.
 ///
 /// Measured off `brawl_tree.png`: the opaque part is the bottom 47% of the frame
-/// and 41% of its width, centred a little right of the middle. Drawn at the size
-/// the game uses, that puts its middle about 46.5 units below the frame's centre
+/// and 41% of its width, centered a little right of the middle. Drawn at the size
+/// the game uses, that puts its middle about 46.5 units below the frame's center
 /// and 3.5 to the right, so the frame is drawn that far up and to the left.
 const Offset kBrawlTreeArtShift = Offset(-3.5, -46.5);
 
@@ -44,7 +44,7 @@ const double kBrawlRockArtScale = 2.6;
 /// every tree and rock, and returns where it ends up.
 ///
 /// The step is applied whole, then anything it overlaps pushes it back out along
-/// the line from that obstacle's centre. A few passes settle a fighter wedged
+/// the line from that obstacle's center. A few passes settle a fighter wedged
 /// between two obstacles or between one and a wall. Called with a zero step it
 /// only does the pushing out, which is how a fighter that ended up inside
 /// something is freed.
@@ -66,17 +66,17 @@ Offset moveAndSlide({
 
   var pos = clampToArena(from + step);
 
-  Offset pushOut(Offset p, Offset centre, double obstacleRadius) {
-    final away = p - centre;
+  Offset pushOut(Offset p, Offset center, double obstacleRadius) {
+    final away = p - center;
     final distance = away.distance;
     final reach = obstacleRadius + radius;
     if (distance >= reach) return p;
-    // Dead centre has no direction to be pushed in. Back along the step, or
+    // Dead center has no direction to be pushed in. Back along the step, or
     // failing that, to the right.
     final normal = distance > 1e-6
         ? away / distance
         : (step.distance > 1e-6 ? -step / step.distance : const Offset(1, 0));
-    return centre + normal * reach;
+    return center + normal * reach;
   }
 
   for (var pass = 0; pass < 4; pass++) {
@@ -124,7 +124,7 @@ class StickReading {
   /// Direction times strength, at most length 1. Zero inside the dead zone.
   final Offset vector;
 
-  /// Where to draw the knob, relative to the ring's centre.
+  /// Where to draw the knob, relative to the ring's center.
   final Offset knob;
 
   static const StickReading rest = StickReading(Offset.zero, Offset.zero);

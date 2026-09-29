@@ -76,7 +76,7 @@ extension LifeSimAssets on LifeSimController {
     return balance;
   }
 
-  // ---- Licence ----------------------------------------------------------------
+  // ---- License ----------------------------------------------------------------
 
   String? licenseGate() {
     if (finished) return 'This life is over';
@@ -251,7 +251,7 @@ extension LifeSimAssets on LifeSimController {
   String? buyGate(AssetDef def, {bool financed = false}) {
     if (finished) return 'This life is over';
     if (_age < def.minAge) return 'You need to be ${def.minAge}';
-    if (def.needsLicense && !_hasLicense) return 'You need a driving licence';
+    if (def.needsLicense && !_hasLicense) return 'You need a driving license';
     if (financed) {
       if (!def.canFinance) return 'This cannot be bought on a loan';
       if (isDependent) return 'You cannot borrow yet';

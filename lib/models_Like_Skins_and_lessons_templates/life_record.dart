@@ -75,7 +75,7 @@ class LifeRecord {
   /// and exactly the sort of thing that makes a player stop trusting it.
   ///
   /// Ungraded runs still pay out, still unlock endings, and still appear in
-  /// Past Lives. They are simply excluded from the history the analyser
+  /// Past Lives. They are simply excluded from the history the analyzer
   /// reasons over. See `money_snapshot_source.dart`.
   ///
   /// **Defaults to true, and old records parse as true.** Every life recorded

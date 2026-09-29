@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:budget_app/controllers_that_updates_stats/user_stats_controller.dart';
 import 'package:budget_app/services_backend_and_other_services/supabase_service.dart';
@@ -136,4 +137,34 @@ void main() {
       );
     },
   );
+
+  group('every Supabase round trip skips guests, not just some of them', () {
+    // **Reported as:** playing Life as a guest, found live in the console,
+    // repeated on every single save: `Supabase upsert failed, keeping
+    // cached data: PostgrestException(message: invalid input syntax for
+    // type uuid: "user_123", ...)`. `loadUserStats` already skips the
+    // Supabase round trip for a non-uuid id like the guest placeholder
+    // 'user_123' -- `saveUserStats` did not, so every year of a guest's
+    // life, every purchase, fired a doomed request against a `uuid` column
+    // with a non-uuid id and always failed the same way. Both tests use
+    // `isSupabaseConnected` false and so cannot exercise the network path
+    // itself -- that is also true of every other test in this file -- but
+    // that guard is what decides whether the request is even attempted, and
+    // that much a source check can hold.
+    final source = File(
+      'lib/services_backend_and_other_services/supabase_service.dart',
+    ).readAsStringSync();
+
+    test('saveUserStats has the same isRealUserId guard loadUserStats does', () {
+      expect(
+        source.contains(
+          '!_isSupabaseConnected || !isRealUserId(stats.id)',
+        ),
+        isTrue,
+        reason: 'without this, a guest\'s local progress tries to sync to '
+            'Supabase on every save and always fails with '
+            '22P02 invalid input syntax for type uuid',
+      );
+    });
+  });
 }

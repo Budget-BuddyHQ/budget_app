@@ -109,7 +109,7 @@ class MyApp extends StatelessWidget {
             const DashboardShell(initialIndex: AppTabIndex.dashboard),
         '/game_hub': (context) =>
             const DashboardShell(initialIndex: AppTabIndex.adventure),
-        // Arcade and Style are tabs again (7-slot bar, Home centred), so
+        // Arcade and Style are tabs again (7-slot bar, Home centered), so
         // these route through DashboardShell like every other tab route
         // below rather than pushing the bare screen.
         '/customize': (context) =>

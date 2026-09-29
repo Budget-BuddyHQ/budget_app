@@ -70,7 +70,7 @@ void main() {
 
     test('villager sheets are the expected grid size', () async {
       // A cell-size drift would misalign every frame in the game and in the
-      // customise grid, so pin the packed dimensions to what AppAssets assumes.
+      // customize grid, so pin the packed dimensions to what AppAssets assumes.
       final expectedW =
           (AppAssets.villagerCellWidth * AppAssets.villagerSheetColumns)
               .round();

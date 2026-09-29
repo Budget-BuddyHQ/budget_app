@@ -64,7 +64,7 @@ class MentorImage extends StatelessWidget {
       width: size,
       height: size,
       // The Budget Buddy turtles are smooth illustrations, and nearest-
-      // neighbour scaling stair-steps their outlines.
+      // neighbor scaling stair-steps their outlines.
       filterQuality: skinFromId(skinId).isPixelArt
           ? FilterQuality.none
           : FilterQuality.medium,

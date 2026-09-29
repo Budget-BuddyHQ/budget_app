@@ -513,7 +513,7 @@ const List<LifeEvent> kLifeEventsLaterLife = <LifeEvent>[
   LifeEvent(
     id: 'l_will_planning',
     prompt:
-        'You realise that you have never written down what you want to '
+        'You realize that you have never written down what you want to '
         'happen to your things.',
     icon: Icons.description_rounded,
     minAge: 50,

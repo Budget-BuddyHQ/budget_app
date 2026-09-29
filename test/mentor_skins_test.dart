@@ -84,7 +84,7 @@ void main() {
 
     test('a villager falls back to the classic guide', () {
       // Deliberate, not an oversight: a villager has no mentor pose to
-      // recolour, and inventing one is a different job. What matters is that
+      // recolor, and inventing one is a different job. What matters is that
       // it resolves to art that exists rather than to a missing file.
       final path = AppAssets.turtleMentorPose('idle', 'villager_classic');
       expect(path, AppAssets.turtleMentorIdle);

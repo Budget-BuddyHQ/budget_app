@@ -7,10 +7,10 @@ import 'package:budget_app/widgets_custom_lotties/coach_spot.dart';
 
 /// The coach's cross-domain reasoning, and the card that carries it.
 ///
-/// **Why these rules get their own file.** Every other rule in the analyser
+/// **Why these rules get their own file.** Every other rule in the analyzer
 /// reads one area and reports on it, which is a report card. These read two
 /// and report on the *gap* — a quiz score against how somebody actually
-/// plays — and that is the only part of the analyser no single screen in the
+/// plays — and that is the only part of the analyzer no single screen in the
 /// app could produce on its own. The Academy sees a good score. The arcade
 /// sees a finished run. Only this sees that they disagree.
 ///
@@ -46,7 +46,7 @@ void main() {
 
   group('knowing it versus doing it', () {
     test('a high quiz score with a high wants share is called out', () {
-      final report = analyseMoney(
+      final report = analyzeMoney(
         player(
           accuracy: const {FinanceConcept.needsVsWants: 0.9},
           cascadeRuns: 4,
@@ -72,8 +72,8 @@ void main() {
     test('one run is not a pattern', () {
       // `hasCascadeHistory` requires two. A single high-wants afternoon is a
       // bad afternoon, and telling somebody it is a character flaw after one
-      // game is how an analyser loses trust it cannot get back.
-      final report = analyseMoney(
+      // game is how an analyzer loses trust it cannot get back.
+      final report = analyzeMoney(
         player(
           accuracy: const {FinanceConcept.needsVsWants: 0.9},
           cascadeRuns: 1,
@@ -84,7 +84,7 @@ void main() {
     });
 
     test('playing it well without ever being assessed points at the unit', () {
-      final report = analyseMoney(
+      final report = analyzeMoney(
         player(cascadeRuns: 3, cascadeLevelsCleared: 4, wantsShare: 0.31),
       );
 
@@ -99,7 +99,7 @@ void main() {
     });
 
     test('a 50/30/20 split played rather than read is named as a strength', () {
-      final report = analyseMoney(
+      final report = analyzeMoney(
         player(cascadeRuns: 5, wantsShare: 0.28, savesShare: 0.24),
       );
       expect(idsOf(report), contains('split_healthy'));
@@ -127,14 +127,14 @@ void main() {
         player(cascadeRuns: 4, cascadeLevelsCleared: 6, wantsShare: 0.2),
         player(cascadeRuns: 4, wantsShare: 0.25, savesShare: 0.3),
       ]) {
-        expect(idsOf(analyseMoney(snap)).intersection(splitIds), hasLength(1));
+        expect(idsOf(analyzeMoney(snap)).intersection(splitIds), hasLength(1));
       }
     });
   });
 
   group('the same habit in two unrelated games', () {
     test('high wants plus lives that are not improving is one finding', () {
-      final report = analyseMoney(
+      final report = analyzeMoney(
         player(
           cascadeRuns: 3,
           wantsShare: 0.45,
@@ -153,7 +153,7 @@ void main() {
     });
 
     test('improving lives do not trigger it, even with a high wants share', () {
-      final report = analyseMoney(
+      final report = analyzeMoney(
         player(
           cascadeRuns: 3,
           wantsShare: 0.45,
@@ -166,12 +166,12 @@ void main() {
 
   group('reading without deciding', () {
     test('lessons finished but nothing ever played', () {
-      final report = analyseMoney(player(lessons: 6));
+      final report = analyzeMoney(player(lessons: 6));
       expect(idsOf(report), contains('reads_never_plays'));
     });
 
     test('a single life played is enough to stop saying it', () {
-      final report = analyseMoney(player(lessons: 6, lives: const <int>[250]));
+      final report = analyzeMoney(player(lessons: 6, lives: const <int>[250]));
       expect(idsOf(report), isNot(contains('reads_never_plays')));
     });
   });

@@ -6,9 +6,9 @@ import 'money_analyzer.dart';
 import 'money_habit_models.dart';
 import 'town_spot_models.dart';
 
-/// Builds the analyser's input out of what the app has actually stored.
+/// Builds the analyzer's input out of what the app has actually stored.
 ///
-/// Kept out of `money_analyzer.dart` on purpose. The analyser is the *rules*
+/// Kept out of `money_analyzer.dart` on purpose. The analyzer is the *rules*
 /// and has no idea where a number came from, which is what lets it be tested
 /// against a player who has pinned six habits and logged one — a state that
 /// takes a fortnight of real use to reach and about four lines to describe.
@@ -43,7 +43,7 @@ const Map<String, FinanceConcept> kUnitConcepts = <String, FinanceConcept>{
   'unit_13': FinanceConcept.insurance, // 13 · Protecting Your Money
 };
 
-/// Reads [stats] into the flat shape the analyser takes.
+/// Reads [stats] into the flat shape the analyzer takes.
 MoneySnapshot buildMoneySnapshot(UserStats stats) {
   final weekly = stats.habitWeeklyLog;
 
@@ -71,7 +71,7 @@ MoneySnapshot buildMoneySnapshot(UserStats stats) {
     //
     // **This is the fix for "I bombed that one on purpose".** Players wreck a
     // life deliberately to reach an unusual ending or to farm quick gold, and
-    // the analyser was reading those as evidence they were getting worse with
+    // the analyzer was reading those as evidence they were getting worse with
     // money — then telling them so. A coach that cannot tell a deliberate
     // choice from a failure is one nobody listens to twice.
     //
@@ -138,7 +138,7 @@ double _cascadeShare(UserStats stats, int part) {
 int get _totalLessons =>
     lessonUnits.fold<int>(0, (sum, unit) => sum + unit.lessons.length);
 
-/// The town's building count, as the analyser's denominator.
+/// The town's building count, as the analyzer's denominator.
 ///
 /// Read from the spot list rather than written down, so adding a building
 /// does not quietly make everybody's exploration score look worse against a
@@ -172,7 +172,7 @@ int _challengesFinished(UserStats stats) {
 /// A unit with no assessed node is *absent* rather than zero: never having
 /// opened the credit unit is not the same as being bad at credit, and telling
 /// somebody they are weak at a lesson they have never seen is the fastest way
-/// to make an analyser worth ignoring.
+/// to make an analyzer worth ignoring.
 Map<FinanceConcept, double> _conceptAccuracy(UserStats stats) {
   final out = <FinanceConcept, double>{};
   for (final unit in lessonUnits) {

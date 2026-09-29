@@ -66,7 +66,7 @@ class SavingsJarWidget extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // ambient glow tinted by mood, not by how full it is. colour
+          // ambient glow tinted by mood, not by how full it is. color
           // answers "hows it going", the coin line answers "how far have i
           // got". keeping them on separate channels means someone whos
           // slipped still sees their progress sat there intact
@@ -140,7 +140,7 @@ class _CoinJarPainter extends CustomPainter {
   final double fill;
   final JarMood mood;
 
-  // Glass, lid and coin colours. Deliberately not from [AppTheme]: this is a
+  // Glass, lid and coin colors. Deliberately not from [AppTheme]: this is a
   // physical object rather than a surface of the UI, and tinting it with the
   // app's greens made it read as another panel.
   static const Color _glass = Color(0xFF9FE8FF);
@@ -190,7 +190,7 @@ class _CoinJarPainter extends CustomPainter {
 
     // The front face of the glass: a soft sheen and one bright highlight
     // stripe. Two cues are what sells "transparent" — an even tint alone
-    // just looks like a coloured shape.
+    // just looks like a colored shape.
     canvas.drawRRect(body, Paint()..color = _glass.withValues(alpha: 0.06));
     final highlight = RRect.fromRectAndRadius(
       Rect.fromLTWH(w * 0.16, bodyTop + h * 0.06, w * 0.09, h * 0.44),
@@ -414,7 +414,7 @@ class _MilestonePip extends StatelessWidget {
     // used raw — a 11px glyph in the app's mint on a mint chip is 3.2:1, and
     // these pips are how a player finds where they are in the ladder.
     final chip = AppTheme.tintedChip(AppTheme.greenPrimary, alpha: 0.22);
-    final colour = reached ? chip.ink : AppTheme.textMuted;
+    final color = reached ? chip.ink : AppTheme.textMuted;
 
     return Tooltip(
       message: '${stage.label} — ${stage.xpThreshold} points',
@@ -431,14 +431,14 @@ class _MilestonePip extends StatelessWidget {
               border: Border.all(
                 color: current
                     ? AppTheme.greenPrimary
-                    : colour.withValues(alpha: 0.4),
+                    : color.withValues(alpha: 0.4),
                 width: current ? 2 : 1,
               ),
             ),
             child: Icon(
               reached ? Icons.check_rounded : stage.icon,
               size: current ? 14 : 11,
-              color: colour,
+              color: color,
             ),
           ),
           const SizedBox(height: 4),

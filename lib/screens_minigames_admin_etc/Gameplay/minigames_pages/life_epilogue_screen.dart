@@ -104,7 +104,7 @@ class LifeEpilogueScreen extends StatelessWidget {
               // The endings collection is the strongest honest reason this
               // game has to start a second life: it rewards playing
               // *differently* rather than playing more, which is exactly the
-              // behaviour a financial-literacy game wants. It was sitting on
+              // behavior a financial-literacy game wants. It was sitting on
               // the Play hub, below the fold, as a row of tiles reading
               // "Undiscovered" — visible only to somebody who had already
               // decided to come back.
@@ -241,9 +241,9 @@ class _PersonalBestBanner extends StatelessWidget {
 
 /// The ending card: who you turned out to be.
 ///
-/// This used to be an accent colour and a Material glyph in a circle, which
+/// This used to be an accent color and a Material glyph in a circle, which
 /// meant all seven endings were the same screen wearing different tints —
-/// nothing to recognise, nothing to want to collect. It now leads with a
+/// nothing to recognize, nothing to want to collect. It now leads with a
 /// **portrait**, because an ending is a person you became, and the name sits
 /// on a ribbon so it reads as a title rather than as a heading.
 class _ArchetypeCard extends StatelessWidget {
@@ -258,7 +258,7 @@ class _ArchetypeCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
       child: Column(
         children: [
-          // The portrait, on a plate tinted with the ending's own colour so
+          // The portrait, on a plate tinted with the ending's own color so
           // the two read as one thing rather than as art dropped onto a card.
           Container(
             width: 96,
@@ -274,7 +274,7 @@ class _ArchetypeCard extends StatelessWidget {
             ),
             child: Image.asset(
               archetype.portrait,
-              // 38x38 source drawn at 84 — nearest-neighbour or it turns to
+              // 38x38 source drawn at 84 — nearest-neighbor or it turns to
               // mush.
               filterQuality: FilterQuality.none,
               fit: BoxFit.contain,
@@ -539,7 +539,7 @@ class _RankedScoreCard extends StatelessWidget {
 
   final RankedScore score;
 
-  static Color _gradeColour(String grade) => switch (grade) {
+  static Color _gradeColor(String grade) => switch (grade) {
     'S' => const Color(0xFFFFD45C),
     'A' => const Color(0xFF85EFAC),
     'B' => const Color(0xFF69C6FF),
@@ -550,7 +550,7 @@ class _RankedScoreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = _gradeColour(score.grade);
+    final accent = _gradeColor(score.grade);
     final chip = AppTheme.tintedChip(accent, alpha: 0.16);
     return Container(
       padding: const EdgeInsets.all(18),

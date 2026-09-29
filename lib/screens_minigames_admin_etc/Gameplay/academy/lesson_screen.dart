@@ -952,7 +952,7 @@ class _UnitJumpChip extends StatelessWidget {
       MasteryLevel.proficient => const Color(0xFFFFD45C),
       MasteryLevel.mastered => const Color(0xFF85EFAC),
     };
-    // The selected chip fills with its unit's own colour, so the tab strip
+    // The selected chip fills with its unit's own color, so the tab strip
     // reads as five distinct places rather than five identical green pills.
     final accent = unitAccentFor(index);
 
@@ -1040,7 +1040,7 @@ class _UnitJumpChip extends StatelessWidget {
                       ),
                     ),
                     // Mastery used to be carried by this chip's icon/border
-                    // colour, which the per-unit accent now owns — so it moves
+                    // color, which the per-unit accent now owns — so it moves
                     // to its own progress bar rather than being dropped.
                     const SizedBox(height: 6),
                     SizedBox(

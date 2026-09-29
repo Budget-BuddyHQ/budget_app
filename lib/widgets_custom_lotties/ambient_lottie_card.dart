@@ -7,7 +7,7 @@ import '../themes_colors/app_theme.dart';
 
 /// Decorative motifs used for the ambient accent panels around the app.
 ///
-/// Each motif pairs a real sprite with the accent colour it should glow in.
+/// Each motif pairs a real sprite with the accent color it should glow in.
 enum AmbientMotif {
   turtle(AppAssets.pixelMainTurtle, Color(0xFF85EFAC)),
   coin(AppAssets.tileCoin, Color(0xFFFFD45C)),

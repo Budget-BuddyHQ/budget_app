@@ -409,7 +409,7 @@ class _ArcadeHeader extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 totalPlays == 0
-                    ? '${arcadeCatalog.length} ways to practise money without spending any.'
+                    ? '${arcadeCatalog.length} ways to practice money without spending any.'
                     : '$totalPlays runs • $played of ${arcadeCatalog.length} games tried',
                 style: GoogleFonts.quicksand(
                   color: Colors.white.withValues(alpha: 0.72),
@@ -701,12 +701,12 @@ class _GameArt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // The badge is a wash of the accent and the glyph *is* the accent, so the
-    // brighter the game's colour the more the icon vanishes into its own
+    // brighter the game's color the more the icon vanishes into its own
     // badge — the mint one measured 2.6:1.
     //
-    // Both gradient stops are resolved to **opaque** colours here rather than
+    // Both gradient stops are resolved to **opaque** colors here rather than
     // left as alpha over whatever is behind. That is what makes the glyph
-    // colour below trustworthy: a translucent wash means the real background
+    // color below trustworthy: a translucent wash means the real background
     // depends on the card, and the first attempt at this fix aimed at a
     // guessed surface and landed short. The lighter stop is the worst case,
     // so it is the one the glyph is measured against.
@@ -763,12 +763,12 @@ class _MetaChip extends StatelessWidget {
   Widget build(BuildContext context) {
     // The chip sits on a card that is already a *tinted* panel — the card
     // gradient lerps the card's accent in — so "the accent on 12% of the
-    // accent" ends up two shades of one colour. Difficulty "Hard" measured
+    // accent" ends up two shades of one color. Difficulty "Hard" measured
     // 2.4:1.
     //
-    // [cardAccent] is the card's colour, not the chip's, and getting that
+    // [cardAccent] is the card's color, not the chip's, and getting that
     // wrong matters: the neutral "5-10 min" chip is near-white, so blending
-    // the base over *its* colour invented a pale card that no text could sit
+    // the base over *its* color invented a pale card that no text could sit
     // on, and the fix looked like it had made things worse.
     final chip = AppTheme.tintedChip(
       color,

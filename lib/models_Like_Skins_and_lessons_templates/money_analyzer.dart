@@ -100,7 +100,7 @@ class LifeReading {
   bool get stalled => workYears >= 12 && promotions == 0;
 }
 
-// everything the analyser can see. flat numbers, not the actual controllers,
+// everything the analyzer can see. flat numbers, not the actual controllers,
 // so the rules can run without supabase/storage/widgets attached
 class MoneySnapshot {
   const MoneySnapshot({
@@ -187,7 +187,7 @@ class MoneySnapshot {
       pastLifeNetWorths.isEmpty;
 }
 
-// one thing the analyser noticed
+// one thing the analyzer noticed
 class MoneyFinding {
   const MoneyFinding({
     required this.id,
@@ -250,7 +250,7 @@ class MoneyReport {
 
 // turns a snapshot into a report. rules stay quiet on thin data, a
 // brand new player shouldnt get hit with 5 "youre failing" findings at once
-MoneyReport analyseMoney(MoneySnapshot snap) {
+MoneyReport analyzeMoney(MoneySnapshot snap) {
   final findings = <MoneyFinding>[];
 
   if (snap.isNewcomer) {
@@ -262,7 +262,7 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
           id: 'start_here',
           kind: MoneyFindingKind.watch,
           dimension: MoneyDimension.consistency,
-          title: 'Nothing to analyse yet',
+          title: 'Nothing to analyze yet',
           evidence: 'No habits saved, no lessons finished, no lives played.',
           action:
               'Save one habit on Track and log it once. Come back after '
@@ -575,7 +575,7 @@ MoneyReport analyseMoney(MoneySnapshot snap) {
               'and have never been assessed on the rule underneath them.',
           action:
               'Coin Cascade is 50/30/20 with the labels taken off. Take the '
-              'Budgeting unit and you will recognise every part of it.',
+              'Budgeting unit and you will recognize every part of it.',
           concept: FinanceConcept.budgetRule,
         ),
       );

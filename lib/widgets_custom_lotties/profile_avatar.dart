@@ -12,9 +12,9 @@ import 'avatar_sprite.dart';
 ///
 /// Centralised because the same avatar appears on the home hero, the profile
 /// screen, and the leaderboard, and each had its own subtly different — and
-/// subtly mis-centred — implementation. The photo is always centre-cropped to
+/// subtly mis-centered — implementation. The photo is always center-cropped to
 /// a square, and the sprite fallback is scaled to fit rather than cropped, so
-/// neither can drift off-centre inside the ring.
+/// neither can drift off-center inside the ring.
 class ProfileAvatar extends StatelessWidget {
   const ProfileAvatar({
     super.key,
@@ -108,7 +108,7 @@ class ProfileAvatar extends StatelessWidget {
     return _fallback(inner);
   }
 
-  /// The equipped skin, padded and centred so the sprite never gets clipped by
+  /// The equipped skin, padded and centered so the sprite never gets clipped by
   /// the circle the way a cover-fitted photo intentionally is.
   Widget _fallback(double inner) {
     // AvatarSprite has no idea how big `inner` is, so an unsized call

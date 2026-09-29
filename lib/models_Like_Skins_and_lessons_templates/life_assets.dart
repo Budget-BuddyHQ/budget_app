@@ -76,7 +76,7 @@ class AssetDef {
 
   final int minAge;
 
-  /// Needs a driving licence, see `LifeSimController.getLicense`.
+  /// Needs a driving license, see `LifeSimController.getLicense`.
   final bool needsLicense;
 
   /// Years a pet lives. Null for everything else.

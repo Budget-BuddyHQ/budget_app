@@ -33,7 +33,7 @@ void main() {
   );
 
   Set<String> ids(List<LifeReading> lives) => {
-    for (final f in analyseMoney(snap(lives)).findings) f.id,
+    for (final f in analyzeMoney(snap(lives)).findings) f.id,
   };
 
   LifeReading life({
@@ -138,7 +138,7 @@ void main() {
     test('three full lives with no home are named, gently', () {
       final found = ids([life(), life(), life()]);
       expect(found, contains('never_owned_a_home'));
-      final finding = analyseMoney(
+      final finding = analyzeMoney(
         snap([life(), life(), life()]),
       ).findings.firstWhere((f) => f.id == 'never_owned_a_home');
       expect(
@@ -165,7 +165,7 @@ void main() {
 
   group('did studying pay', () {
     test('when it did, the Coach says so with both averages', () {
-      final report = analyseMoney(
+      final report = analyzeMoney(
         snap([
           life(degrees: 1, netWorth: 9000),
           life(degrees: 1, netWorth: 8000),

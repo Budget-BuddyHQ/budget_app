@@ -13,7 +13,7 @@ class AppAssets {
   // It was a flat green rounded rectangle with a gold stripe plus four 8x8
   // glyphs, and it is the reason the app kept reading as Material with a
   // pixel font on top. Everything it offered now comes from the sliced,
-  // recoloured pack below, at a quality it could not reach — so keeping it
+  // recolored pack below, at a quality it could not reach — so keeping it
   // would have meant shipping two competing panel sets, which is exactly the
   // unused-art problem this whole effort exists to fix.
   //
@@ -33,7 +33,7 @@ class AppAssets {
   // survive being scaled up.
   static const String _kit = 'assets/images/ui_kit';
 
-  /// Nine-slice surfaces, sliced and recoloured from the Tiny Swords pack by
+  /// Nine-slice surfaces, sliced and recolored from the Tiny Swords pack by
   /// `tool/build_ui_pack.py`. Each ships with its own `centerSlice` rect —
   /// the script prints them, and a guessed rect smears the bevel into
   /// something that looks like a scaling bug.
@@ -49,7 +49,7 @@ class AppAssets {
   // before saving, so no two outputs end up the same size. That trim is a
   // correctness fix, not tidying: Flutter fits an image to its *file* bounds,
   // not to the art inside them, so the untrimmed pack drew a bar whose 64x64
-  // file held 24 rows of colour as a 2px hairline inside a 6px box — which is
+  // file held 24 rows of color as a 2px hairline inside a 6px box — which is
   // exactly what the Finance Brawl progress bar looked like.
   //
   // A nine-slice also can never render smaller than its two end caps
@@ -105,7 +105,7 @@ class AppAssets {
   static const String kitRibbonSmallGold = '$_kit/ribbon_small_gold.png';
 
   /// Progress bars. The pack's fill is red — right for health, wrong for
-  /// progress — so it is emitted in three colours and picked by meaning.
+  /// progress — so it is emitted in three colors and picked by meaning.
   static const String kitBarBase = '$_kit/bar_base.png';
   static const String kitBarBaseSmall = '$_kit/bar_base_small.png';
   static const String kitBarFillGreen = '$_kit/bar_fill_green.png';
@@ -114,7 +114,7 @@ class AppAssets {
   static const String kitBarFillSmallGreen = '$_kit/bar_fill_small_green.png';
   static const String kitBarFillSmallRed = '$_kit/bar_fill_small_red.png';
 
-  /// The pack's own icons, kept at their painted colours.
+  /// The pack's own icons, kept at their painted colors.
   static const String kitPackCoin = '$_kit/pack_icon_coin.png';
   static const String kitPackShield = '$_kit/pack_icon_shield.png';
   static const String kitPackArrowGreen = '$_kit/pack_icon_arrow_green.png';
@@ -178,7 +178,7 @@ class AppAssets {
   /// a player who had won Guild Runner — a 1-in-1,000 legendary — walked the
   /// whole app as an orange turtle and was taught by a green one.
   ///
-  /// Only turtles. A villager or a Goomba has no mentor pose to recolour, and
+  /// Only turtles. A villager or a Goomba has no mentor pose to recolor, and
   /// those skins keep the classic guide.
   /// Skin **ids**, which are not always the filenames the art is drawn from —
   /// `explorer_turtle` comes out of `explorer.png`. The lookup is by equipped
@@ -265,7 +265,7 @@ class AppAssets {
   /// `brawl_enemies.dart` and drawn by `tool/make_brawl_enemies.py`.
   ///
   /// Ten archetypes used to share three images, picked by an `isBoss` /
-  /// `isEnemyTwo` test — so the roster's whole design rule ("the behaviour is
+  /// `isEnemyTwo` test — so the roster's whole design rule ("the behavior is
   /// the lesson") was undone by a payday loan that looked identical to the
   /// credit card beside it.
   static String brawlEnemySprite(String archetypeId) =>
@@ -286,7 +286,7 @@ class AppAssets {
   // Pipeline: hand-drawn sheets in assets/own_skins/
   //   -> tool/crop_human_skins.ps1      (slice into per-frame PNGs)
   //   -> tool/make_female_bases.ps1     (edit hair silhouette for the female body)
-  //   -> tool/make_human_variants.ps1   (palette-swap into colour variants)
+  //   -> tool/make_human_variants.ps1   (palette-swap into color variants)
   //   -> tool/pack_skin_sheets.ps1      (pack into the sheets below)
   //   -> tool/normalize_walk_baseline.py (re-cell taller + clamp the walk
   //                                        dip — run this LAST, after any
@@ -441,7 +441,7 @@ class AppAssets {
   /// sprite with `equippedSkin.isHuman ? equippedSkin.sheetAsset(body) :
   /// villagerSheet(null, ...)` — so every turtle and the Goomba walked the
   /// town as the **default blue villager**. A player could win Guild Runner, a
-  /// 1-in-1,000 legendary, see it on their profile and in the customise grid,
+  /// 1-in-1,000 legendary, see it on their profile and in the customize grid,
   /// then walk into town as a stranger. Nothing threw: the fallback is a real
   /// sheet that loads perfectly and is simply the wrong character.
   ///

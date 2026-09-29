@@ -26,7 +26,7 @@ import 'package:provider/provider.dart';
 
 import 'support/app_fonts.dart';
 
-/// Automated colour-contrast audit.
+/// Automated color-contrast audit.
 ///
 /// **Why this exists.** The report was "yellow text is kinda hard to see",
 /// which is not something you can chase by reading source: the app has 128
@@ -35,9 +35,9 @@ import 'support/app_fonts.dart';
 /// Reading `color:` at a call site tells you nothing.
 ///
 /// So this measures the rendered result instead. It walks the real widget
-/// tree of each screen, reads every `RichText`'s **resolved** colour (Text
+/// tree of each screen, reads every `RichText`'s **resolved** color (Text
 /// merges `DefaultTextStyle` before it builds one, so by that point the style
-/// is final), composites the backgrounds above it down to an opaque colour,
+/// is final), composites the backgrounds above it down to an opaque color,
 /// and computes the WCAG contrast ratio.
 ///
 /// The threshold is WCAG AA: 4.5:1 for body text, relaxed to 3:1 for large
@@ -107,7 +107,7 @@ Color _composite(Color fg, Color bg) {
 // Reading a background out of the tree
 // --------------------------------------------------------------------------
 
-/// The paint colour a single widget contributes, or null if it paints nothing.
+/// The paint color a single widget contributes, or null if it paints nothing.
 ///
 /// Gradients collapse to their midpoint. That is an approximation, but the
 /// alternative — testing every stop — flags a failure for a two-pixel band at
@@ -165,11 +165,11 @@ Color _midpoint(List<Color> colors) {
   );
 }
 
-/// The opaque colour behind [element], or null when the walk hits art.
+/// The opaque color behind [element], or null when the walk hits art.
 ///
 /// Returns null on purpose when it reaches an [Image] before it reaches
 /// anything opaque: text over a photo or a sprite has no single background
-/// colour, and inventing one would produce a number that means nothing.
+/// color, and inventing one would produce a number that means nothing.
 Color? backgroundBehind(Element element) {
   Color? acc;
   Color? result;
@@ -199,17 +199,17 @@ Color? backgroundBehind(Element element) {
   return result;
 }
 
-/// Whether every visible glyph in [label] paints its own colours.
+/// Whether every visible glyph in [label] paints its own colors.
 ///
-/// Emoji are colour bitmaps: `Text('🐷', style: TextStyle(color: red))` draws
-/// a pink pig, not a red one, so measuring the declared colour against the
+/// Emoji are color bitmaps: `Text('🐷', style: TextStyle(color: red))` draws
+/// a pink pig, not a red one, so measuring the declared color against the
 /// background answers a question nobody asked. The app leans on emoji heavily
 /// (they *are* a lot of the UI), and without this the audit's loudest
 /// findings were all emoji sitting on bright chips — noise that would have
 /// buried the handful of real ones.
 ///
 /// Private-use codepoints are deliberately *not* excluded: those are icon
-/// fonts, which do take the text colour, so those findings are real.
+/// fonts, which do take the text color, so those findings are real.
 bool _isPictographic(String label) {
   var sawGlyph = false;
   for (final rune in label.runes) {
@@ -419,7 +419,7 @@ void main() {
     ),
   };
 
-  // Referenced so the unused-import analyser stays quiet about lesson data
+  // Referenced so the unused-import analyzer stays quiet about lesson data
   // that `LessonScreen` pulls in lazily.
   assert(lessonUnits.isNotEmpty);
 
@@ -454,7 +454,7 @@ void main() {
     });
 
     test('gold on the app background is comfortably legible', () {
-      // The colour the report was about, on the surface it usually sits on.
+      // The color the report was about, on the surface it usually sits on.
       // This passing is what proves the *background* is the variable, not
       // the gold — which is why the fixes below change surfaces and pick
       // per-surface inks rather than abandoning gold everywhere.

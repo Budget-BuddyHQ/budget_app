@@ -312,7 +312,7 @@ ParkReward scoreCoinRush({
   final clean = feesTapped == 0;
   final outcome = clean
       ? 'Not one fee tapped. Noticing what not to grab is the whole skill, '
-            'and it is the part people practise least.'
+            'and it is the part people practice least.'
       : 'You caught $collected in coins and $feesTapped '
             '${feesTapped == 1 ? 'fee' : 'fees'}. Fees look like everything '
             'else at speed, which is exactly why they work.';

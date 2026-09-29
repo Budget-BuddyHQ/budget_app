@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// **Why this is the retention mechanic worth building.** It is the only thing
 /// in the app that rewards playing *differently* rather than playing more,
-/// which is exactly the behaviour a financial-literacy game wants. Nothing
+/// which is exactly the behavior a financial-literacy game wants. Nothing
 /// here is a streak, a timer or a "come back tomorrow" — the reason to open
 /// the app again is that there is a specific life you have not lived yet.
 ///

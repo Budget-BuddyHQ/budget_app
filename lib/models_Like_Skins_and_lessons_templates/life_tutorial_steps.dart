@@ -21,7 +21,7 @@ import 'tutorial_steps.dart';
 /// **Why the ids matter.** Each id is a key registered by `life_sim_page.dart`
 /// through [TutorialTargets], so the spotlight lands on the real widget at
 /// whatever size and scroll position it happens to be. A step whose target is
-/// not on screen is not an error, the overlay centres its card instead of
+/// not on screen is not an error, the overlay centers its card instead of
 /// pointing at nothing, which is what lets a step run before the player has ever
 /// opened the thing it is about.
 ///

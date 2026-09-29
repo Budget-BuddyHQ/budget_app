@@ -227,7 +227,7 @@ class _PopNavTile extends StatefulWidget {
 /// How far the active tab is scaled up. Shared with [_HuggingPill], which
 /// needs it to cap the pill so the scaled-up version still lands inside its
 /// cell -- a `Transform` does not affect layout, so this is the only thing
-/// stopping it painting over its neighbour.
+/// stopping it painting over its neighbor.
 const double _activeScale = 1.16;
 
 class _PopNavTileState extends State<_PopNavTile>

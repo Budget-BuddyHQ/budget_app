@@ -207,7 +207,7 @@ class AppSoundService {
 
   /// The two sessions, for the regression test.
   ///
-  /// The fix here is a *value*, not a behaviour — nothing about the code stops
+  /// The fix here is a *value*, not a behavior — nothing about the code stops
   /// working if `audioFocus` goes back to `gain`, it just quietly starts
   /// cutting sounds off on a real phone again, which is invisible on a
   /// desktop and invisible in review. So the values are asserted directly.

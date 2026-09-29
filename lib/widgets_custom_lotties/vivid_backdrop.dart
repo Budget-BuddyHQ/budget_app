@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-/// A background image that actually keeps its colour.
+/// A background image that actually keeps its color.
 ///
 /// Most screens in this app used to paint their art and then bury it under
 /// a ~0.6-alpha near-black wash, which is the cheapest way to keep text
 /// readable and also the fastest way to turn detailed pixel art into one
 /// flat block of dark green. This does the readability job the other way
 /// round: it **boosts** the art (saturation + a small brightness lift, via
-/// a real colour matrix — the same maths an image editor's "vibrance"
+/// a real color matrix — the same maths an image editor's "vibrance"
 /// slider runs), then lays down a much lighter scrim plus a vignette that's
 /// strongest at the edges and clears the middle. The result reads as a lit
 /// scene rather than a dimmed one, and content still sits on enough
@@ -28,7 +28,7 @@ class VividBackdrop extends StatelessWidget {
 
   final String image;
 
-  /// 1.0 leaves colour untouched; above that pushes it. ~1.4-1.6 makes the
+  /// 1.0 leaves color untouched; above that pushes it. ~1.4-1.6 makes the
   /// pixel art read as vivid without tipping into neon.
   final double saturation;
 
@@ -39,7 +39,7 @@ class VividBackdrop extends StatelessWidget {
   final Color scrimColor;
   final double scrimOpacity;
 
-  /// How dark the corners get. The centre always stays clear so the art
+  /// How dark the corners get. The center always stays clear so the art
   /// shows through where the eye actually lands.
   final double vignetteOpacity;
 

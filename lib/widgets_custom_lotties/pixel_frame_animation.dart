@@ -130,7 +130,7 @@ class _PixelFrameAnimationState extends State<PixelFrameAnimation> {
       height: widget.height,
       fit: widget.fit,
       alignment: widget.alignment,
-      // Nearest-neighbour, always. The default smooths pixel art into mush
+      // Nearest-neighbor, always. The default smooths pixel art into mush
       // at the scale factors these get drawn at.
       filterQuality: FilterQuality.none,
       gaplessPlayback: true,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../themes_colors/app_theme.dart';
 
-/// Glows its child with a soft, colour-tinted "puffy" shadow at rest, and
+/// Glows its child with a soft, color-tinted "puffy" shadow at rest, and
 /// lifts + intensifies that glow on pointer hover (desktop/web only — touch
 /// never fires hover events, so the resting glow is what makes cards read
 /// as raised rather than flat on mobile). Deliberately reacts only to an

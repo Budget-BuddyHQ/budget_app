@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// once: a fix landing correctly, then silently disappearing because it was
 /// never committed (or a git operation reverted it) before anyone noticed.
 /// These are all one-line-of-evidence checks against the actual source
-/// files, not the app's runtime behaviour, on purpose -- they need to catch
+/// files, not the app's runtime behavior, on purpose -- they need to catch
 /// the file being wrong, not just the app misbehaving in a way nobody is
 /// looking at yet.
 void main() {

@@ -13,7 +13,7 @@ void main() {
       // avatar frame, a grid tile). Before the Center() fix, that square
       // ancestor's tight constraints forced the inner cell to stretch to the
       // square, widening the visible clip window past one cell and bleeding
-      // in neighbouring frames.
+      // in neighboring frames.
       const requestedSize = 160.0;
       const cellW = AppAssets.villagerCellWidth;
       const cellH = AppAssets.villagerCellHeight;
@@ -61,7 +61,7 @@ void main() {
         reason:
             'SpriteSheetImage stretched to ${renderedSize.width}, expected '
             '~$expectedWidth. A wider box than one cell means the OverflowBox '
-            'clip window is wider than a single cell and neighbouring frames '
+            'clip window is wider than a single cell and neighboring frames '
             'will bleed into view.',
       );
       expect(renderedSize.width, lessThan(requestedSize));

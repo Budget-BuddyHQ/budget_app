@@ -31,7 +31,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// # The rule
 ///
 /// Pixelify stays for **mixed-case** titles — "Play", "Play Life", the
-/// wordmark — which is every place the app is recognised by it, and where it
+/// wordmark — which is every place the app is recognized by it, and where it
 /// measures fine. All-caps labels use [AppTheme.caps].
 ///
 /// Like `digit_legibility_test.dart`, these are source checks rather than a

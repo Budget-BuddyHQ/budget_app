@@ -60,9 +60,9 @@ void main() {
   group('the sheets fit the grid the town assumes', () {
     test('every sheet is exactly the villager grid', () async {
       // Bonfire slices these by cell size and column index. A sheet even a
-      // few pixels off would show slivers of the neighbouring frame in every
+      // few pixels off would show slivers of the neighboring frame in every
       // step of the walk cycle — the same fault `avatar_sprite.dart` documents
-      // for the customise grid.
+      // for the customize grid.
       final expectedW =
           (AppAssets.villagerCellWidth * AppAssets.villagerSheetColumns)
               .round();
@@ -85,7 +85,7 @@ void main() {
     });
 
     test('no sprite spills out of its own cell', () async {
-      // A frame that overflows its cell bleeds into the neighbour, which the
+      // A frame that overflows its cell bleeds into the neighbor, which the
       // town would render as a second turtle hanging off the first.
       final cellW = AppAssets.villagerCellWidth.round();
       final cellH = AppAssets.villagerCellHeight.round();

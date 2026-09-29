@@ -96,7 +96,7 @@ void main() {
         expect(
           r.actual.center.dx,
           closeTo(r.predicted.center.dx, 2),
-          reason: '$name: the highlight is centred on the wrong column',
+          reason: '$name: the highlight is centered on the wrong column',
         );
         expect(
           r.predicted.left,

@@ -101,7 +101,7 @@ class UserStatsController extends ChangeNotifier {
 
   /// True when the last save reached the server, or when there is no server to
   /// reach (signed out, or Supabase not configured) — in which case
-  /// device-only saving is the expected behaviour, not a fault.
+  /// device-only saving is the expected behavior, not a fault.
   bool get cloudSyncHealthy => _cloudSyncHealthy || !isAuthenticated;
 
   /// When cloud sync last failed, for the "last synced" line in the warning.
@@ -1773,7 +1773,7 @@ class UserStatsController extends ChangeNotifier {
   /// **The alternative to the case, not a consolation prize.** A player pays
   /// the same 180 gold and gets the skin they actually chose, so the random
   /// pull is never the only route to a cosmetic — which is a fair thing for an
-  /// app about money to be modelling.
+  /// app about money to be modeling.
   ///
   /// Available to everyone, at every age.
   Future<SkinCaseResult> buySkinDirectly(String skinId) async {

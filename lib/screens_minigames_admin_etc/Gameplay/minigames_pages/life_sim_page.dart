@@ -110,7 +110,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
   /// Whether the current run counts toward the coach's reading.
   ///
   /// Chosen once, on the character sheet. Players deliberately wreck a life
-  /// for an unusual ending or for quick gold, and the analyser was reading
+  /// for an unusual ending or for quick gold, and the analyzer was reading
   /// those as them getting worse with money.
   bool _graded = true;
 
@@ -334,7 +334,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
   /// Deliberately *after* character creation rather than on entering the
   /// route: a tour that spotlights the money panel while the player is still
   /// picking a name is pointing at widgets that do not exist yet, and the
-  /// overlay would centre every card and explain nothing.
+  /// overlay would center every card and explain nothing.
   void _maybeStartFirstTour() {
     if (!mounted || _tourRunning) return;
     final settings = context.read<AppSettingsController>();
@@ -525,7 +525,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
   bool get _simpleWording =>
       context.read<UserStatsController>().stats.ageBand.prefersSimpleWording;
 
-  /// Skill practice. Until this existed, `LifeSimController.practise` had no
+  /// Skill practice. Until this existed, `LifeSimController.practice` had no
   /// UI at all — the whole skill/career ladder was unreachable by the player
   /// even though the events gating on it were already in the pool.
   /// One person, and what you can do about them.
@@ -1208,7 +1208,7 @@ class _YourLifeStrip extends StatelessWidget {
                 // 14% wash — under AA, and it is the chip a player most needs
                 // to read. `tintedChip` keeps the hue and lifts the ink until
                 // it clears the threshold, so "Card debt" stays pink and stays
-                // legible rather than being swapped for a colour that does not
+                // legible rather than being swapped for a color that does not
                 // mean anything.
                 final tint = flag.isTrouble
                     ? const Color(0xFFFF8FB1)
@@ -1416,7 +1416,7 @@ class _AgeHeader extends StatelessWidget {
   }
 }
 
-/// One line of the life story, with a coloured emoji marker for what kind
+/// One line of the life story, with a colored emoji marker for what kind
 /// of thing it was.
 ///
 /// The feed used to be an undifferentiated column of sentences — a doctor's
@@ -1523,12 +1523,12 @@ class _EventCard extends StatelessWidget {
             label.contains('put'));
   }
 
-  /// The card's colour, taken from the money idea the event teaches.
+  /// The card's color, taken from the money idea the event teaches.
   ///
   /// Every event used to be the same blue, so the most-seen surface in the
   /// game — you meet one of these every year of every life — looked
   /// identical whether you were being offered a credit card or a puppy.
-  /// Tinting by concept means a run has visual variety *and* the colour
+  /// Tinting by concept means a run has visual variety *and* the color
   /// carries meaning: debt events are consistently pink, growth events
   /// consistently blue, and the palette matches the concept chips the money
   /// panel already shows.
@@ -2066,7 +2066,7 @@ class _MenuButton extends StatelessWidget {
   }
 }
 
-/// Where skills actually get practised.
+/// Where skills actually get practiced.
 ///
 /// The skill/career ladder (music → gigs → record deal → tour, and the
 /// sports/business equivalents) was already gating events on skill levels,
@@ -2136,7 +2136,7 @@ class _SkillsSheetState extends State<_SkillsSheet> {
                   onPractise: life.finished
                       ? null
                       : () {
-                          life.practise(skill);
+                          life.practice(skill);
                           setState(() {});
                         },
                 ),
@@ -2331,21 +2331,21 @@ class _BudgetSheetState extends State<_BudgetSheet> {
 
   /// Names the trade-off the current split makes. Intentionally never says
   /// "correct" — it describes consequences and lets the player decide.
-  ({String text, Color colour, IconData icon}) get _feedback {
+  ({String text, Color color, IconData icon}) get _feedback {
     if (!_balanced) {
       final diff = 100 - _total;
       return (
         text: diff > 0
             ? 'You have $diff% left to allocate.'
             : 'You are ${-diff}% over — a budget has to add up to 100%.',
-        colour: const Color(0xFFFF8FB1),
+        color: const Color(0xFFFF8FB1),
         icon: Icons.error_outline_rounded,
       );
     }
     if (_savings == 0) {
       return (
         text: 'Nothing saved. Any surprise expense becomes debt.',
-        colour: const Color(0xFFFF8FB1),
+        color: const Color(0xFFFF8FB1),
         icon: Icons.warning_amber_rounded,
       );
     }
@@ -2354,7 +2354,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
         text:
             'Almost no room for fun. Strict budgets like this are the ones '
             'people quit.',
-        colour: const Color(0xFFFFD45C),
+        color: const Color(0xFFFFD45C),
         icon: Icons.sentiment_dissatisfied_rounded,
       );
     }
@@ -2363,7 +2363,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
         text:
             'Solid. Saving $_savings% builds a fund that can absorb a bad '
             'month.',
-        colour: const Color(0xFF4BD2A3),
+        color: const Color(0xFF4BD2A3),
         icon: Icons.check_circle_rounded,
       );
     }
@@ -2372,7 +2372,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
         text:
             'Needs are eating $_needs%. That is the number to attack — '
             'cheaper rent or more income, not smaller treats.',
-        colour: const Color(0xFFFFD45C),
+        color: const Color(0xFFFFD45C),
         icon: Icons.info_outline_rounded,
       );
     }
@@ -2380,7 +2380,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
       text:
           'Workable. Saving $_savings% is a start — push it up when your pay '
           'does.',
-      colour: const Color(0xFF69C6FF),
+      color: const Color(0xFF69C6FF),
       icon: Icons.info_outline_rounded,
     );
   }
@@ -2463,7 +2463,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
               hint: 'Rent, food, transport, bills',
               value: _needs,
               coins: _coins(_needs),
-              colour: const Color(0xFF69C6FF),
+              color: const Color(0xFF69C6FF),
               guide: 50,
               onChanged: (v) => setState(() => _needs = v),
             ),
@@ -2472,7 +2472,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
               hint: 'Eating out, games, going places',
               value: _wants,
               coins: _coins(_wants),
-              colour: const Color(0xFFFFD45C),
+              color: const Color(0xFFFFD45C),
               guide: 30,
               onChanged: (v) => setState(() => _wants = v),
             ),
@@ -2481,7 +2481,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
               hint: 'Emergency fund and your future',
               value: _savings,
               coins: _coins(_savings),
-              colour: const Color(0xFF4BD2A3),
+              color: const Color(0xFF4BD2A3),
               guide: 20,
               onChanged: (v) => setState(() => _savings = v),
             ),
@@ -2489,14 +2489,14 @@ class _BudgetSheetState extends State<_BudgetSheet> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: fb.colour.withValues(alpha: 0.12),
+                color: fb.color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: fb.colour.withValues(alpha: 0.35)),
+                border: Border.all(color: fb.color.withValues(alpha: 0.35)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(fb.icon, color: fb.colour, size: 18),
+                  Icon(fb.icon, color: fb.color, size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -2625,7 +2625,7 @@ class _BudgetRow extends StatelessWidget {
     required this.hint,
     required this.value,
     required this.coins,
-    required this.colour,
+    required this.color,
     required this.guide,
     required this.onChanged,
   });
@@ -2634,7 +2634,7 @@ class _BudgetRow extends StatelessWidget {
   final String hint;
   final int value;
   final int coins;
-  final Color colour;
+  final Color color;
   final int guide;
   final ValueChanged<int> onChanged;
 
@@ -2648,7 +2648,7 @@ class _BudgetRow extends StatelessWidget {
             width: 10,
             height: 38,
             decoration: BoxDecoration(
-              color: colour,
+              color: color,
               borderRadius: BorderRadius.circular(999),
             ),
           ),
@@ -2699,7 +2699,7 @@ class _BudgetRow extends StatelessWidget {
               '$value%',
               textAlign: TextAlign.center,
               style: AppTheme.numeric(
-                color: colour,
+                color: color,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -3037,7 +3037,7 @@ class _ThisYearPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Mint when you may go out, pink when you may not — on a 12% wash of that
-    // same colour, over the slate panel. Resolved opaque so the icon can be
+    // same color, over the slate panel. Resolved opaque so the icon can be
     // measured against it.
     final outingChip = AppTheme.tintedChip(
       outing.allowed ? const Color(0xFF4BD2A3) : const Color(0xFFFF8FB1),
@@ -3197,12 +3197,12 @@ class _ThisYearPanel extends StatelessWidget {
 }
 
 /// The relationship chip: pink text and a pink heart on a 14% pink wash.
-/// Three shades of one colour, which measured 4.26:1 — see
+/// Three shades of one color, which measured 4.26:1 — see
 /// [AppTheme.tintedChip] for why that keeps happening.
 final _personChip = AppTheme.tintedChip(const Color(0xFFFF8FB1), alpha: 0.14);
 
 /// What a [_YearFact] tile actually sits on: a 5% white veil over the slate
-/// panel. Named because two colours in that tile have to be measured against
+/// panel. Named because two colors in that tile have to be measured against
 /// it and neither can be judged against the page.
 final Color _yearFactSurface = AppTheme.flatten(
   Colors.white.withValues(alpha: 0.05),
@@ -3211,7 +3211,7 @@ final Color _yearFactSurface = AppTheme.flatten(
 
 /// Aim above the bar rather than at it.
 ///
-/// [_yearFactSurface] is the tile's *nominal* colour, but the feed stacks
+/// [_yearFactSurface] is the tile's *nominal* color, but the feed stacks
 /// another faint veil or two above the panel before this tile is drawn, so
 /// the real surface renders a shade lighter than the constant says. Aiming
 /// exactly at 4.5 left the weather icon at 4.09 on screen — close enough to

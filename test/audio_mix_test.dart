@@ -12,7 +12,7 @@ import 'package:budget_app/services_backend_and_other_services/app_sound_service
 /// the volume the app plays each of them at, and whether the players survive
 /// long enough to play anything at all.
 ///
-/// Both halves are value / source assertions rather than behaviour tests, and
+/// Both halves are value / source assertions rather than behavior tests, and
 /// that is a deliberate limitation rather than laziness. `audioplayers` has no
 /// usable fake — every method goes straight to a platform channel that does
 /// not exist under `flutter test` — so a "does the music restart" test would

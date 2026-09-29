@@ -623,7 +623,7 @@ class _JobCard extends StatelessWidget {
               bar: LifeBar(
                 label: p.status,
                 value: p.closeness,
-                color: p.statusColour,
+                color: p.statusColor,
                 height: 6,
               ),
             ),
@@ -1229,7 +1229,7 @@ class _CostLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colour = good ? const Color(0xFF85EFAC) : Colors.white;
+    final color = good ? const Color(0xFF85EFAC) : Colors.white;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -1247,7 +1247,7 @@ class _CostLine extends StatelessWidget {
           Text(
             value,
             style: AppTheme.numeric(
-              color: colour,
+              color: color,
               fontSize: 14,
               fontWeight: bold ? FontWeight.w800 : FontWeight.w700,
             ),

@@ -43,5 +43,5 @@ bool leakPatrolUnlocked(Iterable<String> ownedSkinIds) =>
 /// as a bug and teaches nothing about how to open it — the same rule the town
 /// building locks follow in `town_unlocks.dart`.
 const String kLeakPatrolLockHint =
-    'Unlock the Mushroom Goomba in Customise to play. This whole game is '
+    'Unlock the Mushroom Goomba in Customize to play. This whole game is '
     'built out of that sprite.';

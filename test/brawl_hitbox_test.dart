@@ -129,14 +129,14 @@ void main() {
       // The game draws the 256-square sprite into a 175 by 206.5 box with
       // BoxFit.contain, which scales it to 175 across.
       const drawn = 175.0;
-      final bodyCentre = Offset((m.cx - 0.5) * drawn, (m.cy - 0.5) * drawn);
+      final bodyCenter = Offset((m.cx - 0.5) * drawn, (m.cy - 0.5) * drawn);
       final placed = -kBrawlTreeArtShift;
       expect(
-        (placed - bodyCentre).distance,
+        (placed - bodyCenter).distance,
         lessThan(3.0),
         reason:
-            'the tree body is ${bodyCentre.dx.toStringAsFixed(1)}, '
-            '${bodyCentre.dy.toStringAsFixed(1)} from the middle of its frame '
+            'the tree body is ${bodyCenter.dx.toStringAsFixed(1)}, '
+            '${bodyCenter.dy.toStringAsFixed(1)} from the middle of its frame '
             'and the art is shifted by ${kBrawlTreeArtShift.dx}, '
             '${kBrawlTreeArtShift.dy}',
       );
@@ -166,8 +166,8 @@ void main() {
       expect(visibleRadius, closeTo(rockRadius, 3.0));
       // And it is drawn on its circle, not beside it.
       final drawn = rockRadius * kBrawlRockArtScale;
-      final centreY = (m.cy - 0.5) * drawn;
-      expect(kBrawlRockArtShift.dy, closeTo(-centreY, 1.5));
+      final centerY = (m.cy - 0.5) * drawn;
+      expect(kBrawlRockArtShift.dy, closeTo(-centerY, 1.5));
     });
   });
 
@@ -193,7 +193,7 @@ void main() {
       }
     });
 
-    test('and glides round it when the push is a little off centre', () {
+    test('and glides round it when the push is a little off center', () {
       // Pushing right at a tree from just below its middle line. Testing each
       // axis in turn catches and lets go; sliding carries the fighter round.
       var pos = const Offset(430, 520);
@@ -208,7 +208,7 @@ void main() {
       expect((pos - tree).distance, greaterThanOrEqualTo(59 - 1e-6));
     });
 
-    test('dead centre still gets out', () {
+    test('dead center still gets out', () {
       final pos = walk(tree, const Offset(2, 0));
       expect((pos - tree).distance, greaterThanOrEqualTo(59 - 1e-6));
     });

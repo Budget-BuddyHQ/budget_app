@@ -698,9 +698,9 @@ class _StockMarketPageState extends State<StockMarketPage>
           ownedSymbols,
           avgChangePercent,
         );
-        // Unrealised P&L across every open position: market value vs. what was
+        // Unrealized P&L across every open position: market value vs. what was
         // actually paid for it.
-        final totalUnrealised = quotes.fold<double>(0, (sum, quote) {
+        final totalUnrealized = quotes.fold<double>(0, (sum, quote) {
           return sum +
               _holdingMetrics(
                 ownedLots: stats.holdings['stock_${quote.symbol}'] ?? 0.0,
@@ -912,7 +912,7 @@ class _StockMarketPageState extends State<StockMarketPage>
                       portfolioHistory: portfolioHistory,
                       portfolioHistoryAt: portfolioHistoryAt,
                       netWorth: totalAssets,
-                      totalEarned: totalUnrealised.round(),
+                      totalEarned: totalUnrealized.round(),
                     ),
                     _AnalyticsTab(
                       quotes: quotes,
@@ -920,7 +920,7 @@ class _StockMarketPageState extends State<StockMarketPage>
                       equityCurve: portfolioHistory,
                       equityCurveAt: portfolioHistoryAt,
                       totalMarketValue: totalMarketValue,
-                      totalUnrealised: totalUnrealised.round(),
+                      totalUnrealized: totalUnrealized.round(),
                     ),
                   ],
                 ),
@@ -1834,7 +1834,7 @@ class _AllocationBar extends StatelessWidget {
   final List<_TradeQuote> holdings;
   final int Function(_TradeQuote) valueOf;
 
-  /// Colours reserved for the allocation chart, chosen to stay legible next
+  /// Colors reserved for the allocation chart, chosen to stay legible next
   /// to each other on a dark card.
   static const List<Color> _distinctPalette = <Color>[
     Color(0xFFE1BB72), // sand
@@ -1864,8 +1864,8 @@ class _AllocationBar extends StatelessWidget {
 
     // A stock's own accent can collide with another slice's — Cash and AAPL
     // are both 0xFFE1BB72, so the chart drew two "different" slices in the
-    // identical colour and the legend was unreadable. Reassign any repeat to
-    // the next unused palette colour so every slice is visually distinct.
+    // identical color and the legend was unreadable. Reassign any repeat to
+    // the next unused palette color so every slice is visually distinct.
     final used = <int>{};
     final segments = <({String label, int value, Color color})>[];
     for (final segment in raw) {
@@ -1911,7 +1911,7 @@ class _AllocationBar extends StatelessWidget {
           // A donut instead of the old 14px stacked bar — at a realistic
           // split (99% cash, 1% each in two stocks) that bar was a solid
           // block with two invisible slivers, so the section read as pure
-          // text. The ring gives the tab an actual graphic centrepiece and
+          // text. The ring gives the tab an actual graphic centerpiece and
           // the slivers still register as ticks on the edge.
           Row(
             children: [
@@ -3510,7 +3510,7 @@ class _PnlTab extends StatelessWidget {
               ),
               Text(
                 '${positive ? '+' : '-'}${usdLabel(totalEarned.abs())} '
-                'unrealised on open positions',
+                'unrealized on open positions',
                 style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
               ),
               const SizedBox(height: 18),
@@ -3743,7 +3743,7 @@ class _AnalyticsTab extends StatelessWidget {
     required this.equityCurve,
     required this.equityCurveAt,
     required this.totalMarketValue,
-    required this.totalUnrealised,
+    required this.totalUnrealized,
   });
 
   final List<_TradeQuote> quotes;
@@ -3751,7 +3751,7 @@ class _AnalyticsTab extends StatelessWidget {
   final List<double> equityCurve;
   final List<DateTime> equityCurveAt;
   final int totalMarketValue;
-  final int totalUnrealised;
+  final int totalUnrealized;
 
   @override
   Widget build(BuildContext context) {
@@ -3790,7 +3790,7 @@ class _AnalyticsTab extends StatelessWidget {
       (sum, p) => sum + (stats.costBasis['stock_${p.quote.symbol}'] ?? 0),
     );
     final returnPercent = invested > 0
-        ? (totalUnrealised / invested) * 100
+        ? (totalUnrealized / invested) * 100
         : 0.0;
     // Concentration: the largest position as a share of all holdings.
     final topShare = totalMarketValue > 0 && positions.isNotEmpty
@@ -3824,7 +3824,7 @@ class _AnalyticsTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'No data to analyse yet.',
+                  'No data to analyze yet.',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w800,

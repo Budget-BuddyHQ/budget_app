@@ -265,7 +265,7 @@ class LifeChoice {
   /// Fame delta. Fame gates the bigger career events and scales their money.
   final int fame;
 
-  /// Raises one skill — the mechanism behind "practise, then get the gig".
+  /// Raises one skill — the mechanism behind "practice, then get the gig".
   final LifeSkill? skill;
   final int skillGain;
 
@@ -319,7 +319,7 @@ enum LifeAction {
   findJob,
   invest,
   gamble,
-  practise,
+  practice,
 
   /// Extra hours for a shot at a raise. Was not a [LifeAction] at all, which
   /// is why it had no age gate and no yearly limit and could be tapped forever.
@@ -356,7 +356,7 @@ enum LifeAction {
 }
 
 /// A learnable skill. Skills gate career events and scale their payoff — a
-/// music contract should not fire for someone who has never practised.
+/// music contract should not fire for someone who has never practiced.
 enum LifeSkill {
   music('Music', Icons.music_note_rounded),
   sports('Sports', Icons.sports_basketball_rounded),
@@ -467,7 +467,7 @@ const Set<LifeFlag> kOwnershipBackedFlags = {
 extension LifeFlagInfo on LifeFlag {
   /// A short label for the "what is going on in your life" strip, or null
   /// for flags that are bookkeeping rather than something the player would
-  /// recognise as a thing they have.
+  /// recognize as a thing they have.
   ///
   /// Only about half of these are worth showing. `heldThroughCrash` records
   /// a decision so a later beat can pay it off; it is not an *item*, and
@@ -507,7 +507,7 @@ extension LifeFlagInfo on LifeFlag {
     _ => '\u{2728}',
   };
 
-  /// Whether this is something going *wrong* — shown in a warning colour,
+  /// Whether this is something going *wrong* — shown in a warning color,
   /// because "you have card debt" is not the same kind of fact as "you have
   /// a dog" and should not look like one.
   bool get isTrouble =>
@@ -1391,7 +1391,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   LifeEvent(
     id: 'concert_tickets',
     repeatable: true,
-    prompt: 'Your favourite artist is playing. Tickets are 250 coins.',
+    prompt: 'Your favorite artist is playing. Tickets are 250 coins.',
     icon: Icons.music_note_rounded,
     minAge: 14,
     maxAge: 30,
@@ -1412,7 +1412,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   ),
   LifeEvent(
     id: 'side_hustle',
-    prompt: 'A neighbour offers you weekend work for 40 coins a time.',
+    prompt: 'A neighbor offers you weekend work for 40 coins a time.',
     icon: Icons.handyman_rounded,
     minAge: 13,
     maxAge: 24,
@@ -1764,7 +1764,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Too nervous',
-        outcome: 'You stayed home and practised instead.',
+        outcome: 'You stayed home and practiced instead.',
         skill: LifeSkill.music,
         skillGain: 3,
         happiness: -4,
@@ -2479,7 +2479,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Spoil them thoroughly',
-        outcome: 'You are the favourite and you know exactly why.',
+        outcome: 'You are the favorite and you know exactly why.',
         money: -500,
         happiness: 24,
         addRelationship: 'Your grandchild',
@@ -2773,7 +2773,7 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
         label: 'Give the lemonade away',
         outcome: 'No money, plenty of friends.',
         happiness: 7,
-        addRelationship: 'Neighbourhood friend',
+        addRelationship: 'Neighborhood friend',
       ),
     ],
   ),
@@ -3109,7 +3109,7 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
   ),
   LifeEvent(
     id: 'x_subscription_audit',
-    prompt: 'Your bank statement shows six subscriptions. You recognise four.',
+    prompt: 'Your bank statement shows six subscriptions. You recognize four.',
     icon: Icons.receipt_long_rounded,
     minAge: 18,
     maxAge: 80,
@@ -3221,7 +3221,7 @@ const List<LifeEvent> kLifeEventsEarly = <LifeEvent>[
   ),
   LifeEvent(
     id: 'x_share_toy',
-    prompt: 'Another kid wants a turn with your favourite toy.',
+    prompt: 'Another kid wants a turn with your favorite toy.',
     icon: Icons.child_friendly_rounded,
     minAge: 4,
     maxAge: 8,

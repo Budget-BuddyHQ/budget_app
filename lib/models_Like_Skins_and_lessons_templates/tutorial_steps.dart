@@ -8,7 +8,7 @@ import '../navigation_tools_and_animation/app_tab_index.dart';
 ///
 /// The poses are static PNGs drawn by `tools/turtle_mentor_sprites.py` at a
 /// 64x64 pixel grid — same character and palette as the celebration sheet,
-/// so the guide is recognisably the same Buddy who shows up when you win.
+/// so the guide is recognizably the same Buddy who shows up when you win.
 enum TutorialMascot {
   /// Greeting. Opening and closing steps only, so it stays a bookend rather
   /// than the default face.
@@ -47,7 +47,7 @@ enum TutorialMascot {
   /// for the places that have no account to read from.
   String assetFor(String skinId) {
     // Turtles with drawn poses keep them. Those were generated for the
-    // classic turtle and its three recolours, and they are the only guide art
+    // classic turtle and its three recolors, and they are the only guide art
     // with a pose per step.
     if (skinId == kDefaultMascotSkinId ||
         AppAssets.mentorSkinIds.contains(skinId)) {

@@ -7,7 +7,7 @@
 ///     answer at index 1, so "always pick B" scored ~88%. [answerKeyIsBalanced]
 ///     is asserted by a test.
 ///  2. **Every distractor is a real misconception**, not a joke. "Just the
-///     colour of the card" teaches nothing; "The card with the highest limit"
+///     color of the card" teaches nothing; "The card with the highest limit"
 ///     is a mistake teenagers actually make.
 ///  3. **Every question explains itself.** [QuizQuestion.explanation] is
 ///     required, and questions carry the misconception behind the most tempting
@@ -692,7 +692,7 @@ const List<QuizQuestion> _unit2Test = <QuizQuestion>[
     correctIndex: 3,
     explanation:
         'Spending past your balance means the bank covers the gap and charges '
-        'for it. Low-balance alerts are the cheapest defence.',
+        'for it. Low-balance alerts are the cheapest defense.',
   ),
 ];
 
@@ -734,7 +734,7 @@ const List<QuizQuestion> _unit3Practice = <QuizQuestion>[
         'because it stops relying on willpower at the moment of temptation.',
     misconception:
         'The money is not special because it moved automatically — the benefit '
-        'is entirely behavioural.',
+        'is entirely behavioral.',
   ),
 ];
 
@@ -1118,7 +1118,7 @@ const List<QuizQuestion> _unit5Practice = <QuizQuestion>[
     options: [
       'Utilities, deposit and getting to work',
       'The rent itself',
-      'The colour of the walls',
+      'The color of the walls',
       'Nothing — rent is the full cost',
     ],
     correctIndex: 0,
@@ -1401,7 +1401,7 @@ const List<QuizQuestion> _unit12Practice = <QuizQuestion>[
     options: [
       'Whichever looks newer',
       'What each costs to insure, fuel and repair for a year',
-      'The colour and the trim level',
+      'The color and the trim level',
       'They cost the same — the price is the price',
     ],
     correctIndex: 1,
@@ -1708,7 +1708,7 @@ const List<QuizQuestion> _unit13Practice = <QuizQuestion>[
   QuizQuestion(
     id: 'u13p6',
     skillId: QuizSkills.complaints,
-    prompt: 'A collector contacts you about a debt you do not recognise. You:',
+    prompt: 'A collector contacts you about a debt you do not recognize. You:',
     options: [
       'Pay it to make it go away',
       'Ignore every letter permanently',
@@ -1752,7 +1752,7 @@ const List<QuizQuestion> _unit13Quiz = <QuizQuestion>[
     ],
     correctIndex: 1,
     explanation:
-        'Unrecognised accounts, addresses you never lived at, and inquiries '
+        'Unrecognized accounts, addresses you never lived at, and inquiries '
         'you did not trigger are how fraud shows up on paper.',
   ),
   QuizQuestion(
@@ -2071,7 +2071,7 @@ const List<QuizQuestion> _unit7Practice = <QuizQuestion>[
     options: [
       'The bus fare that gets you to school',
       'The newest phone when yours still works',
-      'A skin for your favourite game',
+      'A skin for your favorite game',
       'Concert tickets your friends are buying',
     ],
     correctIndex: 0,
@@ -2168,7 +2168,7 @@ const List<QuizQuestion> _unit7Quiz = <QuizQuestion>[
     correctIndex: 2,
     explanation:
         'Adverts sell a feeling first and a product second. Knowing that is '
-        'most of the defence.',
+        'most of the defense.',
   ),
   QuizQuestion(
     id: 'u7q3',
@@ -2514,7 +2514,7 @@ const List<QuizQuestion> _unit8Test = <QuizQuestion>[
     prompt: 'Before drawing any conclusion from a chart, check:',
     options: [
       'Both axis labels and the time range',
-      'The colour scheme',
+      'The color scheme',
       'Whether the line is straight',
       'How many people shared it',
     ],
@@ -3224,7 +3224,7 @@ const List<QuizQuestion> _unit11Practice = <QuizQuestion>[
   QuizQuestion(
     id: 'u11p9',
     skillId: QuizSkills.allowanceEarning,
-    prompt: 'You do a job for a neighbour and they pay you. That money is:',
+    prompt: 'You do a job for a neighbor and they pay you. That money is:',
     options: [
       'A gift, because you did not have to do it',
       'Earned, because you did work for it',

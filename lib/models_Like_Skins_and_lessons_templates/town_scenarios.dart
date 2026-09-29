@@ -2845,7 +2845,7 @@ kTownScenarios = <String, List<TownScenario>>{
     TownScenario(
       id: 'pet_holiday',
       prompt:
-          'You are away for a week. Boarding costs \$140. A neighbour will '
+          'You are away for a week. Boarding costs \$140. A neighbor will '
           'look in for \$40. A friend has offered for free.',
       choices: [
         TownChoice(
@@ -2858,7 +2858,7 @@ kTownScenarios = <String, List<TownScenario>>{
           literacy: 10,
         ),
         TownChoice(
-          label: 'Pay the neighbour (\$40)',
+          label: 'Pay the neighbor (\$40)',
           outcome:
               'You paid for reliability and kept the friendship out of it. '
               'Paying is often the price of not owing anybody.',
@@ -2885,7 +2885,7 @@ kTownScenarios = <String, List<TownScenario>>{
 /// Index 0 is the spot's own built-in encounter; 1.. are [kTownScenarios].
 /// Derived from the date and the spot id, so:
 ///
-/// * every spot shows something different from its neighbours on the same
+/// * every spot shows something different from its neighbors on the same
 ///   day (the id is part of the hash);
 /// * the town is *stable within a day*, so a player can walk out and back in
 ///   without the scene rerolling — that reroll would turn a decision into a

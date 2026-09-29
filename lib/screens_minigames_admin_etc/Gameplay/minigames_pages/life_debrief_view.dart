@@ -328,20 +328,20 @@ class _MoneyCurve extends StatelessWidget {
             // A peak of nothing is not a peak worth a pill.
             if (tally.peakAge != null && tally.peakNetWorth > 0)
               _Pill(
-                colour: _warn,
+                color: _warn,
                 label:
                     'Peak ${groupedNumber(tally.peakNetWorth)} at '
                     '${tally.peakAge}',
               ),
             if (tally.lowAge != null && tally.lowNetWorth < 0)
               _Pill(
-                colour: _bad,
+                color: _bad,
                 label:
                     'Low ${groupedNumber(tally.lowNetWorth)} at '
                     '${tally.lowAge}',
               ),
             if (tally.firstJobAge != null)
-              _Pill(colour: _sky, label: 'First job at ${tally.firstJobAge}'),
+              _Pill(color: _sky, label: 'First job at ${tally.firstJobAge}'),
           ],
         ),
       ],
@@ -356,14 +356,14 @@ class _MoneyCurve extends StatelessWidget {
 }
 
 class _Pill extends StatelessWidget {
-  const _Pill({required this.colour, required this.label});
+  const _Pill({required this.color, required this.label});
 
-  final Color colour;
+  final Color color;
   final String label;
 
   @override
   Widget build(BuildContext context) {
-    final chip = AppTheme.tintedChip(colour, alpha: 0.16);
+    final chip = AppTheme.tintedChip(color, alpha: 0.16);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
@@ -477,14 +477,14 @@ class _CurvePainter extends CustomPainter {
         ..strokeCap = StrokeCap.round,
     );
 
-    void dot(int? age, Color colour) {
+    void dot(int? age, Color color) {
       if (age == null) return;
       final at = points.where((p) => p.age == age);
       if (at.isEmpty) return;
       final p = at.first;
-      final centre = Offset(x(p.age), y(p.netWorth));
-      canvas.drawCircle(centre, 6, Paint()..color = const Color(0xFF0E2A1D));
-      canvas.drawCircle(centre, 4.2, Paint()..color = colour);
+      final center = Offset(x(p.age), y(p.netWorth));
+      canvas.drawCircle(center, 6, Paint()..color = const Color(0xFF0E2A1D));
+      canvas.drawCircle(center, 4.2, Paint()..color = color);
     }
 
     dot(jobAge, _sky);
@@ -534,7 +534,7 @@ class _AreaBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colour = score >= 60
+    final color = score >= 60
         ? _good
         : score >= 35
         ? _warn
@@ -560,7 +560,7 @@ class _AreaBar extends StatelessWidget {
               value: score / 100,
               minHeight: 8,
               backgroundColor: Colors.white.withValues(alpha: 0.08),
-              valueColor: AlwaysStoppedAnimation<Color>(colour),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),
         ),
@@ -571,7 +571,7 @@ class _AreaBar extends StatelessWidget {
             '$score',
             textAlign: TextAlign.right,
             style: AppTheme.numeric(
-              color: colour,
+              color: color,
               fontSize: 12.5,
               fontWeight: FontWeight.w800,
             ),
@@ -598,7 +598,7 @@ class _InNumbers extends StatelessWidget {
         _Tile(
           label: 'Of your pay, saved',
           value: '${(tally.savingsRate * 100).round()}%',
-          colour: tally.savingsRate >= 0.15
+          color: tally.savingsRate >= 0.15
               ? _good
               : tally.savingsRate >= 0.05
               ? _warn
@@ -608,39 +608,39 @@ class _InNumbers extends StatelessWidget {
         _Tile(
           label: 'Surprise bills covered',
           value: '${tally.shocksCovered} of ${tally.shocksHit}',
-          colour: tally.shocksCovered == tally.shocksHit ? _good : _bad,
+          color: tally.shocksCovered == tally.shocksHit ? _good : _bad,
         ),
       if (tally.interestPaid > 0)
         _Tile(
           label: 'Paid in interest',
           value: groupedNumber(tally.interestPaid),
-          colour: _bad,
+          color: _bad,
         ),
       if (tally.weeksMissed > 0)
         _Tile(
           label: 'Weeks of work missed',
           value: '${tally.weeksMissed}',
-          colour: tally.timesLaidOff > 0 ? _bad : _warn,
+          color: tally.timesLaidOff > 0 ? _bad : _warn,
         ),
       if (tally.raises > 0)
-        _Tile(label: 'Pay rises', value: '${tally.raises}', colour: _good),
+        _Tile(label: 'Pay rises', value: '${tally.raises}', color: _good),
       if (tally.contactsMade > 0)
         _Tile(
           label: 'Contacts, and leads',
           value: '${tally.contactsMade}, ${tally.referrals}',
-          colour: tally.referrals > 0 ? _good : _sky,
+          color: tally.referrals > 0 ? _good : _sky,
         ),
       if (tally.townEarned > 0)
         _Tile(
           label: 'Earned in town',
           value: groupedNumber(tally.townEarned),
-          colour: _warn,
+          color: _warn,
         ),
       if (tally.sideJobs > 0)
         _Tile(
           label: 'Side jobs worked',
           value: '${tally.sideJobs}',
-          colour: _sky,
+          color: _sky,
         ),
     ];
     if (tiles.isEmpty) return const SizedBox.shrink();
@@ -671,11 +671,11 @@ class _InNumbers extends StatelessWidget {
 }
 
 class _Tile extends StatelessWidget {
-  const _Tile({required this.label, required this.value, required this.colour});
+  const _Tile({required this.label, required this.value, required this.color});
 
   final String label;
   final String value;
-  final Color colour;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -684,7 +684,7 @@ class _Tile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colour.withValues(alpha: 0.35)),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -692,7 +692,7 @@ class _Tile extends StatelessWidget {
           Text(
             value,
             style: AppTheme.numeric(
-              color: colour,
+              color: color,
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
@@ -734,7 +734,7 @@ class _Story extends StatelessWidget {
         if (turning != null) ...[
           const SizedBox(height: 12),
           _Beat(
-            colour: _bad,
+            color: _bad,
             icon: Icons.turn_right_rounded,
             heading: 'Turning point, age ${turning.age}',
             body: _turningBody(turning),
@@ -743,7 +743,7 @@ class _Story extends StatelessWidget {
         if (best != null) ...[
           const SizedBox(height: 12),
           _Beat(
-            colour: _good,
+            color: _good,
             icon: Icons.thumb_up_alt_rounded,
             heading: 'Best call, age ${best.age}',
             body:
@@ -791,26 +791,26 @@ String _signed(int value) =>
 
 class _Beat extends StatelessWidget {
   const _Beat({
-    required this.colour,
+    required this.color,
     required this.icon,
     required this.heading,
     required this.body,
   });
 
-  final Color colour;
+  final Color color;
   final IconData icon;
   final String heading;
   final String body;
 
   @override
   Widget build(BuildContext context) {
-    final chip = AppTheme.tintedChip(colour, alpha: 0.14);
+    final chip = AppTheme.tintedChip(color, alpha: 0.14);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: chip.fill,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colour.withValues(alpha: 0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -860,7 +860,7 @@ class _Findings extends StatelessWidget {
 
   final List<LifeFinding> findings;
 
-  Color _colour(LifeFindingKind kind) => switch (kind) {
+  Color _color(LifeFindingKind kind) => switch (kind) {
     LifeFindingKind.fix => _bad,
     LifeFindingKind.watch => _warn,
     LifeFindingKind.strength => _good,
@@ -890,7 +890,7 @@ class _Findings extends StatelessWidget {
                   child: Icon(
                     _icon(finding.kind),
                     size: 17,
-                    color: _colour(finding.kind),
+                    color: _color(finding.kind),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -901,7 +901,7 @@ class _Findings extends StatelessWidget {
                       Text(
                         finding.title,
                         style: AppTheme.numeric(
-                          color: _colour(finding.kind),
+                          color: _color(finding.kind),
                           fontSize: 13.5,
                           fontWeight: FontWeight.w800,
                         ),

@@ -271,7 +271,7 @@ class _QuestRow extends StatelessWidget {
                   decoration: BoxDecoration(
                     // Opaque, and dark, rather than gold at 14% alpha. A
                     // translucent gold pill takes its contrast from whatever
-                    // row colour happens to be behind it, and the rows here
+                    // row color happens to be behind it, and the rows here
                     // are tinted per quest — the same "+15" measured 3.32:1
                     // on the mint row and 4.24:1 on the amber one. An opaque
                     // fill has one contrast ratio instead of five.

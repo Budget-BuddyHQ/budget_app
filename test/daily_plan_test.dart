@@ -45,7 +45,7 @@ void main() {
       // depended on unit_1 being *first in the list*; once the curriculum
       // was reordered chronologically (ages 4-6 first) that stopped being
       // true and the test failed for a reason that had nothing to do with
-      // the behaviour it was checking.
+      // the behavior it was checking.
       final firstUnit = lessonUnits.first;
       final firstTwo = firstUnit.lessons
           .where((l) => l.type == LessonNodeType.lesson)

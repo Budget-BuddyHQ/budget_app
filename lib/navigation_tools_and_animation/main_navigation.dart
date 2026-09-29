@@ -293,7 +293,7 @@ class _MainNavigationState extends State<MainNavigation> {
 /// First version of this bar was flat-filled and text-only, and read as
 /// "generic row of buttons" rather than as the app's own identity — hence
 /// "I'm not getting that top nav bar feeling". What gives it that now: the
-/// fill is a gradient rather than one flat colour, matching the puffy-card
+/// fill is a gradient rather than one flat color, matching the puffy-card
 /// look used everywhere else in the app; and the leaderboard — previously
 /// reachable only from a small button buried in Home's now-removed AppBar
 /// — gets its own permanent trophy pill here, next to Profile, so it is
@@ -357,7 +357,7 @@ class _TopIconBar extends StatelessWidget {
                 tourId: 'daily',
                 onTap: () => onSelected(AppTabIndex.daily),
               ),
-              // Expanded on both sides keeps the wordmark optically centred
+              // Expanded on both sides keeps the wordmark optically centered
               // no matter how wide the two side groups end up.
               // The wordmark disappears rather than shrinking to nothing.
               //
@@ -506,7 +506,7 @@ class _TopIconButton extends StatelessWidget {
   /// Daily, the leaderboard and Profile live up here rather than in the
   /// bottom bar, so `TutorialTargets.navTabRect` — which derives its
   /// rectangle from the bottom bar's geometry — cannot find them. Without a
-  /// key the tour simply centred its card and pointed at nothing for three of
+  /// key the tour simply centered its card and pointed at nothing for three of
   /// its eleven steps.
   ///
   /// Safe as a `GlobalKey` where the bottom tabs were not: this bar is built

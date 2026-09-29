@@ -402,7 +402,7 @@ const List<LifeEvent> kLifeEventsSchoolWork = <LifeEvent>[
       LifeChoice(
         label: 'Start lessons now',
         outcome:
-            'Nervous, then less nervous. You get your licence sooner and '
+            'Nervous, then less nervous. You get your license sooner and '
             'pay for it earlier.',
         money: -60,
         happiness: 4,

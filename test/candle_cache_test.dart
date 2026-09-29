@@ -29,7 +29,7 @@ String _body() => jsonEncode({
 void main() {
   group('candle caching', () {
     test('a repeated range is served from cache, not the network', () {
-      // The behaviour that matters: tapping 1D, then 5D, then back to 1D
+      // The behavior that matters: tapping 1D, then 5D, then back to 1D
       // used to be three network round trips against a free tier that
       // allows eight requests a minute.
       return _withCountingClient((service, calls) async {

@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 ///
 /// The game had four "enemies" — Credit Card Debt, Payday Loan, Medical Bill,
 /// Auto Loan — with **identical hit points, identical speed, identical
-/// colour, identical reward**. They were one enemy with four labels. A second
+/// color, identical reward**. They were one enemy with four labels. A second
 /// real type unlocked at wave 3, and that was the whole roster.
 ///
 /// So a player fought the same thing for twenty minutes, and the names taught
@@ -16,7 +16,7 @@ import 'package:flutter/material.dart';
 ///
 /// # The design rule every entry follows
 ///
-/// **The behaviour is the lesson.** Not a caption, not a tooltip — how the
+/// **The behavior is the lesson.** Not a caption, not a tooltip — how the
 /// thing moves and what it costs you. A payday loan is small and weak and
 /// drains you faster than anything else on screen, because that is what a
 /// payday loan is. A student loan has enormous health and barely moves,
@@ -56,7 +56,7 @@ class BrawlEnemy {
 
   /// One line, shown on the post-wave card.
   ///
-  /// Explains the *behaviour the player just experienced*, which is the only
+  /// Explains the *behavior the player just experienced*, which is the only
   /// moment a sentence about debt is going to land — right after a payday
   /// loan has drained half their balance in four seconds.
   final String lesson;

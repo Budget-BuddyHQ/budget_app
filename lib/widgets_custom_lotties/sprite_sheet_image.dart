@@ -47,7 +47,7 @@ class SpriteSheetImage extends StatelessWidget {
     final sheetH = cellHeight * rows * scale;
 
     // Alignment maps -1..1 across the available travel. With a single row or
-    // column there is no travel, so clamp to centre to avoid dividing by zero.
+    // column there is no travel, so clamp to center to avoid dividing by zero.
     final alignX = columns > 1 ? (column / (columns - 1)) * 2 - 1 : 0.0;
     final alignY = rows > 1 ? (row / (rows - 1)) * 2 - 1 : 0.0;
 

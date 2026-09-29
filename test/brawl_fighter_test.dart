@@ -94,7 +94,7 @@ void main() {
     test('the cell never runs off the end of its sheet', () {
       // Cheap arithmetic guard: if the grid constants are ever edited without
       // repacking the sheets, this catches it before a player sees a sliver of
-      // the neighbouring frame stapled to their fighter.
+      // the neighboring frame stapled to their fighter.
       final frame = byId('villager_classic').canvasFrame(
         VillagerBody.masculine,
       );
@@ -110,7 +110,7 @@ void main() {
 
   group('the roster this unlocks', () {
     test('there are far more fighters than the Brawl had characters', () {
-      // The point of the change: the customise screen becomes a character
+      // The point of the change: the customize screen becomes a character
       // select. Twenty-four skins is twenty-four fighters, at no art cost.
       expect(budgetBuddySkins.length, greaterThanOrEqualTo(20));
     });

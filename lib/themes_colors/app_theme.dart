@@ -23,7 +23,7 @@ class AppTheme {
   // lightened from #B9D1C6 after the contrast audit. old value was fine
   // against the page (9.1:1) but NOT against the cards - those get tinted
   // with each screen's accent and go as light as #436452, where it came out
-  // 4.08:1. this is the colour basically every secondary label uses so one
+  // 4.08:1. this is the color basically every secondary label uses so one
   // step lighter killed a whole pile of findings in one go. still looks
   // muted next to textPrimary so nothing lost
   static const Color textMuted = Color(0xFFC8DDD3);
@@ -102,7 +102,7 @@ class AppTheme {
   /// 30px alike, because they share skeletons rather than lose detail.
   ///
   /// **Pixelify stays for mixed-case titles** — "Play", "Play Life", the
-  /// wordmark — which is every place the app is recognised by it, and where
+  /// wordmark — which is every place the app is recognized by it, and where
   /// it measures fine. This is only for the shouty labels: badges, section
   /// headers, chips. `test/caps_legibility_test.dart` holds the line.
   ///
@@ -156,7 +156,7 @@ class AppTheme {
     ),
   ];
 
-  /// A soft, colour-tinted "puffy" glow — used instead of flat black shadows
+  /// A soft, color-tinted "puffy" glow — used instead of flat black shadows
   /// to make cards/buttons read as raised and bubbled-up rather than flat.
   /// Always visible at [restAlpha] (so touch devices, which never hover,
   /// still see it) and can be intensified for a hover/press state.
@@ -386,7 +386,7 @@ class AppTheme {
   }
 
   /// The app's shared "puffy" card look: a rounded fill with a soft
-  /// colour-tinted glow and a faint highlight border, instead of a flat
+  /// color-tinted glow and a faint highlight border, instead of a flat
   /// panel with a hard black shadow.
   static BoxDecoration getPuffyDecoration({
     required Color accent,
@@ -420,7 +420,7 @@ class AppTheme {
         0.0722 * channel(c.b);
   }
 
-  /// The WCAG contrast ratio between two opaque colours, 1.0 to 21.0.
+  /// The WCAG contrast ratio between two opaque colors, 1.0 to 21.0.
   static double contrast(Color a, Color b) {
     final la = luminance(a);
     final lb = luminance(b);
@@ -433,7 +433,7 @@ class AppTheme {
   ///
   /// **Rounded to whole 8-bit channels**, because that is what a screen can
   /// paint. It used to return the exact floating-point blend, and
-  /// [legibleOn] would then prove a label against a colour no pixel ever
+  /// [legibleOn] would then prove a label against a color no pixel ever
   /// shows. That only matters at the threshold, which is exactly where the
   /// walk stops: the Pink Dream skin's rarity letter cleared its chip at
   /// 4.500:1 against the float fill (63.62, 62.72, 55.54), and measured
@@ -454,12 +454,12 @@ class AppTheme {
 
   /// [tint] shifted just far enough in lightness to be readable on [surface].
   ///
-  /// **Why this is a function and not a lookup table.** The app colours
-  /// hundreds of small chips by *meaning* — a category's colour, a rarity's
-  /// colour, a stat's colour — and then writes the label in that same colour
+  /// **Why this is a function and not a lookup table.** The app colors
+  /// hundreds of small chips by *meaning* — a category's color, a rarity's
+  /// color, a stat's color — and then writes the label in that same color
   /// over a translucent wash of it. That reads beautifully when the tint is
   /// bright and becomes unreadable when it is not, and which is which depends
-  /// on a colour chosen somewhere else entirely. Hardcoding a legible variant
+  /// on a color chosen somewhere else entirely. Hardcoding a legible variant
   /// beside every tint means the two drift apart the first time one changes.
   ///
   /// So: keep the hue and saturation, walk the lightness away from the
@@ -475,7 +475,7 @@ class AppTheme {
     final hsl = HSLColor.fromColor(flat);
 
     // Walk both ways and take whichever reaches the target with the *smaller*
-    // change, so the result stays as close to the designer's colour as the
+    // change, so the result stays as close to the designer's color as the
     // target allows.
     //
     // Trying only one direction was the first version's mistake. It picked
@@ -508,23 +508,23 @@ class AppTheme {
 
     // Neither ramp reaches the target — this hue cannot make it against this
     // surface. Return the end that gets furthest rather than the original: it
-    // is the most legible this colour gets, and still recognisably itself.
+    // is the most legible this color gets, and still recognizably itself.
     final white = hsl.withLightness(1.0).toColor();
     final black = hsl.withLightness(0.0).toColor();
     return contrast(white, surface) >= contrast(black, surface) ? white : black;
   }
 
-  /// A tinted chip: the fill and the label colour, together.
+  /// A tinted chip: the fill and the label color, together.
   ///
   /// The app's most common small component is a wash of some meaningful
-  /// colour with the label written in that same colour — rarity badges,
+  /// color with the label written in that same color — rarity badges,
   /// difficulty pills, stat meters, category tags. It is also where nearly
   /// every legibility failure came from, for two compounding reasons:
   ///
   /// 1. The wash raises the background *towards* the label, so the darker the
   ///    tint the closer the two get. A deep-blue legendary badge measured
   ///    **1.04:1** — a badge with no letter on it. At the call site both
-  ///    colours are the same identifier, so nothing looks wrong.
+  ///    colors are the same identifier, so nothing looks wrong.
   /// 2. The wash is translucent, so what the label actually sits on depends
   ///    on whatever is behind the chip — which the call site cannot know and
   ///    which changes when the chip is reused somewhere else.

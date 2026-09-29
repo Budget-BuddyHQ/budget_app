@@ -823,7 +823,7 @@ class _ShopSheetState extends State<ShopSheet> {
               LifeRow(
                 icon: Icons.badge_rounded,
                 title: life.hasLicense
-                    ? 'You have a driving licence'
+                    ? 'You have a driving license'
                     : 'Take your driving test',
                 subtitle: life.hasLicense
                     ? 'A car is possible.'

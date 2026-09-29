@@ -8,7 +8,7 @@ import 'pixel_kit.dart';
 /// `assets/images/ui/panel_dialog.png` — a flat green rectangle with a gold
 /// stripe, which was the whole reason the app read as Material with a pixel
 /// font on top. That art and its folder are gone; the real surfaces come from
-/// the sliced, recoloured pack (`tool/build_ui_pack.py`) that [PixelFrame]
+/// the sliced, recolored pack (`tool/build_ui_pack.py`) that [PixelFrame]
 /// draws.
 ///
 /// Prefer [PixelFrame] directly in new code: it exposes the four surface

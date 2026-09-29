@@ -259,19 +259,19 @@ void main() {
 
     test('every money-decision building is a short walk from the square', () {
       // The point of the radial layout: no spot should be a hike. Measured
-      // as Manhattan distance to the plaza centre rather than by pathing,
+      // as Manhattan distance to the plaza center rather than by pathing,
       // which is enough to catch a building placed out in a far corner.
-      const squareCentre = (x: 25, y: 24);
+      const squareCenter = (x: 25, y: 24);
       for (final spot in kTownSpots) {
         final distance =
-            (spot.tileX - squareCentre.x).abs() +
-            (spot.tileY - squareCentre.y).abs();
+            (spot.tileX - squareCenter.x).abs() +
+            (spot.tileY - squareCenter.y).abs();
         expect(
           distance,
           lessThanOrEqualTo(30),
           reason:
               '${spot.id} is $distance tiles from the square — the town is '
-              'meant to be walkable from its centre',
+              'meant to be walkable from its center',
         );
       }
     });

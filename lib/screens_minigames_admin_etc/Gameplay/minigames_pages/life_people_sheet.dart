@@ -132,7 +132,7 @@ class _PersonRow extends StatelessWidget {
           : LifeBar(
               label: person.status,
               value: person.closeness,
-              color: person.statusColour,
+              color: person.statusColor,
               height: 7,
             ),
     );
@@ -174,7 +174,7 @@ class PersonSheet extends StatelessWidget {
                     LifeBar(
                       label: 'How close you are',
                       value: person.closeness,
-                      color: person.statusColour,
+                      color: person.statusColor,
                       trailing: '${person.status}  ${person.closeness}',
                       height: 11,
                     )
@@ -212,7 +212,7 @@ class PersonSheet extends StatelessWidget {
                           ? 'Last saw them a year ago.'
                           : 'Last saw them ${life.age - seen} years ago.',
                       style: GoogleFonts.quicksand(
-                        color: person.statusColour,
+                        color: person.statusColor,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),

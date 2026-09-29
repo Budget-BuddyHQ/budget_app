@@ -23,7 +23,7 @@ export 'today_tab.dart' show MoneyHabitsTab;
 
 /// The numbered step badge on the "How this works" card.
 ///
-/// Mint text on a mint wash on a mint-lit panel — three shades of one colour
+/// Mint text on a mint wash on a mint-lit panel — three shades of one color
 /// stacked, which measured 2.39:1. Computed once: fill and ink have to move
 /// together or the fix comes undone the next time either is touched.
 final _stepChip = AppTheme.tintedChip(
@@ -1638,7 +1638,7 @@ class _MoodPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Opaque fill and a measured ink — the mood colours run from mint to a
+    // Opaque fill and a measured ink — the mood colors run from mint to a
     // pale amber, and amber-on-amber was one of the contrast audit's finds.
     final chip = AppTheme.tintedChip(mood.color, on: AppTheme.panelStrong);
 
@@ -1692,7 +1692,7 @@ class _JarStat extends StatelessWidget {
     // Full AA, not the large-text allowance: the value on this card is 20px
     // and bold, but the little icon beside the label is 15px, and the ink is
     // shared between them. Sizing the target to the largest thing that uses
-    // a colour is how small icons end up under the bar.
+    // a color is how small icons end up under the bar.
     final chip = AppTheme.tintedChip(accent, alpha: 0.14);
 
     return Container(

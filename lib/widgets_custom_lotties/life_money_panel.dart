@@ -411,7 +411,7 @@ class _BudgetSegment extends StatelessWidget {
     return Expanded(
       // A zero-percent slice must not take a flex of 0 — `Expanded(flex: 0)`
       // asserts. It collapses to a hairline instead, which also keeps all
-      // three colours on screen while a slider is dragged to zero.
+      // three colors on screen while a slider is dragged to zero.
       flex: percent < 1 ? 1 : percent * 10,
       child: ColoredBox(
         color: color,

@@ -35,7 +35,7 @@ import 'reading_grade.dart';
 /// # Why the model is separate from the card
 ///
 /// So the claims can be tested. Every line here asserts something about the
-/// app's real behaviour; a test that the under-9 band reports fewer questions
+/// app's real behavior; a test that the under-9 band reports fewer questions
 /// than the adult band is a test of the routing, not of the copy.
 class AgeScalingFact {
   const AgeScalingFact({

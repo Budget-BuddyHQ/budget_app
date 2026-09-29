@@ -15,7 +15,7 @@ import '../../../themes_colors/app_theme.dart';
 
 /// Red text that can be read.
 ///
-/// The app's error red is 3.7 to 1 against the panel colour, which is under the
+/// The app's error red is 3.7 to 1 against the panel color, which is under the
 /// 4.5 that body text needs. This is that red lifted just far enough to clear
 /// it, so a reason a row is locked is red in spirit and legible in fact.
 Color errorInk([Color on = AppTheme.panel]) =>
@@ -218,7 +218,7 @@ class LifeCard extends StatelessWidget {
 ///
 /// The one bar everything shares, so "Grades", "Performance", a friend's
 /// closeness and a stat all read the same way. The number is on the right in
-/// the number face, and the colour can be told to follow the value so a low
+/// the number face, and the color can be told to follow the value so a low
 /// bar reads as low before anybody reads it.
 class LifeBar extends StatelessWidget {
   const LifeBar({
@@ -574,7 +574,7 @@ class LifeDropdownItem<T> {
 ///
 /// **Asked for as:** *"the user can still choose from a dropdown."* Choosing a
 /// major, a line of work or a sport is a choice from a list, and a list is what
-/// a dropdown is for. It is a plain Material dropdown with the game's colours,
+/// a dropdown is for. It is a plain Material dropdown with the game's colors,
 /// so it behaves the way anybody expects a dropdown to.
 class LifeDropdown<T> extends StatelessWidget {
   const LifeDropdown({
@@ -802,7 +802,7 @@ class LifeTile extends StatelessWidget {
   }
 }
 
-/// A colour for a 0 to 100 value: red when it is low, amber in the middle,
+/// A color for a 0 to 100 value: red when it is low, amber in the middle,
 /// green when it is good. Used so a bar reads before its number does.
 Color valueColor(int value) {
   if (value >= 70) return const Color(0xFF85EFAC);

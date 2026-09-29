@@ -391,7 +391,7 @@ void main() {
       // A lock that only says "locked" reads as a bug and teaches nothing —
       // the same rule the town building locks follow in `town_unlocks.dart`.
       expect(kLeakPatrolLockHint.toLowerCase(), contains('goomba'));
-      expect(kLeakPatrolLockHint.toLowerCase(), contains('customise'));
+      expect(kLeakPatrolLockHint.toLowerCase(), contains('customize'));
     });
   });
 }

@@ -197,7 +197,7 @@ void main() {
       ]) {
         expect(LifeSimController.hasTownEquivalent(action), isTrue);
       }
-      expect(LifeSimController.hasTownEquivalent(LifeAction.practise), isFalse);
+      expect(LifeSimController.hasTownEquivalent(LifeAction.practice), isFalse);
     });
   });
 }

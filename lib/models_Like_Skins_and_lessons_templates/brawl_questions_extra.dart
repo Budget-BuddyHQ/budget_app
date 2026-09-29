@@ -10,10 +10,10 @@
 ///   handle, and the original bank went almost straight from "what is a
 ///   budget" to "what is a 401(k)".
 /// * **Scams, fees and fine print.** Subscription traps, overdraft charges,
-///   phishing, unit pricing. Recognising these is the single highest-value
+///   phishing, unit pricing. Recognizing these is the single highest-value
 ///   thing this app can teach a teenager, and it was the thinnest area.
 ///
-/// **Distractors are real misconceptions, not jokes.** "The colour of the
+/// **Distractors are real misconceptions, not jokes.** "The color of the
 /// card" teaches nothing; "the card with the highest limit" is a mistake
 /// teenagers actually make, and a player who picks it has learned something
 /// when the explanation lands.
@@ -129,7 +129,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
         'salary?',
     options: [
       'An employer match on retirement contributions',
-      'The colour of the uniform',
+      'The color of the uniform',
       'How the company logo looks',
       'The office postcode',
     ],
@@ -390,7 +390,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
         'Someone claiming to be from your bank asks you to pay a fee '
         'in gift cards. What is this?',
     options: [
-      'A scam — no legitimate organisation asks to be paid in gift cards',
+      'A scam — no legitimate organization asks to be paid in gift cards',
       'A normal way banks collect small charges',
       'A limited-time promotional payment method',
       'Standard practice for online-only banks',
@@ -398,7 +398,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
     correctIndex: 0,
     explanation:
         'Gift-card payment is one of the four classic scam signs, alongside '
-        'impersonating a known organisation, inventing urgency, and claiming '
+        'impersonating a known organization, inventing urgency, and claiming '
         'there is a problem or a prize.',
   ),
   BrawlQuestion(
@@ -557,7 +557,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
     explanation:
         'The card is there because the default is to charge it. A reminder set '
         'for two days before the trial ends costs nothing and is the whole '
-        'defence.',
+        'defense.',
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,

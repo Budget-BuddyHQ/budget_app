@@ -13,9 +13,9 @@ import '../../models_Like_Skins_and_lessons_templates/review_schedule.dart';
 import '../../widgets_custom_lotties/life_money_panel.dart';
 import '../../widgets_custom_lotties/age_scaled_note.dart';
 
-/// The budget and habit analyser, as a screen.
+/// The budget and habit analyzer, as a screen.
 ///
-/// Everything here comes from [analyseMoney]. This file decides how a finding
+/// Everything here comes from [analyzeMoney]. This file decides how a finding
 /// *looks*; it does not decide what counts as one, which is why the rules can
 /// be tested against a player who has pinned six habits and logged one
 /// without anybody having to build that player in a widget test.
@@ -30,7 +30,7 @@ class CoachReportView extends StatelessWidget {
   Widget build(BuildContext context) {
     final stats = context.watch<UserStatsController>().stats;
     final snap = snapshot ?? buildMoneySnapshot(stats);
-    final report = analyseMoney(snap);
+    final report = analyzeMoney(snap);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -319,7 +319,7 @@ class _ScoreRow extends StatelessWidget {
     // Red below a third, amber below two thirds, green above. The bands are
     // wide on purpose — this is meant to point at the weak one, not to be
     // optimised to 100.
-    final colour = score < 34
+    final color = score < 34
         ? const Color(0xFFFF8474)
         : score < 67
         ? AppTheme.warningOrange
@@ -345,7 +345,7 @@ class _ScoreRow extends StatelessWidget {
               value: score / 100,
               minHeight: 8,
               backgroundColor: Colors.white.withValues(alpha: 0.08),
-              valueColor: AlwaysStoppedAnimation<Color>(colour),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),
         ),
@@ -356,7 +356,7 @@ class _ScoreRow extends StatelessWidget {
             '$score',
             textAlign: TextAlign.right,
             style: AppTheme.numeric(
-              color: colour,
+              color: color,
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
@@ -691,7 +691,7 @@ class _DiagnosisCard extends StatelessWidget {
 /// Shared frame for the two diagnosis states.
 ///
 /// Extracted rather than duplicated because the two branches differ only in
-/// colour and words — and a copy-pasted panel is how the "nothing wrong"
+/// color and words — and a copy-pasted panel is how the "nothing wrong"
 /// state quietly stops matching the "here is the problem" one.
 class _DiagnosisShell extends StatelessWidget {
   const _DiagnosisShell({

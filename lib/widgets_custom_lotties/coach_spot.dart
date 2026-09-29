@@ -11,7 +11,7 @@ import 'fitted_label.dart';
 
 /// The coach, as one card that can go anywhere.
 ///
-/// **Why this exists.** The analyser in `money_analyzer.dart` is the most
+/// **Why this exists.** The analyzer in `money_analyzer.dart` is the most
 /// interesting thing this app does — it reads five separate areas of a
 /// player's history and tells them the one thing worth knowing — and until
 /// now it was reachable through exactly one route: the sixth tab of the Money
@@ -64,7 +64,7 @@ class CoachSpot extends StatelessWidget {
   Widget build(BuildContext context) {
     final report =
         debugReport ??
-        analyseMoney(
+        analyzeMoney(
           buildMoneySnapshot(context.watch<UserStatsController>().stats),
         );
 
@@ -178,7 +178,7 @@ class CoachSpot extends StatelessWidget {
   /// Deliberately not "Warning" / "Problem".
   ///
   /// This app is used by nine-year-olds and the findings are about their own
-  /// money behaviour. "Your coach noticed" is the same information without
+  /// money behavior. "Your coach noticed" is the same information without
   /// the implication that they are in trouble.
   static String _labelFor(MoneyFindingKind kind) => switch (kind) {
     MoneyFindingKind.fix => 'YOUR COACH NOTICED',

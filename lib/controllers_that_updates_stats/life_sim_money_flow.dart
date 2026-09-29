@@ -96,7 +96,7 @@ extension LifeMoneyFlow on LifeSimController {
         note:
             'Your coins are yours to spend on fun things or to save. When you '
             'grow up, the things above become your bills, so this is a good '
-            'time to practise saving.',
+            'time to practice saving.',
       );
     }
 

@@ -39,7 +39,7 @@ enum LifeEndingArchetype {
 
   /// A face for this ending.
   ///
-  /// An ending screen that differs only in its accent colour and one
+  /// An ending screen that differs only in its accent color and one
   /// Material glyph reads as the same screen seven times — which is exactly
   /// what it was. A portrait makes each ending a *person* the player ended
   /// up as, and that is the thing worth collecting.
@@ -95,7 +95,7 @@ extension LifeEndingHint on LifeEndingArchetype {
   /// **Why the endings needed this.** The collection is the strongest reason
   /// in the app to play a second life — it is the one thing that rewards
   /// playing *differently* rather than playing more, which is exactly the
-  /// behaviour a financial-literacy game wants. But it was only ever a row of
+  /// behavior a financial-literacy game wants. But it was only ever a row of
   /// locked tiles saying "Undiscovered", which tells a player there is
   /// something to find and nothing whatsoever about how to find it. A
   /// collection you cannot make progress towards on purpose is not a

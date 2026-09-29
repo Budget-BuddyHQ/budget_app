@@ -69,7 +69,7 @@ class MoneyHabitController extends ChangeNotifier {
 
   JarStage get jarStage => JarStage.forXp(jarXp);
 
-  /// The jar's face and pill colour.
+  /// The jar's face and pill color.
   ///
   /// A jar that has never been used reads as [JarMood.steady] rather than
   /// [JarMood.slipping]. The day-count rule alone put a brand-new player in

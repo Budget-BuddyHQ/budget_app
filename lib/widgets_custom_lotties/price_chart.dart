@@ -96,7 +96,7 @@ class PriceChart extends StatelessWidget {
 /// - **One finger, horizontal.** A `HorizontalDragGestureRecognizer` never
 ///   competes with a vertical `ListView`, so it always wins — which is why
 ///   the single-finger interaction is on horizontal drag rather than on a
-///   scale recogniser. A scale recogniser accepts pointers in *any*
+///   scale recognizer. A scale recognizer accepts pointers in *any*
 ///   direction, so it fights the parent list for every vertical pixel and
 ///   usually loses. That is the arena fight the previous version kept
 ///   losing.
@@ -105,7 +105,7 @@ class PriceChart extends StatelessWidget {
 ///   crosshair. Zoomed in, dragging pans — which is what someone who just
 ///   zoomed in expects.
 /// - **Two fingers.** Pinch zooms, anchored on the focal point rather than
-///   on the centre, so the candle under your fingers stays put. Two-pointer
+///   on the center, so the candle under your fingers stays put. Two-pointer
 ///   gestures do not conflict with a one-pointer list drag.
 /// - **Buttons.** Zoom in, out, fit, and pan left/right. Not decoration: a
 ///   mouse has no pinch, a trackpad's pinch is inconsistent across
@@ -113,7 +113,7 @@ class PriceChart extends StatelessWidget {
 ///   matter who wins the arena.
 ///
 /// The window is stored as **integer candle indices**, not as a zoom factor
-/// plus a fractional centre. A fractional centre drifts as it is repeatedly
+/// plus a fractional center. A fractional center drifts as it is repeatedly
 /// re-derived, so a pan-zoom-pan sequence would not land back where it
 /// started. With indices the visible slice is exactly what it says it is,
 /// and the price axis stays honest because [PriceChart] only ever sees the
@@ -307,7 +307,7 @@ class _InteractivePriceChartState extends State<InteractivePriceChart> {
                           ..onCancel = _clearHover;
                       }),
                   // Two fingers or more: pinch. Ignoring single-pointer
-                  // scales is what stops this recogniser claiming ordinary
+                  // scales is what stops this recognizer claiming ordinary
                   // vertical list drags.
                   ScaleGestureRecognizer:
                       GestureRecognizerFactoryWithHandlers<
@@ -764,11 +764,11 @@ class _PriceChartPainter extends CustomPainter {
         _axisStamp(bars[index].time),
         Colors.white.withValues(alpha: 0.42),
       );
-      final centre = chartWidth * (index / (bars.length - 1));
+      final center = chartWidth * (index / (bars.length - 1));
       final x = switch (align) {
         TextAlign.left => 0.0,
         TextAlign.right => chartWidth - tp.width,
-        _ => centre - tp.width / 2,
+        _ => center - tp.width / 2,
       };
       tp.paint(
         canvas,

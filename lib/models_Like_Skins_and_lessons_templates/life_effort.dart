@@ -49,7 +49,7 @@ class EffortRules {
     LifeAction.library: <double>[1.0, 0.5, 0.25],
     LifeAction.exercise: <double>[1.0, 0.5, 0.25],
     LifeAction.goOut: <double>[1.0, 0.5, 0.25],
-    LifeAction.practise: <double>[1.0, 0.5, 0.25],
+    LifeAction.practice: <double>[1.0, 0.5, 0.25],
     LifeAction.sideJob: <double>[1.0, 0.5, 0.25],
     LifeAction.spendTime: <double>[1.0, 0.5, 0.25],
     LifeAction.doctor: <double>[1.0, 0.5],

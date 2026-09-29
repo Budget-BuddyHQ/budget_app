@@ -732,7 +732,7 @@ class _ShortcutCard extends StatelessWidget {
 /// What a [_PictureTile] shows: a kit icon, or a piece of scene art.
 ///
 /// Two cases rather than one because they want opposite treatment. A 16px kit
-/// icon has to be scaled up hard and *must* stay nearest-neighbour or it
+/// icon has to be scaled up hard and *must* stay nearest-neighbor or it
 /// turns to soup; a mentor illustration is already the right size and wants
 /// to sit whole, not cropped.
 class _TileArt {

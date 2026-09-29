@@ -154,7 +154,7 @@ class Relationship {
     return 'Lost touch';
   }
 
-  Color get statusColour {
+  Color get statusColor {
     if (!isAlive) return const Color(0xFF9AA5B1);
     if (closeness >= 80) return const Color(0xFF85EFAC);
     if (closeness >= 55) return const Color(0xFF9CCC65);

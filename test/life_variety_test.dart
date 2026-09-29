@@ -27,9 +27,9 @@ import 'package:flutter_test/flutter_test.dart';
     }
     if (life.age > 6) {
       if (focus != null) {
-        if (rng.nextBool()) life.practise(focus);
+        if (rng.nextBool()) life.practice(focus);
       } else if (rng.nextInt(3) == 0) {
-        life.practise(LifeSkill.values[rng.nextInt(LifeSkill.values.length)]);
+        life.practice(LifeSkill.values[rng.nextInt(LifeSkill.values.length)]);
       }
     }
   }

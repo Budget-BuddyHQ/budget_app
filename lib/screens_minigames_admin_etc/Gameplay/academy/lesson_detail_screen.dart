@@ -1477,7 +1477,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     objectives: [
       'Explain what credit actually costs when a balance is carried',
       'Identify the habits that build a strong payment history',
-      'Recognise why a credit limit is not a spending target',
+      'Recognize why a credit limit is not a spending target',
     ],
     keyTerms: {
       'Credit':
@@ -1803,7 +1803,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     icon: Icons.scatter_plot_rounded,
     objectives: [
       'Explain what diversification protects against and what it does not',
-      'Recognise concentrated risk in a portfolio',
+      'Recognize concentrated risk in a portfolio',
       'Match the amount of risk you take to your time horizon',
     ],
     keyTerms: {
@@ -1892,14 +1892,14 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     icon: Icons.psychology_alt_rounded,
     objectives: [
       'Explain why selling during a downturn usually locks in the loss',
-      'Recognise hype, FOMO and tips as signals to slow down',
+      'Recognize hype, FOMO and tips as signals to slow down',
       'Write a plan you can follow when the market is falling',
     ],
     keyTerms: {
       'Market downturn':
           'a period when prices broadly fall — a normal feature, not a malfunction',
       'Paper loss':
-          'a drop in value you have not realised because you have not sold',
+          'a drop in value you have not realized because you have not sold',
       'FOMO':
           'fear of missing out, which reliably pushes people to buy high and sell low',
       'Dollar-cost averaging':
@@ -2082,7 +2082,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     objectives: [
       'Assemble budgeting, saving, credit and investing into one order of operations',
       'Decide what to do with a monthly surplus',
-      'Recognise lifestyle creep before it absorbs a raise',
+      'Recognize lifestyle creep before it absorbs a raise',
     ],
     keyTerms: {
       'Order of operations':
@@ -2147,7 +2147,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     objectives: [
       'Explain price as the meeting point of buyers and sellers',
       'Separate news-driven moves from long-term value',
-      'Recognise why daily swings are mostly noise',
+      'Recognize why daily swings are mostly noise',
     ],
     keyTerms: {
       'Volatility': 'how sharply a price swings up and down',
@@ -2321,7 +2321,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     icon: Icons.campaign_rounded,
     objectives: [
       'Explain what an advert is actually selling',
-      'Recognise sponsored content and influencer marketing',
+      'Recognize sponsored content and influencer marketing',
       'Name three pressure tactics used on young buyers',
     ],
     keyTerms: {
@@ -2348,7 +2348,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
             'reading a script borrows trust it did not earn.',
       ),
       _LessonSection(
-        title: 'The defence is naming it',
+        title: 'The defense is naming it',
         content:
             'Say out loud what the advert wants you to feel — cool, included, '
             'ahead of your friends. Naming it moves the decision from your gut '
@@ -2437,7 +2437,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
   'lesson_35': _LessonContent(
     icon: Icons.gpp_maybe_rounded,
     objectives: [
-      'Recognise the standard shape of a money scam',
+      'Recognize the standard shape of a money scam',
       'Explain why real prizes never ask you to pay',
       'Know what to do when something feels off',
     ],
@@ -2595,7 +2595,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     icon: Icons.warning_amber_rounded,
     objectives: [
       'Spot a truncated vertical axis',
-      'Recognise a cherry-picked time window',
+      'Recognize a cherry-picked time window',
       'Ask the right question of any financial chart',
     ],
     keyTerms: {
@@ -2635,7 +2635,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     objectives: [
       'Record spending in categories for a full month',
       'Turn small recurring amounts into annual figures',
-      'Change one specific behaviour based on the data',
+      'Change one specific behavior based on the data',
     ],
     keyTerms: {
       'Category': 'a spending group like food, transport, or games',
@@ -2755,7 +2755,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     objectives: [
       'State when tax is paid under each option',
       'Match the choice to your expected future tax rate',
-      'Recognise that both can be used over a career',
+      'Recognize that both can be used over a career',
     ],
     keyTerms: {
       'Roth': 'tax paid now, qualified withdrawals later are untaxed',
@@ -3090,7 +3090,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     icon: Icons.person_off_rounded,
     objectives: [
       'Describe how stolen details become opened accounts',
-      'Recognise the early signs before the damage compounds',
+      'Recognize the early signs before the damage compounds',
       'Know the one site to go to first',
     ],
     keyTerms: {
@@ -3114,7 +3114,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         content:
             'A bill for something you did not buy, a letter about an account '
             'you did not open, a card declined for no reason, or a credit '
-            'report entry you do not recognise. Any one of these is worth '
+            'report entry you do not recognize. Any one of these is worth '
             'ten minutes of checking.',
       ),
       _LessonSection(
@@ -3197,7 +3197,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       _LessonSection(
         title: 'What to scan for',
         content:
-            'Accounts you do not recognise, addresses you never lived at, and '
+            'Accounts you do not recognize, addresses you never lived at, and '
             'hard inquiries from lenders you never applied to. Those three '
             'are how fraud shows up on paper.',
       ),

@@ -138,7 +138,7 @@ class _UnitLessonBlock extends StatelessWidget {
   final double? accuracy;
   final int index;
 
-  /// 0-based unit position — picks this row's colour family via
+  /// 0-based unit position — picks this row's color family via
   /// [unitAccentFor].
   final int unitIndex;
   final int iconSeed;
@@ -190,7 +190,7 @@ class _UnitLessonBlock extends StatelessWidget {
               end: Alignment.bottomRight,
               colors: [
                 // Carries the parent unit's accent so a whole unit reads as
-                // one colour family instead of every row being the same green.
+                // one color family instead of every row being the same green.
                 Color.lerp(
                   AppTheme.panelStrong,
                   unitAccentFor(unitIndex),

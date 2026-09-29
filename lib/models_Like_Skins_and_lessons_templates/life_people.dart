@@ -123,12 +123,18 @@ List<Relationship> buildFamily(Random random, {required String surname}) {
       taken: taken,
     );
     taken.add(name);
+    // A younger sibling (negative offset) is not born until the player
+    // turns `-offset`, so "met" and "last seen" cannot default to player-age
+    // 0 for them the way they correctly can for a parent or grandparent --
+    // that produced a 3-year-old brother the player had supposedly last
+    // seen five years earlier, before he existed.
+    final bornAtPlayerAge = offset < 0 ? -offset : 0;
     return Relationship(
       name: name,
       kind: kind,
       closeness: closeness,
-      metAtAge: 0,
-      lastSeenAge: 0,
+      metAtAge: bornAtPlayerAge,
+      lastSeenAge: bornAtPlayerAge,
       role: role,
       ageOffset: offset,
     );

@@ -731,7 +731,7 @@ class UserStats {
 
   /// Which villager body the avatar renders with. Defaults from the player's
   /// self-described gender the first time, then follows any explicit choice
-  /// made in the customise screen.
+  /// made in the customize screen.
   VillagerBody get villagerBody {
     final explicit = spendingHabits[ProfileKeys.villagerBody];
     if (explicit != null) {
@@ -1516,7 +1516,7 @@ alter view public.leaderboard set (security_invoker = false);
   ///
   /// Always writes a local copy first so nothing is lost if the device is
   /// offline or Supabase isn't configured — matching the rest of this
-  /// service's "degrade gracefully" behaviour rather than failing the whole
+  /// service's "degrade gracefully" behavior rather than failing the whole
   /// submission when only the network leg is unavailable.
   Future<bool> submitFeedback({
     required String category,
@@ -1791,7 +1791,13 @@ alter view public.leaderboard set (security_invoker = false);
     await _cacheUserStats(stats);
     _localController.add(stats);
 
-    if (!_isSupabaseConnected) {
+    // A guest (or any other non-real id) can never have a row here -- see
+    // the identical guard and comment on `loadUserStats`. Without this,
+    // every single save while playing as a guest -- every year of Life,
+    // every purchase -- fired a doomed upsert against a `uuid` column with
+    // a non-uuid id, always failing with `22P02 invalid input syntax for
+    // type uuid`, logged and silently swallowed on every call.
+    if (!_isSupabaseConnected || !isRealUserId(stats.id)) {
       return const SyncState(
         synced: false,
         usedCache: true,

@@ -138,7 +138,7 @@ class TownSpot {
   /// Not hand-tuned any more: `tool/place_town_spots.py` snaps every one of
   /// these to a walkable tile that actually touches a building. The
   /// hand-placed originals had drifted — the cafe and the clinic were sitting
-  /// *four tiles* from the nearest solid thing, which on screen is a coloured
+  /// *four tiles* from the nearest solid thing, which on screen is a colored
   /// circle floating in the middle of a road. `town_layout_test` holds them
   /// there.
   final int tileX;
@@ -345,7 +345,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     title: 'Notice Board',
     prompt:
         'A hand-written note is pinned here: "Whoever keeps track of the '
-        'small stuff ends up with the big stuff. — a neighbour"',
+        'small stuff ends up with the big stuff. — a neighbor"',
     tileX: 40,
     tileY: 28,
     tileX2: 31,
@@ -949,7 +949,7 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
   ),
   TownNpc(
     id: 'npc_neighbour',
-    name: 'Neighbour',
+    name: 'Neighbor',
     look: TownNpcLook.fancy,
     tileX: 28,
     tileY: 27,
@@ -973,7 +973,7 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
 /// position owned by something else is a second copy of that position, and
 /// second copies go stale silently.
 ///
-/// Not the map centre: you leave home to go into town and come back to it,
+/// Not the map center: you leave home to go into town and come back to it,
 /// so spawning in the middle of the square made the map read as a level
 /// select rather than somewhere you live. `test/town_map_test.dart` checks
 /// the tile is walkable, reachable, and has two clear rows overhead so the

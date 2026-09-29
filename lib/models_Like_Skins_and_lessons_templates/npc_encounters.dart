@@ -123,7 +123,7 @@ const List<NpcAction> kNpcActions = <NpcAction>[
     npcId: 'npc_worker',
     headline: 'Someone bumps into you',
     detail:
-        'They apologise, steady you by the elbow, and are already walking '
+        'They apologize, steady you by the elbow, and are already walking '
         'the other way before you check your pockets.',
     acceptLabel: 'Check your pockets',
     declineLabel: 'Check your pockets',

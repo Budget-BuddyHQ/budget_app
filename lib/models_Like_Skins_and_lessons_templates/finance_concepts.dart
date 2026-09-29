@@ -64,7 +64,7 @@ extension FinanceConceptInfo on FinanceConcept {
   /// A one-glyph shorthand for the idea.
   ///
   /// Sits alongside [icon] rather than replacing it: Material icons carry
-  /// the app's own styling and tint to any accent colour, which is what a
+  /// the app's own styling and tint to any accent color, which is what a
   /// list row wants, while an emoji survives at 10px inside a chip where a
   /// tinted vector turns into a smudge. Both are used, in different places.
   ///

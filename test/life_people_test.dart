@@ -612,4 +612,63 @@ void main() {
       expect(life.activityGate(activityById('fair')!), contains('plenty'));
     });
   });
+
+  group('a family generated at birth', () {
+    // **Reported as:** a 3-year-old brother the player supposedly last saw
+    // five years ago -- two years before he was born. `buildFamily` gave
+    // every family member `metAtAge: 0` and `lastSeenAge: 0` regardless of
+    // `ageOffset`, which is only true for a parent or grandparent (always
+    // older, so always alive from the player's birth). A younger sibling has
+    // a *negative* offset and is not born until the player reaches
+    // `-offset`, so both fields have to start there instead, not at 0.
+    test(
+      'nobody is met or last seen before they are born',
+      () {
+        final random = Random(1);
+        for (var seed = 0; seed < 200; seed++) {
+          final family = buildFamily(random, surname: 'Test$seed');
+          for (final person in family) {
+            final bornAtPlayerAge = person.ageOffset < 0
+                ? -person.ageOffset
+                : 0;
+            expect(
+              person.metAtAge,
+              greaterThanOrEqualTo(bornAtPlayerAge),
+              reason:
+                  '${person.role} (offset ${person.ageOffset}) was "met" '
+                  'before they were born',
+            );
+            expect(
+              person.lastSeenAge,
+              greaterThanOrEqualTo(bornAtPlayerAge),
+              reason:
+                  '${person.role} (offset ${person.ageOffset}) was "last '
+                  'seen" before they were born',
+            );
+          }
+        }
+      },
+    );
+
+    test('a not-yet-born sibling is absent from the family list', () {
+      final life = person(age: 3, family: false);
+      life.debugPutPerson(
+        Relationship(
+          name: 'Future Sibling',
+          kind: RelationshipKind.family,
+          closeness: 60,
+          metAtAge: 6,
+          lastSeenAge: 6,
+          role: 'Brother',
+          ageOffset: -6,
+        ),
+      );
+      expect(
+        life.familyMembers.map((p) => p.name),
+        isNot(contains('Future Sibling')),
+        reason: 'a sibling six years younger than a three-year-old player '
+            'does not exist yet',
+      );
+    });
+  });
 }

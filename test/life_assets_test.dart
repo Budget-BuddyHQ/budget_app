@@ -63,7 +63,7 @@ void main() {
       }
     });
 
-    test('a car needs a licence, a bicycle does not', () {
+    test('a car needs a license, a bicycle does not', () {
       expect(asset('veh_used').needsLicense, isTrue);
       expect(asset('veh_bike').needsLicense, isFalse);
     });
@@ -131,14 +131,14 @@ void main() {
 
     test('says why it cannot, in the numbers of this life', () {
       final broke = person(money: 100);
-      expect(broke.buyGate(asset('veh_family')), 'You need a driving licence');
+      expect(broke.buyGate(asset('veh_family')), 'You need a driving license');
       expect(broke.buyGate(asset('home_flat')), contains('It costs 1400'));
 
       final child = person(age: 7);
       expect(child.buyGate(asset('pet_dog')), 'You need to be 8');
     });
 
-    test('a car needs the licence first, and the test costs money', () {
+    test('a car needs the license first, and the test costs money', () {
       final life = person(money: 2000);
       expect(life.buyAsset(asset('veh_used')), isNull);
       expect(life.licenseGate(), isNull);
@@ -146,7 +146,7 @@ void main() {
       expect(life.money, 1960);
       expect(life.hasLicense, isTrue);
       expect(life.buyAsset(asset('veh_used')), isNotNull);
-      expect(life.getLicense(), isFalse, reason: 'only one licence');
+      expect(life.getLicense(), isFalse, reason: 'only one license');
     });
 
     test('nobody under sixteen can take the test', () {

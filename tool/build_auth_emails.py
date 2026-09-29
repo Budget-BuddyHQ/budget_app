@@ -194,7 +194,7 @@ TEMPLATES = {
         title='Confirm your Budget Buddy account',
         heading='One tap and you are in',
         lede='Welcome to Budget Buddy. Confirm this address and your account '
-             'is ready — your level, coins and saved games all live on it.',
+             'is ready — your level, coins, and saved games all live on it.',
         button='Confirm my account',
         body='<strong style="color:#16241D;">Did not sign up?</strong> Ignore '
              'this email. The account is not created until somebody opens '

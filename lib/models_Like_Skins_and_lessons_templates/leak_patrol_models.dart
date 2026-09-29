@@ -32,7 +32,7 @@ import 'player_profile.dart';
 ///
 /// A fail-on-mistake game punishes the exact hesitation this is trying to
 /// train — reading before acting. A clock rewards accuracy under mild
-/// pressure and lets a careful player finish, which is the behaviour worth
+/// pressure and lets a careful player finish, which is the behavior worth
 /// building.
 
 /// What pops up out of a hole.

@@ -106,7 +106,7 @@ void main() {
       LifeAction.volunteer: (l) => l.volunteer(),
       LifeAction.sideJob: (l) => l.workSideJob(),
       LifeAction.gamble: (l) => l.takeARisk(),
-      LifeAction.practise: (l) => l.practise(LifeSkill.music),
+      LifeAction.practice: (l) => l.practice(LifeSkill.music),
       LifeAction.spendTime: (l) => l.spendTimeWith('Sam'),
       LifeAction.buyGift: (l) => l.giveGift('Sam'),
       LifeAction.workHarder: (l) => l.workHarder(),

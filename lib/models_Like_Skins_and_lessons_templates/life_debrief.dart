@@ -84,7 +84,7 @@ extension LifeAreaInfo on LifeArea {
   };
 }
 
-/// How serious a finding is, and what colour it earns on screen.
+/// How serious a finding is, and what color it earns on screen.
 enum LifeFindingKind {
   /// Cost this run real money or years. Shown first.
   fix,
@@ -746,7 +746,14 @@ LifeDebrief debriefLife(LifeRunFacts facts) {
           (missedShare * 100).clamp(0, 30),
     );
 
-    if (tally.timesLaidOff > 0) {
+    // `timesLaidOff` counts three unrelated causes as one number: missed
+    // work through health/mood strain, two years of poor performance
+    // reviews, and a story event that takes the job away outright. Only the
+    // first of those also adds to `weeksMissed` -- so blaming "missed work"
+    // here whenever *any* layoff happened produced exactly the contradiction
+    // this was reported for: "you missed about 0 weeks of work and were let
+    // go once."
+    if (tally.timesLaidOff > 0 && tally.weeksMissed > 0) {
       findings.add(
         LifeFinding(
           id: 'laid_off',
@@ -760,6 +767,25 @@ LifeDebrief debriefLife(LifeRunFacts facts) {
           action:
               'Health and mood are part of holding a job. Rest, a check-up '
               'and time with people all protect your shifts.',
+          concept: FinanceConcept.incomeVsWealth,
+        ),
+      );
+    } else if (tally.timesLaidOff > 0) {
+      findings.add(
+        LifeFinding(
+          id: 'laid_off_other',
+          priority: 90,
+          kind: LifeFindingKind.fix,
+          area: LifeArea.career,
+          title: 'A job ended without much warning',
+          evidence:
+              'You were let go ${tally.timesLaidOff == 1 ? 'once' : '${tally.timesLaidOff} times'}, '
+              'not for missed time -- performance reviews and events at work '
+              'can end a job on their own.',
+          action:
+              'A job can end for reasons outside your control. Keeping some '
+              'savings ready is what makes that survivable rather than a '
+              'crisis.',
           concept: FinanceConcept.incomeVsWealth,
         ),
       );

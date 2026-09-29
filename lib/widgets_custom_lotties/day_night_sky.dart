@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 ///
 /// It is also the cheapest personalisation there is. No account, no setting,
 /// no data collected — the clock is already on the device, and a player who
-/// only ever plays after dinner gets a dusk-coloured app without ever being
+/// only ever plays after dinner gets a dusk-colored app without ever being
 /// asked a question.
 ///
 /// The art is used as a **backdrop, never as content**: it sits behind
@@ -90,7 +90,7 @@ class DayNightSky extends StatelessWidget {
           ),
         ),
         // The scrim is not decoration — it is what keeps every measured text
-        // colour on this screen valid no matter which sky is behind it.
+        // color on this screen valid no matter which sky is behind it.
         ColoredBox(color: Colors.black.withValues(alpha: scrim)),
         child,
       ],

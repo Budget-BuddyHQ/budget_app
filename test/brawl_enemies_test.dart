@@ -9,14 +9,14 @@ import 'package:budget_app/models_Like_Skins_and_lessons_templates/brawl_enemies
 /// The Finance Brawl roster.
 ///
 /// **What this replaced.** Four "enemies" — Credit Card Debt, Payday Loan,
-/// Medical Bill, Auto Loan — with identical hit points, speed, colour and
+/// Medical Bill, Auto Loan — with identical hit points, speed, color and
 /// reward. One enemy with four labels, plus a single real variant at wave 3.
 /// Naming a payday loan and an auto loan differently while making them behave
 /// identically quietly teaches that they *are* the same, which is false and is
 /// the opposite of what this app is for.
 ///
-/// The design rule every archetype follows is that **the behaviour is the
-/// lesson**, so these tests check the behaviour rather than the copy. A
+/// The design rule every archetype follows is that **the behavior is the
+/// lesson**, so these tests check the behavior rather than the copy. A
 /// payday loan that stops draining faster than everything else has lost the
 /// only thing it was teaching, and no test of its description would notice.
 void main() {
@@ -61,7 +61,7 @@ void main() {
     });
   });
 
-  group('the behaviour matches what the debt actually does', () {
+  group('the behavior matches what the debt actually does', () {
     test('a payday loan drains faster than anything else', () {
       final payday = byId('payday_loan');
       for (final other in kBrawlEnemies) {
@@ -213,7 +213,7 @@ void main() {
     });
 
     test('no two archetypes share artwork', () {
-      // The generator builds each sprite from its archetype's own colour, so
+      // The generator builds each sprite from its archetype's own color, so
       // a duplicate here means a builder was copied and not edited — which
       // would put the roster straight back where it started.
       final byDigest = <String, String>{};

@@ -311,7 +311,7 @@ class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
           // instruction — which is the whole job of a coach mark.
           //
           // Positioned from the card's *measured* height — see
-          // [_CardPlacement]. The width is capped and the card centred rather
+          // [_CardPlacement]. The width is capped and the card centered rather
           // than stretched edge to edge: `left: 14, right: 14` reads fine on a
           // phone and becomes a 930px banner across a desktop window, three
           // words of copy stranded in a field of panel, covering a quarter of
@@ -460,7 +460,7 @@ class _CardPlacement extends SingleChildLayoutDelegate {
     final target = hole;
     if (target == null) {
       // Nothing to point at, so the card sits where it is most readable:
-      // just off centre, high enough to leave the app visible under it.
+      // just off center, high enough to leave the app visible under it.
       return Offset(
         left,
         ((size.height - childSize.height) / 2).clamp(top, lowest),
@@ -494,8 +494,8 @@ class _CardPlacement extends SingleChildLayoutDelegate {
 /// a 48px tap target — are right for a screen's primary actions and far too
 /// generous for two secondary words sharing a row with a counter and a
 /// primary button on a phone.
-ButtonStyle _compactText(Color colour) => TextButton.styleFrom(
-  foregroundColor: colour,
+ButtonStyle _compactText(Color color) => TextButton.styleFrom(
+  foregroundColor: color,
   padding: const EdgeInsets.symmetric(horizontal: 8),
   minimumSize: Size.zero,
   tapTargetSize: MaterialTapTargetSize.shrinkWrap,

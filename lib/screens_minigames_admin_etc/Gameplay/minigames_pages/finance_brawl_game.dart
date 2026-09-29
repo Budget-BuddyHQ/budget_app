@@ -176,7 +176,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   /// Turtle, "M" for Mushroom Goomba, "V" for every single villager.
   ///
   /// So the roster was already bought and paid for. Drawing the sprite the
-  /// player already owns turns the whole customise screen into a character
+  /// player already owns turns the whole customize screen into a character
   /// select, which is a far better answer than five more bespoke fighters —
   /// and it means winning a skin now changes something you look at while you
   /// play, not just a portrait on the profile page.
@@ -2248,7 +2248,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     // real variant at wave 3. Four labels on one enemy teaches that a payday
     // loan and an auto loan are the same thing, which is both false and the
     // opposite of the point. See `brawl_enemies.dart`: each archetype's
-    // *behaviour* is the lesson.
+    // *behavior* is the lesson.
     final archetype = pickEnemy(_wave, _rand.nextDouble());
     _lastEnemySeen = archetype;
 
@@ -2406,12 +2406,12 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   ///
   /// Returns nothing: cleared debts are handled inline so the caller does not
   /// have to re-scan the list it is already iterating backwards.
-  void _applySplash(Offset centre, double damage) {
+  void _applySplash(Offset center, double damage) {
     if (_splashRadius <= 0) return;
-    _spawnExplosion(centre, const Color(0xFFFFD45C));
+    _spawnExplosion(center, const Color(0xFFFFD45C));
     for (int i = _liabilities.length - 1; i >= 0; i--) {
       final mob = _liabilities[i];
-      if ((mob.pos - centre).distance > _splashRadius) continue;
+      if ((mob.pos - center).distance > _splashRadius) continue;
       mob.principalRemaining -= damage;
       if (mob.principalRemaining <= 0) {
         _onLiabilityCleared(i, mob);
@@ -2834,7 +2834,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   /// A pan only starts once the finger has travelled the touch slop, about
   /// eighteen pixels, so the stick anchored eighteen pixels away from where the
   /// thumb actually landed and nothing happened until then. It also has to win a
-  /// gesture arena, which a system gesture or a competing recogniser can take
+  /// gesture arena, which a system gesture or a competing recognizer can take
   /// away mid-drag, and after that a fresh pan has to cross the slop again. A
   /// pointer listener anchors where the thumb lands, answers at once, and starts
   /// over the instant a new touch arrives.
@@ -3021,7 +3021,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                   ),
 
                 // The wave/net-worth HUD and the gold/exit controls used to
-                // be two independently `Positioned` widgets — one centred
+                // be two independently `Positioned` widgets — one centered
                 // across almost the full screen width, the other pinned to
                 // the right edge with no awareness of the first one's
                 // width. On a narrow phone the HUD's right panel extended
@@ -3940,7 +3940,7 @@ class _HudStatPanel extends StatelessWidget {
 
 /// One upgrade choice.
 ///
-/// Two layouts on purpose. Side by side (wide screens) it is a centred
+/// Two layouts on purpose. Side by side (wide screens) it is a centered
 /// column — icon over name over description. Stacked (narrow screens) it
 /// turns on its side into icon-beside-text, which is what actually makes
 /// the copy readable: a full-width row gives the description a sane line
@@ -4233,7 +4233,7 @@ class _CoinProjectile {
 
   /// How many more enemies this coin can pass through before it is spent.
   ///
-  /// Zero is the old behaviour: hit one thing, disappear. Pierce is what
+  /// Zero is the old behavior: hit one thing, disappear. Pierce is what
   /// turns a crowd from a wall into a queue, which is the single biggest
   /// difference between "hard" and "unfair" once waves get dense.
   int pierce;
@@ -4446,7 +4446,7 @@ class _BrawlPainter extends CustomPainter {
     for (final tree in treePositions) {
       if (treeImage != null) {
         // The picture is a canopy on a trunk and almost all of its opaque pixels
-        // are in the lower half of the frame. Drawn centred on the collision
+        // are in the lower half of the frame. Drawn centered on the collision
         // circle, the circle sat about 46 units above the tree you could see:
         // the fighter stopped against empty grass and walked through the trunk.
         final Rect treeRect = Rect.fromCenter(

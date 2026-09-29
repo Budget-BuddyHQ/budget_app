@@ -67,7 +67,7 @@ Future<ByteData> _pixels(WidgetTester tester, ui.Image image) async {
   return data!;
 }
 
-/// How many pixels in [image] are recognisably coin-gold.
+/// How many pixels in [image] are recognizably coin-gold.
 ///
 /// Counting gold is the most direct proxy there is for "how much is in the
 /// jar" — it does not care how the coins are arranged, only that more fill
@@ -183,7 +183,7 @@ void main() {
       /// The *mean*, not the lowest row: the stroke is several pixels thick
       /// and the curve only deflects a few, so an extreme-row measurement is
       /// mostly reporting stroke width and the two moods came out 1% apart.
-      double inkCentre(int fromX, int toX) {
+      double inkCenter(int fromX, int toX) {
         var sum = 0.0;
         var count = 0;
         for (var y = (h * 0.30).round(); y < (h * 0.55).round(); y++) {
@@ -209,8 +209,8 @@ void main() {
       // end of the mouth, so the comparison was between two different
       // features and reported the wrong sign.
       return (
-        left: inkCentre((w * 0.44).round(), (w * 0.475).round()),
-        middle: inkCentre((w * 0.485).round(), (w * 0.515).round()),
+        left: inkCenter((w * 0.44).round(), (w * 0.475).round()),
+        middle: inkCenter((w * 0.485).round(), (w * 0.515).round()),
       );
     }
 

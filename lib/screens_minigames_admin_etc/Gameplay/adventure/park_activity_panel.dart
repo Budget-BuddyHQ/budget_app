@@ -264,15 +264,15 @@ class _RewardCard extends StatelessWidget {
           children: [
             _RewardChip(
               label: '+${reward.gold} gold',
-              colour: const Color(0xFFFFD45C),
+              color: const Color(0xFFFFD45C),
             ),
             _RewardChip(
               label: '+${reward.literacy} literacy',
-              colour: const Color(0xFF85EFAC),
+              color: const Color(0xFF85EFAC),
             ),
             _RewardChip(
               label: '+${reward.xp} XP',
-              colour: const Color(0xFF7FD3FF),
+              color: const Color(0xFF7FD3FF),
             ),
           ],
         ),
@@ -298,24 +298,24 @@ class _RewardCard extends StatelessWidget {
 }
 
 class _RewardChip extends StatelessWidget {
-  const _RewardChip({required this.label, required this.colour});
+  const _RewardChip({required this.label, required this.color});
 
   final String label;
-  final Color colour;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: colour.withValues(alpha: 0.16),
+        color: color.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colour.withValues(alpha: 0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(
         label,
         style: AppTheme.numeric(
-          color: colour,
+          color: color,
           fontSize: 12,
           fontWeight: FontWeight.w800,
         ),
@@ -548,7 +548,7 @@ class _FallingChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (Color colour, IconData icon, String label) = switch (kind) {
+    final (Color color, IconData icon, String label) = switch (kind) {
       FallingKind.coin => (
         const Color(0xFFFFD45C),
         Icons.savings_rounded,
@@ -566,18 +566,18 @@ class _FallingChip extends StatelessWidget {
       height: 46,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: colour.withValues(alpha: 0.2),
+        color: color.withValues(alpha: 0.2),
         shape: BoxShape.circle,
-        border: Border.all(color: colour, width: 2),
+        border: Border.all(color: color, width: 2),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: colour, size: 18),
+          Icon(icon, color: color, size: 18),
           Text(
             label,
             style: AppTheme.numeric(
-              color: colour,
+              color: color,
               fontSize: 9.5,
               fontWeight: FontWeight.w800,
             ),

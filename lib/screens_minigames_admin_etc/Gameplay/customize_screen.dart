@@ -103,17 +103,71 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
     );
   }
 
+  Future<void> _buySkinDirectly(AvatarSkin skin) async {
+    final result = await context.read<UserStatsController>().buySkinDirectly(
+      skin.id,
+    );
+    if (!mounted) {
+      return;
+    }
+    GameToast.show(
+      context,
+      title: result.success ? '${skin.name} unlocked' : 'Unable to buy',
+      message: result.success
+          ? 'Bought outright — no case needed.'
+          : result.message,
+      icon: result.success
+          ? Icons.check_circle_rounded
+          : Icons.info_outline_rounded,
+      accent: skin.accent,
+    );
+  }
+
+  // This used to be a `GameToast` — informational only, with no way to act
+  // on what it said. That left `buySkinDirectly` (the no-gambling unlock
+  // path Leak Patrol's lock hint promises) with nowhere to be called from
+  // anywhere in the app. A toast can't carry a button (it's wrapped in
+  // `IgnorePointer` so it never eats taps meant for the screen under it), so
+  // the fix is a real dialog with a real action, not a tweak to the toast.
   void _showLockedSkinInfo(AvatarSkin skin) {
     HapticFeedback.selectionClick();
     final odds = oddsForRarity(skin.rarity);
-    GameToast.show(
-      context,
-      title: '${skin.name} is locked',
-      message:
-          '${skin.rarityLabel} • ${odds.oddsLabel} from an Emerald Case. '
-          'Duplicates refund ${odds.refundGold} gold.',
-      icon: Icons.lock_outline_rounded,
-      accent: skin.accent,
+    const buyCost = 180;
+    final gold = context.read<UserStatsController>().stats.gold;
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF173B2D),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          '${skin.name} is locked',
+          style: GoogleFonts.pixelifySans(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: Text(
+          '${skin.rarityLabel} • ${odds.oddsLabel} from an Emerald Case '
+          '(duplicates refund ${odds.refundGold} gold), or buy it outright '
+          'for $buyCost gold — no randomness either way.',
+          style: const TextStyle(color: Colors.white70, height: 1.35),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Maybe later'),
+          ),
+          FilledButton(
+            onPressed: gold >= buyCost
+                ? () {
+                    Navigator.of(dialogContext).pop();
+                    _buySkinDirectly(skin);
+                  }
+                : null,
+            child: Text('Buy for $buyCost gold'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -741,7 +795,7 @@ class _RarityDot extends StatelessWidget {
     // The letter used to be the skin's own accent on a 22% wash of that same
     // accent — which for the darker skins meant a badge with an invisible
     // letter on it (the navy legendary measured 1.04:1). [AppTheme.tintedChip]
-    // hands back the wash and a letter colour proven against it.
+    // hands back the wash and a letter color proven against it.
     final chip = AppTheme.tintedChip(accent, alpha: 0.22);
 
     return Container(
@@ -964,7 +1018,7 @@ class _SkinTile extends StatelessWidget {
                     Center(
                       child: ColorFiltered(
                         // Locked skins render as a flat silhouette so the shape
-                        // is still recognisable but clearly not owned yet.
+                        // is still recognizable but clearly not owned yet.
                         colorFilter: unlocked
                             ? const ColorFilter.mode(
                                 Colors.transparent,
@@ -1485,7 +1539,7 @@ class _RollTrack extends StatelessWidget {
     // The item's actual content box after its own padding — sprites must be
     // sized to fit inside this, not their natural sheet-cell size, or a
     // villager cell (104x152) overflows this 70px-wide slot and bleeds into
-    // neighbouring reel items.
+    // neighboring reel items.
     final contentWidth = itemWidth - 20;
     const villagerAspect =
         AppAssets.villagerCellHeight / AppAssets.villagerCellWidth;
@@ -1597,7 +1651,7 @@ class _CustomizeBackdrop extends StatelessWidget {
         // The village map art, pushed rather than dimmed. This used to sit
         // under a 0.62 near-black wash which flattened the whole screen to
         // one block of dark green; [VividBackdrop] boosts saturation and
-        // lifts brightness with a colour matrix, then only darkens the
+        // lifts brightness with a color matrix, then only darkens the
         // outer edges for text contrast — so the art reads as a lit place
         // and the character in front of it pops off it.
         Positioned.fill(

@@ -980,7 +980,7 @@ const List<LifeEvent> kLifeEventsHomeMoney = <LifeEvent>[
   ),
   LifeEvent(
     id: 'f_new_neighbour',
-    prompt: 'A new neighbour moves in next door and waves.',
+    prompt: 'A new neighbor moves in next door and waves.',
     icon: Icons.waving_hand_rounded,
     minAge: 12,
     maxAge: 85,
@@ -990,7 +990,7 @@ const List<LifeEvent> kLifeEventsHomeMoney = <LifeEvent>[
         label: 'Bring over something to say welcome',
         outcome: 'It cost almost nothing and you became friends.',
         happiness: 5,
-        addRelationship: 'A friendly neighbour',
+        addRelationship: 'A friendly neighbor',
       ),
       LifeChoice(
         label: 'Wave back',

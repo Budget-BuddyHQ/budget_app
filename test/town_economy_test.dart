@@ -22,7 +22,7 @@ import 'package:budget_app/models_Like_Skins_and_lessons_templates/town_spot_mod
 /// The anti-repetition work made it faster rather than causing it.
 /// `TownCondition` is rolled once per entry to the town and feeds the scene
 /// rotation, so stepping outside and back in re-deals all twelve buildings.
-/// That is exactly the right behaviour for keeping the place interesting, and
+/// That is exactly the right behavior for keeping the place interesting, and
 /// it turned the exploit from "re-take one choice" into "re-take twelve fresh
 /// ones, on demand, forever".
 ///

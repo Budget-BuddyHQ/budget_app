@@ -24,7 +24,7 @@ import 'package:budget_app/services_backend_and_other_services/app_sound_service
 /// `none` requests no focus at all, so `hasAudioFocusRequest()` is false and
 /// playback is granted without anything being taken from anyone.
 ///
-/// This is a *value* test rather than a behaviour test on purpose. Nothing
+/// This is a *value* test rather than a behavior test on purpose. Nothing
 /// breaks if these flip back — the app builds, the tests pass, the sounds play
 /// on a desktop — and it is only wrong on a device, which is the least likely
 /// place for it to be noticed before release.

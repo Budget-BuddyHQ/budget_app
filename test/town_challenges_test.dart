@@ -127,7 +127,7 @@ void main() {
 
     test('it changes across days', () {
       // Otherwise the answer is memorisable and the skill is not being
-      // practised, only recalled.
+      // practiced, only recalled.
       final prompts = <String>{};
       for (var day = 0; day < 30; day++) {
         final c = townChallengeFor(

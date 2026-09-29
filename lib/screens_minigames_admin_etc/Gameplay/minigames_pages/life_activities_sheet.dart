@@ -309,7 +309,7 @@ class ActivityListSheet extends StatelessWidget {
           icon: Icons.auto_awesome_rounded,
           title: 'Practise a skill',
           detail: 'Music, sport, business and charisma. The career ladders.',
-          action: LifeAction.practise,
+          action: LifeAction.practice,
           onTap: onSkills,
         ),
       ],

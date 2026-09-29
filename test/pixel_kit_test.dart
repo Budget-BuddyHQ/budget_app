@@ -154,7 +154,7 @@ void main() {
     });
 
     test('the art is trimmed, so nothing is mostly padding', () {
-      // The bug this locks: an untrimmed 64x64 fill held 24 rows of colour,
+      // The bug this locks: an untrimmed 64x64 fill held 24 rows of color,
       // so a 6px-tall destination painted a 2px hairline. Flutter fits to the
       // file, not to the art inside it.
       for (final (name, _, size) in cases) {
@@ -227,18 +227,18 @@ void main() {
   });
 
   group('every surface declares ink you can actually read on it', () {
-    // The kit's art is *generated* — `tool/build_ui_pack.py` recolours and
-    // dims a third-party pack — so the colour a panel ends up is not written
+    // The kit's art is *generated* — `tool/build_ui_pack.py` recolors and
+    // dims a third-party pack — so the color a panel ends up is not written
     // down anywhere a caller can see. Each style therefore carries the
-    // measured mean of its own centre plus the inks that clear WCAG AA
+    // measured mean of its own center plus the inks that clear WCAG AA
     // against it, and this checks those constants against the real PNG.
     //
-    // Without it the constants are a comment: a change to the recolour rules
+    // Without it the constants are a comment: a change to the recolor rules
     // silently makes them lies, and the symptom is unreadable panels rather
     // than a failing build. That is exactly how gold body text ended up at
     // 1.09:1 on the parchment style and 3.73:1 on slate.
 
-    /// The mean colour of the middle ninth of an asset — the part a
+    /// The mean color of the middle ninth of an asset — the part a
     /// nine-slice stretches, and therefore the part text sits on.
     ///
     /// Reads the PNG off disk rather than through `rootBundle`, and runs in a
@@ -246,7 +246,7 @@ void main() {
     /// is genuinely asynchronous work on the engine, and inside a widget
     /// test's fake-async zone the future it returns is never completed, so
     /// the first version of this simply hung until the runner gave up.
-    Future<Color> centreMean(String assetPath) async {
+    Future<Color> centerMean(String assetPath) async {
       final bytes = await File(assetPath).readAsBytes();
       final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();
@@ -265,16 +265,16 @@ void main() {
           n++;
         }
       }
-      expect(n, greaterThan(0), reason: '$assetPath has no opaque centre');
+      expect(n, greaterThan(0), reason: '$assetPath has no opaque center');
       return Color.fromARGB(255, r ~/ n, g ~/ n, b ~/ n);
     }
 
     for (final style in PixelFrameStyle.values) {
       test('${style.name} matches its art', () async {
-        final measured = await centreMean(style.asset);
+        final measured = await centerMean(style.asset);
 
         // Tolerance in luminance rather than in RGB: what matters is that the
-        // declared surface predicts contrast correctly, and two colours a few
+        // declared surface predicts contrast correctly, and two colors a few
         // points apart in one channel do that identically.
         expect(
           AppTheme.luminance(measured),
@@ -303,7 +303,7 @@ void main() {
 
     for (final tone in PixelRibbonTone.values) {
       test('ribbon ${tone.name} matches its art', () async {
-        final measured = await centreMean(tone.asset);
+        final measured = await centerMean(tone.asset);
         expect(
           AppTheme.luminance(measured),
           closeTo(AppTheme.luminance(tone.surface), 0.02),
@@ -321,7 +321,7 @@ void main() {
 
     for (final tone in PixelButtonTone.values) {
       test('button ${tone.name} matches its art', () async {
-        final measured = await centreMean(tone.asset);
+        final measured = await centerMean(tone.asset);
         expect(
           AppTheme.luminance(measured),
           closeTo(AppTheme.luminance(tone.surface), 0.02),
@@ -337,7 +337,7 @@ void main() {
   });
 
   group('legibleOn', () {
-    test('leaves a colour alone when it already passes', () {
+    test('leaves a color alone when it already passes', () {
       const gold = Color(0xFFFFD45C);
       expect(AppTheme.legibleOn(gold, AppTheme.deepForest), gold);
     });
@@ -384,7 +384,7 @@ void main() {
     });
 
     test('tintedChip returns a fill and an ink that agree', () {
-      // The navy legendary badge: its letter was the same colour as the wash
+      // The navy legendary badge: its letter was the same color as the wash
       // it sat on, at 1.04:1.
       const navy = Color(0xFF2E3F6B);
       final chip = AppTheme.tintedChip(navy, alpha: 0.22);

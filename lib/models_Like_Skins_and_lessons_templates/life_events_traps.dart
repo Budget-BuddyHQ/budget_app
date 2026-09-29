@@ -214,7 +214,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
       LifeChoice(
         label: 'Show an adult before doing anything',
         outcome:
-            'Not the school. No real organisation has ever been paid in gift '
+            'Not the school. No real organization has ever been paid in gift '
             'card codes — that is the whole tell, and it works at any age.',
         happiness: 4,
         smarts: 14,

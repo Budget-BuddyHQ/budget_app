@@ -16,7 +16,7 @@ import '../../../navigation_tools_and_animation/pauses_in_background.dart';
 
 /// Coin Cascade — the arcade's game for everybody.
 ///
-/// The rules fit on the card: swap two neighbours, line up three, needs pay
+/// The rules fit on the card: swap two neighbors, line up three, needs pay
 /// your bills, wants raise them, savings win the run. A four-year-old can play
 /// it by matching pictures and will absorb the shape of the lesson anyway;
 /// a teenager will notice they are being asked to budget their *moves*.
@@ -247,11 +247,11 @@ class _CoinCascadePageState extends State<CoinCascadePage>
     super.dispose();
   }
 
-  void _say(String message, Color colour) {
+  void _say(String message, Color color) {
     _flashTimer?.cancel();
     setState(() {
       _flash = message;
-      _flashColor = colour;
+      _flashColor = color;
     });
     _flashTimer = Timer(const Duration(milliseconds: 1100), () {
       if (mounted) setState(() => _flash = null);
@@ -434,8 +434,8 @@ class _CoinCascadePageState extends State<CoinCascadePage>
         // Feed the coach. This board is the only place in the app where a
         // player allocates money under pressure without being told that is
         // what they are doing — nothing on screen says "budget" while it is
-        // being played — so the split it produces is behaviour rather than an
-        // answer about behaviour. `money_analyzer.dart` checks it against
+        // being played — so the split it produces is behavior rather than an
+        // answer about behavior. `money_analyzer.dart` checks it against
         // their quiz scores, which is a comparison neither the Academy nor
         // the arcade can make on its own.
         //
@@ -516,7 +516,7 @@ class _CoinCascadePageState extends State<CoinCascadePage>
                   ),
                   if (_flash != null)
                     IgnorePointer(
-                      child: _FlashBanner(text: _flash!, colour: _flashColor),
+                      child: _FlashBanner(text: _flash!, color: _flashColor),
                     ),
                   if (done)
                     _ResultCard(
@@ -666,7 +666,7 @@ class _CoinCascadePageState extends State<CoinCascadePage>
                       const SizedBox(height: 12),
                       // Said last on purpose. Naming the lesson first would
                       // turn a game into a worksheet; naming it after the
-                      // rules lets a player recognise something they have
+                      // rules lets a player recognize something they have
                       // already been doing.
                       _HelpSection(
                         title: 'What it is really teaching',
@@ -919,7 +919,7 @@ class _CascadeHud extends StatelessWidget {
                   fraction: billed,
                   accent: TileKind.bill.color,
                   // Bills fill *toward* a loss, so a full bar is bad. The
-                  // colour is the only thing carrying that, which is why it
+                  // color is the only thing carrying that, which is why it
                   // is the one red thing on the screen.
                   danger: true,
                 ),
@@ -1256,14 +1256,14 @@ class _TileViewState extends State<_TileView> {
 }
 
 class _FlashBanner extends StatelessWidget {
-  const _FlashBanner({required this.text, required this.colour});
+  const _FlashBanner({required this.text, required this.color});
 
   final String text;
-  final Color colour;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final chip = AppTheme.tintedChip(colour, alpha: 0.22, target: 3.0);
+    final chip = AppTheme.tintedChip(color, alpha: 0.22, target: 3.0);
 
     return Align(
       alignment: const Alignment(0, -0.82),
@@ -1272,7 +1272,7 @@ class _FlashBanner extends StatelessWidget {
         decoration: BoxDecoration(
           color: chip.fill,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: colour.withValues(alpha: 0.5)),
+          border: Border.all(color: color.withValues(alpha: 0.5)),
         ),
         child: Text(
           text,
@@ -1536,7 +1536,7 @@ class _ResultCard extends StatelessWidget {
 ///
 /// Widths before numbers, because a proportion is a *shape* and the shape is
 /// the part worth remembering. The percentages sit on the labels for anyone
-/// who wants them, and the bars use the tile colours the player has been
+/// who wants them, and the bars use the tile colors the player has been
 /// looking at for the last two minutes — so the connection between "the pink
 /// ones" and "wants" is made by the picture rather than by a sentence.
 class _BudgetSplit extends StatelessWidget {
@@ -1550,21 +1550,21 @@ class _BudgetSplit extends StatelessWidget {
 
     return Column(
       children: [
-        for (final part in <({String label, int percent, Color colour})>[
+        for (final part in <({String label, int percent, Color color})>[
           (
             label: 'Needs',
             percent: report.needsPercent,
-            colour: TileKind.need.color,
+            color: TileKind.need.color,
           ),
           (
             label: 'Wants',
             percent: report.wantsPercent,
-            colour: TileKind.want.color,
+            color: TileKind.want.color,
           ),
           (
             label: 'Savings',
             percent: report.savesPercent,
-            colour: TileKind.save.color,
+            color: TileKind.save.color,
           ),
         ])
           Padding(
@@ -1589,7 +1589,7 @@ class _BudgetSplit extends StatelessWidget {
                       value: part.percent / 100,
                       minHeight: 10,
                       backgroundColor: Colors.white.withValues(alpha: 0.08),
-                      valueColor: AlwaysStoppedAnimation<Color>(part.colour),
+                      valueColor: AlwaysStoppedAnimation<Color>(part.color),
                     ),
                   ),
                 ),

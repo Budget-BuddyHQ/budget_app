@@ -163,8 +163,8 @@ class ReefWater {
   /// Darkest, down at the floor.
   final Color deep;
 
-  /// What distance does to a colour — the tint the far silhouettes take, and
-  /// the colour of the light shafts.
+  /// What distance does to a color — the tint the far silhouettes take, and
+  /// the color of the light shafts.
   final Color haze;
 
   /// Multiplied over the sand.
@@ -174,7 +174,7 @@ class ReefWater {
   /// page it is the single brightest thing on screen — a glaring slab under
   /// the content, which is exactly backwards: the floor is the part of the
   /// scene furthest from the light. Modulating it toward the deep water
-  /// colour sinks it without repainting the art.
+  /// color sinks it without repainting the art.
   final Color floorTint;
 
   /// The house water.
@@ -533,7 +533,7 @@ class _ReefSceneState extends State<ReefScene>
             ),
           ),
           // Sinks the floor into shadow toward the very bottom. Without it
-          // the sand is a flat slab of one colour and the plants look like
+          // the sand is a flat slab of one color and the plants look like
           // stickers laid on it rather than things growing out of it.
           Positioned(
             left: 0,
@@ -562,8 +562,8 @@ class _ReefSceneState extends State<ReefScene>
 
   /// One plant, standing on [bottom] and leaning with the current.
   ///
-  /// The sway rotates about the plant's *base*, not its centre — kelp bends
-  /// from where it is rooted. Rotating about the centre slides the roots out
+  /// The sway rotates about the plant's *base*, not its center — kelp bends
+  /// from where it is rooted. Rotating about the center slides the roots out
   /// of the sand on every swing, which was the first thing tried and is
   /// immediately obvious once you look at the bottom of the frame.
   Widget _plantWidget(
@@ -747,7 +747,7 @@ class _LightShaftPainter extends CustomPainter {
           0.06;
       final breathe =
           0.5 + 0.5 * math.sin((progress * 2 + shaft.phase) * 2 * math.pi);
-      final centre = shaft.x * size.width + sway;
+      final center = shaft.x * size.width + sway;
       final half = shaft.width * size.width / 2;
 
       final paint = Paint()
@@ -764,10 +764,10 @@ class _LightShaftPainter extends CustomPainter {
       // Tapered: wide at the surface, narrowing as it goes down, and leaning
       // slightly so the three are not parallel.
       final path = Path()
-        ..moveTo(centre - half, -size.height * 0.1)
-        ..lineTo(centre + half, -size.height * 0.1)
-        ..lineTo(centre + half * 0.32 + size.width * 0.05, size.height * 0.95)
-        ..lineTo(centre - half * 0.32 + size.width * 0.05, size.height * 0.95)
+        ..moveTo(center - half, -size.height * 0.1)
+        ..lineTo(center + half, -size.height * 0.1)
+        ..lineTo(center + half * 0.32 + size.width * 0.05, size.height * 0.95)
+        ..lineTo(center - half * 0.32 + size.width * 0.05, size.height * 0.95)
         ..close();
       canvas.drawPath(path, paint);
     }

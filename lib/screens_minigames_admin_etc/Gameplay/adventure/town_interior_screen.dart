@@ -112,7 +112,7 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
   Widget build(BuildContext context) {
     final spot = widget.spot;
     return Scaffold(
-      // floor colour sampled straight out of the room art's bottom strip so
+      // floor color sampled straight out of the room art's bottom strip so
       // the area under the backdrop reads as more floor and not as the app
       // background leaking through
       backgroundColor: const Color(0xFF593F21),
@@ -205,7 +205,7 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
                       );
 
                 if (wide) {
-                  // Both columns centred, and the panel capped.
+                  // Both columns centered, and the panel capped.
                   //
                   // Stretched, this read as a broken screen: the panel hugged
                   // the top-right corner, the stall sat in the bottom-left,
@@ -276,7 +276,7 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
 /// `fitWidth` + top alignment rather than `cover`: the source is 500x175, a
 /// very wide, very short strip, and `cover` on a tall phone crops away
 /// either the whole wall or the whole floor. Aligning it to the top and
-/// letting the scaffold's floor colour continue underneath keeps all of it.
+/// letting the scaffold's floor color continue underneath keeps all of it.
 class _RoomBackdrop extends StatelessWidget {
   const _RoomBackdrop({required this.spot});
 

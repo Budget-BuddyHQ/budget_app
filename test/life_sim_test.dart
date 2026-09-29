@@ -254,18 +254,18 @@ void main() {
       expect(life.traits.length, 2);
     });
 
-    test('practising raises that skill and nothing else', () {
+    test('practicing raises that skill and nothing else', () {
       final life = _adult();
       expect(life.skillLevel(LifeSkill.music), 0);
-      life.practise(LifeSkill.music);
+      life.practice(LifeSkill.music);
       expect(life.skillLevel(LifeSkill.music), greaterThan(0));
       expect(life.skillLevel(LifeSkill.sports), 0);
     });
 
-    test('a finished life cannot practise', () {
+    test('a finished life cannot practice', () {
       final life = _adult();
       life.retire();
-      life.practise(LifeSkill.music);
+      life.practice(LifeSkill.music);
       expect(life.skillLevel(LifeSkill.music), 0);
     });
 

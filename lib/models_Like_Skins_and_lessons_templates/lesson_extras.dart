@@ -256,7 +256,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
           'Online ads are chosen for you from what you have watched, '
           'searched and bought. When an ad feels uncannily well-timed, '
           'that is not luck — it is the product working. Knowing that is '
-          'most of the defence.',
+          'most of the defense.',
     ),
     DeepDive(
       title: 'Sponsored is an ad with a friend’s face',
@@ -298,14 +298,14 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
     DeepDive(
       title: 'The four signs, every time',
       content:
-          'Scammers pretend to be an organisation you know; say there is a '
+          'Scammers pretend to be an organization you know; say there is a '
           'problem or a prize; pressure you to act immediately; and tell '
           'you to pay in a specific, hard-to-reverse way — gift cards, '
           'wire transfer, crypto. Any one of those four is a reason to '
           'stop.',
     ),
     DeepDive(
-      title: 'Real organisations never do this',
+      title: 'Real organizations never do this',
       content:
           'No government agency, bank or game company will ask for a gift '
           'card, a password, or a code from your text messages. If '
@@ -905,7 +905,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       content:
           'Date, who you spoke to, what they promised. It takes seconds '
           'and it is the difference between a complaint that resolves and '
-          'one that becomes your word against a call centre\'s.',
+          'one that becomes your word against a call center\'s.',
     ),
     DeepDive(
       title: 'Ask a collector to validate',

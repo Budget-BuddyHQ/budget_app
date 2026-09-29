@@ -263,7 +263,7 @@ void main() {
       // happen, and this is the invariant that guards it.
       //
       // Stated as a property over real play rather than by constructing a
-      // dead board: a two-colour checkerboard *looks* dead and is not — a
+      // dead board: a two-color checkerboard *looks* dead and is not — a
       // vertical swap in one turns a row into three of a kind — and a test
       // built on that premise passes for the wrong reason.
       for (var seed = 0; seed < 30; seed++) {
@@ -776,7 +776,7 @@ bool _makeAnyMove(CoinCascadeGame board) {
 /// they are checking rather than as a list of coordinates.
 ///
 /// `.` means "background": a repeating four-kind pattern chosen so that **no
-/// two neighbouring cells are ever the same kind**, in either direction. That
+/// two neighboring cells are ever the same kind**, in either direction. That
 /// property is what makes these pictures trustworthy — a background with an
 /// accidental pair in it could turn a stamped three into a four, or produce a
 /// second match the test was not asking about, and the assertion that failed
@@ -798,7 +798,7 @@ void _paint(CoinCascadeGame board, List<String> rows) {
           ? rows[row][col]
           : '.';
       // (col + 2 * row) % 4 steps by 1 across and by 2 down, so neither a
-      // horizontal nor a vertical neighbour can repeat.
+      // horizontal nor a vertical neighbor can repeat.
       final kind = ch == '.'
           ? TileKind.spawnable[(col + 2 * row) % TileKind.spawnable.length]
           : legend[ch]!;

@@ -74,7 +74,7 @@ class FriendProfileScreen extends StatelessWidget {
               label: 'Literacy',
               theirs: friend.literacyPoints,
               yours: mine.literacyPoints,
-              colour: const Color(0xFFB388FF),
+              color: const Color(0xFFB388FF),
               // Literacy is the score this app actually cares about, so it
               // goes first and gets the sentence underneath.
               explain: true,
@@ -83,13 +83,13 @@ class FriendProfileScreen extends StatelessWidget {
               label: 'XP',
               theirs: friend.xp,
               yours: mine.xp,
-              colour: AppTheme.teal,
+              color: AppTheme.teal,
             ),
             _CompareRow(
               label: 'Gold',
               theirs: friend.gold,
               yours: mine.gold,
-              colour: const Color(0xFFFFD45C),
+              color: const Color(0xFFFFD45C),
             ),
 
             if (friend.personalityType.isNotEmpty ||
@@ -107,7 +107,7 @@ class FriendProfileScreen extends StatelessWidget {
                       icon: Icons.psychology_rounded,
                       label: friend.personalityType,
                       caption: 'money style',
-                      colour: AppTheme.greenPrimary,
+                      color: AppTheme.greenPrimary,
                     ),
                   if (friend.lessonsCompleted > 0)
                     _Fact(
@@ -116,14 +116,14 @@ class FriendProfileScreen extends StatelessWidget {
                       caption: friend.lessonsCompleted == 1
                           ? 'lesson done'
                           : 'lessons done',
-                      colour: const Color(0xFF69C6FF),
+                      color: const Color(0xFF69C6FF),
                     ),
                   if (friend.dailyStreak > 0)
                     _Fact(
                       icon: Icons.local_fire_department_rounded,
                       label: '${friend.dailyStreak}',
                       caption: 'day streak',
-                      colour: const Color(0xFFFF8A65),
+                      color: const Color(0xFFFF8A65),
                     ),
                 ],
               ),
@@ -233,14 +233,14 @@ class _CompareRow extends StatelessWidget {
     required this.label,
     required this.theirs,
     required this.yours,
-    required this.colour,
+    required this.color,
     this.explain = false,
   });
 
   final String label;
   final int theirs;
   final int yours;
-  final Color colour;
+  final Color color;
 
   /// Whether to spell the gap out in a sentence underneath.
   final bool explain;
@@ -267,12 +267,12 @@ class _CompareRow extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          _Bar(value: theirs, ceiling: ceiling, colour: colour, who: 'Them'),
+          _Bar(value: theirs, ceiling: ceiling, color: color, who: 'Them'),
           const SizedBox(height: 6),
           _Bar(
             value: yours,
             ceiling: ceiling,
-            colour: Colors.white.withValues(alpha: 0.55),
+            color: Colors.white.withValues(alpha: 0.55),
             who: 'You',
           ),
           if (explain) ...[
@@ -308,13 +308,13 @@ class _Bar extends StatelessWidget {
   const _Bar({
     required this.value,
     required this.ceiling,
-    required this.colour,
+    required this.color,
     required this.who,
   });
 
   final int value;
   final int ceiling;
-  final Color colour;
+  final Color color;
   final String who;
 
   @override
@@ -339,7 +339,7 @@ class _Bar extends StatelessWidget {
               value: (value / ceiling).clamp(0.0, 1.0),
               minHeight: 12,
               backgroundColor: Colors.white.withValues(alpha: 0.08),
-              valueColor: AlwaysStoppedAnimation<Color>(colour),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),
         ),
@@ -362,27 +362,27 @@ class _Fact extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.caption,
-    required this.colour,
+    required this.color,
   });
 
   final IconData icon;
   final String label;
   final String caption;
-  final Color colour;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: colour.withValues(alpha: 0.14),
+        color: color.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-        border: Border.all(color: colour.withValues(alpha: 0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: colour, size: 18),
+          Icon(icon, color: color, size: 18),
           const SizedBox(width: 9),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,

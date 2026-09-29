@@ -139,7 +139,7 @@ void main() {
     }, skip: proxyConfigured ? false : 'SUPABASE_URL not configured');
 
     test('falls back to direct calls when Supabase is not configured', () {
-      // Not a behaviour we want in production, but it keeps the repo runnable
+      // Not a behavior we want in production, but it keeps the repo runnable
       // for a contributor with only a Finnhub key and no Supabase project.
       expect(service.usesProxy, proxyConfigured);
       if (!proxyConfigured) {

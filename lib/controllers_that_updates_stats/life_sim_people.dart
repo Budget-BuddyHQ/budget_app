@@ -6,9 +6,18 @@ extension LifeSimPeople on LifeSimController {
   // ---- Groups, for the relationships screen -----------------------------------
 
   /// Parents, brothers, sisters, grandparents and the like, closest first.
+  ///
+  /// A younger sibling has a negative `ageOffset` and does not exist yet for
+  /// however many years until the player reaches `-ageOffset` -- without
+  /// this guard they showed up from the very first year of the life, at a
+  /// negative age, with a "last saw them" line that predated their own
+  /// birth.
   List<Relationship> get familyMembers => [
     for (final p in people)
-      if (p.kind == RelationshipKind.family && p.isAlive) p,
+      if (p.kind == RelationshipKind.family &&
+          p.isAlive &&
+          (p.ageWhen(_age) ?? 0) >= 0)
+        p,
   ];
 
   /// A partner or a spouse.

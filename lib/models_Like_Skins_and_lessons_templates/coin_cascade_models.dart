@@ -40,7 +40,7 @@ enum TileKind {
   /// The goal.
   save('Save', '🐷', Color(0xFF69C6FF)),
 
-  /// Arrives on its own. Clearing it is defence, not progress.
+  /// Arrives on its own. Clearing it is defense, not progress.
   bill('Bill', '🧾', Color(0xFFFF8474));
 
   const TileKind(this.label, this.emoji, this.color);
@@ -972,7 +972,7 @@ class CoinCascadeGame {
           added += (size ~/ 3) * level.wantsCostMultiplier;
           wantsCleared += size;
         case TileKind.bill:
-          // Cleared bills are defence, not an allocation, so they count
+          // Cleared bills are defense, not an allocation, so they count
           // towards what was paid off and not towards the 50/30/20 split.
           paid += size;
       }
@@ -1175,7 +1175,7 @@ class CoinCascadeGame {
 
   /// Places a specific tile. **Tests only.**
   ///
-  /// The engine's interesting behaviour — an L clearing as one group, wants
+  /// The engine's interesting behavior — an L clearing as one group, wants
   /// pushing bills up, a dead board reshuffling — depends on exact
   /// arrangements that are impractical to reach by seeding a random deal and
   /// hoping. A seam is the honest way to reach them; the alternative is tests

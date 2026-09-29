@@ -77,7 +77,7 @@ class _LeakPatrolPageState extends State<LeakPatrolPage>
   LeakStreak _streak = const LeakStreak.empty();
 
   /// Holes mid-hit, and what the hit was worth. Drives the squash frame, the
-  /// coloured burst and the floating number — all of which are the same
+  /// colored burst and the floating number — all of which are the same
   /// event, so they share one piece of state and cannot disagree.
   final Map<int, _Hit> _hits = <int, _Hit>{};
 
@@ -367,7 +367,7 @@ class _LeakPatrolPageState extends State<LeakPatrolPage>
                       hits: _hits,
                       onTap: _tap,
                     )
-                  : _Centred(
+                  : _Centered(
                       scrolls: _finished,
                       child: _finished
                           ? _Results(result: _result!, onAgain: _start)
@@ -391,8 +391,8 @@ class _LeakPatrolPageState extends State<LeakPatrolPage>
 /// On a desktop-sized window the intro stretched its two example cards to
 /// half the screen each, with the explanation as one very long line under
 /// them. Text has a comfortable measure; past it, it stops being read.
-class _Centred extends StatelessWidget {
-  const _Centred({required this.child, this.scrolls = true});
+class _Centered extends StatelessWidget {
+  const _Centered({required this.child, this.scrolls = true});
 
   final Widget child;
 
@@ -839,7 +839,7 @@ class _StreakPill extends StatelessWidget {
 /// middle of an empty field.
 ///
 /// The cell size is now the largest square that fits *both* dimensions, and
-/// the board is only as big as its holes, centred in the space.
+/// the board is only as big as its holes, centered in the space.
 @immutable
 class LeakBoardLayout {
   const LeakBoardLayout(this.columns, this.rows, this.cell);
@@ -1213,7 +1213,7 @@ class _Burst extends StatelessWidget {
       height: size,
       child: CustomPaint(
         painter: _BurstPainter(
-          colour: right ? const Color(0xFF85EFAC) : const Color(0xFFFF8474),
+          color: right ? const Color(0xFF85EFAC) : const Color(0xFFFF8474),
         ),
       ),
     );
@@ -1221,17 +1221,17 @@ class _Burst extends StatelessWidget {
 }
 
 class _BurstPainter extends CustomPainter {
-  const _BurstPainter({required this.colour});
+  const _BurstPainter({required this.color});
 
-  final Color colour;
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final centre = Offset(size.width / 2, size.height / 2);
+    final center = Offset(size.width / 2, size.height / 2);
     // Drawn for an 84px box originally; everything scales from that.
     final k = size.shortestSide / 84;
     final paint = Paint()
-      ..color = colour
+      ..color = color
       ..strokeWidth = max(2.0, 3 * k)
       ..strokeCap = StrokeCap.round;
 
@@ -1242,15 +1242,15 @@ class _BurstPainter extends CustomPainter {
       final inner = (i.isEven ? 24.0 : 20.0) * k;
       final outer = (i.isEven ? 39.0 : 30.0) * k;
       canvas.drawLine(
-        centre + Offset(cos(angle) * inner, sin(angle) * inner),
-        centre + Offset(cos(angle) * outer, sin(angle) * outer),
+        center + Offset(cos(angle) * inner, sin(angle) * inner),
+        center + Offset(cos(angle) * outer, sin(angle) * outer),
         paint,
       );
     }
   }
 
   @override
-  bool shouldRepaint(_BurstPainter oldDelegate) => oldDelegate.colour != colour;
+  bool shouldRepaint(_BurstPainter oldDelegate) => oldDelegate.color != color;
 }
 
 /// One resolved tap, held just long enough to be seen.
@@ -1298,7 +1298,7 @@ class _FloatingDeltaState extends State<_FloatingDelta>
 
   @override
   Widget build(BuildContext context) {
-    final colour = widget.right
+    final color = widget.right
         ? const Color(0xFF85EFAC)
         : const Color(0xFFFF8474);
 
@@ -1312,7 +1312,7 @@ class _FloatingDeltaState extends State<_FloatingDelta>
             '${widget.delta > 0 ? '+' : ''}${widget.delta}',
             style:
                 AppTheme.numeric(
-                  color: colour,
+                  color: color,
                   fontSize: widget.fontSize,
                   fontWeight: FontWeight.w800,
                 ).copyWith(

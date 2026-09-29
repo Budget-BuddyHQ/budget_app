@@ -24,18 +24,18 @@ import '../../../models_Like_Skins_and_lessons_templates/town_spot_models.dart';
 /// Draws a short name on the map, in a dark pill so it reads over any tile.
 ///
 /// **Asked for as:** *"make the map have titles of what the circles are."* The
-/// markers were coloured circles with nothing said about them, so the only way
+/// markers were colored circles with nothing said about them, so the only way
 /// to learn that one was the bank was to walk into it. A place should say what
 /// it is before you get there.
 ///
-/// [centre] is where the middle of the pill goes, in the component's own
+/// [center] is where the middle of the pill goes, in the component's own
 /// coordinates. Painters are cached by text because a label is drawn every frame
 /// and laying out text every frame is the sort of thing that shows up in a
 /// profile.
 void paintMapLabel(
   Canvas canvas,
   String text,
-  Offset centre, {
+  Offset center, {
   double fontSize = 7.5,
   Color? accent,
   double alpha = 1,
@@ -60,7 +60,7 @@ void paintMapLabel(
   const padX = 3.5;
   const padY = 1.8;
   final pill = Rect.fromCenter(
-    center: centre,
+    center: center,
     width: painter.width + padX * 2,
     height: painter.height + padY * 2,
   );
@@ -80,7 +80,7 @@ void paintMapLabel(
   }
   painter.paint(
     canvas,
-    Offset(centre.dx - painter.width / 2, centre.dy - painter.height / 2),
+    Offset(center.dx - painter.width / 2, center.dy - painter.height / 2),
   );
 }
 
@@ -111,12 +111,12 @@ class TownJoystickLayout {
   /// `GestureEvent.screenPosition` and the joystick's own hit test.
   static bool owns(Offset screen, Vector2 viewport) {
     final radius = size / 2;
-    final centre = Offset(
+    final center = Offset(
       margin.left + radius,
       viewport.y - margin.bottom - radius,
     );
     return Rect.fromCircle(
-      center: centre,
+      center: center,
       radius: radius + grabSlop + tapSlop,
     ).contains(screen);
   }
@@ -177,6 +177,24 @@ class TownPlayer extends SimplePlayer
   /// (This used to be `onTapDown`, which Bonfire only fires for taps *on the
   /// player sprite*, so tap-to-walk did nothing. `onTapDownScreen` is the one
   /// that fires anywhere.)
+  ///
+  /// **Why this calls `moveToPositionWithPathFinding` and not
+  /// `moveAlongThePath`.** They look interchangeable and are not:
+  /// `moveAlongThePath` walks the given points in a straight line with no
+  /// obstacle awareness at all, while `moveToPositionWithPathFinding` runs
+  /// Bonfire's A* over the map's actual collision barriers first. Passing a
+  /// raw tap straight to `moveAlongThePath` was the earlier version here --
+  /// it works as long as the tapped point has a clear line back to the
+  /// player, and silently does not otherwise. A tap on or behind a building
+  /// sends the player walking straight into it, and once blocked the
+  /// character does not stop or reroute: `moveToPosition` (from Bonfire's
+  /// `Movement` mixin) reports "keep going" for anything that has not
+  /// physically arrived yet, with no idea that a collision -- not distance --
+  /// is what is stopping it, so `PathFinding`'s per-frame loop re-issues the
+  /// same blocked step forever. That reads as exactly what got reported:
+  /// walk once, then the character glitches in place, back and forth,
+  /// indefinitely -- because every single frame it is colliding with the
+  /// same wall and trying again.
   @override
   void onTapDownScreen(GestureEvent event) {
     super.onTapDownScreen(event);
@@ -187,7 +205,7 @@ class TownPlayer extends SimplePlayer
     )) {
       return;
     }
-    moveAlongThePath([event.worldPosition]);
+    moveToPositionWithPathFinding(event.worldPosition);
   }
 }
 
@@ -240,13 +258,13 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
   void render(Canvas canvas) {
     final visited = isVisited(spot.id);
     final accent = spot.kind.accent;
-    final centre = Offset(size.x / 2, size.y / 2);
+    final center = Offset(size.x / 2, size.y / 2);
 
     final wave = (math.sin(_pulse * math.pi) + 1) / 2;
     final haloRadius = 10 + (wave * 3);
 
     canvas.drawCircle(
-      centre,
+      center,
       haloRadius + 4,
       Paint()
         ..color = accent.withValues(
@@ -254,12 +272,12 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
         ),
     );
     canvas.drawCircle(
-      centre,
+      center,
       haloRadius,
       Paint()..color = accent.withValues(alpha: visited ? 0.28 : 0.55),
     );
     canvas.drawCircle(
-      centre,
+      center,
       haloRadius,
       Paint()
         ..style = PaintingStyle.stroke
@@ -271,7 +289,7 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
       // A padlock, drawn rather than hidden. A missing marker reads as a town
       // with holes in it; a locked one reads as somewhere to come back to.
       final body = Rect.fromCenter(
-        center: Offset(centre.dx, centre.dy + 1.5),
+        center: Offset(center.dx, center.dy + 1.5),
         width: 8,
         height: 6.5,
       );
@@ -281,7 +299,7 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
       );
       canvas.drawArc(
         Rect.fromCenter(
-          center: Offset(centre.dx, centre.dy - 2),
+          center: Offset(center.dx, center.dy - 2),
           width: 5.5,
           height: 6,
         ),
@@ -293,16 +311,16 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
           ..strokeWidth = 1.8
           ..color = Colors.white,
       );
-      _paintTitle(canvas, centre, haloRadius);
+      _paintTitle(canvas, center, haloRadius);
       super.render(canvas);
       return;
     }
 
     if (visited) {
       final tick = Path()
-        ..moveTo(centre.dx - 4, centre.dy)
-        ..lineTo(centre.dx - 1, centre.dy + 3.5)
-        ..lineTo(centre.dx + 4.5, centre.dy - 3);
+        ..moveTo(center.dx - 4, center.dy)
+        ..lineTo(center.dx - 1, center.dy + 3.5)
+        ..lineTo(center.dx + 4.5, center.dy - 3);
       canvas.drawPath(
         tick,
         Paint()
@@ -312,17 +330,17 @@ class TownSpotComponent extends GameComponent with Sensor<Player> {
           ..color = Colors.white,
       );
     }
-    _paintTitle(canvas, centre, haloRadius);
+    _paintTitle(canvas, center, haloRadius);
     super.render(canvas);
   }
 
   /// The name of the place, under its circle. Dimmer once you have been, so a
   /// finished town reads as finished, and dimmer again while it is locked.
-  void _paintTitle(Canvas canvas, Offset centre, double haloRadius) {
+  void _paintTitle(Canvas canvas, Offset center, double haloRadius) {
     paintMapLabel(
       canvas,
       spot.title,
-      Offset(centre.dx, centre.dy + haloRadius + 9),
+      Offset(center.dx, center.dy + haloRadius + 9),
       accent: spot.kind.accent,
       alpha: isLocked ? 0.6 : (isVisited(spot.id) ? 0.85 : 1),
     );
@@ -469,10 +487,10 @@ class TownCoinComponent extends GameComponent with Sensor<Player> {
   @override
   void render(Canvas canvas) {
     final lift = math.sin(_bob * math.pi) * 1.5;
-    final centre = Offset(size.x / 2, size.y / 2 + lift);
-    canvas.drawCircle(centre, 6, Paint()..color = const Color(0xFFFFD45C));
+    final center = Offset(size.x / 2, size.y / 2 + lift);
+    canvas.drawCircle(center, 6, Paint()..color = const Color(0xFFFFD45C));
     canvas.drawCircle(
-      centre,
+      center,
       6,
       Paint()
         ..style = PaintingStyle.stroke
@@ -480,7 +498,7 @@ class TownCoinComponent extends GameComponent with Sensor<Player> {
         ..color = const Color(0xFF8A6400),
     );
     canvas.drawCircle(
-      Offset(centre.dx - 1.5, centre.dy - 1.5),
+      Offset(center.dx - 1.5, center.dy - 1.5),
       1.6,
       Paint()..color = Colors.white.withValues(alpha: 0.75),
     );

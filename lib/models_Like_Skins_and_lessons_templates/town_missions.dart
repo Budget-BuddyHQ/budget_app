@@ -217,7 +217,7 @@ const List<TownMission> kTownMissions = <TownMission>[
     expiresInYears: 20,
   ),
 
-  // --- the neighbour: patience -----------------------------------------
+  // --- the neighbor: patience -----------------------------------------
   TownMission(
     id: 'mission_slow_money',
     npcId: 'npc_neighbour',

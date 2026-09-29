@@ -604,7 +604,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 /// The red "Log Out" button under the settings. Doubles as the guest
-/// "Create an Account" CTA with a different label/icon/colour -- same shape,
+/// "Create an Account" CTA with a different label/icon/color -- same shape,
 /// because the point is "the one prominent button down here", not the red.
 class _LogoutButton extends StatelessWidget {
   const _LogoutButton({
@@ -842,7 +842,7 @@ class _Badge {
 /// The profile badge shelf.
 ///
 /// Doubles as the "show skins more" surface: a skins-collected badge sits
-/// alongside the story/learning ones, so the customise grid isn't the only
+/// alongside the story/learning ones, so the customize grid isn't the only
 /// place unlocked skins are acknowledged.
 class _BadgeShowcase extends StatefulWidget {
   const _BadgeShowcase({required this.stats});
@@ -1304,7 +1304,7 @@ class _InsightMetric extends StatelessWidget {
   }
 }
 
-/// Hides most of an email while leaving it recognisable to its owner.
+/// Hides most of an email while leaving it recognizable to its owner.
 ///
 /// `noobability21@gmail.com` becomes `no••••••••21@gmail.com` — enough for the
 /// account holder to confirm it is theirs, not enough for a stranger reading

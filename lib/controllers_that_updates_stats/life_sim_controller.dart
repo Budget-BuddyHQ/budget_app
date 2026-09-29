@@ -142,7 +142,7 @@ class LifeSimController extends ChangeNotifier {
   // ---- Budgeting -------------------------------------------------------
   //
   // The app was full of money *outcomes* but had nowhere the player
-  // actually practised budgeting — the core skill it claims to teach. This
+  // actually practiced budgeting — the core skill it claims to teach. This
   // is that: each year with income, the player splits take-home pay across
   // needs / wants / savings, and the split has real consequences below in
   // [_applyBudget]. Defaults are the textbook 50/30/20 so an untouched
@@ -988,7 +988,7 @@ class LifeSimController extends ChangeNotifier {
   /// in-game gates are all keyed on the character, which is right for the
   /// fiction and no protection at all: a four-year-old taps Age eighteen
   /// times and the gambling row unlocks. Defaults true so tests and the
-  /// standalone town keep their existing behaviour; the real screen passes
+  /// standalone town keep their existing behavior; the real screen passes
   /// the account's answer.
   bool get allowWagering => _allowWagering && kLifeGamblingEnabled;
   final bool _allowWagering;
@@ -2083,7 +2083,7 @@ class LifeSimController extends ChangeNotifier {
     LifeAction.gamble: 18,
     // A parent takes a small child to the doctor, so this one has no floor.
     LifeAction.doctor: 0,
-    LifeAction.practise: 4,
+    LifeAction.practice: 4,
     LifeAction.spendTime: 0,
     LifeAction.workHarder: 14,
     LifeAction.askForRaise: 14,
@@ -2179,7 +2179,7 @@ class LifeSimController extends ChangeNotifier {
         LifeAction.findJob => 'You are too young to work',
         LifeAction.invest => 'You need to be 16 to open an account',
         LifeAction.gamble => 'You have to be 18',
-        LifeAction.practise => 'You are still a baby',
+        LifeAction.practice => 'You are still a baby',
         LifeAction.workHarder ||
         LifeAction.askForRaise => 'You are too young to work',
         LifeAction.network => 'Networking events start at 16',
@@ -2330,10 +2330,10 @@ class LifeSimController extends ChangeNotifier {
   /// Practise a skill. This is the player-driven half of the career loop:
   /// skills gate which career events can fire at all, so a music contract
   /// only becomes reachable after actually putting the hours in.
-  void practise(LifeSkill skill) {
-    if (!allows(LifeAction.practise)) return;
-    final gain = _scaled(LifeAction.practise, 4 + (_smarts ~/ 25));
-    if (!_spend(LifeAction.practise)) return;
+  void practice(LifeSkill skill) {
+    if (!allows(LifeAction.practice)) return;
+    final gain = _scaled(LifeAction.practice, 4 + (_smarts ~/ 25));
+    if (!_spend(LifeAction.practice)) return;
     _skills[skill] = ((_skills[skill] ?? 0) + gain).clamp(0, 100);
     _happiness = _clamp(_happiness - 2);
     if (!isDependent) {
@@ -2562,7 +2562,7 @@ class LifeSimController extends ChangeNotifier {
   /// good outcome has a price tag.
   /// Give your time somewhere specific.
   ///
-  /// [place] null keeps the old behaviour — the first option open at this
+  /// [place] null keeps the old behavior — the first option open at this
   /// age — so callers that have not been updated, and tests written against
   /// the single-button version, still work.
   ///

@@ -24,13 +24,13 @@ import '../constants/app_assets.dart';
 
 /// Which surface art a [PixelFrame] wears.
 ///
-/// Each style carries the **measured** mean colour of its own art plus the
-/// ink colours that clear WCAG AA against it. Those are not taste calls:
-/// `tool/build_ui_pack.py` recolours the source pack, so a caller cannot know
+/// Each style carries the **measured** mean color of its own art plus the
+/// ink colors that clear WCAG AA against it. Those are not taste calls:
+/// `tool/build_ui_pack.py` recolors the source pack, so a caller cannot know
 /// what its panel ended up looking like, and the two light styles here are
 /// cream parchment — gold text on `paper` measures **1.09:1**, which is
 /// invisible. Every constant below is checked against the real PNG by
-/// `test/pixel_kit_test.dart`, so recolouring the pack fails the test rather
+/// `test/pixel_kit_test.dart`, so recoloring the pack fails the test rather
 /// than silently producing unreadable panels.
 enum PixelFrameStyle {
   /// Cream parchment. The default reading surface — highest contrast for
@@ -52,8 +52,8 @@ enum PixelFrameStyle {
     AppAssets.kitSlicePanelSlate,
     AppAssets.kitSizePanelSlate,
     // Dark, as the name says — `tool/build_ui_pack.py` dims this one asset
-    // after the recolour. The pack's own value left it at #51655E, a mid
-    // tone on which gold body text measured 3.73:1; every colour in the
+    // after the recolor. The pack's own value left it at #51655E, a mid
+    // tone on which gold body text measured 3.73:1; every color in the
     // app's palette clears AA against #303C38.
     Color(0xFF303C38),
     Color(0xFFF7FFFB),
@@ -102,7 +102,7 @@ enum PixelFrameStyle {
   /// [AppAssets.kitSizePanelPaper].
   final Size source;
 
-  /// The mean colour of the art's centre cell — what text actually sits on,
+  /// The mean color of the art's center cell — what text actually sits on,
   /// and what [PixelFrame] falls back to when it is too small to nine-slice.
   ///
   /// The fallback used to be one hardcoded dark green for all four styles,
@@ -219,7 +219,7 @@ class PixelFrame extends StatelessWidget {
             asset: style.asset,
             slice: style.slice,
             source: style.source,
-            // The style's own measured colour, not one green for all four.
+            // The style's own measured color, not one green for all four.
             // See [PixelFrameStyle.surface].
             fallbackColor: style.surface,
             fallbackBorder: const Color(0xFF0A1A12),
@@ -228,7 +228,7 @@ class PixelFrame extends StatelessWidget {
         Padding(
           padding: padding,
           // Text inside a frame defaults to that frame's ink. Without this
-          // the caller has to know what colour the art ended up, which is the
+          // the caller has to know what color the art ended up, which is the
           // knowledge nobody has at a call site — and getting it wrong on the
           // two cream styles produces text at 1.09:1, i.e. none.
           child: DefaultTextStyle.merge(
@@ -245,7 +245,7 @@ class PixelFrame extends StatelessWidget {
 ///
 /// Carries the measured surface and the label ink that clears WCAG AA on it,
 /// for the same reason [PixelFrameStyle] does: the gold ribbon is a light
-/// mustard (#B6AD4B) and the green one is mid-teal, so one label colour
+/// mustard (#B6AD4B) and the green one is mid-teal, so one label color
 /// cannot serve both — white reads at 2.3:1 on gold.
 enum PixelRibbonTone {
   green(
@@ -285,10 +285,10 @@ enum PixelRibbonTone {
   final Rect slice;
   final Size source;
 
-  /// Measured mean of the art's centre cell, and the fallback fill.
+  /// Measured mean of the art's center cell, and the fallback fill.
   final Color surface;
 
-  /// Label colour. One near-black serves every ribbon: all five are
+  /// Label color. One near-black serves every ribbon: all five are
   /// mid-to-light, so the ink has to be dark, and 0xFF0B1410 clears the bar
   /// on the darkest of them (red, the worst case) as well as the lightest.
   Color get ink => const Color(0xFF0B1410);
@@ -315,7 +315,7 @@ class PixelRibbon extends StatelessWidget {
   /// readable on it. Bundling those was the point: the three big ribbons
   /// share a geometry and the small ones do not, so swapping the asset alone
   /// used to smear the art, and the gold ribbon needs a different label
-  /// colour from the green one.
+  /// color from the green one.
   final PixelRibbonTone tone;
   final double height;
 
@@ -365,7 +365,7 @@ class PixelRibbon extends StatelessWidget {
   }
 }
 
-/// Colour of a [PixelButton].
+/// Color of a [PixelButton].
 enum PixelButtonTone {
   primary(
     AppAssets.kitBtnPrimary,
@@ -411,14 +411,14 @@ enum PixelButtonTone {
   /// bright, which is why the label below is ink rather than white.
   final Color surface;
 
-  /// Label colour, >= 4.5:1 on [surface] (4.85 on primary, 5.52 on danger).
+  /// Label color, >= 4.5:1 on [surface] (4.85 on primary, 5.52 on danger).
   Color get ink => const Color(0xFF0B1410);
 }
 
 /// A chunky pixel button that actually depresses when you hold it.
 ///
 /// The pressed state is a separate piece of art with its bevel inverted, not
-/// a tint or an opacity change. That distinction matters: a colour shift says
+/// a tint or an opacity change. That distinction matters: a color shift says
 /// "this changed", but only moving the light says "this went down".
 class PixelButton extends StatefulWidget {
   const PixelButton({
@@ -490,7 +490,7 @@ class _PixelButtonState extends State<PixelButton> {
               Positioned.fill(child: face),
               Padding(
                 // Asymmetric: the art's bottom edge is a shadow, so a
-                // geometrically centred label sits visibly low on the face.
+                // geometrically centered label sits visibly low on the face.
                 padding: EdgeInsets.fromLTRB(
                   widget.height * 0.3,
                   0,
@@ -610,9 +610,9 @@ class PixelProgressBar extends StatelessWidget {
   }
 }
 
-/// One kit icon, nearest-neighbour scaled.
+/// One kit icon, nearest-neighbor scaled.
 ///
-/// Never tinted. The colour is painted into the art, so a coin is gold
+/// Never tinted. The color is painted into the art, so a coin is gold
 /// everywhere it appears rather than taking whatever accent its host widget
 /// happened to have — which is what made the old Material-glyph treatment
 /// read as decoration instead of as a thing.

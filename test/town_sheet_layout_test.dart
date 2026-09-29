@@ -7,7 +7,7 @@ import 'support/app_fonts.dart';
 
 /// The town's bottom sheets, at every phone size.
 ///
-/// **Reported as:** screenshots of the neighbour's mission sheet and the Pawn
+/// **Reported as:** screenshots of the neighbor's mission sheet and the Pawn
 /// Shop's locked sheet with Flutter's yellow overflow stripes across them,
 /// "BOTTOM OVERFLOWED BY 104 PIXELS" and by 28. Each sheet was a fixed-height
 /// column inside a plain `showModalBottomSheet`, which caps at half the
