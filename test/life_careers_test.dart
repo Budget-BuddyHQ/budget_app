@@ -366,6 +366,81 @@ void main() {
         JobOutcome.hired,
       );
     });
+
+    test('interviewing well in person improves the odds', () {
+      // Same fixture as the referral test above: office_1 sits at a 77%
+      // chance, and a roll of 90 only clears it with a real boost on top.
+      LifeSimController withRoll() {
+        final life = LifeSimController(
+          random: const _Rolls(90),
+          name: 'Tester',
+          initialAge: 25,
+          startMoney: 500,
+        );
+        life.debugSetStats(smarts: 60, health: 85, happiness: 65);
+        life.debugSetEducation(level: EducationLevel.secondary);
+        life.debugSetExperience(CareerTrack.office, 2);
+        return life;
+      }
+
+      // Applying cold, the way the Occupation tab always has, never sets
+      // this — it is the Town's interview minigame's score, and nothing
+      // else, which is the actual mechanism behind "going in person helps."
+      final online = withRoll();
+      expect(online.applyForJob('office_1'), JobOutcome.rejected);
+
+      final interviewedWell = withRoll();
+      expect(
+        interviewedWell.applyForJob('office_1', interviewScore: 100),
+        JobOutcome.hired,
+      );
+      expect(
+        interviewedWell.history.last.text.toLowerCase(),
+        contains('interviewed in person'),
+        reason: 'the log should say how the job was actually won',
+      );
+    });
+
+    test('a middling interview is a middling boost, not a free pass', () {
+      // 50/100 only adds half of the full +20, so it is not enough on its
+      // own to turn this particular 77-against-90 into a hire — proving the
+      // bonus scales with the score instead of being all-or-nothing.
+      final life = LifeSimController(
+        random: const _Rolls(90),
+        name: 'Tester',
+        initialAge: 25,
+        startMoney: 500,
+      );
+      life.debugSetStats(smarts: 60, health: 85, happiness: 65);
+      life.debugSetEducation(level: EducationLevel.secondary);
+      life.debugSetExperience(CareerTrack.office, 2);
+      expect(
+        life.applyForJob('office_1', interviewScore: 50),
+        JobOutcome.rejected,
+      );
+    });
+
+    test('an interview and a referral stack rather than override', () {
+      final life = LifeSimController(
+        random: const _Rolls(96),
+        name: 'Tester',
+        initialAge: 25,
+        startMoney: 500,
+      );
+      life.debugSetStats(smarts: 60, health: 85, happiness: 65);
+      life.debugSetEducation(level: EducationLevel.secondary);
+      life.debugSetExperience(CareerTrack.office, 2);
+      // 77 base + 18 referral alone is 95, still short of a roll of 96.
+      // Adding the interview score is what closes the last gap.
+      expect(
+        life.applyForJob(
+          'office_1',
+          referredBy: 'Priya Okafor',
+          interviewScore: 100,
+        ),
+        JobOutcome.hired,
+      );
+    });
   });
 
   group('the old lookup that picks for you', () {

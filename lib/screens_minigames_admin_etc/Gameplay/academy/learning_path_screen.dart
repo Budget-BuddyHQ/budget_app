@@ -8,16 +8,19 @@ class LearningPathScreen extends StatelessWidget {
     super.key,
     this.activeTabIndex = AppTabIndex.academy,
     this.onNavSelected,
+    this.initialUnitId,
   });
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
+  final String? initialUnitId;
 
   @override
   Widget build(BuildContext context) {
     return LessonScreen(
       activeTabIndex: activeTabIndex,
       onNavSelected: onNavSelected,
+      initialUnitId: initialUnitId,
     );
   }
 }

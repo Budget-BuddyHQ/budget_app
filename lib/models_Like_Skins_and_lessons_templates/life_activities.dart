@@ -264,6 +264,20 @@ const List<ActivityDef> kActivities = <ActivityDef>[
     happiness: 3,
     teaches: FinanceConcept.needsVsWants,
   ),
+  ActivityDef(
+    id: 'foster_pet',
+    category: ActivityCategory.mindBody,
+    title: 'Foster a shelter pet for the week',
+    blurb: 'Food, a leash, and a temporary roommate who sheds.',
+    icon: Icons.cruelty_free_rounded,
+    outcome: 'One chewed shoe, paw prints on everything, and a very good dog.',
+    minAge: 10,
+    cost: 15,
+    tiers: <double>[1.0, 0.5],
+    happiness: 6,
+    teaches: FinanceConcept.needsVsWants,
+    place: TownSpotKind.petShop,
+  ),
 
   // ---- Friends and community ------------------------------------------------
   ActivityDef(
@@ -694,6 +708,18 @@ const List<ActivityDef> kActivities = <ActivityDef>[
     earnsMin: 20,
     earnsMax: 90,
     teaches: FinanceConcept.incomeVsWealth,
+  ),
+  ActivityDef(
+    id: 'check_credit_report',
+    category: ActivityCategory.money,
+    title: 'Check your credit report',
+    blurb: 'Free once a year — the one report nobody checks until they need it.',
+    icon: Icons.fact_check_rounded,
+    outcome: 'On-time bills built it up. The one you missed is still on there too.',
+    minAge: 16,
+    tiers: <double>[1.0, 0.5],
+    smarts: 2,
+    teaches: FinanceConcept.creditScore,
   ),
 ];
 

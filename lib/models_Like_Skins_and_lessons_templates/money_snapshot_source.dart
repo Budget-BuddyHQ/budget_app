@@ -242,3 +242,14 @@ FinanceConcept? conceptForLesson(String nodeId) {
   }
   return null;
 }
+
+/// The unit to send somebody to for [concept] — the other direction of
+/// [kUnitConcepts], for the Coach's diagnosis card. It names a concept
+/// ("Pay yourself first has not landed yet"); this is what turns that into
+/// a place to tap through to, rather than a paragraph with nowhere to go.
+String? unitIdForConcept(FinanceConcept concept) {
+  for (final entry in kUnitConcepts.entries) {
+    if (entry.value == concept) return entry.key;
+  }
+  return null;
+}

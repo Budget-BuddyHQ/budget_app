@@ -12,6 +12,7 @@ import '../../models_Like_Skins_and_lessons_templates/knowledge_tracing.dart';
 import '../../models_Like_Skins_and_lessons_templates/review_schedule.dart';
 import '../../widgets_custom_lotties/life_money_panel.dart';
 import '../../widgets_custom_lotties/age_scaled_note.dart';
+import '../Gameplay/academy/lesson_screen.dart';
 
 /// The budget and habit analyzer, as a screen.
 ///
@@ -667,6 +668,7 @@ class _DiagnosisCard extends StatelessWidget {
 
     final root = diagnosis.rootCause;
     final symptom = diagnosis.struggling;
+    final unitId = unitIdForConcept(root);
 
     return _DiagnosisShell(
       accent: const Color(0xFFFFB084),
@@ -684,6 +686,16 @@ class _DiagnosisCard extends StatelessWidget {
           : '${root.label} is the thing to work on. What it depends on is '
                 'already solid, so this really is where the gap is.',
       chips: diagnosis.chain,
+      // No unit teaches this concept: stays a diagnosis with nowhere to send
+      // anyone, which is honest, so no button rather than a dead one.
+      fixLabel: unitId == null ? null : 'Go to ${root.label}',
+      onFix: unitId == null
+          ? null
+          : () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => LessonScreen(initialUnitId: unitId),
+              ),
+            ),
     );
   }
 }
@@ -700,6 +712,8 @@ class _DiagnosisShell extends StatelessWidget {
     required this.title,
     required this.body,
     required this.chips,
+    this.fixLabel,
+    this.onFix,
   });
 
   final Color accent;
@@ -707,6 +721,12 @@ class _DiagnosisShell extends StatelessWidget {
   final String title;
   final String body;
   final List<FinanceConcept> chips;
+
+  /// Button copy and action for jumping straight to the lesson that teaches
+  /// the root cause. Null together: a diagnosis with nothing to send anyone
+  /// to is still shown, just without a button that would go nowhere.
+  final String? fixLabel;
+  final VoidCallback? onFix;
 
   @override
   Widget build(BuildContext context) {
@@ -759,6 +779,43 @@ class _DiagnosisShell extends StatelessWidget {
                 for (final concept in chips.reversed)
                   _ConceptChip(concept: concept),
               ],
+            ),
+          ],
+          if (onFix != null) ...[
+            const SizedBox(height: 12),
+            Material(
+              color: accent.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(999),
+              child: InkWell(
+                onTap: onFix,
+                borderRadius: BorderRadius.circular(999),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          fixLabel!,
+                          style: GoogleFonts.quicksand(
+                            color: accent,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 15,
+                        color: accent,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ],
         ],

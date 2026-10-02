@@ -121,7 +121,18 @@ extension LifeSimWork on LifeSimController {
   /// job may apply for another: getting it means leaving the old one, which is
   /// how careers actually move, and is the only way to a higher rung than a
   /// promotion offers.
-  JobOutcome applyForJob(String jobId, {String? referredBy}) {
+  ///
+  /// [interviewScore] (0-100) is set by the Town's in-person interview
+  /// minigame and raises the odds on top of a referral rather than instead of
+  /// one — showing up well and knowing somebody should both help. Applying
+  /// from the Occupation tab never sets it, which is the actual, mechanical
+  /// reason going in person is worth the walk rather than a line in a
+  /// tooltip nobody can feel.
+  JobOutcome applyForJob(
+    String jobId, {
+    String? referredBy,
+    int interviewScore = 0,
+  }) {
     final job = jobById(jobId);
     if (job == null || applyGate() != null) return JobOutcome.blocked;
     final listing = jobListings().firstWhere(
@@ -132,18 +143,30 @@ extension LifeSimWork on LifeSimController {
     if (!listing.qualified) return JobOutcome.blocked;
     if (!_spend(LifeAction.applyJob)) return JobOutcome.blocked;
     // Somebody vouching for you adds to the odds and is used up doing it.
-    final chance = referredBy != null
-        ? (listing.chance + 18).clamp(5, 98)
-        : listing.chance;
+    final referralBonus = referredBy != null ? 18 : 0;
+    final interviewBonus = (interviewScore.clamp(0, 100) / 100 * 20).round();
+    final chance = (listing.chance + referralBonus + interviewBonus).clamp(
+      5,
+      98,
+    );
     if (_random.nextInt(100) < chance) {
-      _hire(job, referredBy: referredBy, addCoworkers: true);
+      _hire(
+        job,
+        referredBy: referredBy,
+        addCoworkers: true,
+        interviewed: interviewBonus > 0,
+      );
       _changed();
       return JobOutcome.hired;
     }
     _happiness = _clamp(_happiness - 4);
     _setLog(
-      'You applied to be a ${job.title}, and they went with somebody else. '
-      'It stings, and it is normal. Try again or aim a rung lower.',
+      interviewBonus > 0
+          ? 'You interviewed for ${job.title} in person, and they still went '
+                'with somebody else. It stings, and it is normal.'
+          : 'You applied to be a ${job.title}, and they went with somebody '
+                'else. It stings, and it is normal. Try again or aim a rung '
+                'lower.',
       kind: LifeLogKind.career,
     );
     _changed();
@@ -157,6 +180,7 @@ extension LifeSimWork on LifeSimController {
     bool addCoworkers = false,
     bool viaJobBoard = false,
     bool legacyWording = false,
+    bool interviewed = false,
   }) {
     final previous = hasJob ? _job : null;
     _job = job.title;
@@ -186,8 +210,12 @@ extension LifeSimWork on LifeSimController {
       );
     } else {
       _setLog(
-        'You are hired: ${job.title}, ${job.salary} a year.$leaving '
-        'Open Money to split that before it splits itself.',
+        interviewed
+            ? 'You interviewed in person for ${job.title}, and it showed. '
+                  'Hired on ${job.salary} a year.$leaving Open Money to '
+                  'split that before it splits itself.'
+            : 'You are hired: ${job.title}, ${job.salary} a year.$leaving '
+                  'Open Money to split that before it splits itself.',
         kind: LifeLogKind.career,
       );
     }

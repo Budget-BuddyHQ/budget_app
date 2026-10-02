@@ -17,6 +17,7 @@ import '../../../services_backend_and_other_services/app_sound_service.dart';
 import '../../../widgets_custom_lotties/pixel_kit.dart';
 import '../../../models_Like_Skins_and_lessons_templates/town_scenarios.dart';
 import 'park_activity_panel.dart';
+import 'job_interview_panel.dart';
 
 /// Inside a town building — a whole screen, with the room art as the room.
 ///
@@ -92,6 +93,17 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
   bool _talkingInThePark = false;
 
   bool get _isPark => widget.spot.kind == TownSpotKind.park;
+
+  /// Same idea as [_talkingInThePark], for the Job Board's interview.
+  bool _talkingAtJobBoard = false;
+
+  /// Only once there are real jobs to interview for — a character too young
+  /// to apply gets the ordinary gig-card conversation and nothing else,
+  /// exactly as before this existed.
+  bool get _isJobBoard =>
+      widget.spot.kind == TownSpotKind.job &&
+      widget.life != null &&
+      widget.life!.canApplyForJobs;
 
   void _choose(TownChoice choice) {
     if (_confirming != null) return;
@@ -175,6 +187,13 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
                             .ageBand,
                         onTalk: () => setState(() => _talkingInThePark = true),
                         onFinish: (choice) => Navigator.of(context).pop(choice),
+                      )
+                    : _isJobBoard && !_talkingAtJobBoard
+                    ? JobInterviewPanel(
+                        life: widget.life!,
+                        onTalk: () =>
+                            setState(() => _talkingAtJobBoard = true),
+                        onLeave: () => Navigator.of(context).pop(),
                       )
                     : challenge == null
                     ? _DecisionPanel(

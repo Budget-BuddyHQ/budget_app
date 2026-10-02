@@ -574,7 +574,7 @@ class _StorePanel extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  isOpeningCase ? 'Rolling...' : 'Open Case',
+                  isOpeningCase ? 'Opening...' : 'Open Case',
                   style: GoogleFonts.pixelifySans(
                     color: const Color(0xFF06251A),
                     fontSize: 16,
@@ -631,7 +631,8 @@ class _StorePanel extends StatelessWidget {
                 // critter. Naming one family made the other twenty look like
                 // they were not in the pool.
                 'Spend 180 gold for a Common, Rare, Epic, Legendary or '
-                'Mythic skin.',
+                'Mythic skin — or skip the randomness and buy any one '
+                'you pick for the same price. Tap a locked skin below.',
                 style: GoogleFonts.quicksand(
                   color: Colors.white.withValues(alpha: 0.80),
                   height: 1.4,
@@ -758,7 +759,7 @@ class _CaseOddsPanel extends StatelessWidget {
             );
           }),
           Text(
-            'Duplicate pulls refund gold based on rarity.',
+            'A repeat refunds gold based on rarity.',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.60),
               fontSize: 12,
@@ -1209,7 +1210,7 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
 
     GameToast.show(
       context,
-      title: widget.result.isNewUnlock ? 'New skin unlocked' : 'Duplicate pull',
+      title: widget.result.isNewUnlock ? 'New skin unlocked' : 'Already owned',
       // Was "Villager • Saved to Supabase." The refund is the thing a player
       // wants from a duplicate and it was being crowded out by a sync note.
       message: widget.result.isNewUnlock
@@ -1276,7 +1277,7 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
                         Text(
                           _revealed
                               ? 'Case Opened!'
-                              : 'Rolling Emerald Case...',
+                              : 'Opening Emerald Case...',
                           style: GoogleFonts.pixelifySans(
                             color: Colors.white,
                             fontSize: compact ? 18 : 22,
@@ -1438,8 +1439,8 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
                           _revealed
                               ? widget.result.isNewUnlock
                                     ? 'Unlocked and equipped automatically.'
-                                    : 'Duplicate pull — ${_getRefundAmount(preview.rarity)} gold refunded.'
-                              : 'Rolling... tap Skip or wait to reveal.',
+                                    : 'Already owned — ${_getRefundAmount(preview.rarity)} gold refunded.'
+                              : 'Opening... tap Skip or wait to reveal.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.72),
@@ -1496,7 +1497,7 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
                                   ),
                                   child: Center(
                                     child: Text(
-                                      _revealed ? 'Awesome' : 'Rolling...',
+                                      _revealed ? 'Awesome' : 'Opening...',
                                       style: GoogleFonts.pixelifySans(
                                         color: _revealed
                                             ? const Color(0xFF062C21)

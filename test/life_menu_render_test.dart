@@ -352,11 +352,18 @@ void main() {
       await tab(tester, 'Occupation');
       await tester.tap(find.text('Look for a better job'));
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.textContaining('bachelor\'s degree'),
-        400,
-        scrollable: find.byType(Scrollable).last,
-      );
+      // Not `scrollUntilVisible`: it requires its finder to resolve to a
+      // single element at every step along the way, and a growing job
+      // catalogue means more than one row can say "bachelor's degree" at
+      // once by the time scrolling gets there.
+      final jobList = find.byType(Scrollable).last;
+      for (var i = 0; i < 20; i++) {
+        if (find.textContaining("bachelor's degree").evaluate().isNotEmpty) {
+          break;
+        }
+        await tester.drag(jobList, const Offset(0, -400));
+        await tester.pumpAndSettle();
+      }
       expect(find.textContaining("bachelor's degree"), findsWidgets);
     });
   });

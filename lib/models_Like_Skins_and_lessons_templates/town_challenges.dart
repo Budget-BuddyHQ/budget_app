@@ -33,7 +33,7 @@ import 'town_spot_models.dart';
 ///   matters for a town somebody is meant to revisit for years of in-game
 ///   time.
 ///
-/// # Why these five skills
+/// # Why these skills
 ///
 /// Each one is a decision an adult makes badly and often, and each is small
 /// enough to state in a sentence:
@@ -48,6 +48,9 @@ import 'town_spot_models.dart';
 ///   with nothing. Multiplied out, it is a number people would refuse.
 /// * **Tip and total** — arithmetic under mild social pressure, which is when
 ///   people are worst at it.
+/// * **Credit utilization** — the number a lender actually looks at is the
+///   balance *as a share of the limit*, not the dollar amount owed, and most
+///   people have never been told that the two are different.
 ///
 /// The seed is FNV-1a rather than `Object.hash`, which Dart seeds *per
 /// isolate* — so a hash-based rotation changes every time the app restarts.
@@ -157,7 +160,7 @@ const Map<TownSpotKind, List<String>> kChallengesByKind =
     <TownSpotKind, List<String>>{
       TownSpotKind.market: ['unit_price', 'percent_off'],
       TownSpotKind.store: ['unit_price', 'percent_off'],
-      TownSpotKind.bank: ['compound', 'subscription'],
+      TownSpotKind.bank: ['compound', 'subscription', 'credit_utilization'],
       TownSpotKind.cafe: ['tip', 'subscription'],
       TownSpotKind.pawnShop: ['percent_off'],
       TownSpotKind.library: ['subscription', 'compound'],
@@ -201,6 +204,7 @@ TownChallenge? townChallengeFor(
     'compound' => _compound(rolls),
     'subscription' => _subscription(rolls),
     'tip' => _tip(rolls),
+    'credit_utilization' => _creditUtilization(rolls),
     _ => _unitPrice(rolls, young: young),
   };
 }
@@ -398,6 +402,45 @@ TownChallenge _subscription(_Rolls rolls) {
         '$monthly a month is ${monthly * 12} a year — multiply it out before '
         'you decide, every time.',
     concept: FinanceConcept.impulseSpending,
+    lowerIsBetter: true,
+    reward: 3,
+  );
+}
+
+TownChallenge _creditUtilization(_Rolls rolls) {
+  // Same limit for all three, on purpose — isolating the balance is what
+  // makes the comparison about the ratio and not about which card happens to
+  // have the bigger number on it.
+  final limit = <int>[500, 800, 1000, 1500, 2000][rolls.next(5)];
+  final basePct = rolls.between(10, 40);
+  final pctOptions = <int>[
+    basePct,
+    basePct + rolls.between(15, 30),
+    basePct + rolls.between(35, 55),
+  ];
+
+  final options = <ChallengeOption>[
+    for (final pct in pctOptions)
+      ChallengeOption(
+        label: '${(limit * pct / 100).round()} coins owed on a $limit limit',
+        detail: '$pct% of the limit used',
+        score: pct.toDouble(),
+      ),
+  ];
+
+  return TownChallenge(
+    id: 'credit_utilization',
+    title: 'Which card looks best to a lender?',
+    prompt:
+        'Three cards, same limit, three different balances. Which one keeps '
+        'the smallest share of the limit used?',
+    options: options,
+    correctIndex: _bestIndex(options, lowerIsBetter: true),
+    explanation:
+        'A lender reads the balance as a share of the limit, not as a dollar '
+        'figure on its own. A card barely touched looks better than one '
+        'nearly maxed out, even on the exact same limit.',
+    concept: FinanceConcept.creditScore,
     lowerIsBetter: true,
     reward: 3,
   );

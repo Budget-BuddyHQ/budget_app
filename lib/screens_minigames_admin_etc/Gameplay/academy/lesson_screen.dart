@@ -28,10 +28,18 @@ class LessonScreen extends StatefulWidget {
     super.key,
     this.activeTabIndex = AppTabIndex.academy,
     this.onNavSelected,
+    this.initialUnitId,
   });
 
   final int activeTabIndex;
   final ValueChanged<int>? onNavSelected;
+
+  /// Opens straight to this unit instead of wherever progress last left off.
+  ///
+  /// For the Coach's diagnosis card: it names a concept the player is
+  /// missing, and without this there was nowhere for "go fix that" to
+  /// actually go — just a unit name in a sentence.
+  final String? initialUnitId;
 
   @override
   State<LessonScreen> createState() => _LessonScreenState();
@@ -53,6 +61,16 @@ class _LessonScreenState extends State<LessonScreen> {
       initialAccuracy: _accuracyFromStats(),
     )..addListener(_refresh);
     _statsController.addListener(_syncProgressFromStats);
+    final targetUnitId = widget.initialUnitId;
+    if (targetUnitId != null) {
+      final index = _progressionService.units.indexWhere(
+        (unit) => unit.id == targetUnitId,
+      );
+      if (index != -1) {
+        _selectedUnitIndex = index;
+        _hasManualUnitSelection = true;
+      }
+    }
     // After the first layout, so the strip has a scroll extent to clamp to.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _revealUnit(_selectedUnitIndex, animate: false);
@@ -470,6 +488,18 @@ class _LessonScreenState extends State<LessonScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.deepForest,
+      // Only set when this is pushed on its own (the Coach's "go to this
+      // lesson" link) rather than hosted as a tab, which already has its own
+      // way back. Without it, arriving here from outside the tab strip was a
+      // dead end: no bottom nav (that needs `onNavSelected`, which a pushed
+      // route has no use for) and nothing else offered a way back either.
+      appBar: widget.onNavSelected == null
+          ? AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              automaticallyImplyLeading: Navigator.of(context).canPop(),
+            )
+          : null,
       bottomNavigationBar: widget.onNavSelected == null
           ? null
           : CustomBottomNav(

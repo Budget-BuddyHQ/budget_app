@@ -685,6 +685,32 @@ final List<JobDef> kJobs = <JobDef>[
     ),
     _Rung('Partner', 3500, level: _grad, fields: {StudyField.law}, smarts: 70),
   ]),
+  ..._ladder('public_law', CareerTrack.law, const [
+    _Rung(
+      'Public Defender',
+      1500,
+      level: _grad,
+      fields: {StudyField.law},
+      smarts: 60,
+      blurb: 'Representing people who cannot afford a lawyer.',
+    ),
+    _Rung(
+      'Senior Public Defender',
+      1900,
+      level: _grad,
+      fields: {StudyField.law},
+      smarts: 64,
+    ),
+    _Rung(
+      'District Attorney',
+      2600,
+      level: _grad,
+      fields: {StudyField.law},
+      smarts: 68,
+      blurb: 'The pay is lower than corporate law the whole way up. Some '
+          'people take it anyway.',
+    ),
+  ]),
 
   // ---- Public service ------------------------------------------------------
   ..._ladder('security', CareerTrack.publicService, const [
