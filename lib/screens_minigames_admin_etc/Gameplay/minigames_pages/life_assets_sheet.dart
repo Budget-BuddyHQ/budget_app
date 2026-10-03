@@ -17,7 +17,7 @@ import 'life_ui_kit.dart';
 /// in cash that fell to 0, *"the budget amount is still weird."* That number is
 /// answered here too: cash, savings, investments, property and debt are all on
 /// one card, so there is never a moment where a rich life reads as a broke one.
-const Color _accent = Color(0xFF85EFAC);
+const Color _accent = Color(0xFF9BE870);
 
 Future<void> openAssets(
   BuildContext context,
@@ -920,7 +920,7 @@ class _ShopCard extends StatelessWidget {
                 if (def.drift > 0)
                   LifeChip(
                     'Gains about ${(def.drift * 100).round()}% a year',
-                    color: const Color(0xFF85EFAC),
+                    color: const Color(0xFF9BE870),
                   ),
                 if (def.swing >= 0.10)
                   const LifeChip(
@@ -930,7 +930,7 @@ class _ShopCard extends StatelessWidget {
                 if (def.happiness > 0)
                   LifeChip(
                     '+${def.happiness} happiness a year',
-                    color: const Color(0xFF85EFAC),
+                    color: const Color(0xFF9BE870),
                   ),
                 if (def.kind == AssetKind.business)
                   const LifeChip('Can lose money', color: Color(0xFFFF8474)),

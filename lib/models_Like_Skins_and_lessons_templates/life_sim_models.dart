@@ -64,7 +64,7 @@ class LifeLogEntry {
 /// is written is the only version that is actually right.
 enum LifeLogKind {
   /// Earned, spent, saved, invested, borrowed.
-  money('\u{1F4B5}', Color(0xFF85EFAC)),
+  money('\u{1F4B5}', Color(0xFF9BE870)),
 
   /// A bill or setback that had to be paid for from somewhere.
   shock('\u{26A1}', Color(0xFFFF8FB1)),
@@ -85,7 +85,7 @@ enum LifeLogKind {
   life('\u{2728}', Color(0xFFE9C46A)),
 
   /// Birth, ageing up, the ending.
-  milestone('\u{1F382}', Color(0xFF4BD2A3));
+  milestone('\u{1F382}', Color(0xFF6CD34A));
 
   const LifeLogKind(this.emoji, this.accent);
 

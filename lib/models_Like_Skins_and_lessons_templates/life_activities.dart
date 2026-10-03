@@ -23,7 +23,7 @@ enum ActivityCategory {
   mindBody(
     'Mind and body',
     Icons.self_improvement_rounded,
-    Color(0xFF4BD2A3),
+    Color(0xFF6CD34A),
     'Look after yourself. It pays back in everything else.',
   ),
   social(
@@ -53,7 +53,7 @@ enum ActivityCategory {
   money(
     'Earn on the side',
     Icons.savings_rounded,
-    Color(0xFF85EFAC),
+    Color(0xFF9BE870),
     'Small ways to make a little money.',
   ),
   sport(

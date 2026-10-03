@@ -40,8 +40,8 @@ enum PixelFrameStyle {
     AppAssets.kitSlicePanelPaper,
     AppAssets.kitSizePanelPaper,
     Color(0xFFEDE1C2),
-    Color(0xFF12251C),
-    Color(0xFF3C5147),
+    Color(0xFF17232A),
+    Color(0xFF3A4A53),
     Color(0xFF6B4A05),
   ),
 
@@ -55,7 +55,7 @@ enum PixelFrameStyle {
     // after the recolor. The pack's own value left it at #51655E, a mid
     // tone on which gold body text measured 3.73:1; every color in the
     // app's palette clears AA against #303C38.
-    Color(0xFF303C38),
+    Color(0xFF35424A),
     Color(0xFFF7FFFB),
     Color(0xFFB9D1C6),
     Color(0xFFE9C46A),
@@ -69,8 +69,8 @@ enum PixelFrameStyle {
     AppAssets.kitSlicePanelBanner,
     AppAssets.kitSizePanelBanner,
     Color(0xFFD9C9A3),
-    Color(0xFF12251C),
-    Color(0xFF3C5147),
+    Color(0xFF17232A),
+    Color(0xFF3A4A53),
     Color(0xFF6B4A05),
   ),
 
@@ -289,9 +289,9 @@ enum PixelRibbonTone {
   final Color surface;
 
   /// Label color. One near-black serves every ribbon: all five are
-  /// mid-to-light, so the ink has to be dark, and 0xFF0B1410 clears the bar
+  /// mid-to-light, so the ink has to be dark, and 0xFF0F181C clears the bar
   /// on the darkest of them (red, the worst case) as well as the lightest.
-  Color get ink => const Color(0xFF0B1410);
+  Color get ink => const Color(0xFF0F181C);
 }
 
 /// A section heading drawn on a ribbon.
@@ -412,7 +412,7 @@ enum PixelButtonTone {
   final Color surface;
 
   /// Label color, >= 4.5:1 on [surface] (4.85 on primary, 5.52 on danger).
-  Color get ink => const Color(0xFF0B1410);
+  Color get ink => const Color(0xFF0F181C);
 }
 
 /// A chunky pixel button that actually depresses when you hold it.
@@ -594,7 +594,7 @@ class PixelProgressBar extends StatelessWidget {
                       filterQuality: FilterQuality.none,
                       errorBuilder: (_, _, _) => DecoratedBox(
                         decoration: BoxDecoration(
-                          color: const Color(0xFF4BD2A3),
+                          color: const Color(0xFF6CD34A),
                           borderRadius: BorderRadius.circular(999),
                         ),
                       ),

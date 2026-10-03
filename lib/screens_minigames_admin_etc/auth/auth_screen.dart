@@ -426,7 +426,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           ? Icons.verified_rounded
           : Icons.warning_amber_rounded,
       accent: result.success
-          ? const Color(0xFF85EFAC)
+          ? const Color(0xFF9BE870)
           : const Color(0xFFFF8A80),
     );
 
@@ -484,7 +484,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       icon: error == null
           ? Icons.mark_email_read_rounded
           : Icons.warning_amber_rounded,
-      accent: error == null ? const Color(0xFF85EFAC) : const Color(0xFFFF8A80),
+      accent: error == null ? const Color(0xFF9BE870) : const Color(0xFFFF8A80),
     );
   }
 
@@ -544,7 +544,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       message: result.message,
       icon: result.success ? Icons.key_rounded : Icons.warning_amber_rounded,
       accent: result.success
-          ? const Color(0xFF85EFAC)
+          ? const Color(0xFF9BE870)
           : const Color(0xFFFF8A80),
     );
   }
@@ -1045,7 +1045,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                                 _isLogin
                                     ? Icons.login_rounded
                                     : Icons.auto_awesome_rounded,
-                                color: const Color(0xFF1A4D3D),
+                                color: const Color(0xFF2B4256),
                                 size: 18,
                               ),
                               style: const CustomButtonStyle.primary(),
@@ -1102,7 +1102,7 @@ class _AuthHero extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(18, isCompact ? 18 : 24, 18, 18),
       decoration: BoxDecoration(
-        color: const Color(0xFF173B2E),
+        color: const Color(0xFF243440),
         borderRadius: BorderRadius.circular(32),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.16),
@@ -1131,7 +1131,7 @@ class _AuthHero extends StatelessWidget {
                 errorBuilder: (_, _, _) => const Icon(
                   Icons.account_balance_wallet_rounded,
                   size: 42,
-                  color: Color(0xFF103225),
+                  color: Color(0xFF1C2B32),
                 ),
               ),
             ),
@@ -1185,7 +1185,7 @@ class _PendingConfirmationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const accent = Color(0xFF85EFAC);
+    const accent = Color(0xFF9BE870);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1318,7 +1318,7 @@ class _ModeSwitchChip extends StatelessWidget {
             label,
             textAlign: TextAlign.center,
             style: GoogleFonts.quicksand(
-              color: active ? const Color(0xFF103225) : Colors.white70,
+              color: active ? const Color(0xFF1C2B32) : Colors.white70,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -1372,13 +1372,13 @@ class _AuthField extends StatelessWidget {
           fontWeight: FontWeight.w600,
         ),
         floatingLabelStyle: GoogleFonts.quicksand(
-          color: const Color(0xFF85EFAC),
+          color: const Color(0xFF9BE870),
           fontWeight: FontWeight.w700,
         ),
         hintStyle: GoogleFonts.quicksand(
           color: Colors.white.withValues(alpha: 0.42),
         ),
-        prefixIcon: Icon(prefixIcon, color: const Color(0xFF85EFAC)),
+        prefixIcon: Icon(prefixIcon, color: const Color(0xFF9BE870)),
         suffixIcon: suffix,
         contentPadding: const EdgeInsets.all(20),
         border: OutlineInputBorder(
@@ -1391,7 +1391,7 @@ class _AuthField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(color: Color(0xFF85EFAC), width: 1.8),
+          borderSide: const BorderSide(color: Color(0xFF9BE870), width: 1.8),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
@@ -1467,8 +1467,8 @@ class _TermsCard extends StatelessWidget {
         children: [
           Checkbox(
             value: accepted,
-            activeColor: const Color(0xFF85EFAC),
-            checkColor: const Color(0xFF103225),
+            activeColor: const Color(0xFF9BE870),
+            checkColor: const Color(0xFF1C2B32),
             side: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
             onChanged: (value) => onChanged(value ?? false),
           ),
@@ -1495,9 +1495,9 @@ class _TermsCard extends StatelessWidget {
                     TextSpan(
                       text: 'Privacy Policy',
                       style: const TextStyle(
-                        color: Color(0xFF85EFAC),
+                        color: Color(0xFF9BE870),
                         decoration: TextDecoration.underline,
-                        decorationColor: Color(0xFF85EFAC),
+                        decorationColor: Color(0xFF9BE870),
                         fontWeight: FontWeight.w800,
                       ),
                       recognizer: TapGestureRecognizer()..onTap = onOpenPolicy,

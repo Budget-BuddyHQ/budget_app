@@ -343,17 +343,18 @@ void main() {
     });
 
     test('lifts a tint off a dark surface', () {
-      // Mint on panelStrong measures 3.95:1 — the real case behind the
-      // weekday initial in the habit tracker.
-      final fixed = AppTheme.legibleOn(
-        AppTheme.greenPrimary,
-        AppTheme.panelStrong,
-      );
+      // A fixed dim green rather than the theme's own: the case behind this
+      // was mint on panelStrong at 3.95:1, and once the palette moved to
+      // slate the theme green passed by itself, so it stopped testing the
+      // lift at all.
+      const dim = Color(0xFF3F8F1F);
+      expect(AppTheme.contrast(dim, AppTheme.panelStrong), lessThan(4.5));
+      final fixed = AppTheme.legibleOn(dim, AppTheme.panelStrong);
       expect(
         AppTheme.contrast(fixed, AppTheme.panelStrong),
         greaterThanOrEqualTo(4.5),
       );
-      expect(fixed, isNot(AppTheme.greenPrimary));
+      expect(fixed, isNot(dim));
     });
 
     test('darkens a tint on a light surface', () {

@@ -277,7 +277,7 @@ class _TodayCard extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: AppTheme.getPuffyDecoration(
           accent: accent,
-          fillColor: const Color(0xFF12352C),
+          fillColor: const Color(0xFF202F36),
           restAlpha: 0.18,
         ),
         child: Column(
@@ -432,7 +432,7 @@ class _NextQuestRow extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFF0E2A20),
+            color: const Color(0xFF18252B),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
               color: const Color(0xFFFFD45C).withValues(alpha: 0.30),
@@ -614,7 +614,7 @@ class _AdventureLaunchHero extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
           boxShadow: AppTheme.ledgeShadow(
-            const Color(0xFF3FD3C4),
+            AppTheme.greenPrimary,
             restAlpha: 0.3,
             depth: 6,
           ),
@@ -675,11 +675,9 @@ class _AdventureLaunchHero extends StatelessWidget {
                           borderRadius: BorderRadius.circular(
                             AppTheme.radiusXLarge,
                           ),
-                          border: Border.all(
-                            color: const Color(
-                              0xFF8FD8D2,
-                            ).withValues(alpha: 0.30),
-                          ),
+                          // The slate outline every card has, at 2px, not a
+                          // faint teal hairline.
+                          border: Border.all(color: AppTheme.outline, width: 2),
                         ),
                       ),
                     ),
@@ -786,7 +784,7 @@ class _AdventureLaunchHero extends StatelessWidget {
                                 SizedBox(height: veryTight ? 10 : 16),
                                 _ActionButton(
                                   label: 'Start a Life',
-                                  accent: const Color(0xFF7BE9D7),
+                                  accent: AppTheme.greenPrimary,
                                   icon: Icons.explore_rounded,
                                   compact: phone || veryTight,
                                   onTap: onOpenAdventure,
@@ -985,16 +983,16 @@ class _DestinationsCard extends StatelessWidget {
                 height: compact ? 42 : 50,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
+                  color: const Color(0xFF9BE870).withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: const Color(0xFF85EFAC).withValues(alpha: 0.26),
+                    color: const Color(0xFF9BE870).withValues(alpha: 0.26),
                   ),
                 ),
                 child: Text(
                   '${stats.level}',
                   style: AppTheme.numeric(
-                    color: const Color(0xFF85EFAC),
+                    color: const Color(0xFF9BE870),
                     fontSize: compact ? 18 : 21,
                     fontWeight: FontWeight.w700,
                     height: 1,
@@ -1046,7 +1044,7 @@ class _DestinationsCard extends StatelessWidget {
               value: stats.levelProgress.clamp(0.04, 1.0),
               backgroundColor: Colors.white.withValues(alpha: 0.08),
               valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFF85EFAC),
+                Color(0xFF9BE870),
               ),
             ),
           ),
@@ -1088,7 +1086,7 @@ class _ObjectiveActionBar extends StatelessWidget {
       _ObjectiveIconButton(
         label: compact ? 'World' : 'Adventure',
         icon: Icons.explore_rounded,
-        accent: const Color(0xFF85EFAC),
+        accent: const Color(0xFF9BE870),
         onTap: onAdventure,
       ),
       _ObjectiveIconButton(
@@ -1106,7 +1104,7 @@ class _ObjectiveActionBar extends StatelessWidget {
       _ObjectiveIconButton(
         label: 'Academy',
         icon: Icons.school_rounded,
-        accent: const Color(0xFF85EFAC),
+        accent: const Color(0xFF9BE870),
         onTap: onAcademy,
       ),
       _ObjectiveIconButton(
@@ -1433,9 +1431,9 @@ class _SolidPanel extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: const Color(0xFF12352C),
+        color: const Color(0xFF202F36),
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: const Color(0xFF2C5A4A), width: 1.5),
+        border: Border.all(color: const Color(0xFF37464F), width: 1.5),
         boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary),
       ),
       child: child,

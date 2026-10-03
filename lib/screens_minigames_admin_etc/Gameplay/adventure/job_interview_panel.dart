@@ -172,7 +172,7 @@ class _JobInterviewPanelState extends State<JobInterviewPanel>
         children: [
           Row(
             children: [
-              const Icon(Icons.badge_rounded, color: Color(0xFF85EFAC)),
+              const Icon(Icons.badge_rounded, color: Color(0xFF9BE870)),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -335,7 +335,7 @@ class _ListingRow extends StatelessWidget {
               ),
               const Icon(
                 Icons.chevron_right_rounded,
-                color: Color(0xFF85EFAC),
+                color: Color(0xFF9BE870),
               ),
             ],
           ),
@@ -477,7 +477,7 @@ class _InterviewResult extends StatelessWidget {
         Text(
           hired ? 'You got it' : 'Not this time',
           style: GoogleFonts.pixelifySans(
-            color: hired ? const Color(0xFF85EFAC) : const Color(0xFFFF8474),
+            color: hired ? const Color(0xFF9BE870) : const Color(0xFFFF8474),
             fontSize: 18,
             fontWeight: FontWeight.w700,
           ),

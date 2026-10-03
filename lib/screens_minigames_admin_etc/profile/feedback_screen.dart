@@ -22,7 +22,7 @@ class _FeedbackCategory {
 const List<_FeedbackCategory> _categories = [
   _FeedbackCategory('Bug', Icons.bug_report_rounded, Color(0xFFFF8E72)),
   _FeedbackCategory('Idea', Icons.lightbulb_rounded, Color(0xFFF2C66D)),
-  _FeedbackCategory('Praise', Icons.favorite_rounded, Color(0xFF85EFAC)),
+  _FeedbackCategory('Praise', Icons.favorite_rounded, Color(0xFF9BE870)),
   _FeedbackCategory('Other', Icons.chat_bubble_rounded, Color(0xFF69C6FF)),
 ];
 
@@ -88,7 +88,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           ? 'Thanks — the team will read this.'
           : 'No connection right now, but it\'s saved and will send later.',
       icon: sentToServer ? Icons.check_circle_rounded : Icons.save_rounded,
-      accent: const Color(0xFF85EFAC),
+      accent: const Color(0xFF9BE870),
     );
     Navigator.of(context).pop();
   }
@@ -108,7 +108,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           ),
           Positioned.fill(
             child: Container(
-              color: const Color(0xFF071711).withValues(alpha: 0.72),
+              color: const Color(0xFF111B20).withValues(alpha: 0.72),
             ),
           ),
           SafeArea(
@@ -228,7 +228,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                     minLines: 4,
                     maxLength: 600,
                     style: const TextStyle(color: Colors.white),
-                    cursorColor: const Color(0xFF85EFAC),
+                    cursorColor: const Color(0xFF9BE870),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.all(16),

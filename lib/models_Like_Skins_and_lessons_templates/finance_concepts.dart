@@ -112,7 +112,7 @@ extension FinanceConceptInfo on FinanceConcept {
   Color get accent => switch (this) {
     FinanceConcept.needsVsWants ||
     FinanceConcept.budgetRule ||
-    FinanceConcept.payYourselfFirst => const Color(0xFF4BD2A3),
+    FinanceConcept.payYourselfFirst => const Color(0xFF6CD34A),
     FinanceConcept.compoundGrowth ||
     FinanceConcept.diversification ||
     FinanceConcept.incomeVsWealth => const Color(0xFF69C6FF),

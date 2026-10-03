@@ -17,7 +17,7 @@ enum LifeEndingArchetype {
   brokeButHappy(
     'Broke but Happy',
     Icons.sentiment_very_satisfied_rounded,
-    Color(0xFF85EFAC),
+    Color(0xFF9BE870),
   ),
   legacyBuilder(
     'Legacy Builder',

@@ -775,7 +775,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
             child: Text(
               'Keep playing',
               style: GoogleFonts.pixelifySans(
-                color: const Color(0xFF85EFAC),
+                color: const Color(0xFF9BE870),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -859,8 +859,8 @@ class _HeaderBar extends StatelessWidget {
         if (showAvatar) ...[
           CircleAvatar(
             radius: 18,
-            backgroundColor: const Color(0xFF173B2E),
-            child: Icon(gender.icon, color: const Color(0xFF85EFAC), size: 20),
+            backgroundColor: const Color(0xFF243440),
+            child: Icon(gender.icon, color: const Color(0xFF9BE870), size: 20),
           ),
           const SizedBox(width: 10),
         ],
@@ -1212,7 +1212,7 @@ class _YourLifeStrip extends StatelessWidget {
                 // mean anything.
                 final tint = flag.isTrouble
                     ? const Color(0xFFFF8FB1)
-                    : const Color(0xFF85EFAC);
+                    : const Color(0xFF9BE870);
                 // `on:` is the surface the wash sits over. The strip is laid
                 // directly on the scrolling background, which composites to
                 // roughly [AppTheme.panel] once the screen's veils are added —
@@ -1387,7 +1387,7 @@ class _AgeHeader extends StatelessWidget {
           Text(
             'Age $age',
             style: AppTheme.numeric(
-              color: const Color(0xFF85EFAC),
+              color: const Color(0xFF9BE870),
               fontWeight: FontWeight.w700,
               fontSize: 15,
             ),
@@ -1398,14 +1398,14 @@ class _AgeHeader extends StatelessWidget {
           Expanded(
             child: Container(
               height: 1,
-              color: const Color(0xFF85EFAC).withValues(alpha: 0.18),
+              color: const Color(0xFF9BE870).withValues(alpha: 0.18),
             ),
           ),
           const SizedBox(width: 10),
           Text(
             LifeStageInfo.forAge(age).label,
             style: GoogleFonts.quicksand(
-              color: const Color(0xFF85EFAC).withValues(alpha: 0.6),
+              color: const Color(0xFF9BE870).withValues(alpha: 0.6),
               fontWeight: FontWeight.w800,
               fontSize: 10.5,
             ),
@@ -1547,7 +1547,7 @@ class _EventCard extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: const Color(0xFF10241E),
+        color: const Color(0xFF151F25),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: accent.withValues(alpha: 0.42), width: 1.5),
         boxShadow: [
@@ -1583,7 +1583,7 @@ class _EventCard extends StatelessWidget {
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0A1D17).withValues(alpha: 0.55),
+                    color: const Color(0xFF131F24).withValues(alpha: 0.55),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: accent.withValues(alpha: 0.55),
@@ -1724,7 +1724,7 @@ class _ChoiceRow extends StatelessWidget {
                   // tint over the card read at 3.2 to 1 in the contrast audit.
                   color: AppTheme.tintedChip(
                     accent,
-                    on: const Color(0xFF10241E),
+                    on: const Color(0xFF151F25),
                   ).fill,
                   borderRadius: BorderRadius.circular(9),
                 ),
@@ -1733,7 +1733,7 @@ class _ChoiceRow extends StatelessWidget {
                   style: GoogleFonts.pixelifySans(
                     color: AppTheme.tintedChip(
                       accent,
-                      on: const Color(0xFF10241E),
+                      on: const Color(0xFF151F25),
                     ).ink,
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
@@ -1758,7 +1758,7 @@ class _ChoiceRow extends StatelessWidget {
                   style: AppTheme.numeric(
                     color: choice.money < 0
                         ? const Color(0xFFFF8FB1)
-                        : const Color(0xFF85EFAC),
+                        : const Color(0xFF9BE870),
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1822,7 +1822,7 @@ class _BottomMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF0A1D17),
+        color: Color(0xFF131F24),
         border: Border(top: BorderSide(color: Colors.white10)),
       ),
       child: SafeArea(
@@ -1855,7 +1855,7 @@ class _BottomMenu extends StatelessWidget {
                     child: _MenuButton(
                       label: 'Assets',
                       icon: Icons.home_work_rounded,
-                      color: const Color(0xFF85EFAC),
+                      color: const Color(0xFF9BE870),
                       onTap: blocked ? null : onAssets,
                     ),
                   ),
@@ -2087,7 +2087,7 @@ class _SkillsSheetState extends State<_SkillsSheet> {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF0A1D17),
+        color: Color(0xFF131F24),
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SafeArea(
@@ -2362,7 +2362,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
         text:
             'Solid. Saving $_savings% builds a fund that can absorb a bad '
             'month.',
-        color: const Color(0xFF4BD2A3),
+        color: const Color(0xFF6CD34A),
         icon: Icons.check_circle_rounded,
       );
     }
@@ -2418,7 +2418,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
               children: [
                 const Icon(
                   Icons.pie_chart_rounded,
-                  color: Color(0xFF85EFAC),
+                  color: Color(0xFF9BE870),
                   size: 24,
                 ),
                 const SizedBox(width: 10),
@@ -2436,7 +2436,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
                   '$_total%',
                   style: AppTheme.numeric(
                     color: _balanced
-                        ? const Color(0xFF4BD2A3)
+                        ? const Color(0xFF6CD34A)
                         : const Color(0xFFFF8FB1),
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -2480,7 +2480,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
               hint: 'Emergency fund and your future',
               value: _savings,
               coins: _coins(_savings),
-              color: const Color(0xFF4BD2A3),
+              color: const Color(0xFF6CD34A),
               guide: 20,
               onChanged: (v) => setState(() => _savings = v),
             ),
@@ -2599,7 +2599,7 @@ class _BudgetBar extends StatelessWidget {
             if (savings > 0)
               Expanded(
                 flex: savings,
-                child: Container(color: const Color(0xFF4BD2A3)),
+                child: Container(color: const Color(0xFF6CD34A)),
               ),
             // Any unallocated remainder shows as a gap, so "you have 15%
             // left" is visible as well as stated.
@@ -2918,7 +2918,7 @@ class _ConceptsSheet extends StatelessWidget {
             children: [
               const Icon(
                 Icons.school_rounded,
-                color: Color(0xFF85EFAC),
+                color: Color(0xFF9BE870),
                 size: 22,
               ),
               const SizedBox(width: 10),
@@ -2935,7 +2935,7 @@ class _ConceptsSheet extends StatelessWidget {
               Text(
                 '${concepts.length}/${FinanceConcept.values.length}',
                 style: AppTheme.numeric(
-                  color: const Color(0xFF85EFAC),
+                  color: const Color(0xFF9BE870),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -3039,7 +3039,7 @@ class _ThisYearPanel extends StatelessWidget {
     // same color, over the slate panel. Resolved opaque so the icon can be
     // measured against it.
     final outingChip = AppTheme.tintedChip(
-      outing.allowed ? const Color(0xFF4BD2A3) : const Color(0xFFFF8FB1),
+      outing.allowed ? const Color(0xFF6CD34A) : const Color(0xFFFF8FB1),
       alpha: 0.12,
       on: PixelFrameStyle.slate.surface,
       target: 3.0,
@@ -3090,7 +3090,7 @@ class _ThisYearPanel extends StatelessWidget {
             Icon(
               Icons.family_restroom_rounded,
               size: 15,
-              color: const Color(0xFF85EFAC),
+              color: const Color(0xFF9BE870),
             ),
             const SizedBox(width: 6),
             Expanded(
@@ -3148,7 +3148,7 @@ class _ThisYearPanel extends StatelessWidget {
               Expanded(
                 child: _YearFact(
                   icon: Icons.family_restroom_rounded,
-                  accent: const Color(0xFF85EFAC),
+                  accent: const Color(0xFF9BE870),
                   label: 'Family',
                   value: strictness.label,
                 ),
@@ -3311,7 +3311,7 @@ class _PowersSheetState extends State<_PowersSheet> {
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
       decoration: const BoxDecoration(
-        color: Color(0xFF0A1D17),
+        color: Color(0xFF131F24),
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SafeArea(
@@ -3683,7 +3683,7 @@ class _VolunteerRow extends StatelessWidget {
                           _Tag(
                             '${place.happiness > 0 ? '+' : ''}'
                             '${place.happiness} Happy',
-                            const Color(0xFF85EFAC),
+                            const Color(0xFF9BE870),
                             const Color(0x2285EFAC),
                           ),
                         if (place.smarts != 0)
@@ -3697,7 +3697,7 @@ class _VolunteerRow extends StatelessWidget {
                             '${place.health > 0 ? '+' : ''}'
                             '${place.health} Health',
                             place.health > 0
-                                ? const Color(0xFF85EFAC)
+                                ? const Color(0xFF9BE870)
                                 : const Color(0xFFFF8474),
                             place.health > 0
                                 ? const Color(0x2285EFAC)

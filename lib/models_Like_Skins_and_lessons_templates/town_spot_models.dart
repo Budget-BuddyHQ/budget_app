@@ -38,7 +38,7 @@ enum TownSpotKind {
   store('Corner Store', Icons.storefront_rounded, Color(0xFFFFD45C)),
   bank('Town Bank', Icons.account_balance_rounded, Color(0xFF69C6FF)),
   school('School', Icons.school_rounded, Color(0xFFB388FF)),
-  job('Job Board', Icons.work_rounded, Color(0xFF4BD2A3)),
+  job('Job Board', Icons.work_rounded, Color(0xFF6CD34A)),
   home('Your House', Icons.cottage_rounded, Color(0xFFFF8FB1)),
   noticeBoard('Notice Board', Icons.push_pin_rounded, Color(0xFFFFB74D)),
 

@@ -105,7 +105,7 @@ class _SpotlightPainter extends CustomPainter {
     canvas.drawRRect(
       RRect.fromRectAndRadius(hole!.inflate(6), Radius.circular(radius)),
       Paint()
-        ..color = const Color(0xFF85EFAC)
+        ..color = const Color(0xFF9BE870)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2,
     );

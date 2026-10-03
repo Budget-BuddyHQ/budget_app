@@ -267,7 +267,7 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
         icon: status == 'victory'
             ? Icons.workspace_premium_rounded
             : Icons.flag_rounded,
-        accent: const Color(0xFF85EFAC),
+        accent: const Color(0xFF9BE870),
         soundEffect: status == 'victory'
             ? AppSoundEffect.celebration
             : AppSoundEffect.shutdown,
@@ -794,14 +794,14 @@ class _NativeBudgetBattleChallengeState
       key: const ValueKey<String>('loading_questions'),
       padding: const EdgeInsets.all(22),
       decoration: AppTheme.getPuffyDecoration(
-        accent: const Color(0xFF85EFAC),
+        accent: const Color(0xFF9BE870),
         fillColor: AppTheme.panelStrong,
         restAlpha: 0.14,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const CircularProgressIndicator(color: Color(0xFF85EFAC)),
+          const CircularProgressIndicator(color: Color(0xFF9BE870)),
           const SizedBox(height: 16),
           Text(
             'Loading daily challenge',
@@ -825,7 +825,7 @@ class _NativeBudgetBattleChallengeState
       key: ValueKey<int>(_questionIndex),
       padding: const EdgeInsets.all(22),
       decoration: AppTheme.getPuffyDecoration(
-        accent: const Color(0xFF85EFAC),
+        accent: const Color(0xFF9BE870),
         fillColor: AppTheme.panelStrong,
         restAlpha: 0.14,
       ),
@@ -839,7 +839,7 @@ class _NativeBudgetBattleChallengeState
                 child: Text(
                   'Question ${_questionIndex + 1} of ${_questions.length}',
                   style: AppTheme.numeric(
-                    color: const Color(0xFF85EFAC),
+                    color: const Color(0xFF9BE870),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -861,7 +861,7 @@ class _NativeBudgetBattleChallengeState
               value: progress,
               backgroundColor: Colors.white10,
               valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFF85EFAC),
+                Color(0xFF9BE870),
               ),
             ),
           ),
@@ -908,8 +908,8 @@ class _NativeBudgetBattleChallengeState
             child: ElevatedButton(
               onPressed: selectedIndex == null ? null : _advance,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF85EFAC),
-                foregroundColor: const Color(0xFF103225),
+                backgroundColor: const Color(0xFF9BE870),
+                foregroundColor: const Color(0xFF1C2B32),
                 disabledBackgroundColor: Colors.white12,
                 disabledForegroundColor: Colors.white38,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1010,7 +1010,7 @@ class _NativeBudgetBattleChallengeState
       key: const ValueKey<String>('results'),
       padding: const EdgeInsets.all(22),
       decoration: AppTheme.getPuffyDecoration(
-        accent: const Color(0xFF85EFAC),
+        accent: const Color(0xFF9BE870),
         fillColor: AppTheme.panelStrong,
         restAlpha: 0.16,
       ),
@@ -1020,7 +1020,7 @@ class _NativeBudgetBattleChallengeState
         children: [
           Icon(
             passed ? Icons.workspace_premium_rounded : Icons.flag_rounded,
-            color: const Color(0xFF85EFAC),
+            color: const Color(0xFF9BE870),
             size: 42,
           ),
           const SizedBox(height: 14),
@@ -1056,8 +1056,8 @@ class _NativeBudgetBattleChallengeState
               child: ElevatedButton(
                 onPressed: _resetQuiz,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF85EFAC),
-                  foregroundColor: const Color(0xFF103225),
+                  backgroundColor: const Color(0xFF9BE870),
+                  foregroundColor: const Color(0xFF1C2B32),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -1081,8 +1081,8 @@ class _NativeBudgetBattleChallengeState
               child: ElevatedButton(
                 onPressed: _isSubmitting ? null : _bankRewards,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF85EFAC),
-                  foregroundColor: const Color(0xFF103225),
+                  backgroundColor: const Color(0xFF9BE870),
+                  foregroundColor: const Color(0xFF1C2B32),
                   disabledBackgroundColor: Colors.white12,
                   disabledForegroundColor: Colors.white38,
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1096,7 +1096,7 @@ class _NativeBudgetBattleChallengeState
                         width: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Color(0xFF85EFAC),
+                          color: Color(0xFF9BE870),
                         ),
                       )
                     : const Text('Bank Rewards'),
@@ -1132,9 +1132,9 @@ class _ChallengeChoiceButton extends StatelessWidget {
     final IconData? icon;
 
     if (hasAnswered && isCorrect) {
-      backgroundColor = const Color(0xFF85EFAC);
-      borderColor = const Color(0xFF85EFAC);
-      foregroundColor = const Color(0xFF103225);
+      backgroundColor = const Color(0xFF9BE870);
+      borderColor = const Color(0xFF9BE870);
+      foregroundColor = const Color(0xFF1C2B32);
       icon = Icons.check_circle_rounded;
     } else if (hasAnswered && isSelected) {
       backgroundColor = const Color(0xFFFF8A80);
@@ -1248,7 +1248,7 @@ class _ChallengeLoadingOverlay extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
-        color: const Color(0xFF103225).withValues(alpha: 0.94),
+        color: const Color(0xFF1C2B32).withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white12),
       ),
@@ -1278,7 +1278,7 @@ class _ChallengeLoadingOverlay extends StatelessWidget {
                       height: size,
                       width: size,
                       decoration: const BoxDecoration(
-                        color: Color(0xFF85EFAC),
+                        color: Color(0xFF9BE870),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -1307,7 +1307,7 @@ class _CloudSyncBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF103225).withValues(alpha: 0.92),
+        color: const Color(0xFF1C2B32).withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: Colors.white12),
       ),
@@ -1322,12 +1322,12 @@ class _CloudSyncBadge extends StatelessWidget {
               child: isLoading
                   ? const CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Color(0xFF85EFAC),
+                      color: Color(0xFF9BE870),
                     )
                   : const Icon(
                       Icons.cloud_done,
                       size: 14,
-                      color: Color(0xFF85EFAC),
+                      color: Color(0xFF9BE870),
                     ),
             ),
             const SizedBox(width: 8),

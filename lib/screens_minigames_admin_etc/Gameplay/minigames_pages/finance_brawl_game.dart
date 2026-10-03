@@ -115,11 +115,11 @@ class BrawlUpgrade {
   }
 }
 
-const Color _brawlInk = Color(0xFF071711);
+const Color _brawlInk = Color(0xFF111B20);
 const Color _brawlPanel = Color(0xFF10281F);
 const Color _brawlPanelDeep = Color(0xFF0A1814);
 const Color _brawlBorder = Color(0xFF1F4D3E);
-const Color _brawlMint = Color(0xFF85EFAC);
+const Color _brawlMint = Color(0xFF9BE870);
 const Color _brawlGold = Color(0xFFE1BB72);
 const Color _brawlBlue = Color(0xFF6CB6DA);
 const Color _brawlRed = Color(0xFFE25C5C);
@@ -1932,7 +1932,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
             if ((shieldPos - mob.pos).distance < (mob.hitRadius + 14.0)) {
               if (_shieldDamageCooldown >= 0.15) {
                 mob.principalRemaining -= (20.0 + (_emergencyFundLevel * 15.0));
-                _spawnExplosion(mob.pos, const Color(0xFF85EFAC));
+                _spawnExplosion(mob.pos, const Color(0xFF9BE870));
 
                 if (mob.principalRemaining <= 0) {
                   _onLiabilityCleared(mIdx, mob);
@@ -2551,7 +2551,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
           title: "Quiz Score: $_quizCorrectCount/$total",
           message: "${bonus.name} granted. Answer all $total for your pick!",
           icon: Icons.school_rounded,
-          accent: const Color(0xFF85EFAC),
+          accent: const Color(0xFF9BE870),
         );
         return;
       }
@@ -2785,7 +2785,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
         title: "Upgrade Active!",
         message: "${choice.name} initialized. Next wave incoming.",
         icon: Icons.bolt_rounded,
-        accent: const Color(0xFF85EFAC),
+        accent: const Color(0xFF9BE870),
       );
     });
   }
@@ -4649,7 +4649,7 @@ class _BrawlPainter extends CustomPainter {
       playerPos,
       playerRadius,
       Paint()
-        ..color = const Color(0xFF85EFAC)
+        ..color = const Color(0xFF9BE870)
         ..strokeWidth = 3.0
         ..style = PaintingStyle.stroke,
     );
@@ -4717,7 +4717,7 @@ class _BrawlPainter extends CustomPainter {
               ? equippedSkinId.characters.first.toUpperCase()
               : '\$',
           style: GoogleFonts.pixelifySans(
-            color: Color(0xFF85EFAC),
+            color: Color(0xFF9BE870),
             fontWeight: FontWeight.w700,
             fontSize: 18,
           ),
@@ -4753,7 +4753,7 @@ class _BrawlPainter extends CustomPainter {
         pBarW * playerBalancePercent,
         pBarH,
       ),
-      Paint()..color = const Color(0xFF85EFAC),
+      Paint()..color = const Color(0xFF9BE870),
     );
 
     canvas.restore();

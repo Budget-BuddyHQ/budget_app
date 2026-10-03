@@ -68,9 +68,9 @@ class _AgeScalingCardState extends State<AgeScalingCard> {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF12321F).withValues(alpha: 0.55),
+        color: const Color(0xFF1C2A31).withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF4BD2A3).withValues(alpha: 0.3)),
+        border: Border.all(color: const Color(0xFF6CD34A).withValues(alpha: 0.3)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -86,7 +86,7 @@ class _AgeScalingCardState extends State<AgeScalingCard> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF4BD2A3).withValues(alpha: 0.16),
+                      color: const Color(0xFF6CD34A).withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -137,7 +137,7 @@ class _AgeScalingCardState extends State<AgeScalingCard> {
           if (_open) ...[
             Divider(
               height: 1,
-              color: const Color(0xFF4BD2A3).withValues(alpha: 0.18),
+              color: const Color(0xFF6CD34A).withValues(alpha: 0.18),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
@@ -156,7 +156,7 @@ class _AgeScalingCardState extends State<AgeScalingCard> {
                         onPressed: widget.onChangeAge,
                         style: TextButton.styleFrom(
                           backgroundColor: const Color(
-                            0xFF4BD2A3,
+                            0xFF6CD34A,
                           ).withValues(alpha: 0.14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),

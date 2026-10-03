@@ -504,7 +504,7 @@ class _SportSheetState extends State<SportSheet> {
           ? 'Welcome to ${_pick.label.toLowerCase()}.'
           : 'Practice and good health change those odds.',
       icon: _pick.icon,
-      accent: made ? const Color(0xFF85EFAC) : const Color(0xFFF2C66D),
+      accent: made ? const Color(0xFF9BE870) : const Color(0xFFF2C66D),
     );
   }
 }
@@ -553,7 +553,7 @@ class SpecialCareersSheet extends StatelessWidget {
                         : 'Most people who win lost first.',
                     icon: Icons.how_to_vote_rounded,
                     accent: life.hasJob
-                        ? const Color(0xFF85EFAC)
+                        ? const Color(0xFF9BE870)
                         : const Color(0xFFF2C66D),
                   );
                 }

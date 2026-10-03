@@ -141,6 +141,56 @@ void main() {
       await tester.tap(find.textContaining('AAPL • '));
       await settle(tester);
 
+      // Its own analysis screen, not the order ticket. Asked for as "a
+      // detailed analysis screen on how the stock is doing ... like other
+      // stock trading apps would do".
+      expect(find.text('Your position'), findsOneWidget);
+      expect(find.text('Buy Shares'), findsNothing);
+      await tester.scrollUntilVisible(
+        find.text('What could happen next'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('What could happen next'), findsOneWidget);
+    });
+
+    testWidgets('the position adds up', (tester) async {
+      // The fake AAPL is $1900, 19,000 coins a share. 2 shares paid 3,200:
+      // worth 38,000, up 34,800, which is 1087.5% on what was paid.
+      final base = UserStats.defaults('test_user');
+      final stats = base.copyWith(
+        holdings: {...base.holdings, 'stock_AAPL': 2.0},
+        spendingHabits: {
+          ...base.spendingHabits,
+          'cost_basis': {'stock_AAPL': 3200},
+        },
+      );
+      await show(tester, stats: stats);
+      await tester.tap(find.textContaining('AAPL • '));
+      await settle(tester);
+
+      expect(find.text('38,000g'), findsOneWidget);
+      expect(find.text('+34,800g'), findsOneWidget);
+      expect(find.text('+1087.5%'), findsOneWidget);
+      expect(find.text('1600.0g'), findsWidgets); // average cost
+    });
+
+    testWidgets('Sell and Buy on it open the order ticket', (tester) async {
+      final base = UserStats.defaults('test_user');
+      final stats = base.copyWith(
+        holdings: {...base.holdings, 'stock_AAPL': 2.0},
+        spendingHabits: {
+          ...base.spendingHabits,
+          'cost_basis': {'stock_AAPL': 3200},
+        },
+      );
+      await show(tester, stats: stats);
+      await tester.tap(find.textContaining('AAPL • '));
+      await settle(tester);
+
+      expect(find.text('Sell'), findsOneWidget);
+      await tester.tap(find.text('Buy'));
+      await settle(tester);
       expect(find.text('Company background & news'), findsOneWidget);
     });
   });

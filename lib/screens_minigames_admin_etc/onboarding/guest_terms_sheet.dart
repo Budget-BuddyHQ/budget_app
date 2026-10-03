@@ -65,7 +65,7 @@ class _GuestTermsSheetContent extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFF16321F),
+            color: const Color(0xFF1E2C33),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
@@ -100,7 +100,7 @@ class _GuestTermsSheetContent extends StatelessWidget {
                   style: GoogleFonts.quicksand(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF85EFAC),
+                    color: const Color(0xFF9BE870),
                     decoration: TextDecoration.underline,
                   ),
                 ),
@@ -116,7 +116,7 @@ class _GuestTermsSheetContent extends StatelessWidget {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF3CCB74),
-                    foregroundColor: const Color(0xFF0F2E1E),
+                    foregroundColor: const Color(0xFF131F24),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),

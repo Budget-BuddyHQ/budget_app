@@ -457,7 +457,7 @@ class _PriceChartPainter extends CustomPainter {
   final bool showAxis;
   final int? hoverIndex;
 
-  static const Color _up = Color(0xFF85EFAC);
+  static const Color _up = Color(0xFF9BE870);
   static const Color _down = Color(0xFFFF8A80);
   static const double _gutter = PriceChart.axisGutter;
 
@@ -623,7 +623,7 @@ class _PriceChartPainter extends CustomPainter {
       (
         '${change >= 0 ? '+' : ''}${_fmt(change)} '
             '(${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(2)}%)',
-        change >= 0 ? const Color(0xFF4BD2A3) : const Color(0xFFFF6B6B),
+        change >= 0 ? const Color(0xFF6CD34A) : const Color(0xFFFF6B6B),
       ),
       (_stamp(bar.time), Colors.white.withValues(alpha: 0.62)),
     ];
@@ -861,15 +861,9 @@ class _PriceChartPainter extends CustomPainter {
       ..close();
     canvas.drawPath(
       fill,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            accent.withValues(alpha: 0.30),
-            accent.withValues(alpha: 0.02),
-          ],
-        ).createShader(Rect.fromLTWH(0, 0, chartWidth, size.height)),
+      // A flat, light tint under the line rather than a glowing fade:
+      // the fade was part of what a tester called "too AI".
+      Paint()..color = accent.withValues(alpha: 0.12),
     );
 
     final line = Path()..moveTo(points.first.dx, points.first.dy);

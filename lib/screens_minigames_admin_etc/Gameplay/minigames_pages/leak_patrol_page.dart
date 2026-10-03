@@ -794,7 +794,7 @@ class _StreakPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = streak.multiplier >= LeakStreak.maxMultiplier
         ? const Color(0xFFFFD45C)
-        : const Color(0xFF85EFAC);
+        : const Color(0xFF9BE870);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
@@ -1144,7 +1144,7 @@ class _RiserState extends State<_Riser> with SingleTickerProviderStateMixin {
                     ? null
                     : Border.all(
                         color: hit.right
-                            ? const Color(0xFF85EFAC)
+                            ? const Color(0xFF9BE870)
                             : const Color(0xFFFF8474),
                         width: 1.5,
                       ),
@@ -1213,7 +1213,7 @@ class _Burst extends StatelessWidget {
       height: size,
       child: CustomPaint(
         painter: _BurstPainter(
-          color: right ? const Color(0xFF85EFAC) : const Color(0xFFFF8474),
+          color: right ? const Color(0xFF9BE870) : const Color(0xFFFF8474),
         ),
       ),
     );
@@ -1299,7 +1299,7 @@ class _FloatingDeltaState extends State<_FloatingDelta>
   @override
   Widget build(BuildContext context) {
     final color = widget.right
-        ? const Color(0xFF85EFAC)
+        ? const Color(0xFF9BE870)
         : const Color(0xFFFF8474);
 
     return AnimatedBuilder(
@@ -1413,7 +1413,7 @@ class _Intro extends StatelessWidget {
           ),
           const _Step(
             number: 2,
-            accent: Color(0xFF85EFAC),
+            accent: Color(0xFF9BE870),
             title: 'Leak? Tap it.',
             body: 'You save its coins. Right answers in a row multiply them.',
           ),
@@ -1581,7 +1581,7 @@ class _Example extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = tap ? const Color(0xFF85EFAC) : const Color(0xFFFF8474);
+    final accent = tap ? const Color(0xFF9BE870) : const Color(0xFFFF8474);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),

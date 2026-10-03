@@ -215,7 +215,7 @@ class _WelcomeActionButton extends StatelessWidget {
     final background = primary
         ? const Color(0xFF3CCB74)
         : Colors.white.withValues(alpha: 0.08);
-    final textColor = primary ? const Color(0xFF0F2E1E) : Colors.white;
+    final textColor = primary ? const Color(0xFF131F24) : Colors.white;
 
     return SizedBox(
       width: double.infinity,

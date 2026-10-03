@@ -9,7 +9,7 @@ import '../themes_colors/app_theme.dart';
 ///
 /// Each motif pairs a real sprite with the accent color it should glow in.
 enum AmbientMotif {
-  turtle(AppAssets.pixelMainTurtle, Color(0xFF85EFAC)),
+  turtle(AppAssets.pixelMainTurtle, Color(0xFF9BE870)),
   coin(AppAssets.tileCoin, Color(0xFFFFD45C)),
   arcade(AppAssets.iconMarket, Color(0xFF69C6FF)),
   academy(AppAssets.coolTurtle, Color(0xFFB7F7D7));

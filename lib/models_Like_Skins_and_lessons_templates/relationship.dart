@@ -156,7 +156,7 @@ class Relationship {
 
   Color get statusColor {
     if (!isAlive) return const Color(0xFF9AA5B1);
-    if (closeness >= 80) return const Color(0xFF85EFAC);
+    if (closeness >= 80) return const Color(0xFF9BE870);
     if (closeness >= 55) return const Color(0xFF9CCC65);
     if (closeness >= 30) return const Color(0xFFF2C66D);
     return const Color(0xFFFF8474);

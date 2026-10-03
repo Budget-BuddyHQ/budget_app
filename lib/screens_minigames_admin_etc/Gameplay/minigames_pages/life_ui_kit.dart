@@ -370,7 +370,7 @@ class LifeRow extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.onTap,
-    this.accent = const Color(0xFF85EFAC),
+    this.accent = const Color(0xFF9BE870),
     this.disabledReason,
     this.chips = const <Widget>[],
     this.bar,
@@ -805,7 +805,7 @@ class LifeTile extends StatelessWidget {
 /// A color for a 0 to 100 value: red when it is low, amber in the middle,
 /// green when it is good. Used so a bar reads before its number does.
 Color valueColor(int value) {
-  if (value >= 70) return const Color(0xFF85EFAC);
+  if (value >= 70) return const Color(0xFF9BE870);
   if (value >= 45) return const Color(0xFFF2C66D);
   return const Color(0xFFFF8474);
 }

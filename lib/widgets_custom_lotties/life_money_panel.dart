@@ -160,7 +160,7 @@ class LifeMoneyPanel extends StatelessWidget {
   }
 
   List<_TileData> _tiles() => <_TileData>[
-    _TileData('\u{1F4B5}', 'Cash', life.money, const Color(0xFF85EFAC)),
+    _TileData('\u{1F4B5}', 'Cash', life.money, const Color(0xFF9BE870)),
     _TileData(
       '\u{1F3E6}',
       'Saved',
@@ -255,7 +255,9 @@ class _MoneyTile extends StatelessWidget {
                     // washed in their own accent, so knocking the label back
                     // with alpha pulls it toward the tile rather than toward
                     // grey — "Cash" and "Saved" both measured under 4:1.
-                    color: AppTheme.textMuted,
+                    // Full text colour since the slate palette: the pink
+                    // "Owed" tile took muted grey down to 3.98:1.
+                    color: AppTheme.textPrimary,
                     fontSize: 9.5,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.3,
@@ -346,7 +348,7 @@ class _BudgetStrip extends StatelessWidget {
                 Text(
                   isSet ? 'Tap to change' : 'Tap to set',
                   style: GoogleFonts.quicksand(
-                    color: const Color(0xFF85EFAC),
+                    color: const Color(0xFF9BE870),
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                   ),
@@ -373,7 +375,7 @@ class _BudgetStrip extends StatelessWidget {
                     _BudgetSegment(
                       percent: savings,
                       emoji: '\u{1F437}',
-                      color: const Color(0xFF85EFAC),
+                      color: const Color(0xFF9BE870),
                     ),
                   ],
                 ),
@@ -448,7 +450,7 @@ class _RunwayLine extends StatelessWidget {
       ),
       _ => (
         '\u{1F6E1}',
-        const Color(0xFF85EFAC),
+        const Color(0xFF9BE870),
         'Savings cover ${months.toStringAsFixed(1)} months — a real cushion.',
       ),
     };

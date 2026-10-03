@@ -44,7 +44,7 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
     teaches:
         'You learn money best by living with your choices, not by memorising.',
     icon: Icons.auto_stories_rounded,
-    accent: Color(0xFF85EFAC),
+    accent: Color(0xFF9BE870),
     mascot: TutorialMascot.wave,
   ),
   TutorialStep(
@@ -60,7 +60,7 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
     ],
     teaches: 'Time is what every money idea needs to work.',
     icon: Icons.cake_rounded,
-    accent: Color(0xFF4BD2A3),
+    accent: Color(0xFF6CD34A),
     mascot: TutorialMascot.idle,
   ),
   TutorialStep(
@@ -169,7 +169,7 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
     teaches:
         'Going somewhere to make a choice is not the same as tapping a list.',
     icon: Icons.explore_rounded,
-    accent: Color(0xFF85EFAC),
+    accent: Color(0xFF9BE870),
     mascot: TutorialMascot.idle,
   ),
   TutorialStep(
@@ -202,7 +202,7 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
     ],
     teaches: 'Your job is the pipe your money flows through.',
     icon: Icons.work_rounded,
-    accent: Color(0xFF4BD2A3),
+    accent: Color(0xFF6CD34A),
     mascot: TutorialMascot.idle,
   ),
   TutorialStep(
@@ -268,7 +268,7 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
     ],
     teaches: 'A life you cannot restart is a life you pay attention to.',
     icon: Icons.flag_rounded,
-    accent: Color(0xFF4BD2A3),
+    accent: Color(0xFF6CD34A),
     mascot: TutorialMascot.wave,
   ),
 ];

@@ -18,6 +18,7 @@ import '../controllers_that_updates_stats/app_settings_controller.dart';
 import '../controllers_that_updates_stats/user_stats_controller.dart';
 import '../services_backend_and_other_services/app_sound_service.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
+import '../themes_colors/app_theme.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key, this.initialIndex = AppTabIndex.dashboard});
@@ -311,36 +312,26 @@ class _TopIconBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onSelected;
 
-  static const _barTop = Color(0xFF15382A);
-  static const _barBottom = Color(0xFF0C2018);
-  static const _activeAccent = Color(0xFFFFD94A);
+  static const _bar = Color(0xFF182429);
+  static const _activeAccent = Color(0xFFFFC800);
 
   @override
   Widget build(BuildContext context) {
     final narrow = MediaQuery.sizeOf(context).width < 380;
 
+    // Same slate and the same 2px rule as the bottom bar, so the two read as
+    // one frame around the screen. It had a glow-coloured hairline and a soft
+    // drop shadow, part of what testers called "looks AI".
     return Material(
-      color: _barBottom,
+      color: _bar,
       child: SafeArea(
         bottom: false,
         child: Container(
-          decoration: BoxDecoration(
-            color: _barTop,
-            // A hairline under the bar separates it from whatever screen is
-            // showing without needing a heavy shadow.
+          decoration: const BoxDecoration(
+            color: _bar,
             border: Border(
-              bottom: BorderSide(
-                color: _activeAccent.withValues(alpha: 0.22),
-                width: 2,
-              ),
+              bottom: BorderSide(color: AppTheme.outline, width: 2),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.22),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           padding: const EdgeInsets.fromLTRB(10, 7, 10, 8),
           child: Row(
@@ -438,7 +429,7 @@ class _LeaderboardIconButton extends StatelessWidget {
 
   final bool compact;
 
-  static const _gold = Color(0xFFFFD45C);
+  static const _gold = Color(0xFFFFC800);
 
   @override
   Widget build(BuildContext context) {
@@ -459,12 +450,8 @@ class _LeaderboardIconButton extends StatelessWidget {
             height: compact ? 30 : 34,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: _gold.withValues(alpha: 0.14),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: _gold.withValues(alpha: 0.4),
-                width: 1.5,
-              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.outline, width: 2),
             ),
             child: Icon(
               Icons.emoji_events_rounded,
@@ -535,37 +522,28 @@ class _TopIconButton extends StatelessWidget {
             AppSoundService.play(AppSoundEffect.navigation);
             onTap();
           },
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(12),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
             padding: EdgeInsets.symmetric(
               horizontal: compact ? 9 : 12,
               vertical: 7,
             ),
+            // An outlined rounded square, gold when it is where you are: the
+            // same mark the bottom bar uses. Was a filled yellow pill with a
+            // glow.
             decoration: BoxDecoration(
               color: active
-                  ? _TopIconBar._activeAccent
-                  : Colors.white.withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(999),
+                  ? Color.alphaBlend(
+                      _TopIconBar._activeAccent.withValues(alpha: 0.10),
+                      _TopIconBar._bar,
+                    )
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: active
-                    ? const Color(0xFF21402C)
-                    : Colors.white.withValues(alpha: 0.16),
+                color: active ? _TopIconBar._activeAccent : AppTheme.outline,
                 width: 2,
               ),
-              // A soft accent glow on the active pill so "where am I" is
-              // readable at a glance, matching the bottom bar's treatment.
-              boxShadow: active
-                  ? [
-                      BoxShadow(
-                        color: _TopIconBar._activeAccent.withValues(
-                          alpha: 0.30,
-                        ),
-                        blurRadius: 10,
-                        spreadRadius: -2,
-                      ),
-                    ]
-                  : null,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -573,7 +551,7 @@ class _TopIconButton extends StatelessWidget {
                 Icon(
                   icon,
                   size: compact ? 15 : 17,
-                  color: active ? const Color(0xFF21402C) : Colors.white70,
+                  color: active ? _TopIconBar._activeAccent : Colors.white70,
                 ),
                 SizedBox(width: compact ? 4 : 6),
                 Text(
@@ -581,7 +559,7 @@ class _TopIconButton extends StatelessWidget {
                   style: GoogleFonts.pixelifySans(
                     fontSize: compact ? 11 : 12.5,
                     fontWeight: FontWeight.w700,
-                    color: active ? const Color(0xFF21402C) : Colors.white70,
+                    color: active ? _TopIconBar._activeAccent : Colors.white70,
                   ),
                 ),
               ],

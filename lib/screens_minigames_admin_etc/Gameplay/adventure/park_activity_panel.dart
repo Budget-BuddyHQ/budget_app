@@ -92,7 +92,7 @@ class _ParkActivityPanelState extends State<ParkActivityPanel> {
         children: [
           Row(
             children: [
-              const Icon(Icons.park_rounded, color: Color(0xFF85EFAC)),
+              const Icon(Icons.park_rounded, color: Color(0xFF9BE870)),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -268,7 +268,7 @@ class _RewardCard extends StatelessWidget {
             ),
             _RewardChip(
               label: '+${reward.literacy} literacy',
-              color: const Color(0xFF85EFAC),
+              color: const Color(0xFF9BE870),
             ),
             _RewardChip(
               label: '+${reward.xp} XP',
@@ -506,7 +506,7 @@ class _CoinRushState extends State<_CoinRush>
           child: Container(
             height: _areaHeight,
             width: double.infinity,
-            color: const Color(0xFF0C2A1A),
+            color: const Color(0xFF18252B),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return Stack(
@@ -554,7 +554,7 @@ class _FallingChip extends StatelessWidget {
         Icons.savings_rounded,
         '+2',
       ),
-      FallingKind.gem => (const Color(0xFF85EFAC), Icons.diamond_rounded, '+5'),
+      FallingKind.gem => (const Color(0xFF9BE870), Icons.diamond_rounded, '+5'),
       FallingKind.fee => (
         const Color(0xFFFF8474),
         Icons.receipt_long_rounded,

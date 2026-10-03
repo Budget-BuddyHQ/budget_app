@@ -387,9 +387,9 @@ class _EndingsCollection extends StatelessWidget {
                 onPressed: onPlay,
                 icon: const Icon(Icons.play_arrow_rounded, size: 18),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF85EFAC),
+                  foregroundColor: const Color(0xFF9BE870),
                   side: BorderSide(
-                    color: const Color(0xFF85EFAC).withValues(alpha: 0.45),
+                    color: const Color(0xFF9BE870).withValues(alpha: 0.45),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -497,10 +497,10 @@ class _LifeHeroCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
           border: Border.all(
-            color: const Color(0xFF85EFAC).withValues(alpha: 0.32),
+            color: const Color(0xFF9BE870).withValues(alpha: 0.32),
           ),
           boxShadow: AppTheme.ledgeShadow(
-            const Color(0xFF85EFAC),
+            const Color(0xFF9BE870),
             restAlpha: 0.2,
           ),
         ),
@@ -609,7 +609,7 @@ class _LifeHeroCard extends StatelessWidget {
                   FilledButton.icon(
                     onPressed: onPlay,
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF85EFAC),
+                      backgroundColor: const Color(0xFF9BE870),
                       foregroundColor: const Color(0xFF06251A),
                       padding: const EdgeInsets.symmetric(
                         vertical: 15,

@@ -51,7 +51,7 @@ class ConfettiBurst {
 
 const _confettiColors = <Color>[
   Color(0xFFFFD94A),
-  Color(0xFF85EFAC),
+  Color(0xFF9BE870),
   Color(0xFF58C7FF),
   Color(0xFFFF8FB1),
   Color(0xFFB388FF),

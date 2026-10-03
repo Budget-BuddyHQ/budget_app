@@ -12,6 +12,7 @@ import '../../../widgets_custom_lotties/price_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../widgets_custom_lotties/symbol_badge.dart';
+import 'stock_market_page.dart' show kBoardInset, kBoardPanel;
 
 /// What kind of order the player is placing.
 ///
@@ -406,7 +407,7 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.04),
+                        color: kBoardInset,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: Colors.white.withValues(alpha: 0.10),
@@ -530,7 +531,7 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
     final blockReason = _blockReason;
     final workingNote = _workingOrderNote;
     final sideColor = switch (_action) {
-      TradeAction.buy => const Color(0xFF85EFAC),
+      TradeAction.buy => const Color(0xFF9BE870),
       TradeAction.sell => const Color(0xFFFF8A80),
       TradeAction.short => const Color(0xFFFFD166),
       TradeAction.cover => const Color(0xFF8BC6FF),
@@ -647,7 +648,7 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                       vertical: 14,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: kBoardPanel,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.10),
@@ -693,7 +694,7 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
                       vertical: 14,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: kBoardPanel,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.10),
@@ -926,7 +927,7 @@ class _ChartSection extends StatelessWidget {
     ];
   }
 
-  static const Color _up = Color(0xFF4BD2A3);
+  static const Color _up = Color(0xFF6CD34A);
   static const Color _down = Color(0xFFFF6B6B);
 
   /// Green when the visible range is up, red when it's down — computed from
@@ -947,7 +948,7 @@ class _ChartSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: kBoardPanel,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: accent.withValues(alpha: 0.18)),
       ),
@@ -1099,7 +1100,7 @@ class _QuickAmountRow extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: enabled
                         ? accent.withValues(alpha: 0.12)
-                        : Colors.white.withValues(alpha: 0.04),
+                        : kBoardPanel,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: enabled
@@ -1187,9 +1188,7 @@ class _RangeChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: selected
-                ? const Color(0xFF2F6BFF)
-                : Colors.white.withValues(alpha: 0.06),
+            color: selected ? const Color(0xFF2F6BFF) : kBoardInset,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
@@ -1216,7 +1215,7 @@ class _ModeToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: kBoardInset,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -1267,7 +1266,7 @@ class _QuoteRow extends StatelessWidget {
           child: _QuoteChip(
             label: 'Bid',
             value: '${bid}g',
-            color: const Color(0xFF85EFAC),
+            color: const Color(0xFF9BE870),
           ),
         ),
         const SizedBox(width: 10),
@@ -1308,7 +1307,7 @@ class _QuoteChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 10),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: kBoardPanel,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -1387,7 +1386,7 @@ class _CompanyDetailsSection extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.04),
+          color: kBoardPanel,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
         ),
@@ -1416,7 +1415,7 @@ class _CompanyDetailsSection extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.04),
+          color: kBoardPanel,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
         ),
@@ -1431,7 +1430,7 @@ class _CompanyDetailsSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: kBoardPanel,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
@@ -1515,7 +1514,7 @@ class _CompanyProfileAndNewsSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: kBoardPanel,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
@@ -1748,7 +1747,7 @@ class _CompanyNewsBody extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.03),
+                  color: kBoardInset,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
@@ -1874,7 +1873,7 @@ class _SideToggle extends StatelessWidget {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: kBoardPanel,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1956,7 +1955,7 @@ class _OrderTypeSelector extends StatelessWidget {
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: kBoardPanel,
         borderRadius: BorderRadius.circular(12),
       ),
       child: DropdownButtonHideUnderline(
@@ -2010,7 +2009,7 @@ class _StepperField extends StatelessWidget {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: kBoardPanel,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: accent.withValues(alpha: 0.35)),
       ),
@@ -2101,7 +2100,7 @@ class _EstimateCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: kBoardPanel,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),

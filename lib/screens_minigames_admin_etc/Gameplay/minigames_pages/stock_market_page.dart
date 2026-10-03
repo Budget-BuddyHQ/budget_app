@@ -12,14 +12,25 @@ import '../../../services_backend_and_other_services/supabase_service.dart'
     show LedgerTransaction, UserStats;
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/hover_lift.dart';
+import '../../../widgets_custom_lotties/market_visuals.dart';
 import '../../../widgets_custom_lotties/mini_sparkline.dart';
 import '../../../widgets_custom_lotties/price_chart.dart';
 import '../../../widgets_custom_lotties/symbol_badge.dart';
+import 'holding_detail_page.dart';
 import 'order_ticket_page.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/age_scaled_note.dart';
 import '../../../navigation_tools_and_animation/pauses_in_background.dart';
+
+/// Card fill for everything on the board. Solid on purpose: the cards used
+/// to be white at 3-6% over the village map, so every panel picked up the
+/// map's teal and olive patches and read as a gradient wash, which a tester
+/// called "too AI". Shared with [HoldingDetailPage].
+const Color kBoardPanel = Color(0xFF202F36);
+
+/// For a panel nested inside another (a chart inside a card).
+const Color kBoardInset = Color(0xFF18252B);
 
 /// Real, tradeable stock: a [LiveQuote] plus the display/trade dressing
 /// (icon, accent, thesis, bid-ask spread) that Finnhub doesn't provide.
@@ -86,7 +97,7 @@ _kSymbolStyle = {
   ),
   'SBUX': (
     icon: Icons.local_cafe_rounded,
-    accent: Color(0xFF85EFAC),
+    accent: Color(0xFF9BE870),
     sector: 'Retail',
     thesis: 'The coffee shop on every corner, now a stock you can own.',
   ),
@@ -190,7 +201,7 @@ _TradeQuote _tradeQuoteFor(LiveQuote quote) {
     history: quote.miniSeries.map(coinsForUsd).toList(growable: false),
     thesis: style?.thesis ?? 'A real, publicly traded company.',
     icon: style?.icon ?? Icons.show_chart_rounded,
-    accent: style?.accent ?? const Color(0xFF85EFAC),
+    accent: style?.accent ?? const Color(0xFF9BE870),
   );
 }
 
@@ -455,7 +466,7 @@ class _StockMarketPageState extends State<StockMarketPage>
           : Icons.info_outline_rounded,
       accent: result.success
           ? switch (request.action) {
-              TradeAction.buy => const Color(0xFF85EFAC),
+              TradeAction.buy => const Color(0xFF9BE870),
               TradeAction.sell => const Color(0xFFE1BB72),
               TradeAction.short => const Color(0xFFFFD166),
               TradeAction.cover => const Color(0xFF8BC6FF),
@@ -605,10 +616,47 @@ class _StockMarketPageState extends State<StockMarketPage>
             '$fills resting limit order${fills > 1 ? 's' : ''} '
             'reached the price and filled.',
         icon: Icons.check_circle_rounded,
-        accent: const Color(0xFF85EFAC),
+        accent: const Color(0xFF9BE870),
       );
     }
     return fills;
+  }
+
+  /// Opens the analysis screen for a position. Buy and Sell on it go
+  /// through the same ticket as everywhere else, with the cash, shares and
+  /// price read at the moment of the tap rather than when the screen opened.
+  Future<void> _openHolding({
+    required BuildContext context,
+    required _TradeQuote quote,
+  }) {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => HoldingDetailPage(
+          symbol: quote.symbol,
+          company: quote.company,
+          icon: quote.icon,
+          accent: quote.accent,
+          fallbackSeries: quote.history
+              .map((v) => v.toDouble())
+              .toList(growable: false),
+          onTrade: (buy) {
+            final stats = context.read<UserStatsController>().stats;
+            final live = context.read<MarketDataService>().quoteFor(
+              quote.symbol,
+            );
+            return _openOrderTicket(
+              context: context,
+              quote: live != null && live.isValid
+                  ? _tradeQuoteFor(live)
+                  : quote,
+              startAsBuy: buy,
+              availableGold: stats.gold,
+              ownedLots: stats.holdings['stock_${quote.symbol}'] ?? 0.0,
+            );
+          },
+        ),
+      ),
+    );
   }
 
   /// Pulls a quote for a symbol found through search (which is almost never
@@ -827,15 +875,11 @@ class _StockMarketPageState extends State<StockMarketPage>
                       avgChangePercent: avgChangePercent,
                       portfolioTip: portfolioTip,
                       onGoToTrade: () => _tabController.animateTo(1),
-                      // Asked for as: tap a holding — like Apple — and see its
-                      // chart and news, not just the two numbers this row has
-                      // room for. Reuses the same lookup `_openSearchResult`
-                      // already does for a typed-in symbol.
-                      onOpenSymbol: (symbol, company) => _openSearchResult(
-                        context: context,
-                        match: SymbolMatch(symbol: symbol, company: company),
-                        stats: stats,
-                      ),
+                      // Asked for as: tap a holding and get "a detailed
+                      // analysis screen on how the stock is doing", the way a
+                      // broker app does. See [HoldingDetailPage].
+                      onOpenHolding: (quote) =>
+                          _openHolding(context: context, quote: quote),
                     ),
                     _TradeTab(
                       status: market.status,
@@ -909,6 +953,8 @@ class _StockMarketPageState extends State<StockMarketPage>
                       equityCurveAt: portfolioHistoryAt,
                       totalMarketValue: totalMarketValue,
                       totalUnrealized: totalUnrealized.round(),
+                      onOpenHolding: (quote) =>
+                          _openHolding(context: context, quote: quote),
                     ),
                   ],
                 ),
@@ -920,6 +966,14 @@ class _StockMarketPageState extends State<StockMarketPage>
     );
   }
 }
+
+/// A position's numbers, as [_holdingMetrics] works them out.
+typedef _HoldingMetrics = ({
+  double averageCost,
+  double currentValue,
+  double totalProfitLoss,
+  double profitLossPercent,
+});
 
 /// (averageCost, currentValue, totalProfitLoss, profitLossPercent) for a
 /// position — shared by the Trade card and the Portfolio holdings row so the
@@ -1004,7 +1058,10 @@ class _MarketStatusNote extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFB084).withValues(alpha: 0.10),
+        color: Color.alphaBlend(
+          const Color(0xFFFFB084).withValues(alpha: 0.10),
+          kBoardPanel,
+        ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: const Color(0xFFFFB084).withValues(alpha: 0.28),
@@ -1110,7 +1167,7 @@ class _TrendingPromoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final up = quote.changePercent >= 0;
-    final changeColor = up ? const Color(0xFF4BD2A3) : const Color(0xFFFF6B6B);
+    final changeColor = up ? const Color(0xFF6CD34A) : const Color(0xFFFF6B6B);
 
     return HoverLift(
       accent: quote.accent,
@@ -1122,7 +1179,7 @@ class _TrendingPromoCard extends StatelessWidget {
           width: 122,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Color.lerp(const Color(0xFF173B2E), quote.accent, 0.08),
+            color: Color.lerp(const Color(0xFF243440), quote.accent, 0.08),
             borderRadius: BorderRadius.circular(22),
             border: Border.all(
               color: quote.accent.withValues(alpha: 0.30),
@@ -1344,7 +1401,7 @@ class _TradeTabState extends State<_TradeTab> {
                     onPressed: _clearSearch,
                   ),
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.06),
+            fillColor: kBoardPanel,
             contentPadding: const EdgeInsets.symmetric(vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(18),
@@ -1421,7 +1478,7 @@ class _SearchResultRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = _kSymbolStyle[match.symbol];
-    final accent = style?.accent ?? const Color(0xFF85EFAC);
+    final accent = style?.accent ?? const Color(0xFF9BE870);
 
     return InkWell(
       borderRadius: BorderRadius.circular(16),
@@ -1429,7 +1486,7 @@ class _SearchResultRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: kBoardPanel,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
@@ -1511,7 +1568,7 @@ class _PortfolioTab extends StatelessWidget {
     required this.avgChangePercent,
     required this.portfolioTip,
     required this.onGoToTrade,
-    required this.onOpenSymbol,
+    required this.onOpenHolding,
   });
 
   final List<_TradeQuote> quotes;
@@ -1522,10 +1579,8 @@ class _PortfolioTab extends StatelessWidget {
   final String portfolioTip;
   final VoidCallback onGoToTrade;
 
-  /// Opens a holding's own chart, company background and news — the same
-  /// ticket Trade's Buy/Sell buttons open, reached here by tapping the
-  /// position itself rather than starting an order.
-  final void Function(String symbol, String company) onOpenSymbol;
+  /// Opens a holding's analysis screen ([HoldingDetailPage]).
+  final ValueChanged<_TradeQuote> onOpenHolding;
 
   @override
   Widget build(BuildContext context) {
@@ -1623,9 +1678,38 @@ class _PortfolioTab extends StatelessWidget {
         const SizedBox(height: 22),
         const _SectionTitle(
           title: 'Holdings',
-          subtitle: 'Every open position, from largest to smallest.',
+          subtitle:
+              'Largest first. Tap one for its chart, news and what could '
+              'happen next.',
         ),
         const SizedBox(height: 14),
+        if (holdings.length >= 2) ...[
+          _HoldingHighlights(
+            best: holdings.reduce(
+              (a, b) =>
+                  a.metrics.profitLossPercent >= b.metrics.profitLossPercent
+                  ? a
+                  : b,
+            ),
+            worst: holdings.reduce(
+              (a, b) =>
+                  a.metrics.profitLossPercent <= b.metrics.profitLossPercent
+                  ? a
+                  : b,
+            ),
+            today: holdings.fold<double>(
+              0,
+              (sum, h) =>
+                  sum +
+                  h.ownedLots *
+                      h.quote.currentPrice *
+                      h.quote.changePercent /
+                      (100 + h.quote.changePercent),
+            ),
+            onOpen: onOpenHolding,
+          ),
+          const SizedBox(height: 14),
+        ],
         if (holdings.isEmpty)
           _EmptyHoldings(onGoToTrade: onGoToTrade)
         else
@@ -1634,10 +1718,110 @@ class _PortfolioTab extends StatelessWidget {
               quote: h.quote,
               ownedLots: h.ownedLots,
               metrics: h.metrics,
-              onTap: () => onOpenSymbol(h.quote.symbol, h.quote.company),
+              onTap: () => onOpenHolding(h.quote),
             ),
             const SizedBox(height: 12),
           ],
+      ],
+    );
+  }
+}
+
+/// Three quick reads above the holdings list: the position doing best, the
+/// one doing worst, and what everything together did today. The first two
+/// open that holding.
+class _HoldingHighlights extends StatelessWidget {
+  const _HoldingHighlights({
+    required this.best,
+    required this.worst,
+    required this.today,
+    required this.onOpen,
+  });
+
+  final ({_TradeQuote quote, double ownedLots, _HoldingMetrics metrics}) best;
+  final ({_TradeQuote quote, double ownedLots, _HoldingMetrics metrics}) worst;
+
+  /// Today's change across every position, in coins.
+  final double today;
+  final ValueChanged<_TradeQuote> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget tile({
+      required String label,
+      required String value,
+      required String note,
+      required Color color,
+      VoidCallback? onTap,
+    }) {
+      return Expanded(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: BoxDecoration(
+              color: kBoardPanel,
+              borderRadius: BorderRadius.circular(16),
+              border: Border(top: BorderSide(color: color, width: 3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.65),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                FittedLabel(
+                  value,
+                  style: AppTheme.numeric(color: Colors.white, fontSize: 15),
+                ),
+                FittedLabel(
+                  note,
+                  style: AppTheme.numeric(color: color, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    String pct(double v) => '${v >= 0 ? '+' : ''}${v.toStringAsFixed(1)}%';
+    final bestPct = best.metrics.profitLossPercent;
+    final worstPct = worst.metrics.profitLossPercent;
+    const up = Color(0xFF9BE870);
+    const down = Color(0xFFFF8A80);
+
+    return Row(
+      children: [
+        tile(
+          label: 'Best position',
+          value: best.quote.symbol,
+          note: pct(bestPct),
+          color: bestPct >= 0 ? up : down,
+          onTap: () => onOpen(best.quote),
+        ),
+        const SizedBox(width: 10),
+        tile(
+          label: 'Worst position',
+          value: worst.quote.symbol,
+          note: pct(worstPct),
+          color: worstPct >= 0 ? up : down,
+          onTap: () => onOpen(worst.quote),
+        ),
+        const SizedBox(width: 10),
+        tile(
+          label: 'All of it, today',
+          value: '${today >= 0 ? '+' : '-'}${coinLabel(today.abs())}',
+          note: usdLabel(today.abs()),
+          color: today >= 0 ? up : down,
+        ),
       ],
     );
   }
@@ -1668,7 +1852,7 @@ class _HoldingRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isProfitable = metrics.totalProfitLoss >= 0;
     final plColor = isProfitable
-        ? const Color(0xFF85EFAC)
+        ? const Color(0xFF9BE870)
         : const Color(0xFFFF8A80);
     final plSign = isProfitable ? '+' : '';
 
@@ -1678,9 +1862,13 @@ class _HoldingRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: kBoardPanel,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: quote.accent.withValues(alpha: 0.28)),
+          border: Border.all(
+            color: quote.accent.withValues(alpha: 0.28),
+            width: 1.5,
+          ),
+          boxShadow: AppTheme.ledgeShadow(quote.accent, restAlpha: 0.1),
         ),
         child: Row(
           children: [
@@ -1747,6 +1935,11 @@ class _HoldingRow extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(width: 6),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.white.withValues(alpha: 0.45),
+            ),
           ],
         ),
       ),
@@ -1764,7 +1957,7 @@ class _EmptyHoldings extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: kBoardPanel,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
@@ -1792,8 +1985,8 @@ class _EmptyHoldings extends StatelessWidget {
           const SizedBox(height: 16),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF85EFAC),
-              foregroundColor: const Color(0xFF103224),
+              backgroundColor: const Color(0xFF9BE870),
+              foregroundColor: const Color(0xFF1C2B32),
             ),
             onPressed: onGoToTrade,
             child: Text(
@@ -1824,7 +2017,7 @@ class _AllocationBar extends StatelessWidget {
     Color(0xFFE1BB72), // sand
     Color(0xFF58C7FF), // blue
     Color(0xFFFF8FB1), // pink
-    Color(0xFF85EFAC), // mint
+    Color(0xFF9BE870), // mint
     Color(0xFFB388FF), // violet
     Color(0xFFFFD45C), // gold
     Color(0xFF5EE7D6), // cyan
@@ -1876,7 +2069,7 @@ class _AllocationBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: kBoardPanel,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
@@ -2099,7 +2292,7 @@ class _TickerTapeState extends State<_TickerTape> with PausesInBackground {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: const Color(0xFF0F2A21),
+        color: const Color(0xFF18252B),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -2116,7 +2309,7 @@ class _TickerTapeState extends State<_TickerTape> with PausesInBackground {
             final quote = items[index];
             final positive = quote.changePercent >= 0;
             final color = positive
-                ? const Color(0xFF85EFAC)
+                ? const Color(0xFF9BE870)
                 : const Color(0xFFFF8A80);
             return Row(
               mainAxisSize: MainAxisSize.min,
@@ -2197,19 +2390,19 @@ class _PortfolioSummary extends StatelessWidget {
         ? 'Up ${changePercent.toStringAsFixed(1)}%'
         : 'Down ${changePercent.abs().toStringAsFixed(1)}%';
     final changeColor = positive
-        ? const Color(0xFF85EFAC)
+        ? const Color(0xFF9BE870)
         : const Color(0xFFFF8A80);
     final earnedPositive = totalEarned >= 0;
     final earnedLabel = '${earnedPositive ? '+' : ''}${coinLabel(totalEarned)}';
     final earnedColor = earnedPositive
-        ? const Color(0xFF85EFAC)
+        ? const Color(0xFF9BE870)
         : const Color(0xFFFF8A80);
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
-        color: Colors.white.withValues(alpha: 0.05),
+        color: kBoardPanel,
         border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
       child: Column(
@@ -2244,7 +2437,7 @@ class _PortfolioSummary extends StatelessWidget {
                 label: 'Net Worth',
                 value: coinLabel(netWorth),
                 sub: usdLabel(netWorth),
-                color: const Color(0xFF85EFAC),
+                color: const Color(0xFF9BE870),
               ),
               _ValueBadge(
                 label: 'Total Earned',
@@ -2305,7 +2498,7 @@ class _StockCardState extends State<_StockCard> {
     final quote = widget.quote;
     final positive = quote.changePercent >= 0;
     final changeColor = positive
-        ? const Color(0xFF85EFAC)
+        ? const Color(0xFF9BE870)
         : const Color(0xFFFF8A80);
 
     final metrics = _holdingMetrics(
@@ -2319,14 +2512,14 @@ class _StockCardState extends State<_StockCard> {
 
     final bool isProfitable = totalProfitLoss >= 0;
     final Color plColor = isProfitable
-        ? const Color(0xFF85EFAC)
+        ? const Color(0xFF9BE870)
         : const Color(0xFFFF8A80);
     final String plSign = isProfitable ? '+' : '';
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: kBoardPanel,
         borderRadius: BorderRadius.circular(26),
         border: Border.all(color: quote.accent.withValues(alpha: 0.30)),
       ),
@@ -2514,8 +2707,8 @@ class _StockCardState extends State<_StockCard> {
                 child: FilledButton.icon(
                   onPressed: widget.onBuy,
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF85EFAC),
-                    foregroundColor: const Color(0xFF103224),
+                    backgroundColor: const Color(0xFF9BE870),
+                    foregroundColor: const Color(0xFF1C2B32),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   icon: const Icon(Icons.arrow_upward_rounded),
@@ -2589,7 +2782,7 @@ class _ValueBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
+        color: Color.alphaBlend(color.withValues(alpha: 0.14), kBoardPanel),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -2737,7 +2930,7 @@ class _StockSparklineState extends State<_StockSparkline> {
         // No border: this card is always nested inside a bordered parent
         // (_StockCard / the holdings row), and stacking the two read as a
         // doubled outline. The fill alone is enough separation.
-        color: Colors.white.withValues(alpha: 0.04),
+        color: kBoardInset,
         borderRadius: BorderRadius.circular(20),
       ),
       padding: const EdgeInsets.fromLTRB(10, 10, 6, 6),
@@ -3065,7 +3258,7 @@ class _OrdersTab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
+              color: kBoardPanel,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
             ),
@@ -3111,13 +3304,16 @@ class _WorkingOrderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = _kSymbolStyle[order.symbol];
     final sideColor = order.isBuy
-        ? const Color(0xFF85EFAC)
+        ? const Color(0xFF9BE870)
         : const Color(0xFFFF8A80);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF58C7FF).withValues(alpha: 0.07),
+        color: Color.alphaBlend(
+          const Color(0xFF58C7FF).withValues(alpha: 0.07),
+          kBoardPanel,
+        ),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: const Color(0xFF58C7FF).withValues(alpha: 0.30),
@@ -3211,7 +3407,7 @@ class _OrderRow extends StatelessWidget {
         : order.isCover
         ? const Color(0xFF8BC6FF)
         : order.isBuy
-        ? const Color(0xFF85EFAC)
+        ? const Color(0xFF9BE870)
         : const Color(0xFFFF8A80);
     final date = order.createdAt.toLocal();
     final dateLabel =
@@ -3225,7 +3421,7 @@ class _OrderRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: kBoardPanel,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
@@ -3309,7 +3505,7 @@ void _showOrderDetail(
       : order.isCover
       ? const Color(0xFF8BC6FF)
       : order.isBuy
-      ? const Color(0xFF85EFAC)
+      ? const Color(0xFF9BE870)
       : const Color(0xFFFF8A80);
   final date = order.createdAt.toLocal();
   final dateLabel =
@@ -3319,7 +3515,7 @@ void _showOrderDetail(
 
   showModalBottomSheet<void>(
     context: context,
-    backgroundColor: const Color(0xFF10241E),
+    backgroundColor: const Color(0xFF151F25),
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
@@ -3375,7 +3571,7 @@ void _showOrderDetail(
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: kBoardInset,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
@@ -3450,7 +3646,7 @@ class _PnlTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final positive = totalEarned >= 0;
-    final color = positive ? const Color(0xFF85EFAC) : const Color(0xFFFF8A80);
+    final color = positive ? const Color(0xFF9BE870) : const Color(0xFFFF8A80);
 
     // The curve is real net worth in coins, so its own direction — not the P&L
     // sign — decides whether it reads as up or down.
@@ -3458,7 +3654,7 @@ class _PnlTab extends StatelessWidget {
         portfolioHistory.length < 2 ||
         portfolioHistory.last >= portfolioHistory.first;
     final curveColor = curveRising
-        ? const Color(0xFF85EFAC)
+        ? const Color(0xFF9BE870)
         : const Color(0xFFFF8A80);
     final curveDelta = portfolioHistory.length < 2
         ? 0.0
@@ -3479,7 +3675,7 @@ class _PnlTab extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),
-            color: Colors.white.withValues(alpha: 0.05),
+            color: kBoardPanel,
             border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
           ),
           child: Column(
@@ -3625,7 +3821,7 @@ class _EquityCurveEmpty extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 18),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
+        color: kBoardPanel,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -3729,10 +3925,14 @@ class _AnalyticsTab extends StatelessWidget {
     required this.equityCurveAt,
     required this.totalMarketValue,
     required this.totalUnrealized,
+    required this.onOpenHolding,
   });
 
   final List<_TradeQuote> quotes;
   final UserStats stats;
+
+  /// Opens a position's analysis screen, from its bar in the chart.
+  final ValueChanged<_TradeQuote> onOpenHolding;
   final List<double> equityCurve;
   final List<DateTime> equityCurveAt;
   final int totalMarketValue;
@@ -3796,7 +3996,7 @@ class _AnalyticsTab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
+              color: kBoardPanel,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
             ),
@@ -3825,36 +4025,57 @@ class _AnalyticsTab extends StatelessWidget {
             ),
           )
         else ...[
+          if (positions.isNotEmpty) ...[
+            _analyticsTake(
+              positions: positions.length,
+              winners: winners,
+              losers: losers,
+              topShare: topShare,
+              topSymbol: positions
+                  .reduce(
+                    (a, b) => a.metrics.currentValue >= b.metrics.currentValue
+                        ? a
+                        : b,
+                  )
+                  .quote
+                  .symbol,
+            ),
+            const SizedBox(height: 16),
+          ],
           Wrap(
             spacing: 12,
             runSpacing: 12,
             children: [
               _MetricTile(
                 label: 'Return on cost',
+                icon: AppAssets.kitIconChartUp,
                 value:
                     '${returnPercent >= 0 ? '+' : ''}'
                     '${returnPercent.toStringAsFixed(1)}%',
                 sub: 'on ${coinLabel(invested)} invested',
                 color: returnPercent >= 0
-                    ? const Color(0xFF85EFAC)
+                    ? const Color(0xFF9BE870)
                     : const Color(0xFFFF8A80),
               ),
               _MetricTile(
                 label: 'Positions',
+                icon: AppAssets.kitIconStack,
                 value: '${positions.length}',
                 sub: '$winners up • $losers down',
                 color: const Color(0xFF58C7FF),
               ),
               _MetricTile(
                 label: 'Concentration',
+                icon: AppAssets.kitIconShield,
                 value: '${topShare.toStringAsFixed(0)}%',
                 sub: 'in your largest holding',
                 color: topShare > 60
                     ? const Color(0xFFFFB084)
-                    : const Color(0xFF85EFAC),
+                    : const Color(0xFF9BE870),
               ),
               _MetricTile(
                 label: 'Orders filled',
+                icon: AppAssets.kitIconCheck,
                 value: '${orders.length}',
                 sub: '$buys buys • ${orders.length - buys} sells',
                 color: const Color(0xFFB388FF),
@@ -3864,23 +4085,51 @@ class _AnalyticsTab extends StatelessWidget {
           const SizedBox(height: 18),
           if (positions.isNotEmpty) ...[
             const _SectionTitle(
-              title: 'Best & worst',
-              subtitle: 'Where the gains and losses are actually coming from.',
+              title: 'Up and down',
+              subtitle: 'How many of your stocks are making or losing money.',
             ),
             const SizedBox(height: 12),
-            _PositionBar(
-              label: 'Best',
-              entry: positions.first,
-              color: const Color(0xFF85EFAC),
+            _UpDownCard(
+              total: positions.length,
+              winners: winners,
+              losers: losers,
             ),
-            if (positions.length > 1) ...[
-              const SizedBox(height: 10),
-              _PositionBar(
-                label: 'Worst',
-                entry: positions.last,
-                color: const Color(0xFFFF8A80),
+            const SizedBox(height: 20),
+            const _SectionTitle(
+              title: 'Gain or loss by stock',
+              subtitle:
+                  'Where the money is actually coming from. Tap one for its '
+                  'full analysis.',
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+              decoration: BoxDecoration(
+                color: kBoardPanel,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.10),
+                  width: 1.5,
+                ),
               ),
-            ],
+              child: GainLossBars(
+                rows: [
+                  for (final p in positions)
+                    (
+                      SymbolBadge(
+                        symbol: p.quote.symbol,
+                        icon: p.quote.icon,
+                        accent: p.quote.accent,
+                        size: 30,
+                      ),
+                      p.quote.symbol,
+                      p.metrics.totalProfitLoss,
+                      _signedCoinLabel(p.metrics.totalProfitLoss),
+                      () => onOpenHolding(p.quote),
+                    ),
+                ],
+              ),
+            ),
             const SizedBox(height: 20),
           ],
           if (equityCurve.length >= 2) ...[
@@ -3893,7 +4142,7 @@ class _AnalyticsTab extends StatelessWidget {
               height: 150,
               padding: const EdgeInsets.fromLTRB(6, 12, 6, 6),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.04),
+                color: kBoardInset,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
@@ -3910,18 +4159,130 @@ class _AnalyticsTab extends StatelessWidget {
   }
 }
 
+String _signedCoinLabel(double coins) =>
+    '${coins >= 0 ? '+' : '-'}${coinLabel(coins.abs())}';
+
+/// The turtle's one-line read of the whole portfolio on the Analytics tab.
+Widget _analyticsTake({
+  required int positions,
+  required int winners,
+  required int losers,
+  required double topShare,
+  required String topSymbol,
+}) {
+  if (topShare > 60) {
+    return BuddySaysCard(
+      mood: BuddyMood.worried,
+      title: '${topShare.round()}% in one stock',
+      message:
+          'Most of your money moves with $topSymbol. Spreading it out means '
+          'one bad day cannot sink it all.',
+    );
+  }
+  if (winners >= losers) {
+    return BuddySaysCard(
+      mood: BuddyMood.happy,
+      title: '$winners of $positions are up',
+      message:
+          'Good so far. Gains only count once you sell, and a spread-out '
+          'portfolio is what keeps them.',
+    );
+  }
+  return BuddySaysCard(
+    mood: BuddyMood.thinking,
+    title: '$losers of $positions are down',
+    message:
+        'Every investor has red days. Check whether the reason you bought '
+        'each one is still true before selling.',
+  );
+}
+
+/// Winners and losers as a ring, with the kit's up and down charts.
+class _UpDownCard extends StatelessWidget {
+  const _UpDownCard({
+    required this.total,
+    required this.winners,
+    required this.losers,
+  });
+
+  final int total;
+  final int winners;
+  final int losers;
+
+  @override
+  Widget build(BuildContext context) {
+    final even = total - winners - losers;
+    final rows = <(String, String, Color)>[
+      (AppAssets.kitIconChartUp, '$winners making money', kMarketUp),
+      (AppAssets.kitIconChartDown, '$losers losing money', kMarketDown),
+      if (even > 0) (AppAssets.kitIconCoin, '$even even', Colors.white70),
+    ];
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: kBoardPanel,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.10),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          SplitRing(
+            left: winners,
+            right: losers,
+            size: 96,
+            center: Text(
+              '$total',
+              style: AppTheme.numeric(color: Colors.white, fontSize: 22),
+            ),
+          ),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final (icon, label, color) in rows)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        KitIcon(icon, size: 32),
+                        const SizedBox(width: 8),
+                        Text(
+                          label,
+                          style: AppTheme.numeric(color: color, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MetricTile extends StatelessWidget {
   const _MetricTile({
     required this.label,
     required this.value,
     required this.sub,
     required this.color,
+    required this.icon,
   });
 
   final String label;
   final String value;
   final String sub;
   final Color color;
+
+  /// A pixel icon from the UI kit, so the four tiles can be told apart at a
+  /// glance and are not four boxes of words.
+  final String icon;
 
   @override
   Widget build(BuildContext context) {
@@ -3936,21 +4297,28 @@ class _MetricTile extends StatelessWidget {
           width: width,
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.10),
+            color: Color.alphaBlend(color.withValues(alpha: 0.10), kBoardPanel),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: color.withValues(alpha: 0.25)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label.toUpperCase(),
-                style: AppTheme.caps(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.4,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      label.toUpperCase(),
+                      style: AppTheme.caps(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ),
+                  KitIcon(icon, size: 36),
+                ],
               ),
               const SizedBox(height: 6),
               Text(
@@ -3973,84 +4341,6 @@ class _MetricTile extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _PositionBar extends StatelessWidget {
-  const _PositionBar({
-    required this.label,
-    required this.entry,
-    required this.color,
-  });
-
-  final String label;
-  final ({
-    _TradeQuote quote,
-    double owned,
-    ({
-      double averageCost,
-      double currentValue,
-      double totalProfitLoss,
-      double profitLossPercent,
-    })
-    metrics,
-  })
-  entry;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final pl = entry.metrics.totalProfitLoss;
-    final sign = pl >= 0 ? '+' : '';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.22)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              label,
-              style: GoogleFonts.pixelifySans(
-                color: color,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          SymbolBadge(
-            symbol: entry.quote.symbol,
-            icon: entry.quote.icon,
-            accent: entry.quote.accent,
-            size: 22,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '${entry.quote.symbol} • ${formatShares(entry.owned)} sh',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          Text(
-            '$sign${coinLabel(pl)} ($sign'
-            '${entry.metrics.profitLossPercent.toStringAsFixed(1)}%)',
-            style: AppTheme.numeric(color: color, fontWeight: FontWeight.w700),
-          ),
-        ],
-      ),
     );
   }
 }

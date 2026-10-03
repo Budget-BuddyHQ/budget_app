@@ -38,13 +38,13 @@ class MoneyFlowSheet extends StatelessWidget {
   };
 
   static Color _color(MoneyFlowKind kind) => switch (kind) {
-    MoneyFlowKind.pay => const Color(0xFF85EFAC),
+    MoneyFlowKind.pay => const Color(0xFF9BE870),
     MoneyFlowKind.loan => const Color(0xFFFF8FB1),
     MoneyFlowKind.need => const Color(0xFF69C6FF),
     MoneyFlowKind.want => const Color(0xFFB388FF),
     MoneyFlowKind.saved => _gold,
     MoneyFlowKind.interest => const Color(0xFFFF8FB1),
-    MoneyFlowKind.family => const Color(0xFF85EFAC),
+    MoneyFlowKind.family => const Color(0xFF9BE870),
   };
 
   @override
@@ -72,7 +72,7 @@ class MoneyFlowSheet extends StatelessWidget {
             subtitle: line.why,
             accent: color,
             trailing: family
-                ? const LifeChip('Paid for you', color: Color(0xFF85EFAC))
+                ? const LifeChip('Paid for you', color: Color(0xFF9BE870))
                 : LifeChip(
                     '${line.isIncome ? '+' : '-'}${groupedNumber(line.amount)}',
                     color: color,
@@ -106,12 +106,12 @@ class MoneyFlowSheet extends StatelessWidget {
                     ? 'What you keep if nothing else happens.'
                     : 'A gap like this is borrowed, and borrowing has a price.',
                 accent: flow.leftOver >= 0
-                    ? const Color(0xFF85EFAC)
+                    ? const Color(0xFF9BE870)
                     : const Color(0xFFFF8FB1),
                 trailing: LifeChip(
                   groupedNumber(flow.leftOver.abs()),
                   color: flow.leftOver >= 0
-                      ? const Color(0xFF85EFAC)
+                      ? const Color(0xFF9BE870)
                       : const Color(0xFFFF8FB1),
                 ),
               ),

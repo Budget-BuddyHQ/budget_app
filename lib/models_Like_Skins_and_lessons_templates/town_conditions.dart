@@ -105,7 +105,7 @@ const List<TownCondition> kTownConditions = <TownCondition>[
     label: 'An ordinary day',
     note: 'Nothing special going on. Prices are what they usually are.',
     icon: Icons.wb_sunny_rounded,
-    accent: Color(0xFF85EFAC),
+    accent: Color(0xFF9BE870),
     // Heavier than everything else combined. A town where something is always
     // happening is a town where nothing is.
     weight: 5.0,

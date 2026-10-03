@@ -153,7 +153,7 @@ class _DayCell extends StatelessWidget {
             ? const Icon(
                 Icons.check_rounded,
                 size: 16,
-                color: Color(0xFF0B2419),
+                color: Color(0xFF152126),
               )
             : (isToday
                   ? Icon(

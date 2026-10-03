@@ -816,7 +816,7 @@ class _MinigameBackdrop extends StatelessWidget {
         // Same fix as the home dashboard backdrop: a light dim let the
         // small repeating tile icons read crisply behind the header text
         // and card gaps, which looked like clutter rather than texture.
-        Container(color: const Color(0xFF071711).withValues(alpha: 0.82)),
+        Container(color: const Color(0xFF111B20).withValues(alpha: 0.82)),
       ],
     );
   }

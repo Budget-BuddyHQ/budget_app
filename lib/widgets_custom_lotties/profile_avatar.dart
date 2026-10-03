@@ -21,7 +21,7 @@ class ProfileAvatar extends StatelessWidget {
     required this.imageUrl,
     required this.fallbackSkin,
     required this.size,
-    this.ringColor = const Color(0xFF85EFAC),
+    this.ringColor = const Color(0xFF9BE870),
     this.ringWidth = 2.4,
     this.showGlow = true,
   });
@@ -46,7 +46,7 @@ class ProfileAvatar extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: const Color(0xFF071711).withValues(alpha: 0.74),
+        color: const Color(0xFF111B20).withValues(alpha: 0.74),
         border: Border.all(color: ringColor, width: ringWidth),
         boxShadow: showGlow
             ? [

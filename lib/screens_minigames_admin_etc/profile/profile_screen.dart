@@ -125,7 +125,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ? 'It will show up on your profile and the leaderboard.'
             : 'Cloud storage is unavailable, so it is saved locally only.',
         icon: Icons.camera_alt_rounded,
-        accent: uploaded ? const Color(0xFF4BD2A3) : const Color(0xFFFFB084),
+        accent: uploaded ? const Color(0xFF6CD34A) : const Color(0xFFFFB084),
       );
     } catch (error) {
       if (!context.mounted) {
@@ -402,7 +402,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: Icons.volume_up_rounded,
                       trailing: Switch.adaptive(
                         value: settings.soundEnabled,
-                        activeThumbColor: const Color(0xFF4BD2A3),
+                        activeThumbColor: const Color(0xFF6CD34A),
                         onChanged: (value) async {
                           HapticFeedback.lightImpact();
                           await settings.setSoundEnabled(value);
@@ -417,7 +417,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: Icons.music_note_rounded,
                       trailing: Switch.adaptive(
                         value: settings.musicEnabled,
-                        activeThumbColor: const Color(0xFF4BD2A3),
+                        activeThumbColor: const Color(0xFF6CD34A),
                         onChanged: (value) async {
                           HapticFeedback.lightImpact();
                           await settings.setMusicEnabled(value);
@@ -675,7 +675,7 @@ class _ProfileHero extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: const Color(0xFF163729),
+        color: const Color(0xFF22323B),
         borderRadius: BorderRadius.circular(32),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.12),
@@ -701,13 +701,13 @@ class _ProfileHero extends StatelessWidget {
                   child: DecoratedBox(
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xFF091914),
+                      color: Color(0xFF111B20),
                     ),
                     child: ClipOval(
                       child: avatarUrl.isEmpty
                           ? const Icon(
                               Icons.person_rounded,
-                              color: Color(0xFF4BD2A3),
+                              color: Color(0xFF6CD34A),
                               size: 40,
                             )
                           : _AvatarImage(url: avatarUrl),
@@ -725,10 +725,10 @@ class _ProfileHero extends StatelessWidget {
                     width: 34,
                     height: 34,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF4BD2A3),
+                      color: const Color(0xFF6CD34A),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: const Color(0xFF091914),
+                        color: const Color(0xFF111B20),
                         width: 3,
                       ),
                     ),
@@ -888,7 +888,7 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
         id: 'first_life',
         label: 'First Life',
         icon: Icons.auto_stories_rounded,
-        color: const Color(0xFF85EFAC),
+        color: const Color(0xFF9BE870),
         earned: endings >= 1,
         detail: 'Finish a life',
       ),
@@ -1191,7 +1191,7 @@ class _ProfileInsightCard extends StatelessWidget {
               label: 'Level',
               value: '${stats.level}',
               icon: Icons.workspace_premium_rounded,
-              accent: const Color(0xFF4BD2A3),
+              accent: const Color(0xFF6CD34A),
             ),
           ];
 
@@ -1340,10 +1340,10 @@ class _SettingsCard extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: const Color(0xFF4BD2A3).withValues(alpha: 0.14),
+            color: const Color(0xFF6CD34A).withValues(alpha: 0.14),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(icon, color: const Color(0xFF4BD2A3)),
+          child: Icon(icon, color: const Color(0xFF6CD34A)),
         ),
         title: Text(
           title,
@@ -1409,7 +1409,7 @@ class _AvatarImage extends StatelessWidget {
 
   static const Widget _placeholder = Icon(
     Icons.person_rounded,
-    color: Color(0xFF4BD2A3),
+    color: Color(0xFF6CD34A),
     size: 40,
   );
 
@@ -1467,7 +1467,7 @@ class _MoneyHabitsProfileCard extends StatelessWidget {
             children: [
               const Icon(
                 Icons.savings_rounded,
-                color: Color(0xFF85EFAC),
+                color: Color(0xFF9BE870),
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -1501,7 +1501,7 @@ class _MoneyHabitsProfileCard extends StatelessWidget {
                     maxLines: 2,
                     style: TextStyle(
                       color: delta >= 0
-                          ? const Color(0xFF85EFAC)
+                          ? const Color(0xFF9BE870)
                           : const Color(0xFFFF8474),
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -1738,7 +1738,7 @@ class _FriendsCardState extends State<_FriendsCard> {
             children: [
               const Icon(
                 Icons.group_rounded,
-                color: Color(0xFF85EFAC),
+                color: Color(0xFF9BE870),
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -1773,7 +1773,7 @@ class _FriendsCardState extends State<_FriendsCard> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
+                    color: const Color(0xFF9BE870).withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(8),
                     // The friend code. Alphanumeric, and somebody has
                     // to read it aloud or type it in — an ambiguous 5 here
@@ -1782,7 +1782,7 @@ class _FriendsCardState extends State<_FriendsCard> {
                   child: Text(
                     friendCode,
                     style: AppTheme.numeric(
-                      color: Color(0xFF85EFAC),
+                      color: Color(0xFF9BE870),
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.2,
                     ),
@@ -1823,7 +1823,7 @@ class _FriendsCardState extends State<_FriendsCard> {
               const SizedBox(width: 8),
               FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF4BD2A3),
+                  backgroundColor: const Color(0xFF6CD34A),
                   foregroundColor: const Color(0xFF062017),
                 ),
                 onPressed: _submitting ? null : () => _addFriend(currentUserId),

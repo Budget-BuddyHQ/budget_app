@@ -99,7 +99,7 @@ class _BasicCalculatorDialogState extends State<BasicCalculatorDialog> {
     VoidCallback? onTap,
   }) {
     return Material(
-      color: color ?? const Color(0xFF1E3E33),
+      color: color ?? const Color(0xFF263743),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -165,7 +165,7 @@ class _BasicCalculatorDialogState extends State<BasicCalculatorDialog> {
       ('4', null, null, () => _onNumberTap('4')),
       ('5', null, null, () => _onNumberTap('5')),
       ('6', null, null, () => _onNumberTap('6')),
-      ('=', const Color(0xFF85EFAC), const Color(0xFF062C21), _onCalculate),
+      ('=', const Color(0xFF9BE870), const Color(0xFF062C21), _onCalculate),
       ('1', null, null, () => _onNumberTap('1')),
       ('2', null, null, () => _onNumberTap('2')),
       ('3', null, null, () => _onNumberTap('3')),
@@ -198,7 +198,7 @@ class _BasicCalculatorDialogState extends State<BasicCalculatorDialog> {
                   width: 280,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0F2A21),
+                    color: const Color(0xFF18252B),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(color: const Color(0x5585EFAC)),
                     boxShadow: [
@@ -219,14 +219,14 @@ class _BasicCalculatorDialogState extends State<BasicCalculatorDialog> {
                             children: [
                               const Icon(
                                 Icons.calculate_rounded,
-                                color: Color(0xFF85EFAC),
+                                color: Color(0xFF9BE870),
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 'Calculator',
                                 style: GoogleFonts.pixelifySans(
-                                  color: const Color(0xFF85EFAC),
+                                  color: const Color(0xFF9BE870),
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -253,7 +253,7 @@ class _BasicCalculatorDialogState extends State<BasicCalculatorDialog> {
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF071711),
+                          color: const Color(0xFF111B20),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: const Color(0x3385EFAC)),
                         ),

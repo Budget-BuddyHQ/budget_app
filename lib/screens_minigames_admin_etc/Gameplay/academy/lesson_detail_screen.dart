@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 
+import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/age_scaled_note.dart';
@@ -67,12 +68,32 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   /// [LessonScreen] to get here, so the quiz for this unit should match what
   /// they were just warned about and agreed to read, not go silently empty on
   /// top of it. See [ageAppropriateQuestions].
-  late final List<QuizQuestion> _quiz = widget.quizAboveAgeConfirmed
-      ? quizFor(widget.lesson.id)
-      : ageAppropriateQuestions(
-          quizFor(widget.lesson.id),
-          context.read<UserStatsController>().stats.ageBand,
-        );
+  List<QuizQuestion> get _quiz =>
+      widget.quizAboveAgeConfirmed || _takingFullTest ? _fullQuiz : _fitted;
+
+  late final List<QuizQuestion> _fullQuiz = quizFor(widget.lesson.id);
+  late final List<QuizQuestion> _fitted = ageAppropriateQuestions(
+    _fullQuiz,
+    context.read<UserStatsController>().stats.ageBand,
+  );
+
+  /// Set when the player chooses to take a test whose questions were all
+  /// written for an older age group. See [_allFilteredOut].
+  bool _takingFullTest = false;
+
+  /// A quiz or test with questions, none of them written for this player's
+  /// age band.
+  ///
+  /// **Reported as** *"the unit test doesn't show anything."* Unit 9's test has
+  /// four questions, all about loans, cars and rent, and the age filter removed
+  /// every one. The screen then fell back to the one-line placeholder a
+  /// reading lesson gets and offered "Complete Lesson" on a test with nothing
+  /// in it. Now it says why, and lets the player take the full test.
+  bool get _allFilteredOut =>
+      _fitted.isEmpty &&
+      _fullQuiz.isNotEmpty &&
+      !widget.quizAboveAgeConfirmed &&
+      !_takingFullTest;
 
   Future<void> _completeLesson({List<QuizQuestion> quiz = const []}) async {
     if (_isSaving) {
@@ -92,18 +113,16 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
     final xpEarned = 12 + bonusXp;
     final goldEarned = 50 + (hasQuiz ? _correctCount * 5 : 0);
 
-    await context
-        .read<UserStatsController>()
-        .completeLessonProgress(
-          lessonId: widget.lesson.id,
-          lessonTitle: widget.lesson.title,
-          xpEarned: xpEarned,
-          literacyPointsEarned: 20,
-          goldEarned: goldEarned,
-          quizCorrect: hasQuiz ? _correctCount : null,
-          quizTotal: hasQuiz ? quiz.length : null,
-          missedSkills: _missed.map((question) => question.skillId),
-        );
+    await context.read<UserStatsController>().completeLessonProgress(
+      lessonId: widget.lesson.id,
+      lessonTitle: widget.lesson.title,
+      xpEarned: xpEarned,
+      literacyPointsEarned: 20,
+      goldEarned: goldEarned,
+      quizCorrect: hasQuiz ? _correctCount : null,
+      quizTotal: hasQuiz ? quiz.length : null,
+      missedSkills: _missed.map((question) => question.skillId),
+    );
 
     if (!mounted) {
       return;
@@ -150,7 +169,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           ? 'Scored $_correctCount/${quiz.length}. Earned $rewardsText!'
           : '${widget.lesson.title} saved. Earned $rewardsText!',
       icon: Icons.school_rounded,
-      accent: const Color(0xFF2F9E68),
+      accent: const Color(0xFF3F8F1F),
       soundEffect: AppSoundEffect.celebration,
     );
 
@@ -282,8 +301,11 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                       // different questions. Saying so is the difference
                       // between a system that works and one anybody can see
                       // working.
-                      if (quiz.isNotEmpty && widget.quizAboveAgeConfirmed)
-                        const _AboveAgeQuizNote(margin: EdgeInsets.only(top: 12))
+                      if (quiz.isNotEmpty &&
+                          (widget.quizAboveAgeConfirmed || _takingFullTest))
+                        const _AboveAgeQuizNote(
+                          margin: EdgeInsets.only(top: 12),
+                        )
                       else if (quiz.isNotEmpty)
                         const AgeScaledNote(
                           what: 'Questions',
@@ -294,7 +316,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                         _ObjectivesCard(objectives: content.objectives),
                         const SizedBox(height: 8),
                       ],
-                      if (quiz.isEmpty)
+                      if (_allFilteredOut)
+                        _OlderQuestionsCard(count: _fullQuiz.length)
+                      else if (quiz.isEmpty)
                         ..._sectionsFor(content).map(
                           (section) => Container(
                             padding: const EdgeInsets.symmetric(vertical: 22),
@@ -375,7 +399,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0A1D17),
+                      color: const Color(0xFF131F24),
                       border: Border(
                         top: BorderSide(
                           color: Colors.white.withValues(alpha: 0.08),
@@ -394,11 +418,28 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   }
 
   Widget _buildActionButton(List<QuizQuestion> quiz, bool inQuizResults) {
+    if (_allFilteredOut) {
+      return FilledButton(
+        onPressed: () => setState(() => _takingFullTest = true),
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF3F8F1F),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+        ),
+        child: Text(
+          'Take the full test',
+          style: GoogleFonts.pixelifySans(
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+          ),
+        ),
+      );
+    }
     if (quiz.isEmpty || inQuizResults) {
       return FilledButton(
         onPressed: () => _completeLesson(quiz: quiz),
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF2F9E68),
+          backgroundColor: const Color(0xFF3F8F1F),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 18),
         ),
@@ -475,6 +516,66 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
 /// That dialog is the actual warning; this is just a quiet echo of it inside
 /// the quiz itself, so scrolling back up mid-quiz still explains why the
 /// questions look different from usual rather than looking unexplained.
+/// Shown instead of an empty test: what is in it, and why it was held back.
+class _OlderQuestionsCard extends StatelessWidget {
+  const _OlderQuestionsCard({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF243440),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFB84D), width: 1.5),
+        boxShadow: AppTheme.ledgeShadow(const Color(0xFFFFB84D)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Image.asset(
+            AppAssets.turtleMentorThinking,
+            width: 72,
+            height: 72,
+            filterQuality: FilterQuality.none,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$count questions, written for older players',
+                  style: GoogleFonts.pixelifySans(
+                    color: const Color(0xFFFFD08A),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Every question in this one covers money a little ahead of '
+                  'your age group, so none were picked for you. You can still '
+                  'take it: the questions are the same ones an older player '
+                  'gets.',
+                  style: GoogleFonts.quicksand(
+                    color: const Color(0xFFF7FFFB),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _AboveAgeQuizNote extends StatelessWidget {
   const _AboveAgeQuizNote({this.margin = EdgeInsets.zero});
 
@@ -538,10 +639,10 @@ class _LessonOverviewCard extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: const Color(0xFF85EFAC).withValues(alpha: 0.16),
+              color: const Color(0xFF9BE870).withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: Icon(icon, color: const Color(0xFF85EFAC)),
+            child: Icon(icon, color: const Color(0xFF9BE870)),
           );
 
           final copy = Column(
@@ -596,10 +697,10 @@ class _ObjectivesCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF85EFAC).withValues(alpha: 0.08),
+        color: const Color(0xFF9BE870).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFF85EFAC).withValues(alpha: 0.24),
+          color: const Color(0xFF9BE870).withValues(alpha: 0.24),
         ),
       ),
       child: Column(
@@ -621,7 +722,7 @@ class _ObjectivesCard extends StatelessWidget {
               children: [
                 const Icon(
                   Icons.check_circle_outline_rounded,
-                  color: Color(0xFF85EFAC),
+                  color: Color(0xFF9BE870),
                   size: 17,
                 ),
                 const SizedBox(width: 10),

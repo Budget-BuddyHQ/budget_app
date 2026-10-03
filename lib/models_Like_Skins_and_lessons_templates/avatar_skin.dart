@@ -214,7 +214,7 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     name: 'Classic Turtle',
     assetPath: AppAssets.turtleClassic,
     rarity: SkinRarity.common,
-    accent: Color(0xFF85EFAC),
+    accent: Color(0xFF9BE870),
     blurb: 'Where every Budget Buddy starts.',
   ),
   AvatarSkin(
@@ -230,7 +230,7 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     name: 'Explorer',
     assetPath: AppAssets.turtleExplorer,
     rarity: SkinRarity.rare,
-    accent: Color(0xFF85EFAC),
+    accent: Color(0xFF9BE870),
     blurb: 'Packed and ready for the meadow.',
   ),
   AvatarSkin(

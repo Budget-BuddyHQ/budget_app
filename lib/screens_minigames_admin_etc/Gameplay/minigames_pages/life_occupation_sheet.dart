@@ -264,7 +264,7 @@ class OccupationSheet extends StatelessWidget {
           title: 'Promoted',
           message: 'You are now ${next?.title ?? life.job}.',
           icon: Icons.workspace_premium_rounded,
-          accent: const Color(0xFF85EFAC),
+          accent: const Color(0xFF9BE870),
         );
       case PromotionOutcome.refused:
         GameToast.show(
@@ -319,7 +319,7 @@ class OccupationSheet extends StatelessWidget {
             child: Text(
               'Keep going',
               style: GoogleFonts.pixelifySans(
-                color: const Color(0xFF85EFAC),
+                color: const Color(0xFF9BE870),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -490,12 +490,12 @@ class _SchoolCard extends StatelessWidget {
                 if (quote.scholarship > 0)
                   LifeChip(
                     'Scholarship ${quote.scholarship}',
-                    color: const Color(0xFF85EFAC),
+                    color: const Color(0xFF9BE870),
                   ),
                 if (quote.family > 0)
                   LifeChip(
                     'Family pays ${quote.family}',
-                    color: const Color(0xFF85EFAC),
+                    color: const Color(0xFF9BE870),
                   ),
               ],
             ),
@@ -565,7 +565,7 @@ class _JobCard extends StatelessWidget {
                       job != null)
                     LifeChip(
                       '${life.experienceIn(job.track)} yrs in the field',
-                      color: const Color(0xFF85EFAC),
+                      color: const Color(0xFF9BE870),
                     ),
                 ],
               ),
@@ -700,7 +700,7 @@ class _EducationCard extends StatelessWidget {
                 for (final c in life.credentials)
                   LifeChip(
                     c,
-                    color: const Color(0xFF85EFAC),
+                    color: const Color(0xFF9BE870),
                     icon: Icons.check_circle_rounded,
                   ),
               ],
@@ -825,7 +825,7 @@ class _ListingCard extends StatelessWidget {
       child: Opacity(
         opacity: ok ? 1 : 0.8,
         child: LifeCard(
-          accent: ok ? const Color(0xFF85EFAC) : Colors.white,
+          accent: ok ? const Color(0xFF9BE870) : Colors.white,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -914,7 +914,7 @@ class _ListingCard extends StatelessWidget {
       chips.add(
         LifeChip(
           job.minLevel.label,
-          color: has ? const Color(0xFF85EFAC) : const Color(0xFFFF8474),
+          color: has ? const Color(0xFF9BE870) : const Color(0xFFFF8474),
           icon: has ? Icons.check_rounded : Icons.close_rounded,
         ),
       );
@@ -924,7 +924,7 @@ class _ListingCard extends StatelessWidget {
       chips.add(
         LifeChip(
           job.fields.map((f) => f.label).join(' or '),
-          color: has ? const Color(0xFF85EFAC) : const Color(0xFFFF8474),
+          color: has ? const Color(0xFF9BE870) : const Color(0xFFFF8474),
           icon: has ? Icons.check_rounded : Icons.close_rounded,
         ),
       );
@@ -934,7 +934,7 @@ class _ListingCard extends StatelessWidget {
       chips.add(
         LifeChip(
           'Smarts ${job.minSmarts}',
-          color: has ? const Color(0xFF85EFAC) : const Color(0xFFFF8474),
+          color: has ? const Color(0xFF9BE870) : const Color(0xFFFF8474),
           icon: has ? Icons.check_rounded : Icons.close_rounded,
         ),
       );
@@ -952,7 +952,7 @@ class _ListingCard extends StatelessWidget {
           title: 'You got it',
           message: 'You are now a ${job.title}.',
           icon: Icons.celebration_rounded,
-          accent: const Color(0xFF85EFAC),
+          accent: const Color(0xFF9BE870),
         );
         Navigator.of(context).maybePop();
       case JobOutcome.rejected:
@@ -1121,14 +1121,14 @@ class _ProgramSheetState extends State<ProgramSheet> {
                       ),
                       LifeChip(
                         program.awards.label,
-                        color: const Color(0xFF85EFAC),
+                        color: const Color(0xFF9BE870),
                       ),
                       LifeChip(
                         'Smarts ${program.minSmartsFor(privateSchool: usePrivate)}',
                         color:
                             life.smarts >=
                                 program.minSmartsFor(privateSchool: usePrivate)
-                            ? const Color(0xFF85EFAC)
+                            ? const Color(0xFF9BE870)
                             : const Color(0xFFFF8474),
                       ),
                       LifeChip(program.field.label),
@@ -1197,7 +1197,7 @@ class _ProgramSheetState extends State<ProgramSheet> {
           title: 'Accepted',
           message: 'You are in: ${program.name}.',
           icon: Icons.school_rounded,
-          accent: const Color(0xFF85EFAC),
+          accent: const Color(0xFF9BE870),
         );
         Navigator.of(context).maybePop();
       case ApplyResult.rejected:
@@ -1229,7 +1229,7 @@ class _CostLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = good ? const Color(0xFF85EFAC) : Colors.white;
+    final color = good ? const Color(0xFF9BE870) : Colors.white;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(

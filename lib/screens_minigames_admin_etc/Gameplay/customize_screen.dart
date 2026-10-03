@@ -137,7 +137,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF173B2D),
+        backgroundColor: const Color(0xFF243440),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           '${skin.name} is locked',
@@ -306,7 +306,7 @@ class _CharacterPreviewCard extends StatelessWidget {
           Text(
             'Customize',
             style: GoogleFonts.pixelifySans(
-              color: const Color(0xFF85EFAC),
+              color: const Color(0xFF9BE870),
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -491,19 +491,19 @@ class _BodyChip extends StatelessWidget {
           // whatever sat behind it, and on the player row that was light
           // enough to drop the green label to 2.7:1.
           color: selected
-              ? const Color(0xFF14432B)
+              ? const Color(0xFF22383F)
               : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: selected
-                ? const Color(0xFF85EFAC)
+                ? const Color(0xFF9BE870)
                 : Colors.white.withValues(alpha: 0.14),
           ),
         ),
         child: Text(
           body.label,
           style: TextStyle(
-            color: selected ? const Color(0xFF85EFAC) : Colors.white,
+            color: selected ? const Color(0xFF9BE870) : Colors.white,
             fontWeight: FontWeight.w800,
             fontSize: 13,
           ),
@@ -859,16 +859,16 @@ class _SkinCollection extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFF85EFAC).withValues(alpha: 0.14),
+                color: const Color(0xFF9BE870).withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(
-                  color: const Color(0xFF85EFAC).withValues(alpha: 0.28),
+                  color: const Color(0xFF9BE870).withValues(alpha: 0.28),
                 ),
               ),
               child: Text(
                 '$owned / $total',
                 style: AppTheme.numeric(
-                  color: Color(0xFF85EFAC),
+                  color: Color(0xFF9BE870),
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -883,7 +883,7 @@ class _SkinCollection extends StatelessWidget {
             value: total == 0 ? 0 : owned / total,
             minHeight: 6,
             backgroundColor: Colors.white.withValues(alpha: 0.08),
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF85EFAC)),
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF9BE870)),
           ),
         ),
         // Grouped by what the skin is *for*, not by what it looks like. The
@@ -1018,7 +1018,7 @@ class _SkinTile extends StatelessWidget {
                                 BlendMode.srcOver,
                               )
                             : ColorFilter.mode(
-                                const Color(0xFF071711).withValues(alpha: 0.82),
+                                const Color(0xFF111B20).withValues(alpha: 0.82),
                                 BlendMode.srcATop,
                               ),
                         // The grid tile's size varies with screen width, so
@@ -1257,7 +1257,7 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
                   child: Container(
                     padding: EdgeInsets.all(compact ? 16 : 20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF071711).withValues(alpha: 0.96),
+                      color: const Color(0xFF111B20).withValues(alpha: 0.96),
                       borderRadius: BorderRadius.circular(28),
                       border: Border.all(
                         color: preview.accent.withValues(alpha: 0.34),
@@ -1483,7 +1483,7 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
                                   height: compact ? 44 : 52,
                                   decoration: BoxDecoration(
                                     color: _revealed
-                                        ? const Color(0xFF85EFAC)
+                                        ? const Color(0xFF9BE870)
                                         : Colors.white.withValues(alpha: 0.06),
                                     borderRadius: BorderRadius.circular(18),
                                   ),
@@ -1924,7 +1924,7 @@ class _ShinePoint extends StatelessWidget {
 
 Color _rarityAuraColor(SkinRarity rarity) {
   return switch (rarity) {
-    SkinRarity.common => const Color(0xFF85EFAC),
+    SkinRarity.common => const Color(0xFF9BE870),
     SkinRarity.rare => const Color(0xFF58C7FF),
     SkinRarity.epic => const Color(0xFFB9A5FF),
     SkinRarity.legendary => const Color(0xFFFFD45C),

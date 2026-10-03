@@ -5,28 +5,41 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Colors
-  // bumped lighter + warmer than the original near-black (twice now, first
-  // pass still read too dark apparently) so it looks like a lit night scene
-  // instead of a cave. still a dark forest theme, not light mode
-  static const Color deepForest = Color(0xFF0F2E20);
-  static const Color darkForest = Color(0xFF1B4633);
-  static const Color limeAccent = Color(0xFFB7F7D7);
-  static const Color greenPrimary = Color(0xFF4BD2A3);
-  static const Color lightGreen = Color(0xFFEAFBF4);
-  static const Color teal = Color(0xFF69C6FF);
-  static const Color successGreen = Color(0xFF2C9C73);
-  static const Color warningOrange = Color(0xFFF2C66D);
-  static const Color errorRed = Color(0xFFFF8474);
-  static const Color panel = Color(0xFF264F3D);
-  static const Color panelStrong = Color(0xFF335D48);
-  static const Color textPrimary = Color(0xFFF7FFFB);
-  // lightened from #B9D1C6 after the contrast audit. old value was fine
-  // against the page (9.1:1) but NOT against the cards - those get tinted
-  // with each screen's accent and go as light as #436452, where it came out
-  // 4.08:1. this is the color basically every secondary label uses so one
-  // step lighter killed a whole pile of findings in one go. still looks
-  // muted next to textPrimary so nothing lost
-  static const Color textMuted = Color(0xFFC8DDD3);
+  //
+  // **Slate surfaces, a few bold colours with one job each.** The app used to
+  // be dark green everywhere: green cards on green pages over green art, with
+  // mint and teal accents. Testers called that "looks AI", and the reference
+  // the user pointed at — Prodigy, and game apps like Duolingo — does the
+  // opposite: neutral slate surfaces with clear outlines, and saturated
+  // colours that each mean something (green to act, gold for money, blue for
+  // information, red for losses). The backgrounds (reef, village map) stay
+  // green; the UI on top of them no longer is.
+  //
+  // The names are kept so the ~400 call sites did not churn; read
+  // `deepForest` as "page" and `panel` as "card".
+  static const Color deepForest = Color(0xFF131F24); // page
+  static const Color darkForest = Color(0xFF1A2830); // page, raised
+  static const Color limeAccent = Color(0xFFB8F28C);
+  static const Color greenPrimary = Color(0xFF6CD34A); // act
+  static const Color lightGreen = Color(0xFFEFF9E8);
+  static const Color teal = Color(0xFF1CB0F6); // information
+  static const Color successGreen = Color(0xFF46A302);
+  static const Color warningOrange = Color(0xFFFFC800); // money, attention
+  static const Color errorRed = Color(0xFFFF6B6B); // loss
+  static const Color panel = Color(0xFF202F36); // card
+  static const Color panelStrong = Color(0xFF2A3C45); // raised card
+
+  /// The 2px outline game apps put around cards and buttons. A visible edge
+  /// is what makes a flat surface read as an object instead of a smudge.
+  static const Color outline = Color(0xFF37464F);
+
+  /// Inside a card: a chart well, an inset field.
+  static const Color inset = Color(0xFF18252B);
+
+  static const Color textPrimary = Color(0xFFF1F7FB);
+  // Every secondary label uses this, on cards up to [panelStrong] and on
+  // accent-tinted cards, so it is kept light: 7.6:1 on [panel].
+  static const Color textMuted = Color(0xFFB3C4CD);
 
   // Spacing constants
   static const double spacingXSmall = 4.0;
@@ -160,7 +173,7 @@ class AppTheme {
   /// page's darkest green, so a mint card sits on a dark mint ledge rather
   /// than on grey.
   static Color ledgeColor(Color accent) =>
-      Color.lerp(accent, const Color(0xFF04140D), 0.72)!;
+      Color.lerp(accent, const Color(0xFF0B1418), 0.72)!;
 
   /// A hard ledge under a card or button: no blur, straight down.
   ///
@@ -429,9 +442,11 @@ class AppTheme {
     return BoxDecoration(
       color: fillColor ?? panelStrong,
       borderRadius: BorderRadius.circular(borderRadius),
+      // A real outline: the slate edge with a little of the card's accent in
+      // it, at 2px like the game apps this follows.
       border: Border.all(
-        color: accent.withValues(alpha: borderOpacity),
-        width: 1.5,
+        color: Color.lerp(outline, accent, 0.25 + borderOpacity)!,
+        width: 2,
       ),
       boxShadow: ledgeShadow(accent, restAlpha: restAlpha),
     );

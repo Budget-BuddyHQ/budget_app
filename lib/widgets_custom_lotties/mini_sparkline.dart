@@ -161,15 +161,8 @@ class _MiniSparklinePainter extends CustomPainter {
       fill
         ..lineTo(points.last.dx, size.height)
         ..close();
-      final fillPaint = Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            color.withValues(alpha: 0.30),
-            color.withValues(alpha: 0.02),
-          ],
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+      // Flat tint, not a fade. See price_chart.dart.
+      final fillPaint = Paint()..color = color.withValues(alpha: 0.12);
       canvas.drawPath(fill, fillPaint);
     }
 

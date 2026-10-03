@@ -49,13 +49,13 @@ class DailyPlanCard extends StatelessWidget {
           decoration: BoxDecoration(
             // The middle of the fade this replaced, which is the shade the
             // contrast audit measures the quest icons against.
-            color: const Color(0xFF133026),
+            color: const Color(0xFF1E2C33),
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: const Color(0xFF85EFAC).withValues(alpha: 0.22),
+              color: const Color(0xFF9BE870).withValues(alpha: 0.22),
               width: 1.5,
             ),
-            boxShadow: AppTheme.ledgeShadow(const Color(0xFF85EFAC)),
+            boxShadow: AppTheme.ledgeShadow(const Color(0xFF9BE870)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,7 +98,7 @@ class DailyPlanCard extends StatelessWidget {
                   value: plan.progress,
                   backgroundColor: Colors.white.withValues(alpha: 0.08),
                   valueColor: const AlwaysStoppedAnimation<Color>(
-                    Color(0xFF85EFAC),
+                    Color(0xFF9BE870),
                   ),
                 ),
               ),
@@ -259,7 +259,7 @@ class _QuestRow extends StatelessWidget {
               if (done)
                 const Icon(
                   Icons.check_circle_rounded,
-                  color: Color(0xFF85EFAC),
+                  color: Color(0xFF9BE870),
                   size: 20,
                 )
               else
@@ -275,7 +275,7 @@ class _QuestRow extends StatelessWidget {
                     // are tinted per quest — the same "+15" measured 3.32:1
                     // on the mint row and 4.24:1 on the amber one. An opaque
                     // fill has one contrast ratio instead of five.
-                    color: const Color(0xFF0E2A20),
+                    color: const Color(0xFF18252B),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
                       color: const Color(0xFFFFD45C).withValues(alpha: 0.30),

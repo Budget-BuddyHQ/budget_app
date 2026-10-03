@@ -316,7 +316,7 @@ class _LifeRecapCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A1D17),
+        color: const Color(0xFF131F24),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -349,7 +349,7 @@ class _LifeRecapCard extends StatelessWidget {
               _StatPill(
                 label: 'Net worth',
                 value: '${summary.netWorth}',
-                color: const Color(0xFF85EFAC),
+                color: const Color(0xFF9BE870),
               ),
               _StatPill(
                 label: 'Happiness',
@@ -434,7 +434,7 @@ class _RelationshipsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A1D17),
+        color: const Color(0xFF131F24),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -541,7 +541,7 @@ class _RankedScoreCard extends StatelessWidget {
 
   static Color _gradeColor(String grade) => switch (grade) {
     'S' => const Color(0xFFFFD45C),
-    'A' => const Color(0xFF85EFAC),
+    'A' => const Color(0xFF9BE870),
     'B' => const Color(0xFF69C6FF),
     'C' => const Color(0xFFB388FF),
     'D' => const Color(0xFFF2C66D),

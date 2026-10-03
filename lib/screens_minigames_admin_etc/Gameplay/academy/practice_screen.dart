@@ -163,7 +163,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                           width: double.infinity,
                           padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0A1D17),
+                            color: const Color(0xFF131F24),
                             border: Border(
                               top: BorderSide(
                                 color: Colors.white.withValues(alpha: 0.08),
@@ -186,7 +186,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
       return FilledButton(
         onPressed: _saving ? null : _finish,
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF2F9E68),
+          backgroundColor: const Color(0xFF3F8F1F),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 18),
         ),

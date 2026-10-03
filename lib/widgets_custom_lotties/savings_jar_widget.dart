@@ -148,7 +148,7 @@ class _CoinJarPainter extends CustomPainter {
   static const Color _lidDark = Color(0xFF7C8892);
   static const Color _coin = Color(0xFFFFD45C);
   static const Color _coinDark = Color(0xFFC79A2E);
-  static const Color _outline = Color(0xFF0B2419);
+  static const Color _outline = Color(0xFF152126);
 
   @override
   void paint(Canvas canvas, Size size) {

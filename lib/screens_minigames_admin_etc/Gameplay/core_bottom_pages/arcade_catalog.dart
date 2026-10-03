@@ -14,7 +14,7 @@ enum ArcadeLength {
 }
 
 enum ArcadeDifficulty {
-  easy('Easy', Color(0xFF85EFAC)),
+  easy('Easy', Color(0xFF9BE870)),
   medium('Medium', Color(0xFFFFD45C)),
   hard('Hard', Color(0xFFFF8474));
 
@@ -67,7 +67,7 @@ const List<ArcadeGame> _allArcadeGames = <ArcadeGame>[
     title: 'Finance Brawl',
     tagline: 'Answer fast enough to hold off the horde.',
     teaches: 'Recall under pressure',
-    accent: Color(0xFF85EFAC),
+    accent: Color(0xFF9BE870),
     icon: Icons.gavel_rounded,
     difficulty: ArcadeDifficulty.hard,
     length: ArcadeLength.medium,

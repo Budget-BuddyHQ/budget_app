@@ -141,7 +141,7 @@ String _ordinal(int n) {
   };
 }
 
-const Color _good = Color(0xFF85EFAC);
+const Color _good = Color(0xFF9BE870);
 const Color _warn = Color(0xFFFFD45C);
 const Color _bad = Color(0xFFFF8474);
 const Color _sky = Color(0xFF7FD3FF);

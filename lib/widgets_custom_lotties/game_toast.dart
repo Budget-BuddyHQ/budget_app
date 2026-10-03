@@ -15,7 +15,7 @@ class GameToast {
     String? title,
     TextAlign textAlign = TextAlign.center,
     IconData icon = Icons.auto_awesome_rounded,
-    Color accent = const Color(0xFF85EFAC),
+    Color accent = const Color(0xFF9BE870),
     Duration duration = const Duration(milliseconds: 2100),
     AppSoundEffect soundEffect = AppSoundEffect.notification,
   }) {
@@ -134,7 +134,7 @@ class _GameToastBannerState extends State<_GameToastBanner>
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF133628),
+                      color: const Color(0xFF202F36),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: widget.accent.withValues(alpha: 0.5),

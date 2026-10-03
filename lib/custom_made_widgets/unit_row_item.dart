@@ -149,9 +149,9 @@ class _UnitLessonBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = switch (status) {
       LessonStatus.completed => const _LessonPalette(
-        fill: Color(0xFF85EFAC),
+        fill: Color(0xFF9BE870),
         border: Color(0xFF2A7D52),
-        foreground: Color(0xFF0B2D1A),
+        foreground: Color(0xFF172328),
       ),
       LessonStatus.available => const _LessonPalette(
         fill: Color(0xFFFFD45C),

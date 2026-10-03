@@ -195,25 +195,25 @@ class CustomButtonStyle {
 
   const CustomButtonStyle.primary({
     this.gradient,
-    this.backgroundColor = const Color(0xFF4BD2A3),
+    this.backgroundColor = const Color(0xFF6CD34A),
     this.textColor = const Color(0xFF062017),
     this.borderRadius = AppTheme.radiusLarge,
     this.border = const Border.fromBorderSide(
-      BorderSide(color: Color(0xFF9EF0D0), width: 1.5),
+      BorderSide(color: Color(0xFFB8F28C), width: 1.5),
     ),
     this.boxShadow = const [
-      BoxShadow(color: Color(0xFF18493A), offset: Offset(0, 4)),
+      BoxShadow(color: Color(0xFF2C5A17), offset: Offset(0, 4)),
     ],
     this.splashColor = const Color.fromRGBO(255, 255, 255, 0.18),
   });
 
   const CustomButtonStyle.secondary({
     this.gradient,
-    this.backgroundColor = const Color(0xFF16362B),
+    this.backgroundColor = const Color(0xFF1E2D34),
     this.textColor = const Color(0xFFB7F7D7),
     this.borderRadius = AppTheme.radiusLarge,
     this.border = const Border.fromBorderSide(
-      BorderSide(color: Color(0xFF4BD2A3), width: 1.5),
+      BorderSide(color: Color(0xFF6CD34A), width: 1.5),
     ),
     this.boxShadow = const [
       BoxShadow(color: Color(0xFF071A12), offset: Offset(0, 4)),
@@ -223,7 +223,7 @@ class CustomButtonStyle {
 
   const CustomButtonStyle.tertiary({
     this.gradient,
-    this.backgroundColor = const Color(0xFF132A21),
+    this.backgroundColor = const Color(0xFF1C2A31),
     this.textColor = Colors.white,
     this.borderRadius = AppTheme.radiusLarge,
     this.border = const Border.fromBorderSide(

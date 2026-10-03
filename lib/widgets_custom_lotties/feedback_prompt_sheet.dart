@@ -29,7 +29,7 @@ class _FeedbackPromptSheetContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF0D2B20),
+        color: Color(0xFF18252B),
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SafeArea(
@@ -95,7 +95,7 @@ class _FeedbackPromptSheetContent extends StatelessWidget {
                         );
                       },
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF2F9E68),
+                        backgroundColor: const Color(0xFF3F8F1F),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),

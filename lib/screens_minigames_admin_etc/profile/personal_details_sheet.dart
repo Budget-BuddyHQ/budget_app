@@ -79,7 +79,7 @@ class _PersonalDetailsSheetState extends State<PersonalDetailsSheet> {
       // `lesson_detail_screen.dart`.
       message: 'Your details are up to date.',
       icon: Icons.person_rounded,
-      accent: const Color(0xFF85EFAC),
+      accent: const Color(0xFF9BE870),
     );
   }
 
@@ -96,7 +96,7 @@ class _PersonalDetailsSheetState extends State<PersonalDetailsSheet> {
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: Container(
           decoration: const BoxDecoration(
-            color: Color(0xFF0D2B20),
+            color: Color(0xFF18252B),
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: SafeArea(
@@ -214,7 +214,7 @@ class _PersonalDetailsSheetState extends State<PersonalDetailsSheet> {
                         child: FilledButton(
                           onPressed: _saving ? null : _save,
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF2F9E68),
+                            backgroundColor: const Color(0xFF3F8F1F),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
@@ -297,10 +297,10 @@ class _ChoiceWrap<T> extends StatelessWidget {
               onSelected(value);
             },
             backgroundColor: Colors.white.withValues(alpha: 0.06),
-            selectedColor: const Color(0xFF2F9E68),
+            selectedColor: const Color(0xFF3F8F1F),
             side: BorderSide(
               color: value == selected
-                  ? const Color(0xFF85EFAC)
+                  ? const Color(0xFF9BE870)
                   : Colors.white.withValues(alpha: 0.14),
             ),
             labelStyle: TextStyle(

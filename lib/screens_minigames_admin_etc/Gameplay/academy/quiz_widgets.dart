@@ -66,10 +66,10 @@ class QuizQuestionCard extends StatelessWidget {
                     vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF85EFAC).withValues(alpha: 0.12),
+                    color: const Color(0xFF9BE870).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: const Color(0xFF85EFAC).withValues(alpha: 0.35),
+                      color: const Color(0xFF9BE870).withValues(alpha: 0.35),
                     ),
                   ),
                   child: Row(
@@ -77,14 +77,14 @@ class QuizQuestionCard extends StatelessWidget {
                     children: [
                       const Icon(
                         Icons.calculate_outlined,
-                        color: Color(0xFF85EFAC),
+                        color: Color(0xFF9BE870),
                         size: 26,
                       ),
                       const SizedBox(width: 5),
                       Text(
                         'Calculator',
                         style: GoogleFonts.pixelifySans(
-                          color: const Color(0xFF85EFAC),
+                          color: const Color(0xFF9BE870),
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                         ),
@@ -103,7 +103,7 @@ class QuizQuestionCard extends StatelessWidget {
             minHeight: 6,
             value: (questionNumber - 1) / totalQuestions,
             backgroundColor: Colors.white.withValues(alpha: 0.12),
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF85EFAC)),
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF9BE870)),
           ),
         ),
         const SizedBox(height: 20),
@@ -201,12 +201,12 @@ class _OptionCard extends StatelessWidget {
         text = Colors.white;
         trailing = null;
       case _OptionState.correct:
-        fill = const Color(0xFF2F9E68).withValues(alpha: 0.24);
-        border = const Color(0xFF85EFAC);
+        fill = const Color(0xFF3F8F1F).withValues(alpha: 0.24);
+        border = const Color(0xFF9BE870);
         text = const Color(0xFFF7FFFB);
         trailing = const Icon(
           Icons.check_circle_rounded,
-          color: Color(0xFF85EFAC),
+          color: Color(0xFF9BE870),
         );
       case _OptionState.incorrect:
         fill = const Color(0xFFE24B4A).withValues(alpha: 0.22);
@@ -504,7 +504,7 @@ class _MissedSkillRow extends StatelessWidget {
               children: [
                 const Icon(
                   Icons.check_circle_outline_rounded,
-                  color: Color(0xFF85EFAC),
+                  color: Color(0xFF9BE870),
                   size: 15,
                 ),
                 const SizedBox(width: 8),
@@ -512,7 +512,7 @@ class _MissedSkillRow extends StatelessWidget {
                   child: Text(
                     question.correctOption,
                     style: GoogleFonts.quicksand(
-                      color: const Color(0xFF85EFAC),
+                      color: const Color(0xFF9BE870),
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       height: 1.4,

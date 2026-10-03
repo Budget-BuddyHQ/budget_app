@@ -62,7 +62,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
           ? Icons.lock_reset_rounded
           : Icons.error_outline_rounded,
       accent: result.success
-          ? const Color(0xFF85EFAC)
+          ? const Color(0xFF9BE870)
           : const Color(0xFFFF8A80),
     );
     // On success the recovery session becomes a normal one, so the auth gate
@@ -95,7 +95,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
           ),
           Positioned.fill(
             child: Container(
-              color: const Color(0xFF071711).withValues(alpha: 0.82),
+              color: const Color(0xFF111B20).withValues(alpha: 0.82),
             ),
           ),
           SafeArea(
@@ -110,7 +110,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
                     children: [
                       const Icon(
                         Icons.lock_reset_rounded,
-                        color: Color(0xFF85EFAC),
+                        color: Color(0xFF9BE870),
                         size: 48,
                       ),
                       const SizedBox(height: 16),
@@ -187,7 +187,7 @@ class _PasswordField extends StatelessWidget {
       controller: controller,
       obscureText: obscure,
       style: const TextStyle(color: Colors.white),
-      cursorColor: const Color(0xFF85EFAC),
+      cursorColor: const Color(0xFF9BE870),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),

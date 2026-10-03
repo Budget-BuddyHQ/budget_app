@@ -36,7 +36,7 @@ class PastLifeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final facts = record.facts;
     final archetype = record.archetype;
-    final accent = archetype?.color ?? const Color(0xFF85EFAC);
+    final accent = archetype?.color ?? const Color(0xFF9BE870);
 
     return Scaffold(
       backgroundColor: AppTheme.deepForest,

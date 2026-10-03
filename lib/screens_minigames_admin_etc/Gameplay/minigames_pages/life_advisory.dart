@@ -205,7 +205,7 @@ class _NoteRow extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(note.icon, color: const Color(0xFF85EFAC), size: 20),
+            child: Icon(note.icon, color: const Color(0xFF9BE870), size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -270,7 +270,7 @@ Future<void> showLifeAgeGate(BuildContext context) {
           child: Text(
             'Okay',
             style: GoogleFonts.pixelifySans(
-              color: const Color(0xFF85EFAC),
+              color: const Color(0xFF9BE870),
               fontWeight: FontWeight.w700,
             ),
           ),

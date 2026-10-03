@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 
 enum HabitCategory {
   cutSpending('Cut Spending', Icons.local_offer_rounded, Color(0xFFFF8474)),
-  saveMore('Save More', Icons.savings_rounded, Color(0xFF4BD2A3)),
+  saveMore('Save More', Icons.savings_rounded, Color(0xFF6CD34A)),
   smartHabits('Smart Habits', Icons.psychology_rounded, Color(0xFF69C6FF));
 
   const HabitCategory(this.label, this.icon, this.accent);
@@ -606,7 +606,7 @@ enum JarStage {
 /// Mood is always derived from days since the last habit completion, never
 /// stored — so it can never go stale or drift out of sync.
 enum JarMood {
-  onARoll('On a Roll', Color(0xFF4BD2A3)),
+  onARoll('On a Roll', Color(0xFF6CD34A)),
   steady('Steady', Color(0xFFF2C66D)),
   slipping('Slipping', Color(0xFFFF8474));
 

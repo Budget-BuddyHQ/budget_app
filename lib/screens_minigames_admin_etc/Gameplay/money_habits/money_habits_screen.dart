@@ -455,7 +455,7 @@ class _MoneyStatsRow extends StatelessWidget {
           child: _StatTile(
             label: 'Money saved',
             value: '\$${totals.moneySavedUsd.toStringAsFixed(0)}',
-            accent: const Color(0xFF4BD2A3),
+            accent: const Color(0xFF6CD34A),
           ),
         ),
         const SizedBox(width: 10),

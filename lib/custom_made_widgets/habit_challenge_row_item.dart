@@ -57,9 +57,9 @@ class _HabitTaskBlock extends StatelessWidget {
     final template = task.template;
     final palette = switch (status) {
       HabitRowStatus.completed => const _StatusPalette(
-        fill: Color(0xFF85EFAC),
+        fill: Color(0xFF9BE870),
         border: Color(0xFF2A7D52),
-        foreground: Color(0xFF0B2D1A),
+        foreground: Color(0xFF172328),
         label: 'Done',
         icon: Icons.check_circle_rounded,
       ),

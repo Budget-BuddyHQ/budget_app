@@ -93,14 +93,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       body: DecoratedBox(
         decoration: const BoxDecoration(color: AppTheme.deepForest),
         child: RefreshIndicator(
-          color: const Color(0xFF2F9E68),
+          color: const Color(0xFF3F8F1F),
           onRefresh: _refresh,
           child: FutureBuilder<List<LeaderboardEntry>>(
             future: _leaderboardFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF85EFAC)),
+                  child: CircularProgressIndicator(color: Color(0xFF9BE870)),
                 );
               }
 
@@ -744,7 +744,7 @@ class _PodiumPlace extends StatelessWidget {
           height: avatarSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF1E4D3D),
+            color: const Color(0xFF2A3C45),
             border: Border.all(color: medalColor, width: 3),
           ),
         );
@@ -801,12 +801,12 @@ class _PodiumPlace extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: medalColor,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: const Color(0xFF0E2A1F), width: 2),
+                  border: Border.all(color: const Color(0xFF18252B), width: 2),
                 ),
                 child: Text(
                   '#$rank',
                   style: AppTheme.numeric(
-                    color: const Color(0xFF0E2A1F),
+                    color: const Color(0xFF18252B),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),

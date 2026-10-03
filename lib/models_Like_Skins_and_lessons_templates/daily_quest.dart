@@ -157,7 +157,7 @@ class DailyPlanBuilder {
           detail: 'Continue ${nextLesson.unit.title}',
           surface: QuestSurface.academyLesson,
           icon: Icons.school_rounded,
-          accent: const Color(0xFF85EFAC),
+          accent: const Color(0xFF9BE870),
           xpReward: 15,
           unitId: nextLesson.unit.id,
         ),
@@ -334,7 +334,7 @@ class DailyPlanBuilder {
         detail: 'Pick one to start your streak',
         surface: QuestSurface.moneyHabit,
         icon: Icons.savings_rounded,
-        accent: Color(0xFF4BD2A3),
+        accent: Color(0xFF6CD34A),
         xpReward: 8,
       );
     }
@@ -351,7 +351,7 @@ class DailyPlanBuilder {
       detail: 'Log it in Money Habits',
       surface: QuestSurface.moneyHabit,
       icon: Icons.savings_rounded,
-      accent: const Color(0xFF4BD2A3),
+      accent: const Color(0xFF6CD34A),
       xpReward: 8,
       habitId: habitId,
     );

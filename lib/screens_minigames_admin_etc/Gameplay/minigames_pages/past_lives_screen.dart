@@ -175,7 +175,7 @@ class _BestsGrid extends StatelessWidget {
         record: book.richest,
         value: (r) => '${groupedNumber(r.netWorth)} coins',
         icon: Icons.savings_rounded,
-        accent: const Color(0xFF85EFAC),
+        accent: const Color(0xFF9BE870),
       ),
       _BestTile(
         key: const ValueKey('best-age'),
@@ -246,7 +246,7 @@ class _BestTile extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: AppTheme.getPuffyDecoration(
         accent: accent,
-        fillColor: const Color(0xFF15302A),
+        fillColor: const Color(0xFF1E2C33),
         borderRadius: AppTheme.radiusLarge,
         restAlpha: 0.14,
       ),
@@ -314,7 +314,7 @@ class _RecordRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final archetype = record.archetype;
-    final accent = archetype?.color ?? const Color(0xFF85EFAC);
+    final accent = archetype?.color ?? const Color(0xFF9BE870);
 
     // A row can hold more than one crown (the same life can be both the
     // richest and the longest), and identity matters rather than equality —

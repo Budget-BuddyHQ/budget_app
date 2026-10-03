@@ -414,7 +414,7 @@ class DailyChallengeCard extends StatelessWidget {
         decoration: AppTheme.getPuffyDecoration(
           accent: accent,
           fillColor: isCompleted
-              ? const Color(0xFF1E3320)
+              ? const Color(0xFF23342B)
               : const Color(0xFF3B301A),
           restAlpha: 0.18,
         ),
