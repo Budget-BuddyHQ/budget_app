@@ -185,9 +185,9 @@ class ActivityListSheet extends StatelessWidget {
         '${life.outingPermission.message} Hiking, running and the gym are done '
             'in town, so they wait. The doctor still comes to you.',
       ActivityCategory.mindBody =>
-        'Hiking, running, meditating, reading, the gym and the doctor are done '
-            'in town now. Tap the compass at the top to walk there: the park, '
-            'the library, the gym and the clinic are on the map.',
+        'Hiking, running, meditating, reading and the gym are done in town. '
+            'Tap the compass at the top to walk there. The doctor is right '
+            'here, and at the clinic on the map.',
       ActivityCategory.social =>
         'Going out is done in town now. Walk to the park or the cafe from the '
             'compass at the top.',
@@ -266,24 +266,25 @@ class ActivityListSheet extends StatelessWidget {
     }
 
     return switch (category) {
-      // The gym and the library are in town now, and so is the doctor, except
-      // for somebody who cannot leave the house. Below 16 health you are "too
-      // unwell to leave", which is exactly when a doctor is what you need, and a
-      // clinic you are not allowed to walk to would be a trap. So the menu keeps
-      // the one row that has no other way in.
-      ActivityCategory.mindBody =>
-        life.outingPermission.allowed
-            ? const <Widget>[]
-            : [
-                classic(
-                  icon: Icons.medical_services_rounded,
-                  title: 'See the doctor',
-                  detail: 'A check-up at home. +12 Health.',
-                  action: LifeAction.doctor,
-                  cost: 60,
-                  onTap: life.visitDoctor,
-                ),
-              ],
+      // The doctor is always here, as well as at the clinic in town.
+      //
+      // **Reported as:** *"he couldn't find where the doctor was on the menu."*
+      // It used to be listed only for somebody too unwell to leave the house;
+      // everybody else had to know to walk to the clinic on the map. A sick
+      // player looks for a doctor in the menu, and finding one there is not
+      // the place to teach map-reading.
+      ActivityCategory.mindBody => [
+        classic(
+          icon: Icons.medical_services_rounded,
+          title: 'See the doctor',
+          detail: life.outingPermission.allowed
+              ? 'A check-up. +12 Health. The clinic in town does the same.'
+              : 'A check-up at home. +12 Health.',
+          action: LifeAction.doctor,
+          cost: 60,
+          onTap: life.visitDoctor,
+        ),
+      ],
       ActivityCategory.social => [
         classic(
           icon: Icons.volunteer_activism_rounded,

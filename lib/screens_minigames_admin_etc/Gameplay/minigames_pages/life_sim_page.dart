@@ -34,6 +34,7 @@ import 'life_ui_kit.dart';
 import '../../../constants/app_assets.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
 import '../../../widgets_custom_lotties/life_money_panel.dart';
+import '../../../widgets_custom_lotties/payday_card.dart';
 import '../../../widgets_custom_lotties/pixel_kit.dart';
 import '../../../widgets_custom_lotties/pixel_panel.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_seed.dart';
@@ -435,6 +436,35 @@ class _LifeSimPageState extends State<LifeSimPage> {
     }
   }
 
+  /// A check-up from the Payday card, with the result said out loud: the
+  /// card is about cause and effect, so the effect should not be silent.
+  void _seeDoctor(LifeSimController life) {
+    HapticFeedback.lightImpact();
+    final blocked = doctorUnavailable(life);
+    if (blocked != null) {
+      GameToast.show(
+        context,
+        title: 'Not right now',
+        message: blocked,
+        icon: Icons.medical_services_rounded,
+        accent: const Color(0xFFFFB084),
+      );
+      return;
+    }
+    final before = life.health;
+    life.visitDoctor();
+    final gained = life.health - before;
+    GameToast.show(
+      context,
+      title: gained > 0 ? 'Feeling better' : 'No check-up',
+      message: gained > 0
+          ? '+$gained Health. Keep it up and you will stop missing work.'
+          : 'A check-up costs 60 coins, and there was not enough.',
+      icon: Icons.medical_services_rounded,
+      accent: gained > 0 ? AppTheme.greenPrimary : const Color(0xFFFFB084),
+    );
+  }
+
   Future<void> _openBudget(LifeSimController life) async {
     HapticFeedback.lightImpact();
     await showModalBottomSheet<void>(
@@ -704,6 +734,8 @@ class _LifeSimPageState extends State<LifeSimPage> {
                     onOpenMoney: () => _openAssets(life),
                     onOpenConcepts: () => _openConcepts(life),
                     onOpenPeople: () => _openPeople(life),
+                    onFindJob: () => _openOccupation(life),
+                    onSeeDoctor: () => _seeDoctor(life),
                     moneyKey: _tourMoneyKey,
                   ),
                 ),
@@ -962,8 +994,16 @@ class _LifeFeed extends StatelessWidget {
     required this.onOpenMoney,
     required this.onOpenConcepts,
     required this.onOpenPeople,
+    required this.onFindJob,
+    required this.onSeeDoctor,
     required this.moneyKey,
   });
+
+  /// For the Payday card: opens Occupation when there is no job.
+  final VoidCallback onFindJob;
+
+  /// For the Payday card: a check-up when missed work came from poor health.
+  final VoidCallback onSeeDoctor;
 
   /// Anchor for the in-game tour. The feed owns the money panel, so it is the
   /// only place that can hand a key to it.
@@ -1014,6 +1054,14 @@ class _LifeFeed extends StatelessWidget {
           onOpenMoney: onOpenMoney,
           onOpenConcepts: onOpenConcepts,
           onOpenWhereItGoes: () => openMoneyFlow(context, life),
+        ),
+        // This year's pay, where it went, and any work missed. See
+        // [PaydayCard] for why it is a card and not a feed line.
+        PaydayCard(
+          life: life,
+          onOpenBudget: onOpenBudget,
+          onFindJob: onFindJob,
+          onSeeDoctor: onSeeDoctor,
         ),
         const SizedBox(height: 12),
         // Above the cost, not after it: running yourself down costs shifts,

@@ -10,6 +10,7 @@ import '../../themes_colors/app_theme.dart';
 import '../../widgets_custom_lotties/fitted_label.dart';
 import '../../models_Like_Skins_and_lessons_templates/knowledge_tracing.dart';
 import '../../models_Like_Skins_and_lessons_templates/review_schedule.dart';
+import '../../widgets_custom_lotties/how_to_budget.dart';
 import '../../widgets_custom_lotties/life_money_panel.dart';
 import '../../widgets_custom_lotties/age_scaled_note.dart';
 import '../Gameplay/academy/lesson_screen.dart';
@@ -470,6 +471,10 @@ class _FindingCard extends StatelessWidget {
               ),
             ],
           ),
+          if (finding.showsBudgetHowTo) ...[
+            const SizedBox(height: 10),
+            const HowToBudgetButton(),
+          ],
           if (finding.concept != null) ...[
             const SizedBox(height: 10),
             _ConceptChip(concept: finding.concept!),

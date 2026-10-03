@@ -18,7 +18,9 @@ import 'package:budget_app/themes_colors/app_theme.dart';
 
 import 'contrast_audit_test.dart' show auditContrast;
 import 'support/app_fonts.dart';
+import 'support/fixed_random.dart';
 import 'support/life_fixtures.dart';
+import 'package:budget_app/widgets_custom_lotties/payday_card.dart';
 
 /// Every Life screen, at every size, in the state that is hardest to lay out.
 ///
@@ -49,6 +51,18 @@ void main() {
   );
 
   final worker = busyAdult();
+  // A year of work missed through poor health, for the Payday card.
+  final sickWorker =
+      LifeSimController(
+          random: FixedRandom.unlucky(),
+          name: 'Sam',
+          initialAge: 25,
+          startMoney: 500,
+          startJob: 'Baker',
+          startSalary: 1000,
+        )
+        ..debugSetStats(health: 20, happiness: 70)
+        ..ageUp();
   final student = collegeStudent();
   final child = schoolChild();
   final seeker = jobSeeker();
@@ -89,6 +103,15 @@ void main() {
       onConcepts: () {},
     ),
     'asset detail': () => AssetDetailSheet(life: worker, uid: car.uid),
+    // The year's pay, itemised, with missed work in red. See [PaydayCard].
+    'payday': () => SingleChildScrollView(
+      child: PaydayCard(
+        life: sickWorker,
+        onOpenBudget: () {},
+        onFindJob: () {},
+        onSeeDoctor: () {},
+      ),
+    ),
     'loan': () => LoanSheet(life: worker, uid: loan.uid),
     'housing': () => HousingSheet(life: worker),
     'move money': () => MoveMoneySheet(life: worker),
@@ -204,6 +227,7 @@ void main() {
       'activities mindBody',
       'sport on team',
       'asset detail',
+      'payday',
     ];
     for (final name in picked) {
       testWidgets(name, (tester) async {

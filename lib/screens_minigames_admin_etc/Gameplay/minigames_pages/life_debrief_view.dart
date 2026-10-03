@@ -7,6 +7,7 @@ import '../../../models_Like_Skins_and_lessons_templates/life_debrief.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_run_record.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../utils/number_format.dart';
+import '../../../widgets_custom_lotties/how_to_budget.dart';
 
 /// The end of a life, looked back on.
 ///
@@ -926,6 +927,13 @@ class _Findings extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
+                      // "Set one the first year you are paid" — and how, since a
+                      // younger tester read this and could not find where.
+                      // No "Play Life" button here: this is the end of one.
+                      if (finding.id == 'never_budgeted') ...[
+                        const SizedBox(height: 8),
+                        const HowToBudgetButton(offerPlayLife: false),
+                      ],
                     ],
                   ),
                 ),

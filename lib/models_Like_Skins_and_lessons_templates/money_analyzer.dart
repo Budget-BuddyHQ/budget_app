@@ -197,7 +197,13 @@ class MoneyFinding {
     required this.evidence,
     required this.action,
     this.concept,
+    this.showsBudgetHowTo = false,
   });
+
+  /// Whether the advice is "set your budget in Life", and the card should
+  /// offer the how-to. A younger tester read that advice and could not find
+  /// where to do it. See `how_to_budget.dart`.
+  final bool showsBudgetHowTo;
 
   // stable key, safe to log/persist. never reuse one
   final String id;
@@ -503,9 +509,10 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
                     'Worth knowing what it costs: the runs that reach an '
                     'unusual ending finish poorer, and that is a real '
                     'trade rather than a mistake. Try one run where you '
-                    'chase an ending *and* set your budget in the Assets tab '
-                    'early — the two are not opposites.',
+                    'chase an ending *and* set your budget early — the two '
+                    'are not opposites.',
                 concept: FinanceConcept.opportunityCost,
+                showsBudgetHowTo: true,
               )
             : MoneyFinding(
                 id: 'lives_flat',
@@ -516,10 +523,11 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
                     'Last three finished at '
                     '${snap.pastLifeNetWorths.take(3).join(', ')}.',
                 action:
-                    'Next run, set your budget in the Assets tab in the first '
-                    'ten years instead of the last ten. Almost all of the '
-                    'difference is made early.',
+                    'Next run, set your budget in your first working years '
+                    'instead of your last ones. Almost all of the difference '
+                    'is made early.',
                 concept: FinanceConcept.compoundGrowth,
+                showsBudgetHowTo: true,
               ),
       );
     }

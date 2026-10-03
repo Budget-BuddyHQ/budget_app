@@ -284,7 +284,6 @@ void main() {
         'Stretch and breathe',
         'Read a good book',
         'Go to the gym',
-        'See the doctor',
       ]) {
         expect(find.text(gone), findsNothing, reason: '$gone is still listed');
       }
@@ -314,7 +313,11 @@ void main() {
       expect(life.health, greaterThan(before));
     });
 
-    testWidgets('and somebody well enough to go out is sent to the clinic', (
+    // It used to send somebody well enough to go out to the clinic on the map,
+    // and only the map. Reported as a younger tester "couldn't find where the
+    // doctor was on the menu": a sick player looks for a doctor in the menu.
+    // The clinic in town still does a check-up too.
+    testWidgets('and somebody well enough to go out finds one in the menu', (
       tester,
     ) async {
       final life = adult();
@@ -323,7 +326,7 @@ void main() {
       await tab(tester, 'Activities');
       await tester.tap(find.text('Mind and body'));
       await tester.pumpAndSettle();
-      expect(find.text('See the doctor'), findsNothing);
+      expect(find.text('See the doctor'), findsOneWidget);
     });
 
     testWidgets('a person can be talked to, and the bar moves', (tester) async {

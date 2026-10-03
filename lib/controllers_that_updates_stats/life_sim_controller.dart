@@ -40,6 +40,63 @@ part 'life_sim_money_flow.dart';
 /// depends on nothing (no Supabase, no providers), so the whole game is unit
 /// testable and can't corrupt the player's real gold. The screen turns a
 /// finished life into a gold/XP reward through [goldReward].
+/// One year's pay, and where every part of it went, in the words a player
+/// would use.
+///
+/// **Reported as:** *"he wasn't understanding why he wasn't getting any money
+/// from his job"* and *"he didn't know when he missed work."* Both were in the
+/// feed as one line each among a dozen. Most of a paycheck never reaches cash
+/// — bills, the wants slice and savings take it first — so a salary of 1,000
+/// can move the Cash box by 40, and nothing on screen said why. This is the
+/// whole year's pay, itemised, for the Payday card.
+@immutable
+class PaySlip {
+  const PaySlip({
+    required this.age,
+    required this.fullPay,
+    required this.pay,
+    required this.weeksMissed,
+    required this.missedBecause,
+    required this.loans,
+    required this.bills,
+    required this.wants,
+    required this.saved,
+    required this.toCash,
+  });
+
+  final int age;
+
+  /// What the job pays for a full year.
+  final int fullPay;
+
+  /// What was actually paid, after missed weeks.
+  final int pay;
+
+  /// Weeks of work missed this year, 0 when none.
+  final int weeksMissed;
+
+  /// Why, in a phrase ("being unwell"), or null when no work was missed.
+  final String? missedBecause;
+
+  /// Loan payments taken out of the pay first.
+  final int loans;
+
+  /// What living actually cost: rent, food, the basics.
+  final int bills;
+
+  /// The wants slice, spent during the year on things you enjoy.
+  final int wants;
+
+  /// Moved into the Saved box.
+  final int saved;
+
+  /// How much the Cash box went up (or down) because of this year's pay.
+  final int toCash;
+
+  /// Pay lost to missed weeks.
+  int get missedPay => fullPay - pay;
+}
+
 class LifeSimController extends ChangeNotifier {
   LifeSimController({
     Random? random,
@@ -444,6 +501,8 @@ class LifeSimController extends ChangeNotifier {
       _settleLoans(0);
       return;
     }
+    final cashBefore = _money;
+    final savedBefore = _emergencyFund;
     _incomeTotal += gross;
     // Loan payments come out of the pay before it is split, which is how a
     // mortgage or a student loan behaves. What is left is what the 50/30/20
@@ -649,6 +708,21 @@ class LifeSimController extends ChangeNotifier {
       );
       _teach(FinanceConcept.interestCost);
     }
+
+    final fullPay = (_salary * (1 + powerStrength(PowerEffect.betterPay)))
+        .round();
+    _lastPaySlip = PaySlip(
+      age: _age,
+      fullPay: fullPay,
+      pay: gross,
+      weeksMissed: ((1 - _payShare) * 52).round(),
+      missedBecause: _missedBecause,
+      loans: gross - income,
+      bills: actualNeeds,
+      wants: wantsBudget,
+      saved: _emergencyFund - savedBefore,
+      toCash: _money - cashBefore,
+    );
   }
 
   /// An unavoidable expense. Draws the emergency fund first, then cash, then
@@ -1057,6 +1131,13 @@ class LifeSimController extends ChangeNotifier {
   /// The share of this year's pay still earned. 1.0 unless work was missed.
   double _payShare = 1.0;
 
+  /// This year's pay, itemised. Null in a year with no paycheck.
+  PaySlip? _lastPaySlip;
+  PaySlip? get lastPaySlip => _lastPaySlip;
+
+  /// Why work was missed this year, for [PaySlip.missedBecause].
+  String? _missedBecause;
+
   int _weeksMissedTotal = 0;
   int _yearsStrained = 0;
   int _timesLaidOff = 0;
@@ -1299,6 +1380,8 @@ class LifeSimController extends ChangeNotifier {
     _expirePowers();
 
     _payShare = 1.0;
+    _lastPaySlip = null;
+    _missedBecause = null;
     // School comes first in the year: tuition falls due before anything is
     // earned, and a graduation can change what the year's job hunt looks like.
     _advanceSchooling(studied);
@@ -2820,6 +2903,7 @@ class LifeSimController extends ChangeNotifier {
 
     _weeksMissedTotal += strain.weeksMissed;
     _yearsStrained++;
+    _missedBecause = strain.cause;
 
     if (strain.isSerious) {
       _strainYears++;
