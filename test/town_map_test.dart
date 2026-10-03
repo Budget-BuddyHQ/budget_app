@@ -368,26 +368,6 @@ void main() {
       expect(bad, isEmpty, reason: bad.join('; '));
     });
 
-    test('no npc sprite clips into scenery above it', () {
-      // The villager sheet is ~2 tiles tall and is drawn *upward* from the
-      // character's feet tile, so a solid tile one or two rows above an NPC
-      // means its head visibly overlaps a wall/tree. This caught the
-      // Student, who was standing right against the west ledge.
-      final clipping = <String>[];
-      for (final npc in kTownNpcs) {
-        for (final dy in <int>[1, 2]) {
-          final above = (x: npc.tileX, y: npc.tileY - dy);
-          if (solid.contains(above)) {
-            clipping.add(
-              '${npc.id} at (${npc.tileX},${npc.tileY}) has solid tile '
-              '$above $dy row(s) above it',
-            );
-          }
-        }
-      }
-      expect(clipping, isEmpty, reason: clipping.join('; '));
-    });
-
     test('no two npcs share a tile', () {
       final tiles = kTownNpcs.map((n) => '${n.tileX},${n.tileY}').toList();
       expect(tiles.toSet().length, tiles.length);

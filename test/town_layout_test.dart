@@ -1,10 +1,31 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:budget_app/constants/app_assets.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/town_spot_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/town_landmarks.dart';
+
+/// One parsed map: its size and the set of solid tiles.
+({int width, int height, Set<(int, int)> solid}) loadMap(String name) {
+  final raw = File('assets/images/maps/$name').readAsStringSync();
+  final data = jsonDecode(raw) as Map<String, dynamic>;
+  final solid = <(int, int)>{};
+  for (final layer in data['layers'] as List<dynamic>) {
+    final map = layer as Map<String, dynamic>;
+    if (map['collider'] != true) continue;
+    for (final tile in map['tiles'] as List<dynamic>) {
+      final t = tile as Map<String, dynamic>;
+      solid.add((t['x'] as int, t['y'] as int));
+    }
+  }
+  return (
+    width: data['mapWidth'] as int,
+    height: data['mapHeight'] as int,
+    solid: solid,
+  );
+}
 
 /// Where the town's markers actually sit on the map.
 ///
@@ -22,26 +43,6 @@ void main() {
   _mapIdentity();
 
   _landmarks();
-
-  /// One parsed map: its size and the set of solid tiles.
-  ({int width, int height, Set<(int, int)> solid}) loadMap(String name) {
-    final raw = File('assets/images/maps/$name').readAsStringSync();
-    final data = jsonDecode(raw) as Map<String, dynamic>;
-    final solid = <(int, int)>{};
-    for (final layer in data['layers'] as List<dynamic>) {
-      final map = layer as Map<String, dynamic>;
-      if (map['collider'] != true) continue;
-      for (final tile in map['tiles'] as List<dynamic>) {
-        final t = tile as Map<String, dynamic>;
-        solid.add((t['x'] as int, t['y'] as int));
-      }
-    }
-    return (
-      width: data['mapWidth'] as int,
-      height: data['mapHeight'] as int,
-      solid: solid,
-    );
-  }
 
   group('map.json', () {
     late final map = loadMap('map.json');
@@ -133,10 +134,11 @@ void main() {
   });
 
   group('map_two.json', () {
-    // The second town, rebuilt from a flat PNG by tool/build_map_two.py. It
-    // has no hand-authored colliders at all — they were learned from map 1 —
-    // so the connectivity check is the thing standing between it and a town
-    // cut into quarters.
+    // The second town, rebuilt from a flat PNG by tool/build_map_two.py, with
+    // walls learned from map 1 and then — because that left most buildings
+    // and the whole bottom border walk-through — measured footprints added by
+    // tool/fix_map_two_collision.py. The connectivity check is still the
+    // thing standing between it and a town cut into quarters.
     late final map = loadMap('map_two.json');
 
     test('it exists and is the same shape as the first', () {
@@ -145,10 +147,13 @@ void main() {
     });
 
     test('most of it is walkable', () {
+      // Map 1, hand-built, is about 71% walkable. This was 0.7 while map 2's
+      // walls were inferred and mostly missing; with real footprints it sits
+      // in the same range, and the floor is here to catch an over-fire.
       final walkable = map.width * map.height - map.solid.length;
       expect(
         walkable / (map.width * map.height),
-        greaterThan(0.7),
+        greaterThan(0.6),
         reason:
             'only ${(walkable / (map.width * map.height) * 100).round()}% '
             'is walkable — the collider mapping has over-fired again',
@@ -463,20 +468,29 @@ void _mapIdentity() {
           final x = npc.xOn(map);
           final y = npc.yOn(map);
 
-          expect(
-            solid.contains((x: x, y: y)),
-            isFalse,
-            reason: '${npc.id} stands inside a wall on ${map.name}',
-          );
-
-          // The sprite is about two tiles tall and drawn upward from its
-          // feet, so a solid tile one or two rows above clips it.
-          for (final dy in const [1, 2]) {
-            expect(
-              solid.contains((x: x, y: y - dy)),
-              isFalse,
-              reason: '${npc.id} is clipped by scenery on ${map.name}',
-            );
+          // Every tile the sprite covers at any point of its patrol. The
+          // component is anchored at its tile's top-left and is 26px tall
+          // and about 23 wide, so it spills *down and right* into a 2x2 —
+          // this used to check the two rows *above* instead, which is why an
+          // NPC could stand inside the stilt tower and pace through a crate
+          // and a hall on the second map with every check passing.
+          const width = 26 * AppAssets.npcAspectRatio;
+          const height = 26.0;
+          final reach = npc.patrolTiles * 16;
+          for (var step = 0; step <= reach; step++) {
+            final px = x * 16 + (npc.patrolHorizontal ? step : 0);
+            final py = y * 16 + (npc.patrolHorizontal ? 0 : step);
+            for (var tx = px ~/ 16; tx <= (px + width - 0.01) ~/ 16; tx++) {
+              for (var ty = py ~/ 16; ty <= (py + height - 0.01) ~/ 16; ty++) {
+                expect(
+                  solid.contains((x: tx, y: ty)),
+                  isFalse,
+                  reason:
+                      '${npc.id} walks into a wall at ($tx, $ty) on '
+                      '${map.name}',
+                );
+              }
+            }
           }
 
           final key = '$x,$y';
@@ -486,6 +500,65 @@ void _mapIdentity() {
             reason: '${npc.id} and ${taken[key]} share a tile on ${map.name}',
           );
           taken[key] = npc.id;
+        }
+      });
+
+      test('${map.name} has no way off the edge', () {
+        // Past the last tile there is no map and no collision, so one open
+        // tile on the outermost ring is a door into the void. Reported as
+        // the player walking off the map; map 2's bottom and right edges were
+        // drawn as rock with no hitbox at all.
+        final data = loadMap(map.asset.split('/').last);
+        final open = <String>[];
+        for (var i = 0; i < data.width; i++) {
+          for (final (x, y) in <(int, int)>[
+            (i, 0),
+            (i, data.height - 1),
+            (0, i),
+            (data.width - 1, i),
+          ]) {
+            if (!data.solid.contains((x, y))) open.add('($x, $y)');
+          }
+        }
+        expect(open, isEmpty, reason: 'open edge tiles on ${map.name}');
+      });
+
+      test('${map.name}: spawn reaches every marker and coin', () {
+        // Adding walls is how a building stops being walk-through, and also
+        // how a doorstep gets sealed off from the street. Both have to hold.
+        final data = loadMap(map.asset.split('/').last);
+        final spawn = townSpawnTile(map);
+        final seen = <(int, int)>{(spawn.x, spawn.y)};
+        final queue = <(int, int)>[(spawn.x, spawn.y)];
+        expect(data.solid.contains((spawn.x, spawn.y)), isFalse);
+        while (queue.isNotEmpty) {
+          final (x, y) = queue.removeLast();
+          for (final n in <(int, int)>[
+            (x + 1, y),
+            (x - 1, y),
+            (x, y + 1),
+            (x, y - 1),
+          ]) {
+            if (n.$1 < 0 || n.$2 < 0) continue;
+            if (n.$1 >= data.width || n.$2 >= data.height) continue;
+            if (!data.solid.contains(n) && seen.add(n)) queue.add(n);
+          }
+        }
+        for (final spot in kTownSpots) {
+          expect(
+            seen.contains((spot.xOn(map), spot.yOn(map))),
+            isTrue,
+            reason: '${spot.id} is walled off on ${map.name}',
+          );
+        }
+        for (final coin in townCoinsFor(map)) {
+          expect(
+            seen.contains((coin.x, coin.y)),
+            isTrue,
+            reason:
+                'the coin at (${coin.x}, ${coin.y}) is walled off on '
+                '${map.name}',
+          );
         }
       });
 

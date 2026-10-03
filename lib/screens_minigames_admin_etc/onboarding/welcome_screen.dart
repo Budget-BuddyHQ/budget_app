@@ -61,12 +61,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          AnimatedBuilder(
-            animation: _floatController,
-            builder: (context, child) {
-              return _WelcomeBackground(progress: _floatController.value);
-            },
-          ),
+          const MapBackdrop(style: MapBackdropStyle.hero),
           SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -199,72 +194,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _WelcomeBackground extends StatelessWidget {
-  final double progress;
-
-  const _WelcomeBackground({required this.progress});
-
-  @override
-  Widget build(BuildContext context) {
-    final glowShift = (progress - 0.5) * 0.4;
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const MapBackdrop(style: MapBackdropStyle.hero),
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(0.3, -0.4 + glowShift),
-                radius: 0.9,
-                colors: [
-                  const Color(0xFF78E08F).withValues(alpha: 0.25),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: -80,
-          top: 120,
-          child: _GlowOrb(
-            size: 220,
-            color: const Color(0xFF3CCB74).withValues(alpha: 0.25),
-          ),
-        ),
-        Positioned(
-          right: -60,
-          bottom: 80,
-          child: _GlowOrb(
-            size: 200,
-            color: const Color(0xFFF4D06F).withValues(alpha: 0.18),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _GlowOrb extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _GlowOrb({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(colors: [color, Colors.transparent]),
       ),
     );
   }

@@ -206,11 +206,28 @@ class LifeChoice {
     this.sellsAsset,
     this.removesAsset,
     this.paysOffStudentLoan = false,
+    this.replacesJob = false,
+    this.laidOff = false,
   });
 
   final String label;
   final String outcome;
   final int money;
+
+  /// [setJob] takes over even if it pays less than the job held now.
+  ///
+  /// Every other card is held to "never quietly demote", so an offer of a 400
+  /// job cannot replace a 2,000 one. That guard is right for an offer and
+  /// wrong for a decision: starting a business, teaching after the music
+  /// stops, taking the first thing going after a layoff. Without this the
+  /// guard kept the old job at full pay while the card described the new one.
+  final bool replacesJob;
+
+  /// The old job was lost rather than left, so the debrief counts it.
+  ///
+  /// A card that sets the salary to 0 already counts as a layoff. This is for
+  /// the one that ends the job and hands out another in the same breath.
+  final bool laidOff;
 
   /// An asset (by catalogue id) this choice puts in the character's hands.
   ///
@@ -456,12 +473,15 @@ enum LifeFlag {
 /// asset (`LifeChoice.grantsAsset`/`sellsAsset`/`removesAsset`/
 /// `paysOffStudentLoan`) and one of these becomes true or false as a side
 /// effect, so nothing in `kLifeEvents` ever needs a literal `setsFlag` or
-/// `clearsFlag` for them.
+/// `clearsFlag` for them. `gotDegree` is the same idea for school: it is read
+/// from the education record, so the chip cannot say "Degree" while the job
+/// board says one is needed.
 const Set<LifeFlag> kOwnershipBackedFlags = {
   LifeFlag.hasPet,
   LifeFlag.hasCar,
   LifeFlag.ownsHome,
   LifeFlag.hasStudentLoan,
+  LifeFlag.gotDegree,
 };
 
 extension LifeFlagInfo on LifeFlag {
@@ -538,7 +558,11 @@ class LifeContext {
     this.debt = 0,
     this.renting = false,
     this.track,
+    this.salary = 0,
   });
+
+  /// Yearly pay, 0 without a job. See [LifeEvent.maxSalary].
+  final int salary;
 
   /// The highest qualification held.
   final EducationLevel education;
@@ -612,12 +636,34 @@ class LifeEvent {
     this.minDebt = 0,
     this.requiresRenting = false,
     this.forbidsAsset,
+    this.maxSalary,
+    this.topic,
   });
+
+  /// Cards that are the same situation in different words share a topic.
+  ///
+  /// The pool grew in packs, and several packs wrote their own version of the
+  /// same moment: three cards for "a friend asks to borrow money", three for
+  /// "the house is bigger than you need", two each for the found wallet, the
+  /// bank scam call and the school tryouts. A tester read that as the game
+  /// repeating itself, which it was. Only one card per topic is drawn in a
+  /// life; a repeatable one can come back once the usual cooldown has passed
+  /// since *any* card on its topic, so a friend can ask again in ten years
+  /// but not twice in two.
+  final String? topic;
 
   final String id;
   final String prompt;
   final IconData icon;
   final List<LifeChoice> choices;
+
+  /// Only draw this while the character earns less than this.
+  ///
+  /// For cards that offer a job or a raise at a fixed salary. Taking one never
+  /// demotes (see `LifeChoice.replacesJob`), so for somebody already paid more
+  /// "Take the raise — Team Lead, 520" showed "more work, more pay" and
+  /// changed nothing. An offer that cannot improve anything is not offered.
+  final int? maxSalary;
 
   /// Gates on the newer parts of a life. Each is only checked when set, so the
   /// events written before they existed are unaffected.
@@ -728,6 +774,7 @@ class LifeEvent {
     if (requiresTrack != null && c.track != requiresTrack) return false;
     if (c.debt < minDebt) return false;
     if (requiresRenting && !c.renting) return false;
+    if (maxSalary != null && c.salary >= maxSalary!) return false;
     return true;
   }
 }
@@ -877,6 +924,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   ),
   LifeEvent(
     id: 'sports_tryout',
+    topic: 'tryouts',
     prompt: 'Tryouts for the school team are this week.',
     icon: Icons.sports_soccer_rounded,
     minAge: 9,
@@ -1097,6 +1145,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     icon: Icons.store_rounded,
     minAge: 16,
     maxAge: 45,
+    maxSalary: 260,
     choices: [
       LifeChoice(
         label: 'Take it',
@@ -1192,6 +1241,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     prompt: 'Your boss offers a raise for more responsibility.',
     icon: Icons.trending_up_rounded,
     minAge: 20,
+    maxSalary: 520,
     choices: [
       LifeChoice(
         label: 'Take the raise',
@@ -1237,6 +1287,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   ),
   LifeEvent(
     id: 'checkup',
+    topic: 'checkup',
     repeatable: true,
     prompt: 'You have been putting off a doctor visit.',
     icon: Icons.medical_services_rounded,
@@ -1258,6 +1309,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   ),
   LifeEvent(
     id: 'friend_loan',
+    topic: 'friend_loan',
     repeatable: true,
     prompt: 'A close friend asks to borrow 300 coins.',
     icon: Icons.handshake_rounded,
@@ -1346,6 +1398,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   ),
   LifeEvent(
     id: 'lost_wallet',
+    topic: 'found_wallet',
     repeatable: true,
     prompt: 'You find a wallet with 200 coins and an ID inside.',
     icon: Icons.badge_rounded,
@@ -1463,6 +1516,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   // ---------------- Adult (expansion) ----------------
   LifeEvent(
     id: 'credit_card_offer',
+    topic: 'card_offer',
     prompt: 'A card with a 2,000 coin limit is pre-approved for you.',
     icon: Icons.credit_card_rounded,
     minAge: 18,
@@ -1489,6 +1543,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   ),
   LifeEvent(
     id: 'rent_increase',
+    topic: 'rent_rise',
     repeatable: true,
     prompt: 'Your landlord is raising the rent by 200 coins a month.',
     icon: Icons.home_work_rounded,
@@ -1522,6 +1577,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     prompt: 'You have been offered a new role. The salary is negotiable.',
     icon: Icons.trending_up_rounded,
     minAge: 21,
+    maxSalary: 420,
     choices: [
       LifeChoice(
         label: 'Ask for more',
@@ -1565,6 +1621,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   ),
   LifeEvent(
     id: 'market_crash',
+    topic: 'market_drop',
     repeatable: true,
     prompt: 'The market drops sharply. Your investments are down 30%.',
     icon: Icons.trending_down_rounded,
@@ -1595,6 +1652,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   ),
   LifeEvent(
     id: 'insurance_choice',
+    topic: 'renters_insurance',
     repeatable: true,
     prompt: 'Your renters insurance is up for renewal.',
     icon: Icons.shield_rounded,
@@ -1617,6 +1675,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   ),
   LifeEvent(
     id: 'family_support',
+    topic: 'parent_money',
     repeatable: true,
     prompt: 'A parent is struggling and could use help with bills.',
     icon: Icons.family_restroom_rounded,
@@ -1691,6 +1750,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   ),
   LifeEvent(
     id: 'discover_sports',
+    topic: 'tryouts',
     prompt: 'Tryouts are open for the school team.',
     icon: Icons.sports_basketball_rounded,
     minAge: 8,
@@ -1776,7 +1836,10 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     prompt: 'A small label wants to record an EP with you.',
     icon: Icons.album_rounded,
     minAge: 17,
-    weight: 0.6,
+    // Above the 1.0 default on purpose. The skill and fame gates already make
+    // this rare; at 0.6 it was rare twice over, and about 2 in 100 committed
+    // musicians ever saw it.
+    weight: 1.4,
     requiresSkill: LifeSkill.music,
     minSkill: 45,
     minFame: 10,
@@ -1805,7 +1868,10 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     prompt: 'Your booking agent thinks you could sell out a tour.',
     icon: Icons.travel_explore_rounded,
     minAge: 19,
-    weight: 0.4,
+    // Same reasoning as record_deal: at 0.4, behind skill 65 and fame 26, it
+    // reached about 1 in 2,000 committed musicians. At 1.6 it is roughly 1 in
+    // 7 of those who sign a record deal — still the top of the ladder.
+    weight: 1.6,
     requiresSkill: LifeSkill.music,
     minSkill: 65,
     // 26, not 35: the best reachable fame before this point is first_gig (12)
@@ -1839,6 +1905,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     icon: Icons.sports_basketball_rounded,
     minAge: 16,
     weight: 0.6,
+    maxSalary: 380,
     requiresSkill: LifeSkill.sports,
     minSkill: 45,
     choices: [
@@ -1875,6 +1942,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
         money: -500,
         setJob: 'Founder',
         setSalary: 460,
+        replacesJob: true,
         smarts: 8,
         happiness: 10,
       ),
@@ -1884,6 +1952,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
         money: 400,
         setJob: 'Founder',
         setSalary: 520,
+        replacesJob: true,
         smarts: 5,
         happiness: 6,
       ),
@@ -2029,6 +2098,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   LifeEvent(
     id: 'promotion_or_balance',
     prompt: 'You are offered a promotion. More money, noticeably more hours.',
+    maxSalary: 440,
     icon: Icons.stairs_rounded,
     minAge: 27,
     maxAge: 58,
@@ -2092,12 +2162,17 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     maxAge: 60,
     requiresJob: true,
     weight: 0.7,
+    // "A better job than the old one" at 480 is only better below 480.
+    // `a_redundancy` and `s_boss_lets_you_go` cover layoffs at any salary.
+    maxSalary: 480,
     choices: [
       LifeChoice(
         label: 'Live off the emergency fund and search properly',
         outcome: 'Three stressful months, then a better job than the old one.',
         money: -400,
         setSalary: 480,
+        replacesJob: true,
+        laidOff: true,
         smarts: 12,
         happiness: -6,
       ),
@@ -2105,6 +2180,8 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
         label: 'Take the first thing offered',
         outcome: 'The gap was short. The pay cut was not.',
         setSalary: 260,
+        replacesJob: true,
+        laidOff: true,
         happiness: -8,
       ),
       LifeChoice(
@@ -2112,6 +2189,8 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
         outcome: 'Unpredictable months, but the good ones are very good.',
         setJob: 'Freelancer',
         setSalary: 400,
+        replacesJob: true,
+        laidOff: true,
         happiness: 5,
         smarts: 8,
       ),
@@ -2119,6 +2198,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   ),
   LifeEvent(
     id: 'parent_needs_help',
+    topic: 'parent_money',
     prompt: 'A parent is struggling with money and has not asked directly.',
     icon: Icons.elderly_rounded,
     minAge: 30,
@@ -2234,9 +2314,14 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     choices: [
       LifeChoice(
         label: 'Retrain while still employed',
-        outcome: 'Two exhausting years, then a job you actually want.',
+        // Opens the job board rather than setting a fixed 460: the job "you
+        // actually want" is the player's to pick, at its real pay, and a flat
+        // 460 was either ignored or a cut for anybody this far into a career.
+        outcome:
+            'Two exhausting years of evenings. Now the job board is open, and '
+            'this time you are choosing.',
         money: -600,
-        setSalary: 460,
+        followUp: LifeFollowUp.openJobs,
         happiness: 14,
         smarts: 16,
       ),
@@ -2367,15 +2452,20 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   ),
   LifeEvent(
     id: 'downsize_home',
+    topic: 'downsize',
     prompt: 'The house is bigger than you need now.',
     icon: Icons.holiday_village_rounded,
     minAge: 55,
     weight: 0.9,
+    // Drawn for renters too, and "downsizing" paid 2,200 out of nowhere while
+    // the house stayed owned. It now needs a home and sells it at its value.
+    requiresAsset: AssetKind.home,
     choices: [
       LifeChoice(
         label: 'Downsize and free the money',
         outcome: 'Smaller rooms, a much larger cushion.',
-        money: 2200,
+        sellsAsset: AssetKind.home,
+        clearsFlag: LifeFlag.ownsHome,
         happiness: 6,
         smarts: 12,
       ),
@@ -2416,6 +2506,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   ),
   LifeEvent(
     id: 'scam_target',
+    topic: 'bank_scam',
     prompt:
         'Someone calls claiming to be your bank, urgently, asking you to move '
         'money to a "safe account".',
@@ -2744,6 +2835,7 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
   // ---------------- The 10-11 hole ----------------
   LifeEvent(
     id: 'x_lemonade_stand',
+    topic: 'lemonade_stand',
     prompt:
         'You and a friend want to run a lemonade stand. Cups and lemons cost '
         'money up front.',
@@ -2943,6 +3035,7 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
   ),
   LifeEvent(
     id: 'x_friend_loan',
+    topic: 'friend_loan',
     prompt:
         'A close friend asks to borrow \$500. They are good for it — '
         'probably.',
@@ -2980,6 +3073,7 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
   // ---------------- 40s / 50s ----------------
   LifeEvent(
     id: 'x_health_checkup',
+    topic: 'checkup',
     prompt: 'You have been putting off a check-up for two years.',
     icon: Icons.medical_services_rounded,
     minAge: 35,
@@ -3031,6 +3125,7 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
   ),
   LifeEvent(
     id: 'x_retirement_review',
+    topic: 'pension_review',
     prompt:
         'A letter arrives about your retirement account. You have not looked '
         'at it in years.',
@@ -3055,6 +3150,7 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
   ),
   LifeEvent(
     id: 'x_downsize',
+    topic: 'downsize',
     prompt:
         'The house is bigger than you need now. Selling would free up a '
         'lot of money.',
@@ -3062,13 +3158,17 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
     minAge: 50,
     maxAge: 80,
     weight: 0.8,
+    // Paid 40,000 to anybody aged 50 to 80, renting or not, and left the house
+    // owned. Now needs a home and sells it at its value, like a_downsize.
+    requiresAsset: AssetKind.home,
     choices: [
       LifeChoice(
         label: 'Downsize',
         outcome:
             'Smaller place, smaller bills, more freedom. Housing is most '
             'people\'s biggest line item.',
-        money: 40000,
+        sellsAsset: AssetKind.home,
+        clearsFlag: LifeFlag.ownsHome,
         happiness: 6,
       ),
       LifeChoice(
@@ -3080,6 +3180,7 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
   ),
   LifeEvent(
     id: 'x_scam_call',
+    topic: 'bank_scam',
     prompt:
         'Someone calls claiming to be your bank. They need your details to '
         '"secure your account", urgently.',
@@ -3158,6 +3259,7 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
   ),
   LifeEvent(
     id: 'x_market_drop',
+    topic: 'market_drop',
     prompt:
         'The market drops hard. Your investments are down 25% on paper and '
         'the news is loud about it.',
@@ -3520,6 +3622,7 @@ const List<LifeEvent> kLifeEventsMoney = <LifeEvent>[
   ),
   LifeEvent(
     id: 'm_card_offer',
+    topic: 'card_offer',
     prompt:
         'A credit card arrives pre-approved. The limit is more than you '
         'earn in two months.',

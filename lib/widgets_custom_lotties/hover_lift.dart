@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../themes_colors/app_theme.dart';
 
-/// Glows its child with a soft, color-tinted "puffy" shadow at rest, and
-/// lifts + intensifies that glow on pointer hover (desktop/web only — touch
-/// never fires hover events, so the resting glow is what makes cards read
-/// as raised rather than flat on mobile). Deliberately reacts only to an
+/// Sits its child on a hard ledge ([AppTheme.ledgeShadow]) at rest, and lifts
+/// it off that ledge on pointer hover (desktop/web only — touch never fires
+/// hover events, so the resting ledge is what makes cards read as raised
+/// rather than flat on mobile). Deliberately reacts only to an
 /// actual pointer rather than a continuous idle bob — a whole grid of
 /// things bobbing at once (see [IdleHoverIcon]) reads as noisy.
 class HoverLift extends StatefulWidget {
@@ -45,14 +45,14 @@ class _HoverLiftState extends State<HoverLift> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(widget.borderRadius),
           boxShadow: _hovering
-              ? AppTheme.puffyShadow(
+              // The card rises by `lift`, so the ledge grows by the same
+              // amount and the card still looks like it sits on it.
+              ? AppTheme.ledgeShadow(
                   widget.accent,
                   restAlpha: 0.34,
-                  blurRadius: 30,
-                  spreadRadius: -3,
-                  offset: const Offset(0, 14),
+                  depth: 4 + widget.lift,
                 )
-              : AppTheme.puffyShadow(widget.accent),
+              : AppTheme.ledgeShadow(widget.accent),
         ),
         child: widget.child,
       ),

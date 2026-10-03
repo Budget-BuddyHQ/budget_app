@@ -250,9 +250,8 @@ class _LessonScreenState extends State<LessonScreen> {
               const SizedBox(height: 8),
               CheckboxListTile(
                 value: dontShowAgain,
-                onChanged: (value) => setDialogState(
-                  () => dontShowAgain = value ?? false,
-                ),
+                onChanged: (value) =>
+                    setDialogState(() => dontShowAgain = value ?? false),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
                 controlAffinity: ListTileControlAffinity.leading,
@@ -361,9 +360,8 @@ class _LessonScreenState extends State<LessonScreen> {
               const SizedBox(height: 8),
               CheckboxListTile(
                 value: dontShowAgain,
-                onChanged: (value) => setDialogState(
-                  () => dontShowAgain = value ?? false,
-                ),
+                onChanged: (value) =>
+                    setDialogState(() => dontShowAgain = value ?? false),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
                 controlAffinity: ListTileControlAffinity.leading,
@@ -1128,20 +1126,10 @@ class _HubHeader extends StatelessWidget {
       ),
       padding: EdgeInsets.all(compact ? 18 : 24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[Color(0xFF10382D), Color(0xFF1C5C48)],
-        ),
+        color: const Color(0xFF164A3B),
         borderRadius: BorderRadius.circular(compact ? 26 : 30),
-        border: Border.all(color: Colors.white12),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x22000000),
-            blurRadius: 24,
-            offset: Offset(0, 14),
-          ),
-        ],
+        border: Border.all(color: Colors.white12, width: 1.5),
+        boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -1340,20 +1328,10 @@ class _NextLessonFocusCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF173B2F), Color(0xFF0F2B22)],
-        ),
+        color: const Color(0xFF173B2F),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0x444BD2A3)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x33000000),
-            blurRadius: 20,
-            offset: Offset(0, 10),
-          ),
-        ],
+        border: Border.all(color: const Color(0x444BD2A3), width: 1.5),
+        boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -1644,31 +1622,14 @@ class _UnitCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(compact ? 18 : 24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            // Lifted off the near-black end of the palette so the card sits
-            // *above* the backdrop tonally instead of merging into it — the
-            // main reason the tab read as one dense block of green.
-            Color.lerp(const Color(0xFF1B4536), accent, 0.16)!,
-            const Color(0xFF122F26),
-          ],
-        ),
+        // Lifted off the near-black end of the palette so the card sits
+        // *above* the backdrop tonally instead of merging into it — the main
+        // reason the tab read as one dense block of green. One flat color on
+        // a ledge, not a fade with a glow round it.
+        color: Color.lerp(const Color(0xFF1B4536), accent, 0.16),
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: accent.withValues(alpha: 0.42), width: 1.4),
-        boxShadow: [
-          const BoxShadow(
-            color: Color(0x44000000),
-            blurRadius: 28,
-            offset: Offset(0, 16),
-          ),
-          BoxShadow(
-            color: accent.withValues(alpha: 0.13),
-            blurRadius: 26,
-            spreadRadius: -6,
-          ),
-        ],
+        border: Border.all(color: accent.withValues(alpha: 0.42), width: 1.5),
+        boxShadow: AppTheme.ledgeShadow(accent),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -167,13 +167,7 @@ class PopNavBar extends StatelessWidget {
             color: _deepCharcoalStrong,
             borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
             border: Border.all(color: _deepCharcoal, width: borderWidth),
-            boxShadow: AppTheme.puffyShadow(
-              _activeAccent,
-              restAlpha: 0.18,
-              blurRadius: 22,
-              spreadRadius: -8,
-              offset: const Offset(0, 8),
-            ),
+            boxShadow: AppTheme.ledgeShadow(_activeAccent, restAlpha: 0.18),
           ),
           padding: const EdgeInsets.symmetric(horizontal: innerPadding),
           child: Row(

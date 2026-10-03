@@ -426,6 +426,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
   // --- Being on the other end of it ------------------------------------
   LifeEvent(
     id: 't_lent_to_friend',
+    topic: 'friend_loan',
     prompt:
         'A friend needs \$70 until the end of the month. They have asked '
         'before and it took a while.',

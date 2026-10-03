@@ -532,7 +532,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _LogoutButton(
                         label: 'Create an Account',
                         icon: Icons.person_add_alt_1_rounded,
-                        colors: const [Color(0xFF4FDB8F), Color(0xFF2FAE6C)],
+                        color: const Color(0xFF24865A),
                         onTap: () {
                           HapticFeedback.lightImpact();
                           Navigator.of(context).push(
@@ -611,13 +611,13 @@ class _LogoutButton extends StatelessWidget {
     required this.onTap,
     this.label = 'Log Out',
     this.icon = Icons.logout_rounded,
-    this.colors = const [Color(0xFFE86A55), Color(0xFFC94545)],
+    this.color = const Color(0xFFC94545),
   });
 
   final VoidCallback onTap;
   final String label;
   final IconData icon;
-  final List<Color> colors;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -627,7 +627,8 @@ class _LogoutButton extends StatelessWidget {
         height: 58,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(colors: colors),
+          color: color,
+          boxShadow: AppTheme.ledgeShadow(color, restAlpha: 0.3),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
@@ -674,20 +675,13 @@ class _ProfileHero extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF122D24), Color(0xFF1A4133)],
-        ),
+        color: const Color(0xFF163729),
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x22000000),
-            blurRadius: 24,
-            offset: Offset(0, 14),
-          ),
-        ],
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.12),
+          width: 1.5,
+        ),
+        boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -699,16 +693,8 @@ class _ProfileHero extends StatelessWidget {
                 height: 92,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF4BD2A3), Color(0xFF9EF0D0)],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF4BD2A3).withValues(alpha: 0.25),
-                      blurRadius: 24,
-                      spreadRadius: 2,
-                    ),
-                  ],
+                  color: AppTheme.greenPrimary,
+                  boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(4),
@@ -979,7 +965,7 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
         color: AppTheme.panelStrong,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-        boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
+        boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary, restAlpha: 0.1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1183,7 +1169,7 @@ class _ProfileInsightCard extends StatelessWidget {
         color: AppTheme.panelStrong,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-        boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
+        boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary, restAlpha: 0.1),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -1345,7 +1331,7 @@ class _SettingsCard extends StatelessWidget {
         color: AppTheme.panelStrong,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-        boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
+        boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary, restAlpha: 0.1),
       ),
       child: ListTile(
         onTap: onTap,
@@ -1472,7 +1458,7 @@ class _MoneyHabitsProfileCard extends StatelessWidget {
         color: AppTheme.panelStrong,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-        boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
+        boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary, restAlpha: 0.1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1743,7 +1729,7 @@ class _FriendsCardState extends State<_FriendsCard> {
         color: AppTheme.panelStrong,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-        boxShadow: AppTheme.puffyShadow(AppTheme.greenPrimary, restAlpha: 0.1),
+        boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary, restAlpha: 0.1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

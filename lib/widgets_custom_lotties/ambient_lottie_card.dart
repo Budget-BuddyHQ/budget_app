@@ -91,7 +91,7 @@ class _AmbientLottieCardState extends State<AmbientLottieCard>
           color: widget.backgroundColor,
           borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
           border: Border.all(color: widget.borderColor),
-          boxShadow: AppTheme.puffyShadow(accent, restAlpha: 0.14),
+          boxShadow: AppTheme.ledgeShadow(accent, restAlpha: 0.14),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
@@ -102,18 +102,6 @@ class _AmbientLottieCardState extends State<AmbientLottieCard>
               return Stack(
                 fit: StackFit.expand,
                 children: [
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: RadialGradient(
-                        center: const Alignment(0, -0.15),
-                        radius: 0.95,
-                        colors: [
-                          accent.withValues(alpha: 0.20),
-                          accent.withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
-                  ),
                   CustomPaint(
                     painter: _MotePainter(progress: t, accent: accent),
                   ),

@@ -237,6 +237,7 @@ const List<LifeEvent> kLifeEventsHomeMoney = <LifeEvent>[
   ),
   LifeEvent(
     id: 'h_rent_rise',
+    topic: 'rent_rise',
     prompt: 'Your landlord says the rent is going up next year.',
     icon: Icons.apartment_rounded,
     minAge: 18,
@@ -303,6 +304,7 @@ const List<LifeEvent> kLifeEventsHomeMoney = <LifeEvent>[
   // ==== Money, day to day =========================================================
   LifeEvent(
     id: 'm_found_wallet',
+    topic: 'found_wallet',
     prompt:
         'You find a wallet on the pavement with 60 coins and an ID card in '
         'it.',

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../controllers_that_updates_stats/user_stats_controller.dart';
 import '../screens_minigames_admin_etc/auth/auth_screen.dart';
 import '../navigation_tools_and_animation/fade_page_route.dart';
+import '../themes_colors/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Warns when progress is saving to the device but not reaching Supabase.
@@ -94,10 +95,16 @@ class _Banner extends StatelessWidget {
     return Container(
       margin: EdgeInsets.only(bottom: compact ? 10 : 14),
       padding: EdgeInsets.all(compact ? 12 : 14),
+      // Opaque: the same tint as before, mixed into a card color so the
+      // water does not show through it like frosted glass.
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.12),
+        color: Color.alphaBlend(
+          accent.withValues(alpha: 0.12),
+          const Color(0xFF12352C),
+        ),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: accent.withValues(alpha: 0.45)),
+        border: Border.all(color: accent.withValues(alpha: 0.45), width: 1.5),
+        boxShadow: AppTheme.ledgeShadow(accent),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

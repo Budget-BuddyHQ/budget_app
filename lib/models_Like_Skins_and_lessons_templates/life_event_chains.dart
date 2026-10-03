@@ -250,6 +250,41 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
       ),
     ],
   ),
+  // The payoff. Clearing the card used to set a flag nothing ever read, so
+  // the hardest choice in the chain led nowhere. This is where it lands: the
+  // payment you no longer owe is money, and what happens to it is a choice.
+  LifeEvent(
+    id: 'chain_card_clear',
+    prompt:
+        'The card is gone. The 120 coins a month that used to go to it are '
+        'yours again.',
+    icon: Icons.celebration_rounded,
+    minAge: 18,
+    weight: 2.5,
+    requiresFlag: LifeFlag.cardPaidOff,
+    choices: [
+      LifeChoice(
+        label: 'Keep paying it, into savings',
+        outcome:
+            'You were already living without that money, so you never missed '
+            'it. A year later the savings are 1,440 coins bigger.',
+        money: 1440,
+        smarts: 5,
+        clearsFlag: LifeFlag.cardPaidOff,
+        teaches: FinanceConcept.payYourselfFirst,
+      ),
+      LifeChoice(
+        label: 'Enjoy the breathing room',
+        outcome:
+            'Takeaways, a weekend away, nicer shoes. Every coin of it was '
+            'earned, and a year later none of it is left.',
+        money: 200,
+        happiness: 9,
+        clearsFlag: LifeFlag.cardPaidOff,
+        teaches: FinanceConcept.lifestyleCreep,
+      ),
+    ],
+  ),
 
   // =====================================================================
   // Index investing, and the crash that tests it. The whole point of the
@@ -732,15 +767,19 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         followUp: LifeFollowUp.openCollege,
         teaches: FinanceConcept.incomeVsWealth,
       ),
+      // This used to hand out the Degree chip on the spot, while the job
+      // board still said a degree was needed. The chip now comes from
+      // finishing a real course (see `LifeSimController._effectiveFlags`), so
+      // this branch says what it actually is: work now, school stays open.
       LifeChoice(
-        label: 'Work first, study part time',
+        label: 'Work first, study later',
         outcome:
-            'Slower, no debt, and you arrived with experience. There is more '
-            'than one route and the expensive one is not automatically the '
-            'best one.',
+            'No debt, a year of pay, and experience that counts for something. '
+            'The course has not gone anywhere; you can apply once you have '
+            'saved toward it. There is more than one route, and the expensive '
+            'one is not automatically the best one.',
         money: 900,
-        smarts: 7,
-        setsFlag: LifeFlag.gotDegree,
+        smarts: 5,
         teaches: FinanceConcept.opportunityCost,
       ),
       LifeChoice(
@@ -781,6 +820,41 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
             'actually invest it. Most people who say this spend it instead.',
         smarts: 7,
         teaches: FinanceConcept.compoundGrowth,
+      ),
+    ],
+  ),
+  // What overpaying the loan leads to. The lesson is that it suited *you*:
+  // the same move is wrong for somebody with no savings and a cheap loan.
+  LifeEvent(
+    id: 'chain_study_advice',
+    prompt:
+        'A friend still paying off school asks how you cleared yours. Their '
+        'loan is at 3%, and they have nothing saved.',
+    icon: Icons.forum_rounded,
+    minAge: 23,
+    weight: 2.5,
+    requiresFlag: LifeFlag.loanRepaid,
+    choices: [
+      LifeChoice(
+        label: 'Tell them to build savings first',
+        outcome:
+            'At 3%, the loan is cheap. With no cushion, the first surprise '
+            'bill goes on a card at 22%. They saved a month of costs first, '
+            'and thanked you when the car broke down.',
+        happiness: 4,
+        smarts: 6,
+        clearsFlag: LifeFlag.loanRepaid,
+        teaches: FinanceConcept.emergencyFund,
+      ),
+      LifeChoice(
+        label: 'Tell them to overpay, like you did',
+        outcome:
+            'They threw every spare coin at it. Then the boiler went, and it '
+            'went on a card. What worked for you was not a rule.',
+        happiness: -2,
+        smarts: 3,
+        clearsFlag: LifeFlag.loanRepaid,
+        teaches: FinanceConcept.interestCost,
       ),
     ],
   ),

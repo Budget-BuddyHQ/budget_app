@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -462,9 +461,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     HapticFeedback.lightImpact();
     setState(() => _resendingConfirmation = true);
 
-    final error = await SupabaseService.instance.resendConfirmationEmail(
-      email,
-    );
+    final error = await SupabaseService.instance.resendConfirmationEmail(email);
 
     if (!mounted) {
       return;
@@ -487,9 +484,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       icon: error == null
           ? Icons.mark_email_read_rounded
           : Icons.warning_amber_rounded,
-      accent: error == null
-          ? const Color(0xFF85EFAC)
-          : const Color(0xFFFF8A80),
+      accent: error == null ? const Color(0xFF85EFAC) : const Color(0xFFFF8A80),
     );
   }
 
@@ -742,25 +737,11 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           ),
           // Matches the welcome screen's treatment rather than the old
           // 0.86/0.90 wash: a light flat dim so the village art still reads,
-          // plus a soft green glow so it feels lit instead of murky.
+          // and nothing else on top of it.
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: const Color(0xFF0C2418).withValues(alpha: 0.55),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0.3, -0.4),
-                  radius: 0.95,
-                  colors: [
-                    const Color(0xFF78E08F).withValues(alpha: 0.25),
-                    Colors.transparent,
-                  ],
-                ),
               ),
             ),
           ),
@@ -1116,92 +1097,71 @@ class _AuthHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(32),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          padding: EdgeInsets.fromLTRB(18, isCompact ? 18 : 24, 18, 18),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: 0.14),
-                Colors.white.withValues(alpha: 0.06),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x33000000),
-                blurRadius: 22,
-                offset: Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Hero(
-                tag: 'budget-buddy-logo',
-                child: Container(
-                  width: isCompact ? 96 : 112,
-                  height: isCompact ? 96 : 112,
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFF85EFAC).withValues(alpha: 0.96),
-                        const Color(0xFF45D388).withValues(alpha: 0.92),
-                      ],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF85EFAC).withValues(alpha: 0.26),
-                        blurRadius: 22,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  // The 3D turtle, matching the welcome screen — the pixel
-                  // logo read as a different brand between the two screens.
-                  child: Image.asset(
-                    AppAssets.coolTurtle,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const Icon(
-                      Icons.account_balance_wallet_rounded,
-                      size: 42,
-                      color: Color(0xFF103225),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                'BUDGET BUDDY',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.pixelifySans(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'A polished, game-first finance coach that feels great on mobile.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.quicksand(
-                  color: Colors.white.withValues(alpha: 0.74),
-                  fontSize: 13,
-                  height: 1.4,
-                ),
-              ),
-            ],
-          ),
+    // A solid panel. This was frosted glass: a blur of the map behind a
+    // white wash with a diagonal fade, the look a tester called "too AI".
+    return Container(
+      padding: EdgeInsets.fromLTRB(18, isCompact ? 18 : 24, 18, 18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF173B2E),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.16),
+          width: 1.5,
         ),
+        boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary),
+      ),
+      child: Column(
+        children: [
+          Hero(
+            tag: 'budget-buddy-logo',
+            child: Container(
+              width: isCompact ? 96 : 112,
+              height: isCompact ? 96 : 112,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF6FE6A0),
+                boxShadow: AppTheme.ledgeShadow(const Color(0xFF6FE6A0)),
+              ),
+              // The 3D turtle, matching the welcome screen — the pixel
+              // logo read as a different brand between the two screens.
+              child: Image.asset(
+                AppAssets.coolTurtle,
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.account_balance_wallet_rounded,
+                  size: 42,
+                  color: Color(0xFF103225),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'BUDGET BUDDY',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.pixelifySans(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Was "A polished, game-first finance coach that feels great
+          // on mobile." — a line that describes the app to an investor,
+          // in the voice testers recognise as generated. This says what
+          // a player does here.
+          Text(
+            'Learn money by playing with it.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.78),
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1352,11 +1312,7 @@ class _ModeSwitchChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
-            gradient: active
-                ? const LinearGradient(
-                    colors: [Color(0xFF85EFAC), Color(0xFF64DDA1)],
-                  )
-                : null,
+            color: active ? const Color(0xFF7BE8A8) : null,
           ),
           child: Text(
             label,
@@ -1599,7 +1555,6 @@ class _HiddenTurnstileView extends StatelessWidget {
     );
   }
 }
-
 
 // age question, asked once at signup. chips instead of a dob picker,
 // we only need the band not an exact birthday, and chips are easier

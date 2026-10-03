@@ -187,28 +187,22 @@ class CustomButtonStyle {
   final List<BoxShadow>? boxShadow;
   final Color splashColor;
 
-  // Shadow shapes below are written out by hand (blurRadius 28-30,
-  // spreadRadius -6, offset (0,12)) to match AppTheme.puffyShadow()'s look
-  // while staying `const` — these styles are used as `const` default
-  // parameter values elsewhere, which AppTheme's static method call can't be.
+  // Solid fills on a hard ledge, the same shape as AppTheme.ledgeShadow(),
+  // written out by hand because these styles are used as `const` default
+  // parameter values and a static method call can't be. The ledge colors
+  // are AppTheme.ledgeColor() of each fill. The gradients and soft glows
+  // these replaced were what a tester called "too AI".
 
   const CustomButtonStyle.primary({
-    this.gradient = const LinearGradient(
-      colors: [Color(0xFF4BD2A3), Color(0xFF9EF0D0)],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    ),
-    this.backgroundColor = Colors.transparent,
+    this.gradient,
+    this.backgroundColor = const Color(0xFF4BD2A3),
     this.textColor = const Color(0xFF062017),
     this.borderRadius = AppTheme.radiusLarge,
-    this.border,
+    this.border = const Border.fromBorderSide(
+      BorderSide(color: Color(0xFF9EF0D0), width: 1.5),
+    ),
     this.boxShadow = const [
-      BoxShadow(
-        color: Color.fromRGBO(75, 210, 163, 0.30),
-        blurRadius: 28,
-        spreadRadius: -6,
-        offset: Offset(0, 12),
-      ),
+      BoxShadow(color: Color(0xFF18493A), offset: Offset(0, 4)),
     ],
     this.splashColor = const Color.fromRGBO(255, 255, 255, 0.18),
   });
@@ -222,12 +216,7 @@ class CustomButtonStyle {
       BorderSide(color: Color(0xFF4BD2A3), width: 1.5),
     ),
     this.boxShadow = const [
-      BoxShadow(
-        color: Color.fromRGBO(75, 210, 163, 0.14),
-        blurRadius: 24,
-        spreadRadius: -6,
-        offset: Offset(0, 10),
-      ),
+      BoxShadow(color: Color(0xFF071A12), offset: Offset(0, 4)),
     ],
     this.splashColor = const Color.fromRGBO(118, 255, 3, 0.12),
   });
@@ -238,36 +227,24 @@ class CustomButtonStyle {
     this.textColor = Colors.white,
     this.borderRadius = AppTheme.radiusLarge,
     this.border = const Border.fromBorderSide(
-      BorderSide(color: Color.fromRGBO(255, 255, 255, 0.10), width: 1),
+      BorderSide(color: Color.fromRGBO(255, 255, 255, 0.14), width: 1),
     ),
     this.boxShadow = const [
-      BoxShadow(
-        color: Color.fromRGBO(255, 255, 255, 0.08),
-        blurRadius: 20,
-        spreadRadius: -6,
-        offset: Offset(0, 10),
-      ),
+      BoxShadow(color: Color(0xFF071A12), offset: Offset(0, 4)),
     ],
     this.splashColor = const Color.fromRGBO(255, 255, 255, 0.1),
   });
 
   const CustomButtonStyle.danger({
-    this.gradient = const LinearGradient(
-      colors: [Color(0xFFFF8474), Color(0xFFFFA07F)],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    ),
-    this.backgroundColor = Colors.transparent,
-    this.textColor = Colors.white,
+    this.gradient,
+    this.backgroundColor = const Color(0xFFFF8474),
+    this.textColor = const Color(0xFF2A0B06),
     this.borderRadius = AppTheme.radiusLarge,
-    this.border,
+    this.border = const Border.fromBorderSide(
+      BorderSide(color: Color(0xFFFFB3A6), width: 1.5),
+    ),
     this.boxShadow = const [
-      BoxShadow(
-        color: Color.fromRGBO(255, 132, 116, 0.26),
-        blurRadius: 24,
-        spreadRadius: -6,
-        offset: Offset(0, 10),
-      ),
+      BoxShadow(color: Color(0xFF5A2A22), offset: Offset(0, 4)),
     ],
     this.splashColor = const Color.fromRGBO(255, 255, 255, 0.16),
   });

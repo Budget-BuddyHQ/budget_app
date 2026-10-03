@@ -1452,16 +1452,18 @@ class _JarTab extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color.lerp(AppTheme.panelStrong, mood.color, 0.10)!,
-                AppTheme.panel,
-              ],
+            // Flat, at the middle of the fade it replaced: the shade the
+            // contrast audit already measures the mood chips against.
+            color: Color.lerp(
+              Color.lerp(AppTheme.panelStrong, mood.color, 0.10),
+              AppTheme.panel,
+              0.5,
             ),
-            border: Border.all(color: mood.color.withValues(alpha: 0.26)),
-            boxShadow: AppTheme.puffyShadow(mood.color, restAlpha: 0.18),
+            border: Border.all(
+              color: mood.color.withValues(alpha: 0.26),
+              width: 1.5,
+            ),
+            boxShadow: AppTheme.ledgeShadow(mood.color, restAlpha: 0.18),
           ),
           child: Column(
             children: [

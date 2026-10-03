@@ -499,7 +499,7 @@ class _LifeHeroCard extends StatelessWidget {
           border: Border.all(
             color: const Color(0xFF85EFAC).withValues(alpha: 0.32),
           ),
-          boxShadow: AppTheme.puffyShadow(
+          boxShadow: AppTheme.ledgeShadow(
             const Color(0xFF85EFAC),
             restAlpha: 0.2,
           ),

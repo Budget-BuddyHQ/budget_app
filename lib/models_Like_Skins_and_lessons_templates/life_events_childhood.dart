@@ -49,6 +49,8 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
             'Twelve weeks later you have \$12 and you did not miss the dollar. '
             'That is the whole trick — a small amount taken off the top before '
             'you start spending is the one nobody notices.',
+        // The $12 it says you have. It used to say so and add nothing.
+        money: 12,
         happiness: 2,
         smarts: 6,
         teaches: FinanceConcept.payYourselfFirst,
@@ -59,6 +61,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
             'Two dollars for this week, one for later. A plan that leaves room '
             'for the thing you actually wanted is the kind you are still using '
             'at forty.',
+        money: 12,
         happiness: 4,
         smarts: 5,
         teaches: FinanceConcept.budgetRule,
@@ -238,6 +241,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
   ),
   LifeEvent(
     id: 'c_lemonade_stand',
+    topic: 'lemonade_stand',
     prompt:
         'You and a friend want to run a stall. Cups, lemons and sugar come to '
         '\$9.',
@@ -339,6 +343,9 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
             'It comes out anyway, and the window still costs \$60. The bill '
             'did not get smaller while you were hoping — that is the part '
             'worth remembering.',
+        // Same $14 as owning up. It used to cost nothing, which made hiding
+        // the cheapest option on a card about the bill not going away.
+        money: -14,
         happiness: -6,
         smarts: 4,
       ),
@@ -570,7 +577,10 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
             'A very good weekend. By Wednesday it is gone and you can name two '
             'of the things — which is worth knowing about yourself rather than '
             'feeling bad about.',
-        money: -50,
+        // The $50 arrives and leaves: net nothing. It was -50, so the gift
+        // never arrived and spending it took fifty out of the player's own
+        // pocket — and "save it all" banked nothing at all.
+        money: 0,
         happiness: 8,
         smarts: 3,
         teaches: FinanceConcept.impulseSpending,
@@ -581,7 +591,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
             'Twenty-five for now, twenty-five in the jar. Nobody has ever '
             'regretted this split, which is roughly why it is the one grown '
             'people are still using.',
-        money: -25,
+        money: 25,
         happiness: 6,
         smarts: 8,
         teaches: FinanceConcept.budgetRule,
@@ -592,6 +602,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
             'Hard at eleven, and the \$50 becomes the start of something worth '
             'far more than \$50 of sweets. Just make sure the bigger thing is '
             'real, or the money sits there being nothing.',
+        money: 50,
         happiness: 2,
         smarts: 9,
         teaches: FinanceConcept.payYourselfFirst,

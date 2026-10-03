@@ -156,45 +156,77 @@ class AppTheme {
     ),
   ];
 
-  /// A soft, color-tinted "puffy" glow — used instead of flat black shadows
-  /// to make cards/buttons read as raised and bubbled-up rather than flat.
-  /// Always visible at [restAlpha] (so touch devices, which never hover,
-  /// still see it) and can be intensified for a hover/press state.
-  static List<BoxShadow> puffyShadow(
+  /// The color a ledge is cut from: [accent] pushed most of the way to the
+  /// page's darkest green, so a mint card sits on a dark mint ledge rather
+  /// than on grey.
+  static Color ledgeColor(Color accent) =>
+      Color.lerp(accent, const Color(0xFF04140D), 0.72)!;
+
+  /// A hard ledge under a card or button: no blur, straight down.
+  ///
+  /// **Reported as** *"it looks too AI."* This used to be a soft glow in the
+  /// card's own color, 28px of blur pulled in under the edges, on almost
+  /// every card in the app. A colored halo around every rounded rectangle is
+  /// the house style of generated UI, and next to pixel art it reads as two
+  /// different apps. A ledge is how the art itself draws depth — the same
+  /// dark step under a sign or a crate in the town — so the panels now look
+  /// like they belong to the game.
+  ///
+  /// [restAlpha] still means "how much is this raised", so a hover or a
+  /// selected state can ask for more and get a darker ledge. [depth] is in
+  /// logical pixels.
+  static List<BoxShadow> ledgeShadow(
     Color accent, {
     double restAlpha = 0.22,
-    double blurRadius = 28,
-    double spreadRadius = -6,
-    Offset offset = const Offset(0, 12),
+    double depth = 4,
   }) {
     return [
       BoxShadow(
-        color: accent.withValues(alpha: restAlpha),
-        blurRadius: blurRadius,
-        spreadRadius: spreadRadius,
-        offset: offset,
+        color: ledgeColor(
+          accent,
+        ).withValues(alpha: (0.6 + restAlpha).clamp(0.0, 1.0)),
+        offset: Offset(0, depth),
       ),
     ];
   }
 
-  // Gradients
-  static const LinearGradient gradientForest = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [deepForest, Color(0xFF0C211A), Color(0xFF16392D)],
-  );
+  /// A gradient that steps instead of fading: [colors] are flat bands, and
+  /// [edges] (one fewer than [colors], ascending, 0..1) are where one band
+  /// stops and the next starts, with nothing blended in between.
+  ///
+  /// For the places that genuinely need a shade to change across a
+  /// surface (water getting deeper, a scrim behind text) without the smooth
+  /// fade that a tester called "too AI". Pixel art shades in bands, so this
+  /// sits next to it rather than on top of it.
+  static LinearGradient steppedGradient({
+    required List<Color> colors,
+    required List<double> edges,
+    AlignmentGeometry begin = Alignment.topCenter,
+    AlignmentGeometry end = Alignment.bottomCenter,
+  }) {
+    assert(edges.length == colors.length - 1);
+    final out = <Color>[];
+    final stops = <double>[];
+    for (var i = 0; i < colors.length; i++) {
+      // Each band is the same color at both of its ends, so the shader has
+      // nothing to interpolate inside it, and the edge between two bands is
+      // two stops at the same position.
+      out
+        ..add(colors[i])
+        ..add(colors[i]);
+      stops
+        ..add(i == 0 ? 0 : edges[i - 1])
+        ..add(i == colors.length - 1 ? 1 : edges[i]);
+    }
+    return LinearGradient(begin: begin, end: end, colors: out, stops: stops);
+  }
 
-  static const LinearGradient gradientGreen = LinearGradient(
-    colors: [Color(0xFF7BE1BB), greenPrimary],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  static const LinearGradient gradientTeal = LinearGradient(
-    colors: [teal, Color(0xFF7BE1BB)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
+  /// [count] flat bands evenly spaced between [from] and [to], for
+  /// [steppedGradient].
+  static List<Color> bands(Color from, Color to, int count) => [
+    for (var i = 0; i < count; i++)
+      Color.lerp(from, to, count == 1 ? 0 : i / (count - 1))!,
+  ];
 
   // Material Theme
   static ThemeData getLightTheme() {
@@ -385,9 +417,8 @@ class AppTheme {
     );
   }
 
-  /// The app's shared "puffy" card look: a rounded fill with a soft
-  /// color-tinted glow and a faint highlight border, instead of a flat
-  /// panel with a hard black shadow.
+  /// The app's shared card look: a solid fill, a border in the card's accent
+  /// and a hard ledge under it (see [ledgeShadow]).
   static BoxDecoration getPuffyDecoration({
     required Color accent,
     Color? fillColor,
@@ -402,7 +433,7 @@ class AppTheme {
         color: accent.withValues(alpha: borderOpacity),
         width: 1.5,
       ),
-      boxShadow: puffyShadow(accent, restAlpha: restAlpha),
+      boxShadow: ledgeShadow(accent, restAlpha: restAlpha),
     );
   }
 

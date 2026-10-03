@@ -172,10 +172,7 @@ class MinigamesPage extends StatelessWidget {
           ? 'Goal reached'
           : 'Run finished',
       message: <String>[
-        if (result.isRush)
-          '${game.savings} saved'
-        else
-          '${game.score} points',
+        if (result.isRush) '${game.savings} saved' else '${game.score} points',
         if (result.goldEarned > 0) '+${result.goldEarned} gold',
         if (result.xpEarned > 0) '+${result.xpEarned} XP',
       ].join(' · '),
@@ -715,20 +712,12 @@ class _GameArt extends StatelessWidget {
       game.accent.withValues(alpha: 0.28),
       cardBase,
     );
-    final faint = AppTheme.flatten(
-      game.accent.withValues(alpha: 0.10),
-      cardBase,
-    );
 
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [bright, faint],
-        ),
+        color: bright,
         borderRadius: BorderRadius.circular(size * 0.26),
         border: Border.all(
           color: game.accent.withValues(alpha: 0.34),
@@ -799,15 +788,15 @@ class _MetaChip extends StatelessWidget {
 }
 
 BoxDecoration _cardDecoration(Color accent, {required double radius}) {
+  // One flat color: the tinted panel every chip and label on the card is
+  // already measured against (see [_MetaChip]), rather than a diagonal fade
+  // whose top-left corner was a different color from the one that was
+  // measured.
   return BoxDecoration(
-    gradient: LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [AppTheme.panelStrong, Color.lerp(AppTheme.panel, accent, 0.14)!],
-    ),
+    color: Color.lerp(AppTheme.panel, accent, 0.14),
     borderRadius: BorderRadius.circular(radius),
-    border: Border.all(color: accent.withValues(alpha: 0.30)),
-    boxShadow: AppTheme.puffyShadow(accent, restAlpha: 0.20),
+    border: Border.all(color: accent.withValues(alpha: 0.30), width: 1.5),
+    boxShadow: AppTheme.ledgeShadow(accent, restAlpha: 0.20),
   );
 }
 

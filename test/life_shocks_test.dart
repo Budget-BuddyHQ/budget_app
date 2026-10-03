@@ -127,11 +127,25 @@ void main() {
         expect(life.hasJob, isTrue);
         life.debugSetEvent(letGo);
         life.chooseOption(i);
-        expect(life.job, 'Unemployed', reason: letGo.choices[i].label);
-        expect(life.salary, 0);
-        expect(life.hasJob, isFalse);
-        expect(life.timesLaidOff, 1);
+        final label = letGo.choices[i].label;
+        expect(life.job, isNot('Barista'), reason: label);
+        expect(life.salary, lessThan(1000), reason: label);
+        expect(life.timesLaidOff, 1, reason: label);
       }
+    });
+
+    test('taking the first offer means working again, on less', () {
+      // It used to leave the player Unemployed at 0 under text that says
+      // "you are working again within weeks, and on less".
+      final i = letGo.choices.indexWhere(
+        (c) => c.label.startsWith('Take the first job'),
+      );
+      final life = worker();
+      life.debugSetEvent(letGo);
+      life.chooseOption(i);
+      expect(life.hasJob, isTrue);
+      expect(life.salary, greaterThan(0));
+      expect(life.salary, lessThan(1000));
     });
 
     test('and opens the job board, so there is somewhere to go next', () {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../services_backend_and_other_services/app_sound_service.dart';
+import '../themes_colors/app_theme.dart';
 
 class GameToast {
   GameToast._();
@@ -133,31 +134,13 @@ class _GameToastBannerState extends State<_GameToastBanner>
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          const Color(0xEE103225),
-                          const Color(0xDD173B2D),
-                        ],
-                      ),
+                      color: const Color(0xFF133628),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: widget.accent.withValues(alpha: 0.42),
-                        width: 1.2,
+                        color: widget.accent.withValues(alpha: 0.5),
+                        width: 1.5,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: widget.accent.withValues(alpha: 0.18),
-                          blurRadius: 22,
-                          offset: const Offset(0, 10),
-                        ),
-                        const BoxShadow(
-                          color: Color(0x44000000),
-                          blurRadius: 18,
-                          offset: Offset(0, 8),
-                        ),
-                      ],
+                      boxShadow: AppTheme.ledgeShadow(widget.accent),
                     ),
                     child: Row(
                       children: [

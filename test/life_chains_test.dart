@@ -310,6 +310,30 @@ void main() {
           seen.addAll(play(seed, steer: steer));
         }
       }
+      // Clearing a student loan needs a college place, a job and then the
+      // overpay choice, about one random life in four hundred, so the beat
+      // after it is walked from the repayment itself.
+      final repay = kLifeEventsChains.firstWhere(
+        (e) => e.id == 'chain_study_repay',
+      );
+      for (var seed = 0; seed < 40; seed++) {
+        final life = LifeSimController(
+          random: Random(seed),
+          initialAge: 28,
+          startMoney: 3000,
+          startJob: 'Baker',
+          startSalary: 900,
+        );
+        life.debugSetEvent(repay);
+        life.chooseOption(0);
+        for (var y = 0; y < 20 && !life.finished; y++) {
+          life.ageUp();
+          final event = life.currentEvent;
+          if (event == null) continue;
+          seen.add(event.id);
+          life.chooseOption(0);
+        }
+      }
       final unreachable = kLifeEventsChains
           .map((e) => e.id)
           .where((id) => !seen.contains(id))

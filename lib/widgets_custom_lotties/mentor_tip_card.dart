@@ -175,7 +175,7 @@ class _MentorTipSheet extends StatelessWidget {
           color: const Color(0xFF15302A),
           borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
           border: Border.all(color: concept.accent.withValues(alpha: 0.35)),
-          boxShadow: AppTheme.puffyShadow(concept.accent, restAlpha: 0.2),
+          boxShadow: AppTheme.ledgeShadow(concept.accent, restAlpha: 0.2),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

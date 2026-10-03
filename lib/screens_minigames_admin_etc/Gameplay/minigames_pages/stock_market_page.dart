@@ -482,12 +482,13 @@ class _StockMarketPageState extends State<StockMarketPage>
     ];
     final earliestTracking = trackedAt.isEmpty
         ? now.subtract(const Duration(days: 90))
-        : trackedAt.reduce((first, next) => first.isBefore(next) ? first : next);
+        : trackedAt.reduce(
+            (first, next) => first.isBefore(next) ? first : next,
+          );
     // Daily candles remain practical through six months. Beyond that Twelve
     // Data changes to weekly bars, which is too coarse for a portfolio P&L.
-    final historyStart = earliestTracking.isBefore(
-      now.subtract(const Duration(days: 180)),
-    )
+    final historyStart =
+        earliestTracking.isBefore(now.subtract(const Duration(days: 180)))
         ? now.subtract(const Duration(days: 180))
         : earliestTracking;
     final range = now.difference(historyStart).inDays > 90
@@ -528,7 +529,8 @@ class _StockMarketPageState extends State<StockMarketPage>
       var cash = stats.gold.toDouble();
       final lots = <String, double>{
         for (final entry in stats.holdings.entries)
-          if (entry.key.startsWith('stock_')) entry.key.substring(6): entry.value,
+          if (entry.key.startsWith('stock_'))
+            entry.key.substring(6): entry.value,
       };
       // Gold rewards, spending, and stock fills all travel through the same
       // ledger. Reversing every later transaction gives this day's cash,
@@ -740,20 +742,6 @@ class _StockMarketPageState extends State<StockMarketPage>
                   // 0.88 keeps the backdrop as texture (you can still tell it
                   // is the village) while stopping it reading as content.
                   color: const Color(0xFF0C2418).withValues(alpha: 0.88),
-                ),
-              ),
-            ),
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: const Alignment(0.3, -0.5),
-                    radius: 0.95,
-                    colors: [
-                      const Color(0xFF78E08F).withValues(alpha: 0.22),
-                      Colors.transparent,
-                    ],
-                  ),
                 ),
               ),
             ),
@@ -1134,16 +1122,12 @@ class _TrendingPromoCard extends StatelessWidget {
           width: 122,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF173B2E),
-                Color.lerp(const Color(0xFF10281F), quote.accent, 0.14)!,
-              ],
-            ),
+            color: Color.lerp(const Color(0xFF173B2E), quote.accent, 0.08),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: quote.accent.withValues(alpha: 0.30)),
+            border: Border.all(
+              color: quote.accent.withValues(alpha: 0.30),
+              width: 1.5,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -3487,7 +3471,8 @@ class _PnlTab extends StatelessWidget {
       children: [
         const _SectionTitle(
           title: 'P&L',
-          subtitle: 'Your real net worth, recorded after price updates and trades.',
+          subtitle:
+              'Your real net worth, recorded after price updates and trades.',
         ),
         const SizedBox(height: 14),
         Container(

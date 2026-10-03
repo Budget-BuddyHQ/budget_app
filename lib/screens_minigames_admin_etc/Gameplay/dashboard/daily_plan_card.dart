@@ -47,15 +47,15 @@ class DailyPlanCard extends StatelessWidget {
         return Container(
           padding: EdgeInsets.all(compact ? 16 : 20),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF15392D), Color(0xFF10281F)],
-            ),
+            // The middle of the fade this replaced, which is the shade the
+            // contrast audit measures the quest icons against.
+            color: const Color(0xFF133026),
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
               color: const Color(0xFF85EFAC).withValues(alpha: 0.22),
+              width: 1.5,
             ),
+            boxShadow: AppTheme.ledgeShadow(const Color(0xFF85EFAC)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

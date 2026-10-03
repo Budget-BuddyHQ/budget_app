@@ -209,6 +209,13 @@ void main() {
       // end runs. The first pass killed 86% of players before sixty and
       // dropped the average life to 35 — which is not a harder game, it is a
       // game that stops before it can teach anything.
+      //
+      // The player here sees a doctor when their health is low, and that is
+      // all. A bot that never did was measuring neglect, which is meant to
+      // be costly (see life_wellbeing.dart), and it only passed because
+      // layoff cards used to leave the job in place. Once a layoff really
+      // ended the job, the neglect bot went from 93 to 110 early deaths in
+      // 200; this one went from 86 to 89.
       var total = 0;
       var early = 0;
       const runs = 200;
@@ -216,6 +223,7 @@ void main() {
         final life = LifeSimController(random: Random(seed), initialAge: 0);
         while (!life.finished && life.age < 95) {
           if (life.currentEvent != null) life.chooseOption(0);
+          if (life.health < 50) life.visitDoctor();
           life.ageUp();
         }
         total += life.age;

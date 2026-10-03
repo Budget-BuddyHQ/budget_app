@@ -199,6 +199,7 @@ const List<LifeEvent> kLifeEventsStardom = <LifeEvent>[
         money: 60000,
         fame: 22,
         setSalary: 900,
+        replacesJob: true,
         setJob: 'Recording artist',
         setsFlag: LifeFlag.famousArtist,
         clearsFlag: LifeFlag.wentViral,
@@ -212,6 +213,7 @@ const List<LifeEvent> kLifeEventsStardom = <LifeEvent>[
         money: 14000,
         fame: 16,
         setSalary: 700,
+        replacesJob: true,
         setJob: 'Independent artist',
         setsFlag: LifeFlag.famousArtist,
         clearsFlag: LifeFlag.wentViral,
@@ -295,6 +297,8 @@ const List<LifeEvent> kLifeEventsStardom = <LifeEvent>[
     // lock out the unluckier half of an already rare path.
     minFame: 45,
     weight: 1.0,
+    // "Keep the catalogue" pays royalties of 2,600 a year for life.
+    maxSalary: 2600,
     choices: [
       LifeChoice(
         label: 'Sell, and put most of it to work',
@@ -401,6 +405,7 @@ const List<LifeEvent> kLifeEventsStardom = <LifeEvent>[
             'because of you. A career that ends is not a career that failed.',
         setJob: 'Music teacher',
         setSalary: 420,
+        replacesJob: true,
         happiness: 10,
         clearsFlag: LifeFlag.famousArtist,
         teaches: FinanceConcept.incomeVsWealth,
@@ -422,6 +427,7 @@ const List<LifeEvent> kLifeEventsStardom = <LifeEvent>[
             'at one thing transfers further than anybody tells you.',
         setJob: 'Studio owner',
         setSalary: 780,
+        replacesJob: true,
         happiness: 8,
         smarts: 8,
         setsFlag: LifeFlag.hasSideHustle,

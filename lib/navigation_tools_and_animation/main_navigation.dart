@@ -325,11 +325,7 @@ class _TopIconBar extends StatelessWidget {
         bottom: false,
         child: Container(
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [_barTop, _barBottom],
-            ),
+            color: _barTop,
             // A hairline under the bar separates it from whatever screen is
             // showing without needing a heavy shadow.
             border: Border(

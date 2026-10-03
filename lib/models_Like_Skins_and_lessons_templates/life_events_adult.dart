@@ -27,6 +27,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
   // --- Insurance: the thing nobody buys until they needed it ----------
   LifeEvent(
     id: 'a_renters_insurance',
+    topic: 'renters_insurance',
     prompt:
         'Your building has had two break-ins this year. Renters insurance is '
         '\$14 a month.',
@@ -188,6 +189,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
 
   LifeEvent(
     id: 'a_downsize',
+    topic: 'downsize',
     prompt:
         'The place is bigger than you need and the upkeep is eating the '
         'month. A smaller flat would free up real money.',
@@ -247,6 +249,11 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
             'is the entire point of the fund — not the money, the not having '
             'to take the first thing offered.',
         money: -900,
+        // Every branch of this card used to leave the job in place at full
+        // pay, under a prompt that says the role is going.
+        setJob: 'Unemployed',
+        setSalary: 0,
+        followUp: LifeFollowUp.openJobs,
         happiness: -6,
         smarts: 5,
         teaches: FinanceConcept.emergencyFund,
@@ -257,15 +264,20 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
             'Employed again quickly, at less than you were on. Urgency is '
             'expensive, and it is what having no cushion buys you.',
         setSalary: 220,
+        replacesJob: true,
+        laidOff: true,
         happiness: -3,
         smarts: 3,
       ),
       LifeChoice(
         label: 'Retrain into something adjacent',
         outcome:
-            'A hard six months and a better position at the end of it. A '
-            'downturn is the cheapest time to change direction, because the '
-            'thing you were doing has already stopped.',
+            'A hard six months, and a much stronger application at the end '
+            'of it. A downturn is the cheapest time to change direction, '
+            'because the thing you were doing has already stopped.',
+        setJob: 'Unemployed',
+        setSalary: 0,
+        followUp: LifeFollowUp.openJobs,
         money: -600,
         smarts: 8,
         skill: LifeSkill.business,
@@ -278,6 +290,9 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
     prompt:
         'You have been offered a role. The number is fair; the range for the '
         'job goes about 12% higher.',
+    // The role is the Analyst job these choices set. Above 320 it would be a
+    // pay cut called an offer.
+    maxSalary: 320,
     icon: Icons.handshake_rounded,
     minAge: 21,
     weight: 0.9,
@@ -287,6 +302,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
         outcome:
             'A fine salary, and every future raise is a percentage of this '
             'number. A starting figure compounds for as long as you stay.',
+        setJob: 'Analyst',
         setSalary: 320,
         happiness: 3,
       ),
@@ -295,6 +311,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
         outcome:
             'They meet you near the middle. Asking cost one uncomfortable '
             'sentence and moved every raise you will ever get from here.',
+        setJob: 'Analyst',
         setSalary: 360,
         smarts: 6,
         teaches: FinanceConcept.incomeVsWealth,
@@ -304,6 +321,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
         outcome:
             'They tell you. You ask for the upper half of it and get it — the '
             'person with the information usually does.',
+        setJob: 'Analyst',
         setSalary: 370,
         smarts: 8,
         teaches: FinanceConcept.incomeVsWealth,
@@ -314,6 +332,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
   // --- Family and other people -----------------------------------------
   LifeEvent(
     id: 'a_parent_needs_help',
+    topic: 'parent_money',
     prompt:
         'A parent is short on money and has not said so directly. You can '
         'tell.',
@@ -353,6 +372,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
   ),
   LifeEvent(
     id: 'a_friend_asks_for_loan',
+    topic: 'friend_loan',
     prompt: 'A friend asks to borrow \$500. They are good for it, probably.',
     icon: Icons.volunteer_activism_rounded,
     minAge: 20,
@@ -434,6 +454,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
   // --- The long game ----------------------------------------------------
   LifeEvent(
     id: 'a_pension_review',
+    topic: 'pension_review',
     prompt:
         'Your retirement statement arrives. You have not looked at what it is '
         'invested in since the day you joined.',

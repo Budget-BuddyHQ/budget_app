@@ -854,8 +854,10 @@ class TownNpc {
   final List<String> lines;
 }
 
-/// Every position here was checked against the collider data for a clear
-/// 3x3 around it, so an NPC never spawns wedged inside a wall.
+/// Every position here is checked, on both maps, against every tile the
+/// sprite covers along its whole patrol — see `test/town_layout_test.dart`.
+/// Patrols move in a straight line with no collision of their own, so that
+/// check is the only thing keeping an NPC out of a building.
 const List<TownNpc> kTownNpcs = <TownNpc>[
   TownNpc(
     id: 'npc_taxer',
@@ -864,8 +866,8 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
     look: TownNpcLook.taxer,
     tileX: 34,
     tileY: 16,
-    tileX2: 6,
-    tileY2: 12,
+    tileX2: 3,
+    tileY2: 11,
     lines: [
       'Your paycheck is smaller than your pay rate. The gap is taxes — '
           'and it comes out before you ever see the money.',
@@ -881,9 +883,9 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
     name: 'Shopper',
     look: TownNpcLook.customer,
     tileX: 14,
-    tileY: 16,
-    tileX2: 25,
-    tileY2: 12,
+    tileY: 14,
+    tileX2: 24,
+    tileY2: 9,
     lines: [
       'I nearly bought this twice. Waiting a day is the cheapest trick '
           'I know.',
@@ -900,7 +902,7 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
     look: TownNpcLook.fancy,
     tileX: 22,
     tileY: 24,
-    tileX2: 40,
+    tileX2: 36,
     tileY2: 12,
     lines: [
       'I pay myself first — a slice goes to savings the day money arrives, '
@@ -916,8 +918,8 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
     name: 'Shift Worker',
     look: TownNpcLook.worker,
     tileX: 33,
-    tileY: 27,
-    tileX2: 8,
+    tileY: 24,
+    tileX2: 6,
     tileY2: 37,
     lines: [
       'Every job is really trading hours for money. Worth asking what an '
@@ -932,13 +934,12 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
     patrolTiles: 4,
     name: 'Student',
     look: TownNpcLook.customer,
-    // Was (17, 17), which sat right against the west ledge with a solid
-    // tile two rows up — the NPC sprite is ~2 tiles tall and drawn upward
-    // from its feet, so its head visibly clipped into the scenery above.
-    // Every NPC tile is now checked for two clear rows overhead; see
-    // `test/town_map_test.dart`.
-    tileX: 13,
-    tileY: 27,
+    // The sprite is anchored at its tile's top-left and spills about one
+    // tile down and right, so what has to be clear is the 2x2 below and
+    // beside it, along the whole patrol. (13, 27) paced into the building
+    // at (18, 27); see `test/town_layout_test.dart`.
+    tileX: 12,
+    tileY: 26,
     tileX2: 25,
     tileY2: 37,
     lines: [
@@ -952,7 +953,7 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
     name: 'Neighbor',
     look: TownNpcLook.fancy,
     tileX: 28,
-    tileY: 27,
+    tileY: 25,
     tileX2: 41,
     tileY2: 37,
     lines: [

@@ -92,18 +92,13 @@ class _TutorialScreenState extends State<TutorialScreen> {
         children: [
           // The accent wash re-tints as you move between steps, so each
           // feature owns the whole screen rather than just its icon chip.
+          // A flat tint now, not a spotlight glow from the top.
           AnimatedContainer(
             duration: const Duration(milliseconds: 420),
             curve: Curves.easeOut,
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: const Alignment(0, -0.65),
-                radius: 1.1,
-                colors: [
-                  step.accent.withValues(alpha: 0.20),
-                  AppTheme.deepForest,
-                ],
-              ),
+            color: Color.alphaBlend(
+              step.accent.withValues(alpha: 0.08),
+              AppTheme.deepForest,
             ),
           ),
           Positioned.fill(
@@ -591,13 +586,7 @@ class _PrimaryButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: accent,
             borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-            boxShadow: AppTheme.puffyShadow(
-              accent,
-              restAlpha: 0.34,
-              blurRadius: 18,
-              spreadRadius: -3,
-              offset: const Offset(0, 7),
-            ),
+            boxShadow: AppTheme.ledgeShadow(accent, restAlpha: 0.34),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,

@@ -1569,13 +1569,12 @@ class _EventCard extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  accent.withValues(alpha: 0.30),
-                  accent.withValues(alpha: 0.06),
-                ],
+              color: accent.withValues(alpha: 0.18),
+              border: Border(
+                bottom: BorderSide(
+                  color: accent.withValues(alpha: 0.4),
+                  width: 2,
+                ),
               ),
             ),
             child: Row(

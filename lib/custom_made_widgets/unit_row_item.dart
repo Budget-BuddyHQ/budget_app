@@ -185,23 +185,17 @@ class _UnitLessonBlock extends StatelessWidget {
             vertical: compact ? 12 : 14,
           ),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                // Carries the parent unit's accent so a whole unit reads as
-                // one color family instead of every row being the same green.
-                Color.lerp(
-                  AppTheme.panelStrong,
-                  unitAccentFor(unitIndex),
-                  0.14,
-                )!,
-                AppTheme.panel,
-              ],
+            // Carries the parent unit's accent so a whole unit reads as one
+            // color family instead of every row being the same green. Flat:
+            // it used to fade to plain panel toward one corner.
+            color: Color.lerp(
+              AppTheme.panelStrong,
+              unitAccentFor(unitIndex),
+              0.14,
             ),
             borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
             border: Border.all(color: palette.border.withValues(alpha: 0.32)),
-            boxShadow: AppTheme.puffyShadow(palette.border, restAlpha: 0.20),
+            boxShadow: AppTheme.ledgeShadow(palette.border, restAlpha: 0.20),
           ),
           child: Row(
             children: [

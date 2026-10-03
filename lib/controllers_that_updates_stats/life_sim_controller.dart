@@ -784,6 +784,7 @@ class LifeSimController extends ChangeNotifier {
         _rentalId != 'family' &&
         !_assets.any((a) => a.def.kind == AssetKind.home),
     track: currentJob?.track,
+    salary: _salary,
   );
 
   /// What has happened to this character that a later event can be about.
@@ -899,6 +900,7 @@ class LifeSimController extends ChangeNotifier {
       LifeFlag.hasStudentLoan,
       _loans.any((l) => l.kind == LoanKind.student && l.balance > 0),
     );
+    backed(LifeFlag.gotDegree, _edu.level.atLeast(EducationLevel.bachelor));
     if (_rentalId != 'shared' || ownsHome) f.remove(LifeFlag.rentsWithFriend);
     return f;
   }
@@ -1838,6 +1840,14 @@ class LifeSimController extends ChangeNotifier {
       // grown-up characters. See [plainWordsOnly].
       if (plainWordsOnly && mentionsAdultTopic(e.prompt)) return false;
       if (!e.matches(ctx)) return false;
+      final topic = e.topic;
+      if (topic != null) {
+        final last = _topicLastFired(topic);
+        if (last != null) {
+          if (!e.repeatable) return false;
+          if (_age - last < _repeatCooldownYears) return false;
+        }
+      }
       if (!_seen.contains(e.id)) return true;
       if (!e.repeatable) return false;
       final last = _lastFiredAge[e.id];
@@ -1912,6 +1922,22 @@ class LifeSimController extends ChangeNotifier {
 
   double _drawWeight(LifeEvent e) =>
       e.requiresFlag == null ? e.weight : e.weight * _openChainBoost;
+
+  /// The latest age any card on [topic] fired this life. See
+  /// [LifeEvent.topic].
+  int? _topicLastFired(String topic) {
+    int? latest;
+    for (final entry in _lastFiredAge.entries) {
+      if (_topicOf[entry.key] != topic) continue;
+      if (latest == null || entry.value > latest) latest = entry.value;
+    }
+    return latest;
+  }
+
+  static final Map<String, String> _topicOf = <String, String>{
+    for (final e in kLifeEvents)
+      if (e.topic != null) e.id: e.topic!,
+  };
 
   LifeEvent _weightedPick(List<LifeEvent> eligible, double total) {
     var roll = _random.nextDouble() * total;
@@ -1991,16 +2017,32 @@ class LifeSimController extends ChangeNotifier {
       // can never quietly demote: with pay now reaching the thousands, an
       // event that offers a 400 job must not replace a 2,000 one.
       final offered = choice.setSalary ?? _salary;
-      if (!hasJob || offered > _salary || offered == 0) {
+      final forced = choice.replacesJob;
+      if (!hasJob || offered > _salary || offered == 0 || forced) {
         // A card that takes the job away is a layoff like any other, and the
         // debrief counts them.
-        if (hasJob && offered == 0) _timesLaidOff++;
+        if (hasJob && (offered == 0 || choice.laidOff)) _timesLaidOff++;
         _job = choice.setJob!;
         _salary = offered;
         _jobId = null;
         _yearsInRole = 0;
         _performance = 60;
         if (_salary > 0) _firstJobAge ??= _age;
+      }
+    } else if (choice.setSalary != null && hasJob) {
+      // Pay changes and the title does not: a promotion, a negotiated figure,
+      // the next employer after a layoff. These used to be read only inside
+      // the branch above, so ten choices across seven cards — "the pay rise
+      // is real", royalties for life — moved nothing at all.
+      final offered = choice.setSalary!;
+      if (offered > _salary || choice.replacesJob) {
+        if (choice.laidOff) _timesLaidOff++;
+        _salary = offered;
+        if (choice.replacesJob) {
+          _jobId = null;
+          _yearsInRole = 0;
+          _performance = 60;
+        }
       }
     }
     _fame = (_fame + choice.fame).clamp(0, 100);

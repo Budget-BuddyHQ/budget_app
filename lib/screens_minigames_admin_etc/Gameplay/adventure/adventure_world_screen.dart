@@ -890,7 +890,7 @@ class _InteractButton extends StatelessWidget {
             color: Colors.black.withValues(alpha: 0.62),
             borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
             border: Border.all(color: spot.kind.accent, width: 2),
-            boxShadow: AppTheme.puffyShadow(spot.kind.accent, restAlpha: 0.35),
+            boxShadow: AppTheme.ledgeShadow(spot.kind.accent, restAlpha: 0.35),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

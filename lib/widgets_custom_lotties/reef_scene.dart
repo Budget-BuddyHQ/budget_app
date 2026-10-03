@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../themes_colors/app_theme.dart';
+
 /// The underwater art pack, as paths plus the one number Flutter cannot work
 /// out for itself: how much of each 128x128 box is actually drawn.
 ///
@@ -204,11 +206,20 @@ class ReefWater {
     floorTint: Color(0xFF4E6E64),
   );
 
-  LinearGradient get gradient => LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: <Color>[surface, mid, deep],
-    stops: const <double>[0, 0.55, 1],
+  /// The water as flat bands, light at the top and darker with depth.
+  ///
+  /// It was a smooth three-stop fade. Smooth fades behind everything were
+  /// what a tester meant by "the gradient looks too AI", and they never
+  /// matched the fish and plants anyway, which are pixel art and shade in
+  /// steps. Seven bands: four from the surface to mid-water, three more
+  /// down to the floor, with the edge between the halves where the old
+  /// middle stop was.
+  LinearGradient get gradient => AppTheme.steppedGradient(
+    colors: <Color>[
+      ...AppTheme.bands(surface, mid, 4),
+      ...AppTheme.bands(mid, deep, 4).skip(1),
+    ],
+    edges: const <double>[0.14, 0.28, 0.42, 0.55, 0.70, 0.85],
   );
 }
 
@@ -542,13 +553,14 @@ class _ReefSceneState extends State<ReefScene>
             height: widget.floorHeight * 1.3,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                gradient: AppTheme.steppedGradient(
                   colors: <Color>[
                     widget.water.deep.withValues(alpha: 0),
+                    widget.water.deep.withValues(alpha: 0.24),
+                    widget.water.deep.withValues(alpha: 0.46),
                     widget.water.deep.withValues(alpha: 0.68),
                   ],
+                  edges: const <double>[0.25, 0.5, 0.75],
                 ),
               ),
             ),
@@ -716,10 +728,11 @@ class _PlantPlan {
 
 /// Sunlight coming down through moving water.
 ///
-/// Three wide, soft, slightly tapered bands that sway across and breathe in
-/// brightness. Painted rather than composed from widgets because a blurred
-/// gradient per shaft is one `drawPath` each here against three more layers
-/// in the tree, and this sits underneath everything else on the page.
+/// Three wide, slightly tapered bands that sway across and breathe in
+/// brightness, each fading out in flat steps. Painted rather than composed
+/// from widgets because a shaded shaft is one `drawPath` each here against
+/// three more layers in the tree, and this sits underneath everything else
+/// on the page.
 class _LightShaftPainter extends CustomPainter {
   const _LightShaftPainter({required this.progress, required this.tint});
 
@@ -750,16 +763,20 @@ class _LightShaftPainter extends CustomPainter {
       final center = shaft.x * size.width + sway;
       final half = shaft.width * size.width / 2;
 
+      // Hard-edged and banded, not blurred: a soft glowing beam was the
+      // other half of the "too AI" look. Three flat steps of fading light
+      // read as a shaft and match the art.
+      final top = 0.11 + breathe * 0.05;
       final paint = Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+        ..shader = AppTheme.steppedGradient(
           colors: <Color>[
-            tint.withValues(alpha: 0.15 + breathe * 0.07),
+            tint.withValues(alpha: top),
+            tint.withValues(alpha: top * 0.6),
+            tint.withValues(alpha: top * 0.3),
             tint.withValues(alpha: 0),
           ],
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height * 0.92))
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 22);
+          edges: const <double>[0.3, 0.55, 0.8],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height * 0.92));
 
       // Tapered: wide at the surface, narrowing as it goes down, and leaning
       // slightly so the three are not parallel.

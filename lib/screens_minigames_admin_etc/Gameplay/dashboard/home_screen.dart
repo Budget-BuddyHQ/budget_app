@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -615,12 +613,10 @@ class _AdventureLaunchHero extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
-          boxShadow: AppTheme.puffyShadow(
+          boxShadow: AppTheme.ledgeShadow(
             const Color(0xFF3FD3C4),
-            restAlpha: 0.22,
-            blurRadius: 36,
-            spreadRadius: -8,
-            offset: const Offset(0, 18),
+            restAlpha: 0.3,
+            depth: 6,
           ),
         ),
         child: ClipRRect(
@@ -653,15 +649,20 @@ class _AdventureLaunchHero extends StatelessWidget {
                     child: IgnorePointer(
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
+                          // In steps, not a fade: each band is flat and
+                          // the edges are hard, the way the pixel art
+                          // shades. See `AppTheme.steppedGradient`.
+                          gradient: AppTheme.steppedGradient(
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
+                            // The first edge sits past the end of the
+                            // title, so no step line runs through text.
                             colors: [
-                              const Color(0xFF06231F).withValues(alpha: 0.72),
-                              const Color(0xFF06231F).withValues(alpha: 0.30),
+                              const Color(0xFF06231F).withValues(alpha: 0.58),
+                              const Color(0xFF06231F).withValues(alpha: 0.26),
                               const Color(0xFF06231F).withValues(alpha: 0),
                             ],
-                            stops: const [0, 0.46, 0.78],
+                            edges: const [0.74, 0.86],
                           ),
                         ),
                       ),
@@ -743,11 +744,12 @@ class _AdventureLaunchHero extends StatelessWidget {
                                           : (phone ? 30 : 34),
                                       fontWeight: FontWeight.w700,
                                       height: 1,
+                                      // A hard drop, like the town's own sign
+                                      // lettering, not a blurred glow.
                                       shadows: const [
                                         Shadow(
-                                          color: Color(0xCC06231F),
-                                          blurRadius: 12,
-                                          offset: Offset(0, 2),
+                                          color: Color(0xFF06231F),
+                                          offset: Offset(0, 3),
                                         ),
                                       ],
                                     ),
@@ -775,8 +777,8 @@ class _AdventureLaunchHero extends StatelessWidget {
                                     fontWeight: FontWeight.w700,
                                     shadows: const [
                                       Shadow(
-                                        color: Color(0xCC06231F),
-                                        blurRadius: 10,
+                                        color: Color(0xFF06231F),
+                                        offset: Offset(0, 1.5),
                                       ),
                                     ],
                                   ),
@@ -969,7 +971,7 @@ class _DestinationsCard extends StatelessWidget {
     final into = stats.xp % _xpPerLevel;
     final toGo = _xpPerLevel - into;
 
-    return _GlassPanel(
+    return _SolidPanel(
       padding: EdgeInsets.all(compact ? 14 : 18),
       radius: 26,
       child: Column(
@@ -1208,8 +1210,8 @@ class _ObjectiveIconButton extends StatelessWidget {
 /// The main CTA on the home hero — deliberately more theatrical than a plain
 /// button, since it's the single most-tapped element on the screen.
 ///
-/// Three animations run together: a continuous diagonal shine sweeping
-/// across the button, a slow breathing glow behind it, and — on press — a
+/// Two animations run together: a hard-edged glint sweeping across the
+/// button, and — on press — the button sinking onto its ledge with a
 /// 3D tilt-and-snap "flip" (a perspective rotation that dips away from the
 /// finger then springs back with an elastic overshoot) instead of a plain
 /// scale-down. Desktop/web additionally gets a hover lift.
@@ -1297,9 +1299,6 @@ class _ActionButtonState extends State<_ActionButton>
             final tilt = pressCurve * 0.22;
             final dip = pressCurve * 5;
             final lift = reduceMotion ? 0.0 : (_hovering ? -3.0 : 0.0);
-            final breathe = reduceMotion
-                ? 0.0
-                : math.sin(loop * 2 * math.pi) * 0.5 + 0.5;
 
             return Transform(
               alignment: Alignment.center,
@@ -1318,17 +1317,14 @@ class _ActionButtonState extends State<_ActionButton>
                     ),
                     width: 1.4,
                   ),
-                  boxShadow: reduceMotion
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: widget.accent.withValues(
-                              alpha: 0.28 + breathe * 0.24,
-                            ),
-                            blurRadius: 16 + breathe * 14,
-                            spreadRadius: -2 + breathe * 2,
-                          ),
-                        ],
+                  // A ledge the button is pushed down onto, rather than the
+                  // breathing glow it had: pressing sinks it into its own
+                  // shadow, which is how a game button says "pressed".
+                  boxShadow: AppTheme.ledgeShadow(
+                    widget.accent,
+                    restAlpha: 0.4,
+                    depth: 5 - pressCurve.clamp(0.0, 1.0) * 3,
+                  ),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Stack(
@@ -1406,17 +1402,11 @@ class _ShineSweep extends StatelessWidget {
           child: Transform.rotate(
             angle: -0.5,
             child: Container(
-              width: constraints.maxWidth * 0.22,
+              width: constraints.maxWidth * 0.12,
               height: constraints.maxHeight * 2.4,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.white.withValues(alpha: 0),
-                    Colors.white.withValues(alpha: 0.32),
-                    Colors.white.withValues(alpha: 0),
-                  ],
-                ),
-              ),
+              // A flat band with hard edges, the way a sprite draws a glint,
+              // rather than a soft gloss fading in and out.
+              color: Colors.white.withValues(alpha: 0.22),
             ),
           ),
         );
@@ -1425,8 +1415,8 @@ class _ShineSweep extends StatelessWidget {
   }
 }
 
-class _GlassPanel extends StatelessWidget {
-  const _GlassPanel({
+class _SolidPanel extends StatelessWidget {
+  const _SolidPanel({
     required this.child,
     this.padding = const EdgeInsets.all(22),
     this.radius = 28,
@@ -1436,21 +1426,17 @@ class _GlassPanel extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final double radius;
 
+  // Solid, not frosted. A 6% white wash over moving water was a glass card,
+  // and glass cards were the main thing behind "it looks too AI".
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: const Color(0xFF12352C),
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.24),
-            blurRadius: 26,
-            offset: const Offset(0, 16),
-          ),
-        ],
+        border: Border.all(color: const Color(0xFF2C5A4A), width: 1.5),
+        boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary),
       ),
       child: child,
     );

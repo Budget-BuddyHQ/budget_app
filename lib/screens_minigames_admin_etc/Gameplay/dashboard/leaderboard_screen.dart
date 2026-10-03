@@ -87,12 +87,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      // A flat solid background was a big part of why this screen read as
-      // "bad" next to the rest of the app — everywhere else uses a soft
-      // gradient + glow ("puffy") look; this was the one screen still
-      // using plain fills.
+      // Flat on purpose. A diagonal green-to-green wash behind a list was
+      // one of the things a tester called "too AI"; the cards carry the
+      // color here, not the page.
       body: DecoratedBox(
-        decoration: const BoxDecoration(gradient: AppTheme.gradientForest),
+        decoration: const BoxDecoration(color: AppTheme.deepForest),
         child: RefreshIndicator(
           color: const Color(0xFF2F9E68),
           onRefresh: _refresh,
@@ -678,20 +677,16 @@ class _HallOfFameStage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            const Color(0xFFF4D06F).withValues(alpha: 0.14),
-            AppTheme.panelStrong,
-          ],
+        color: Color.alphaBlend(
+          const Color(0xFFF4D06F).withValues(alpha: 0.08),
+          AppTheme.panelStrong,
         ),
         borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
         border: Border.all(
           color: const Color(0xFFF4D06F).withValues(alpha: 0.22),
           width: 1.5,
         ),
-        boxShadow: AppTheme.puffyShadow(
+        boxShadow: AppTheme.ledgeShadow(
           const Color(0xFFF4D06F),
           restAlpha: 0.16,
         ),
@@ -855,19 +850,18 @@ class _PodiumPlace extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         // The stand itself — a flat translucent rectangle read as a
-        // placeholder, not a podium. A gradient (lighter at the top edge,
-        // like a lit surface) plus the glow below sells "3D block" instead
-        // of "colored box".
+        // placeholder, not a podium. A lit top face in a hard band over a
+        // darker front, the way a block is drawn in pixel art, sells "3D
+        // block" instead of "colored box" without a soft fade or a glow.
         Container(
           height: standHeight,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+            gradient: AppTheme.steppedGradient(
               colors: [
-                medalColor.withValues(alpha: 0.42),
-                medalColor.withValues(alpha: 0.12),
+                medalColor.withValues(alpha: 0.46),
+                medalColor.withValues(alpha: 0.2),
               ],
+              edges: const [0.16],
             ),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
             border: Border(
@@ -884,13 +878,6 @@ class _PodiumPlace extends StatelessWidget {
                 width: 1,
               ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: medalColor.withValues(alpha: 0.25),
-                blurRadius: 14,
-                offset: const Offset(0, 6),
-              ),
-            ],
           ),
         ),
       ],
@@ -1010,7 +997,6 @@ class _LeaderboardRow extends StatelessWidget {
   }
 }
 
-
 /// A filter label over its control.
 ///
 /// Extracted so the panel can lay the two groups out in a row or a column
@@ -1027,11 +1013,7 @@ class _FilterGroup extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
-      children: [
-        _FilterLabel(label),
-        const SizedBox(height: 6),
-        child,
-      ],
+      children: [_FilterLabel(label), const SizedBox(height: 6), child],
     );
   }
 }

@@ -564,20 +564,6 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
             ),
           ),
         ),
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: const Alignment(0.3, -0.5),
-                radius: 0.95,
-                colors: [
-                  const Color(0xFF78E08F).withValues(alpha: 0.20),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(

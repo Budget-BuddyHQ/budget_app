@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../constants/app_assets.dart';
+import '../themes_colors/app_theme.dart';
 import 'sprite_sheet_image.dart';
 import '../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
 import 'avatar_sprite.dart';
@@ -135,26 +136,17 @@ class _AchievementDialogState extends State<_AchievementDialog>
           child: Container(
             padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color.lerp(const Color(0xFF15392D), widget.accent, 0.18)!,
-                  const Color(0xFF0A1D17),
-                ],
-              ),
+              color: Color.lerp(const Color(0xFF10291F), widget.accent, 0.12),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
                 color: widget.accent.withValues(alpha: 0.55),
-                width: 1.6,
+                width: 2,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: widget.accent.withValues(alpha: 0.28),
-                  blurRadius: 40,
-                  spreadRadius: -8,
-                ),
-              ],
+              boxShadow: AppTheme.ledgeShadow(
+                widget.accent,
+                restAlpha: 0.3,
+                depth: 6,
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -209,8 +201,7 @@ class _AchievementDialogState extends State<_AchievementDialog>
                                   ? SpriteSheetImage(
                                       sheetAsset:
                                           AppAssets.turtleCelebrateSheet,
-                                      columns:
-                                          AppAssets.turtleCelebrateColumns,
+                                      columns: AppAssets.turtleCelebrateColumns,
                                       rows: AppAssets.turtleCelebrateRows,
                                       column: column,
                                       row: row,
@@ -226,10 +217,7 @@ class _AchievementDialogState extends State<_AchievementDialog>
                                         color: widget.accent,
                                       ),
                                     )
-                                  : AvatarSprite(
-                                      skin: widget.skin!,
-                                      size: 96,
-                                    ),
+                                  : AvatarSprite(skin: widget.skin!, size: 96),
                             ),
                           ),
                         ],

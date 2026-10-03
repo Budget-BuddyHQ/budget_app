@@ -94,7 +94,7 @@ class _HabitTaskBlock extends StatelessWidget {
               color: AppTheme.panelStrong,
               borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
               border: Border.all(color: palette.border.withValues(alpha: 0.32)),
-              boxShadow: AppTheme.puffyShadow(palette.border, restAlpha: 0.16),
+              boxShadow: AppTheme.ledgeShadow(palette.border, restAlpha: 0.16),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,

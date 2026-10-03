@@ -554,20 +554,12 @@ class _StorePanel extends StatelessWidget {
               height: 58,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-                // Was a flat lime→mint ramp where both stops were nearly
-                // the same lightness, so it read as one washy slab. This
-                // runs bright mint → deep emerald on the diagonal, which
-                // gives the button an actual lit edge and a shaded base.
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF9BF3CE), Color(0xFF2E9E76)],
-                ),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.35),
-                  width: 1.5,
-                ),
-                boxShadow: AppTheme.puffyShadow(
+                // One solid mint with a light rim and a hard ledge: the lit
+                // edge and shaded base the old diagonal ramp was reaching
+                // for, drawn the way the pixel art draws them.
+                color: const Color(0xFF6FE0B2),
+                border: Border.all(color: const Color(0xFFC4F8E2), width: 1.5),
+                boxShadow: AppTheme.ledgeShadow(
                   AppTheme.greenPrimary,
                   restAlpha: 0.38,
                 ),
