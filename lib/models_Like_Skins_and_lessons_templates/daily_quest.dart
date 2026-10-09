@@ -21,6 +21,9 @@ enum QuestSurface {
   arcade,
   adventure,
   moneyHabit,
+
+  /// Today's budget question (the Daily tab's "Today's Challenge").
+  dailyChallenge,
 }
 
 @immutable
@@ -140,6 +143,11 @@ class DailyPlanBuilder {
     required List<String> activeArcadeGameIds,
     List<String> savedHabitIds = const <String>[],
     Set<String> habitsDoneToday = const <String>{},
+    // Whether today's budget question has been cleared. It is done when the
+    // challenge is, not when the quest is tapped.
+    bool dailyChallengeDone = false,
+    // A game's best score so far, for "beat your high score".
+    int Function(String gameId)? bestScore,
     // The player's own self-declared age band, so the learning slot can
     // skip units pitched below them — see [_nextLesson].
     AgeStage? readerStage,
@@ -184,15 +192,44 @@ class DailyPlanBuilder {
       );
     }
 
+    // 2a. Today's budget question. One quick question, new every day, and
+    //     the cheapest way to keep a streak. Second, after the lesson: the
+    //     curriculum stays the backbone of the plan.
+    final challengeId = 'daily_challenge_$dateKey';
+    quests.insert(
+      quests.isEmpty ? 0 : 1,
+      DailyQuest(
+        id: challengeId,
+        title: "Try today's budget question",
+        detail: 'One quick money question, new every day',
+        surface: QuestSurface.dailyChallenge,
+        icon: Icons.quiz_rounded,
+        accent: const Color(0xFFFFC800),
+        xpReward: 10,
+      ),
+    );
+    if (dailyChallengeDone) {
+      completedIds = <String>{...completedIds, challengeId};
+    }
+
     // 3. Arcade slot — the least-played active game, tagged with what it
     //    teaches so it reads as practice, not filler.
     final game = _leastPlayedGame(activeArcadeGameIds, arcadePlays);
     if (game != null) {
+      // Once there is a score to beat, the quest says so. "Beat your best"
+      // is a reason to play again; "Play" is a menu item.
+      final best = bestScore?.call(game) ?? 0;
+      final chase = best > 0 && game == 'finance_brawl';
       quests.add(
         DailyQuest(
           id: 'arcade_${game}_$dateKey',
-          title: 'Play: ${_arcadeTitle(game)}',
-          detail: 'Drills ${_arcadeSkillFocus[game] ?? 'money skills'}',
+          title: chase
+              ? 'Beat your ${_arcadeTitle(game)} high score'
+              : 'Play: ${_arcadeTitle(game)}',
+          detail: chase
+              ? 'Your best is $best. Drills '
+                    '${_arcadeSkillFocus[game] ?? 'money skills'}'
+              : 'Drills ${_arcadeSkillFocus[game] ?? 'money skills'}',
           surface: QuestSurface.arcade,
           icon: _arcadeIcons[game] ?? Icons.sports_esports_rounded,
           accent: const Color(0xFFE1BB72),

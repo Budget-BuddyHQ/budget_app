@@ -29,6 +29,7 @@ class LessonScreen extends StatefulWidget {
     this.activeTabIndex = AppTabIndex.academy,
     this.onNavSelected,
     this.initialUnitId,
+    this.initialLessonId,
   });
 
   final int activeTabIndex;
@@ -40,6 +41,11 @@ class LessonScreen extends StatefulWidget {
   /// missing, and without this there was nowhere for "go fix that" to
   /// actually go — just a unit name in a sentence.
   final String? initialUnitId;
+
+  /// Opens straight into this lesson, for the Coach's "where to improve":
+  /// a weak topic is taught by one lesson, and the button should land on it
+  /// rather than on the unit it sits in.
+  final String? initialLessonId;
 
   @override
   State<LessonScreen> createState() => _LessonScreenState();
@@ -61,7 +67,13 @@ class _LessonScreenState extends State<LessonScreen> {
       initialAccuracy: _accuracyFromStats(),
     )..addListener(_refresh);
     _statsController.addListener(_syncProgressFromStats);
-    final targetUnitId = widget.initialUnitId;
+    final targetLesson = widget.initialLessonId == null
+        ? null
+        : _progressionService.units
+              .expand((u) => u.lessons)
+              .where((l) => l.id == widget.initialLessonId)
+              .firstOrNull;
+    final targetUnitId = targetLesson?.unitId ?? widget.initialUnitId;
     if (targetUnitId != null) {
       final index = _progressionService.units.indexWhere(
         (unit) => unit.id == targetUnitId,
@@ -73,7 +85,9 @@ class _LessonScreenState extends State<LessonScreen> {
     }
     // After the first layout, so the strip has a scroll extent to clamp to.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _revealUnit(_selectedUnitIndex, animate: false);
+      if (!mounted) return;
+      _revealUnit(_selectedUnitIndex, animate: false);
+      if (targetLesson != null) _openLesson(targetLesson);
     });
   }
 

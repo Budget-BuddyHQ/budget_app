@@ -278,6 +278,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
         builder: (_) => LifeEpilogueScreen(
           summary: summary,
           bestsBeaten: bestsBeaten,
+          newAchievements: controller.lastNewAchievements,
           rankedScore: score,
           seed: _seed,
           graded: _graded,

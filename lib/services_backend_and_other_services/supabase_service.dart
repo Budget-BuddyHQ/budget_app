@@ -320,6 +320,14 @@ class UserStats {
         .toList(growable: false);
   }
 
+  /// [LifeAchievement] names earned in any life, kept for good. See
+  /// `life_achievements.dart` for why they are saved rather than derived.
+  Set<String> get lifeAchievements {
+    final raw = spendingHabits['life_achievements'];
+    if (raw is! List) return const <String>{};
+    return raw.map((e) => e.toString()).toSet();
+  }
+
   /// Badge ids the player has already been shown the celebration for.
   /// Badges themselves are *derived* from progress, so this only records
   /// "we already congratulated them" — it never decides whether a badge is

@@ -145,6 +145,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
                                 correct: _correct,
                                 total: _questions.length,
                                 missed: _missed,
+                                questions: _questions,
+                                unitId: widget.unit.id,
                               )
                             else
                               QuizQuestionCard(

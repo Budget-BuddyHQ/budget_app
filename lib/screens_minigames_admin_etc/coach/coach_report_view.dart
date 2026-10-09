@@ -14,6 +14,11 @@ import '../../widgets_custom_lotties/how_to_budget.dart';
 import '../../widgets_custom_lotties/life_money_panel.dart';
 import '../../widgets_custom_lotties/age_scaled_note.dart';
 import '../Gameplay/academy/lesson_screen.dart';
+import '../../models_Like_Skins_and_lessons_templates/coach_memory.dart';
+import '../../models_Like_Skins_and_lessons_templates/lesson.dart';
+import '../../models_Like_Skins_and_lessons_templates/quiz_bank.dart';
+import '../../models_Like_Skins_and_lessons_templates/skill_lessons.dart';
+import '../../widgets_custom_lotties/market_visuals.dart';
 
 /// The budget and habit analyzer, as a screen.
 ///
@@ -21,7 +26,15 @@ import '../Gameplay/academy/lesson_screen.dart';
 /// *looks*; it does not decide what counts as one, which is why the rules can
 /// be tested against a player who has pinned six habits and logged one
 /// without anybody having to build that player in a widget test.
-class CoachReportView extends StatelessWidget {
+///
+/// **Asked for as:** *"for the coach I want it to send back to the lesson
+/// where the users can improve ... make sure that the things that improved
+/// and finished disappear and congratulate them for doing so."* So anything
+/// to work on points at the lesson that teaches it (the weak topics in
+/// [_ImproveCard], the "Practice in the Academy" button on a finding), and
+/// [CoachMemory] remembers what was flagged last time: when something stops
+/// being flagged it leaves the list and shows up in [_FixedCard] instead.
+class CoachReportView extends StatefulWidget {
   const CoachReportView({super.key, this.snapshot});
 
   /// Overrides the player's real history. See
@@ -29,16 +42,75 @@ class CoachReportView extends StatelessWidget {
   final MoneySnapshot? snapshot;
 
   @override
+  State<CoachReportView> createState() => _CoachReportViewState();
+}
+
+class _CoachReportViewState extends State<CoachReportView> {
+  CoachMemory? _memory;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMemory();
+  }
+
+  // Without device storage (a locked-down browser, a test harness) the Coach
+  // still works; it just cannot remember last time, so it congratulates
+  // nothing rather than failing to open.
+  Future<void> _loadMemory() async {
+    try {
+      final memory = await CoachMemory.load();
+      if (mounted) setState(() => _memory = memory);
+    } catch (_) {
+      // No memory this session.
+    }
+  }
+
+  /// Weak quiz topics, as the "to improve" items [CoachMemory] tracks.
+  static Map<String, String> _skillItems(List<String> weakSkills) => {
+    for (final skill in weakSkills) 'skill:$skill': QuizSkills.label(skill),
+  };
+
+  /// Records what is flagged now. Runs after the frame, because it can change
+  /// what this screen shows and a build must not set state.
+  void _remember(MoneyReport report, List<String> weakSkills) {
+    final memory = _memory;
+    if (memory == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      if (memory.update(report.findings, extra: _skillItems(weakSkills))) {
+        await memory.save();
+        if (mounted) setState(() {});
+      }
+    });
+  }
+
+  Future<void> _dismissFixed() async {
+    final memory = _memory;
+    if (memory == null) return;
+    memory.dismissFixed();
+    await memory.save();
+    if (mounted) setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     final stats = context.watch<UserStatsController>().stats;
-    final snap = snapshot ?? buildMoneySnapshot(stats);
+    final snap = widget.snapshot ?? buildMoneySnapshot(stats);
     final report = analyzeMoney(snap);
+    _remember(report, stats.weakSkills);
+    final fixed = _memory?.fixedFindings ?? const <FixedFinding>[];
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
         _CoachHeader(report: report),
         const SizedBox(height: 16),
+        if (fixed.isNotEmpty) ...[
+          _FixedCard(fixed: fixed, onDismiss: _dismissFixed),
+          const SizedBox(height: 16),
+        ],
+        _ImproveCard(weakSkills: stats.weakSkills),
         const AgeScaledNote(
           what: 'Findings',
           margin: EdgeInsets.only(bottom: 12),
@@ -471,6 +543,22 @@ class _FindingCard extends StatelessWidget {
               ),
             ],
           ),
+          if (finding.kind != MoneyFindingKind.strength &&
+              finding.concept != null &&
+              unitIdForConcept(finding.concept!) != null) ...[
+            const SizedBox(height: 10),
+            _GoButton(
+              label: 'Practice in the Academy',
+              icon: Icons.school_rounded,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => LessonScreen(
+                    initialUnitId: unitIdForConcept(finding.concept!),
+                  ),
+                ),
+              ),
+            ),
+          ],
           if (finding.showsBudgetHowTo) ...[
             const SizedBox(height: 10),
             const HowToBudgetButton(),
@@ -824,6 +912,203 @@ class _DiagnosisShell extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// "You fixed it" — what the Coach used to flag and no longer does.
+class _FixedCard extends StatelessWidget {
+  const _FixedCard({required this.fixed, required this.onDismiss});
+
+  final List<FixedFinding> fixed;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('coach-fixed-card'),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.panel,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: AppTheme.greenPrimary, width: 2),
+        boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          BuddySaysCard(
+            mood: BuddyMood.happy,
+            title: fixed.length == 1
+                ? 'You fixed it!'
+                : 'You fixed ${fixed.length} things!',
+            message:
+                'The Coach is not flagging these any more. That is real '
+                'progress — nice work.',
+          ),
+          const SizedBox(height: 12),
+          for (final f in fixed)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: AppTheme.greenPrimary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      f.id.startsWith('skill:')
+                          ? '${f.title}: no longer a weak spot'
+                          : f.title,
+                      style: GoogleFonts.quicksand(
+                        color: Colors.white,
+                        fontSize: 13.5,
+                        height: 1.35,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 10),
+          _GoButton(
+            label: 'Nice!',
+            icon: Icons.celebration_rounded,
+            onTap: onDismiss,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The topics answered wrong and not yet put right, each with the lesson
+/// that teaches it. A topic leaves this list as soon as it is answered right
+/// in a quiz, a test or a practice run.
+class _ImproveCard extends StatelessWidget {
+  const _ImproveCard({required this.weakSkills});
+
+  final List<String> weakSkills;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <(String, Lesson)>[
+      for (final skill in weakSkills)
+        if (lessonForSkill(skill) case final lesson?)
+          (QuizSkills.label(skill), lesson),
+    ];
+    if (rows.isEmpty) return const SizedBox.shrink();
+    const accent = Color(0xFFFFC36B);
+    return Container(
+      key: const ValueKey('coach-improve-card'),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.panel,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: accent, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Where to improve',
+            style: GoogleFonts.pixelifySans(
+              color: accent,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Topics you got wrong. Each goes away once you get it right.',
+            style: GoogleFonts.quicksand(
+              color: AppTheme.textMuted,
+              fontSize: 12.5,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final (label, lesson) in rows.take(5))
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          style: GoogleFonts.quicksand(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          'Lesson: ${lesson.title}',
+                          style: GoogleFonts.quicksand(
+                            color: AppTheme.textMuted,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _GoButton(
+                    label: 'Go to lesson',
+                    icon: Icons.menu_book_rounded,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) =>
+                            LessonScreen(initialLessonId: lesson.id),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GoButton extends StatelessWidget {
+  const _GoButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 17),
+      label: Text(
+        label,
+        style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+      ),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppTheme.greenPrimary,
+        side: const BorderSide(color: AppTheme.greenPrimary, width: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

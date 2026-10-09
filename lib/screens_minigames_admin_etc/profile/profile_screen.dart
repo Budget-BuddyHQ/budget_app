@@ -36,6 +36,7 @@ import '../onboarding/welcome_screen.dart';
 import 'feedback_screen.dart';
 import 'friend_profile_screen.dart';
 import 'personal_details_sheet.dart';
+import '../../models_Like_Skins_and_lessons_templates/life_achievements.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
@@ -940,6 +941,20 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
         earned: lessons >= 20,
         detail: '20 lessons',
       ),
+      // Earned by how a life went, not by how many were played. See
+      // `life_achievements.dart`. Also read off the record book, so lives
+      // finished before achievements were saved still count.
+      for (final a in LifeAchievement.values)
+        _Badge(
+          id: 'life_${a.name}',
+          label: a.label,
+          icon: a.icon,
+          color: a.color,
+          earned:
+              stats.lifeAchievements.contains(a.name) ||
+              stats.lifeRecords.records.any(a.earnedBy),
+          detail: a.detail,
+        ),
       _Badge(
         id: 'veteran',
         label: 'Veteran',

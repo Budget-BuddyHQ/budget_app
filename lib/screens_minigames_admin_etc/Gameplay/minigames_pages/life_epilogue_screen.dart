@@ -18,6 +18,7 @@ import '../../../models_Like_Skins_and_lessons_templates/life_seed.dart';
 import 'package:flutter/services.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import 'life_debrief_view.dart';
+import '../../../models_Like_Skins_and_lessons_templates/life_achievements.dart';
 
 /// The recap shown when a [LifeSummary] life ends — replaces what used to be
 /// a silent `Navigator.pop()` straight back to Home. Purely presentational;
@@ -28,6 +29,7 @@ class LifeEpilogueScreen extends StatelessWidget {
     super.key,
     required this.summary,
     this.bestsBeaten = const <LifeBest>{},
+    this.newAchievements = const <LifeAchievement>[],
     this.rankedScore,
     this.seed,
     this.graded = true,
@@ -50,6 +52,9 @@ class LifeEpilogueScreen extends StatelessWidget {
   /// life (nothing to beat yet) and empty when replaying an old screen, so
   /// the banner is genuinely an event rather than decoration.
   final Set<LifeBest> bestsBeaten;
+
+  /// Life achievements this run earned for the first time.
+  final List<LifeAchievement> newAchievements;
 
   /// Set only for a ranked run. Normal play is a sandbox and gets no grade —
   /// scoring somebody who was deliberately finding out what happens if they
@@ -113,6 +118,10 @@ class LifeEpilogueScreen extends StatelessWidget {
               // specific ending and how to reach it. No streak, no timer, no
               // "come back tomorrow": just something worth doing next.
               const _NextEndingCard(),
+              if (newAchievements.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _AchievementsBanner(achievements: newAchievements),
+              ],
               if (bestsBeaten.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 _PersonalBestBanner(bests: bestsBeaten),
@@ -158,6 +167,83 @@ class LifeEpilogueScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// "Achievement unlocked" — what this life earned for the first time.
+class _AchievementsBanner extends StatelessWidget {
+  const _AchievementsBanner({required this.achievements});
+
+  final List<LifeAchievement> achievements;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.panel,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: const Color(0xFFFFC800), width: 2),
+        boxShadow: AppTheme.ledgeShadow(const Color(0xFFFFC800)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            achievements.length == 1
+                ? 'Achievement unlocked'
+                : '${achievements.length} achievements unlocked',
+            style: GoogleFonts.pixelifySans(
+              color: const Color(0xFFFFC800),
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final a in achievements)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: a.color,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(a.icon, color: const Color(0xFF0B1418)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          a.label,
+                          style: GoogleFonts.pixelifySans(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          a.detail,
+                          style: GoogleFonts.quicksand(
+                            color: AppTheme.textMuted,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

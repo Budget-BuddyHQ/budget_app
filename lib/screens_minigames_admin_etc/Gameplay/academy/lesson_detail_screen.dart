@@ -8,15 +8,19 @@ import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/age_scaled_note.dart';
 import '../../../widgets_custom_lotties/map_backdrop.dart';
+import '../../../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson.dart';
+import '../../../models_Like_Skins_and_lessons_templates/money_snapshot_source.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson_extras.dart';
 import '../../../models_Like_Skins_and_lessons_templates/lesson_sources.dart';
 import '../../../models_Like_Skins_and_lessons_templates/player_profile.dart';
 import '../../../models_Like_Skins_and_lessons_templates/progression_service.dart';
 import '../../../models_Like_Skins_and_lessons_templates/quiz_bank.dart';
+import '../../../models_Like_Skins_and_lessons_templates/skill_lessons.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
 import '../../../widgets_custom_lotties/confetti_burst.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
+import '../../../widgets_custom_lotties/market_visuals.dart';
 import 'quiz_widgets.dart';
 
 class LessonDetailScreen extends StatefulWidget {
@@ -49,6 +53,10 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   bool _isCompleted = false;
   bool _isSaving = false;
 
+  /// Whether finishing this time paid the rewards, i.e. it was the first.
+  /// Null until saved.
+  bool? _rewardedFirstTime;
+
   int _questionIndex = 0;
   int? _selectedOption;
   int _correctCount = 0;
@@ -56,6 +64,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   /// Questions answered wrong this run, kept so the results screen can show
   /// exactly what to revisit instead of only a score.
   final List<QuizQuestion> _missed = <QuizQuestion>[];
+
+  /// Right or wrong for each answer, in order, for the results card's dots.
+  final List<bool> _answers = <bool>[];
 
   /// Assessment questions for this node, empty for reading lessons.
   ///
@@ -112,6 +123,17 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
     final bonusXp = hasQuiz ? _correctCount * 2 : 0;
     final xpEarned = 12 + bonusXp;
     final goldEarned = 50 + (hasQuiz ? _correctCount * 5 : 0);
+    // Read before saving, which marks it done. Rewards are first-time only;
+    // see `completeLessonProgress`.
+    final firstTime = !context
+        .read<UserStatsController>()
+        .stats
+        .completedLessons
+        .contains(widget.lesson.id);
+    // Unit 6 pays out real gold and tradeable shares, so finishing the
+    // trading lessons hands you something to trade on the Market Board. It
+    // goes through the same one-time grant as everything else a lesson pays.
+    final payout = kLessonPayouts[widget.lesson.id];
 
     await context.read<UserStatsController>().completeLessonProgress(
       lessonId: widget.lesson.id,
@@ -122,32 +144,19 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       quizCorrect: hasQuiz ? _correctCount : null,
       quizTotal: hasQuiz ? quiz.length : null,
       missedSkills: _missed.map((question) => question.skillId),
+      correctSkills: quiz.map((question) => question.skillId),
+      bonusGold: payout?.gold ?? 0,
+      bonusShares: payout?.shares ?? const <String, double>{},
     );
 
     if (!mounted) {
       return;
     }
 
-    // Unit 6 pays out real gold and tradeable shares — the point is that
-    // finishing the trading lessons hands you something to actually trade on
-    // the Market Board rather than just XP.
-    final payout = kLessonPayouts[widget.lesson.id];
-    if (payout != null) {
-      await context.read<UserStatsController>().applyChallengePayload({
-        'gold_earned': payout.gold,
-        'shares_earned': payout.shares,
-        'title': 'Academy: ${widget.lesson.title}',
-        'description': payout.blurb,
-      });
-
-      if (!mounted) {
-        return;
-      }
-    }
-
     setState(() {
       _isCompleted = true;
       _isSaving = false;
+      _rewardedFirstTime = firstTime;
     });
 
     final String rewardsText = '+$xpEarned XP, +$goldEarned Gold';
@@ -164,8 +173,13 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
     // there whether anything went wrong or not.
     GameToast.show(
       context,
-      title: 'Lesson complete',
-      message: hasQuiz
+      title: firstTime ? 'Lesson complete' : 'Practice done',
+      message: !firstTime
+          ? (hasQuiz
+                ? 'Scored $_correctCount/${quiz.length}. Rewards are paid the '
+                      'first time only, but your best score still counts.'
+                : 'Rewards are paid the first time only. Good review!')
+          : hasQuiz
           ? 'Scored $_correctCount/${quiz.length}. Earned $rewardsText!'
           : '${widget.lesson.title} saved. Earned $rewardsText!',
       icon: Icons.school_rounded,
@@ -173,7 +187,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       soundEffect: AppSoundEffect.celebration,
     );
 
-    if (payout != null) {
+    if (payout != null && firstTime) {
       GameToast.show(
         context,
         title: 'Payout unlocked',
@@ -191,6 +205,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
     final isCorrect = optionIndex == question.correctIndex;
     setState(() {
       _selectedOption = optionIndex;
+      _answers.add(isCorrect);
       if (isCorrect) {
         _correctCount++;
       } else {
@@ -359,6 +374,34 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                           correct: _correctCount,
                           total: quiz.length,
                           missed: _missed,
+                          answers: _answers,
+                          questions: quiz,
+                          unitId: widget.unit.id,
+                          // On top of the results, not instead of them: the
+                          // score is only saved by "Complete Lesson", so the
+                          // player comes back here to finish.
+                          onOpenLesson: (lesson) => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => LessonDetailScreen(
+                                lesson: lesson,
+                                unit: unitOfLesson(lesson) ?? widget.unit,
+                                progressionService: widget.progressionService,
+                              ),
+                            ),
+                          ),
+                          // The same sums `_completeLesson` pays, shown before
+                          // the button so the score has something to earn.
+                          reward: (
+                            gold: 50 + _correctCount * 5,
+                            xp: 12 + _correctCount * 2,
+                            firstTime:
+                                _rewardedFirstTime ??
+                                !context
+                                    .watch<UserStatsController>()
+                                    .stats
+                                    .completedLessons
+                                    .contains(widget.lesson.id),
+                          ),
                         )
                       else
                         QuizQuestionCard(
@@ -376,6 +419,20 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                           stage: context.select<UserStatsController, LifeStage>(
                             (controller) => controller.stats.lifeStage,
                           ),
+                        ),
+                      ],
+                      // Buddy's tip: one thing to try for real, from the
+                      // unit's money idea. The lesson explains; this is the
+                      // trick to use it.
+                      if (quiz.isEmpty &&
+                          conceptForLesson(widget.lesson.id) != null) ...[
+                        const SizedBox(height: 20),
+                        BuddySaysCard(
+                          mood: BuddyMood.thinking,
+                          title:
+                              "Buddy's tip: "
+                              '${conceptForLesson(widget.lesson.id)!.label}',
+                          message: conceptForLesson(widget.lesson.id)!.tryThis,
                         ),
                       ],
                       if (quiz.isEmpty && content.keyTerms.isNotEmpty) ...[

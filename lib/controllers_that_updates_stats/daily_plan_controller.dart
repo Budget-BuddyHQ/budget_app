@@ -52,6 +52,8 @@ class DailyPlanController extends ChangeNotifier {
       savedHabitIds: stats.savedHabitIds,
       habitsDoneToday: (stats.habitWeeklyLog[today] ?? const <String>[])
           .toSet(),
+      dailyChallengeDone: _stats.isTodayChallengeCompleted,
+      bestScore: (game) => stats.bestArcadeScore(game) ?? 0,
       // Keeps the learning quest age-appropriate now that the curriculum
       // list is in chronological order — without this an adult's daily
       // quest would be "What Is Money?" (ages 4-6), which is now genuinely

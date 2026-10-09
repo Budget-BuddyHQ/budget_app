@@ -16,6 +16,7 @@ import '../models_Like_Skins_and_lessons_templates/review_schedule.dart';
 import '../models_Like_Skins_and_lessons_templates/knowledge_tracing.dart';
 import '../models_Like_Skins_and_lessons_templates/money_snapshot_source.dart';
 import '../services_backend_and_other_services/supabase_service.dart';
+import '../models_Like_Skins_and_lessons_templates/life_achievements.dart';
 
 @immutable
 class StatsActionResult {
@@ -495,11 +496,22 @@ class UserStatsController extends ChangeNotifier {
     // Judged against the book as it stands, so this must happen before add.
     final beaten = book.bestsBeaten(record);
 
+    // Achievements this life earned for the first time, saved for good.
+    final had = _stats.lifeAchievements;
+    _lastNewAchievements = <LifeAchievement>[
+      for (final a in LifeAchievement.values)
+        if (!had.contains(a.name) && a.earnedBy(record)) a,
+    ];
+
     await _saveStats(
       _stats.copyWith(
         spendingHabits: <String, dynamic>{
           ..._stats.spendingHabits,
           'life_records': book.add(record).toJson(),
+          'life_achievements': <String>[
+            ...had,
+            for (final a in _lastNewAchievements) a.name,
+          ],
         },
         updatedAt: DateTime.now().toUtc(),
       ),
@@ -508,6 +520,11 @@ class UserStatsController extends ChangeNotifier {
 
     return beaten;
   }
+
+  /// Achievements the last [recordLifeRun] earned for the first time, for
+  /// the epilogue to announce.
+  List<LifeAchievement> _lastNewAchievements = const <LifeAchievement>[];
+  List<LifeAchievement> get lastNewAchievements => _lastNewAchievements;
 
   /// Marks badges as already celebrated so their unlock popup shows once.
   Future<StatsActionResult> markBadgesCelebrated(
@@ -1454,9 +1471,21 @@ class UserStatsController extends ChangeNotifier {
     int? quizCorrect,
     int? quizTotal,
     Iterable<String> missedSkills = const <String>[],
+    int bonusGold = 0,
+    Map<String, double> bonusShares = const <String, double>{},
+    Iterable<String> correctSkills = const <String>[],
   }) async {
     final completedLessons = _stats.completedLessons.toSet();
     final alreadyComplete = completedLessons.contains(lessonId);
+    // Everything a lesson pays, including the Unit 6 payouts ([bonusGold],
+    // [bonusShares]), is paid on the first completion only.
+    //
+    // **Reported as:** players "can just keep pressing the lessons to get
+    // infinite coins". The normal reward was already one-time, but the Unit 6
+    // payouts — 400 to 800 gold and free shares — went through
+    // `applyChallengePayload`, which has no idea a lesson was done before, so
+    // replaying a reading lesson paid out again every time.
+    final pays = !alreadyComplete;
 
     // A retake still updates the score and skill history — only the rewards
     // and the completion flag are one-time.
@@ -1529,12 +1558,29 @@ class UserStatsController extends ChangeNotifier {
       // Skills answered correctly this run clear; freshly missed ones stick
       // until they are answered right somewhere later.
       final missed = missedSkills.toSet();
-      weakSkills.addAll(missed);
+      // The comment above was true for practice runs and not for quizzes: a
+      // topic missed once in a quiz stayed "weak" for good, however often it
+      // was answered right afterwards, so the Coach could never say it was
+      // fixed.
+      weakSkills
+        ..removeAll(correctSkills.toSet().difference(missed))
+        ..addAll(missed);
+    }
+
+    var holdings = _stats.holdings;
+    if (pays && bonusShares.isNotEmpty) {
+      holdings = <String, double>{..._stats.holdings};
+      bonusShares.forEach((symbol, amount) {
+        if (amount <= 0) return;
+        final key = 'stock_${symbol.trim().toUpperCase()}';
+        holdings[key] = (holdings[key] ?? 0.0) + amount;
+      });
     }
 
     final nextStats = _stats.copyWith(
-      gold: _stats.gold + (alreadyComplete ? 0 : goldEarned),
-      xp: _stats.xp + (alreadyComplete ? 0 : xpEarned),
+      gold: _stats.gold + (pays ? goldEarned + bonusGold : 0),
+      xp: _stats.xp + (pays ? xpEarned : 0),
+      holdings: holdings,
       literacyPoints:
           _stats.literacyPoints + (alreadyComplete ? 0 : literacyPointsEarned),
       spendingHabits: <String, dynamic>{
@@ -1546,16 +1592,19 @@ class UserStatsController extends ChangeNotifier {
         'review_schedule': reviewSchedule.toMap(),
         'knowledge': knowledge.toMap(),
       },
+      // A retake pays nothing, so it writes nothing to the money history:
+      // a "+gold" line for gold that never arrived made the ledger lie.
       transactions: <LedgerTransaction>[
-        LedgerTransaction(
-          id: 'txn_${now.microsecondsSinceEpoch}',
-          title: 'Academy Lesson Complete',
-          description:
-              'Finished $lessonTitle and banked $literacyPointsEarned literacy points.',
-          amount: goldEarned,
-          createdAt: now,
-          category: 'lesson',
-        ),
+        if (pays)
+          LedgerTransaction(
+            id: 'txn_${now.microsecondsSinceEpoch}',
+            title: 'Academy Lesson Complete',
+            description:
+                'Finished $lessonTitle and banked $literacyPointsEarned literacy points.',
+            amount: goldEarned + bonusGold,
+            createdAt: now,
+            category: 'lesson',
+          ),
         ..._stats.transactions,
       ],
       updatedAt: now,
@@ -1586,10 +1635,9 @@ class UserStatsController extends ChangeNotifier {
   /// The undated key is simply no longer read. That is the whole migration:
   /// existing rows keep it, it goes inert, and anybody who cleared the
   /// challenge *today* still has the dated key and still reads as done.
-  bool get isTodayChallengeCompleted =>
-      _stats.completedChallengeTasks.contains(
-        'daily_budget_battle_${HabitDateKeys.todayKey()}',
-      );
+  bool get isTodayChallengeCompleted => _stats.completedChallengeTasks.contains(
+    'daily_budget_battle_${HabitDateKeys.todayKey()}',
+  );
 
   /// Records an arcade run so the hub can show a personal best and play count.
   ///
@@ -1942,9 +1990,7 @@ class UserStatsController extends ChangeNotifier {
     // Compared against the slot this skin belongs in. With one slot, a
     // turtle and a villager could not both be worn; now each has its own.
     final skin = skinFromId(skinId);
-    final current = skin.isMascot
-        ? _stats.equippedMascot
-        : _stats.equippedSkin;
+    final current = skin.isMascot ? _stats.equippedMascot : _stats.equippedSkin;
     if (current == skinId) {
       return const StatsActionResult(
         success: true,

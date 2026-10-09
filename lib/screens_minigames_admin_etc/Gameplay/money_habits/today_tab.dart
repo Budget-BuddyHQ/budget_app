@@ -66,6 +66,12 @@ class TodayTab extends StatelessWidget {
   }
 
   Future<void> _openQuest(BuildContext context, DailyQuest quest) async {
+    // Today's question counts when it is cleared, not when it is tapped, so
+    // it goes straight to the challenge and is not marked done here.
+    if (quest.surface == QuestSurface.dailyChallenge) {
+      await _launchDailyChallenge(context);
+      return;
+    }
     // Recorded before navigating. Switching a tab does not return a future,
     // so there is no "came back" moment to hang this on.
     await context.read<DailyPlanController>().completeQuest(quest.id);
@@ -79,6 +85,8 @@ class TodayTab extends StatelessWidget {
         _goToTab(context, AppTabIndex.minigames, '/minigames');
       case QuestSurface.adventure:
         _goToTab(context, AppTabIndex.adventure, '/main-gameplay');
+      case QuestSurface.dailyChallenge:
+        break;
       case QuestSurface.moneyHabit:
         // Stays on this screen — the habit tracker is two tabs across, not a
         // different destination.
