@@ -320,6 +320,24 @@ class UserStats {
         .toList(growable: false);
   }
 
+  /// When each Coach item last paid a reward, id -> time. See
+  /// `CoachRewards` for why this lives on the account.
+  Map<String, DateTime> get coachRewardsPaid {
+    final raw = spendingHabits['coach_rewards_paid'];
+    if (raw is! Map) return const <String, DateTime>{};
+    return <String, DateTime>{
+      for (final e in raw.entries)
+        if (DateTime.tryParse(e.value.toString()) case final at?)
+          e.key.toString(): at,
+    };
+  }
+
+  /// Every Coach fix ever rewarded.
+  int get coachFixesTotal {
+    final raw = spendingHabits['coach_fixes_total'];
+    return raw is num ? raw.toInt() : 0;
+  }
+
   /// [LifeAchievement] names earned in any life, kept for good. See
   /// `life_achievements.dart` for why they are saved rather than derived.
   Set<String> get lifeAchievements {

@@ -40,6 +40,23 @@ Future<void> openActivities(
   );
 }
 
+/// Opens one category's list straight away, skipping the grid. For shortcuts
+/// that already know where the player wants to go: the Health bar and the
+/// "I want to..." finder both land on "Health & doctor" this way.
+Future<void> openActivityCategory(
+  BuildContext context,
+  LifeSimController life,
+  ActivityCategory category, {
+  required VoidCallback onVolunteer,
+  required VoidCallback onSkills,
+}) {
+  return ActivitiesSheet(
+    life: life,
+    onVolunteer: onVolunteer,
+    onSkills: onSkills,
+  ).open(context, category);
+}
+
 class ActivitiesSheet extends StatelessWidget {
   const ActivitiesSheet({
     super.key,
@@ -58,7 +75,7 @@ class ActivitiesSheet extends StatelessWidget {
       listenable: life,
       builder: (context, _) {
         return LifeSheet(
-          title: 'Activities',
+          title: 'Do things',
           icon: Icons.apps_rounded,
           accent: _accent,
           subtitle: 'Choose how to spend the year',
@@ -72,7 +89,7 @@ class ActivitiesSheet extends StatelessWidget {
                     subtitle: c.blurb,
                     accent: c.accent,
                     badge: _badge(c),
-                    onTap: () => _open(context, c),
+                    onTap: () => open(context, c),
                   ),
               ],
             ),
@@ -97,17 +114,21 @@ class ActivitiesSheet extends StatelessWidget {
     }
   }
 
-  void _open(BuildContext context, ActivityCategory c) {
+  /// Opens [c]'s own sheet.
+  Future<void> open(BuildContext context, ActivityCategory c) {
     switch (c) {
       case ActivityCategory.sport:
-        showLifeSheet<void>(context, builder: (_) => SportSheet(life: life));
+        return showLifeSheet<void>(
+          context,
+          builder: (_) => SportSheet(life: life),
+        );
       case ActivityCategory.special:
-        showLifeSheet<void>(
+        return showLifeSheet<void>(
           context,
           builder: (_) => SpecialCareersSheet(life: life),
         );
       default:
-        showLifeSheet<void>(
+        return showLifeSheet<void>(
           context,
           builder: (_) => ActivityListSheet(
             life: life,

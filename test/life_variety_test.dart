@@ -358,7 +358,7 @@ void main() {
       for (final e in kLifeEvents) {
         final context = LifeContext(
           age: e.minAge,
-          money: e.minMoney,
+          money: e.requiresMortgage ? e.minMoney + 1 : e.minMoney,
           happiness: 60,
           health: 80,
           smarts: 60,
@@ -377,6 +377,9 @@ void main() {
           hasPartner: e.requiresPartner,
           hasChild: e.requiresChild,
           hasLivingParent: e.requiresParent,
+          hasSibling: e.requiresSibling,
+          // Owed, and enough cash to clear it.
+          mortgage: e.requiresMortgage ? 1 : 0,
           debt: e.minDebt,
           renting: e.requiresRenting,
           track: e.requiresTrack,

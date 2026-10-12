@@ -40,6 +40,8 @@ import '../../../widgets_custom_lotties/pixel_panel.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_seed.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_network.dart';
 import '../../../models_Like_Skins_and_lessons_templates/life_wellbeing.dart';
+import 'life_finder.dart';
+import '../../../models_Like_Skins_and_lessons_templates/life_activities.dart';
 
 /// **Life** — the main game, in the BitLife format: a scrolling life feed up
 /// top, a fixed bottom menu, and a big central Age button that advances time
@@ -368,6 +370,133 @@ class _LifeSimPageState extends State<LifeSimPage> {
     HapticFeedback.lightImpact();
     openPeople(context, life);
   }
+
+  /// "Health & doctor", straight away.
+  void _openHealth(LifeSimController life) {
+    HapticFeedback.lightImpact();
+    openActivityCategory(
+      context,
+      life,
+      ActivityCategory.mindBody,
+      onVolunteer: () => _openVolunteer(life),
+      onSkills: () => _openSkills(life),
+    );
+  }
+
+  void _openCategory(LifeSimController life, ActivityCategory category) {
+    HapticFeedback.lightImpact();
+    openActivityCategory(
+      context,
+      life,
+      category,
+      onVolunteer: () => _openVolunteer(life),
+      onSkills: () => _openSkills(life),
+    );
+  }
+
+  void _exploreTown(LifeSimController life) {
+    final permission = life.outingPermission;
+    if (!permission.allowed) {
+      GameToast.show(
+        context,
+        title: 'You cannot go out',
+        message: permission.message,
+        icon: permission.reason?.icon ?? Icons.block_rounded,
+        accent: const Color(0xFFFF8FB1),
+      );
+      return;
+    }
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => AdventureWorldScreen(life: life)));
+  }
+
+  /// Everything a player might be looking for, in their words, for the
+  /// "I want to..." finder. See [showLifeFinder].
+  List<LifeFinderEntry> _finderEntries(LifeSimController life) => [
+    LifeFinderEntry(
+      icon: Icons.medical_services_rounded,
+      title: 'See a doctor',
+      keywords: 'doctor health sick hospital clinic heal hurt ill',
+      color: const Color(0xFFFF8474),
+      onTap: () => _openHealth(life),
+    ),
+    LifeFinderEntry(
+      icon: Icons.work_rounded,
+      title: life.isStudent && !life.hasJob ? 'School and jobs' : 'Get a job',
+      keywords: 'job work career money earn hire school study college',
+      color: const Color(0xFF58C7FF),
+      onTap: () => _openOccupation(life),
+    ),
+    LifeFinderEntry(
+      icon: Icons.pie_chart_rounded,
+      title: 'Set my budget',
+      keywords: 'budget save needs wants split plan money',
+      color: AppTheme.greenPrimary,
+      onTap: () => life.canBudget
+          ? _openBudget(life)
+          : GameToast.show(
+              context,
+              title: 'Not yet',
+              message:
+                  'A budget splits your pay, so it opens once you have '
+                  'a job.',
+              icon: Icons.pie_chart_rounded,
+              accent: AppTheme.greenPrimary,
+            ),
+    ),
+    LifeFinderEntry(
+      icon: Icons.shopping_bag_rounded,
+      title: 'Buy something (car, home, pet)',
+      keywords: 'buy shop car house home pet dog money stuff assets',
+      color: const Color(0xFF9BE870),
+      onTap: () => _openAssets(life),
+    ),
+    LifeFinderEntry(
+      icon: Icons.savings_rounded,
+      title: 'Save or invest money',
+      keywords: 'save savings invest bank loan debt pay money',
+      color: const Color(0xFFFFC800),
+      onTap: () => _openAssets(life),
+    ),
+    LifeFinderEntry(
+      icon: Icons.favorite_rounded,
+      title: 'Family and friends',
+      keywords:
+          'family friends mom dad parent sibling brother sister talk '
+          'partner child people',
+      color: const Color(0xFFFF8FB1),
+      onTap: () => _openPeople(life),
+    ),
+    LifeFinderEntry(
+      icon: Icons.fitness_center_rounded,
+      title: 'Exercise or rest',
+      keywords: 'gym run exercise fit hike rest relax health',
+      color: const Color(0xFF6CD34A),
+      onTap: () => _openHealth(life),
+    ),
+    LifeFinderEntry(
+      icon: Icons.school_rounded,
+      title: 'Learn something',
+      keywords: 'learn study read book class skill smart',
+      color: const Color(0xFFB388FF),
+      onTap: () => _openCategory(life, ActivityCategory.learning),
+    ),
+    LifeFinderEntry(
+      icon: Icons.beach_access_rounded,
+      title: 'Have fun or travel',
+      keywords: 'fun travel trip vacation holiday party happy',
+      color: const Color(0xFFFFC857),
+      onTap: () => _openCategory(life, ActivityCategory.travel),
+    ),
+    LifeFinderEntry(
+      icon: Icons.explore_rounded,
+      title: 'Explore the town',
+      keywords: 'town map walk explore shop bank outside',
+      color: const Color(0xFF7FD8F2),
+      onTap: () => _exploreTown(life),
+    ),
+  ];
 
   void _openActivities(LifeSimController life) {
     HapticFeedback.lightImpact();
@@ -737,6 +866,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
                     onOpenPeople: () => _openPeople(life),
                     onFindJob: () => _openOccupation(life),
                     onSeeDoctor: () => _seeDoctor(life),
+                    onOpenHealth: () => _openHealth(life),
                     moneyKey: _tourMoneyKey,
                   ),
                 ),
@@ -753,6 +883,8 @@ class _LifeSimPageState extends State<LifeSimPage> {
                   onOccupation: () => _openOccupation(life),
                   onRelationships: () => _openPeople(life),
                   onActivities: () => _openActivities(life),
+                  onHealth: () => _openHealth(life),
+                  onFind: () => showLifeFinder(context, _finderEntries(life)),
                   onAssets: () => _openAssets(life),
                   // Ageing can fire an expense shock, which teaches too.
                   onAge: () {
@@ -997,8 +1129,12 @@ class _LifeFeed extends StatelessWidget {
     required this.onOpenPeople,
     required this.onFindJob,
     required this.onSeeDoctor,
+    required this.onOpenHealth,
     required this.moneyKey,
   });
+
+  /// Opens "Health & doctor", for the low-health warning.
+  final VoidCallback onOpenHealth;
 
   /// For the Payday card: opens Occupation when there is no job.
   final VoidCallback onFindJob;
@@ -1069,6 +1205,8 @@ class _LifeFeed extends StatelessWidget {
         // and the player should be able to see that coming while there is
         // still a year left to act in. See `life_wellbeing.dart`.
         _StrainBanner(life: life),
+        if (!life.finished && life.health < 40)
+          _HealthWarning(health: life.health, onSeeDoctor: onOpenHealth),
         _YourLifeStrip(flags: life.flags),
         if (relationships.isNotEmpty) ...[
           const SizedBox(height: 10),
@@ -1314,6 +1452,59 @@ class _YourLifeStrip extends StatelessWidget {
 /// through "running a little low" and "you will miss about N weeks" before
 /// anything is taken, and every line ends with what to do about it. Nothing is
 /// shown for a child, an unemployed adult, or somebody who is fine.
+/// Low health, said where it cannot be missed, with the way to fix it.
+class _HealthWarning extends StatelessWidget {
+  const _HealthWarning({required this.health, required this.onSeeDoctor});
+
+  final int health;
+  final VoidCallback onSeeDoctor;
+
+  @override
+  Widget build(BuildContext context) {
+    const red = Color(0xFFFF6B6B);
+    return Container(
+      key: const ValueKey('life-health-warning'),
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.panel,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: red, width: 2),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.healing_rounded, color: red, size: 26),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Your health is low ($health). A doctor can help, before it '
+              'costs you work and fun.',
+              style: GoogleFonts.quicksand(
+                color: Colors.white,
+                fontSize: 13,
+                height: 1.35,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          FilledButton(
+            onPressed: onSeeDoctor,
+            style: FilledButton.styleFrom(
+              backgroundColor: red,
+              foregroundColor: const Color(0xFF2A0B06),
+            ),
+            child: Text(
+              'See a doctor',
+              style: GoogleFonts.pixelifySans(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _StrainBanner extends StatelessWidget {
   const _StrainBanner({required this.life});
 
@@ -1843,7 +2034,15 @@ class _BottomMenu extends StatelessWidget {
     required this.onActivities,
     required this.onAssets,
     required this.onAge,
+    required this.onHealth,
+    required this.onFind,
   });
+
+  /// Opens "Health & doctor" from the Health bar.
+  final VoidCallback onHealth;
+
+  /// Opens the "I want to..." finder.
+  final VoidCallback onFind;
 
   /// Anchor for the in-game tour's "press this to age up" step.
   final GlobalKey ageKey;
@@ -1886,7 +2085,15 @@ class _BottomMenu extends StatelessWidget {
                 health: health,
                 smarts: smarts,
                 looks: looks,
+                onHealthTap: blocked ? null : onHealth,
               ),
+            ),
+            // The way in for anybody who knows what they want and not
+            // where it lives. Reported as a younger tester not finding the
+            // doctor, and as the menu being "too complex" to find things in.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
+              child: _FindButton(onTap: blocked ? null : onFind),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 2, 8, 8),
@@ -1894,7 +2101,7 @@ class _BottomMenu extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _MenuButton(
-                      label: student ? 'School' : 'Occupation',
+                      label: student ? 'School' : 'Job',
                       icon: Icons.work_rounded,
                       color: const Color(0xFF58C7FF),
                       onTap: blocked ? null : onOccupation,
@@ -1902,8 +2109,8 @@ class _BottomMenu extends StatelessWidget {
                   ),
                   Expanded(
                     child: _MenuButton(
-                      label: 'Assets',
-                      icon: Icons.home_work_rounded,
+                      label: 'Money',
+                      icon: Icons.account_balance_wallet_rounded,
                       color: const Color(0xFF9BE870),
                       onTap: blocked ? null : onAssets,
                     ),
@@ -1924,7 +2131,7 @@ class _BottomMenu extends StatelessWidget {
                   ),
                   Expanded(
                     child: _MenuButton(
-                      label: 'Activities',
+                      label: 'Do things',
                       icon: Icons.apps_rounded,
                       color: const Color(0xFFB388FF),
                       onTap: blocked ? null : onActivities,
@@ -1994,6 +2201,51 @@ class _EventDialog extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "I want to..." — looks like a search box, because that is what it is.
+class _FindButton extends StatelessWidget {
+  const _FindButton({required this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppTheme.inset,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        key: const ValueKey('life-find'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppTheme.outline, width: 2),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.search_rounded, color: Colors.white70, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'I want to... (doctor, job, budget)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white70,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

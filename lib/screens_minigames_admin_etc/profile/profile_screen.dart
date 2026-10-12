@@ -37,6 +37,7 @@ import 'feedback_screen.dart';
 import 'friend_profile_screen.dart';
 import 'personal_details_sheet.dart';
 import '../../models_Like_Skins_and_lessons_templates/life_achievements.dart';
+import '../../models_Like_Skins_and_lessons_templates/coach_rewards.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
@@ -955,6 +956,31 @@ class _BadgeShowcaseState extends State<_BadgeShowcase> {
               stats.lifeRecords.records.any(a.earnedBy),
           detail: a.detail,
         ),
+      // For fixing what the Coach flagged. See `CoachRewards`.
+      _Badge(
+        id: 'coach_fixer',
+        label: 'Fixer',
+        icon: Icons.build_circle_rounded,
+        color: const Color(0xFF6CD34A),
+        earned: stats.coachFixesTotal >= 1,
+        detail: 'Fix something the Coach found',
+      ),
+      _Badge(
+        id: 'coach_turnaround',
+        label: 'Turnaround',
+        icon: Icons.autorenew_rounded,
+        color: const Color(0xFF1CB0F6),
+        earned: stats.coachFixesTotal >= 5,
+        detail: 'Fix 5 Coach suggestions (${stats.coachFixesTotal})',
+      ),
+      _Badge(
+        id: 'coach_pride',
+        label: "Coach's Pride",
+        icon: Icons.workspace_premium_rounded,
+        color: const Color(0xFFDDB33E),
+        earned: stats.coachFixesTotal >= CoachRewards.skinMilestone,
+        detail: 'Fix ${CoachRewards.skinMilestone} and unlock Golden Buddy',
+      ),
       _Badge(
         id: 'veteran',
         label: 'Veteran',

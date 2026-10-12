@@ -182,6 +182,7 @@ extension LifeStageInfo on LifeStage {
 class LifeChoice {
   const LifeChoice({
     required this.label,
+    this.adds,
     required this.outcome,
     this.money = 0,
     this.happiness = 0,
@@ -206,6 +207,7 @@ class LifeChoice {
     this.sellsAsset,
     this.removesAsset,
     this.paysOffStudentLoan = false,
+    this.paysOffMortgage = false,
     this.replacesJob = false,
     this.laidOff = false,
   });
@@ -259,6 +261,20 @@ class LifeChoice {
 
   /// Clears every student loan from cash, savings or debt.
   final bool paysOffStudentLoan;
+
+  /// A real person this choice brings into the life, made the same way the
+  /// People tab makes them: a name, the right kind, the right age.
+  ///
+  /// [addRelationship] only knows a name, and every name it is given becomes a
+  /// friend. "You are becoming a parent" added a *friend* called "Your child",
+  /// so the parenting cards that ask about your child never came, and a first
+  /// crush became a friend called "Partner".
+  final LifeNewcomer? adds;
+
+  /// Clears the mortgage at what is actually still owed on it. "Clear the
+  /// rest of the mortgage" used to charge a flat 2,500 and leave the loan
+  /// exactly where it was.
+  final bool paysOffMortgage;
 
   /// A screen to open once this choice has landed. The choice itself is only
   /// data, so "apply to college" is expressed as a request to open the sheet
@@ -555,6 +571,8 @@ class LifeContext {
     this.hasPartner = false,
     this.hasChild = false,
     this.hasLivingParent = false,
+    this.hasSibling = false,
+    this.mortgage = 0,
     this.debt = 0,
     this.renting = false,
     this.track,
@@ -579,6 +597,12 @@ class LifeContext {
   /// Whether at least one parent is still alive.
   final bool hasLivingParent;
 
+  /// Whether a brother or sister is alive. Not every life has one.
+  final bool hasSibling;
+
+  /// What is still owed on a home loan, 0 without one.
+  final int mortgage;
+
   /// What is owed, all kinds together.
   final int debt;
 
@@ -602,6 +626,9 @@ class LifeContext {
 
   int skill(LifeSkill s) => skills[s] ?? 0;
 }
+
+/// Who a [LifeChoice.adds] brings into a life.
+enum LifeNewcomer { partner, child, grandchild }
 
 /// A prompt that appears when you age up.
 @immutable
@@ -632,6 +659,10 @@ class LifeEvent {
     this.requiresPartner = false,
     this.requiresChild = false,
     this.requiresParent = false,
+    this.requiresSibling = false,
+    this.forbidsPartner = false,
+    this.forbidsChild = false,
+    this.requiresMortgage = false,
     this.requiresTrack,
     this.minDebt = 0,
     this.requiresRenting = false,
@@ -674,6 +705,20 @@ class LifeEvent {
   final bool requiresPartner;
   final bool requiresChild;
   final bool requiresParent;
+
+  /// Only for somebody with a living brother or sister. Reported as a card
+  /// asking the player to lend a sibling money in a life with no siblings.
+  final bool requiresSibling;
+
+  /// Not for somebody already with a partner: a first crush, a first date.
+  final bool forbidsPartner;
+
+  /// Not for somebody who already has a child: "You are becoming a parent"
+  /// is the first one.
+  final bool forbidsChild;
+
+  /// Only while a mortgage is owed and there is cash to clear it in one go.
+  final bool requiresMortgage;
   final CareerTrack? requiresTrack;
   final int minDebt;
   final bool requiresRenting;
@@ -771,6 +816,12 @@ class LifeEvent {
     if (requiresPartner && !c.hasPartner) return false;
     if (requiresChild && !c.hasChild) return false;
     if (requiresParent && !c.hasLivingParent) return false;
+    if (requiresSibling && !c.hasSibling) return false;
+    if (forbidsPartner && c.hasPartner) return false;
+    if (forbidsChild && c.hasChild) return false;
+    if (requiresMortgage && (c.mortgage <= 0 || c.money < c.mortgage)) {
+      return false;
+    }
     if (requiresTrack != null && c.track != requiresTrack) return false;
     if (c.debt < minDebt) return false;
     if (requiresRenting && !c.renting) return false;
@@ -840,10 +891,12 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   ),
   LifeEvent(
     id: 'pet',
+    topic: 'get_dog',
     prompt: 'Your family is thinking about getting a pet.',
     icon: Icons.pets_rounded,
     minAge: 5,
     maxAge: 16,
+    forbidsFlag: LifeFlag.hasPet,
     choices: [
       LifeChoice(
         label: 'Beg for a dog',
@@ -851,7 +904,10 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
         happiness: 14,
         health: 4,
         money: -60,
-        addRelationship: 'Dog',
+        // An owned pet, like every other dog in the game. This used to add a
+        // *person* called "Dog" to the People tab.
+        grantsAsset: 'pet_dog',
+        grantsAssetName: 'Scruffy',
       ),
       LifeChoice(
         label: 'Ask for a goldfish',
@@ -873,6 +929,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     icon: Icons.cleaning_services_rounded,
     minAge: 7,
     maxAge: 15,
+    requiresParent: true,
     choices: [
       LifeChoice(
         label: 'Do every chore',
@@ -958,13 +1015,14 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     icon: Icons.favorite_rounded,
     minAge: 12,
     maxAge: 19,
+    forbidsPartner: true,
     choices: [
       LifeChoice(
         label: 'Tell them',
         outcome: 'They said yes! First relationship unlocked.',
         happiness: 15,
         looks: 2,
-        addRelationship: 'Partner',
+        adds: LifeNewcomer.partner,
       ),
       LifeChoice(
         label: 'Say nothing',
@@ -1069,7 +1127,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   LifeEvent(
     id: 'crypto_tip',
     repeatable: true,
-    prompt: 'A classmate swears a coin will "10x by Friday". Get in?',
+    prompt: 'A friend swears a coin will "10x by Friday". Get in?',
     icon: Icons.currency_bitcoin_rounded,
     minAge: 15,
     choices: [
@@ -1218,6 +1276,8 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     prompt: 'Your car needs a 250-coin repair to get you to work.',
     icon: Icons.car_repair_rounded,
     minAge: 18,
+    requiresFlag: LifeFlag.hasCar,
+    requiresJob: true,
     choices: [
       LifeChoice(
         label: 'Pay from savings',
@@ -1241,6 +1301,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     prompt: 'Your boss offers a raise for more responsibility.',
     icon: Icons.trending_up_rounded,
     minAge: 20,
+    requiresJob: true,
     maxSalary: 520,
     choices: [
       LifeChoice(
@@ -1548,6 +1609,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     prompt: 'Your landlord is raising the rent by 200 coins a month.',
     icon: Icons.home_work_rounded,
     minAge: 20,
+    requiresRenting: true,
     choices: [
       LifeChoice(
         label: 'Negotiate',
@@ -1680,6 +1742,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     prompt: 'A parent is struggling and could use help with bills.',
     icon: Icons.family_restroom_rounded,
     minAge: 24,
+    requiresParent: true,
     choices: [
       LifeChoice(
         label: 'Help every month',
@@ -1706,6 +1769,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     prompt: 'Work offers to match retirement contributions up to 5%.',
     icon: Icons.savings_rounded,
     minAge: 23,
+    requiresJob: true,
     choices: [
       LifeChoice(
         label: 'Contribute the full 5%',
@@ -2063,6 +2127,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
   // -------------------------------------------------------------------------
   LifeEvent(
     id: 'mortgage_offer',
+    topic: 'buy_home',
     prompt:
         'You have enough saved for a deposit. The bank offers you a mortgage.',
     icon: Icons.house_rounded,
@@ -2070,22 +2135,30 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     maxAge: 55,
     minMoney: 1200,
     weight: 1.1,
+    forbidsAsset: AssetKind.home,
     choices: [
       LifeChoice(
         label: 'Buy within your means',
         outcome:
-            'Smaller than you wanted, comfortably affordable. You sleep fine.',
+            'Smaller than you wanted, comfortably affordable. You sleep fine. '
+            'It is on the Assets tab, with the mortgage beside it.',
         money: -1200,
         happiness: 12,
         smarts: 10,
+        grantsAsset: 'home_flat',
+        grantsFinanced: true,
       ),
       LifeChoice(
         label: 'Stretch for the bigger place',
-        outcome: 'Beautiful house. Every month is tight and you feel it.',
-        money: -2000,
+        outcome:
+            'Beautiful house. Every month is tight and you feel it. It is on '
+            'the Assets tab, with the mortgage beside it.',
+        money: -1200,
         happiness: 6,
         health: -6,
         smarts: -3,
+        grantsAsset: 'home_house',
+        grantsFinanced: true,
       ),
       LifeChoice(
         label: 'Keep renting and invest instead',
@@ -2136,6 +2209,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     minAge: 24,
     maxAge: 45,
     weight: 0.9,
+    forbidsChild: true,
     choices: [
       LifeChoice(
         label: 'Start a savings account for them',
@@ -2143,14 +2217,14 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
         money: -300,
         happiness: 18,
         smarts: 10,
-        addRelationship: 'Your child',
+        adds: LifeNewcomer.child,
       ),
       LifeChoice(
         label: 'Focus on the here and now',
         outcome: 'Everything goes on the present. It is a good present.',
         money: -500,
         happiness: 20,
-        addRelationship: 'Your child',
+        adds: LifeNewcomer.child,
       ),
     ],
   ),
@@ -2203,6 +2277,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     icon: Icons.elderly_rounded,
     minAge: 30,
     maxAge: 65,
+    requiresParent: true,
     weight: 0.9,
     choices: [
       LifeChoice(
@@ -2255,15 +2330,15 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     prompt: 'You could clear the rest of the mortgage in one payment.',
     icon: Icons.done_all_rounded,
     minAge: 40,
-    minMoney: 2500,
     weight: 0.8,
+    requiresMortgage: true,
     choices: [
       LifeChoice(
         label: 'Clear it',
         outcome: 'No more interest, no more monthly. The relief is physical.',
-        money: -2500,
         happiness: 20,
         smarts: 8,
+        paysOffMortgage: true,
       ),
       LifeChoice(
         label: 'Keep the cash invested',
@@ -2295,11 +2370,10 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
         smarts: -5,
       ),
       LifeChoice(
-        label: 'Split it with siblings beyond the will',
-        outcome: 'Less money, a family that still speaks at Christmas.',
+        label: 'Share some of it with family',
+        outcome: 'Less money, a family that still speaks at the holidays.',
         money: 900,
         happiness: 15,
-        addRelationship: 'Your sibling',
       ),
     ],
   ),
@@ -2425,6 +2499,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     prompt: 'Your child asks for help with a house deposit.',
     icon: Icons.family_restroom_rounded,
     minAge: 48,
+    requiresChild: true,
     minMoney: 1500,
     weight: 0.85,
     choices: [
@@ -2483,6 +2558,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     icon: Icons.beach_access_rounded,
     minAge: 60,
     maxAge: 70,
+    requiresJob: true,
     weight: 1.2,
     choices: [
       LifeChoice(
@@ -2557,6 +2633,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     prompt: 'You become a grandparent.',
     icon: Icons.child_care_rounded,
     minAge: 55,
+    requiresChild: true,
     weight: 1.0,
     choices: [
       LifeChoice(
@@ -2566,14 +2643,14 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
         money: -400,
         happiness: 22,
         smarts: 12,
-        addRelationship: 'Your grandchild',
+        adds: LifeNewcomer.grandchild,
       ),
       LifeChoice(
         label: 'Spoil them thoroughly',
         outcome: 'You are the favorite and you know exactly why.',
         money: -500,
         happiness: 24,
-        addRelationship: 'Your grandchild',
+        adds: LifeNewcomer.grandchild,
       ),
     ],
   ),
@@ -2632,6 +2709,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     icon: Icons.school_rounded,
     minAge: 35,
     maxAge: 68,
+    requiresJob: true,
     weight: 1.0,
     choices: [
       LifeChoice(
@@ -2656,6 +2734,7 @@ const List<LifeEvent> _kLifeEventsCore = <LifeEvent>[
     prompt: 'The roof needs work. It is not optional.',
     icon: Icons.roofing_rounded,
     minAge: 30,
+    requiresAsset: AssetKind.home,
     repeatable: true,
     weight: 1.0,
     choices: [
@@ -2928,6 +3007,9 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
     minAge: 24,
     maxAge: 40,
     weight: 0.9,
+    // Somebody you are already seeing, and rent to halve.
+    requiresPartner: true,
+    requiresRenting: true,
     choices: [
       LifeChoice(
         label: 'Move in together',
@@ -2936,7 +3018,6 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
             'biggest money moves there is.',
         money: 2400,
         happiness: 10,
-        addRelationship: 'Partner',
       ),
       LifeChoice(
         label: 'Not yet',
@@ -2953,6 +3034,7 @@ const List<LifeEvent> kLifeEventsExtra = <LifeEvent>[
     icon: Icons.car_repair_rounded,
     minAge: 20,
     maxAge: 65,
+    requiresFlag: LifeFlag.hasCar,
     weight: 1.1,
     repeatable: true,
     choices: [
@@ -3593,7 +3675,7 @@ const List<LifeEvent> kLifeEventsMoney = <LifeEvent>[
   // ---- Adults ----------------------------------------------------------
   LifeEvent(
     id: 'm_first_raise',
-    prompt: 'You got a raise. Your flat, car and habits all still work fine.',
+    prompt: 'You got a raise. Your home and habits all still work fine.',
     icon: Icons.moving_rounded,
     minAge: 20,
     requiresJob: true,
@@ -3610,7 +3692,7 @@ const List<LifeEvent> kLifeEventsMoney = <LifeEvent>[
         teaches: FinanceConcept.lifestyleCreep,
       ),
       LifeChoice(
-        label: 'Upgrade the flat to match',
+        label: 'Upgrade where you live to match',
         outcome:
             'Nicer place, same empty account at month end. The raise '
             'vanished into rent.',
@@ -3685,6 +3767,7 @@ const List<LifeEvent> kLifeEventsMoney = <LifeEvent>[
         'everything they have into it.',
     icon: Icons.scatter_plot_rounded,
     minAge: 20,
+    requiresJob: true,
     minMoney: 200,
     weight: 1.0,
     choices: [

@@ -17,6 +17,7 @@ import '../models_Like_Skins_and_lessons_templates/knowledge_tracing.dart';
 import '../models_Like_Skins_and_lessons_templates/money_snapshot_source.dart';
 import '../services_backend_and_other_services/supabase_service.dart';
 import '../models_Like_Skins_and_lessons_templates/life_achievements.dart';
+import '../models_Like_Skins_and_lessons_templates/coach_rewards.dart';
 
 @immutable
 class StatsActionResult {
@@ -1743,6 +1744,85 @@ class UserStatsController extends ChangeNotifier {
     );
 
     return _saveStats(nextStats, savingMessage: 'Saving practice results...');
+  }
+
+  /// Pays for Coach suggestions the player fixed. See [CoachRewards].
+  ///
+  /// Each id pays at most once per [CoachRewards.cooldown]; the rest are
+  /// still celebrated, just not paid. Reaching [CoachRewards.skinMilestone]
+  /// fixes unlocks the Golden skin for free.
+  Future<CoachClaim> claimCoachRewards(Iterable<String> fixedIds) async {
+    final now = DateTime.now().toUtc();
+    final lastPaid = _stats.coachRewardsPaid;
+    final paying = [
+      for (final id in fixedIds.toSet())
+        if (CoachRewards.canPay(id, lastPaid, now)) id,
+    ];
+    if (paying.isEmpty) {
+      return CoachClaim(
+        gold: 0,
+        xp: 0,
+        paidCount: 0,
+        totalFixes: _stats.coachFixesTotal,
+      );
+    }
+
+    var gold = 0;
+    var xp = 0;
+    for (final id in paying) {
+      final reward = CoachRewards.forId(id);
+      gold += reward.gold;
+      xp += reward.xp;
+    }
+    final before = _stats.coachFixesTotal;
+    final total = before + paying.length;
+    final reachesSkin =
+        before < CoachRewards.skinMilestone &&
+        total >= CoachRewards.skinMilestone &&
+        !_stats.unlockedSkins.contains(CoachRewards.skinId);
+
+    await _saveStats(
+      _stats.copyWith(
+        gold: _stats.gold + gold,
+        xp: _stats.xp + xp,
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          if (reachesSkin)
+            'unlocked_skins': <String>{
+              ..._stats.unlockedSkins,
+              CoachRewards.skinId,
+            }.toList(growable: false),
+          'coach_rewards_paid': <String, String>{
+            for (final e in lastPaid.entries) e.key: e.value.toIso8601String(),
+            for (final id in paying) id: now.toIso8601String(),
+          },
+          'coach_fixes_total': total,
+        },
+        transactions: <LedgerTransaction>[
+          LedgerTransaction(
+            id: 'txn_${now.microsecondsSinceEpoch}',
+            title: 'Coach: suggestions fixed',
+            description:
+                'Fixed ${paying.length} '
+                '${paying.length == 1 ? 'thing' : 'things'} the Coach flagged.',
+            amount: gold,
+            createdAt: now,
+            category: 'coach',
+          ),
+          ..._stats.transactions,
+        ],
+        updatedAt: now,
+      ),
+      savingMessage: 'Paying your reward...',
+    );
+
+    return CoachClaim(
+      gold: gold,
+      xp: xp,
+      paidCount: paying.length,
+      totalFixes: total,
+      unlockedSkinId: reachesSkin ? CoachRewards.skinId : null,
+    );
   }
 
   /// Clears a skill from the weak list once it has been answered correctly.

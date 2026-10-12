@@ -20,11 +20,13 @@ import 'town_spot_models.dart';
 /// Pure data. The controller checks age, price and yearly limit, and applies it.
 
 enum ActivityCategory {
+  // Named for what a player is looking for. "Mind and body" was accurate,
+  // and a younger tester still could not find the doctor under it.
   mindBody(
-    'Mind and body',
-    Icons.self_improvement_rounded,
+    'Health & doctor',
+    Icons.medical_services_rounded,
     Color(0xFF6CD34A),
-    'Look after yourself. It pays back in everything else.',
+    'See the doctor, exercise and rest.',
   ),
   social(
     'Friends and community',
@@ -713,9 +715,11 @@ const List<ActivityDef> kActivities = <ActivityDef>[
     id: 'check_credit_report',
     category: ActivityCategory.money,
     title: 'Check your credit report',
-    blurb: 'Free once a year — the one report nobody checks until they need it.',
+    blurb:
+        'Free once a year — the one report nobody checks until they need it.',
     icon: Icons.fact_check_rounded,
-    outcome: 'On-time bills built it up. The one you missed is still on there too.',
+    outcome:
+        'On-time bills built it up. The one you missed is still on there too.',
     minAge: 16,
     tiers: <double>[1.0, 0.5],
     smarts: 2,

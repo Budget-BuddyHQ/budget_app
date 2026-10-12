@@ -142,7 +142,7 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
         'pipe bursts. Every real life has them.',
     bullets: [
       'You cannot stop them, but savings make them small.',
-      'If you lose a job, the Occupation tab helps you find the next one.',
+      'If you lose a job, the Job tab helps you find the next one.',
       'Nobody is punished for a bad day. You are shown what would have '
           'helped.',
     ],
@@ -162,8 +162,8 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
     bullets: [
       'There are sixteen places, like the bank, a shop, a cafe, a gym and a '
           'clinic. Walk to one to make a money choice.',
-      'Hiking, the gym, the doctor, reading and the park are done in the town, '
-          'not in the menus.',
+      'Hiking, the gym, reading and the park are done in the town. The '
+          'doctor is in the town and in the menu too.',
       'Some days you cannot go out: too young, too ill, or a storm.',
     ],
     teaches:
@@ -176,12 +176,13 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
     id: 'life_menus',
     title: 'The four menus',
     tagline:
-        'Four tabs sit either side of the Age button: Occupation, Assets, '
-        'People and Activities. They hold the things you choose to do.',
+        'Four tabs sit either side of the Age button: Job, Money, People '
+        'and Do things. Above them, "I want to..." finds anything by name.',
     bullets: [
-      'Events happen to you. The menus are what you do between them.',
-      'Tap a tab to open it. Swipe the sheet down to close it.',
-      'The next four cards explain one each.',
+      'Not sure where something is? Tap "I want to..." and type it, like '
+          '"doctor" or "budget".',
+      'Tap the Health bar to see a doctor.',
+      'The next four cards explain one tab each.',
     ],
     teaches:
         'Half of a money life is what you choose to do between the big events.',
@@ -191,7 +192,7 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
   ),
   TutorialStep(
     id: 'life_menu_work',
-    title: 'Occupation',
+    title: 'Job',
     tagline:
         'Your job, or your school if you are young. This is where your pay '
         'comes from.',
@@ -207,7 +208,7 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
   ),
   TutorialStep(
     id: 'life_menu_assets',
-    title: 'Assets',
+    title: 'Money',
     tagline:
         'What you own and what you owe: homes, cars, pets, loans, and your '
         'budget.',
@@ -240,10 +241,10 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
   ),
   TutorialStep(
     id: 'life_menu_activities',
-    title: 'Activities',
+    title: 'Do things',
     tagline:
-        'Things to do, in groups: sport, clubs, learning, travel, dating and '
-        'side jobs.',
+        'Things to do, in groups: health and the doctor, sport, clubs, '
+        'learning, travel, dating and side jobs.',
     bullets: [
       'Each one costs a little or nothing, and does something for you.',
       'You can do each a few times a year. Then it stops paying, so try '

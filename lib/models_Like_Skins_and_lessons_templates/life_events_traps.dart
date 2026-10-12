@@ -209,6 +209,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
         'gift cards and send the codes.',
     icon: Icons.warning_amber_rounded,
     minAge: 11,
+    requiresStudent: true,
     weight: 1.0,
     choices: [
       LifeChoice(

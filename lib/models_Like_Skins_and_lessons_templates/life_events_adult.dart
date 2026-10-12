@@ -106,6 +106,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
   // --- Housing --------------------------------------------------------
   LifeEvent(
     id: 'a_mortgage_or_rent',
+    topic: 'buy_home',
     prompt:
         'You could buy a small place. The mortgage payment is close to your '
         'rent, but the deposit is most of your savings.',
@@ -114,6 +115,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
     minMoney: 400,
     weight: 0.7,
     forbidsAsset: AssetKind.home,
+    requiresRenting: true,
     choices: [
       LifeChoice(
         label: 'Buy (210 coins down, the rest on a mortgage)',
@@ -338,6 +340,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
         'tell.',
     icon: Icons.elderly_rounded,
     minAge: 26,
+    requiresParent: true,
     weight: 0.7,
     choices: [
       LifeChoice(

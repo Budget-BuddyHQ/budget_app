@@ -37,6 +37,8 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
   // =====================================================================
   LifeEvent(
     id: 'chain_pet_adopt',
+    topic: 'get_dog',
+    forbidsFlag: LifeFlag.hasPet,
     prompt:
         'There is a scruffy dog at the shelter with your name on it, '
         'apparently. Taking him home costs 60 coins and he eats every day '
@@ -294,7 +296,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
   LifeEvent(
     id: 'chain_index_start',
     prompt:
-        'A colleague explains index funds: instead of picking a company you '
+        'A friend explains index funds: instead of picking a company you '
         'buy a slice of hundreds of them, and it costs almost nothing to '
         'hold.',
     icon: Icons.show_chart_rounded,
@@ -592,6 +594,8 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         'car is 1,100, or 110 down and the rest on a five-year loan.',
     icon: Icons.directions_car_rounded,
     minAge: 17,
+    minMoney: 450,
+    forbidsFlag: LifeFlag.hasCar,
     weight: 1.3,
     choices: [
       LifeChoice(

@@ -795,6 +795,7 @@ const List<LifeEvent> kLifeEventsHomeMoney = <LifeEvent>[
     minAge: 20,
     maxAge: 65,
     minMoney: 100,
+    requiresSibling: true,
     repeatable: true,
     choices: [
       LifeChoice(

@@ -797,7 +797,9 @@ class LifeSimController extends ChangeNotifier {
     if (choice.setJob != null || choice.setSalary != null) {
       return LifeLogKind.career;
     }
-    if (choice.addRelationship != null) return LifeLogKind.people;
+    if (choice.addRelationship != null || choice.adds != null) {
+      return LifeLogKind.people;
+    }
     if (choice.skillGain > 0 || choice.smarts != 0) {
       return LifeLogKind.learning;
     }
@@ -853,6 +855,12 @@ class LifeSimController extends ChangeNotifier {
     hasLivingParent: _people.any(
       (p) => p.isAlive && (p.role == 'Mother' || p.role == 'Father'),
     ),
+    hasSibling: _people.any(
+      (p) => p.isAlive && (p.role == 'Sister' || p.role == 'Brother'),
+    ),
+    mortgage: _loans
+        .where((l) => l.kind == LoanKind.mortgage)
+        .fold(0, (sum, l) => sum + l.balance),
     debt: _debt + loanBalance,
     renting:
         _rentalId != 'family' &&
@@ -2140,6 +2148,8 @@ class LifeSimController extends ChangeNotifier {
     if (revealed != null) {
       _traits.add(revealed);
     }
+    final newcomer = choice.adds;
+    if (newcomer != null) _welcome(newcomer);
     final person = choice.addRelationship;
     if (person != null && _personNamed(person) == null) {
       _people.add(

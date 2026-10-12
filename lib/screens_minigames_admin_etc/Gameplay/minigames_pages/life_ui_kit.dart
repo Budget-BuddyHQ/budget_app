@@ -823,12 +823,17 @@ class LifeStatBars extends StatelessWidget {
     required this.health,
     required this.smarts,
     required this.looks,
+    this.onHealthTap,
   });
 
   final int happiness;
   final int health;
   final int smarts;
   final int looks;
+
+  /// Tapping Health opens "Health & doctor". A low bar is when a player goes
+  /// looking for a doctor, and the bar is where they are already looking.
+  final VoidCallback? onHealthTap;
 
   @override
   Widget build(BuildContext context) {
@@ -846,10 +851,18 @@ class LifeStatBars extends StatelessWidget {
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: _StatBar(
-                label: 'Health',
-                value: health,
-                color: const Color(0xFFFF8474),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onHealthTap,
+                child: Semantics(
+                  button: onHealthTap != null,
+                  label: onHealthTap == null ? null : 'Health, see a doctor',
+                  child: _StatBar(
+                    label: 'Health',
+                    value: health,
+                    color: const Color(0xFFFF8474),
+                  ),
+                ),
               ),
             ),
           ],

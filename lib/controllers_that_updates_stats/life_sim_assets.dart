@@ -125,6 +125,7 @@ extension LifeSimAssets on LifeSimController {
       if (asset != null) _dropAsset(asset);
     }
     if (choice.paysOffStudentLoan) _payOffStudentLoans();
+    if (choice.paysOffMortgage) _payOffMortgage();
   }
 
   /// The most recently acquired asset of [kind]. A bicycle does not count as the
@@ -186,6 +187,22 @@ extension LifeSimAssets on LifeSimController {
       _applyEventMoney(-loan.balance);
     }
     _assets.remove(asset);
+  }
+
+  void _payOffMortgage() {
+    var owed = 0;
+    for (final loan
+        in _loans.where((l) => l.kind == LoanKind.mortgage).toList()) {
+      owed += loan.balance;
+      _loans.remove(loan);
+      for (final a in _assets) {
+        if (a.loanUid == loan.uid) a.loanUid = null;
+      }
+    }
+    if (owed > 0) {
+      _applyEventMoney(-owed);
+      _teach(FinanceConcept.interestCost);
+    }
   }
 
   void _payOffStudentLoans() {

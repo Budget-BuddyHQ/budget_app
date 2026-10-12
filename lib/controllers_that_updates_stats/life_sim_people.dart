@@ -368,6 +368,21 @@ extension LifeSimPeople on LifeSimController {
 
   bool _startFamily(Relationship p) {
     _touch(p.name);
+    final child = _addChild();
+    _applyEventMoney(-120);
+    _happiness = _clamp(_happiness + 12);
+    _setLog(
+      'You and ${_first(p)} welcomed ${child.split(' ').first}. It is '
+      'wonderful, and it is also about 40 a year for a long time to come.',
+      kind: LifeLogKind.people,
+    );
+    _teach(FinanceConcept.needsVsWants);
+    _changed();
+    return true;
+  }
+
+  /// A newborn son or daughter, with the family surname. Returns their name.
+  String _addChild() {
     final girl = _random.nextBool();
     final child = childName(_random, surname: surnameOf(name), girl: girl);
     _people.add(
@@ -382,16 +397,37 @@ extension LifeSimPeople on LifeSimController {
       ),
     );
     _lastChildAge = _age;
-    _applyEventMoney(-120);
-    _happiness = _clamp(_happiness + 12);
-    _setLog(
-      'You and ${_first(p)} welcomed ${child.split(' ').first}. It is '
-      'wonderful, and it is also about 40 a year for a long time to come.',
-      kind: LifeLogKind.people,
-    );
-    _teach(FinanceConcept.needsVsWants);
-    _changed();
-    return true;
+    return child;
+  }
+
+  /// Somebody a story card brought into the life. See [LifeChoice.adds].
+  void _welcome(LifeNewcomer who) {
+    switch (who) {
+      case LifeNewcomer.child:
+        _addChild();
+      case LifeNewcomer.partner:
+        if (hasPartner) return;
+        _addPartner();
+      case LifeNewcomer.grandchild:
+        final girl = _random.nextBool();
+        final taken = {for (final p in _people) p.name};
+        var kid = childName(_random, surname: surnameOf(name), girl: girl);
+        for (var i = 0; i < 20 && taken.contains(kid); i++) {
+          kid = childName(_random, surname: surnameOf(name), girl: girl);
+        }
+        _people.add(
+          Relationship(
+            name: kid,
+            kind: RelationshipKind.family,
+            closeness: 80,
+            metAtAge: _age,
+            lastSeenAge: _age,
+            role: girl ? 'Granddaughter' : 'Grandson',
+            // A newborn, not somebody the player's own age.
+            ageOffset: -_age,
+          ),
+        );
+    }
   }
 
   // ---- Meeting people --------------------------------------------------------------
@@ -418,13 +454,8 @@ extension LifeSimPeople on LifeSimController {
     return true;
   }
 
-  /// A chance of finding somebody to be with.
-  bool _maybeMeetPartner(int chancePercent) {
-    if (hasPartner) return false;
-    final looks = (_looks - 50) / 10;
-    final charm = (_skills[LifeSkill.charisma] ?? 0) / 8;
-    final chance = (chancePercent + looks + charm).round().clamp(5, 90);
-    if (_random.nextInt(100) >= chance) return false;
+  /// A new partner with a fresh name. Returns their name.
+  String _addPartner() {
     final taken = {for (final p in _people) p.name};
     final person = freshContactName(_random, taken);
     _people.add(
@@ -437,6 +468,17 @@ extension LifeSimPeople on LifeSimController {
         role: 'Partner',
       ),
     );
+    return person;
+  }
+
+  /// A chance of finding somebody to be with.
+  bool _maybeMeetPartner(int chancePercent) {
+    if (hasPartner) return false;
+    final looks = (_looks - 50) / 10;
+    final charm = (_skills[LifeSkill.charisma] ?? 0) / 8;
+    final chance = (chancePercent + looks + charm).round().clamp(5, 90);
+    if (_random.nextInt(100) >= chance) return false;
+    final person = _addPartner();
     _happiness = _clamp(_happiness + 8);
     _setLog(
       'You met $person, and it turned into something. Take your time.',

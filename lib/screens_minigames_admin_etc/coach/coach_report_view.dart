@@ -19,6 +19,11 @@ import '../../models_Like_Skins_and_lessons_templates/lesson.dart';
 import '../../models_Like_Skins_and_lessons_templates/quiz_bank.dart';
 import '../../models_Like_Skins_and_lessons_templates/skill_lessons.dart';
 import '../../widgets_custom_lotties/market_visuals.dart';
+import '../../models_Like_Skins_and_lessons_templates/coach_rewards.dart';
+import '../../models_Like_Skins_and_lessons_templates/avatar_skin.dart';
+import '../../services_backend_and_other_services/app_sound_service.dart';
+import '../../widgets_custom_lotties/confetti_burst.dart';
+import '../../widgets_custom_lotties/game_toast.dart';
 
 /// The budget and habit analyzer, as a screen.
 ///
@@ -85,6 +90,38 @@ class _CoachReportViewState extends State<CoachReportView> {
     });
   }
 
+  /// Pays for what was fixed, celebrates it, and clears the card.
+  Future<void> _claim(List<FixedFinding> fixed) async {
+    final controller = context.read<UserStatsController>();
+    final claim = await controller.claimCoachRewards(fixed.map((f) => f.id));
+    if (!mounted) return;
+    if (claim.paidAnything) {
+      ConfettiBurst.show(context);
+      GameToast.show(
+        context,
+        title: 'Reward claimed!',
+        message:
+            '+${claim.gold} gold and +${claim.xp} XP for fixing what the '
+            'Coach found.',
+        icon: Icons.emoji_events_rounded,
+        accent: const Color(0xFFFFC800),
+        soundEffect: AppSoundEffect.celebration,
+      );
+    }
+    if (claim.unlockedSkinId != null) {
+      GameToast.show(
+        context,
+        title: 'New skin unlocked!',
+        message:
+            '${skinFromId(claim.unlockedSkinId!).name} Buddy is yours, '
+            'for ${CoachRewards.skinMilestone} fixes. Find it in Style.',
+        icon: Icons.auto_awesome_rounded,
+        accent: const Color(0xFFDDB33E),
+      );
+    }
+    await _dismissFixed();
+  }
+
   Future<void> _dismissFixed() async {
     final memory = _memory;
     if (memory == null) return;
@@ -107,9 +144,26 @@ class _CoachReportViewState extends State<CoachReportView> {
         _CoachHeader(report: report),
         const SizedBox(height: 16),
         if (fixed.isNotEmpty) ...[
-          _FixedCard(fixed: fixed, onDismiss: _dismissFixed),
+          _FixedCard(
+            fixed: fixed,
+            payable: [
+              for (final f in fixed)
+                if (CoachRewards.canPay(
+                  f.id,
+                  stats.coachRewardsPaid,
+                  DateTime.now().toUtc(),
+                ))
+                  f,
+            ],
+            onClaim: () => _claim(fixed),
+            onDismiss: _dismissFixed,
+          ),
           const SizedBox(height: 16),
         ],
+        _FixProgress(
+          fixes: stats.coachFixesTotal,
+          hasSkin: stats.unlockedSkins.contains(CoachRewards.skinId),
+        ),
         _ImproveCard(weakSkills: stats.weakSkills),
         const AgeScaledNote(
           what: 'Findings',
@@ -544,6 +598,15 @@ class _FindingCard extends StatelessWidget {
             ],
           ),
           if (finding.kind != MoneyFindingKind.strength &&
+              finding.id != 'start_here') ...[
+            const SizedBox(height: 10),
+            const _RewardChip(
+              label:
+                  'Fix this: +${CoachRewards.findingGold} gold · '
+                  '+${CoachRewards.findingXp} XP',
+            ),
+          ],
+          if (finding.kind != MoneyFindingKind.strength &&
               finding.concept != null &&
               unitIdForConcept(finding.concept!) != null) ...[
             const SizedBox(height: 10),
@@ -919,9 +982,18 @@ class _DiagnosisShell extends StatelessWidget {
 
 /// "You fixed it" — what the Coach used to flag and no longer does.
 class _FixedCard extends StatelessWidget {
-  const _FixedCard({required this.fixed, required this.onDismiss});
+  const _FixedCard({
+    required this.fixed,
+    required this.payable,
+    required this.onClaim,
+    required this.onDismiss,
+  });
 
   final List<FixedFinding> fixed;
+
+  /// The fixes that can still pay (outside the cooldown).
+  final List<FixedFinding> payable;
+  final VoidCallback onClaim;
   final VoidCallback onDismiss;
 
   @override
@@ -976,12 +1048,59 @@ class _FixedCard extends StatelessWidget {
                 ],
               ),
             ),
-          const SizedBox(height: 10),
-          _GoButton(
-            label: 'Nice!',
-            icon: Icons.celebration_rounded,
-            onTap: onDismiss,
-          ),
+          const SizedBox(height: 12),
+          if (payable.isNotEmpty) ...[
+            Builder(
+              builder: (context) {
+                var gold = 0;
+                var xp = 0;
+                for (final f in payable) {
+                  final r = CoachRewards.forId(f.id);
+                  gold += r.gold;
+                  xp += r.xp;
+                }
+                return SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    key: const ValueKey('coach-claim'),
+                    onPressed: onClaim,
+                    icon: const Icon(Icons.redeem_rounded),
+                    label: Text(
+                      'Claim +$gold gold · +$xp XP',
+                      style: GoogleFonts.pixelifySans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFC800),
+                      foregroundColor: const Color(0xFF2A1F00),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ] else ...[
+            Text(
+              'Already rewarded in the last 30 days, but still worth '
+              'celebrating.',
+              style: GoogleFonts.quicksand(
+                color: AppTheme.textMuted,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _GoButton(
+              label: 'Nice!',
+              icon: Icons.celebration_rounded,
+              onTap: onDismiss,
+            ),
+          ],
         ],
       ),
     );
@@ -1061,6 +1180,12 @@ class _ImproveCard extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                        const SizedBox(height: 4),
+                        const _RewardChip(
+                          label:
+                              'Fix it: +${CoachRewards.skillGold} gold · '
+                              '+${CoachRewards.skillXp} XP',
+                        ),
                       ],
                     ),
                   ),
@@ -1109,6 +1234,125 @@ class _GoButton extends StatelessWidget {
         side: const BorderSide(color: AppTheme.greenPrimary, width: 2),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+}
+
+/// What a suggestion is worth, shown before it is fixed.
+class _RewardChip extends StatelessWidget {
+  const _RewardChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppTheme.inset,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFFFC800), width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.monetization_on_rounded,
+            color: Color(0xFFFFC800),
+            size: 15,
+          ),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              label,
+              style: AppTheme.numeric(
+                color: const Color(0xFFFFC800),
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Fixes so far, toward the mythic skin. Hidden once it is unlocked.
+class _FixProgress extends StatelessWidget {
+  const _FixProgress({required this.fixes, required this.hasSkin});
+
+  final int fixes;
+  final bool hasSkin;
+
+  @override
+  Widget build(BuildContext context) {
+    if (hasSkin) return const SizedBox.shrink();
+    const goal = CoachRewards.skinMilestone;
+    final done = fixes.clamp(0, goal);
+    final skin = skinFromId(CoachRewards.skinId);
+    return Container(
+      key: const ValueKey('coach-fix-progress'),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.panel,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: AppTheme.outline, width: 2),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.asset(
+              skin.assetPath,
+              width: 52,
+              height: 52,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => const Icon(
+                Icons.auto_awesome_rounded,
+                color: Color(0xFFDDB33E),
+                size: 40,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Fix $goal things to unlock ${skin.name} Buddy',
+                  style: GoogleFonts.pixelifySans(
+                    color: const Color(0xFFDDB33E),
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: done / goal,
+                    minHeight: 8,
+                    backgroundColor: AppTheme.inset,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Color(0xFFDDB33E),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$done / $goal fixed · a mythic skin',
+                  style: AppTheme.numeric(
+                    color: AppTheme.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

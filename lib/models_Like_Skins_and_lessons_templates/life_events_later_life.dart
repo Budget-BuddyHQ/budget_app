@@ -298,7 +298,7 @@ const List<LifeEvent> kLifeEventsLaterLife = <LifeEvent>[
         teaches: FinanceConcept.lifestyleCreep,
       ),
       LifeChoice(
-        label: 'Buy a new outfit and a nicer car for it (150 coins)',
+        label: 'Buy a new outfit and hire a fancy car for the night (150 coins)',
         outcome:
             'Nobody asked. You spent 150 to impress people you will '
             'not see again.',

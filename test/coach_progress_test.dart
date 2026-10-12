@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:budget_app/controllers_that_updates_stats/user_stats_controller.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/coach_memory.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/coach_rewards.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/money_analyzer.dart';
 import 'package:budget_app/screens_minigames_admin_etc/coach/coach_report_view.dart';
 import 'package:budget_app/services_backend_and_other_services/supabase_service.dart';
@@ -84,6 +85,8 @@ void main() {
   });
 
   group('the Coach screen', () {
+    late UserStatsController controller;
+
     Future<void> show(
       WidgetTester tester, {
       List<String> weak = const [],
@@ -97,9 +100,9 @@ void main() {
       );
       await tester.pumpWidget(
         ChangeNotifierProvider<UserStatsController>(
-          create: (_) =>
-              UserStatsController(service: SupabaseService.instance)
-                ..seedStatsForTest(stats),
+          create: (_) => controller = UserStatsController(
+            service: SupabaseService.instance,
+          )..seedStatsForTest(stats),
           child: const MaterialApp(home: Scaffold(body: CoachReportView())),
         ),
       );
@@ -127,11 +130,58 @@ void main() {
       expect(find.text('You fixed it!'), findsOneWidget);
       expect(find.text('Income: no longer a weak spot'), findsOneWidget);
 
-      await tester.tap(find.text('Nice!'));
-      for (var i = 0; i < 3; i++) {
+      // And it pays: a weak topic is worth the smaller reward.
+      final gold = controller.stats.gold;
+      expect(
+        find.text(
+          'Claim +${CoachRewards.skillGold} gold · +${CoachRewards.skillXp} XP',
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('coach-claim')));
+      for (var i = 0; i < 30; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
+      expect(controller.stats.gold, gold + CoachRewards.skillGold);
+      expect(controller.stats.coachFixesTotal, 1);
       expect(find.text('You fixed it!'), findsNothing);
+    });
+
+    testWidgets('each weak topic says what fixing it is worth', (tester) async {
+      await show(tester, weak: const ['income']);
+      expect(
+        find.textContaining('Fix it: +${CoachRewards.skillGold}'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('coach-fix-progress')), findsOneWidget);
+    });
+  });
+
+  group('Coach rewards', () {
+    UserStatsController fresh() =>
+        UserStatsController(service: SupabaseService.instance);
+
+    test('a fix pays once, then not again for 30 days', () async {
+      final c = fresh();
+      final gold = c.stats.gold;
+      final first = await c.claimCoachRewards(['lives_flat']);
+      expect(first.gold, CoachRewards.findingGold);
+      expect(c.stats.gold, gold + CoachRewards.findingGold);
+
+      // Flag it again, fix it again: the same id inside the cooldown.
+      final again = await c.claimCoachRewards(['lives_flat']);
+      expect(again.paidAnything, isFalse);
+      expect(c.stats.gold, gold + CoachRewards.findingGold);
+    });
+
+    test('the tenth fix unlocks the Golden skin', () async {
+      final c = fresh();
+      await c.claimCoachRewards([for (var i = 0; i < 9; i++) 'skill:s$i']);
+      expect(c.stats.unlockedSkins, isNot(contains(CoachRewards.skinId)));
+      final tenth = await c.claimCoachRewards(['finding_x']);
+      expect(tenth.unlockedSkinId, CoachRewards.skinId);
+      expect(c.stats.unlockedSkins, contains(CoachRewards.skinId));
+      expect(c.stats.coachFixesTotal, 10);
     });
   });
 }

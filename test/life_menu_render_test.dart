@@ -106,10 +106,10 @@ void main() {
     ) async {
       await show(tester, adult());
       for (final label in const [
-        'Occupation',
-        'Assets',
+        'Job',
+        'Money',
         'People',
-        'Activities',
+        'Do things',
       ]) {
         expect(find.text(label), findsWidgets, reason: label);
       }
@@ -130,7 +130,7 @@ void main() {
       );
       await show(tester, kid);
       expect(find.text('School'), findsWidgets);
-      expect(find.text('Occupation'), findsNothing);
+      expect(find.text('Job'), findsNothing);
     });
 
     testWidgets('the header shows net worth and not just cash', (tester) async {
@@ -187,7 +187,7 @@ void main() {
       tester,
     ) async {
       await show(tester, adult());
-      await tab(tester, 'Occupation');
+      await tab(tester, 'Job');
       expect(find.text('Barista'), findsWidgets);
       expect(find.text('Work harder'), findsOneWidget);
       expect(find.text('Ask for a raise'), findsOneWidget);
@@ -216,7 +216,7 @@ void main() {
       tester,
     ) async {
       await show(tester, adult());
-      await tab(tester, 'Assets');
+      await tab(tester, 'Money');
       expect(find.text('Net worth'), findsWidgets);
       expect(find.text('Where you live'), findsOneWidget);
       expect(find.text('Browse and buy'), findsOneWidget);
@@ -239,9 +239,9 @@ void main() {
 
     testWidgets('Activities is a grid of categories', (tester) async {
       await show(tester, adult());
-      await tab(tester, 'Activities');
+      await tab(tester, 'Do things');
       for (final label in const [
-        'Mind and body',
+        'Health & doctor',
         'Friends and community',
         'Love and dating',
         'Travel and fun',
@@ -258,8 +258,8 @@ void main() {
     testWidgets('an activity can be done from its category', (tester) async {
       final life = adult();
       await show(tester, life);
-      await tab(tester, 'Activities');
-      await tester.tap(find.text('Mind and body'));
+      await tab(tester, 'Do things');
+      await tester.tap(find.text('Health & doctor'));
       await tester.pumpAndSettle();
       final before = life.health;
       await tester.tap(find.text('Eat well for a while'));
@@ -274,8 +274,8 @@ void main() {
       tester,
     ) async {
       await show(tester, adult());
-      await tab(tester, 'Activities');
-      await tester.tap(find.text('Mind and body'));
+      await tab(tester, 'Do things');
+      await tester.tap(find.text('Health & doctor'));
       await tester.pumpAndSettle();
       for (final gone in const [
         'Go for a run',
@@ -303,8 +303,8 @@ void main() {
       final life = adult()..debugSetStats(health: 10);
       expect(life.outingPermission.allowed, isFalse);
       await show(tester, life);
-      await tab(tester, 'Activities');
-      await tester.tap(find.text('Mind and body'));
+      await tab(tester, 'Do things');
+      await tester.tap(find.text('Health & doctor'));
       await tester.pumpAndSettle();
       expect(find.text('See the doctor'), findsOneWidget);
       final before = life.health;
@@ -323,8 +323,8 @@ void main() {
       final life = adult();
       expect(life.outingPermission.allowed, isTrue);
       await show(tester, life);
-      await tab(tester, 'Activities');
-      await tester.tap(find.text('Mind and body'));
+      await tab(tester, 'Do things');
+      await tester.tap(find.text('Health & doctor'));
       await tester.pumpAndSettle();
       expect(find.text('See the doctor'), findsOneWidget);
     });
@@ -342,7 +342,7 @@ void main() {
 
     testWidgets('the job board shows what each job needs', (tester) async {
       await show(tester, adult());
-      await tab(tester, 'Occupation');
+      await tab(tester, 'Job');
       await tester.tap(find.text('Look for a better job'));
       await tester.pumpAndSettle();
       expect(find.text('Job board'), findsOneWidget);
@@ -352,7 +352,7 @@ void main() {
 
     testWidgets('a locked job says what is in the way', (tester) async {
       await show(tester, adult());
-      await tab(tester, 'Occupation');
+      await tab(tester, 'Job');
       await tester.tap(find.text('Look for a better job'));
       await tester.pumpAndSettle();
       // Not `scrollUntilVisible`: it requires its finder to resolve to a
@@ -387,7 +387,7 @@ void main() {
 
     testWidgets('is not there when nothing is owed', (tester) async {
       await show(tester, adult());
-      await tab(tester, 'Assets');
+      await tab(tester, 'Money');
       expect(find.text('Pay back what you owe'), findsNothing);
     });
 
@@ -395,7 +395,7 @@ void main() {
       final life = owing(cash: 300);
       expect(life.debt, 200);
       await show(tester, life);
-      await tab(tester, 'Assets');
+      await tab(tester, 'Money');
       expect(find.text('Pay back what you owe'), findsOneWidget);
       expect(find.textContaining('You owe 200'), findsOneWidget);
       expect(find.textContaining('about 36 a year'), findsOneWidget);
@@ -404,7 +404,7 @@ void main() {
     testWidgets('pays the debt when pressed', (tester) async {
       final life = owing(cash: 300);
       await show(tester, life);
-      await tab(tester, 'Assets');
+      await tab(tester, 'Money');
       await tester.tap(find.text('Pay back what you owe'));
       await tester.pumpAndSettle();
       expect(life.debt, 0);
@@ -416,7 +416,7 @@ void main() {
     ) async {
       final life = owing(cash: 0);
       await show(tester, life);
-      await tab(tester, 'Assets');
+      await tab(tester, 'Money');
       expect(find.text('Cash and savings are both empty'), findsOneWidget);
       await tester.tap(find.text('Pay back what you owe'));
       await tester.pumpAndSettle();
@@ -426,7 +426,7 @@ void main() {
     for (final size in const <Size>[Size(320, 568), Size(360, 640)]) {
       testWidgets('fits on a ${size.width.toInt()}-wide phone', (tester) async {
         await show(tester, owing(cash: 300), size: size);
-        await tab(tester, 'Assets');
+        await tab(tester, 'Money');
         expect(tester.takeException(), isNull);
         expect(find.text('Pay back what you owe'), findsOneWidget);
       });
