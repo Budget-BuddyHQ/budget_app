@@ -1634,19 +1634,61 @@ class LifeSimController extends ChangeNotifier {
   /// player never finds out why anyone bothers. With it, the same shock is
   /// a shrug for a player who budgeted savings and a debt spiral for one
   /// who did not — the lesson lands as an experience rather than a tip.
-  static const List<({String reason, int min, int max})> _shocks = [
-    (reason: 'Your car broke down', min: 300, max: 900),
-    (reason: 'A trip to the dentist', min: 150, max: 500),
-    (reason: 'The boiler gave out', min: 400, max: 1100),
-    (reason: 'Your phone was stolen', min: 200, max: 600),
-    (reason: 'An unexpected vet bill', min: 180, max: 700),
-    (reason: 'A leak damaged the floor', min: 350, max: 1000),
+  ///
+  /// Each one only lands on a life it can be true of. A car repair hit people
+  /// with no car, a vet bill people with no pet, and a broken boiler people
+  /// renting or living with family, whose boiler is somebody else's bill.
+  /// Reported as life events that "conflict with what you have".
+  static const List<({String reason, int min, int max, _ShockNeeds needs})>
+  _shocks = [
+    (reason: 'Your car broke down', min: 300, max: 900, needs: _ShockNeeds.car),
+    (
+      reason: 'A trip to the dentist',
+      min: 150,
+      max: 500,
+      needs: _ShockNeeds.nothing,
+    ),
+    (
+      reason: 'The boiler gave out',
+      min: 400,
+      max: 1100,
+      needs: _ShockNeeds.home,
+    ),
+    (
+      reason: 'Your phone was stolen',
+      min: 200,
+      max: 600,
+      needs: _ShockNeeds.nothing,
+    ),
+    (
+      reason: 'An unexpected vet bill',
+      min: 180,
+      max: 700,
+      needs: _ShockNeeds.pet,
+    ),
+    (
+      reason: 'A leak damaged the floor',
+      min: 350,
+      max: 1000,
+      needs: _ShockNeeds.home,
+    ),
   ];
+
+  bool _shockFits(_ShockNeeds needs) => switch (needs) {
+    _ShockNeeds.nothing => true,
+    _ShockNeeds.car => _effectiveFlags().contains(LifeFlag.hasCar),
+    _ShockNeeds.pet => _assets.any((a) => a.def.kind == AssetKind.pet),
+    _ShockNeeds.home => ownsHome,
+  };
 
   void _maybeFinancialShock() {
     if (isDependent || _salary <= 0 || finished) return;
     if (_random.nextInt(7) != 0) return;
-    final shock = _shocks[_random.nextInt(_shocks.length)];
+    final fits = [
+      for (final s in _shocks)
+        if (_shockFits(s.needs)) s,
+    ];
+    final shock = fits[_random.nextInt(fits.length)];
     final amount = shock.min + _random.nextInt(shock.max - shock.min + 1);
     applyShock(amount, shock.reason);
   }
@@ -3070,3 +3112,6 @@ class LifeSimController extends ChangeNotifier {
 
   int _clamp(int value) => value.clamp(0, 100);
 }
+
+/// What a life must have for a surprise bill to be about it.
+enum _ShockNeeds { nothing, car, pet, home }

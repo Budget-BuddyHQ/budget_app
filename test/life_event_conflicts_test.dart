@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:budget_app/controllers_that_updates_stats/life_sim_controller.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_assets.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_sim_models.dart';
@@ -185,6 +187,44 @@ void main() {
       final e = event('t_gift_card_scam');
       expect(e.matches(ctx(age: 40)), isFalse);
     });
+  });
+
+  test('surprise bills only come for things the life has', () {
+    // A car repair charged to somebody with no car, a vet bill with no pet,
+    // a broken boiler for somebody renting. Twenty working lives with none
+    // of the three, every card skipped so nothing gets bought.
+    const needsSomething = [
+      'Your car broke down',
+      'An unexpected vet bill',
+      'The boiler gave out',
+      'A leak damaged the floor',
+    ];
+    var shocks = 0;
+    for (var seed = 0; seed < 20; seed++) {
+      final l = LifeSimController(
+        random: Random(seed),
+        name: 'Tester',
+        initialAge: 25,
+        startMoney: 5000,
+        startJob: 'Baker',
+        startSalary: 300,
+      );
+      for (var year = 0; year < 30 && !l.finished; year++) {
+        l.debugClearEvent();
+        l.ageUp();
+      }
+      for (final entry in l.history) {
+        if (entry.text.contains(' cost ')) shocks++;
+        for (final reason in needsSomething) {
+          expect(
+            entry.text,
+            isNot(startsWith(reason)),
+            reason: 'seed $seed, age ${entry.age}',
+          );
+        }
+      }
+    }
+    expect(shocks, greaterThan(0), reason: 'the shocks still happen');
   });
 
   group('nobody is invented', () {
