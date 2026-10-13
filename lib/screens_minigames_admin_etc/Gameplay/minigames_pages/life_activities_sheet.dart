@@ -57,6 +57,28 @@ Future<void> openActivityCategory(
   ).open(context, category);
 }
 
+/// The youngest age at which [c] has anything in it.
+///
+/// The catalogue's own ages, plus the actions each category lists from the
+/// controller's gates: the doctor has no floor, volunteering is 10, study 4
+/// (practice), side jobs 14, sport tryouts 9 and the special careers 16
+/// (networking). `test/life_menu_render_test.dart` holds these in step.
+int categoryOpensAt(ActivityCategory c) {
+  final ages = <int>[
+    for (final a in activitiesIn(c)) a.minAge,
+    ...switch (c) {
+      ActivityCategory.mindBody => const [0],
+      ActivityCategory.social => const [10],
+      ActivityCategory.learning => const [4],
+      ActivityCategory.money => const [14],
+      ActivityCategory.sport => const [9],
+      ActivityCategory.special => const [16],
+      _ => const <int>[],
+    },
+  ];
+  return ages.isEmpty ? 0 : ages.reduce((a, b) => a < b ? a : b);
+}
+
 class ActivitiesSheet extends StatelessWidget {
   const ActivitiesSheet({
     super.key,
@@ -74,15 +96,30 @@ class ActivitiesSheet extends StatelessWidget {
     return ListenableBuilder(
       listenable: life,
       builder: (context, _) {
+        final now = [
+          for (final c in ActivityCategory.values)
+            if (life.age >= categoryOpensAt(c)) c,
+        ];
+        final later = [
+          for (final c in ActivityCategory.values)
+            if (life.age < categoryOpensAt(c)) c,
+        ];
         return LifeSheet(
           title: 'Do things',
           icon: Icons.apps_rounded,
           accent: _accent,
           subtitle: 'Choose how to spend the year',
           children: [
+            // What can be done at this age comes first, as big tiles. The
+            // rest is a short list that says when it opens.
+            //
+            // **Reported as:** *"still quite hard to follow."* A newborn was
+            // shown eight equal tiles, Love and dating and Special careers
+            // among them, and had to open each to find it empty.
+            if (later.isNotEmpty) const LifeSection('YOU CAN DO NOW'),
             LifeTileGrid(
               children: [
-                for (final c in ActivityCategory.values)
+                for (final c in now)
                   LifeTile(
                     icon: c.icon,
                     title: c.label,
@@ -93,6 +130,18 @@ class ActivitiesSheet extends StatelessWidget {
                   ),
               ],
             ),
+            if (later.isNotEmpty) ...[
+              const LifeSection('LATER IN LIFE'),
+              for (final c in later)
+                LifeRow(
+                  key: ValueKey('activity-later-${c.name}'),
+                  icon: Icons.lock_clock_rounded,
+                  title: c.label,
+                  subtitle: 'Opens at ${categoryOpensAt(c)}',
+                  accent: AppTheme.textMuted,
+                  onTap: () => open(context, c),
+                ),
+            ],
           ],
         );
       },

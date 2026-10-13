@@ -112,6 +112,13 @@ void main() {
     for (var i = 0; i < 6; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
+    // The single most useful thing is first, with one button to its lesson.
+    // Reported as the page being "kinda hard to follow".
+    expect(find.byKey(const ValueKey('coach-next-step')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('coach-next-step-lesson')),
+      findsOneWidget,
+    );
     expect(find.text('None of these lives owned a home'), findsOneWidget);
     expect(
       find.textContaining(

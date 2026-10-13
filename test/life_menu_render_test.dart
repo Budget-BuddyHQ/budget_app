@@ -4,8 +4,10 @@ import 'dart:ui' as ui;
 import 'package:budget_app/controllers_that_updates_stats/app_settings_controller.dart';
 import 'package:budget_app/controllers_that_updates_stats/life_sim_controller.dart';
 import 'package:budget_app/controllers_that_updates_stats/user_stats_controller.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_activities.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/life_sim_models.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/outing_rules.dart';
+import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/life_activities_sheet.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/life_sim_page.dart';
 import 'package:budget_app/services_backend_and_other_services/supabase_service.dart';
 import 'package:budget_app/themes_colors/app_theme.dart';
@@ -105,12 +107,7 @@ void main() {
       tester,
     ) async {
       await show(tester, adult());
-      for (final label in const [
-        'Job',
-        'Money',
-        'People',
-        'Do things',
-      ]) {
+      for (final label in const ['Job', 'Money', 'People', 'Do things']) {
         expect(find.text(label), findsWidgets, reason: label);
       }
       await shoot(tester, 'life_page');
@@ -251,6 +248,73 @@ void main() {
       ]) {
         expect(find.text(label), findsOneWidget, reason: label);
       }
+      // An adult can do all of it, so there is no "later" list.
+      expect(find.text('LATER IN LIFE'), findsNothing);
+    });
+
+    testWidgets('a small child sees what they can do, and when the rest '
+        'opens', (tester) async {
+      // Reported as "still quite hard to follow": a newborn was shown Love
+      // and dating and Special careers as big tiles, all empty.
+      final kid = LifeSimController(
+        random: FixedRandom.unlucky(),
+        initialAge: 2,
+      );
+      await show(tester, kid);
+      await tab(tester, 'Do things');
+      expect(find.text('YOU CAN DO NOW'), findsOneWidget);
+      expect(find.text('Health & doctor'), findsOneWidget);
+      expect(find.text('LATER IN LIFE'), findsOneWidget);
+      expect(find.byKey(const ValueKey('activity-later-love')), findsOneWidget);
+      expect(
+        find.text('Opens at ${categoryOpensAt(ActivityCategory.love)}'),
+        findsWidgets,
+      );
+      expect(find.text('Opens at 9'), findsWidgets, reason: 'Sport');
+    });
+  });
+
+  group('the ages each category opens at', () {
+    test('match the gates the actions really have', () {
+      // `categoryOpensAt` writes down ages the controller decides. If either
+      // moves, the "Opens at" label would lie.
+      for (final (category, action) in const [
+        (ActivityCategory.social, LifeAction.volunteer),
+        (ActivityCategory.learning, LifeAction.practice),
+        (ActivityCategory.money, LifeAction.sideJob),
+      ]) {
+        final opens = categoryOpensAt(category);
+        final at = LifeSimController(
+          random: FixedRandom.unlucky(),
+          initialAge: opens,
+        );
+        final catalogueOpen = activitiesIn(
+          category,
+        ).any((a) => at.activityGate(a) == null);
+        expect(
+          at.gateFor(action) == null || catalogueOpen,
+          isTrue,
+          reason: '${category.name} should open at $opens',
+        );
+        if (opens > 0) {
+          final before = LifeSimController(
+            random: FixedRandom.unlucky(),
+            initialAge: opens - 1,
+          );
+          expect(
+            before.gateFor(action),
+            isNotNull,
+            reason: '${category.name} opens later than it says',
+          );
+        }
+      }
+      expect(
+        LifeSimController(
+          random: FixedRandom.unlucky(),
+          initialAge: 9,
+        ).tryoutGate(LifeSport.values.first),
+        isNull,
+      );
     });
   });
 

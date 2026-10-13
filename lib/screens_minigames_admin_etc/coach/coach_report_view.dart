@@ -143,6 +143,10 @@ class _CoachReportViewState extends State<CoachReportView> {
       children: [
         _CoachHeader(report: report),
         const SizedBox(height: 16),
+        if (_nextStep(report) case final step?) ...[
+          _NextStepCard(finding: step),
+          const SizedBox(height: 16),
+        ],
         if (fixed.isNotEmpty) ...[
           _FixedCard(
             fixed: fixed,
@@ -176,10 +180,13 @@ class _CoachReportViewState extends State<CoachReportView> {
           const SizedBox(height: 18),
         ],
         _LivesCard(lives: snap.lives),
-        for (final finding in report.findings) ...[
-          _FindingCard(finding: finding),
-          const SizedBox(height: 12),
-        ],
+        // The next step is already at the top; listing it again read as two
+        // problems.
+        for (final finding in report.findings)
+          if (finding != _nextStep(report)) ...[
+            _FindingCard(finding: finding),
+            const SizedBox(height: 12),
+          ],
         const SizedBox(height: 6),
         Text(
           // Said out loud, because an app that scores you owes you this.
@@ -193,6 +200,120 @@ class _CoachReportViewState extends State<CoachReportView> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The one card to act on first: the worst finding, when there is one.
+MoneyFinding? _nextStep(MoneyReport report) {
+  final top = report.headline;
+  if (top == null || top.kind == MoneyFindingKind.strength) return null;
+  return top;
+}
+
+/// "Your next step", at the top of the page.
+///
+/// **Reported as:** *"it's kinda hard to follow."* The advice was the last
+/// thing on the page, under the score bars, the lives row and the review
+/// card, so somebody opening the Coach read numbers before they read anything
+/// to do. This puts the single most useful thing first: what it is, what
+/// clears it, and one button to the lesson for it. The full list is still
+/// below.
+class _NextStepCard extends StatelessWidget {
+  const _NextStepCard({required this.finding});
+
+  final MoneyFinding finding;
+
+  @override
+  Widget build(BuildContext context) {
+    const gold = Color(0xFFFFC800);
+    final lessons = _lessonsFor(finding);
+    return Container(
+      key: const ValueKey('coach-next-step'),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.panel,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: gold, width: 2),
+        boxShadow: AppTheme.ledgeShadow(gold, restAlpha: 0.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'YOUR NEXT STEP',
+            style: AppTheme.caps(
+              color: gold,
+              fontSize: 11,
+              letterSpacing: 0.6,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            finding.title,
+            style: GoogleFonts.pixelifySans(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            finding.evidence,
+            style: GoogleFonts.quicksand(
+              color: Colors.white.withValues(alpha: 0.86),
+              fontSize: 13,
+              height: 1.4,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (finding.clearsWhen != null) ...[
+            const SizedBox(height: 10),
+            _ClearsWhen(text: finding.clearsWhen!),
+          ],
+          if (lessons.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                key: const ValueKey('coach-next-step-lesson'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.greenPrimary,
+                  foregroundColor: const Color(0xFF0B1418),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        LessonScreen(initialLessonId: lessons.first.id),
+                  ),
+                ),
+                icon: const Icon(Icons.menu_book_rounded, size: 18),
+                label: Text(
+                  'Start lesson: ${lessons.first.title}',
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.pixelifySans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+          if (finding.showsBudgetHowTo) ...[
+            const SizedBox(height: 10),
+            const HowToBudgetButton(),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -806,6 +927,27 @@ class _ConceptChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chip = AppTheme.tintedChip(concept.accent, alpha: 0.16);
+    final unitId = unitIdForConcept(concept);
+    final body = _chipBody(chip);
+    if (unitId == null) return body;
+    // A chip that looks like a link is tapped like one. It now opens the
+    // unit that teaches the idea.
+    return Semantics(
+      button: true,
+      label: 'Learn about ${concept.label}',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => LessonScreen(initialUnitId: unitId),
+          ),
+        ),
+        child: body,
+      ),
+    );
+  }
+
+  Widget _chipBody(({Color fill, Color ink}) chip) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(

@@ -440,10 +440,11 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
         dimension: MoneyDimension.learning,
         title: 'One idea keeps catching you out',
         evidence:
-            'You are getting ${worst.key.label} right '
+            'You are getting ${_inSentence(worst.key.label)} right '
             '${(worst.value * 100).round()}% of the time — your lowest.',
         action:
-            'Redo the ${worst.key.label} lesson. It is the shortest way '
+            'Redo the lesson on ${_inSentence(worst.key.label)}. It is the '
+            'shortest way '
             'to move every other number on this page.',
         concept: worst.key,
         clearsWhen:
@@ -901,6 +902,11 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
     findings: ordered,
   );
 }
+
+// "The 50/30/20 budget" reads as "the 50/30/20 budget" mid-sentence. It used
+// to print "Redo the The 50/30/20 budget lesson".
+String _inSentence(String label) =>
+    label.startsWith('The ') ? 'the ${label.substring(4)}' : label;
 
 // value vs target, scaled to 0..100
 int _score(num value, num target) {

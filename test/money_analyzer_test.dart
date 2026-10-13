@@ -244,7 +244,12 @@ void main() {
           (f) => f.id.startsWith('weak_concept_'),
         );
         expect(finding.concept, concept);
-        expect(finding.action, contains(concept.label));
+        // Mid-sentence, so "The 50/30/20 budget" reads "the 50/30/20 budget".
+        expect(
+          finding.action.toLowerCase(),
+          contains(concept.label.toLowerCase()),
+        );
+        expect(finding.action, isNot(contains('the The')));
       }
     });
   });
