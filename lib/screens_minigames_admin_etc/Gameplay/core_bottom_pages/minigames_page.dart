@@ -18,6 +18,7 @@ import '../../../models_Like_Skins_and_lessons_templates/leak_patrol_unlock.dart
 import '../minigames_pages/coin_cascade_page.dart';
 import '../minigames_pages/leak_patrol_page.dart';
 import '../minigames_pages/finance_brawl_game.dart';
+import '../minigames_pages/question_focus_picker.dart';
 import '../minigames_pages/react_challenge_screen.dart';
 import '../minigames_pages/stock_market_page.dart';
 import 'arcade_catalog.dart';
@@ -81,9 +82,14 @@ class MinigamesPage extends StatelessWidget {
       return;
     }
 
+    final focus = await showQuestionFocusPicker(
+      context,
+      gameTitle: 'Leak Patrol',
+    );
+    if (focus == null || !context.mounted) return;
     await Navigator.of(
       context,
-    ).push(FadePageRoute(builder: (_) => const LeakPatrolPage()));
+    ).push(FadePageRoute(builder: (_) => LeakPatrolPage(focus: focus)));
   }
 
   Future<void> _openReactChallenge(BuildContext context) async {
@@ -149,8 +155,13 @@ class MinigamesPage extends StatelessWidget {
     // the page is not tidying: the page is the only place that knows whether
     // a level was a first clear or a replay, and whether the run was a Rush,
     // both of which change what it is worth.
+    final focus = await showQuestionFocusPicker(
+      context,
+      gameTitle: 'Coin Cascade',
+    );
+    if (focus == null || !context.mounted) return;
     final result = await Navigator.of(context).push<CascadeCloseResult>(
-      FadePageRoute(builder: (_) => const CoinCascadePage()),
+      FadePageRoute(builder: (_) => CoinCascadePage(focus: focus)),
     );
     if (!context.mounted || result == null) {
       return;
@@ -198,8 +209,13 @@ class MinigamesPage extends StatelessWidget {
 
   Future<void> _openFinanceBrawl(BuildContext context) async {
     final controller = context.read<UserStatsController>();
+    final focus = await showQuestionFocusPicker(
+      context,
+      gameTitle: 'Finance Brawl',
+    );
+    if (focus == null || !context.mounted) return;
     final result = await Navigator.of(context).push<FinanceBrawlCloseResult>(
-      FadePageRoute(builder: (_) => const FinanceBrawlScreen()),
+      FadePageRoute(builder: (_) => FinanceBrawlScreen(focus: focus)),
     );
 
     if (!context.mounted || result == null) {

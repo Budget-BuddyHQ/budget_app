@@ -598,6 +598,11 @@ class _FindingCard extends StatelessWidget {
             ],
           ),
           if (finding.kind != MoneyFindingKind.strength &&
+              finding.clearsWhen != null) ...[
+            const SizedBox(height: 10),
+            _ClearsWhen(text: finding.clearsWhen!),
+          ],
+          if (finding.kind != MoneyFindingKind.strength &&
               finding.id != 'start_here') ...[
             const SizedBox(height: 10),
             const _RewardChip(
@@ -607,6 +612,10 @@ class _FindingCard extends StatelessWidget {
             ),
           ],
           if (finding.kind != MoneyFindingKind.strength &&
+              _lessonsFor(finding).isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _LessonsThatHelp(lessons: _lessonsFor(finding)),
+          ] else if (finding.kind != MoneyFindingKind.strength &&
               finding.concept != null &&
               unitIdForConcept(finding.concept!) != null) ...[
             const SizedBox(height: 10),
@@ -632,6 +641,156 @@ class _FindingCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// The lessons a finding points at. Its own list when it has one; otherwise
+/// the first two lessons of the unit that teaches its idea, so "one idea keeps
+/// catching you out" still names a lesson rather than a whole unit.
+List<Lesson> _lessonsFor(MoneyFinding finding) {
+  if (finding.lessonIds.isNotEmpty) {
+    return [
+      for (final id in finding.lessonIds)
+        if (lessonById(id) case final lesson?) lesson,
+    ];
+  }
+  final concept = finding.concept;
+  final unitId = concept == null ? null : unitIdForConcept(concept);
+  if (unitId == null) return const <Lesson>[];
+  return lessonsInUnit(unitId).take(2).toList();
+}
+
+/// "How to clear this": what counts as fixed. See [MoneyFinding.clearsWhen].
+class _ClearsWhen extends StatelessWidget {
+  const _ClearsWhen({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('coach-clears-when'),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppTheme.inset,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.outline, width: 1.5),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.flag_rounded,
+            size: 16,
+            color: AppTheme.greenPrimary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  const TextSpan(
+                    text: 'How to clear this: ',
+                    style: TextStyle(
+                      color: AppTheme.greenPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  TextSpan(text: text),
+                ],
+              ),
+              style: GoogleFonts.quicksand(
+                color: Colors.white,
+                fontSize: 12.5,
+                height: 1.4,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The specific lessons that close the gap, each one tap from the lesson.
+class _LessonsThatHelp extends StatelessWidget {
+  const _LessonsThatHelp({required this.lessons});
+
+  final List<Lesson> lessons;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: const ValueKey('coach-lessons-that-help'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'LESSONS THAT HELP',
+          style: AppTheme.caps(
+            color: AppTheme.textMuted,
+            fontSize: 10.5,
+            letterSpacing: 0.6,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 6),
+        for (final lesson in lessons)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Material(
+              color: AppTheme.inset,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                key: ValueKey('coach-lesson-${lesson.id}'),
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => LessonScreen(initialLessonId: lesson.id),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.menu_book_rounded,
+                        size: 18,
+                        color: AppTheme.greenPrimary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          lesson.title,
+                          style: GoogleFonts.quicksand(
+                            color: Colors.white,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'Go',
+                        style: GoogleFonts.pixelifySans(
+                          color: AppTheme.greenPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppTheme.greenPrimary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

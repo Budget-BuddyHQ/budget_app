@@ -99,20 +99,7 @@ class _HabitTaskBlock extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: palette.fill.withValues(alpha: 0.22),
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                    border: Border.all(color: palette.border, width: 2),
-                  ),
-                  child: Icon(
-                    template?.icon ?? Icons.savings_rounded,
-                    color: palette.border,
-                    size: 24,
-                  ),
-                ),
+                _TaskPicture(template: template, palette: palette),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -147,21 +134,19 @@ class _HabitTaskBlock extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: palette.border.withValues(alpha: 0.22),
+                    color: palette.fill,
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: palette.border.withValues(alpha: 0.55),
-                    ),
+                    border: Border.all(color: palette.border),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(palette.icon, color: palette.border, size: 12),
+                      Icon(palette.icon, color: palette.foreground, size: 12),
                       const SizedBox(width: 4),
                       Text(
                         palette.label,
                         style: GoogleFonts.pixelifySans(
-                          color: palette.border,
+                          color: palette.foreground,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),
@@ -173,6 +158,51 @@ class _HabitTaskBlock extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The habit's own picture, the same one the Habits tab shows.
+///
+/// **Reported as:** "for the challenge you can't see the pictures." The tile
+/// drew the icon in the status's border colour, and the Done border is a dark
+/// green on a dark green card. Now it is the picture, framed in the status
+/// colour, and the fallback icon is dark ink on the light status fill.
+class _TaskPicture extends StatelessWidget {
+  const _TaskPicture({required this.template, required this.palette});
+
+  final HabitTemplate? template;
+  final _StatusPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(AppTheme.radiusMedium);
+    final icon = Container(
+      color: palette.fill,
+      alignment: Alignment.center,
+      child: Icon(
+        template?.icon ?? Icons.savings_rounded,
+        color: palette.foreground,
+        size: 26,
+      ),
+    );
+    return Container(
+      width: 52,
+      height: 52,
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        border: Border.all(color: palette.fill, width: 2.5),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMedium - 2),
+        child: template == null
+            ? icon
+            : Image.asset(
+                'assets/images/money_habits/${template!.id}.png',
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => icon,
+              ),
       ),
     );
   }

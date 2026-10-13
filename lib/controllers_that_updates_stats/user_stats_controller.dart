@@ -1746,6 +1746,40 @@ class UserStatsController extends ChangeNotifier {
     return _saveStats(nextStats, savingMessage: 'Saving practice results...');
   }
 
+  /// Academy questions answered inside an arcade game.
+  ///
+  /// Counts the same way a quiz does: a topic answered right drops off the
+  /// weak list, one missed goes on it. Pays nothing, because every game pays
+  /// its own run. This is what makes "My weak spots" in Finance Brawl or Coin
+  /// Cascade worth choosing: getting them right there clears them from the
+  /// Coach, which then pays the fix reward.
+  Future<void> recordArcadeAnswers({
+    Iterable<String> correctSkills = const <String>[],
+    Iterable<String> missedSkills = const <String>[],
+  }) async {
+    final missed = missedSkills.toSet();
+    final correct = correctSkills.toSet().difference(missed);
+    if (missed.isEmpty && correct.isEmpty) return;
+    final before = _stats.weakSkills.toSet();
+    final weakSkills = {...before}
+      ..removeAll(correct)
+      ..addAll(missed);
+    if (weakSkills.length == before.length && weakSkills.containsAll(before)) {
+      return;
+    }
+    final now = DateTime.now().toUtc();
+    await _saveStats(
+      _stats.copyWith(
+        spendingHabits: <String, dynamic>{
+          ..._stats.spendingHabits,
+          'weak_skills': weakSkills.toList(growable: false),
+        },
+        updatedAt: now,
+      ),
+      savingMessage: 'Saving your answers...',
+    );
+  }
+
   /// Pays for Coach suggestions the player fixed. See [CoachRewards].
   ///
   /// Each id pays at most once per [CoachRewards.cooldown]; the rest are

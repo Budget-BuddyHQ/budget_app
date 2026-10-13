@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
 import '../../../models_Like_Skins_and_lessons_templates/coin_cascade_models.dart';
+import '../../../models_Like_Skins_and_lessons_templates/question_focus.dart';
+import '../../../models_Like_Skins_and_lessons_templates/quiz_bank.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
@@ -60,7 +62,15 @@ class CascadeCloseResult {
 }
 
 class CoinCascadePage extends StatefulWidget {
-  const CoinCascadePage({super.key, this.debugInitialGame});
+  const CoinCascadePage({
+    super.key,
+    this.debugInitialGame,
+    this.focus = QuestionFocus.ageGroup,
+  });
+
+  /// Where the bonus question between levels comes from. See
+  /// `showQuestionFocusPicker`.
+  final QuestionFocus focus;
 
   /// A board to open on instead of a fresh level 1.
   ///
@@ -150,7 +160,61 @@ class _CoinCascadePageState extends State<CoinCascadePage>
     _finished = _game.status != CascadeStatus.playing;
   }
 
-  void _startLevel(int number) {
+  /// Moves a right bonus answer adds to the next level.
+  static const int bonusMoves = 3;
+
+  final Random _quizRandom = Random();
+  final Set<String> _askedBonus = <String>{};
+
+  /// "Next level", with one question on the way.
+  ///
+  /// **Asked for as:** the Finance Brawl option, *"questions on the things
+  /// they need to work on, or just the questions in their age group"*, in the
+  /// other games too. Cascade had no questions to choose between, so a won
+  /// level now offers one, worth [bonusMoves] extra moves. It can be skipped.
+  Future<void> _toNextLevel() async {
+    final next = _game.level.number + 1;
+    final stats = context.read<UserStatsController>().stats;
+    final weak = widget.focus == QuestionFocus.weakSpots
+        ? weakSkillsFor(stats)
+        : const <String>{};
+    final question = pickFocusedQuestion(
+      _quizRandom,
+      focusedQuestions(
+        band: stats.ageBand,
+        focus: weak.isEmpty ? QuestionFocus.ageGroup : QuestionFocus.weakSpots,
+        weakSkills: weak,
+      ),
+      weak,
+      avoid: _askedBonus,
+    );
+    if (question == null) {
+      _startLevel(next);
+      return;
+    }
+    _askedBonus.add(question.id);
+    final correct = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _BonusQuestionDialog(
+        question: question,
+        nextLevel: next,
+        weakSpot: weak.contains(question.skillId),
+      ),
+    );
+    if (!mounted) return;
+    if (correct != null) {
+      unawaited(
+        context.read<UserStatsController>().recordArcadeAnswers(
+          correctSkills: [if (correct) question.skillId],
+          missedSkills: [if (!correct) question.skillId],
+        ),
+      );
+    }
+    _startLevel(next, bonusMoves: correct == true ? bonusMoves : 0);
+  }
+
+  void _startLevel(int number, {int bonusMoves = 0}) {
     _stopRushClocks();
     setState(() {
       _finished = false;
@@ -162,7 +226,8 @@ class _CoinCascadePageState extends State<CoinCascadePage>
       _awardedLiteracy = 0;
       _newRushBest = false;
       _awardPending = false;
-      _game = CoinCascadeGame(level: cascadeLevelFor(number));
+      _game = CoinCascadeGame(level: cascadeLevelFor(number))
+        ..movesLeft += bonusMoves;
     });
   }
 
@@ -530,7 +595,7 @@ class _CoinCascadePageState extends State<CoinCascadePage>
                           !_isRush &&
                           _game.status == CascadeStatus.won &&
                           _game.level.number < kCascadeLevels.length,
-                      onNext: () => _startLevel(_game.level.number + 1),
+                      onNext: _toNextLevel,
                       onAgain: _restart,
                       onLeave: () => Navigator.of(context).pop(
                         CascadeCloseResult(
@@ -715,6 +780,220 @@ class _CoinCascadePageState extends State<CoinCascadePage>
 /// Extracted because the help now has four of them and a screen that explains
 /// rules badly is the fault being fixed — a copy-pasted `Column` per section
 /// is how the wording drifts apart later.
+/// One question between levels. Pops true for right, false for wrong, null
+/// for skipped.
+class _BonusQuestionDialog extends StatefulWidget {
+  const _BonusQuestionDialog({
+    required this.question,
+    required this.nextLevel,
+    required this.weakSpot,
+  });
+
+  final QuizQuestion question;
+  final int nextLevel;
+
+  /// Whether this is one of the player's weak topics, so the card can say so.
+  final bool weakSpot;
+
+  @override
+  State<_BonusQuestionDialog> createState() => _BonusQuestionDialogState();
+}
+
+class _BonusQuestionDialogState extends State<_BonusQuestionDialog> {
+  int? _picked;
+
+  bool get _answered => _picked != null;
+  bool get _right => _picked == widget.question.correctIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final q = widget.question;
+    const gold = Color(0xFFFFC800);
+    return Dialog(
+      backgroundColor: AppTheme.panel,
+      insetPadding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: AppTheme.outline, width: 2),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            key: const ValueKey('cascade-bonus-question'),
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                widget.weakSpot ? 'BONUS · YOUR WEAK SPOT' : 'BONUS QUESTION',
+                style: AppTheme.caps(
+                  color: gold,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Get it right for +${_CoinCascadePageState.bonusMoves} moves '
+                'on level ${widget.nextLevel}.',
+                style: GoogleFonts.quicksand(
+                  color: AppTheme.textMuted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                q.prompt,
+                style: GoogleFonts.quicksand(
+                  color: Colors.white,
+                  fontSize: 16,
+                  height: 1.35,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 12),
+              for (var i = 0; i < q.options.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _BonusOption(
+                    key: ValueKey('cascade-bonus-option-$i'),
+                    text: q.options[i],
+                    state: !_answered
+                        ? _OptionState.open
+                        : i == q.correctIndex
+                        ? _OptionState.right
+                        : i == _picked
+                        ? _OptionState.wrong
+                        : _OptionState.faded,
+                    onTap: _answered ? null : () => setState(() => _picked = i),
+                  ),
+                ),
+              if (_answered) ...[
+                const SizedBox(height: 4),
+                Text(
+                  _right
+                      ? 'Right! +${_CoinCascadePageState.bonusMoves} moves.'
+                      : 'Not this time.',
+                  style: GoogleFonts.pixelifySans(
+                    color: _right
+                        ? AppTheme.greenPrimary
+                        : const Color(0xFFFF8474),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  q.explanation,
+                  style: GoogleFonts.quicksand(
+                    color: Colors.white.withValues(alpha: 0.86),
+                    fontSize: 13,
+                    height: 1.4,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  if (!_answered)
+                    TextButton(
+                      key: const ValueKey('cascade-bonus-skip'),
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        'Skip',
+                        style: GoogleFonts.pixelifySans(
+                          color: AppTheme.textMuted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  const Spacer(),
+                  if (_answered)
+                    FilledButton(
+                      key: const ValueKey('cascade-bonus-continue'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.greenPrimary,
+                        foregroundColor: const Color(0xFF0B1418),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(_right),
+                      child: Text(
+                        'Start level ${widget.nextLevel}',
+                        style: GoogleFonts.pixelifySans(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _OptionState { open, right, wrong, faded }
+
+class _BonusOption extends StatelessWidget {
+  const _BonusOption({
+    super.key,
+    required this.text,
+    required this.state,
+    required this.onTap,
+  });
+
+  final String text;
+  final _OptionState state;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final (border, icon) = switch (state) {
+      _OptionState.open => (AppTheme.outline, null),
+      _OptionState.right => (AppTheme.greenPrimary, Icons.check_circle_rounded),
+      _OptionState.wrong => (const Color(0xFFFF8474), Icons.cancel_rounded),
+      _OptionState.faded => (AppTheme.outline, null),
+    };
+    return Opacity(
+      opacity: state == _OptionState.faded ? 0.6 : 1,
+      child: Material(
+        color: AppTheme.inset,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: border, width: 2),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    text,
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                if (icon != null) Icon(icon, color: border, size: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _HelpSection extends StatelessWidget {
   const _HelpSection({required this.title, required this.lines});
 

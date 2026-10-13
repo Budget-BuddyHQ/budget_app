@@ -98,7 +98,9 @@ void main() {
     });
 
     test('finding ids are unique within a report', () {
-      final report = analyzeMoney(steady(pinnedHabits: 7, habitsLoggedLast14: 1));
+      final report = analyzeMoney(
+        steady(pinnedHabits: 7, habitsLoggedLast14: 1),
+      );
       final ids = report.findings.map((f) => f.id).toList();
       expect(ids.toSet().length, ids.length);
     });
@@ -118,7 +120,10 @@ void main() {
       // 999 is the store's "never" sentinel. Reporting it as "last logged 999
       // days ago" is how it used to reach players, and it is nonsense.
       final report = analyzeMoney(
-        steady(daysSinceLastLog: MoneySnapshot.neverLogged, loggedDaysLast14: 0),
+        steady(
+          daysSinceLastLog: MoneySnapshot.neverLogged,
+          loggedDaysLast14: 0,
+        ),
       );
       for (final finding in report.findings) {
         expect(finding.evidence, isNot(contains('999')));
@@ -135,10 +140,13 @@ void main() {
     test('pinning far more than you log is the headline fault', () {
       // The most common shape of failure in any habit app: pinning is free
       // and feels like progress, logging is neither.
-      final report = analyzeMoney(steady(pinnedHabits: 6, habitsLoggedLast14: 1));
+      final report = analyzeMoney(
+        steady(pinnedHabits: 6, habitsLoggedLast14: 1),
+      );
       expect(idsOf(report), contains('too_many_habits'));
-      final finding =
-          report.findings.firstWhere((f) => f.id == 'too_many_habits');
+      final finding = report.findings.firstWhere(
+        (f) => f.id == 'too_many_habits',
+      );
       expect(finding.evidence, contains('6'));
       expect(finding.evidence, contains('1'));
     });
@@ -147,15 +155,19 @@ void main() {
       // The rule needs three to fire. With two habits, "you logged one of
       // them" is a normal week, and nagging about it is how an analyzer
       // teaches people to ignore it.
-      final report = analyzeMoney(steady(pinnedHabits: 2, habitsLoggedLast14: 1));
+      final report = analyzeMoney(
+        steady(pinnedHabits: 2, habitsLoggedLast14: 1),
+      );
       expect(idsOf(report), isNot(contains('too_many_habits')));
     });
 
     test('abandoned challenges are watched, not scolded', () {
-      final report =
-          analyzeMoney(steady(challengesStarted: 5, challengesFinished: 1));
-      final finding =
-          report.findings.firstWhere((f) => f.id == 'challenges_abandoned');
+      final report = analyzeMoney(
+        steady(challengesStarted: 5, challengesFinished: 1),
+      );
+      final finding = report.findings.firstWhere(
+        (f) => f.id == 'challenges_abandoned',
+      );
       expect(finding.kind, MoneyFindingKind.watch);
       expect(finding.concept, FinanceConcept.sunkCost);
     });
@@ -168,8 +180,9 @@ void main() {
       // be a model user and no better off, and the analyzer has to be the
       // thing that says so.
       final report = analyzeMoney(steady(choicesKept: 80, moneySaved: 0));
-      final finding =
-          report.findings.firstWhere((f) => f.id == 'motion_not_money');
+      final finding = report.findings.firstWhere(
+        (f) => f.id == 'motion_not_money',
+      );
       expect(finding.kind, MoneyFindingKind.fix);
       expect(finding.dimension, MoneyDimension.saving);
       expect(finding.evidence, contains('80'));
@@ -238,19 +251,23 @@ void main() {
 
   group('trying things', () {
     test('an unopened town is worth mentioning', () {
-      final report =
-          analyzeMoney(steady(townSpotsVisited: 2, townSpotsAvailable: 12));
+      final report = analyzeMoney(
+        steady(townSpotsVisited: 2, townSpotsAvailable: 12),
+      );
       expect(idsOf(report), contains('town_unexplored'));
     });
 
     test('improving lives are credited', () {
-      final report = analyzeMoney(steady(pastLifeNetWorths: const [50000, 10000]));
+      final report = analyzeMoney(
+        steady(pastLifeNetWorths: const [50000, 10000]),
+      );
       expect(idsOf(report), contains('lives_improving'));
     });
 
     test('flat lives point at the early years', () {
-      final report =
-          analyzeMoney(steady(pastLifeNetWorths: const [900, 1200, 1100]));
+      final report = analyzeMoney(
+        steady(pastLifeNetWorths: const [900, 1200, 1100]),
+      );
       final finding = report.findings.firstWhere((f) => f.id == 'lives_flat');
       expect(finding.concept, FinanceConcept.compoundGrowth);
     });
@@ -332,7 +349,8 @@ void main() {
         ChangeNotifierProxyProvider<UserStatsController, DailyPlanController>(
           create: (context) =>
               DailyPlanController(context.read<UserStatsController>()),
-          update: (_, stats, previous) => previous ?? DailyPlanController(stats),
+          update: (_, stats, previous) =>
+              previous ?? DailyPlanController(stats),
         ),
         ChangeNotifierProxyProvider<UserStatsController, MoneyHabitController>(
           create: (context) =>
@@ -375,6 +393,18 @@ void main() {
         find.textContaining('7 habits saved', findRichText: true),
         findsOneWidget,
         reason: 'the finding rendered without the number behind it',
+      );
+      // Each card now says how it clears and which lessons help, so the
+      // second one starts below the fold on a phone.
+      await tester.scrollUntilVisible(
+        find.text('Lots of ticks, almost no money'),
+        300,
+        scrollable: find
+            .ancestor(
+              of: find.text('More habits pinned than kept'),
+              matching: find.byType(Scrollable),
+            )
+            .first,
       );
       expect(find.text('Lots of ticks, almost no money'), findsOneWidget);
     });

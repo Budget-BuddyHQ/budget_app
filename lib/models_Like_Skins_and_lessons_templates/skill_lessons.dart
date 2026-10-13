@@ -109,6 +109,24 @@ kSkillLessonByUnit = <String, Map<String, String>>{
 
 /// The lesson that teaches [skillId], preferring [unitId]'s own lesson.
 /// Falls back to any unit that teaches it, for practice runs that mix units.
+/// The lessons in [unitId], in course order. Empty for an unknown unit.
+List<Lesson> lessonsInUnit(String unitId) {
+  for (final unit in lessonUnits) {
+    if (unit.id == unitId) return unit.lessons;
+  }
+  return const <Lesson>[];
+}
+
+/// The lesson with [id], or null for an id that is not in the lesson data.
+Lesson? lessonById(String id) {
+  for (final unit in lessonUnits) {
+    for (final lesson in unit.lessons) {
+      if (lesson.id == id) return lesson;
+    }
+  }
+  return null;
+}
+
 Lesson? lessonForSkill(String skillId, {String? unitId}) {
   final id =
       kSkillLessonByUnit[unitId]?[skillId] ??

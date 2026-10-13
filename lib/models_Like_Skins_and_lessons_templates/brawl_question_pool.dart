@@ -30,13 +30,19 @@ class BrawlItem {
     required this.options,
     required this.correctIndex,
     required this.explanation,
+    this.skillId,
   });
 
   final String id;
+
+  /// The Academy skill this question tests. Null for the Brawl's own bank,
+  /// which was never tagged. Answers are fed back into the weak list through
+  /// it (`UserStatsController.recordArcadeAnswers`).
   final String question;
   final List<String> options;
   final int correctIndex;
   final String explanation;
+  final String? skillId;
 
   /// One of the Brawl's own questions, which have no id of their own.
   factory BrawlItem.native({
@@ -58,6 +64,7 @@ class BrawlItem {
     options: q.options,
     correctIndex: q.correctIndex,
     explanation: q.explanation,
+    skillId: q.skillId,
   );
 }
 

@@ -8,7 +8,9 @@ import 'package:provider/provider.dart';
 
 import '../../../constants/app_assets.dart';
 import '../../../controllers_that_updates_stats/user_stats_controller.dart';
+import '../../../models_Like_Skins_and_lessons_templates/finance_concepts.dart';
 import '../../../models_Like_Skins_and_lessons_templates/leak_patrol_models.dart';
+import '../../../models_Like_Skins_and_lessons_templates/question_focus.dart';
 import '../../../services_backend_and_other_services/app_sound_service.dart';
 import '../../../themes_colors/app_theme.dart';
 import '../../../widgets_custom_lotties/confetti_burst.dart';
@@ -28,7 +30,11 @@ import '../../../navigation_tools_and_animation/pauses_in_background.dart';
 /// `AvatarSkin.walkFrames`, a method with no callers at all. The sprite
 /// existed and never animated once.
 class LeakPatrolPage extends StatefulWidget {
-  const LeakPatrolPage({super.key});
+  const LeakPatrolPage({super.key, this.focus = QuestionFocus.ageGroup});
+
+  /// "My weak spots" makes the items about the player's weak ideas come up
+  /// more often. See [pickLeakItem].
+  final QuestionFocus focus;
 
   @override
   State<LeakPatrolPage> createState() => _LeakPatrolPageState();
@@ -47,6 +53,9 @@ class _LeakPatrolPageState extends State<LeakPatrolPage>
 
   late LeakRound _round;
   late List<LeakItem> _pool;
+
+  /// The ideas to lean on in weak-spots mode. Empty in age-group mode.
+  Set<FinanceConcept> _weak = const <FinanceConcept>{};
 
   /// What is currently up in each hole, or null for empty.
   late List<LeakItem?> _holes;
@@ -97,9 +106,18 @@ class _LeakPatrolPageState extends State<LeakPatrolPage>
   @override
   void initState() {
     super.initState();
-    final band = context.read<UserStatsController>().stats.ageBand;
+    final stats = context.read<UserStatsController>().stats;
+    final band = stats.ageBand;
     _round = LeakRound.forBand(band);
     _pool = leakItemsFor(band);
+    if (widget.focus == QuestionFocus.weakSpots) {
+      final weak = weakConceptsFor(stats);
+      // Only ideas this round can actually show.
+      _weak = {
+        for (final item in _pool)
+          if (weak.contains(item.concept)) item.concept,
+      };
+    }
     _holes = List<LeakItem?>.filled(_round.holes, null);
   }
 
@@ -206,7 +224,7 @@ class _LeakPatrolPageState extends State<LeakPatrolPage>
     if (empty.isEmpty) return;
 
     final hole = empty[_random.nextInt(empty.length)];
-    final item = _pool[_random.nextInt(_pool.length)];
+    final item = pickLeakItem(_random, _pool, _weak);
 
     setState(() {
       _holes[hole] = item;
@@ -322,14 +340,14 @@ class _LeakPatrolPageState extends State<LeakPatrolPage>
 
     final controller = context.read<UserStatsController>();
     await controller.applyChallengePayload(<String, dynamic>{
-          'gold_earned': payout,
-          'xp_earned': result.caught * 2,
-          'literacy_points_earned': result.caught > 0 ? 2 : 0,
-          'title': 'Leak Patrol',
-          'description':
-              'Caught ${result.caught}, cancelled ${result.wronglyTapped} real '
-              'charges by mistake.',
-        });
+      'gold_earned': payout,
+      'xp_earned': result.caught * 2,
+      'literacy_points_earned': result.caught > 0 ? 2 : 0,
+      'title': 'Leak Patrol',
+      'description':
+          'Caught ${result.caught}, cancelled ${result.wronglyTapped} real '
+          'charges by mistake.',
+    });
     await controller.recordArcadeRun(
       gameId: 'leak_patrol',
       score: result.coinsSaved,
@@ -374,6 +392,7 @@ class _LeakPatrolPageState extends State<LeakPatrolPage>
                           : _Intro(
                               round: _round,
                               pool: _pool,
+                              focusing: _weak,
                               best: _streak.best,
                               onStart: _start,
                             ),
@@ -1354,10 +1373,14 @@ class _Intro extends StatelessWidget {
     required this.pool,
     required this.best,
     required this.onStart,
+    this.focusing = const <FinanceConcept>{},
   });
 
   final LeakRound round;
   final List<LeakItem> pool;
+
+  /// Weak ideas this round leans on, named so the player knows why.
+  final Set<FinanceConcept> focusing;
 
   /// Best streak so far, or zero. Shown only once there is one.
   final int best;
@@ -1404,6 +1427,40 @@ class _Intro extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
+          if (focusing.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              key: const ValueKey('leak-focusing'),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFFC36B), width: 1.5),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.track_changes_rounded,
+                    color: Color(0xFFFFC36B),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Weak spots: more ${focusing.map((c) => c.label).join(', ')} '
+                      'this round.',
+                      style: AppTheme.numeric(
+                        color: Colors.white,
+                        fontSize: 13,
+                        height: 1.35,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           const _Step(
             number: 1,

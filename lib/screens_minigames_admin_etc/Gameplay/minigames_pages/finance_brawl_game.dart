@@ -6,6 +6,7 @@ import '../../../models_Like_Skins_and_lessons_templates/brawl_enemies.dart';
 import '../../../models_Like_Skins_and_lessons_templates/brawl_movement.dart';
 import '../../../models_Like_Skins_and_lessons_templates/brawl_question_pool.dart';
 import '../../../models_Like_Skins_and_lessons_templates/brawl_wave_rules.dart';
+import '../../../models_Like_Skins_and_lessons_templates/question_focus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -70,12 +71,14 @@ class ShuffledQuizQuestion {
     required this.shuffledOptions,
     required this.correctOptionText,
     required this.explanation,
+    this.skillId,
   });
 
   final String question;
   final List<String> shuffledOptions;
   final String correctOptionText;
   final String explanation;
+  final String? skillId;
 }
 
 /// One offer on the level-up screen.
@@ -126,7 +129,11 @@ const Color _brawlRed = Color(0xFFE25C5C);
 const Color _brawlDanger = Color(0xFFFF2F55);
 
 class FinanceBrawlScreen extends StatefulWidget {
-  const FinanceBrawlScreen({super.key});
+  const FinanceBrawlScreen({super.key, this.focus = QuestionFocus.ageGroup});
+
+  /// Which questions the checkpoints ask. Chosen on the way in; see
+  /// `showQuestionFocusPicker`.
+  final QuestionFocus focus;
 
   @override
   State<FinanceBrawlScreen> createState() => _FinanceBrawlScreenState();
@@ -472,6 +479,10 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
   final Random _rand = Random();
 
   bool _isQuizOpen = false;
+
+  /// Skills answered this checkpoint, fed back to the weak list when it closes.
+  final Set<String> _checkpointCorrectSkills = <String>{};
+  final Set<String> _checkpointMissedSkills = <String>{};
   bool _isUpgradeChoiceOpen = false;
 
   int _quizCorrectCount = 0;
@@ -2445,7 +2456,8 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     // is a CD Ladder strategy?" — correct answer: "staggering multiple CD
     // maturity dates to keep liquidity while earning higher rates". Every
     // test passed, because nothing tested the game that kept its own bank.
-    final band = context.read<UserStatsController>().stats.ageBand;
+    final stats = context.read<UserStatsController>().stats;
+    final band = stats.ageBand;
     final native = <BrawlItem>[
       for (final q in [..._questionBank, ..._extraBrawlQuestions])
         BrawlItem.native(
@@ -2462,6 +2474,23 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     // was being asked about Roth IRAs.
     var pool = brawlPool(band: band, native: native);
 
+    // "My weak spots": only the Academy questions on what this player keeps
+    // missing, still inside their age gate, topped up from it when there are
+    // too few. The weak ones are asked first either way (below).
+    final weakSkills = widget.focus == QuestionFocus.weakSpots
+        ? weakSkillsFor(stats)
+        : const <String>{};
+    if (weakSkills.isNotEmpty) {
+      pool = [
+        for (final q in focusedQuestions(
+          band: band,
+          focus: QuestionFocus.weakSpots,
+          weakSkills: weakSkills,
+        ).questions)
+          BrawlItem.fromAcademy(q),
+      ];
+    }
+
     // Never leave the player staring at a checkpoint with nothing in it.
     if (pool.length < 3) pool = native;
 
@@ -2475,6 +2504,13 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     }
 
     pool = pool..shuffle(_rand);
+    if (weakSkills.isNotEmpty) {
+      // Stable, so the shuffle survives inside each group.
+      pool = [
+        ...pool.where((q) => weakSkills.contains(q.skillId)),
+        ...pool.where((q) => !weakSkills.contains(q.skillId)),
+      ];
+    }
     final chosenRawQuestions = pool.take(3).toList();
     _askedThisRun.addAll(chosenRawQuestions.map((q) => q.id));
 
@@ -2488,6 +2524,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
         shuffledOptions: optionsCopy,
         correctOptionText: correctText,
         explanation: q.explanation,
+        skillId: q.skillId,
       );
     }).toList();
 
@@ -2511,11 +2548,30 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
     setState(() {
       _isAnswerSubmitted = true;
       final currentQuestion = _activeQuizQuestions[_quizQuestionIndex];
+      final skill = currentQuestion.skillId;
       if (currentQuestion.shuffledOptions[_selectedAnswerIndex!] ==
           currentQuestion.correctOptionText) {
         _quizCorrectCount++;
+        if (skill != null) _checkpointCorrectSkills.add(skill);
+      } else if (skill != null) {
+        _checkpointMissedSkills.add(skill);
       }
     });
+  }
+
+  /// Right answers clear their topic from the weak list, wrong ones add it.
+  void _recordCheckpointAnswers() {
+    if (_checkpointCorrectSkills.isEmpty && _checkpointMissedSkills.isEmpty) {
+      return;
+    }
+    unawaited(
+      context.read<UserStatsController>().recordArcadeAnswers(
+        correctSkills: {..._checkpointCorrectSkills},
+        missedSkills: {..._checkpointMissedSkills},
+      ),
+    );
+    _checkpointCorrectSkills.clear();
+    _checkpointMissedSkills.clear();
   }
 
   void _nextQuizQuestion() {
@@ -2529,6 +2585,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       }
 
       _isQuizOpen = false;
+      _recordCheckpointAnswers();
 
       // Reset wave counters FIRST so level state is clean regardless of quiz outcome
       _debtsCleared = 0;
@@ -3315,7 +3372,9 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    "LITERACY CHECKPOINT (${_quizQuestionIndex + 1}/3)",
+                    widget.focus == QuestionFocus.weakSpots
+                        ? "WEAK SPOTS CHECKPOINT (${_quizQuestionIndex + 1}/3)"
+                        : "LITERACY CHECKPOINT (${_quizQuestionIndex + 1}/3)",
                     style: AppTheme.numeric(
                       color: _brawlBlue,
                       fontSize: 14,

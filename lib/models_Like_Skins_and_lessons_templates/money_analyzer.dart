@@ -198,7 +198,25 @@ class MoneyFinding {
     required this.action,
     this.concept,
     this.showsBudgetHowTo = false,
+    this.clearsWhen,
+    this.lessonIds = const <String>[],
   });
+
+  /// What makes this card go away, in one plain sentence.
+  ///
+  /// **Asked for as:** *"how do I get rid of them?"* The cards said what was
+  /// wrong and what to try, and never what would count as fixed, so a player
+  /// could do the right thing and not know it. Only for findings worth
+  /// fixing: a strength has nothing to clear.
+  final String? clearsWhen;
+
+  /// The lessons that close the gap, most useful first. Ids from the lesson
+  /// data (`skill_lessons.dart` lists every one with its title).
+  ///
+  /// **Asked for as:** *"guide them to lessons that help them bridge that
+  /// gap."* A unit was too broad a pointer: "Big Purchases" is nine minutes,
+  /// "Renting Your First Place" is the part about the home you never bought.
+  final List<String> lessonIds;
 
   /// Whether the advice is "set your budget in Life", and the card should
   /// offer the how-to. A younger tester read that advice and could not find
@@ -273,6 +291,9 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
           action:
               'Save one habit on Track and log it once. Come back after '
               'a few days and this will have something real to say.',
+          clearsWhen:
+              'Clears once you have saved a habit, finished a lesson or played a life.',
+          lessonIds: <String>['lesson_1'],
         ),
       ],
     );
@@ -291,6 +312,8 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
         action:
             'Log one habit today. One is enough — the streak counts days '
             'you turned up, not days you were perfect.',
+        clearsWhen: 'Clears the day you log a habit.',
+        lessonIds: <String>['lesson_14'],
       ),
     );
   } else if (snap.loggedDaysLast14 >= 10) {
@@ -330,6 +353,9 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
               'Unpin everything except the two you actually did. A short '
               'list you finish beats a long one you avoid opening.',
           concept: FinanceConcept.opportunityCost,
+          clearsWhen:
+              'Clears when you have logged at least half of your saved habits in the last two weeks, or saved fewer.',
+          lessonIds: <String>['lesson_14', 'lesson_10'],
         ),
       );
     }
@@ -349,6 +375,9 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
             'Pick the one you got furthest through and finish only that '
             'one before starting another.',
         concept: FinanceConcept.sunkCost,
+        clearsWhen:
+            'Clears when you have finished at least half the challenges you started.',
+        lessonIds: <String>['lesson_10', 'lesson_14'],
       ),
     );
   }
@@ -372,6 +401,8 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
             'skip a bought lunch, cancel one subscription. Ticks feel like '
             'progress; only the number is progress.',
         concept: FinanceConcept.payYourselfFirst,
+        clearsWhen: 'Clears once your kept habits have saved \$5 or more.',
+        lessonIds: <String>['lesson_11', 'lesson_4'],
       ),
     );
   } else if (snap.moneySaved >= 50) {
@@ -415,6 +446,8 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
             'Redo the ${worst.key.label} lesson. It is the shortest way '
             'to move every other number on this page.',
         concept: worst.key,
+        clearsWhen:
+            'Clears when you get this idea right more than 60% of the time in quizzes and practice.',
       ),
     );
   } else if (snap.conceptAccuracy.length >= 4) {
@@ -452,6 +485,9 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
         action:
             'Walk into one you have never opened. Each building is a '
             'different money decision, and they change as you get older.',
+        clearsWhen:
+            'Clears once you have visited a third of the places in town.',
+        lessonIds: <String>['lesson_40'],
       ),
     );
   }
@@ -528,6 +564,9 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
                     'is made early.',
                 concept: FinanceConcept.compoundGrowth,
                 showsBudgetHowTo: true,
+                clearsWhen:
+                    'Clears when your next finished life ends richer than the one before it.',
+                lessonIds: <String>['lesson_11', 'lesson_19', 'lesson_44'],
               ),
       );
     }
@@ -569,6 +608,9 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
               'third — then watch the bills counter instead of the score. '
               'The rule is not the hard part; spending it is.',
           concept: FinanceConcept.budgetRule,
+          clearsWhen:
+              'Clears when wants take less than 35% of your Coin Cascade boards.',
+          lessonIds: <String>['lesson_5', 'lesson_1'],
         ),
       );
     } else if (bestSplitScore == null && snap.cascadeLevelsCleared >= 3) {
@@ -585,6 +627,9 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
               'Coin Cascade is 50/30/20 with the labels taken off. Take the '
               'Budgeting unit and you will recognize every part of it.',
           concept: FinanceConcept.budgetRule,
+          clearsWhen:
+              'Clears once you take a quiz on needs versus wants or the 50/30/20 budget.',
+          lessonIds: <String>['lesson_1', 'lesson_5'],
         ),
       );
     } else if (snap.cascadeSavesShare >= 0.2 && snap.cascadeWantsShare <= 0.3) {
@@ -625,6 +670,9 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
               'appears in both, it is coming from you rather than from the '
               'game — which is the useful kind of bad news.',
           concept: FinanceConcept.opportunityCost,
+          clearsWhen:
+              'Clears when wants drop under 40% of your Coin Cascade boards, or your next life ends richer.',
+          lessonIds: <String>['lesson_31', 'lesson_34'],
         ),
       );
     }
@@ -647,6 +695,8 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
             'Play one life. The lessons will stop being facts and start '
             'being things you wish you had done earlier.',
         concept: FinanceConcept.opportunityCost,
+        clearsWhen: 'Clears once you play one life or one Coin Cascade run.',
+        lessonIds: <String>['lesson_25'],
       ),
     );
   }
@@ -672,8 +722,11 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
           action:
               'Next run, look at what a course pays before you enrol, or '
               'start with a trade or a state school. Then put spare money on '
-              'the loan in the Assets tab in your first working years.',
+              'the loan in the Money tab in your first working years.',
           concept: FinanceConcept.interestCost,
+          clearsWhen:
+              'Clears when fewer than two of your last four lives end still paying back a school loan.',
+          lessonIds: <String>['lesson_54', 'lesson_6', 'lesson_22'],
         ),
       );
     }
@@ -694,6 +747,9 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
               'car. A loan on something that loses value is the one that '
               'outlasts it.',
           concept: FinanceConcept.sunkCost,
+          clearsWhen:
+              'Clears when fewer than two of your last four lives end owing more than they own.',
+          lessonIds: <String>['lesson_6', 'lesson_53', 'lesson_5'],
         ),
       );
     }
@@ -710,10 +766,13 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
               '$stalled of your last ${recent.length} lives worked twelve '
               'years or more without one promotion.',
           action:
-              'Use Work Harder in the Occupation tab, then ask for the '
+              'Use Work Harder in the Job tab, then ask for the '
               'promotion. If it still will not come, the job board is where a '
               'higher ladder is advertised.',
           concept: FinanceConcept.incomeVsWealth,
+          clearsWhen:
+              'Clears when fewer than two of your last four lives go twelve years without a promotion.',
+          lessonIds: <String>['lesson_22', 'lesson_2'],
         ),
       );
     }
@@ -731,8 +790,11 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
           action:
               'Renting is a real choice. Try one life where you buy a starter '
               'home in your thirties, and compare the loan with the rent you '
-              'would have paid. The Assets tab shows both.',
+              'would have paid. The Money tab shows both.',
           concept: FinanceConcept.opportunityCost,
+          clearsWhen:
+              'Clears when one of your next lives owns a home when it ends.',
+          lessonIds: <String>['lesson_55', 'lesson_54', 'lesson_57'],
         ),
       );
     }
@@ -778,6 +840,9 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
               'trade with a job waiting can beat a degree with none, and '
               'starting to earn earlier is worth real money.',
           concept: FinanceConcept.opportunityCost,
+          clearsWhen:
+              'Clears when your lives with a qualification finish no poorer than the ones without.',
+          lessonIds: <String>['lesson_22', 'lesson_54'],
         ),
       );
     }
@@ -804,9 +869,12 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
               'well off and under 45 out of 100 in happiness.',
           action:
               'Money is a tool for the rest of it. Give one life more time in '
-              'the Relationships and Activities tabs, and see what it does to '
+              'the People and Do things tabs, and see what it does to '
               'the ending as well as the number.',
           concept: FinanceConcept.incomeVsWealth,
+          clearsWhen:
+              'Clears when fewer than two of your recent lives end well off and unhappy.',
+          lessonIds: <String>['lesson_10', 'lesson_25'],
         ),
       );
     }
