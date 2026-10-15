@@ -18,6 +18,7 @@ import 'player_profile.dart';
 import 'question_reading_levels.dart';
 import 'question_stage.dart';
 import 'reading_grade.dart';
+import 'quiz_bank_kids.dart';
 
 /// How demanding a question is. Practice sets lead with [core]; unit tests mix
 /// in [stretch] items that need two ideas combined.
@@ -2025,14 +2026,23 @@ const Map<String, List<QuizQuestion>> practiceBank =
       'unit_13': _unit13Practice,
     };
 
-List<QuizQuestion> quizFor(String nodeId) =>
-    quizBank[nodeId] ?? const <QuizQuestion>[];
+/// The node's own questions, then the ones written for younger players on
+/// the same unit. See `quiz_bank_kids.dart`.
+List<QuizQuestion> quizFor(String nodeId) {
+  final own = quizBank[nodeId];
+  final kids = kKidQuizAdditions[nodeId];
+  if (kids == null) return own ?? const <QuizQuestion>[];
+  return <QuizQuestion>[...?own, ...kids];
+}
 
 List<QuizQuestion> practiceFor(String unitId) =>
     practiceBank[unitId] ?? const <QuizQuestion>[];
 
 Iterable<QuizQuestion> get allQuizQuestions sync* {
   for (final list in quizBank.values) {
+    yield* list;
+  }
+  for (final list in kKidQuizAdditions.values) {
     yield* list;
   }
   for (final list in practiceBank.values) {

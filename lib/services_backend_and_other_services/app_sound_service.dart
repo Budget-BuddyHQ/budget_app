@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'web_audio.dart';
+
 enum AppSoundEffect {
   tap,
   navigation,
@@ -298,6 +300,11 @@ class AppSoundService {
     if (!musicEnabled || !enabled) return;
     // Remembered, not started: [handleAppResumed] starts it on the way back.
     if (!_inForeground) return;
+    if (kIsWeb) {
+      await initialize();
+      WebAudio.startMusic();
+      return;
+    }
     final epoch = _lifecycleEpoch;
 
     final existing = _music;
@@ -359,6 +366,7 @@ class AppSoundService {
     // of several different intentions — muting, rebuilding a stalled player,
     // switching music off — and only one of them means "nobody wants music
     // any more". That one is [stopMusic], which clears the flag itself.
+    if (kIsWeb) WebAudio.stopMusic();
     final player = _music;
     _music = null;
     if (player == null) return;
@@ -400,6 +408,21 @@ class AppSoundService {
     musicEnabled = _preferences?.getBool(_musicEnabledKey) ?? musicEnabled;
 
     if (!_canUseAssetPlayers) {
+      _playersReady = true;
+      return;
+    }
+
+    // A browser plays through its own `<audio>` elements, started from the
+    // first touch. See `WebAudio` for why `audioplayers` stayed silent there.
+    if (kIsWeb) {
+      WebAudio.init(
+        effects: {
+          for (final entry in _assetPaths.entries)
+            entry.key.name: 'assets/${entry.value}',
+        },
+        music: 'assets/$_musicAsset',
+        musicVolume: _musicVolume,
+      );
       _playersReady = true;
       return;
     }
@@ -565,6 +588,11 @@ class AppSoundService {
       return _playSystemFallback(effect);
     }
 
+    if (kIsWeb) {
+      WebAudio.playEffect(effect.name, _volumes[effect] ?? _defaultVolume);
+      return;
+    }
+
     if (await _tryPlay(effect, assetPath)) return;
 
     // One heal-and-retry before giving up.
@@ -605,6 +633,10 @@ class AppSoundService {
   /// reward chime lands on top of ticks for a reel that is no longer moving,
   /// which reads as the app having lost track of itself.
   static Future<void> stop(AppSoundEffect effect) async {
+    if (kIsWeb) {
+      WebAudio.stopEffect(effect.name);
+      return;
+    }
     final player = _players[effect];
     if (player == null) return;
     try {

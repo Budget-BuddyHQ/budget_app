@@ -61,6 +61,7 @@ import 'lesson.dart';
 import 'lesson_data.dart';
 import 'player_profile.dart';
 import 'quiz_bank.dart';
+import 'quiz_bank_kids.dart';
 
 /// Question id to the stage of the unit that owns it.
 ///
@@ -76,7 +77,10 @@ Map<String, AgeStage> _buildQuestionStages() {
   for (final unit in lessonUnits) {
     for (final lesson in unit.lessons) {
       for (final question in quizFor(lesson.id)) {
-        out[question.id] = unit.ageStage;
+        // Written for younger players on purpose. See `quiz_bank_kids.dart`.
+        out[question.id] = kKidQuestionIds.contains(question.id)
+            ? AgeStage.youngKids
+            : unit.ageStage;
       }
     }
     for (final question in practiceFor(unit.id)) {

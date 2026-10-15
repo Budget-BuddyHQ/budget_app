@@ -5,6 +5,7 @@ import 'package:budget_app/models_Like_Skins_and_lessons_templates/lesson_data.d
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/player_profile.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/question_stage.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/quiz_bank.dart';
+import 'package:budget_app/models_Like_Skins_and_lessons_templates/quiz_bank_kids.dart';
 import 'package:budget_app/models_Like_Skins_and_lessons_templates/reading_grade.dart';
 
 /// Nobody is quizzed above their age.
@@ -156,7 +157,12 @@ void main() {
       // plain, easy questions — see `minQuizStage`, which replaced a reading
       // grade floor that was withholding 59% of the bank from adults.
       final adult = served(AgeBand.adult18plus);
-      expect(adult.length, greaterThan(allQuizQuestions.length * 0.7));
+      // Measured against the bank written for adults to see: the questions
+      // in `quiz_bank_kids.dart` are for younger players by design.
+      final forAdults = allQuizQuestions
+          .where((q) => !kKidQuestionIds.contains(q.id))
+          .length;
+      expect(adult.length, greaterThan(forAdults * 0.7));
 
       for (final question in adult) {
         final stage = kQuestionStage[question.id];
@@ -182,7 +188,7 @@ void main() {
   });
 
   group('reading above your age is still allowed', () {
-    test('a young reader on an adult unit gets the lesson and no quiz', () {
+    test('a young reader on an adult unit is only quizzed at their age', () {
       // The rule, stated once: **you may read above your age, you are not
       // tested above it.** The Academy warns and then lets you read; being
       // quizzed is different, because a quiz says "you should know this" and
@@ -199,16 +205,44 @@ void main() {
       ];
       expect(anyQuiz, isNotEmpty, reason: 'the unit has questions at all');
 
-      expect(
-        ageAppropriateQuestions(anyQuiz, AgeBand.under9),
-        isEmpty,
-        reason: 'a four-year-old should not be tested on retirement',
-      );
+      // Still never tested *above* their age: what a young player gets on
+      // this unit is only the questions written for their age, about why
+      // grown-ups save for later, never which account to use. Before those
+      // existed the unit had no quiz at all for them, reported as "it still
+      // has no quizzes for some". See `quiz_bank_kids.dart`.
+      final young = ageAppropriateQuestions(anyQuiz, AgeBand.under9);
+      expect(young, isNotEmpty);
+      for (final q in young) {
+        expect(
+          kQuestionStage[q.id]!.index,
+          lessThanOrEqualTo(AgeStage.youngKids.index),
+          reason: '"${q.prompt}" was written for older players',
+        );
+      }
       expect(
         ageAppropriateQuestions(anyQuiz, AgeBand.adult18plus),
         isNotEmpty,
         reason: 'and an adult still gets the quiz',
       );
     });
+  });
+
+  test('every quiz and unit test has questions for every age', () {
+    // Reported as "it still has no quizzes for some": whole units showed a
+    // young player "written for older players" and nothing to answer.
+    final empty = <String>[];
+    for (final unit in lessonUnits) {
+      for (final lesson in unit.lessons) {
+        if (lesson.type == LessonNodeType.lesson) continue;
+        // Two is the floor for a quick quiz: 16-17 get a unit's own two
+        // questions on Credit and Big Purchases rather than the kids' ones.
+        final need = lesson.type == LessonNodeType.quiz ? 2 : 3;
+        for (final band in AgeBand.values) {
+          final n = ageAppropriateQuestions(quizFor(lesson.id), band).length;
+          if (n < need) empty.add('${lesson.id} ${band.name}: $n');
+        }
+      }
+    }
+    expect(empty, isEmpty, reason: empty.join(', '));
   });
 }

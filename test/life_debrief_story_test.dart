@@ -220,58 +220,57 @@ void main() {
       expect(ids, contains('never_budgeted'));
     });
 
-    test(
-      'a layoff with no missed work is not blamed on missed work',
-      () {
-        // **Reported as:** "I don't understand how missed work cost me my
-        // job, if I literally never missed work" -- `timesLaidOff` counts
-        // three unrelated causes as one number (missed-work strain, poor
-        // performance reviews, a story event taking the job away), and the
-        // debrief used to credit all of them to missed work regardless,
-        // producing evidence that read "you missed about 0 weeks of work
-        // and were let go once."
-        final facts = LifeRunFacts(
-          age: 40,
-          netWorth: 0,
-          cash: 0,
-          investments: 0,
-          emergencyFund: 0,
-          debt: 0,
-          health: 70,
-          happiness: 70,
-          conceptsMet: 1,
-          died: false,
-          everStarved: false,
-          budgetSet: true,
-          record: const LifeRunRecord(
-            tally: LifeRunTally(
-              adultYears: 22,
-              workYears: 20,
-              timesLaidOff: 1,
-              weeksMissed: 0,
-            ),
+    test('a layoff with no missed work is not blamed on missed work', () {
+      // **Reported as:** "I don't understand how missed work cost me my
+      // job, if I literally never missed work" -- `timesLaidOff` counts
+      // three unrelated causes as one number (missed-work strain, poor
+      // performance reviews, a story event taking the job away), and the
+      // debrief used to credit all of them to missed work regardless,
+      // producing evidence that read "you missed about 0 weeks of work
+      // and were let go once."
+      final facts = LifeRunFacts(
+        age: 40,
+        netWorth: 0,
+        cash: 0,
+        investments: 0,
+        emergencyFund: 0,
+        debt: 0,
+        health: 70,
+        happiness: 70,
+        conceptsMet: 1,
+        died: false,
+        everStarved: false,
+        budgetSet: true,
+        record: const LifeRunRecord(
+          tally: LifeRunTally(
+            adultYears: 22,
+            workYears: 20,
+            timesLaidOff: 1,
+            weeksMissed: 0,
           ),
-        );
-        final findings = debriefLife(facts).findings;
-        final ids = findings.map((f) => f.id);
+        ),
+      );
+      final findings = debriefLife(facts).findings;
+      final ids = findings.map((f) => f.id);
 
-        expect(
-          ids,
-          isNot(contains('laid_off')),
-          reason: '"Missed work cost you the job" cites weeksMissed as '
-              'evidence -- it must not fire when weeksMissed is 0',
-        );
-        expect(ids, contains('laid_off_other'));
+      expect(
+        ids,
+        isNot(contains('laid_off')),
+        reason:
+            '"Missed work cost you the job" cites weeksMissed as '
+            'evidence -- it must not fire when weeksMissed is 0',
+      );
+      expect(ids, contains('laid_off_other'));
 
-        final other = findings.firstWhere((f) => f.id == 'laid_off_other');
-        expect(
-          other.evidence.contains('0 weeks'),
-          isFalse,
-          reason: 'the replacement finding must not smuggle the same '
-              'contradiction back in',
-        );
-      },
-    );
+      final other = findings.firstWhere((f) => f.id == 'laid_off_other');
+      expect(
+        other.evidence.contains('0 weeks'),
+        isFalse,
+        reason:
+            'the replacement finding must not smuggle the same '
+            'contradiction back in',
+      );
+    });
 
     test('the good life is told what worked', () {
       final ids = debriefLife(richRunFacts()).findings.map((f) => f.id);
@@ -502,6 +501,45 @@ void main() {
       expect(find.text('Your challenge for next time'), findsOneWidget);
       expect(find.textContaining('Turning point, age 24'), findsOneWidget);
       expect(find.textContaining('Best call, age 31'), findsOneWidget);
+    });
+
+    testWidgets('the money chart reads out any year you touch', (tester) async {
+      // Asked for as "make the graph interactable".
+      tester.view.physicalSize = const Size(430, 3200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final debrief = debriefLife(richRunFacts());
+      await tester.pumpWidget(host(LifeDebriefView(debrief: debrief)));
+      await tester.pump();
+
+      expect(
+        find.text('Tap or drag the line to see any year.'),
+        findsOneWidget,
+      );
+
+      // The far right of the chart is the last year.
+      final chart = find.byKey(const ValueKey('debrief-money-curve'));
+      await tester.tapAt(tester.getTopRight(chart) + const Offset(-1, 40));
+      await tester.pump();
+      final lastAge = debrief.record.curve.last.age;
+      expect(find.text('Age $lastAge'), findsWidgets);
+      final readout = find.byKey(const ValueKey('debrief-year-readout'));
+      expect(
+        find.descendant(of: readout, matching: find.textContaining('Money ')),
+        findsOneWidget,
+      );
+
+      // Dragging moves it.
+      await tester.drag(chart, const Offset(-200, 0));
+      await tester.pump();
+      expect(
+        find.descendant(
+          of: readout,
+          matching: find.textContaining('Happiness '),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('the rough life leads with what went wrong', (tester) async {

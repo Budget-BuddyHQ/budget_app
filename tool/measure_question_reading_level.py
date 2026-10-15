@@ -50,6 +50,9 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BANK = os.path.join(ROOT, 'lib', 'models_Like_Skins_and_lessons_templates',
                     'quiz_bank.dart')
+# Questions written for younger players on older units live in their own file.
+KIDS_BANK = os.path.join(ROOT, 'lib', 'models_Like_Skins_and_lessons_templates',
+                         'quiz_bank_kids.dart')
 
 VOWELS = 'aeiouy'
 
@@ -102,6 +105,7 @@ def grade_level(text):
 
 def read_questions():
     src = io.open(BANK, encoding='utf8').read()
+    src += io.open(KIDS_BANK, encoding='utf8').read()
     out = []
     for block in src.split('QuizQuestion(')[1:]:
         qid = re.search(r"id:\s*'([^']+)'", block)

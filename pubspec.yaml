@@ -27,6 +27,8 @@ dependencies:
   lottie: ^3.3.0
   flutter_svg: ^2.2.0
   audioplayers: ^6.6.0
+  # Browser audio. See `web_audio_web.dart`.
+  web: ^1.1.1
   image_picker: ^1.1.2
   cloudflare_turnstile: ^1.0.0
   flutter_3d_controller: ^2.3.0

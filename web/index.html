@@ -18,21 +18,38 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Budget Buddy: learn money by playing.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="budget_app">
+  <meta name="apple-mobile-web-app-title" content="Budget Buddy">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>budget_app</title>
+  <title>Budget Buddy</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <script>
+    // Older builds installed a service worker that kept serving a saved copy
+    // of the app after every new deploy. Remove it and its saved files, then
+    // load once more so this visit gets the current build.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        if (!regs.length) return;
+        var jobs = regs.map(function (r) { return r.unregister(); });
+        if (window.caches) {
+          jobs.push(caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+          }));
+        }
+        Promise.all(jobs).then(function () { window.location.reload(); });
+      });
+    }
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

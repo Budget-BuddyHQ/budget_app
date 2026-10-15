@@ -45,14 +45,21 @@ class QuizQuestionCard extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Question $questionNumber of $totalQuestions',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.62),
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
+            // Flexible, so a narrow phone shrinks the count rather than
+            // pushing the Calculator button off the edge.
+            Flexible(
+              child: Text(
+                'Question $questionNumber of $totalQuestions',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.62),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
+            const SizedBox(width: 8),
             // Calculator Trigger Button
             Material(
               color: Colors.transparent,

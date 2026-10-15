@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../models_Like_Skins_and_lessons_templates/life_debrief.dart';
@@ -279,36 +280,103 @@ class _Header extends StatelessWidget {
 // The money curve
 // ---------------------------------------------------------------------------
 
-class _MoneyCurve extends StatelessWidget {
+/// The money curve, which answers "what was I worth at 30?" when touched.
+///
+/// **Asked for as:** *"make the graph interactable."* It was a picture: three
+/// pills named the peak, the low and the first job, and every other year was
+/// a line nobody could read. Tap or drag along it and the readout above says
+/// that year's age, money, happiness and health, with a guide on the chart.
+/// The pills jump to their year.
+class _MoneyCurve extends StatefulWidget {
   const _MoneyCurve({required this.record});
 
   final LifeRunRecord record;
 
   @override
+  State<_MoneyCurve> createState() => _MoneyCurveState();
+}
+
+class _MoneyCurveState extends State<_MoneyCurve> {
+  /// Index into the curve of the year being read, or null for none yet.
+  int? _picked;
+
+  void _pickAt(double dx, double width) {
+    final curve = widget.record.curve;
+    if (curve.length < 2 || width <= 0) return;
+    final first = curve.first.age;
+    final span = max(1, curve.last.age - first);
+    final age = first + (dx.clamp(0, width) / width * span).round();
+    var best = 0;
+    for (var i = 1; i < curve.length; i++) {
+      if ((curve[i].age - age).abs() < (curve[best].age - age).abs()) {
+        best = i;
+      }
+    }
+    _pick(best);
+  }
+
+  void _pickAge(int age) {
+    final i = widget.record.curve.indexWhere((p) => p.age == age);
+    if (i >= 0) _pick(i);
+  }
+
+  void _pick(int index) {
+    if (index == _picked) return;
+    HapticFeedback.selectionClick();
+    setState(() => _picked = index);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final record = widget.record;
     final curve = record.curve;
     final tally = record.tally;
     final first = curve.first.age;
     final last = curve.last.age;
+    final picked = _picked == null ? null : curve[_picked!];
+    final note = picked == null
+        ? null
+        : picked.age == tally.peakAge
+        ? 'Your richest year'
+        : picked.age == tally.lowAge
+        ? 'Your lowest year'
+        : picked.age == tally.firstJobAge
+        ? 'Your first job'
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _SectionTitle('Your money, year by year'),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
+        _YearReadout(point: picked, note: note),
+        const SizedBox(height: 8),
         Semantics(
           label:
               'A chart of your net worth from age $first to $last. It peaked '
-              'at ${groupedNumber(tally.peakNetWorth)}.',
-          child: SizedBox(
-            height: 130,
-            width: double.infinity,
-            child: CustomPaint(
-              painter: _CurvePainter(
-                points: curve,
-                jobAge: tally.firstJobAge,
-                peakAge: tally.peakAge,
-                lowAge: tally.lowAge,
+              'at ${groupedNumber(tally.peakNetWorth)}. Tap or drag along it '
+              'to read any year.',
+          child: LayoutBuilder(
+            builder: (context, box) => GestureDetector(
+              key: const ValueKey('debrief-money-curve'),
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (d) => _pickAt(d.localPosition.dx, box.maxWidth),
+              onHorizontalDragStart: (d) =>
+                  _pickAt(d.localPosition.dx, box.maxWidth),
+              onHorizontalDragUpdate: (d) =>
+                  _pickAt(d.localPosition.dx, box.maxWidth),
+              child: SizedBox(
+                height: 130,
+                width: double.infinity,
+                child: CustomPaint(
+                  painter: _CurvePainter(
+                    points: curve,
+                    jobAge: tally.firstJobAge,
+                    peakAge: tally.peakAge,
+                    lowAge: tally.lowAge,
+                    pickedAge: picked?.age,
+                  ),
+                ),
               ),
             ),
           ),
@@ -333,6 +401,7 @@ class _MoneyCurve extends StatelessWidget {
                 label:
                     'Peak ${groupedNumber(tally.peakNetWorth)} at '
                     '${tally.peakAge}',
+                onTap: () => _pickAge(tally.peakAge!),
               ),
             if (tally.lowAge != null && tally.lowNetWorth < 0)
               _Pill(
@@ -340,9 +409,14 @@ class _MoneyCurve extends StatelessWidget {
                 label:
                     'Low ${groupedNumber(tally.lowNetWorth)} at '
                     '${tally.lowAge}',
+                onTap: () => _pickAge(tally.lowAge!),
               ),
             if (tally.firstJobAge != null)
-              _Pill(color: _sky, label: 'First job at ${tally.firstJobAge}'),
+              _Pill(
+                color: _sky,
+                label: 'First job at ${tally.firstJobAge}',
+                onTap: () => _pickAge(tally.firstJobAge!),
+              ),
           ],
         ),
       ],
@@ -356,14 +430,84 @@ class _MoneyCurve extends StatelessWidget {
   );
 }
 
-class _Pill extends StatelessWidget {
-  const _Pill({required this.color, required this.label});
+/// What the picked year was like, shown above the chart.
+class _YearReadout extends StatelessWidget {
+  const _YearReadout({required this.point, this.note});
 
-  final Color color;
-  final String label;
+  final LifeYearPoint? point;
+  final String? note;
 
   @override
   Widget build(BuildContext context) {
+    final p = point;
+    final style = AppTheme.numeric(
+      color: Colors.white,
+      fontSize: 12.5,
+      fontWeight: FontWeight.w800,
+    );
+    return Container(
+      key: const ValueKey('debrief-year-readout'),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.22),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: p == null
+          ? Row(
+              children: [
+                const Icon(
+                  Icons.touch_app_rounded,
+                  size: 16,
+                  color: Color(0xFFC8DDD3),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Tap or drag the line to see any year.',
+                    style: style.copyWith(
+                      color: const Color(0xFFC8DDD3),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: [
+                Text('Age ${p.age}', style: style.copyWith(color: _warn)),
+                Text('Money ${groupedNumber(p.netWorth)}', style: style),
+                Text('Happiness ${p.happiness}', style: style),
+                Text('Health ${p.health}', style: style),
+                if (note != null)
+                  Text(note!, style: style.copyWith(color: _sky)),
+              ],
+            ),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill({required this.color, required this.label, this.onTap});
+
+  final Color color;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final body = _body();
+    if (onTap == null) return body;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: body,
+    );
+  }
+
+  Widget _body() {
     final chip = AppTheme.tintedChip(color, alpha: 0.16);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -396,12 +540,16 @@ class _CurvePainter extends CustomPainter {
     required this.jobAge,
     required this.peakAge,
     required this.lowAge,
+    this.pickedAge,
   });
 
   final List<LifeYearPoint> points;
   final int? jobAge;
   final int? peakAge;
   final int? lowAge;
+
+  /// The year being read, drawn as a guide line and a ring.
+  final int? pickedAge;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -491,6 +639,22 @@ class _CurvePainter extends CustomPainter {
     dot(jobAge, _sky);
     dot(lowAge, _bad);
     dot(peakAge, _warn);
+
+    final pickedAt = points.where((p) => p.age == pickedAge);
+    if (pickedAt.isNotEmpty) {
+      final p = pickedAt.first;
+      final gx = x(p.age);
+      canvas.drawLine(
+        Offset(gx, 0),
+        Offset(gx, size.height),
+        Paint()
+          ..color = Colors.white.withValues(alpha: 0.45)
+          ..strokeWidth = 1.2,
+      );
+      final center = Offset(gx, y(p.netWorth));
+      canvas.drawCircle(center, 7, Paint()..color = const Color(0xFF0E2A1D));
+      canvas.drawCircle(center, 5, Paint()..color = Colors.white);
+    }
   }
 
   @override
@@ -498,7 +662,8 @@ class _CurvePainter extends CustomPainter {
       old.points != points ||
       old.jobAge != jobAge ||
       old.peakAge != peakAge ||
-      old.lowAge != lowAge;
+      old.lowAge != lowAge ||
+      old.pickedAge != pickedAge;
 }
 
 // ---------------------------------------------------------------------------

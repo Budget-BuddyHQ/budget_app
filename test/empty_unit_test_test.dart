@@ -47,31 +47,27 @@ void main() {
     }
   }
 
-  test('the case this covers really happens', () {
-    // If this ever stops being true the screen below is untested, not fixed.
-    expect(quizFor('test_12'), isNotEmpty);
+  test('no unit test is held back from a younger player any more', () {
+    // Unit 9's four questions were all for older players, so this band got
+    // nothing. It now has questions written for its age as well. See
+    // `quiz_bank_kids.dart`.
     expect(
       ageAppropriateQuestions(quizFor('test_12'), AgeBand.undisclosed),
-      isEmpty,
+      isNotEmpty,
     );
   });
 
-  testWidgets('says why, instead of an empty test to "complete"', (
+  testWidgets('the test opens on a real question, not a note or "complete"', (
     tester,
   ) async {
     await open(tester, 'test_12');
-    expect(find.text('Take the full test'), findsOneWidget);
+    expect(find.text('Take the full test'), findsNothing);
     expect(find.text('Complete Lesson'), findsNothing);
-    expect(find.textContaining('written for older players'), findsOneWidget);
-  });
-
-  testWidgets('and the full test is there when asked for', (tester) async {
-    await open(tester, 'test_12');
-    await tester.tap(find.text('Take the full test'));
-    for (var i = 0; i < 3; i++) {
-      await tester.pump(const Duration(milliseconds: 150));
-    }
-    expect(find.text(quizFor('test_12').first.prompt), findsOneWidget);
+    final first = ageAppropriateQuestions(
+      quizFor('test_12'),
+      AgeBand.undisclosed,
+    ).first;
+    expect(find.text(first.prompt), findsOneWidget);
   });
 
   test('every quiz and test has something for an older player', () {
