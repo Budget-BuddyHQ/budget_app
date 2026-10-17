@@ -1238,7 +1238,7 @@ class _OutcomeDialog extends StatelessWidget {
           // just missing.
           if (settled)
             Text(
-              'No coins this time — you had already worked this one out.',
+              'No coins this time: you had already worked this one out.',
               style: GoogleFonts.quicksand(
                 color: Colors.white54,
                 fontSize: 12.5,
@@ -1549,7 +1549,7 @@ class _AdventureMapPendingScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'The adventure world is wired up and ready — it just '
+                  'The adventure world is wired up and ready: it just '
                   'needs its map. Drop a Sprite Fusion or Tiled export at\n'
                   '$kAdventureMapAsset\n'
                   '(plus its spritesheet.png alongside it) and it will '

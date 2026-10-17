@@ -290,7 +290,7 @@ const List<QuizQuestion> _unit1Quiz = <QuizQuestion>[
         '50% needs, 30% wants, 20% savings or debt payoff. The 20% is the slice '
         'that builds your future rather than covering today.',
     misconception:
-        'Taxes are already gone before this rule applies — the split works on '
+        'Taxes are already gone before this rule applies: the split works on '
         'take-home pay, not gross pay.',
   ),
   QuizQuestion(
@@ -319,10 +319,10 @@ const List<QuizQuestion> _unit1Quiz = <QuizQuestion>[
         'Your hours change every week at a part-time job. What kind of income '
         'is that, and how should you budget it?',
     options: [
-      'Fixed income — budget the same amount every month',
-      'Variable income — budget around a low typical month',
-      'Variable income — budget around your best month so far',
-      'Fixed income — budget your average of the last three months',
+      'Fixed income: budget the same amount every month',
+      'Variable income: budget around a low typical month',
+      'Variable income: budget around your best month so far',
+      'Fixed income: budget your average of the last three months',
     ],
     correctIndex: 1,
     explanation:
@@ -347,7 +347,7 @@ const List<QuizQuestion> _unit1Quiz = <QuizQuestion>[
     correctIndex: 1,
     explanation:
         'Plenty of real expenses are partly both. The phone is a need at some '
-        'level of service and a want above it — the useful question is "how '
+        'level of service and a want above it: the useful question is "how '
         'much of this is essential?", not "which box does it go in?".',
     misconception:
         'Needs and wants are treated as tidy categories, but the interesting '
@@ -400,7 +400,7 @@ const List<QuizQuestion> _unit1Test = <QuizQuestion>[
     correctIndex: 3,
     explanation:
         'Individually forgettable purchases are exactly what tracking is for. '
-        'Fourteen \$9 orders is \$126 — a number worth deciding on rather than '
+        'Fourteen \$9 orders is \$126: a number worth deciding on rather than '
         'drifting into.',
     misconception:
         'People look for one big leak. Budgets more often bleed from many '
@@ -449,14 +449,14 @@ const List<QuizQuestion> _unit1Test = <QuizQuestion>[
         'You build a budget and it balances perfectly to \$0 left over, with '
         'nothing set aside for surprises. What is the weakness?',
     options: [
-      'Nothing — a balanced budget is the goal',
+      'Nothing: a balanced budget is the goal',
       'Any unexpected cost has to become debt or break the plan',
       'You should always have money left unassigned',
       'It means you did the arithmetic wrong',
     ],
     correctIndex: 1,
     explanation:
-        'A budget with no slack is fragile. One flat tyre turns into borrowed '
+        'A budget with no slack is fragile. One flat tire turns into borrowed '
         'money, which is why an emergency buffer is part of the plan and not an '
         'optional extra.',
     misconception:
@@ -476,8 +476,8 @@ const List<QuizQuestion> _unit1Test = <QuizQuestion>[
     ],
     correctIndex: 2,
     explanation:
-        'A budget is a working document. Reviewing it on a regular rhythm — '
-        'monthly is common — keeps it matched to what your life actually costs.',
+        'A budget is a working document. Reviewing it on a regular rhythm ('
+        'monthly is common) keeps it matched to what your life actually costs.',
   ),
 ];
 
@@ -503,7 +503,7 @@ const List<QuizQuestion> _unit2Practice = <QuizQuestion>[
         'can take years and cost more than the original purchase.',
     misconception:
         '"Minimum payment" reads like "the amount I am supposed to pay". It is '
-        'the least you can pay without penalty — a floor, not a plan.',
+        'the least you can pay without penalty: a floor, not a plan.',
   ),
   QuizQuestion(
     id: 'u2p2',
@@ -518,7 +518,7 @@ const List<QuizQuestion> _unit2Practice = <QuizQuestion>[
     correctIndex: 0,
     explanation:
         'Payment history is the single biggest factor. You do not need to carry '
-        'debt to build credit — paying in full and on time does it.',
+        'debt to build credit: paying in full and on time does it.',
     misconception:
         'The myth that "you need to carry a balance to build credit" costs '
         'people real interest for no benefit.',
@@ -539,7 +539,7 @@ const List<QuizQuestion> _unit2Quiz = <QuizQuestion>[
     correctIndex: 2,
     explanation:
         'Credit moves spending forward in time. Whatever you buy with it, you '
-        'still pay for — plus interest if you do not clear it quickly.',
+        'still pay for, plus interest if you do not clear it quickly.',
   ),
   QuizQuestion(
     id: 'u2q2',
@@ -555,7 +555,7 @@ const List<QuizQuestion> _unit2Quiz = <QuizQuestion>[
     correctIndex: 0,
     explanation:
         'Return and risk travel together. Higher advertised returns mean a '
-        'higher chance of loss — not necessarily fraud, but never free money.',
+        'higher chance of loss, not necessarily fraud, but never free money.',
     misconception:
         'The two failure modes are believing every high return is safe, and '
         'assuming every high return is a scam. The truth is "priced risk".',
@@ -645,7 +645,7 @@ const List<QuizQuestion> _unit2Test = <QuizQuestion>[
         'An emergency fund is insurance for your budget. Its job is absorbing '
         'surprises, which is why access matters more than interest rate.',
     misconception:
-        'Chasing yield on emergency money often locks it up — exactly when you '
+        'Chasing yield on emergency money often locks it up: exactly when you '
         'need it liquid.',
   ),
   QuizQuestion(
@@ -734,7 +734,7 @@ const List<QuizQuestion> _unit3Practice = <QuizQuestion>[
         'Automation moves the decision from every month to once. It works '
         'because it stops relying on willpower at the moment of temptation.',
     misconception:
-        'The money is not special because it moved automatically — the benefit '
+        'The money is not special because it moved automatically: the benefit '
         'is entirely behavioral.',
   ),
 ];
@@ -831,7 +831,7 @@ const List<QuizQuestion> _unit3Test = <QuizQuestion>[
         'One account pays 4% but locks money for a year; another pays 2% with '
         'instant access. For an emergency fund you should:',
     options: [
-      'Take the 4% — the extra return is worth it',
+      'Take the 4%: the extra return is worth it',
       'Avoid both and keep the cash at home',
       'Split it evenly regardless of the goal',
       'Take the 2% because access is the point of the fund',
@@ -854,7 +854,7 @@ const List<QuizQuestion> _unit3Test = <QuizQuestion>[
     ],
     correctIndex: 2,
     explanation:
-        'Automation removes friction in both directions — good habits and '
+        'Automation removes friction in both directions: good habits and '
         'forgotten charges alike. A periodic review is what keeps it honest.',
     difficulty: QuizDifficulty.stretch,
   ),
@@ -929,7 +929,7 @@ const List<QuizQuestion> _unit4Practice = <QuizQuestion>[
     correctIndex: 1,
     explanation:
         'Diversifying does not remove risk, it stops any single failure being '
-        'decisive. A broad fund can still fall — just not to zero because one '
+        'decisive. A broad fund can still fall: just not to zero because one '
         'company collapsed.',
   ),
 ];
@@ -957,7 +957,7 @@ const List<QuizQuestion> _unit4Quiz = <QuizQuestion>[
         'You put all your savings into one company\'s stock because a friend '
         'says it will double. The clearest problem is:',
     options: [
-      'Concentrated risk — one outcome decides everything',
+      'Concentrated risk: one outcome decides everything',
       'Stocks are always a bad idea',
       'You should have waited for the price to fall',
       'One company is too small to invest in',
@@ -1030,7 +1030,7 @@ const List<QuizQuestion> _unit4Test = <QuizQuestion>[
     options: [r'$1,200', r'$1,210', r'$1,100', r'$2,000'],
     correctIndex: 1,
     explanation:
-        r'Year two earns 10% on $1,100, not on the original $1,000 — that extra '
+        r'Year two earns 10% on $1,100, not on the original $1,000: that extra '
         r'$10 is compounding. Small early, enormous over decades.',
     difficulty: QuizDifficulty.stretch,
   ),
@@ -1120,7 +1120,7 @@ const List<QuizQuestion> _unit5Practice = <QuizQuestion>[
       'Utilities, deposit and getting to work',
       'The rent itself',
       'The color of the walls',
-      'Nothing — rent is the full cost',
+      'Nothing: rent is the full cost',
     ],
     correctIndex: 0,
     explanation:
@@ -1142,7 +1142,7 @@ const List<QuizQuestion> _unit5Quiz = <QuizQuestion>[
     ],
     correctIndex: 1,
     explanation:
-        'Deductions — tax, and often insurance or retirement contributions — '
+        'Deductions (tax, and often insurance or retirement contributions) '
         'come out between gross and net. Net is what lands.',
   ),
   QuizQuestion(
@@ -1160,7 +1160,7 @@ const List<QuizQuestion> _unit5Quiz = <QuizQuestion>[
     correctIndex: 1,
     explanation:
         r'Benefits are pay in another form. If cover and transport are worth $4 '
-        r'an hour to you, Job B is effectively $21 — ahead of Job A.',
+        r'an hour to you, Job B is effectively $21: ahead of Job A.',
     misconception:
         'Hourly rate is the visible number, so it dominates the comparison even '
         'when benefits are worth more.',
@@ -1228,7 +1228,7 @@ const List<QuizQuestion> _unit5Test = <QuizQuestion>[
     options: [
       'You earned extra money from the government',
       'Your employer underpaid you',
-      'You made a mistake that will be penalised',
+      'You made a mistake that will be penalized',
       'You overpaid during the year and are getting it back',
     ],
     correctIndex: 3,
@@ -1301,7 +1301,7 @@ const List<QuizQuestion> _unit5Test = <QuizQuestion>[
         'has time to work. Letting spending rise to absorb it is the default '
         'that quietly cancels the progress.',
     misconception:
-        'Lifestyle creep is invisible because nothing goes wrong — the surplus '
+        'Lifestyle creep is invisible because nothing goes wrong: the surplus '
         'just stops existing.',
     difficulty: QuizDifficulty.stretch,
   ),
@@ -1403,7 +1403,7 @@ const List<QuizQuestion> _unit12Practice = <QuizQuestion>[
       'Whichever looks newer',
       'What each costs to insure, fuel and repair for a year',
       'The color and the trim level',
-      'They cost the same — the price is the price',
+      'They cost the same: the price is the price',
     ],
     correctIndex: 1,
     explanation:
@@ -1445,7 +1445,7 @@ const List<QuizQuestion> _unit12Practice = <QuizQuestion>[
     skillId: QuizSkills.renting,
     prompt: 'On a joint lease, your flatmate stops paying their half. You:',
     options: [
-      'Owe only your own half — their share is their problem',
+      'Owe only your own half: their share is their problem',
       'Can be pursued by the landlord for the full rent',
       'Are released from the lease automatically',
       'Owe nothing until a court decides',
@@ -1464,7 +1464,7 @@ const List<QuizQuestion> _unit12Practice = <QuizQuestion>[
     skillId: QuizSkills.moveInCosts,
     prompt: 'Rent is 800. A realistic amount to have saved before moving in:',
     options: [
-      '800 — one month',
+      '800: one month',
       'Nothing, deposits are paid later',
       'Roughly 1,600–2,400, because deposits and setup land at once',
       '400, since deposits are usually half a month',
@@ -1489,7 +1489,7 @@ const List<QuizQuestion> _unit12Practice = <QuizQuestion>[
     ],
     correctIndex: 0,
     explanation:
-        'Waiting is a real option with a real return — a better car, or the '
+        'Waiting is a real option with a real return: a better car, or the '
         'same car without a loan. Nobody in the room earns anything from it.',
   ),
 ];
@@ -1510,7 +1510,7 @@ const List<QuizQuestion> _unit12Quiz = <QuizQuestion>[
     correctIndex: 1,
     explanation:
         '300 x 48 = 14,400. 240 x 72 = 17,280. The smaller payment is the '
-        'bigger total — that is what a longer term does.',
+        'bigger total: that is what a longer term does.',
     misconception:
         'Lower monthly means cheaper. It usually means longer, and longer '
         'means more interest.',
@@ -1539,7 +1539,7 @@ const List<QuizQuestion> _unit12Quiz = <QuizQuestion>[
       'Your social media',
       'Your school grades',
       'Income, rental history and a credit report',
-      'Nothing — first to pay gets the keys',
+      'Nothing: first to pay gets the keys',
     ],
     correctIndex: 2,
     explanation:
@@ -1557,7 +1557,7 @@ const List<QuizQuestion> _unit12Test = <QuizQuestion>[
         'quoted. The safest next step is:',
     options: [
       'Get an insurance quote for that exact car first',
-      'Buy it — insurance is roughly the same for every car',
+      'Buy it: insurance is roughly the same for every car',
       'Assume insurance is 10% of the price',
       'Wait until after the purchase to shop around',
     ],
@@ -1578,7 +1578,7 @@ const List<QuizQuestion> _unit12Test = <QuizQuestion>[
     ],
     correctIndex: 2,
     explanation:
-        'It matters the moment you need to sell or the car is written off — '
+        'It matters the moment you need to sell or the car is written off: '
         'the loan does not disappear with the vehicle.',
     difficulty: QuizDifficulty.stretch,
   ),
@@ -1604,7 +1604,7 @@ const List<QuizQuestion> _unit12Test = <QuizQuestion>[
         'Your car is how you get to work and it has failed. The reasonable '
         'reading of "waiting is an option" here is:',
     options: [
-      'Wait regardless — never borrow for a car',
+      'Wait regardless: never borrow for a car',
       'Necessity justifies buying reliable transport now, not the expensive one',
       'Buy the nicest car you can finance, since you need it',
       'Opportunity cost does not apply to needs',
@@ -1660,7 +1660,7 @@ const List<QuizQuestion> _unit13Practice = <QuizQuestion>[
     prompt: 'You freeze your file at one bureau. Are you protected?',
     options: [
       'Yes, the bureaus share freezes',
-      'No — a lender only needs one unfrozen file to approve an account',
+      'No: a lender only needs one unfrozen file to approve an account',
       'Yes, if it is the largest bureau',
       'Only for thirty days',
     ],
@@ -1673,7 +1673,7 @@ const List<QuizQuestion> _unit13Practice = <QuizQuestion>[
   QuizQuestion(
     id: 'u13p4',
     skillId: QuizSkills.creditReports,
-    prompt: 'The federally authorised place to get your free credit report is:',
+    prompt: 'The federally authorized place to get your free credit report is:',
     options: [
       'AnnualCreditReport.com',
       'Any site offering a free score',
@@ -1700,7 +1700,7 @@ const List<QuizQuestion> _unit13Practice = <QuizQuestion>[
     ],
     correctIndex: 1,
     explanation:
-        'Without opting in, the transaction is simply declined — which is '
+        'Without opting in, the transaction is simply declined, which is '
         'free. The fee is the price of a convenience you chose.',
     misconception:
         'Assuming overdraft fees are unavoidable. For debit and ATM '
@@ -1762,7 +1762,7 @@ const List<QuizQuestion> _unit13Quiz = <QuizQuestion>[
     prompt: 'Why is a flat overdraft fee on a small purchase so expensive?',
     options: [
       'Because banks compound it daily',
-      'It is not — flat fees are always cheaper',
+      'It is not: flat fees are always cheaper',
       'As a short loan of a few dollars, the effective rate is enormous',
       'Because it is added to your credit report',
     ],
@@ -1812,7 +1812,7 @@ const List<QuizQuestion> _unit13Test = <QuizQuestion>[
     options: [
       'Wait to see if it disappears',
       'Pay it so it stops affecting your score',
-      'Dispute it — the bureau has to investigate',
+      'Dispute it: the bureau has to investigate',
       'Nothing can be done once it is reported',
     ],
     correctIndex: 2,
@@ -1827,7 +1827,7 @@ const List<QuizQuestion> _unit13Test = <QuizQuestion>[
     options: [
       'It is the only way to catch the thief',
       'Reports expire after a week',
-      'The damage compounds — each new account is more to unwind',
+      'The damage compounds: each new account is more to unwind',
       'It restores your score instantly',
     ],
     correctIndex: 2,
@@ -1855,7 +1855,7 @@ const List<QuizQuestion> _unit6Practice = <QuizQuestion>[
     ],
     correctIndex: 1,
     explanation:
-        'A share is ownership — a genuine slice of the business and whatever '
+        'A share is ownership: a genuine slice of the business and whatever '
         'it earns. It is not a loan, and nothing about it is guaranteed.',
   ),
   QuizQuestion(
@@ -1897,7 +1897,7 @@ const List<QuizQuestion> _unit6Quiz = <QuizQuestion>[
     prompt: 'A share priced at 8 coins is:',
     options: [
       'Always cheaper value than one priced at 800 coins',
-      'Not necessarily cheap — it depends what you get for it',
+      'Not necessarily cheap: it depends what you get for it',
       'A sign the company is failing',
       'Better for beginners by definition',
     ],
@@ -2000,7 +2000,7 @@ const List<QuizQuestion> _unit6Test = <QuizQuestion>[
     ],
     correctIndex: 1,
     explanation:
-        'A rule written before a crash — hold, or buy more — beats a decision '
+        'A rule written before a crash (hold, or buy more) beats a decision '
         'made while watching the number fall.',
   ),
 ];
@@ -2801,7 +2801,7 @@ const List<QuizQuestion> _unit9Test = <QuizQuestion>[
     ],
     correctIndex: 3,
     explanation:
-        'Nothing about the market favours the young. What favours them is the '
+        'Nothing about the market favors the young. What favors them is the '
         'number of years left for compounding to run.',
   ),
 ];
@@ -3020,7 +3020,7 @@ const List<QuizQuestion> _unit10Test = <QuizQuestion>[
       'Trading for things you need or want',
       'Decorating your room',
       'Making your food taste better',
-      'Nothing — it is just for looking at',
+      'Nothing: it is just for looking at',
     ],
     correctIndex: 0,
     explanation: 'Money is a tool people trade for things they need or want.',
@@ -3122,7 +3122,7 @@ const List<QuizQuestion> _unit11Practice = <QuizQuestion>[
     ],
     correctIndex: 0,
     explanation:
-        'An allowance is money a kid gets on a regular basis — sometimes for '
+        'An allowance is money a kid gets on a regular basis, sometimes for '
         'doing chores, sometimes just as a set amount.',
   ),
   QuizQuestion(
@@ -3138,7 +3138,7 @@ const List<QuizQuestion> _unit11Practice = <QuizQuestion>[
     correctIndex: 1,
     explanation:
         'A need is something you cannot really do without. A video game is '
-        'fun, but you can live without it — that makes it a want.',
+        'fun, but you can live without it: that makes it a want.',
   ),
   QuizQuestion(
     id: 'u11p3',
@@ -3265,7 +3265,7 @@ const List<QuizQuestion> _unit11Quiz = <QuizQuestion>[
     options: ['Want', 'Need', 'Trick', 'Toy'],
     correctIndex: 1,
     explanation:
-        'Shoes that actually work are a need — you use them every day and cannot go without them.',
+        'Shoes that actually work are a need: you use them every day and cannot go without them.',
   ),
   QuizQuestion(
     id: 'u11q3',
@@ -3289,7 +3289,7 @@ const List<QuizQuestion> _unit11Quiz = <QuizQuestion>[
     ],
     correctIndex: 1,
     explanation:
-        'Banks are built to keep money safe — safer than leaving cash lying '
+        'Banks are built to keep money safe: safer than leaving cash lying '
         'around the house.',
   ),
 ];
@@ -3320,7 +3320,7 @@ const List<QuizQuestion> _unit11Test = <QuizQuestion>[
     ],
     correctIndex: 1,
     explanation:
-        'Food is something your body needs regularly — that makes it a need, not a want.',
+        'Food is something your body needs regularly: that makes it a need, not a want.',
   ),
   QuizQuestion(
     id: 'u11t3',
@@ -3421,10 +3421,10 @@ const List<QuizQuestion> _creditSourcedPractice = <QuizQuestion>[
     ],
     correctIndex: 1,
     explanation:
-        'Payment history is 35% of a FICO score — the biggest single slice. '
+        'Payment history is 35% of a FICO score: the biggest single slice. '
         'Income is not part of the score at all. [FICO]',
     misconception:
-        'Lots of people assume income drives the score. It does not — the '
+        'Lots of people assume income drives the score. It does not: the '
         'score only measures how you handle borrowed money.',
   ),
   QuizQuestion(
@@ -3454,7 +3454,7 @@ const List<QuizQuestion> _creditSourcedPractice = <QuizQuestion>[
     correctIndex: 2,
     explanation:
         'APR is the yearly cost of borrowing, and it folds in fees as well as '
-        'the interest rate. APY is the other direction — what money earns.',
+        'the interest rate. APY is the other direction: what money earns.',
     misconception:
         'APR and APY look like the same letters shuffled and get swapped all '
         'the time. Borrowing = APR. Earning = APY.',
@@ -3472,7 +3472,7 @@ const List<QuizQuestion> _creditSourcedPractice = <QuizQuestion>[
     correctIndex: 3,
     explanation:
         'APY is what you earn over a year and already accounts for '
-        'compounding — which is why it is the fair number for comparing '
+        'compounding, which is why it is the fair number for comparing '
         'accounts against each other.',
   ),
   QuizQuestion(
@@ -3516,7 +3516,7 @@ const List<QuizQuestion> _savingSourcedPractice = <QuizQuestion>[
         'that stops a surprise cost turning into debt. [CFPB]',
     misconception:
         'A fund you dip into for planned spending is a savings goal, not an '
-        'emergency fund — and it will not be there in a real emergency.',
+        'emergency fund, and it will not be there in a real emergency.',
   ),
   QuizQuestion(
     id: 'src_save_2',
@@ -3619,7 +3619,7 @@ const List<QuizQuestion> _investingSourcedPractice = <QuizQuestion>[
     ],
     correctIndex: 2,
     explanation:
-        'Nothing about the market favours the young — time does. More years '
+        'Nothing about the market favors the young: time does. More years '
         'means more compounding cycles on the same money. [SEC]',
   ),
   QuizQuestion(
@@ -3637,7 +3637,7 @@ const List<QuizQuestion> _investingSourcedPractice = <QuizQuestion>[
     correctIndex: 3,
     explanation:
         'Diversification limits how much damage any one holding can do. It '
-        'does not remove risk — nothing does — it stops one bad pick being '
+        'does not remove risk (nothing does) it stops one bad pick being '
         'fatal.',
     misconception:
         '"Diversified" gets read as "safe". It means spread out, not '

@@ -345,7 +345,7 @@ class _LeakPatrolPageState extends State<LeakPatrolPage>
       'literacy_points_earned': result.caught > 0 ? 2 : 0,
       'title': 'Leak Patrol',
       'description':
-          'Caught ${result.caught}, cancelled ${result.wronglyTapped} real '
+          'Caught ${result.caught}, canceled ${result.wronglyTapped} real '
           'charges by mistake.',
     });
     await controller.recordArcadeRun(
@@ -1418,7 +1418,7 @@ class _Intro extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'A leak is money quietly wasted — a subscription you forgot, a '
+            'A leak is money quietly wasted: a subscription you forgot, a '
             'sneaky fee, a scam. Real bills are money you actually owe.',
             style: AppTheme.numeric(
               color: Colors.white.withValues(alpha: 0.88),

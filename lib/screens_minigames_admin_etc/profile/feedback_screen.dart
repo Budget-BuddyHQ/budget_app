@@ -85,7 +85,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       context,
       title: sentToServer ? 'Feedback sent' : 'Saved on this device',
       message: sentToServer
-          ? 'Thanks — the team will read this.'
+          ? 'Thanks! The team will read this.'
           : 'No connection right now, but it\'s saved and will send later.',
       icon: sentToServer ? Icons.check_circle_rounded : Icons.save_rounded,
       accent: const Color(0xFF9BE870),

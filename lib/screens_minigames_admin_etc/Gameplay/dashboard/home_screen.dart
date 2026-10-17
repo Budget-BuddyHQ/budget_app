@@ -507,7 +507,7 @@ class _LeaderboardPromoCard extends StatelessWidget {
                   // truncated at 999,999. Naming the two boards was the
                   // expendable half; the card opens straight onto them.
                   Text(
-                    'You have $gold gold — see where that ranks.',
+                    'You have $gold gold: see where that ranks.',
                     maxLines: 2,
                     style: GoogleFonts.quicksand(
                       color: Colors.white.withValues(alpha: 0.78),
@@ -765,7 +765,7 @@ class _AdventureLaunchHero extends StatelessWidget {
                                 // a narrow one. Content should not blink in
                                 // and out on a 2px threshold.
                                 Text(
-                                  'Walk the town — every shop is a real '
+                                  'Walk the town: every shop is a real '
                                   'money decision.',
                                   maxLines: 2,
                                   style: GoogleFonts.quicksand(

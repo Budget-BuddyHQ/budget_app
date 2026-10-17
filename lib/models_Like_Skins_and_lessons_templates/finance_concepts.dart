@@ -182,29 +182,29 @@ extension FinanceConceptInfo on FinanceConcept {
   String get explainer => switch (this) {
     FinanceConcept.needsVsWants =>
       'A need keeps you housed, fed, healthy and able to work. A want is '
-          'everything else. Most overspending is not one huge mistake — it '
+          'everything else. Most overspending is not one huge mistake: it '
           'is wants quietly getting filed as needs.',
     FinanceConcept.opportunityCost =>
       'The real price of anything is what you gave up to get it. Spending '
-          '\$200 on headphones does not cost \$200 — it costs the \$200 '
+          '\$200 on headphones does not cost \$200: it costs the \$200 '
           'plus whatever that money would have become if you had invested '
           'it instead.',
     FinanceConcept.payYourselfFirst =>
       'Move money to savings the day you get paid, not whatever is left at '
-          'the end of the month — because the honest answer is usually '
+          'the end of the month, because the honest answer is usually '
           'nothing is left. Automating the transfer beats willpower.',
     FinanceConcept.budgetRule =>
       'A common starting split is 50% of take-home pay on needs, 30% on '
           'wants, 20% to savings and debt. It is a starting point, not a '
-          'law — but if your needs are far above 50%, that is the number '
+          'law, but if your needs are far above 50%, that is the number '
           'to fix first.',
     FinanceConcept.emergencyFund =>
       'Three to six months of essential expenses, kept somewhere boring '
-          'and reachable. Its job is not to earn — it is to stop one bad '
+          'and reachable. Its job is not to earn: it is to stop one bad '
           'month from turning into high-interest debt.',
     FinanceConcept.compoundGrowth =>
       'Growth earns growth. At about 7% a year, money roughly doubles '
-          'every 10 years — so \$1,000 invested at 20 is worth far more at '
+          'every 10 years, so \$1,000 invested at 20 is worth far more at '
           '60 than \$1,000 invested at 50. Time is the ingredient you '
           'cannot buy later.',
     FinanceConcept.interestCost =>
@@ -213,7 +213,7 @@ extension FinanceConceptInfo on FinanceConcept {
           'exactly as hard against you when you are the borrower.',
     FinanceConcept.creditScore =>
       'A number lenders use to price the risk of lending to you. Payment '
-          'history is the single biggest input — one missed payment hurts '
+          'history is the single biggest input: one missed payment hurts '
           'more than most people expect, and a better score means a '
           'cheaper mortgage later.',
     FinanceConcept.inflation =>
@@ -272,7 +272,7 @@ extension FinanceConceptInfo on FinanceConcept {
       'Next time you nearly buy something, name what else that money could '
           'have done.',
     FinanceConcept.payYourselfFirst =>
-      'Decide an amount to save the moment money arrives — even 10%.',
+      'Decide an amount to save the moment money arrives, even 10%.',
     FinanceConcept.budgetRule =>
       'Add up last month. What percent actually went to needs?',
     FinanceConcept.emergencyFund =>

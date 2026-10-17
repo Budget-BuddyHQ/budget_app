@@ -1282,7 +1282,7 @@ class UserStatsController extends ChangeNotifier {
         },
         updatedAt: now,
       ),
-      savingMessage: 'Cancelling order...',
+      savingMessage: 'Canceling order...',
     );
   }
 

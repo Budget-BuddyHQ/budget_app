@@ -254,7 +254,7 @@ class CascadeReport {
     }
     if (coins > 0) {
       parts.add(
-        'You also matched $coins in coins — income, which buys moves rather '
+        'You also matched $coins in coins: income, which buys moves rather '
         'than counting as a choice.',
       );
     }
@@ -376,7 +376,7 @@ const List<CascadeLevel> kCascadeLevels = <CascadeLevel>[
   CascadeLevel(
     number: 3,
     name: 'Tight Month',
-    rule: 'Only 20 moves. Coins buy more — spend them early.',
+    rule: 'Only 20 moves. Coins buy more: spend them early.',
     savingsGoal: 20,
     moves: 20,
     billCapacity: 12,
@@ -451,7 +451,7 @@ const List<CascadeLevel> kCascadeLevels = <CascadeLevel>[
   CascadeLevel(
     number: 10,
     name: 'Cheap Thrills',
-    rule: 'Wants cost triple. Almost never worth it — almost.',
+    rule: 'Wants cost triple. Almost never worth it: almost.',
     savingsGoal: 28,
     moves: 28,
     billCapacity: 12,
@@ -715,9 +715,7 @@ class CoinCascadeGame {
     // one way to lose a timed run is to let the bills win, which is the
     // lesson the clock exists to teach.
     if (isTimed) {
-      return bills >= billCapacity
-          ? CascadeStatus.lost
-          : CascadeStatus.playing;
+      return bills >= billCapacity ? CascadeStatus.lost : CascadeStatus.playing;
     }
     if (savings >= savingsGoal) return CascadeStatus.won;
     if (bills >= billCapacity) return CascadeStatus.lost;
@@ -1185,7 +1183,6 @@ class CoinCascadeGame {
     if (!inBounds(col, row)) return;
     _grid[row][col] = Tile(kind, id);
   }
-
 }
 
 /// What a finished run pays.

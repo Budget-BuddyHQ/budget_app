@@ -90,7 +90,8 @@ const List<LeakItem> kLeakItems = <LeakItem>[
     id: 'unused_sub',
     label: 'Gym you stopped going to',
     kind: LeakKind.leak,
-    why: 'Still charging every month. A subscription you do not use is the '
+    why:
+        'Still charging every month. A subscription you do not use is the '
         'purest form of money leaving for nothing.',
     concept: FinanceConcept.impulseSpending,
     value: 8,
@@ -99,7 +100,8 @@ const List<LeakItem> kLeakItems = <LeakItem>[
     id: 'free_trial',
     label: 'Free trial, day 31',
     kind: LeakKind.leak,
-    why: 'Free trials are designed around the day you forget. That is the '
+    why:
+        'Free trials are designed around the day you forget. That is the '
         'product.',
     concept: FinanceConcept.impulseSpending,
     value: 9,
@@ -108,7 +110,8 @@ const List<LeakItem> kLeakItems = <LeakItem>[
     id: 'double_charge',
     label: 'Charged twice for one thing',
     kind: LeakKind.leak,
-    why: 'Mistakes happen and almost nobody checks. Money back is only ever '
+    why:
+        'Mistakes happen and almost nobody checks. Money back is only ever '
         'given to people who ask.',
     concept: FinanceConcept.needsVsWants,
     value: 10,
@@ -117,7 +120,8 @@ const List<LeakItem> kLeakItems = <LeakItem>[
     id: 'guaranteed_return',
     label: '"Guaranteed 40% return"',
     kind: LeakKind.leak,
-    why: 'Nothing guarantees a return like that. The word guaranteed is the '
+    why:
+        'Nothing guarantees a return like that. The word guaranteed is the '
         'tell, not the reassurance.',
     concept: FinanceConcept.diversification,
     value: 12,
@@ -127,7 +131,8 @@ const List<LeakItem> kLeakItems = <LeakItem>[
     id: 'overdraft_fee',
     label: 'Fee for being 20p short',
     kind: LeakKind.leak,
-    why: 'A charge for not having money, applied when you have least of it. '
+    why:
+        'A charge for not having money, applied when you have least of it. '
         'Worth arguing about every time.',
     concept: FinanceConcept.interestCost,
     value: 9,
@@ -137,7 +142,8 @@ const List<LeakItem> kLeakItems = <LeakItem>[
     id: 'auto_renew',
     label: 'Auto-renewed at triple',
     kind: LeakKind.leak,
-    why: 'The cheap first year was the offer. The renewal is the real price, '
+    why:
+        'The cheap first year was the offer. The renewal is the real price, '
         'and it renews itself so you never compare.',
     concept: FinanceConcept.impulseSpending,
     value: 10,
@@ -147,7 +153,8 @@ const List<LeakItem> kLeakItems = <LeakItem>[
     id: 'app_extra',
     label: 'Game coins you did not mean to buy',
     kind: LeakKind.leak,
-    why: 'One tap, real money. The easiest spending is always the least '
+    why:
+        'One tap, real money. The easiest spending is always the least '
         'decided.',
     concept: FinanceConcept.impulseSpending,
     value: 7,
@@ -158,7 +165,8 @@ const List<LeakItem> kLeakItems = <LeakItem>[
     id: 'rent',
     label: 'Rent',
     kind: LeakKind.legitimate,
-    why: 'You live there. Cancelling the things you actually need is not '
+    why:
+        'You live there. Canceling the things you actually need is not '
         'thrift, it is a different mistake.',
     concept: FinanceConcept.needsVsWants,
     value: 12,
@@ -167,7 +175,8 @@ const List<LeakItem> kLeakItems = <LeakItem>[
     id: 'groceries',
     label: 'Food shop',
     kind: LeakKind.legitimate,
-    why: 'Eating is a need. A budget that cuts it is one you abandon by '
+    why:
+        'Eating is a need. A budget that cuts it is one you abandon by '
         'Thursday.',
     concept: FinanceConcept.needsVsWants,
     value: 10,
@@ -184,7 +193,8 @@ const List<LeakItem> kLeakItems = <LeakItem>[
     id: 'savings_transfer',
     label: 'Money moving to savings',
     kind: LeakKind.legitimate,
-    why: 'That is not money leaving, it is money moving. Stopping it is the '
+    why:
+        'That is not money leaving, it is money moving. Stopping it is the '
         'most expensive tap on this board.',
     concept: FinanceConcept.payYourselfFirst,
     value: 14,
@@ -193,8 +203,9 @@ const List<LeakItem> kLeakItems = <LeakItem>[
     id: 'phone_bill',
     label: 'Phone bill you agreed to',
     kind: LeakKind.legitimate,
-    why: 'A bill you chose and use is not a leak. The skill is telling those '
-        'apart, not cancelling everything.',
+    why:
+        'A bill you chose and use is not a leak. The skill is telling those '
+        'apart, not canceling everything.',
     concept: FinanceConcept.needsVsWants,
     value: 8,
   ),
@@ -202,7 +213,8 @@ const List<LeakItem> kLeakItems = <LeakItem>[
     id: 'insurance',
     label: 'Insurance premium',
     kind: LeakKind.legitimate,
-    why: 'It feels like a leak right up until the year you need it. That is '
+    why:
+        'It feels like a leak right up until the year you need it. That is '
         'what it is for.',
     concept: FinanceConcept.insurance,
     value: 10,
@@ -482,7 +494,7 @@ class LeakResult {
       return 'Nothing tapped. Reading is fine; the clock still runs.';
     }
     if (wronglyTapped > caught) {
-      return 'You cancelled more real charges than leaks. Vigilance is not '
+      return 'You canceled more real charges than leaks. Vigilance is not '
           'the same as suspicion.';
     }
     if (wronglyTapped > 0) {
@@ -490,9 +502,9 @@ class LeakResult {
           'went with them.';
     }
     if (missed > caught) {
-      return 'Every tap was right — there were just more getting past you.';
+      return 'Every tap was right: there were just more getting past you.';
     }
-    return 'Caught $caught, cancelled nothing you needed. That is the whole '
+    return 'Caught $caught, canceled nothing you needed. That is the whole '
         'skill.';
   }
 }

@@ -128,7 +128,7 @@ const List<TutorialStep> kTutorialSteps = <TutorialStep>[
     id: 'welcome',
     title: 'Hey, I\'m Buddy',
     tagline:
-        'I\'ll show you around Budget Buddy — it takes about a minute, and '
+        'I\'ll show you around Budget Buddy: it takes about a minute, and '
         'you can skip out any time.',
     bullets: [
       'Every game here is really a money decision wearing a costume.',
@@ -144,11 +144,11 @@ const List<TutorialStep> kTutorialSteps = <TutorialStep>[
     id: 'home',
     title: 'Home',
     tagline:
-        'Your dashboard — the middle button, and where every session starts.',
+        'Your dashboard: the middle button, and where every session starts.',
     bullets: [
       'Start a Life straight from the big card at the top.',
       'Log today\'s money habit without digging through menus.',
-      'Read my tip of the day — a new money idea every day.',
+      'Read my tip of the day: a new money idea every day.',
     ],
     teaches: 'One screen that always tells you what\'s worth doing next.',
     icon: Icons.dashboard_rounded,
@@ -164,7 +164,7 @@ const List<TutorialStep> kTutorialSteps = <TutorialStep>[
         'childhood to retirement.',
     bullets: [
       'Press the big Age button to advance a year.',
-      'Answer the money decisions that come up — a first credit card, a vet '
+      'Answer the money decisions that come up: a first credit card, a vet '
           'bill, a market crash.',
       'Watch cash, savings, investments and debt move in the money panel.',
     ],
@@ -182,13 +182,13 @@ const List<TutorialStep> kTutorialSteps = <TutorialStep>[
         'Inside a life you can walk out into the town. It is the same money '
         'decisions, met in person rather than picked from a list.',
     bullets: [
-      'The menus are what you do from where you are sitting — search for '
+      'The menus are what you do from where you are sitting: search for '
           'work online, read at home, book a check-up.',
       'The town is the same things done in person: a notice board with real '
           'cards on it, a library, a clinic, a market.',
       'Turning up is worth more. The job board hires better than a form, and '
           'the library pays double what reading at home does.',
-      'Prices move with the day. Watch the banner at the top — market day is '
+      'Prices move with the day. Watch the banner at the top: market day is '
           'cheaper, and some months everything just costs more.',
     ],
     teaches:
@@ -207,8 +207,8 @@ const List<TutorialStep> kTutorialSteps = <TutorialStep>[
     title: 'Arcade',
     tagline: 'Short games that drill one money skill each.',
     bullets: [
-      'Finance Brawl — answer fast enough to hold off the horde.',
-      'Market Board — trade a live ticker without chasing the hype.',
+      'Finance Brawl: answer fast enough to hold off the horde.',
+      'Market Board: trade a live ticker without chasing the hype.',
       'Every card shows how long a run takes, so you can pick one that fits.',
     ],
     teaches: 'Recall under pressure, and knowing a good call from a fast one.',
@@ -221,7 +221,7 @@ const List<TutorialStep> kTutorialSteps = <TutorialStep>[
     id: 'market_board',
     title: 'Market Board',
     tagline:
-        'A full trading desk running on real market data — with play money.',
+        'A full trading desk running on real market data: with play money.',
     bullets: [
       'Trade to buy and sell, Assets to see what you hold.',
       'Orders for what\'s pending, P&L for what you actually made or lost.',
@@ -237,7 +237,7 @@ const List<TutorialStep> kTutorialSteps = <TutorialStep>[
   TutorialStep(
     id: 'learn',
     title: 'Learn',
-    tagline: 'The Academy — proper lessons, in a path you work down.',
+    tagline: 'The Academy: proper lessons, in a path you work down.',
     bullets: [
       'Work through units at your own pace.',
       'Finish a lesson to earn literacy points and gold.',
@@ -254,7 +254,7 @@ const List<TutorialStep> kTutorialSteps = <TutorialStep>[
     id: 'daily',
     title: 'Daily',
     tagline:
-        'Money Habits — the one part of the app about your real money, not a '
+        'Money Habits: the one part of the app about your real money, not a '
         'character\'s.',
     bullets: [
       'Pick habits to track: skip a takeaway, save the spare change, wait a '
@@ -278,7 +278,7 @@ const List<TutorialStep> kTutorialSteps = <TutorialStep>[
       'Open an Emerald Case for 180 gold to roll a new one.',
       'Duplicates pay some gold back, so a roll is never wasted.',
     ],
-    teaches: 'A case is a lesson in odds — check the chances before you spend.',
+    teaches: 'A case is a lesson in odds: check the chances before you spend.',
     icon: Icons.auto_awesome_rounded,
     accent: Color(0xFFFFD45C),
     mascot: TutorialMascot.worried,
@@ -287,7 +287,7 @@ const List<TutorialStep> kTutorialSteps = <TutorialStep>[
   TutorialStep(
     id: 'leaderboard',
     title: 'Leaderboard',
-    tagline: 'See where you rank — globally, or against friends only.',
+    tagline: 'See where you rank: globally, or against friends only.',
     bullets: [
       'Switch between Global and Friends.',
       'Rank by level or by gold, whichever you\'re chasing.',
@@ -319,7 +319,7 @@ const List<TutorialStep> kTutorialSteps = <TutorialStep>[
     id: 'finish',
     title: 'That\'s the tour',
     tagline:
-        'Start a Life when you\'re ready — it\'s the quickest way to see how '
+        'Start a Life when you\'re ready: it\'s the quickest way to see how '
         'all of this fits together.',
     bullets: [
       'Stuck? My tip on Home changes every day.',

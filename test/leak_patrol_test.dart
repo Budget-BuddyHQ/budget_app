@@ -41,15 +41,14 @@ void main() {
       expect(
         worstReal,
         greaterThanOrEqualTo(worstLeak),
-        reason: 'a wrong tap has to cost at least as much as a right one is '
+        reason:
+            'a wrong tap has to cost at least as much as a right one is '
             'worth, or spraying taps is still optimal',
       );
     });
 
     test('stopping your own savings transfer is the costliest tap', () {
-      final savings = kLeakItems.firstWhere(
-        (i) => i.id == 'savings_transfer',
-      );
+      final savings = kLeakItems.firstWhere((i) => i.id == 'savings_transfer');
       expect(savings.isLeak, isFalse);
       for (final other in kLeakItems.where((i) => !i.isLeak)) {
         expect(savings.value, greaterThanOrEqualTo(other.value));
@@ -119,7 +118,7 @@ void main() {
         coinsSaved: 45,
         coinsLost: 0,
       );
-      expect(r.headline, contains('cancelled nothing you needed'));
+      expect(r.headline, contains('canceled nothing you needed'));
     });
 
     test('doing nothing is not scolded', () {
@@ -139,7 +138,8 @@ void main() {
         expect(
           item.why.trim().length,
           greaterThan(30),
-          reason: '${item.id} says nothing — a game that only tells you '
+          reason:
+              '${item.id} says nothing — a game that only tells you '
               '"wrong" teaches reflexes, not judgement',
         );
         expect(item.value, greaterThan(0));
@@ -147,10 +147,7 @@ void main() {
     });
 
     test('ids are unique', () {
-      expect(
-        kLeakItems.map((i) => i.id).toSet().length,
-        kLeakItems.length,
-      );
+      expect(kLeakItems.map((i) => i.id).toSet().length, kLeakItems.length);
     });
   });
 
@@ -162,7 +159,8 @@ void main() {
       expect(
         young.visibleMillis,
         greaterThan(adult.visibleMillis),
-        reason: 'a game that outruns a six-year-old\'s reading is testing '
+        reason:
+            'a game that outruns a six-year-old\'s reading is testing '
             'reflexes, not judgement',
       );
       expect(young.popMillis, greaterThan(adult.popMillis));

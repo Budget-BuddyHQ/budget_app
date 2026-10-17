@@ -129,10 +129,10 @@ const List<NpcAction> kNpcActions = <NpcAction>[
     declineLabel: 'Check your pockets',
     outcomeAccepted:
         'Some of your carried coins are gone. Money in savings was never '
-        'at risk — that is most of what savings is for.',
+        'at risk: that is most of what savings is for.',
     outcomeDeclined:
         'Some of your carried coins are gone. Money in savings was never '
-        'at risk — that is most of what savings is for.',
+        'at risk: that is most of what savings is for.',
     concept: FinanceConcept.emergencyFund,
     acceptedGoldPercent: -0.12,
     maxLoss: 45,
@@ -177,7 +177,7 @@ const List<NpcAction> kNpcActions = <NpcAction>[
         'Paid, in full, for a known amount of effort. Boring money is the '
         'kind that actually arrives.',
     outcomeDeclined:
-        'Fair enough — turning down work is allowed. The offer comes round '
+        'Fair enough: turning down work is allowed. The offer comes round '
         'again, which is worth knowing before you say yes to a worse one.',
     concept: FinanceConcept.incomeVsWealth,
     goldDelta: 35,
@@ -212,11 +212,11 @@ const List<NpcAction> kNpcActions = <NpcAction>[
     headline: 'Want to split the cost?',
     detail:
         'They are buying in bulk and offering you half at half the price. '
-        'The maths checks out if you look at it.',
+        'The math checks out if you look at it.',
     acceptLabel: 'Split it',
     declineLabel: 'Pass',
     outcomeAccepted:
-        'Cheaper per unit for both of you. Not every offer is a trick — the '
+        'Cheaper per unit for both of you. Not every offer is a trick: the '
         'skill is telling which is which, not refusing all of them.',
     outcomeDeclined:
         'You passed on a good one. Being careful costs something too, and '

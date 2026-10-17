@@ -1947,7 +1947,7 @@ class _FriendsList extends StatelessWidget {
         final friends = snapshot.data ?? const <LeaderboardEntry>[];
         if (friends.isEmpty) {
           return Text(
-            'No friends yet. Share your code, or enter someone else\'s — '
+            'No friends yet. Share your code, or enter someone else\'s: '
             'either of you adding the other is enough for you both to show '
             'up here.',
             style: GoogleFonts.quicksand(

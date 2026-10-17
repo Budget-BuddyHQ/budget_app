@@ -971,7 +971,7 @@ class LeaderboardEntry {
     LeaderboardMetric.gold => '${gold}g',
     // Never "0" for somebody who has not played it. A blank is honest; a
     // zero looks like a score you earned.
-    LeaderboardMetric.ranked => rankedScore > 0 ? '$rankedScore' : '—',
+    LeaderboardMetric.ranked => rankedScore > 0 ? '$rankedScore' : '-',
   };
 
   String detailFor(LeaderboardMetric metric) => switch (metric) {
@@ -1042,7 +1042,7 @@ grant select, insert, update on table public.user_stats to authenticated;
 alter table public.user_stats enable row level security;
 
 -- Self-declared under-13 accounts (spending_habits.age_band = 'under_13')
--- never appear on the leaderboard — a privacy-protective default, not a
+-- never appear on the leaderboard: a privacy-protective default, not a
 -- setting, since none of the profile-picture/username fields the view
 -- exposes should surface a young kid's account publicly. Accounts with no
 -- declared age band (age is optional at signup) still appear.
@@ -1108,7 +1108,7 @@ end
 \$\$;
 
 -- Friendships for the eco-impact "Friends" leaderboard. A row is a directed
--- edge "user_id added friend_id" — adding a code only ever inserts YOUR own
+-- edge "user_id added friend_id": adding a code only ever inserts YOUR own
 -- row (RLS below only allows inserting where you're `user_id`), so a
 -- friendship reads as mutual once both sides have added each other's code.
 -- `friend code` needs no new column: it's derived client-side as the first
@@ -1123,7 +1123,7 @@ create table if not exists public.friendships (
 );
 
 -- `delete` as well as insert: a friends list you cannot leave is not a
--- friends list. No `update` on purpose — nothing about an edge can change,
+-- friends list. No `update` on purpose: nothing about an edge can change,
 -- and withholding it means a stray upsert fails loudly instead of quietly
 -- rewriting someone else's row.
 grant select, insert, delete on table public.friendships to authenticated;
@@ -1181,7 +1181,7 @@ end
 -- `user_stats` RLS restricts SELECT to your own row, which is correct for the
 -- table and fatal for the view: with `security_invoker = true` the view
 -- inherits the caller's RLS and every player sees a leaderboard containing
--- exactly themselves — and, worse for the friends feature, resolving a friend
+-- exactly themselves, and, worse for the friends feature, resolving a friend
 -- code returns "No player found with that code" every single time, because
 -- the lookup scans a view that can only ever contain the person doing the
 -- looking.
@@ -1845,7 +1845,7 @@ alter view public.leaderboard set (security_invoker = false);
       return const SyncState(
         synced: false,
         usedCache: true,
-        message: 'Saved on this device — it will reach your account shortly.',
+        message: 'Saved on this device: it will reach your account shortly.',
       );
     }
   }
@@ -2231,7 +2231,7 @@ alter view public.leaderboard set (security_invoker = false);
     // prefix avoids an overflow edge case on the code `FFFFFFFF`.
     final prefix = trimmed.toLowerCase();
     if (prefix.length != 8 || !RegExp(r'^[0-9a-f]{8}$').hasMatch(prefix)) {
-      return 'That code does not look right — codes are 8 characters.';
+      return 'That code does not look right: codes are 8 characters.';
     }
 
     try {
@@ -2323,7 +2323,7 @@ alter view public.leaderboard set (security_invoker = false);
         // the moment another lands — which is worse than vague, because it
         // sends whoever reads it to run one file and stop.
         return 'Friends need a setup step on the server that has not been '
-            'run yet — paste supabase/RUN_THIS_IN_SUPABASE.sql into the '
+            'run yet: paste supabase/RUN_THIS_IN_SUPABASE.sql into the '
             'Supabase SQL editor.';
       }
       return 'Could not add that friend right now (${error.code ?? 'error'}).';

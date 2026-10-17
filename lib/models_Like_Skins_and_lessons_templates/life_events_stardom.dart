@@ -56,7 +56,7 @@ const List<LifeEvent> kLifeEventsStardom = <LifeEvent>[
         label: 'Buy it and leave it in the corner',
         outcome:
             '\$85 for a thing to feel guilty about. Most instruments are '
-            'played for three weeks — the cost of finding out is the point.',
+            'played for three weeks: the cost of finding out is the point.',
         money: -85,
         happiness: 2,
         skill: LifeSkill.music,
@@ -94,7 +94,7 @@ const List<LifeEvent> kLifeEventsStardom = <LifeEvent>[
         label: 'Take the paid pitch',
         outcome:
             '\$15 out, about \$70 back. Spending money to make money is a real '
-            'thing and it is also how people lose money — the difference is '
+            'thing and it is also how people lose money: the difference is '
             'whether you counted.',
         money: 55,
         fame: 4,
@@ -113,7 +113,7 @@ const List<LifeEvent> kLifeEventsStardom = <LifeEvent>[
         skillGain: 5,
       ),
       LifeChoice(
-        label: 'Practise at home instead',
+        label: 'Practice at home instead',
         outcome:
             'No money, faster progress. Nobody watching is its own kind of '
             'useful.',
@@ -170,7 +170,7 @@ const List<LifeEvent> kLifeEventsStardom = <LifeEvent>[
       LifeChoice(
         label: 'Let it pass',
         outcome:
-            'It died down in a fortnight, as these do. You kept your job and '
+            'It died down in two weeks, as these do. You kept your job and '
             'your evenings.',
         happiness: -3,
         fame: 6,
@@ -194,7 +194,7 @@ const List<LifeEvent> kLifeEventsStardom = <LifeEvent>[
         label: 'Take the advance',
         outcome:
             '\$60,000 now, and you earn nothing more until the album has paid '
-            'it back. An advance is a loan against yourself — comfortable, and '
+            'it back. An advance is a loan against yourself: comfortable, and '
             'not the same as being paid.',
         money: 60000,
         fame: 22,
@@ -209,7 +209,7 @@ const List<LifeEvent> kLifeEventsStardom = <LifeEvent>[
         label: 'Release it yourself',
         outcome:
             'Less up front, and you keep the rights. Slower, riskier, and the '
-            'version where the catalogue is still yours in twenty years.',
+            'version where the catalog is still yours in twenty years.',
         money: 14000,
         fame: 16,
         setSalary: 700,
@@ -287,7 +287,7 @@ const List<LifeEvent> kLifeEventsStardom = <LifeEvent>[
   LifeEvent(
     id: 'stardom_windfall',
     prompt:
-        'A publisher offers \$800,000 for your back catalogue. One payment, '
+        'A publisher offers \$800,000 for your back catalog. One payment, '
         'and the songs are theirs.',
     icon: Icons.workspace_premium_rounded,
     minAge: 24,
@@ -304,7 +304,7 @@ const List<LifeEvent> kLifeEventsStardom = <LifeEvent>[
         label: 'Sell, and put most of it to work',
         outcome:
             '\$800,000, and you invested the bulk of it rather than spending '
-            'it. A windfall is not income — it is the one chance to buy '
+            'it. A windfall is not income: it is the one chance to buy '
             'yourself an income.',
         money: 800000,
         happiness: 12,
@@ -316,7 +316,7 @@ const List<LifeEvent> kLifeEventsStardom = <LifeEvent>[
         label: 'Sell, and enjoy it',
         outcome:
             '\$800,000 and a very good few years. Money with no job to do gets '
-            'spent — that is not a moral failing, it is just what happens '
+            'spent: that is not a moral failing, it is just what happens '
             'without a plan.',
         money: 800000,
         happiness: 22,
@@ -324,10 +324,10 @@ const List<LifeEvent> kLifeEventsStardom = <LifeEvent>[
         teaches: FinanceConcept.lifestyleCreep,
       ),
       LifeChoice(
-        label: 'Keep the catalogue',
+        label: 'Keep the catalog',
         outcome:
             'No lump sum. The royalties keep arriving for the rest of your '
-            'life and beyond it — the difference between being paid once and '
+            'life and beyond it: the difference between being paid once and '
             'owning the thing that pays.',
         setSalary: 2600,
         happiness: 8,

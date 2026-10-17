@@ -84,7 +84,7 @@ List<AgeScalingFact> ageScalingFacts(AgeBand band) {
       title: 'Grown-up money words',
       detail: band.blocksAdultTopics
           ? '${kAdultOnlyTopics.length} topics like mortgages, IRAs and APR '
-                'are held back until you are older — even when the question '
+                'are held back until you are older, even when the question '
                 'is short.'
           : 'Nothing is held back. Tax, credit and investing questions are '
                 'all in the mix.',
@@ -96,13 +96,13 @@ List<AgeScalingFact> ageScalingFacts(AgeBand band) {
           ? 'Wagers can appear, and the lessons about them are honest about '
                 'the odds.'
           : 'You are never offered a bet. The events that explain how betting '
-                'works still show up — reading about it costs nothing.',
+                'works still show up: reading about it costs nothing.',
     ),
     AgeScalingFact(
       icon: AgeScalingIcon.wording,
       title: 'How things are worded',
       detail: band.prefersSimpleWording
-          ? 'The life game and the Market Board use everyday words — "What '
+          ? 'The life game and the Market Board use everyday words: "What '
                 'you own" instead of "Assets".'
           : 'Full wording, including the terms you will meet on a real pay '
                 'slip or brokerage.',

@@ -45,10 +45,7 @@ void main() {
     test('each sorts by its own column first', () {
       expect(LeaderboardMetric.literacy.orderColumns.first, 'literacy_points');
       expect(LeaderboardMetric.gold.orderColumns.first, 'gold');
-      expect(
-        LeaderboardMetric.ranked.orderColumns.first,
-        'best_ranked_score',
-      );
+      expect(LeaderboardMetric.ranked.orderColumns.first, 'best_ranked_score');
     });
 
     test('every metric has tie-breaks', () {
@@ -90,7 +87,7 @@ void main() {
       // about there being nothing there — and on a board where most players
       // have not tried the mode, that distinction is most of the screen.
       final row = entry(literacy: 40);
-      expect(row.headlineFor(LeaderboardMetric.ranked), '—');
+      expect(row.headlineFor(LeaderboardMetric.ranked), '-');
       expect(row.detailFor(LeaderboardMetric.ranked), 'No ranked life yet');
     });
 
@@ -164,7 +161,9 @@ void main() {
         'lib/controllers_that_updates_stats/user_stats_controller.dart',
       ).readAsStringSync().replaceAll('\r\n', '\n');
 
-      final at = controller.indexOf('Future<StatsActionResult> recordRankedRun');
+      final at = controller.indexOf(
+        'Future<StatsActionResult> recordRankedRun',
+      );
       expect(at, greaterThan(-1), reason: 'ranked runs are not recorded');
       expect(
         controller.substring(at, at + 500),

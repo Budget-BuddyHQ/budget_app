@@ -238,7 +238,7 @@ void main() {
       );
       expect(
         life.programGate(program('college_business')),
-        'Resign from your job before you enrol',
+        'Resign from your job before you enroll',
       );
       life.quitJob();
       expect(life.programGate(program('college_business')), isNull);

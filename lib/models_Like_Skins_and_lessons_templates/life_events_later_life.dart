@@ -298,7 +298,8 @@ const List<LifeEvent> kLifeEventsLaterLife = <LifeEvent>[
         teaches: FinanceConcept.lifestyleCreep,
       ),
       LifeChoice(
-        label: 'Buy a new outfit and hire a fancy car for the night (150 coins)',
+        label:
+            'Buy a new outfit and hire a fancy car for the night (150 coins)',
         outcome:
             'Nobody asked. You spent 150 to impress people you will '
             'not see again.',
@@ -316,7 +317,7 @@ const List<LifeEvent> kLifeEventsLaterLife = <LifeEvent>[
   ),
   LifeEvent(
     id: 'l_retirement_party',
-    prompt: 'It is your last week at work. They have organised a party.',
+    prompt: 'It is your last week at work. They have organized a party.',
     icon: Icons.celebration_rounded,
     minAge: 60,
     maxAge: 72,
@@ -636,7 +637,7 @@ const List<LifeEvent> kLifeEventsLaterLife = <LifeEvent>[
         addRelationship: 'A young reader',
       ),
       LifeChoice(
-        label: 'Say yes, once a fortnight',
+        label: 'Say yes, once two weeks',
         outcome: 'Less than you wanted and it fitted your life.',
         happiness: 6,
       ),

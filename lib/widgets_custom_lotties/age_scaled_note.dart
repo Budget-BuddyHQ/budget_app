@@ -70,7 +70,7 @@ class AgeScaledNote extends StatelessWidget {
               band == AgeBand.undisclosed
                   // Says what to do about it, since this is the one band
                   // where the app is guessing rather than knowing.
-                  ? '$what set to a general mix — set your age in Profile to '
+                  ? '$what set to a general mix: set your age in Profile to '
                         'sharpen it.'
                   : '$what matched to your age (${band.label}).',
               style: GoogleFonts.quicksand(

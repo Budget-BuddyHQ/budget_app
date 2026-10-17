@@ -57,8 +57,8 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
       LifeChoice(
         label: 'Sign up and set a reminder for day 28',
         outcome:
-            'Free month, cancelled on time, cost nothing. The reminder is the '
-            'entire trick — the business model is people who mean to cancel.',
+            'Free month, canceled on time, cost nothing. The reminder is the '
+            'entire trick: the business model is people who mean to cancel.',
         happiness: 4,
         smarts: 6,
         teaches: FinanceConcept.impulseSpending,
@@ -74,7 +74,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
         teaches: FinanceConcept.lifestyleCreep,
       ),
       LifeChoice(
-        label: 'Skip it — you know what you are like',
+        label: 'Skip it: you know what you are like',
         outcome:
             'Slightly boring, entirely free. Knowing which kind of person you '
             'are is worth more than any budgeting app.',
@@ -95,8 +95,8 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
       LifeChoice(
         label: 'Go through all of them',
         outcome:
-            'Four you forgot, two you were paying twice. Cancelling took '
-            'twenty minutes and saved \$31 a month — \$372 a year, for one '
+            'Four you forgot, two you were paying twice. Canceling took '
+            'twenty minutes and saved \$31 a month: \$372 a year, for one '
             'evening.',
         money: 96,
         happiness: 5,
@@ -129,7 +129,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
         label: 'Pay the fee and turn overdrafts off',
         outcome:
             'A \$35 fee on a \$4 coffee. You switched the setting so the card '
-            'gets declined next time instead — a declined card is embarrassing '
+            'gets declined next time instead: a declined card is embarrassing '
             'for ten seconds and free forever.',
         money: -35,
         happiness: -3,
@@ -149,7 +149,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
         label: 'Ring the bank and ask them to drop it',
         outcome:
             'They dropped it. Banks refund first-time fees far more often than '
-            'anybody asks — the call took four minutes.',
+            'anybody asks: the call took four minutes.',
         money: -4,
         happiness: 4,
         smarts: 10,
@@ -181,7 +181,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
         label: 'Use it, and miss one',
         outcome:
             'A \$7 late fee, then another. "No interest" is true and it is not '
-            'the same as "no cost" — the fees are where the money is.',
+            'the same as "no cost": the fees are where the money is.',
         money: -102,
         happiness: -5,
         smarts: 8,
@@ -216,13 +216,13 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
         label: 'Show an adult before doing anything',
         outcome:
             'Not the school. No real organization has ever been paid in gift '
-            'card codes — that is the whole tell, and it works at any age.',
+            'card codes: that is the whole tell, and it works at any age.',
         happiness: 4,
         smarts: 14,
         teaches: FinanceConcept.impulseSpending,
       ),
       LifeChoice(
-        label: 'Do it — it sounded serious',
+        label: 'Do it: it sounded serious',
         outcome:
             'The codes were spent within a minute and gift cards cannot be '
             'reversed, which is exactly why they asked for them. \$60 gone. '
@@ -235,7 +235,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
       LifeChoice(
         label: 'Ring the school on the number you already had',
         outcome:
-            'Engaged, then answered, then confused — because it was never '
+            'Engaged, then answered, then confused, because it was never '
             'them. Calling back on a number you looked up yourself beats every '
             'kind of caller ID.',
         happiness: 3,
@@ -288,7 +288,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
     id: 't_fake_job',
     prompt:
         'A job offer arrived that you did not apply for. Work from home, good '
-        'money — but they need \$95 up front for the equipment.',
+        'money, but they need \$95 up front for the equipment.',
     icon: Icons.work_off_rounded,
     minAge: 16,
     weight: 0.95,
@@ -303,7 +303,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
         teaches: FinanceConcept.incomeVsWealth,
       ),
       LifeChoice(
-        label: 'Pay it — the money was good',
+        label: 'Pay it: the money was good',
         outcome:
             '\$95, no equipment, no replies. The good money was the bait and '
             'the fee was the entire business.',
@@ -326,7 +326,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
       LifeChoice(
         label: 'Check whether they were paid to post it',
         outcome:
-            'They were. It was in grey text at the bottom. Somebody being '
+            'They were. It was in gray text at the bottom. Somebody being '
             'confident and somebody being right are unrelated, and the '
             'countdown was there to stop you checking.',
         smarts: 14,
@@ -336,7 +336,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
       LifeChoice(
         label: 'Buy before the countdown ends',
         outcome:
-            'It had already peaked by the time the post reached you — that is '
+            'It had already peaked by the time the post reached you: that is '
             'what the countdown is for. Down \$180.',
         money: -180,
         happiness: -6,
@@ -362,7 +362,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
       LifeChoice(
         label: 'Work out what it would actually cost',
         outcome:
-            'At 0.6%, it takes about 115 boxes to be even likely — roughly '
+            'At 0.6%, it takes about 115 boxes to be even likely: roughly '
             '\$265 for one item. Written down it stopped being tempting, '
             'which is why it is never written down.',
         smarts: 14,
@@ -373,7 +373,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
         label: 'Buy ten and see',
         outcome:
             'Nothing. Ten tries at 0.6% is a 6% chance overall, so this was '
-            'the likely outcome rather than bad luck — and the next ten are '
+            'the likely outcome rather than bad luck, and the next ten are '
             'the same odds as the first ten.',
         money: -23,
         happiness: -2,
@@ -381,7 +381,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
         teaches: FinanceConcept.sunkCost,
       ),
       LifeChoice(
-        label: 'Keep going — you are due',
+        label: 'Keep going: you are due',
         outcome:
             'You were not due. Each box forgets the last one, and \$140 later '
             'the feeling that you must be close is the product being sold.',
@@ -406,7 +406,7 @@ const List<LifeEvent> kLifeEventsTraps = <LifeEvent>[
         label: 'Read what "fair" means here',
         outcome:
             'Fair meant a 5% cut on every trade. The odds were honest and the '
-            'house still wins, because the house is not betting — it is '
+            'house still wins, because the house is not betting: it is '
             'charging. That is true of every site like it.',
         smarts: 14,
         teaches: FinanceConcept.interestCost,

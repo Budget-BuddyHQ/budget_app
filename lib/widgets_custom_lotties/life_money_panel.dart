@@ -451,7 +451,7 @@ class _RunwayLine extends StatelessWidget {
       _ => (
         '\u{1F6E1}',
         const Color(0xFF9BE870),
-        'Savings cover ${months.toStringAsFixed(1)} months — a real cushion.',
+        'Savings cover ${months.toStringAsFixed(1)} months: a real cushion.',
       ),
     };
 
@@ -649,12 +649,12 @@ class _DependentNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final line = canJobHunt
-        ? 'No income yet. Open Career and look for work — a budget needs '
+        ? 'No income yet. Open Career and look for work: a budget needs '
               'something to split.'
         : age < 6
         ? 'Grown-ups pay for everything right now. Watch what things cost.'
         : age < 13
-        ? 'No paycheck yet — but every coin you keep is a coin you chose to keep.'
+        ? 'No paycheck yet, but every coin you keep is a coin you chose to keep.'
         : 'Take a side job and you can start splitting your own money.';
 
     return InkWell(

@@ -114,7 +114,7 @@ class _HowToBudgetSheet extends StatelessWidget {
             n: 2,
             title: 'Tap the budget bar',
             body:
-                'Under "Your money" there is a coloured bar that says "Pick a '
+                'Under "Your money" there is a colored bar that says "Pick a '
                 'budget". Tap it. The Payday card has a "Set my budget" button '
                 'too.',
             picture: _BarPicture(),

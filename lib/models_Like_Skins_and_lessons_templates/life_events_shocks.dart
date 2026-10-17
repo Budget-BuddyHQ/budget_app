@@ -232,7 +232,7 @@ const List<LifeEvent> kLifeEventsShocks = <LifeEvent>[
       LifeChoice(
         label: 'Ignore the damp and hope it dries',
         outcome:
-            'By spring it had turned into mould, and the repair cost more '
+            'By spring it had turned into mold, and the repair cost more '
             'than the clean-up would have. A small problem left alone grows.',
         money: -450,
         health: -6,

@@ -310,7 +310,7 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
         title: 'The streak has gone cold',
         evidence: _gap(snap.daysSinceLastLog),
         action:
-            'Log one habit today. One is enough — the streak counts days '
+            'Log one habit today. One is enough: the streak counts days '
             'you turned up, not days you were perfect.',
         clearsWhen: 'Clears the day you log a habit.',
         lessonIds: <String>['lesson_14'],
@@ -348,7 +348,7 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
           title: 'More habits pinned than kept',
           evidence:
               'You have ${snap.pinnedHabits} habits saved and logged '
-              '${snap.habitsLoggedLast14} of them in the last fortnight.',
+              '${snap.habitsLoggedLast14} of them in the last two weeks.',
           action:
               'Unpin everything except the two you actually did. A short '
               'list you finish beats a long one you avoid opening.',
@@ -397,7 +397,7 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
             '${snap.choicesKept.round()} habits kept, and \$'
             '${snap.moneySaved.toStringAsFixed(0)} saved by them.',
         action:
-            'Swap one tracking habit for one that has a number attached — '
+            'Swap one tracking habit for one that has a number attached: '
             'skip a bought lunch, cancel one subscription. Ticks feel like '
             'progress; only the number is progress.',
         concept: FinanceConcept.payYourselfFirst,
@@ -416,7 +416,7 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
             '\$${snap.moneySaved.toStringAsFixed(0)} saved across '
             '${snap.choicesKept.round()} kept choices.',
         action:
-            'Give it a job. Money with no name attached gets spent — '
+            'Give it a job. Money with no name attached gets spent: '
             'decide now what this is for.',
         concept: FinanceConcept.emergencyFund,
       ),
@@ -441,7 +441,7 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
         title: 'One idea keeps catching you out',
         evidence:
             'You are getting ${_inSentence(worst.key.label)} right '
-            '${(worst.value * 100).round()}% of the time — your lowest.',
+            '${(worst.value * 100).round()}% of the time: your lowest.',
         action:
             'Redo the lesson on ${_inSentence(worst.key.label)}. It is the '
             'shortest way '
@@ -519,8 +519,8 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
           action: chasingEndings
               ? 'You are exploring and building at the same time, which is '
                     'harder than either on its own. The unusual endings '
-                    'normally cost money — this run did not.'
-              : 'Whatever you did differently, do it again — and this time '
+                    'normally cost money: this run did not.'
+              : 'Whatever you did differently, do it again, and this time '
                     'notice which decision it was.',
           concept: FinanceConcept.compoundGrowth,
         ),
@@ -546,7 +546,7 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
                     'Worth knowing what it costs: the runs that reach an '
                     'unusual ending finish poorer, and that is a real '
                     'trade rather than a mistake. Try one run where you '
-                    'chase an ending *and* set your budget early — the two '
+                    'chase an ending *and* set your budget early: the two '
                     'are not opposites.',
                 concept: FinanceConcept.opportunityCost,
                 showsBudgetHowTo: true,
@@ -606,7 +606,7 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
               'wants took $wantsPct% of your board.',
           action:
               'Next run, decide before you start that wants stay under a '
-              'third — then watch the bills counter instead of the score. '
+              'third, then watch the bills counter instead of the score. '
               'The rule is not the hard part; spending it is.',
           concept: FinanceConcept.budgetRule,
           clearsWhen:
@@ -669,7 +669,7 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
           action:
               'These two games share no code and no rules. When a pattern '
               'appears in both, it is coming from you rather than from the '
-              'game — which is the useful kind of bad news.',
+              'game, which is the useful kind of bad news.',
           concept: FinanceConcept.opportunityCost,
           clearsWhen:
               'Clears when wants drop under 40% of your Coin Cascade boards, or your next life ends richer.',
@@ -721,7 +721,7 @@ MoneyReport analyzeMoney(MoneySnapshot snap) {
               '$indebted of your last ${recent.length} lives borrowed for '
               'school and were still paying it back at the end.',
           action:
-              'Next run, look at what a course pays before you enrol, or '
+              'Next run, look at what a course pays before you enroll, or '
               'start with a trade or a state school. Then put spare money on '
               'the loan in the Money tab in your first working years.',
           concept: FinanceConcept.interestCost,

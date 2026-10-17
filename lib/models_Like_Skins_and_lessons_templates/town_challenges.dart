@@ -249,7 +249,8 @@ TownChallenge _unitPrice(_Rolls rolls, {required bool young}) {
   final options = <ChallengeOption>[
     for (var i = 0; i < 3; i++)
       ChallengeOption(
-        label: '$name — ${sizes[i]} $unit for '
+        label:
+            '$name: ${sizes[i]} $unit for '
             '${perUnit[i] * sizes[i]} coins',
         detail: '${perUnit[i]} coins per $unit',
         score: perUnit[i].toDouble(),
@@ -264,7 +265,7 @@ TownChallenge _unitPrice(_Rolls rolls, {required bool young}) {
     correctIndex: _bestIndex(options, lowerIsBetter: true),
     explanation:
         'Divide the price by the size. The biggest box is usually cheapest '
-        'per $unit — and shops know you assume that, so sometimes it is not.',
+        'per $unit, and shops know you assume that, so sometimes it is not.',
     concept: FinanceConcept.opportunityCost,
     lowerIsBetter: true,
     reward: 2,
@@ -309,7 +310,7 @@ TownChallenge _percentOff(_Rolls rolls, {required bool young}) {
     explanation:
         'A percentage is meaningless until you know what it is a percentage '
         'of. $pct% of $price is ${(price * pct / 100).toStringAsFixed(0)} '
-        'coins — compare that with the $flat off, not with the number itself.',
+        'coins: compare that with the $flat off, not with the number itself.',
     concept: FinanceConcept.opportunityCost,
     lowerIsBetter: true,
     reward: 3,
@@ -339,7 +340,7 @@ TownChallenge _compound(_Rolls rolls) {
   final options = <ChallengeOption>[
     ChallengeOption(
       label: '${simple.round()} coins',
-      detail: 'That is simple interest — the same amount added each year',
+      detail: 'That is simple interest: the same amount added each year',
       score: (simple - real).abs(),
     ),
     ChallengeOption(
@@ -364,7 +365,7 @@ TownChallenge _compound(_Rolls rolls) {
     correctIndex: _bestIndex(options, lowerIsBetter: true),
     explanation:
         'Interest earns interest. Adding $rate% $years times is not the same '
-        'as $rate% x $years — that gap is the whole reason to start early '
+        'as $rate% x $years: that gap is the whole reason to start early '
         'rather than to start big.',
     concept: FinanceConcept.compoundGrowth,
     lowerIsBetter: true,
@@ -399,7 +400,7 @@ TownChallenge _subscription(_Rolls rolls) {
     correctIndex: _bestIndex(options, lowerIsBetter: true),
     explanation:
         'A monthly price is designed to be compared with nothing. '
-        '$monthly a month is ${monthly * 12} a year — multiply it out before '
+        '$monthly a month is ${monthly * 12} a year: multiply it out before '
         'you decide, every time.',
     concept: FinanceConcept.impulseSpending,
     lowerIsBetter: true,
@@ -472,7 +473,8 @@ TownChallenge _tip(_Rolls rolls) {
   return TownChallenge(
     id: 'tip',
     title: 'What you actually hand over',
-    prompt: 'The bill is $bill coins and you want to leave $pct%. What is '
+    prompt:
+        'The bill is $bill coins and you want to leave $pct%. What is '
         'the total?',
     options: options,
     correctIndex: _bestIndex(options, lowerIsBetter: true),

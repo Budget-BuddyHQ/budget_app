@@ -329,7 +329,7 @@ class _OrderTicketPageState extends State<OrderTicketPage> {
     // fills — so it is never blocked for affordability here.
     if (!_restsAsWorkingOrder) {
       if (widget.availableGold < _effectiveTotal) {
-        return 'You need ${_effectiveTotal}g for this order — you have '
+        return 'You need ${_effectiveTotal}g for this order: you have '
             '${widget.availableGold}g.';
       }
     }

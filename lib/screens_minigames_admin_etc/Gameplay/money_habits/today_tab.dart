@@ -458,7 +458,7 @@ class DailyChallengeCard extends StatelessWidget {
                   Text(
                     isCompleted
                         ? 'Gold and XP claimed. Play again for practice.'
-                        : 'Test your budgeting reflexes — gold and XP '
+                        : 'Test your budgeting reflexes: gold and XP '
                               'either way.',
                     style: GoogleFonts.quicksand(
                       color: Colors.white.withValues(alpha: 0.78),

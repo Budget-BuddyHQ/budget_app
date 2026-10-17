@@ -80,7 +80,7 @@ class CurriculumSourcesCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             '$lessonCount lessons and $_questionCount questions, checked '
-            'against the agencies that publish the rules — not against a '
+            'against the agencies that publish the rules, not against a '
             'bank that sells the products.',
             style: GoogleFonts.quicksand(
               color: AppTheme.textMuted,
@@ -158,7 +158,7 @@ class CurriculumSourcesCard extends StatelessWidget {
             Text(
               'Federal agencies and the regulators\' own education arms. '
               'Nothing here is selling a financial product, which is the '
-              'point — a source with something to sell is an advertisement '
+              'point: a source with something to sell is an advertisement '
               'with footnotes.',
               style: GoogleFonts.quicksand(
                 color: AppTheme.textMuted,

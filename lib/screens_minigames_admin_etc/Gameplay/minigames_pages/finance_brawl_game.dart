@@ -677,7 +677,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       ],
       correctIndex: 2,
       explanation:
-          "Opportunity cost is the trade-off value—spending \$100 on shoes today means losing future interest if invested.",
+          "Opportunity cost is the trade-off value, spending \$100 on shoes today means losing future interest if invested.",
     ),
     FinanceQuestion(
       question: "What is the envelope budgeting method?",
@@ -689,7 +689,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       ],
       correctIndex: 1,
       explanation:
-          "Envelope budgeting relies on cash envelopes for categories like groceries—when the cash runs out, spending stops.",
+          "Envelope budgeting relies on cash envelopes for categories like groceries, when the cash runs out, spending stops.",
     ),
     FinanceQuestion(
       question: "Why is discretionary spending dangerous if unmonitored?",
@@ -1079,7 +1079,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       ],
       correctIndex: 2,
       explanation:
-          "Credit cards are unsecured loans—lenders approve them based on creditworthiness without physical collateral.",
+          "Credit cards are unsecured loans, lenders approve them based on creditworthiness without physical collateral.",
     ),
     FinanceQuestion(
       question: "What is APR in personal credit agreements?",
@@ -1250,7 +1250,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       ],
       correctIndex: 1,
       explanation:
-          "Buying stock gives you equity—a small piece of direct ownership in that business.",
+          "Buying stock gives you equity, a small piece of direct ownership in that business.",
     ),
     FinanceQuestion(
       question: "What is a corporate or government bond?",
@@ -1262,7 +1262,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       ],
       correctIndex: 1,
       explanation:
-          "Bonds are IOUs—you lend money to a government or corporation, and they pay you regular interest until maturity.",
+          "Bonds are IOUs, you lend money to a government or corporation, and they pay you regular interest until maturity.",
     ),
     FinanceQuestion(
       question: "What is asset allocation diversification?",
@@ -1274,7 +1274,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       ],
       correctIndex: 2,
       explanation:
-          "Diversification reduces risk—if one asset or sector crashes, other investments help buffer the loss.",
+          "Diversification reduces risk, if one asset or sector crashes, other investments help buffer the loss.",
     ),
     FinanceQuestion(
       question: "What is an Index Fund?",
@@ -1508,7 +1508,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       ],
       correctIndex: 1,
       explanation:
-          "An employer match is essentially free compensation—failing to contribute enough to grab the full match leaves money on the table.",
+          "An employer match is essentially free compensation, failing to contribute enough to grab the full match leaves money on the table.",
     ),
     FinanceQuestion(
       question:
@@ -1715,7 +1715,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
       ],
       correctIndex: 3,
       explanation:
-          "Starting early gives compounding more time to work—a head start of 10 years can double your ultimate retirement nest egg.",
+          "Starting early gives compounding more time to work, a head start of 10 years can double your ultimate retirement nest egg.",
     ),
   ];
 

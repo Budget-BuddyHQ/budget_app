@@ -148,7 +148,7 @@ class CompanyProfile {
 
   String get marketCapLabel {
     if (marketCapitalization <= 0) {
-      return '—';
+      return '-';
     }
     final billions = marketCapitalization / 1000;
     if (billions >= 1) {

@@ -149,7 +149,7 @@ extension LifeSimSchool on LifeSimController {
     );
     if (why != null) return why;
     if (hasJob && currentJob?.partTime != true) {
-      return 'Resign from your job before you enrol';
+      return 'Resign from your job before you enroll';
     }
     if (budgetFor(LifeAction.applyCollege).exhausted) {
       return 'You have applied to enough places this year';
@@ -316,7 +316,7 @@ extension LifeSimSchool on LifeSimController {
         if (_edu.grades >= 85 && before < 85) {
           _happiness = _clamp(_happiness + 3);
           _setLog(
-            'You made the honour roll. Studying pays.',
+            'You made the honor roll. Studying pays.',
             kind: LifeLogKind.learning,
           );
         } else if (_edu.grades < 40 && before >= 40) {
@@ -349,7 +349,7 @@ extension LifeSimSchool on LifeSimController {
       final honours = _edu.grades >= 85;
       _setLog(
         honours
-            ? 'You graduated from high school with honours.'
+            ? 'You graduated from high school with honors.'
             : 'You graduated from high school.',
         kind: LifeLogKind.learning,
       );

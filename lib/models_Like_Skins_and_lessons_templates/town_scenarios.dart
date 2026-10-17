@@ -53,7 +53,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Add it to the basket',
           outcome:
-              'That rack is there because it works — the till queue is the '
+              'That rack is there because it works: the till queue is the '
               'one place in the shop where you are standing still with '
               'nothing to do. Twice a week is \$187 a year.',
           gold: -2,
@@ -73,7 +73,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Buy it, but skip tomorrow',
           outcome:
               'A real budget has room for treats. What it does not have is '
-              'room for treats that were never counted — you just counted '
+              'room for treats that were never counted: you just counted '
               'this one, which is the difference.',
           gold: -2,
           xp: 8,
@@ -90,7 +90,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Take the brand you know',
           outcome:
-              'Sometimes worth it — a brand you trust saves you the risk of '
+              'Sometimes worth it: a brand you trust saves you the risk of '
               'wasting \$2.20 on something nobody eats. Just know you paid '
               '\$2.30 for the certainty.',
           gold: -5,
@@ -110,7 +110,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Read both lists and buy neither today',
           outcome:
-              'Often the same factory and nearly the same list — the gap you '
+              'Often the same factory and nearly the same list: the gap you '
               'would pay for is frequently the box. You have enough at home '
               'this week, so knowing costs you nothing.',
           xp: 9,
@@ -125,7 +125,7 @@ kTownScenarios = <String, List<TownScenario>>{
           'tomorrow. You have plenty of bread at home.',
       choices: [
         TownChoice(
-          label: 'Buy two — half price is half price',
+          label: 'Buy two: half price is half price',
           outcome:
               'Half price on food you will not eat is not a saving, it is a '
               'cheaper way to throw money away. The discount only counts if '
@@ -138,7 +138,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Walk past',
           outcome:
               'Right call today. The reduced shelf is genuinely good value '
-              'for something you were already going to buy — and a trap for '
+              'for something you were already going to buy, and a trap for '
               'everything else.',
           xp: 9,
           literacy: 9,
@@ -158,7 +158,7 @@ kTownScenarios = <String, List<TownScenario>>{
     TownScenario(
       id: 'store_sale',
       prompt:
-          'A sign says BUY 2 GET 1 FREE on drinks — \$3 each. You came '
+          'A sign says BUY 2 GET 1 FREE on drinks: \$3 each. You came '
           'in for one.',
       choices: [
         TownChoice(
@@ -174,7 +174,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Buy the one you came for',
           outcome:
               'You spent \$3 and got exactly what you wanted. Skipping a '
-              'discount is allowed — the saving is only real if you '
+              'discount is allowed: the saving is only real if you '
               'wanted the extra.',
           gold: -3,
           xp: 6,
@@ -194,7 +194,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Drink the water you brought',
           outcome:
               'Nothing spent. Every scene in this town has a way out that '
-              'costs nothing — if a shop has arranged things so it feels '
+              'costs nothing: if a shop has arranged things so it feels '
               'like there is not one, that is the arrangement talking.',
           xp: 7,
           literacy: 8,
@@ -217,7 +217,7 @@ kTownScenarios = <String, List<TownScenario>>{
           xp: 3,
         ),
         TownChoice(
-          label: 'Buy the charger — you keep losing yours',
+          label: 'Buy the charger: you keep losing yours',
           outcome:
               'Not an impulse buy if it replaces something you actually '
               'need. The test is whether you would have driven here for '
@@ -243,7 +243,7 @@ kTownScenarios = <String, List<TownScenario>>{
           'You spend about \$15 here a month.',
       choices: [
         TownChoice(
-          label: 'Join — 10% off sounds good',
+          label: 'Join: 10% off sounds good',
           outcome:
               '10% of \$15 is \$1.50 a month. The membership costs \$4. '
               'You are paying \$2.50 a month for the privilege.',
@@ -293,7 +293,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Ask the bank to refund it',
           outcome:
               'They often will, once, if you ask politely and it is your '
-              'first. Fees are frequently a policy rather than a law — it '
+              'first. Fees are frequently a policy rather than a law: it '
               'costs one phone call to find out.',
           gold: -10,
           xp: 9,
@@ -337,7 +337,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Save whatever is left at month end',
           outcome:
-              'Almost nothing is ever left — spending expands to fill the '
+              'Almost nothing is ever left: spending expands to fill the '
               'account. Saving last is the plan that fails quietly, which is '
               'why the order matters more than the amount.',
           xp: 5,
@@ -352,7 +352,7 @@ kTownScenarios = <String, List<TownScenario>>{
           'bank machine is a six-minute walk away.',
       choices: [
         TownChoice(
-          label: 'Pay the \$3.50 — you are in a hurry',
+          label: 'Pay the \$3.50: you are in a hurry',
           outcome:
               'Sometimes six minutes really is worth \$3.50. The trap is '
               'doing it weekly without noticing: that is \$182 a year for '
@@ -387,7 +387,7 @@ kTownScenarios = <String, List<TownScenario>>{
           'other 4% but you must leave the money for a year.',
       choices: [
         TownChoice(
-          label: 'Take the 4% — more is better',
+          label: 'Take the 4%: more is better',
           outcome:
               'More interest, less access. Fine for money you will not '
               'need; painful if the car breaks next month.',
@@ -398,7 +398,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Ask what happens if you need it early',
           outcome:
               'There is a penalty that wipes out several months of '
-              'interest. Now you can actually compare the two — that '
+              'interest. Now you can actually compare the two: that '
               'question is the whole decision.',
           xp: 9,
           literacy: 10,
@@ -416,14 +416,14 @@ kTownScenarios = <String, List<TownScenario>>{
     TownScenario(
       id: 'bank_overdraft',
       prompt:
-          'A form asks whether you want overdraft coverage — payments go '
+          'A form asks whether you want overdraft coverage: payments go '
           'through even when your balance is short.',
       choices: [
         TownChoice(
           label: 'Say yes, so nothing gets declined',
           outcome:
               'A declined card is embarrassing for a second. An overdraft '
-              'fee is often about \$35 — sometimes more than the thing '
+              'fee is often about \$35, sometimes more than the thing '
               'you bought.',
           gold: -35,
           xp: 5,
@@ -441,8 +441,8 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Ask about a low-balance alert instead',
           outcome:
-              'Free, and it solves the actual problem — not knowing the '
-              'balance was low — rather than charging you for it.',
+              'Free, and it solves the actual problem (not knowing the '
+              'balance was low) rather than charging you for it.',
           xp: 9,
           literacy: 10,
         ),
@@ -457,7 +457,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'It means the bank promises to be careful',
           outcome:
-              'Not quite. It means a US government agency — the FDIC — '
+              'Not quite. It means a US government agency (the FDIC) '
               'repays your deposits if the bank itself fails.',
           xp: 4,
         ),
@@ -474,7 +474,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'It only covers savings, not checking',
           outcome:
               'Both are covered. So are money market deposit accounts '
-              'and CDs — investments held at the bank are not.',
+              'and CDs: investments held at the bank are not.',
           xp: 5,
           literacy: 6,
         ),
@@ -559,7 +559,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Buy lunch every day',
           outcome:
-              'Five canteen meals is \$30 out of \$25 — you run out on '
+              'Five canteen meals is \$30 out of \$25: you run out on '
               'Friday. Not a disaster, but it was arithmetic you could have '
               'done on Monday.',
           gold: -25,
@@ -581,7 +581,7 @@ kTownScenarios = <String, List<TownScenario>>{
           outcome:
               'The food is already bought, so the whole \$25 survives the '
               'week. It works, and the thing to watch is whether you stick '
-              'to it — the strictest plan is not always the one that lasts.',
+              'to it: the strictest plan is not always the one that lasts.',
           xp: 9,
           literacy: 9,
         ),
@@ -596,7 +596,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Charge 50c each',
           outcome:
-              'Forty at 50c is \$20 against \$18 of ingredients — you raise '
+              'Forty at 50c is \$20 against \$18 of ingredients: you raise '
               '\$2 for a day of work. Cheap is not the same as generous when '
               'the point was to raise money.',
           gold: 2,
@@ -607,7 +607,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Charge \$1.50 each',
           outcome:
               'Sell them all and you clear \$42. Price has to cover the cost '
-              'first and the profit second — that order is the whole of '
+              'first and the profit second: that order is the whole of '
               'running anything.',
           gold: 42,
           xp: 10,
@@ -616,7 +616,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Charge \$3 and expect to sell half',
           outcome:
-              'Twenty at \$3 is \$60 minus \$18, so \$42 as well — and you '
+              'Twenty at \$3 is \$60 minus \$18, so \$42 as well, and you '
               'still have twenty cupcakes. Two very different plans can land '
               'on the same number.',
           gold: 42,
@@ -655,7 +655,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Find a \$30 present instead',
           outcome:
               '\$5 each and nobody is squeezed. Changing the size of the '
-              'problem is a move people forget they have — the present was '
+              'problem is a move people forget they have: the present was '
               'never the fixed part.',
           gold: -5,
           xp: 10,
@@ -679,7 +679,7 @@ kTownScenarios = <String, List<TownScenario>>{
           'off at the till. What do you pay?"',
       choices: [
         TownChoice(
-          label: '\$35 — that is 30% off',
+          label: '\$35: that is 30% off',
           outcome:
               'A common trap. The second discount comes off the reduced '
               'price, not the original, so the two do not simply add.',
@@ -697,7 +697,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Ask to see the till receipt to check',
           outcome:
-              'Also right, and the more useful habit — checking beats '
+              'Also right, and the more useful habit: checking beats '
               'assuming the sign was honest.',
           xp: 8,
           literacy: 8,
@@ -720,7 +720,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Ask for the median instead',
           outcome:
-              'The median is the middle person — about \$40,000 here. '
+              'The median is the middle person: about \$40,000 here. '
               'For anything about people and money, the median is the '
               'honest number.',
           xp: 10,
@@ -811,7 +811,7 @@ kTownScenarios = <String, List<TownScenario>>{
       id: 'job_first_payslip',
       prompt:
           'Your first payslip. You worked 20 hours at \$12, so you expected '
-          '\$240 — the bank got \$203.',
+          '\$240: the bank got \$203.',
       choices: [
         TownChoice(
           label: 'Assume you were underpaid',
@@ -868,7 +868,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Average the last eight weeks',
           outcome:
               'The middle answer, and a good one once you have eight weeks '
-              'to average. Two data points is not a pattern — that is the '
+              'to average. Two data points is not a pattern: that is the '
               'part people get wrong.',
           xp: 9,
           literacy: 10,
@@ -916,7 +916,7 @@ kTownScenarios = <String, List<TownScenario>>{
           'other pays \$16/hour but costs \$6 a day to get to.',
       choices: [
         TownChoice(
-          label: 'Take the \$16 job — higher rate',
+          label: 'Take the \$16 job: higher rate',
           outcome:
               'On a 5-hour shift that is \$80 less \$6 travel, so \$74. '
               'The \$14 job pays \$70. Closer than the headline, and it '
@@ -939,7 +939,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Take the \$14 job for the shorter day',
           outcome:
               '\$70 and two hours of your life back. Time has a value '
-              'too — the trick is to price it deliberately rather than '
+              'too: the trick is to price it deliberately rather than '
               'ignore it.',
           gold: 70,
           xp: 8,
@@ -956,7 +956,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'The employer kept it',
           outcome:
-              'No — it was withheld for tax. Federal income tax, Social '
+              'No: it was withheld for tax. Federal income tax, Social '
               'Security at 6.2%, Medicare at 1.45%, usually state tax '
               'too.',
           gold: 268,
@@ -974,7 +974,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Check the hours and rate on the stub',
           outcome:
-              'Worth doing every first stub — payroll makes mistakes, and '
+              'Worth doing every first stub: payroll makes mistakes, and '
               'one caught in month one is a conversation rather than a '
               'repayment.',
           gold: 268,
@@ -1051,7 +1051,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Read the meter yourself before paying',
           outcome:
               'Free, and it settles it. A bill that jumped with no change in '
-              'the house is very often an estimate rather than a reading — '
+              'the house is very often an estimate rather than a reading: '
               'and an estimate you correct is money you get back.',
           xp: 10,
           literacy: 10,
@@ -1067,7 +1067,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Cancel the ones you cannot name',
           outcome:
-              'A subscription is designed to be forgotten — that is the '
+              'A subscription is designed to be forgotten: that is the '
               'business model. Twenty minutes on the statement usually pays '
               'better than any coupon.',
           gold: 18,
@@ -1075,7 +1075,7 @@ kTownScenarios = <String, List<TownScenario>>{
           literacy: 10,
         ),
         TownChoice(
-          label: 'Keep them — they are only a few dollars',
+          label: 'Keep them: they are only a few dollars',
           outcome:
               'Six at \$6 is \$432 a year. Small recurring costs are hard to '
               'feel and easy to add up, which is exactly why they are sold '
@@ -1105,7 +1105,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Repair it',
           outcome:
               'A quarter of the price for maybe two more years. That is a '
-              'good trade if it holds — the risk is paying \$120 and then '
+              'good trade if it holds: the risk is paying \$120 and then '
               '\$430 anyway six months later.',
           gold: -12,
           xp: 8,
@@ -1173,7 +1173,7 @@ kTownScenarios = <String, List<TownScenario>>{
           '\$55, and you were saving for a \$120 console.',
       choices: [
         TownChoice(
-          label: 'Buy the bike — it is a good price',
+          label: 'Buy the bike: it is a good price',
           outcome:
               'You cannot: you have \$40. Wanting something now does not '
               'create the other \$15, which is the whole reason people '
@@ -1185,14 +1185,14 @@ kTownScenarios = <String, List<TownScenario>>{
           outcome:
               'A goal you already chose beats a goal that turned up '
               'today. Every jar with a name on it wins more often than a '
-              'jar labelled "saving".',
+              'jar labeled "saving".',
           xp: 9,
           literacy: 9,
         ),
         TownChoice(
           label: 'Change the goal to the bike, on purpose',
           outcome:
-              'Also fine — as long as it is a decision, not a drift. '
+              'Also fine: as long as it is a decision, not a drift. '
               'Changing your mind deliberately is not the same as giving '
               'up on a plan.',
           xp: 8,
@@ -1209,7 +1209,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Ask the friend with the car',
           outcome:
-              'Free, and it takes two trips. A favour is a price paid in time '
+              'Free, and it takes two trips. A favor is a price paid in time '
               'and thanks, and it is worth knowing you are paying it.',
           xp: 10,
           literacy: 8,
@@ -1266,7 +1266,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Come back tomorrow morning instead',
           outcome:
               'Better stock, higher price. There is no version of this '
-              'where you get both — that is what a trade-off is.',
+              'where you get both: that is what a trade-off is.',
           xp: 8,
           literacy: 7,
         ),
@@ -1290,7 +1290,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Offer \$14',
           outcome:
-              'You settle at \$16. Asking cost nothing and saved \$4 — the '
+              'You settle at \$16. Asking cost nothing and saved \$4: the '
               'worst that happens when you ask is that the answer is no.',
           gold: -16,
           xp: 10,
@@ -1311,12 +1311,12 @@ kTownScenarios = <String, List<TownScenario>>{
       id: 'market_bulk',
       prompt:
           'A sack of rice is \$18 and would last two months. A small bag '
-          'is \$4 and lasts a fortnight.',
+          'is \$4 and lasts two weeks.',
       choices: [
         TownChoice(
           label: 'Buy the sack',
           outcome:
-              'Four fortnights for \$18 instead of \$16 — barely cheaper, '
+              'Four fortnights for \$18 instead of \$16: barely cheaper, '
               'and you paid it all today. Buying in bulk needs both the '
               'space and the cash up front.',
           gold: -18,
@@ -1327,7 +1327,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Buy the small bag',
           outcome:
               'More expensive per meal, and you keep \$14 for whatever '
-              'else this fortnight brings. Poverty is expensive precisely '
+              'else this two weeks brings. Poverty is expensive precisely '
               'because of this trade.',
           gold: -4,
           xp: 8,
@@ -1336,7 +1336,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Work out the price per meal first, and buy neither today',
           outcome:
-              'The sack is 11c a meal, the bag 14c. Real but small — and '
+              'The sack is 11c a meal, the bag 14c. Real but small, and '
               'now it is a number instead of a feeling. You have enough '
               'in for this week anyway.',
           xp: 10,
@@ -1373,7 +1373,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Leave the bag',
           outcome:
-              'You keep the \$7 and go without. Fair enough — though the '
+              'You keep the \$7 and go without. Fair enough, though the '
               'question would probably have sorted it.',
           xp: 6,
           literacy: 6,
@@ -1393,7 +1393,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Take the card and start filling it',
           outcome:
-              'You spend \$40.50 to get \$4.50 back — a 10% discount on '
+              'You spend \$40.50 to get \$4.50 back: a 10% discount on '
               'money you were going to spend anyway, or an excellent '
               'reason to come nine more times.',
           gold: -5,
@@ -1460,7 +1460,7 @@ kTownScenarios = <String, List<TownScenario>>{
       prompt: '"Make it a large for 80c?" The large is nearly twice the size.',
       choices: [
         TownChoice(
-          label: 'Yes — it is better value',
+          label: 'Yes: it is better value',
           outcome:
               'It genuinely is, per millilitre. It is also 80c you were '
               'not going to spend, on a drink you did not need to be '
@@ -1518,7 +1518,7 @@ kTownScenarios = <String, List<TownScenario>>{
           outcome:
               'You choose the number, and it reaches the person more '
               'directly. Same money, different route, and you decided '
-              'both — the screen decided neither.',
+              'both: the screen decided neither.',
           xp: 9,
           literacy: 8,
         ),
@@ -1538,7 +1538,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Take the branded one',
           outcome:
               '\$26 for a name and a nicer box. Sometimes that buys '
-              'confidence, which is worth something — just not usually '
+              'confidence, which is worth something: just not usually '
               '\$26.',
           gold: -32,
           xp: 5,
@@ -1615,7 +1615,7 @@ kTownScenarios = <String, List<TownScenario>>{
           literacy: 7,
         ),
         TownChoice(
-          label: 'Ask for an itemised bill',
+          label: 'Ask for an itemized bill',
           outcome:
               'Two of the lines were charged twice. You are entitled to '
               'the detail, and asking for it is the only way anybody ever '
@@ -1691,7 +1691,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Keep paying for the streaming one',
           outcome:
-              'Better catalogue, and you are paying for convenience — '
+              'Better catalog, and you are paying for convenience: '
               'which is fine when it is a decision rather than a habit.',
           gold: -12,
           xp: 5,
@@ -1758,7 +1758,7 @@ kTownScenarios = <String, List<TownScenario>>{
           literacy: 10,
         ),
         TownChoice(
-          label: 'Skip it — payslips are self-explanatory',
+          label: 'Skip it: payslips are self-explanatory',
           outcome:
               'They are not, and the people who say so are usually the '
               'ones being taxed wrong. No harm done tonight.',
@@ -1785,7 +1785,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Pay the fine and move on',
           outcome:
               '\$8 for forgetting. Cheap as lessons go, and the cap is '
-              'why — most late fees in the real world do not have one.',
+              'why: most late fees in the real world do not have one.',
           gold: -8,
           xp: 7,
           literacy: 9,
@@ -1823,7 +1823,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Take it',
           outcome:
               '\$25 to borrow \$70 for nine days. As a yearly rate that is '
-              'over 1,400% — and it is still sometimes the only door open, '
+              'over 1,400%, and it is still sometimes the only door open, '
               'which is the part worth understanding.',
           gold: 70,
           xp: 6,
@@ -1855,7 +1855,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Take the \$120',
           outcome:
-              '\$780 of value gone in two years — about \$1 a day. That is '
+              '\$780 of value gone in two years: about \$1 a day. That is '
               'what owning the newest thing costs, and it is worth knowing '
               'the number before the next one.',
           gold: 120,
@@ -1902,7 +1902,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Buy new instead',
           outcome:
               'A warranty, a shop to go back to, and \$175. Sometimes '
-              'that is the right trade — as long as you know that is what '
+              'that is the right trade: as long as you know that is what '
               'you bought.',
           gold: -260,
           xp: 6,
@@ -1928,7 +1928,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Sell it',
           outcome:
               '\$40, and it is gone. A pawn shop prices metal, not '
-              'meaning — which is the right way round for them and rarely '
+              'meaning, which is the right way round for them and rarely '
               'for you.',
           gold: 40,
           xp: 5,
@@ -1937,7 +1937,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Keep it',
           outcome:
-              'Not everything you own is an asset to be optimised. Knowing '
+              'Not everything you own is an asset to be optimized. Knowing '
               'which things are outside the spreadsheet is part of being '
               'good with money, not a failure of it.',
           xp: 10,
@@ -1947,7 +1947,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Get it valued somewhere else first',
           outcome:
               'A jeweller says \$150 for the workmanship. One offer is '
-              'never a price — it is one person\'s opinion of one.',
+              'never a price: it is one person\'s opinion of one.',
           xp: 10,
           literacy: 10,
         ),
@@ -2001,7 +2001,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Go to the festival',
           outcome:
               'Bigger, louder, \$25 plus whatever you eat there. Worth it '
-              'sometimes — the trap is assuming the paid version is '
+              'sometimes: the trap is assuming the paid version is '
               'automatically the better day.',
           gold: -25,
           xp: 6,
@@ -2016,7 +2016,7 @@ kTownScenarios = <String, List<TownScenario>>{
           literacy: 9,
         ),
         TownChoice(
-          label: 'Both — band now, festival next year',
+          label: 'Both: band now, festival next year',
           outcome:
               'You get the free one today and the paid one becomes a '
               'decision rather than a default. Spacing things out is the '
@@ -2036,7 +2036,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Join the gym',
           outcome:
               '\$540 a year, and the equipment is genuinely better. The '
-              'question is not whether it is good — it is whether you will '
+              'question is not whether it is good: it is whether you will '
               'go in March.',
           gold: -45,
           xp: 6,
@@ -2071,7 +2071,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Buy one',
           outcome:
               'Nice, and gone in four minutes. Spending on a small good '
-              'moment is what money is for — as long as it is not every '
+              'moment is what money is for: as long as it is not every '
               'time you walk past.',
           gold: -5,
           xp: 6,
@@ -2081,7 +2081,7 @@ kTownScenarios = <String, List<TownScenario>>{
           outcome:
               'You are not hungry, and in ten minutes you will not '
               'remember the van. Most impulses are settled entirely by '
-              'walking another hundred metres.',
+              'walking another hundred meters.',
           xp: 9,
           literacy: 9,
         ),
@@ -2116,7 +2116,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Donate \$20 directly instead',
           outcome:
               'All of it arrives and none of it is spent on medals and '
-              'timing chips. Less fun, more efficient — both are real '
+              'timing chips. Less fun, more efficient: both are real '
               'answers.',
           gold: -20,
           xp: 9,
@@ -2143,7 +2143,7 @@ kTownScenarios = <String, List<TownScenario>>{
           'link." You are expecting a parcel.',
       choices: [
         TownChoice(
-          label: 'Pay the \$2 — it is tiny',
+          label: 'Pay the \$2: it is tiny',
           outcome:
               'The \$2 was never the point; the card details were. A fee '
               'small enough not to think about is the whole design of this '
@@ -2155,7 +2155,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Open the courier app instead',
           outcome:
-              'Right move. Never follow the link you were sent — go to the '
+              'Right move. Never follow the link you were sent: go to the '
               'company the way you normally would and check there. A real '
               'problem will be waiting for you.',
           xp: 10,
@@ -2178,7 +2178,7 @@ kTownScenarios = <String, List<TownScenario>>{
           'deposit, cash only, move in today".',
       choices: [
         TownChoice(
-          label: 'Take it — cheap and quick',
+          label: 'Take it: cheap and quick',
           outcome:
               'Cash only and no paperwork means no proof you paid and no '
               'rights if it goes wrong. The saving is real and so is what '
@@ -2216,7 +2216,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Sign up for \$10 a month',
           outcome:
               'Charities push monthly because it is worth far more than a '
-              'one-off, which is fair — as long as it is a number you '
+              'one-off, which is fair: as long as it is a number you '
               'reviewed rather than one agreed on a pavement.',
           gold: -10,
           xp: 7,
@@ -2247,10 +2247,10 @@ kTownScenarios = <String, List<TownScenario>>{
       id: 'notice_scam',
       prompt:
           'A flyer: "YOU HAVE WON \$500! Claim within 24 hours. Small '
-          '\$20 processing fee — pay by gift card."',
+          '\$20 processing fee: pay by gift card."',
       choices: [
         TownChoice(
-          label: 'Pay the \$20 — \$500 is worth it',
+          label: 'Pay the \$20: \$500 is worth it',
           outcome:
               'Gone. Gift-card payment, a prize you did not enter for, '
               'and a 24-hour deadline: three of the four classic scam '
@@ -2272,7 +2272,7 @@ kTownScenarios = <String, List<TownScenario>>{
           label: 'Report it to the notice board keeper',
           outcome:
               'Best answer. Reporting is what stops the next person '
-              'falling for it — the FTC takes reports for exactly this.',
+              'falling for it: the FTC takes reports for exactly this.',
           xp: 10,
           literacy: 10,
         ),
@@ -2285,7 +2285,7 @@ kTownScenarios = <String, List<TownScenario>>{
           'bank details up front "to set up payroll".',
       choices: [
         TownChoice(
-          label: 'Send the details — it is just payroll',
+          label: 'Send the details: it is just payroll',
           outcome:
               'A real employer collects bank details *after* hiring you, '
               'through a process you can verify. Up front, before an '
@@ -2323,7 +2323,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Sign up and set a reminder for day six',
           outcome:
-              'You used the free week and cancelled before it charged. Free '
+              'You used the free week and canceled before it charged. Free '
               'trials that renew on their own count on you forgetting the date.',
           xp: 12,
           literacy: 12,
@@ -2851,7 +2851,7 @@ kTownScenarios = <String, List<TownScenario>>{
         TownChoice(
           label: 'Ask the friend',
           outcome:
-              'Free, and it is a favour, not a saving. Favours are worth '
+              'Free, and it is a favor, not a saving. Favors are worth '
               'something, and remembering to return one is what keeps them '
               'coming.',
           xp: 10,

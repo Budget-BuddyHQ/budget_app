@@ -114,7 +114,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
       context,
       title: result.success ? '${skin.name} unlocked' : 'Unable to buy',
       message: result.success
-          ? 'Bought outright — no case needed.'
+          ? 'Bought outright: no case needed.'
           : result.message,
       icon: result.success
           ? Icons.check_circle_rounded
@@ -149,7 +149,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
         content: Text(
           '${skin.rarityLabel} • ${odds.oddsLabel} from an Emerald Case '
           '(duplicates refund ${odds.refundGold} gold), or buy it outright '
-          'for $buyCost gold — no randomness either way.',
+          'for $buyCost gold: no randomness either way.',
           style: const TextStyle(color: Colors.white70, height: 1.35),
         ),
         actions: [
@@ -623,7 +623,7 @@ class _StorePanel extends StatelessWidget {
                 // critter. Naming one family made the other twenty look like
                 // they were not in the pool.
                 'Spend 180 gold for a Common, Rare, Epic, Legendary or '
-                'Mythic skin — or skip the randomness and buy any one '
+                'Mythic skin, or skip the randomness and buy any one '
                 'you pick for the same price. Tap a locked skin below.',
                 style: GoogleFonts.quicksand(
                   color: Colors.white.withValues(alpha: 0.80),
@@ -1431,7 +1431,7 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
                           _revealed
                               ? widget.result.isNewUnlock
                                     ? 'Unlocked and equipped automatically.'
-                                    : 'Already owned — ${_getRefundAmount(preview.rarity)} gold refunded.'
+                                    : 'Already owned: ${_getRefundAmount(preview.rarity)} gold refunded.'
                               : 'Opening... tap Skip or wait to reveal.',
                           textAlign: TextAlign.center,
                           style: TextStyle(

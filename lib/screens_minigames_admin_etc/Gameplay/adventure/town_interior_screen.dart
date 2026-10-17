@@ -191,8 +191,7 @@ class _TownInteriorScreenState extends State<TownInteriorScreen> {
                     : _isJobBoard && !_talkingAtJobBoard
                     ? JobInterviewPanel(
                         life: widget.life!,
-                        onTalk: () =>
-                            setState(() => _talkingAtJobBoard = true),
+                        onTalk: () => setState(() => _talkingAtJobBoard = true),
                         onLeave: () => Navigator.of(context).pop(),
                       )
                     : challenge == null
@@ -622,7 +621,7 @@ class _ChallengePanelState extends State<_ChallengePanel> {
           if (widget.settled) ...[
             const SizedBox(height: 8),
             Text(
-              'You already settled here today — this one is for the practice.',
+              'You already settled here today: this one is for the practice.',
               style: GoogleFonts.quicksand(
                 color: Colors.white.withValues(alpha: 0.6),
                 fontSize: 11.5,
@@ -893,7 +892,7 @@ class _DecisionPanel extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'You already settled this one. Nothing to earn or '
-                      'spend here — come back when something has changed.',
+                      'spend here: come back when something has changed.',
                       style: GoogleFonts.quicksand(
                         color: Colors.white70,
                         fontSize: 11.5,

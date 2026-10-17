@@ -42,7 +42,7 @@ const List<TutorialStep> kLifeTutorialSteps = <TutorialStep>[
       'When your life ends it is saved, and you can start a new one.',
     ],
     teaches:
-        'You learn money best by living with your choices, not by memorising.',
+        'You learn money best by living with your choices, not by memorizing.',
     icon: Icons.auto_stories_rounded,
     accent: Color(0xFF9BE870),
     mascot: TutorialMascot.wave,

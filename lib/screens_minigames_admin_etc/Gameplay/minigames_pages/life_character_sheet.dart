@@ -299,7 +299,7 @@ class _LifeCharacterSheetState extends State<LifeCharacterSheet> {
             _OriginTile(origin: _origin, selected: true, onTap: null),
             const SizedBox(height: 6),
             Text(
-              'Rolled from the seed — nobody chooses this one.',
+              'Rolled from the seed: nobody chooses this one.',
               style: AppTheme.numeric(
                 color: AppTheme.textMuted,
                 fontSize: 11.5,
@@ -333,7 +333,7 @@ class _LifeCharacterSheetState extends State<LifeCharacterSheet> {
               subtitle: Text(
                 _graded
                     ? 'Saved to your past lives, and your coach reads it.'
-                    : 'Still pays out and still unlocks endings — your coach '
+                    : 'Still pays out and still unlocks endings: your coach '
                           'just will not judge you on it.',
                 style: AppTheme.numeric(
                   color: AppTheme.textMuted,

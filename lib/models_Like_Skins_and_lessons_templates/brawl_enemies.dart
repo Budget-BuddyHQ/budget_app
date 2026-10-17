@@ -121,7 +121,7 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     color: Color(0xFFFF8A80),
     lesson:
         'It arrived without warning. That is exactly what an emergency fund '
-        'is for — not for emergencies you planned.',
+        'is for, not for emergencies you planned.',
     hpScale: 1.1,
     speedScale: 0.95,
     goldReward: 6,
@@ -135,7 +135,7 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     color: Color(0xFF7FD4C1),
     lesson:
         'Each one was almost nothing. Together they outweighed every single '
-        'enemy on the board — which is how subscriptions actually get you.',
+        'enemy on the board, which is how subscriptions actually get you.',
     hpScale: 0.28,
     speedScale: 1.05,
     drainScale: 0.35,
@@ -153,7 +153,7 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     color: Color(0xFFFFB020),
     lesson:
         'Small, fast, and it drained you faster than anything else out there. '
-        'A payday loan is not a small loan — it is the most expensive money '
+        'A payday loan is not a small loan: it is the most expensive money '
         'you can borrow.',
     hpScale: 0.55,
     speedScale: 1.55,
@@ -172,7 +172,7 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     color: Color(0xFF8FA8E8),
     lesson:
         'Big, slow, and completely predictable. Secured debt at a fair rate '
-        'is the least frightening kind — you can see it coming and plan for '
+        'is the least frightening kind: you can see it coming and plan for '
         'it.',
     hpScale: 1.9,
     speedScale: 0.62,
@@ -204,7 +204,7 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     name: 'Student Loan',
     color: Color(0xFF6FB1FF),
     lesson:
-        'Enormous, and it barely moved. A student loan is not an emergency — '
+        'Enormous, and it barely moved. A student loan is not an emergency: '
         'it is a long, slow thing you live alongside, and panicking about it '
         'costs more than paying it.',
     hpScale: 3.2,
@@ -222,7 +222,7 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     color: Color(0xFFA65CE2),
     lesson:
         'A loan sold to someone it did not suit, at a rate that made it '
-        'worse. The size was never the problem — the terms were.',
+        'worse. The size was never the problem: the terms were.',
     hpScale: 2.4,
     speedScale: 0.75,
     drainScale: 1.3,
@@ -240,7 +240,7 @@ const List<BrawlEnemy> kBrawlEnemies = <BrawlEnemy>[
     color: Color(0xFFB8C4A8),
     lesson:
         'You never borrowed it and it took from you anyway. Money left doing '
-        'nothing loses value every year — that is why saving is not the same '
+        'nothing loses value every year: that is why saving is not the same '
         'as investing.',
     hpScale: 1.4,
     speedScale: 0.5,

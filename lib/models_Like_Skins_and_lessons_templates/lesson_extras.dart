@@ -38,14 +38,14 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       content:
           'A dollar bill is a piece of paper. It buys things because '
           'everyone agrees it is worth a dollar. That agreement is what '
-          'money is — not the paper. People have used shells, salt and '
+          'money is, not the paper. People have used shells, salt and '
           'beads the same way.',
     ),
     DeepDive(
       title: 'Coins and bills are for the same job',
       content:
           'A hundred pennies and one dollar bill are worth exactly the '
-          'same. Bigger coins are not always worth more — a dime is '
+          'same. Bigger coins are not always worth more: a dime is '
           'smaller than a nickel and worth twice as much. The number on '
           'it is what counts, not the size.',
     ),
@@ -56,15 +56,15 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       content:
           'The same toy can cost different amounts in different shops. '
           'That is why grown-ups sometimes check two places before they '
-          'buy. Checking is not being difficult — it is how you keep the '
+          'buy. Checking is not being difficult: it is how you keep the '
           'extra money.',
     ),
     DeepDive(
       title: 'When you cannot buy both',
       content:
           'If you have five dollars and two things cost five dollars '
-          'each, you can only take one home. That feeling — picking one '
-          'and putting the other back — is what grown-ups call a budget.',
+          'each, you can only take one home. That feeling (picking one '
+          'and putting the other back) is what grown-ups call a budget.',
     ),
   ],
   'lesson_48': [
@@ -78,7 +78,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
     DeepDive(
       title: 'Give it a name',
       content:
-          'A jar labelled "bike" fills up faster than a jar labelled '
+          'A jar labeled "bike" fills up faster than a jar labeled '
           '"saving". Naming the goal turns every coin into progress you '
           'can see, which is the whole trick behind the jar on the Daily '
           'tab of this app.',
@@ -91,7 +91,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       title: 'Earning means someone valued your work',
       content:
           'An allowance for chores, a paid job at fourteen, a salary at '
-          'thirty — all the same shape. Someone wanted something done and '
+          'thirty: all the same shape. Someone wanted something done and '
           'traded money for it. The number changes; the deal does not.',
     ),
     DeepDive(
@@ -107,7 +107,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       title: 'The test that actually works',
       content:
           'A need is something that goes wrong if you skip it: food, a '
-          'roof, getting to school, medicine. A want is everything else — '
+          'roof, getting to school, medicine. A want is everything else: '
           'and wants are allowed. The point is not to have no wants, it is '
           'to know which is which before you spend.',
     ),
@@ -123,8 +123,8 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
     DeepDive(
       title: 'Three jars beat one',
       content:
-          'Spend, save, give. Splitting money the moment it arrives — '
-          'rather than at the end, out of whatever is left — is the same '
+          'Spend, save, give. Splitting money the moment it arrives ('
+          'rather than at the end, out of whatever is left) is the same '
           'idea adults call "pay yourself first". Starting it with three '
           'jars at eight years old is the easiest version there is.',
     ),
@@ -141,7 +141,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
     DeepDive(
       title: 'Banks pay you to keep it there',
       content:
-          'A savings account pays interest — a small amount of money for '
+          'A savings account pays interest: a small amount of money for '
           'letting the bank hold yours. It is the first time most people '
           'earn money without doing any work for it.',
     ),
@@ -154,14 +154,14 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       content:
           'It is a starting point, not a law. Fifty percent to needs, '
           'thirty to wants, twenty to savings and debt payoff. Its value '
-          'is that it is simple enough to actually use — a budget with '
+          'is that it is simple enough to actually use: a budget with '
           'nineteen categories is a budget you abandon in March.',
     ),
     DeepDive(
       title: 'Adjust the split, keep the habit',
       content:
           'If rent eats sixty percent where you live, the answer is not to '
-          'give up on budgeting — it is 60/20/20, deliberately. What '
+          'give up on budgeting: it is 60/20/20, deliberately. What '
           'matters is that every dollar has a job before it arrives.',
     ),
   ],
@@ -178,7 +178,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
     DeepDive(
       title: 'Irregular income needs a different rule',
       content:
-          'If your income varies — tips, shifts, freelance — budget from '
+          'If your income varies (tips, shifts, freelance) budget from '
           'your *lowest* recent month rather than your average. The months '
           'above it become savings instead of surprises.',
     ),
@@ -189,7 +189,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       content:
           'Fixed costs are the same every month (rent, phone). Variable '
           'costs move (food, fuel). The third kind is periodic: insurance, '
-          'car registration, holidays — big, predictable, and not monthly, '
+          'car registration, holidays: big, predictable, and not monthly, '
           'which is exactly why they wreck budgets.',
     ),
     DeepDive(
@@ -233,7 +233,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       title: 'A budget you review is a budget that survives',
       content:
           'Fifteen minutes, same day each month. Not to feel bad about '
-          'overspending — to move the numbers so next month is right. '
+          'overspending: to move the numbers so next month is right. '
           'Budgets are drafts.',
     ),
   ],
@@ -255,7 +255,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       content:
           'Online ads are chosen for you from what you have watched, '
           'searched and bought. When an ad feels uncannily well-timed, '
-          'that is not luck — it is the product working. Knowing that is '
+          'that is not luck: it is the product working. Knowing that is '
           'most of the defense.',
     ),
     DeepDive(
@@ -288,7 +288,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
     DeepDive(
       title: 'Why a day works',
       content:
-          'Urgency is manufactured — countdown timers, "only 3 left", '
+          'Urgency is manufactured: countdown timers, "only 3 left", '
           'limited drops. Waiting 24 hours does not cost you anything real '
           'and removes the pressure the seller added. Most wants do not '
           'survive the wait, and the ones that do were worth buying.',
@@ -300,7 +300,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       content:
           'Scammers pretend to be an organization you know; say there is a '
           'problem or a prize; pressure you to act immediately; and tell '
-          'you to pay in a specific, hard-to-reverse way — gift cards, '
+          'you to pay in a specific, hard-to-reverse way: gift cards, '
           'wire transfer, crypto. Any one of those four is a reason to '
           'stop.',
     ),
@@ -309,7 +309,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       content:
           'No government agency, bank or game company will ask for a gift '
           'card, a password, or a code from your text messages. If '
-          'someone does, it is a scam — no exceptions worth learning.',
+          'someone does, it is a scam: no exceptions worth learning.',
     ),
   ],
 
@@ -336,7 +336,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
     DeepDive(
       title: 'What to actually compare',
       content:
-          'APY (not "interest rate" — APY includes compounding), monthly '
+          'APY (not "interest rate": APY includes compounding), monthly '
           'fees, minimum balance, and how long a transfer takes to arrive. '
           'A headline rate with a 12-dollar monthly fee is worse than a '
           'lower rate with none until your balance is fairly large.',
@@ -347,7 +347,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
           'Look for FDIC (banks) or NCUA (credit unions). Both cover '
           '250,000 dollars per depositor, per institution, per ownership '
           'category. Apps that are not banks sometimes pass your money '
-          'through to one — worth checking which.',
+          'through to one: worth checking which.',
     ),
   ],
   'lesson_14': [
@@ -355,7 +355,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       title: 'Automate the boring parts only',
       content:
           'Automate saving and fixed bills. Do not automate the variable '
-          'spending you are trying to control — the point of automation is '
+          'spending you are trying to control: the point of automation is '
           'to remove decisions you already made, not to hide decisions you '
           'still need to make.',
     ),
@@ -394,7 +394,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       title: 'When a mean lies to you',
       content:
           'Average salary at a company where one founder earns ten million '
-          'is meaningless. The median — the middle person — describes the '
+          'is meaningless. The median (the middle person) describes the '
           'typical case. Whenever a number is about people and money, ask '
           'which one you are being shown.',
     ),
@@ -430,7 +430,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       content:
           'You do not need every transaction. Five or six categories, '
           'totalled weekly, tells you everything a spreadsheet of 400 rows '
-          'does — and you will still be doing it in three months.',
+          'does, and you will still be doing it in three months.',
     ),
   ],
 
@@ -442,7 +442,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
           'Payment history is the largest single factor, followed by how '
           'much of your available credit you are using. Length of history, '
           'the mix of account types and recent applications make up the '
-          'rest. Nothing on that list is "how much money you have" — a '
+          'rest. Nothing on that list is "how much money you have": a '
           'score measures how you handle borrowing, not wealth.',
     ),
     DeepDive(
@@ -451,12 +451,12 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
           'Paying only the minimum on a card is how a 1,000-dollar balance '
           'at 24 percent APR takes years to clear and costs more in '
           'interest than the original purchase. Card statements are '
-          'required to show you that comparison — read that box.',
+          'required to show you that comparison: read that box.',
     ),
     DeepDive(
       title: 'You are entitled to your report for free',
       content:
-          'AnnualCreditReport.com is the federally authorised site for '
+          'AnnualCreditReport.com is the federally authorized site for '
           'free reports from the three nationwide bureaus. Checking your '
           'own report never lowers your score, and errors on it are '
           'common enough to be worth looking for.',
@@ -476,7 +476,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
     DeepDive(
       title: 'Checking, savings, and why both',
       content:
-          'A checking account is for money moving through — bills, card '
+          'A checking account is for money moving through: bills, card '
           'payments. A savings account is for money standing still, and '
           'pays interest for it. Keeping them separate is what stops '
           'savings quietly becoming spending.',
@@ -485,7 +485,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       title: 'Overdraft is a loan you did not ask for',
       content:
           'Overdraft coverage lets a payment go through when the balance '
-          'is short — and charges a flat fee, often around 35 dollars, '
+          'is short, and charges a flat fee, often around 35 dollars, '
           'which can be more than the purchase. In the US you have to opt '
           'in for debit-card overdraft, and you can opt out.',
     ),
@@ -518,8 +518,8 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       content:
           'Gross pay, federal income tax withheld, Social Security (6.2 '
           'percent of wages up to an annual cap), Medicare (1.45 percent '
-          'with no cap), usually state tax, then net pay. Anything else — '
-          'insurance, retirement — is a deduction you chose.',
+          'with no cap), usually state tax, then net pay. Anything else ('
+          'insurance, retirement) is a deduction you chose.',
     ),
     DeepDive(
       title: 'Check it, because payroll makes mistakes',
@@ -563,7 +563,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       title: 'Withholding is an estimate, not the bill',
       content:
           'Tax is withheld from every paycheck as a guess at your annual '
-          'liability. Filing a return reconciles the guess — a refund '
+          'liability. Filing a return reconciles the guess: a refund '
           'means you over-paid all year, which is not free money, it is '
           'your money returned without interest.',
     ),
@@ -571,7 +571,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       title: 'Marginal rates only apply to the top slice',
       content:
           'Moving into a higher tax bracket does not tax all your income '
-          'at the higher rate — only the part above the threshold. "A '
+          'at the higher rate: only the part above the threshold. "A '
           'raise pushed me into a higher bracket so I earn less" is not '
           'how the system works.',
     ),
@@ -594,7 +594,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       content:
           'If prices rise about 3 percent a year, money under a mattress '
           'buys about 26 percent less after ten years. Investing is not '
-          'about getting rich quickly — for most people it is about not '
+          'about getting rich quickly: for most people it is about not '
           'going quietly backwards.',
     ),
   ],
@@ -636,8 +636,8 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
     DeepDive(
       title: 'Compounding works against you too',
       content:
-          'Credit card interest compounds on the same maths. At 24 percent '
-          'APR a balance you never add to still grows — which is why '
+          'Credit card interest compounds on the same math. At 24 percent '
+          'APR a balance you never add to still grows, which is why '
           'paying down high-rate debt is a guaranteed return no investment '
           'can promise.',
     ),
@@ -658,7 +658,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       title: 'A share is a claim, not a ticket',
       content:
           'Owning a share makes you a part-owner with a claim on the '
-          'company\'s future profits — and usually a vote. The price moves '
+          'company\'s future profits, and usually a vote. The price moves '
           'because expectations about those profits move, not because the '
           'ticker is popular.',
     ),
@@ -668,7 +668,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       title: 'Price is agreement, not value',
       content:
           'A quoted price is simply what a buyer and a seller last agreed '
-          'on. It changes when expectations change — earnings, rates, '
+          'on. It changes when expectations change: earnings, rates, '
           'news, or nothing anyone can name.',
     ),
   ],
@@ -703,7 +703,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       content:
           'Regular contributions to a diversified, low-cost fund, left '
           'alone through falls, is the approach with the most evidence '
-          'behind it. It is unexciting on purpose — excitement in a '
+          'behind it. It is unexciting on purpose: excitement in a '
           'portfolio is usually risk you did not price.',
     ),
   ],
@@ -713,8 +713,8 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
     DeepDive(
       title: 'The tax break is the whole point',
       content:
-          'Retirement accounts trade a rule — you cannot touch it until '
-          'about 59 and a half without a penalty — for tax treatment you '
+          'Retirement accounts trade a rule (you cannot touch it until '
+          'about 59 and a half without a penalty) for tax treatment you '
           'cannot get anywhere else. The lock is what pays for the '
           'advantage.',
     ),
@@ -736,7 +736,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
           'Traditional contributions reduce your taxable income today and '
           'are taxed on withdrawal. Roth contributions are made from '
           'taxed income and come out tax-free. The choice turns on '
-          'whether your tax rate is likely higher now or later — which is '
+          'whether your tax rate is likely higher now or later, which is '
           'why Roth often suits someone early in their career.',
     ),
   ],
@@ -763,7 +763,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       content:
           'Rolling an old plan into a new one or into an IRA keeps the tax '
           'treatment. Cashing out triggers income tax and usually a 10 '
-          'percent early-withdrawal penalty — and removes the decades of '
+          'percent early-withdrawal penalty, and removes the decades of '
           'compounding that were the point.',
     ),
   ],
@@ -773,7 +773,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
     DeepDive(
       title: 'Work it out per year, not per purchase',
       content:
-          'Insurance, fuel, servicing, tyres, tax and the odd repair are '
+          'Insurance, fuel, servicing, tires, tax and the odd repair are '
           'the yearly figure that decides whether a car fits your budget. '
           'A cheap car with expensive insurance can cost more per year '
           'than a pricier one with cheap everything.',
@@ -818,7 +818,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       title: 'Your credit file shows up here first',
       content:
           'For many people a rental application is the first time a thin '
-          'or damaged credit file has a visible cost — a larger deposit, '
+          'or damaged credit file has a visible cost: a larger deposit, '
           'a guarantor, or a rejection. It is a good reason to have '
           'looked at your report before you need it.',
     ),
@@ -886,7 +886,7 @@ const Map<String, List<DeepDive>> kLessonDeepDives = <String, List<DeepDive>>{
       content:
           'Because there are three bureaus, requesting from a different '
           'one every few months gives you a look at your file several '
-          'times a year rather than all at once — the cheapest fraud '
+          'times a year rather than all at once: the cheapest fraud '
           'monitoring available.',
     ),
   ],

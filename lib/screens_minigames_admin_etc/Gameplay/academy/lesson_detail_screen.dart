@@ -670,7 +670,7 @@ class _AboveAgeQuizNote extends StatelessWidget {
           const SizedBox(width: 6),
           Flexible(
             child: Text(
-              'These questions cover an older age group — you chose to try them anyway.',
+              'These questions cover an older age group: you chose to try them anyway.',
               style: GoogleFonts.quicksand(
                 color: const Color(0xFFFFB84D).withValues(alpha: 0.9),
                 fontSize: 11,
@@ -1164,7 +1164,7 @@ String _fiftyThirtyTwentyExample(int income, LifeStage stage) {
   final saving = (income * 0.2).round();
   return 'Say $income dollars reaches you this month. The 50/30/20 split puts '
       '$needs on needs, $wants on wants, and $saving into savings or debt '
-      'payoff — decided before any of it moves.';
+      'payoff: decided before any of it moves.';
 }
 
 String _payYourselfFirstExample(int income, LifeStage stage) {
@@ -1181,7 +1181,7 @@ String _sinkingFundExample(int income, LifeStage stage) {
   final target = (income * 1.5).round();
   final monthly = (target / 6).round();
   return 'A $target dollar cost you know is six months away becomes $monthly a '
-      'month starting now. The bill still costs the same — it just stops '
+      'month starting now. The bill still costs the same: it just stops '
       'landing on one month all at once.';
 }
 
@@ -1206,7 +1206,7 @@ String _compoundingExample(int income, LifeStage stage) {
   }
   return 'Investing $monthly a month adds up to $yearOne in year one. Left to '
       'grow at about 7 percent a year, ten years of those contributions is '
-      'roughly ${balance.round()} dollars — and only ${monthly * 120} of that '
+      'roughly ${balance.round()} dollars, and only ${monthly * 120} of that '
       'came out of your pocket.';
 }
 
@@ -1269,7 +1269,7 @@ const Map<String, LessonPayout> kLessonPayouts = <String, LessonPayout>{
   'lesson_28': LessonPayout(
     gold: 600,
     shares: <String, double>{'SPY': 0.25, 'KO': 0.5},
-    blurb: '+600 gold, plus SPY and KO shares — your first diversified mix.',
+    blurb: '+600 gold, plus SPY and KO shares: your first diversified mix.',
   ),
   'lesson_29': LessonPayout(
     gold: 450,
@@ -1300,7 +1300,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Money': 'coins and bills people trade for things they need or want',
     },
     takeaway:
-        'Money is something people trade for things — that\'s its whole job.',
+        'Money is something people trade for things: that\'s its whole job.',
     sections: [
       _LessonSection(
         title: 'Money is for trading',
@@ -1324,7 +1324,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     ],
     keyTerms: {'Pay': 'giving money to get something in return'},
     takeaway:
-        'Almost everything at a store costs money — that\'s how buying works.',
+        'Almost everything at a store costs money: that\'s how buying works.',
     sections: [
       _LessonSection(
         title: 'Everything has a price',
@@ -1375,7 +1375,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Allowance': 'money a kid gets regularly, sometimes for doing chores',
       'Earn': 'get money in exchange for doing something',
     },
-    takeaway: 'Earning means getting money for doing something — like a chore.',
+    takeaway: 'Earning means getting money for doing something, like a chore.',
     sections: [
       _LessonSection(
         title: 'What is an allowance?',
@@ -1403,12 +1403,12 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Want': 'something nice to have, but you could live without it',
     },
     takeaway:
-        'A need is something you can\'t really do without — a want is everything else.',
+        'A need is something you can\'t really do without: a want is everything else.',
     sections: [
       _LessonSection(
         title: 'What makes something a need',
         content:
-            'A need is something your day genuinely does not work without — '
+            'A need is something your day genuinely does not work without: '
             'food, a place to sleep, clothes that fit.',
       ),
       _LessonSection(
@@ -1441,7 +1441,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         title: 'Decide first, spend later',
         content:
             'A simple money plan just means deciding ahead of time how much '
-            'you will save and how much you will spend — before you spend '
+            'you will save and how much you will spend: before you spend '
             'any of it.',
       ),
       _LessonSection(
@@ -1471,7 +1471,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       _LessonSection(
         title: 'What a bank does',
         content:
-            'When you keep money in a bank, it is still yours — the bank '
+            'When you keep money in a bank, it is still yours: the bank '
             'just holds onto it and keeps track of how much you have.',
       ),
     ],
@@ -1490,7 +1490,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
           'a starting framework: 50% needs, 30% wants, 20% savings or debt payoff',
     },
     takeaway:
-        'A budget is not a punishment — it is a plan that puts you in charge of every dollar before it leaves.',
+        'A budget is not a punishment: it is a plan that puts you in charge of every dollar before it leaves.',
     sections: [
       _LessonSection(
         title: 'What is budgeting?',
@@ -1521,7 +1521,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Net income': 'the take-home amount that actually reaches your account',
     },
     takeaway:
-        'Always plan with net income — budgets built on gross pay promise money you never actually receive.',
+        'Always plan with net income: budgets built on gross pay promise money you never actually receive.',
     sections: [
       _LessonSection(
         title: 'Income comes first',
@@ -1546,7 +1546,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Want': 'a nice-to-have that should fit after essentials are covered',
     },
     takeaway:
-        'Your bank statement tells the truth about your habits — read it before you plan.',
+        'Your bank statement tells the truth about your habits: read it before you plan.',
     sections: [
       _LessonSection(
         title: 'Track spending patterns',
@@ -1601,17 +1601,17 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
           'how many weeks or months it takes to reach a goal at a given savings rate',
     },
     takeaway:
-        'A goal without a number and a timeline is just a wish — divide the price by what you can save each week and it becomes a plan.',
+        'A goal without a number and a timeline is just a wish: divide the price by what you can save each week and it becomes a plan.',
     sections: [
       _LessonSection(
         title: 'Name the number',
         content:
-            '"I want to save up for something" is not a plan yet. Write down the exact price and roughly when you want it by — that is what turns a wish into a goal.',
+            '"I want to save up for something" is not a plan yet. Write down the exact price and roughly when you want it by: that is what turns a wish into a goal.',
       ),
       _LessonSection(
         title: 'Divide it into weeks',
         content:
-            'Take the price and divide it by how much you can realistically save each week. That gives you a real timeline instead of a guess — and a weekly number small enough to actually hit.',
+            'Take the price and divide it by how much you can realistically save each week. That gives you a real timeline instead of a guess, and a weekly number small enough to actually hit.',
       ),
       _LessonSection(
         title: 'If it feels too slow',
@@ -1633,7 +1633,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
           'costs you can adjust month to month, like eating out',
     },
     takeaway:
-        'A budget is a living tool — build it once, then review and adjust it as life changes.',
+        'A budget is a living tool: build it once, then review and adjust it as life changes.',
     sections: [
       _LessonSection(
         title: 'Build the plan',
@@ -1660,12 +1660,12 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'APR':
           'the yearly cost of borrowing, so a higher APR means a carried balance grows faster',
       'Minimum payment':
-          'the least you can pay to stay current — a floor, not a plan for clearing the balance',
-      'Credit utilisation':
+          'the least you can pay to stay current: a floor, not a plan for clearing the balance',
+      'Credit utilization':
           'how much of your available limit you are using; lower generally looks better',
     },
     takeaway:
-        'Credit is a tool for timing, not for extra money — anything you buy with it, you still pay for, plus interest if you carry it.',
+        'Credit is a tool for timing, not for extra money: anything you buy with it, you still pay for, plus interest if you carry it.',
     sections: [
       _LessonSection(
         title: 'Credit is borrowed trust',
@@ -1696,7 +1696,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Time horizon': 'how long until you need the money back',
     },
     takeaway:
-        'Return and risk are two sides of the same coin — the honest question is not "how do I avoid risk?" but "how much can I carry, for how long?".',
+        'Return and risk are two sides of the same coin: the honest question is not "how do I avoid risk?" but "how much can I carry, for how long?".',
     sections: [
       _LessonSection(
         title: 'Investing is long-term',
@@ -1722,7 +1722,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Savings account':
           'a separate account for money you are deliberately not spending',
       'Overdraft fee':
-          'a charge for spending past your balance — one of the most avoidable costs there is',
+          'a charge for spending past your balance: one of the most avoidable costs there is',
       'Direct deposit':
           'pay sent straight into your account, which is what makes payday automation possible',
     },
@@ -1754,7 +1754,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Liquidity':
           'how quickly money can be turned into spendable cash without a penalty',
       'Starter fund':
-          r'a first milestone — often $500 or one month of essentials — before building further',
+          r'a first milestone (often $500 or one month of essentials) before building further',
     },
     takeaway:
         'An emergency fund is insurance for your budget, so reachability matters far more than the interest rate it earns.',
@@ -1780,7 +1780,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     ],
     keyTerms: {
       'SMART goal':
-          'specific, measurable, achievable, relevant and time-bound — the test a goal has to pass',
+          'specific, measurable, achievable, relevant and time-bound: the test a goal has to pass',
       'Milestone': 'a checkpoint along the way that proves the plan is working',
       'Target date': 'the deadline that turns a wish into a monthly number',
     },
@@ -1812,7 +1812,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Savings rate':
           'the share of take-home pay you save, expressed as a percentage',
       'Leftover saving':
-          'the habit of saving whatever survives the month — unreliable because everything else competes with it first',
+          'the habit of saving whatever survives the month: unreliable because everything else competes with it first',
     },
     takeaway:
         'Saving survives a busy month only when it happens before the month starts spending.',
@@ -1844,7 +1844,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Smoothing': 'spreading a lumpy cost across the months leading up to it',
     },
     takeaway:
-        'A bill you knew about is not an emergency — sinking funds are what keep predictable costs out of your emergency fund.',
+        'A bill you knew about is not an emergency: sinking funds are what keep predictable costs out of your emergency fund.',
     sections: [
       _LessonSection(
         title: 'What is a sinking fund?',
@@ -1874,7 +1874,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Withdrawal penalty': 'the cost of taking money out earlier than agreed',
     },
     takeaway:
-        'A great rate you cannot reach when you need it is worth nothing — pick the account by the job the money is doing.',
+        'A great rate you cannot reach when you need it is worth nothing: pick the account by the job the money is doing.',
     sections: [
       _LessonSection(
         title: 'Savings accounts are tools',
@@ -1902,7 +1902,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
           'recurring charges that outlive their usefulness because nobody is watching',
     },
     takeaway:
-        'Automation removes friction in both directions — it protects good habits and hides dead subscriptions, so a periodic review is part of the system.',
+        'Automation removes friction in both directions: it protects good habits and hides dead subscriptions, so a periodic review is part of the system.',
     sections: [
       _LessonSection(
         title: 'Automation removes friction',
@@ -1930,7 +1930,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
           'a budget line for costs you know are coming but cannot date precisely',
     },
     takeaway:
-        r'Costs like gifts, servicing and renewals are predictable in total even when they are unpredictable in timing — $720 a year is just $60 a month.',
+        r'Costs like gifts, servicing and renewals are predictable in total even when they are unpredictable in timing: $720 a year is just $60 a month.',
     sections: [
       _LessonSection(
         title: 'Irregular costs are still real',
@@ -1957,7 +1957,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Purchasing power':
           'what your money can actually buy, rather than its face value',
       'Real return':
-          'return after inflation — the only one that changes your life',
+          'return after inflation: the only one that changes your life',
     },
     takeaway:
         'A balance that never falls still loses ground if prices rise faster than it grows, which is why long-horizon money is invested rather than parked.',
@@ -1989,7 +1989,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
           'how money is split between different kinds of investment',
     },
     takeaway:
-        'Diversification does not stop you losing money — it stops any one failure being the whole story.',
+        'Diversification does not stop you losing money: it stops any one failure being the whole story.',
     sections: [
       _LessonSection(
         title: 'Risk is normal',
@@ -2019,7 +2019,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
           'the yearly fee a fund charges, quietly subtracted from your return',
     },
     takeaway:
-        'Stocks own, bonds lend, funds bundle — and the fee you pay for the bundle compounds against you just as surely as returns compound for you.',
+        'Stocks own, bonds lend, funds bundle, and the fee you pay for the bundle compounds against you just as surely as returns compound for you.',
     sections: [
       _LessonSection(
         title: 'Know the categories',
@@ -2049,7 +2049,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
           'divide 72 by the yearly return to estimate the years it takes money to double',
     },
     takeaway:
-        'Compounding is unremarkable in year two and overwhelming in year thirty — which is why the most valuable thing a young investor has is time, not money.',
+        'Compounding is unremarkable in year two and overwhelming in year thirty, which is why the most valuable thing a young investor has is time, not money.',
     sections: [
       _LessonSection(
         title: 'Growth can build on growth',
@@ -2072,7 +2072,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     ],
     keyTerms: {
       'Market downturn':
-          'a period when prices broadly fall — a normal feature, not a malfunction',
+          'a period when prices broadly fall: a normal feature, not a malfunction',
       'Paper loss':
           'a drop in value you have not realized because you have not sold',
       'FOMO':
@@ -2081,7 +2081,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
           'investing a fixed amount on a schedule, so you buy more units when prices are low',
     },
     takeaway:
-        'The downturn is not the risk — reacting to it is. Deciding your response in advance is what turns volatility into something you can sit through.',
+        'The downturn is not the risk: reacting to it is. Deciding your response in advance is what turns volatility into something you can sit through.',
     sections: [
       _LessonSection(
         title: 'Stay focused on the plan',
@@ -2111,7 +2111,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
           'the running total since January across all pay periods',
     },
     takeaway:
-        'Your pay stub is a receipt for your own labour — reading it is how you catch errors that would otherwise go unnoticed for months.',
+        'Your pay stub is a receipt for your own labor: reading it is how you catch errors that would otherwise go unnoticed for months.',
     sections: [
       _LessonSection(
         title: 'A pay stub tells the real story',
@@ -2140,7 +2140,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
           'what you really earn per hour once benefits, commute time and costs are counted',
     },
     takeaway:
-        r'The advertised rate is the least interesting number on an offer — $17 with cover and a transport pass can comfortably beat $19 without.',
+        r'The advertised rate is the least interesting number on an offer: $17 with cover and a transport pass can comfortably beat $19 without.',
     sections: [
       _LessonSection(
         title: 'Salary is only one part',
@@ -2163,7 +2163,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     ],
     keyTerms: {
       'Utilities':
-          'electricity, water, heating and internet — usually billed separately from rent',
+          'electricity, water, heating and internet, usually billed separately from rent',
       'Security deposit':
           'money held up front and returned if the place is left in good order',
       '30% guideline':
@@ -2172,7 +2172,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
           'the total of everything it takes to run your life in a given place',
     },
     takeaway:
-        'Rent is the headline, not the total — utilities, deposit and getting to work are what decide whether a place is actually affordable.',
+        'Rent is the headline, not the total: utilities, deposit and getting to work are what decide whether a place is actually affordable.',
     sections: [
       _LessonSection(
         title: 'Housing has layers',
@@ -2210,14 +2210,14 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Tax deduction': 'an amount that lowers taxable income',
       'Tax credit': 'an amount that lowers the tax bill itself',
       'Tax refund':
-          'money returned because you overpaid during the year — your own money coming back',
+          'money returned because you overpaid during the year: your own money coming back',
       'Filing':
           'the yearly reconciliation between what you paid and what you owed',
       'W-4 / tax code':
           'the form or setting that tells your employer how much to withhold',
     },
     takeaway:
-        'Taxes are not just money disappearing — they fund public services, change take-home pay, and reward careful paperwork.',
+        'Taxes are not just money disappearing: they fund public services, change take-home pay, and reward careful paperwork.',
     workedExample: WorkedExample(_taxWithholdingExample),
     sections: [
       _LessonSection(
@@ -2265,10 +2265,10 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Surplus': 'money left after everything planned has been funded',
       'Lifestyle creep':
           'spending quietly rising to match income, so a raise leaves you no better off',
-      'Net worth': 'what you own minus what you owe — the long-run scoreboard',
+      'Net worth': 'what you own minus what you owe: the long-run scoreboard',
     },
     takeaway:
-        'Every unit so far is one step in a single sequence — the plan is knowing which step you are on, and what earns your next spare dollar.',
+        'Every unit so far is one step in a single sequence: the plan is knowing which step you are on, and what earns your next spare dollar.',
     sections: [
       _LessonSection(
         title: 'Bring the pieces together',
@@ -2294,7 +2294,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     keyTerms: {
       'Share': 'one unit of ownership in a company',
       'Market cap':
-          'share price multiplied by the number of shares — the market\'s price tag on the whole company',
+          'share price multiplied by the number of shares: the market\'s price tag on the whole company',
       'Dividend': 'a slice of profit some companies pay out to shareholders',
     },
     takeaway:
@@ -2303,12 +2303,12 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       _LessonSection(
         title: 'You are buying a business',
         content:
-            'When you buy a share you own a genuine fraction of a company — its buildings, its brand, its future profits. If the business does well over time, your slice is worth more.',
+            'When you buy a share you own a genuine fraction of a company: its buildings, its brand, its future profits. If the business does well over time, your slice is worth more.',
       ),
       _LessonSection(
         title: 'Price is not the same as value',
         content:
-            'A 500-coin share is not "expensive" and a 5-coin share is not "cheap". What matters is what you get for that price — a company worth ten times more can still have a lower share price if it simply split its ownership into more pieces.',
+            'A 500-coin share is not "expensive" and a 5-coin share is not "cheap". What matters is what you get for that price: a company worth ten times more can still have a lower share price if it simply split its ownership into more pieces.',
       ),
       _LessonSection(
         title: 'Why companies sell shares',
@@ -2364,7 +2364,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
           'the danger of having too much riding on one company',
     },
     takeaway:
-        'Owning one stock is a bet on one company. Owning an index is a bet that the economy keeps producing — historically the safer bet.',
+        'Owning one stock is a bet on one company. Owning an index is a bet that the economy keeps producing: historically the safer bet.',
     sections: [
       _LessonSection(
         title: 'Do not put it all in one place',
@@ -2379,7 +2379,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       _LessonSection(
         title: 'Check your own mix',
         content:
-            'Open the Market Board and look at the allocation ring. If one slice dominates the circle, that is concentration risk — visible at a glance.',
+            'Open the Market Board and look at the allocation ring. If one slice dominates the circle, that is concentration risk: visible at a glance.',
       ),
     ],
   ),
@@ -2393,7 +2393,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     keyTerms: {
       'Bid / Ask':
           'the highest price a buyer will pay and the lowest a seller will accept',
-      'Spread': 'the gap between them — a cost you pay on every round trip',
+      'Spread': 'the gap between them: a cost you pay on every round trip',
       'Limit order':
           'an order that only fills at your price or better, instead of whatever is available',
     },
@@ -2403,12 +2403,12 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       _LessonSection(
         title: 'The spread is a real cost',
         content:
-            'You buy at the ask and sell at the bid, and the ask is always higher. Buy and immediately sell and you lose that gap — which is exactly why the Market Board charges one.',
+            'You buy at the ask and sell at the bid, and the ask is always higher. Buy and immediately sell and you lose that gap, which is exactly why the Market Board charges one.',
       ),
       _LessonSection(
         title: 'Market vs limit orders',
         content:
-            'A market order fills instantly at whatever price is there. A limit order waits for your price. Instant certainty or price control — you pick which one matters more.',
+            'A market order fills instantly at whatever price is there. A limit order waits for your price. Instant certainty or price control: you pick which one matters more.',
       ),
       _LessonSection(
         title: 'Costs compound too',
@@ -2430,7 +2430,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Time in the market': 'staying invested and letting compounding work',
     },
     takeaway:
-        'The best recovery days cluster right after the worst crash days — sell to escape one and you usually miss the other.',
+        'The best recovery days cluster right after the worst crash days: sell to escape one and you usually miss the other.',
     sections: [
       _LessonSection(
         title: 'Nobody reliably calls the top',
@@ -2440,7 +2440,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       _LessonSection(
         title: 'Missing a handful of days matters enormously',
         content:
-            'Historically, a small number of days account for a huge share of long-run returns — and they usually land right after sharp drops, when selling feels most sensible.',
+            'Historically, a small number of days account for a huge share of long-run returns, and they usually land right after sharp drops, when selling feels most sensible.',
       ),
       _LessonSection(
         title: 'Decide before it drops',
@@ -2466,7 +2466,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     },
     takeaway:
         'Ask what actually breaks if you skip it. If the honest answer is '
-        '"nothing", it is a want — and wants are fine, as long as you know.',
+        '"nothing", it is a want, and wants are fine, as long as you know.',
     sections: [
       _LessonSection(
         title: 'The test is consequence, not price',
@@ -2512,7 +2512,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         title: 'You are the product being aimed at',
         content:
             'Companies pay a lot to reach people your age, because habits '
-            'formed now can last decades. That is not a conspiracy — it is '
+            'formed now can last decades. That is not a conspiracy: it is '
             'written down in their marketing plans.',
       ),
       _LessonSection(
@@ -2525,7 +2525,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       _LessonSection(
         title: 'The defense is naming it',
         content:
-            'Say out loud what the advert wants you to feel — cool, included, '
+            'Say out loud what the advert wants you to feel: cool, included, '
             'ahead of your friends. Naming it moves the decision from your gut '
             'to your head, which is where it belongs.',
       ),
@@ -2564,8 +2564,8 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       _LessonSection(
         title: 'A rule beats a decision',
         content:
-            'Decide once — a monthly cap, or only spending money you earned '
-            'yourself — instead of deciding again every time a limited offer '
+            'Decide once (a monthly cap, or only spending money you earned '
+            'yourself) instead of deciding again every time a limited offer '
             'appears. Rules do not get tired; willpower does.',
       ),
     ],
@@ -2597,7 +2597,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         title: 'What waiting actually costs',
         content:
             'Almost always: nothing. "Limited time" offers repeat. And if you '
-            'could not afford it today anyway, waiting was already the plan — '
+            'could not afford it today anyway, waiting was already the plan: '
             'you just get to keep the choice.',
       ),
       _LessonSection(
@@ -2644,7 +2644,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         title: 'What to do instead',
         content:
             'Do not reply, do not click, and tell an adult you trust. Scammers '
-            'rely on embarrassment to keep people quiet — being scammed is not '
+            'rely on embarrassment to keep people quiet: being scammed is not '
             'a failure of intelligence, it is a crime committed against you.',
       ),
     ],
@@ -2715,7 +2715,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       _LessonSection(
         title: 'One value can move the mean',
         content:
-            'Nine people earning 30 and one earning 1000 gives a mean of 127 — '
+            'Nine people earning 30 and one earning 1000 gives a mean of 127: '
             'a number nobody in the room earns. The median, 30, describes '
             'almost everyone.',
       ),
@@ -2735,7 +2735,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Explain how zoom level changes the story',
     ],
     keyTerms: {
-      'Axis': 'the labelled scale along an edge of the chart',
+      'Axis': 'the labeled scale along an edge of the chart',
       'Time range': 'the window of history a chart covers',
       'Noise': 'small movement that carries no information',
     },
@@ -2746,7 +2746,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       _LessonSection(
         title: 'Read the labels first',
         content:
-            'Price on the vertical, time on the horizontal — usually. Check '
+            'Price on the vertical, time on the horizontal, usually. Check '
             'where the vertical axis starts and how long the window is before '
             'you form any opinion about the line.',
       ),
@@ -2826,7 +2826,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         content:
             'A list of purchases is noise. The same purchases grouped into '
             'five or six categories tell you immediately where the money '
-            'concentrates — usually somewhere surprising.',
+            'concentrates, usually somewhere surprising.',
       ),
       _LessonSection(
         title: 'Annualise the small stuff',
@@ -2880,7 +2880,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         title: 'The lock is a feature',
         content:
             'Penalties on early withdrawal exist to stop you raiding it. That '
-            'friction is doing real work — the accounts people never touch are '
+            'friction is doing real work: the accounts people never touch are '
             'the ones that end up large.',
       ),
     ],
@@ -2995,7 +2995,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       _LessonSection(
         title: 'What waiting costs',
         content:
-            'Delaying five years is not five years of contributions — it is '
+            'Delaying five years is not five years of contributions: it is '
             'five years off the end of every future coin\'s growth. That is '
             'the expensive part.',
       ),
@@ -3036,7 +3036,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         content:
             'When you change jobs the account stays yours. Roll it into the '
             'new plan or an IRA so it does not sit forgotten in cash for a '
-            'decade — a surprisingly common way to lose growth.',
+            'decade: a surprisingly common way to lose growth.',
       ),
     ],
   ),
@@ -3079,7 +3079,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         content:
             'Get an insurance quote for the exact car before you buy it, not '
             'after. Two similar cars can differ enormously, and a quote takes '
-            'minutes — this is the single easiest way to avoid a nasty '
+            'minutes: this is the single easiest way to avoid a nasty '
             'surprise in month one.',
       ),
     ],
@@ -3106,7 +3106,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         content:
             '"Only 240 a month" is not a price. Ask for the term, multiply, '
             'and compare that to the car. A payment can always be made '
-            'smaller by stretching the loan — which makes the total bigger.',
+            'smaller by stretching the loan, which makes the total bigger.',
       ),
       _LessonSection(
         title: 'Why a longer term costs more',
@@ -3156,7 +3156,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         content:
             'Landlords generally look at income, rental history and a credit '
             'report. This is one of the first places a thin or damaged credit '
-            'file costs you something concrete — sometimes a bigger deposit, '
+            'file costs you something concrete, sometimes a bigger deposit, '
             'sometimes a guarantor, sometimes the flat.',
       ),
       _LessonSection(
@@ -3164,7 +3164,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         content:
             'A long-standing housing guideline treats spending more than 30% '
             'of income on housing as cost-burdened. It is a rule of thumb, not '
-            'a law — but if rent takes far more than that, the rest of the '
+            'a law, but if rent takes far more than that, the rest of the '
             'budget has to give somewhere, and usually it is savings.',
       ),
       _LessonSection(
@@ -3187,7 +3187,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     keyTerms: {
       'Move-in cost': 'everything due before you get keys',
       'Utilities':
-          'power, water, heating, internet — usually separate from rent',
+          'power, water, heating, internet, usually separate from rent',
       'Proration': 'paying part of a month when you move in mid-month',
     },
     takeaway:
@@ -3198,7 +3198,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         title: 'Add it up before you sign',
         content:
             'First month, a security deposit, sometimes a last month, utility '
-            'connection charges, and everything a flat does not come with — '
+            'connection charges, and everything a flat does not come with: '
             'from a shower curtain to a bed. It is normal for this to be two '
             'to three times the monthly rent.',
       ),
@@ -3247,7 +3247,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         content:
             'Money spent on a depreciating thing is money not in an emergency '
             'fund or an index fund. That is not an argument against ever '
-            'buying — it is the price tag the sticker leaves off.',
+            'buying: it is the price tag the sticker leaves off.',
       ),
       _LessonSection(
         title: 'Needing it is a real answer',
@@ -3275,7 +3275,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     },
     takeaway:
         'Identity theft is usually noticed on a statement or a credit report, '
-        'not at the moment it happens — which is why checking matters.',
+        'not at the moment it happens, which is why checking matters.',
     sections: [
       _LessonSection(
         title: 'It rarely starts with you',
@@ -3297,7 +3297,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         content:
             'The FTC runs IdentityTheft.gov specifically for this. It builds '
             'a recovery plan for your situation and produces the official '
-            'affidavit that banks and credit bureaus ask for — which is the '
+            'affidavit that banks and credit bureaus ask for, which is the '
             'part that is hard to do on your own.',
       ),
     ],
@@ -3313,11 +3313,11 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Credit freeze': 'a lock stopping new lenders from seeing your file',
       'Fraud alert': 'a flag asking lenders to verify identity before lending',
       'Credit bureau':
-          'a company that keeps your credit file — Equifax, Experian, TransUnion',
+          'a company that keeps your credit file: Equifax, Experian, TransUnion',
     },
     takeaway:
         'A freeze is free, reversible, and the strongest single thing you can '
-        'do — but it only counts at the bureaus you actually freeze.',
+        'do, but it only counts at the bureaus you actually freeze.',
     sections: [
       _LessonSection(
         title: 'What it actually blocks',
@@ -3339,7 +3339,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         content:
             'Federal law makes placing and lifting a freeze free. You lift it '
             'temporarily when you genuinely apply for credit. The friction is '
-            'the point — it is a few minutes against someone opening a loan '
+            'the point: it is a few minutes against someone opening a loan '
             'in your name.',
       ),
     ],
@@ -3357,7 +3357,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
       'Dispute': 'a formal challenge to an entry you believe is wrong',
     },
     takeaway:
-        'AnnualCreditReport.com is the federally authorised free source. '
+        'AnnualCreditReport.com is the federally authorized free source. '
         'Anything charging you for the same report is selling you something '
         'you are entitled to.',
     sections: [
@@ -3366,7 +3366,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         content:
             'AnnualCreditReport.com is the site set up under federal law for '
             'free reports from all three bureaus. Search results are full of '
-            'lookalikes that want a subscription — this is the one that does '
+            'lookalikes that want a subscription: this is the one that does '
             'not.',
       ),
       _LessonSection(
@@ -3380,7 +3380,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         title: 'Disputing works',
         content:
             'You have a right to dispute an entry, and the bureau has to '
-            'investigate. Wrong entries do get removed — but only for people '
+            'investigate. Wrong entries do get removed, but only for people '
             'who look, which is most of the value of ever opening the report.',
       ),
     ],
@@ -3394,7 +3394,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     ],
     keyTerms: {
       'Overdraft': 'spending past your balance, if the bank allows it',
-      'Opt in': 'a choice you have to actively make — the default is off',
+      'Opt in': 'a choice you have to actively make: the default is off',
       'Declined transaction': 'the free alternative to an overdraft fee',
     },
     takeaway:
@@ -3406,7 +3406,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         content:
             'For ATM and everyday debit card transactions, a bank generally '
             'needs your opt-in before it can charge overdraft fees. Without '
-            'it the transaction is simply declined — which is free, and '
+            'it the transaction is simply declined, which is free, and '
             'briefly embarrassing rather than expensive.',
       ),
       _LessonSection(
@@ -3442,7 +3442,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
     },
     takeaway:
         'Complaining to the company first and the regulator second is not '
-        'politeness — it is the order that actually gets things fixed.',
+        'politeness: it is the order that actually gets things fixed.',
     sections: [
       _LessonSection(
         title: 'Company first, in writing',
@@ -3456,7 +3456,7 @@ const Map<String, _LessonContent> _lessonLibrary = <String, _LessonContent>{
         content:
             'The CFPB takes complaints about financial products and forwards '
             'them to the company, which is expected to respond. A complaint '
-            'is on the record — a phone call is not.',
+            'is on the record: a phone call is not.',
       ),
       _LessonSection(
         title: 'Collectors have rules',

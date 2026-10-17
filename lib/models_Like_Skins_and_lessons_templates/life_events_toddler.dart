@@ -312,7 +312,7 @@ const List<LifeEvent> kLifeEventsToddler = <LifeEvent>[
       LifeChoice(
         label: 'Put everything you can reach in',
         outcome:
-            'Most of it went back on the shelf at the till — the first time '
+            'Most of it went back on the shelf at the till: the first time '
             'you saw someone decide a thing was not worth the money.',
         happiness: 2,
         smarts: 3,
@@ -366,7 +366,7 @@ const List<LifeEvent> kLifeEventsToddler = <LifeEvent>[
       LifeChoice(
         label: 'Shake it out immediately',
         outcome:
-            'One coin, briefly. The pig went back on the shelf empty — which '
+            'One coin, briefly. The pig went back on the shelf empty, which '
             'is what happens to most savings with no reason to stay put.',
         happiness: 3,
       ),
@@ -423,7 +423,7 @@ const List<LifeEvent> kLifeEventsToddler = <LifeEvent>[
         smarts: 3,
       ),
       LifeChoice(
-        label: 'Forget about it after a fortnight',
+        label: 'Forget about it after two weeks',
         outcome: 'A grown-up quietly took over. You got the credit anyway.',
         happiness: 2,
       ),

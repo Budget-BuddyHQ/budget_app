@@ -782,7 +782,7 @@ class _NextEndingCard extends StatelessWidget {
         icon: Icons.emoji_events_rounded,
         title: 'Every ending found',
         body:
-            'All $total of them. There is nothing left to collect — which '
+            'All $total of them. There is nothing left to collect, which '
             'means the next run is just for the score.',
         progress: 1,
         label: '$total / $total',

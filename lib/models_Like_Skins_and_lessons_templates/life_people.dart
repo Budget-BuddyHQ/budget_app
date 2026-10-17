@@ -270,7 +270,7 @@ LifeEvent bereavementEvent({
         outcome:
             'A quiet day, and what $first would have wanted. Nobody who loved '
             'them thought less of it. Planning ahead makes days like this '
-            'easier on the people left to organise them.',
+            'easier on the people left to organize them.',
         money: -40,
         happiness: close ? -6 : -3,
         teaches: FinanceConcept.insurance,

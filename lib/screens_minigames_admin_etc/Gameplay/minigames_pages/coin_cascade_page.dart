@@ -707,7 +707,7 @@ class _CoinCascadePageState extends State<CoinCascadePage>
                         title: 'Where bills come from',
                         lines: const <String>[
                           'On a timer. A bill arrives every few moves whether '
-                              'you are ready or not — the level banner says '
+                              'you are ready or not: the level banner says '
                               'how often.',
                           'From your own wants. Every want you match scores '
                               'well and adds bills on top of the scheduled '
@@ -742,7 +742,7 @@ class _CoinCascadePageState extends State<CoinCascadePage>
                               'the only thing that gets you anywhere.',
                           'Nothing on the board says the word budget while '
                               'you play. The split you end up with is a habit '
-                              'rather than an answer — which is why your '
+                              'rather than an answer, which is why your '
                               'coach reads it.',
                         ],
                       ),
@@ -767,7 +767,7 @@ class _CoinCascadePageState extends State<CoinCascadePage>
 
   static String _helpFor(TileKind kind) => switch (kind) {
     TileKind.need => 'Needs pay your bills down. Cover these first.',
-    TileKind.want => 'Wants score big — and add to what you owe.',
+    TileKind.want => 'Wants score big, and add to what you owe.',
     TileKind.save => 'Savings are how you win. Fill the goal bar.',
     TileKind.coin => 'Coins buy extra moves when you run low.',
     TileKind.bill =>
@@ -1663,7 +1663,7 @@ class _ResultCard extends StatelessWidget {
       title = isNewRushBest ? 'New best!' : 'Time is up';
       blurb = game.bills >= game.billCapacity
           ? 'The bills buried you with ${game.savings} saved. They arrive '
-                'whether or not you are ready — that is the whole mode.'
+                'whether or not you are ready: that is the whole mode.'
           : 'You banked ${game.savings} in ninety seconds.';
     } else if (won) {
       title = 'Goal reached!';
@@ -1674,7 +1674,7 @@ class _ResultCard extends StatelessWidget {
       blurb = game.bills >= game.billCapacity
           ? 'The bills got ahead of you. Next time, clear needs before wants.'
           : 'You saved ${game.savings} of ${game.savingsGoal}. Coins buy '
-                'extra moves — spend them earlier.';
+                'extra moves: spend them earlier.';
     }
 
     return Center(
@@ -1760,7 +1760,7 @@ class _ResultCard extends StatelessWidget {
                 if (!rush && won && literacy == 0) ...[
                   const SizedBox(height: 6),
                   Text(
-                    'Replay pay — you had cleared this level already. '
+                    'Replay pay: you had cleared this level already. '
                     'The next one pays in full.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.quicksand(

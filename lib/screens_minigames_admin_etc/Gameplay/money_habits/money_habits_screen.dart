@@ -1551,7 +1551,7 @@ class _JarTab extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 next == null
-                    ? 'Every habit from here still counts — the totals below '
+                    ? 'Every habit from here still counts: the totals below '
                           'keep climbing.'
                     : '${next.xpThreshold - habits.jarXp} more points to go.',
                 style: GoogleFonts.quicksand(
@@ -1792,12 +1792,12 @@ class _JarNextStep extends StatelessWidget {
                 Text(
                   !everActive
                       ? 'Nothing in the jar yet. Save one habit on Track and '
-                            'log it once — that is the whole of getting '
+                            'log it once: that is the whole of getting '
                             'started.'
                       : slipping
                       ? 'It has been $daysSince ${daysSince == 1 ? 'day' : 'days'}. '
                             'One habit on Track is enough to restart the '
-                            'streak — the jar keeps everything you have '
+                            'streak: the jar keeps everything you have '
                             'already put in.'
                       : 'Log a habit on Track, or take on a challenge on '
                             'Activity. Both drop points straight into the jar.',

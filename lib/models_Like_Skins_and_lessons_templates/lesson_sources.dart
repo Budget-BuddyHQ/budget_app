@@ -85,7 +85,7 @@ const Map<String, LessonSource> kLessonSources = <String, LessonSource>{
   ),
   'cfpb_money_as_you_grow': LessonSource(
     publisher: 'CFPB',
-    title: 'Money as You Grow — age-appropriate money milestones',
+    title: 'Money as You Grow: age-appropriate money milestones',
     url: 'https://www.consumerfinance.gov/consumer-tools/money-as-you-grow/',
   ),
   'fed_currency': LessonSource(
@@ -102,7 +102,7 @@ const Map<String, LessonSource> kLessonSources = <String, LessonSource>{
   // ---------------- Saving and banking ----------------
   'fdic_insurance': LessonSource(
     publisher: 'FDIC',
-    title: 'Deposit insurance — how your money is protected',
+    title: 'Deposit insurance: how your money is protected',
     url: 'https://www.fdic.gov/resources/deposit-insurance/',
   ),
   'cfpb_savings': LessonSource(
@@ -138,17 +138,17 @@ const Map<String, LessonSource> kLessonSources = <String, LessonSource>{
   ),
   'annualcreditreport': LessonSource(
     publisher: 'AnnualCreditReport.com',
-    title: 'The federally authorised free credit report site',
+    title: 'The federally authorized free credit report site',
     url: 'https://www.annualcreditreport.com/',
   ),
   'cfpb_credit_cards': LessonSource(
     publisher: 'CFPB',
-    title: 'Credit cards — how interest and minimum payments work',
+    title: 'Credit cards: how interest and minimum payments work',
     url: 'https://www.consumerfinance.gov/consumer-tools/credit-cards/',
   ),
   'cfpb_debt_collection': LessonSource(
     publisher: 'CFPB',
-    title: 'Debt collection — your rights',
+    title: 'Debt collection: your rights',
     url: 'https://www.consumerfinance.gov/consumer-tools/debt-collection/',
   ),
   'ftc_credit': LessonSource(
@@ -180,12 +180,12 @@ const Map<String, LessonSource> kLessonSources = <String, LessonSource>{
   ),
   'bls_earnings': LessonSource(
     publisher: 'Bureau of Labor Statistics',
-    title: 'Occupational Outlook Handbook — pay by occupation',
+    title: 'Occupational Outlook Handbook: pay by occupation',
     url: 'https://www.bls.gov/ooh/',
   ),
   'bls_cpi': LessonSource(
     publisher: 'Bureau of Labor Statistics',
-    title: 'Consumer Price Index — how inflation is measured',
+    title: 'Consumer Price Index: how inflation is measured',
     url: 'https://www.bls.gov/cpi/',
   ),
 
@@ -207,7 +207,7 @@ const Map<String, LessonSource> kLessonSources = <String, LessonSource>{
   ),
   'sec_index_funds': LessonSource(
     publisher: 'SEC',
-    title: 'Mutual funds and ETFs — a guide for investors',
+    title: 'Mutual funds and ETFs: a guide for investors',
     url: 'https://www.sec.gov/investor',
   ),
   'investor_risk': LessonSource(
@@ -224,7 +224,7 @@ const Map<String, LessonSource> kLessonSources = <String, LessonSource>{
   ),
   'irs_retirement_plans': LessonSource(
     publisher: 'IRS',
-    title: 'Retirement plans — 401(k) and IRA basics',
+    title: 'Retirement plans: 401(k) and IRA basics',
     url: 'https://www.irs.gov/retirement-plans',
   ),
   'dol_401k': LessonSource(
@@ -275,7 +275,7 @@ const Map<String, LessonSource> kLessonSources = <String, LessonSource>{
   ),
   'cfpb_auto_loans': LessonSource(
     publisher: 'CFPB',
-    title: 'Auto loans — what to know before you borrow',
+    title: 'Auto loans: what to know before you borrow',
     url: 'https://www.consumerfinance.gov/consumer-tools/auto-loans/',
   ),
   'usa_gov_money': LessonSource(
@@ -290,7 +290,7 @@ const Map<String, LessonSource> kLessonSources = <String, LessonSource>{
   // them where to go has stopped one step short of being useful.
   'identitytheft_gov': LessonSource(
     publisher: 'FTC',
-    title: 'IdentityTheft.gov — report and recover',
+    title: 'IdentityTheft.gov: report and recover',
     url: 'https://www.identitytheft.gov/',
   ),
 };

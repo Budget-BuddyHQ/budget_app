@@ -72,7 +72,7 @@ const List<TownUnlock> kTownUnlocks = <TownUnlock>[
     unitId: 'unit_1',
     unitName: 'Budgeting',
     why:
-        'The stalls are about what things really cost per unit — which is a '
+        'The stalls are about what things really cost per unit, which is a '
         'question you have to know to ask before the answer is any use.',
   ),
   TownUnlock(

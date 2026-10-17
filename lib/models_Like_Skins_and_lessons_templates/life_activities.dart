@@ -617,7 +617,7 @@ const List<ActivityDef> kActivities = <ActivityDef>[
     title: 'Visit a science center',
     blurb: 'Buttons to press and things that actually happen.',
     icon: Icons.science_rounded,
-    outcome: 'You pressed every button labelled "do not press."',
+    outcome: 'You pressed every button labeled "do not press."',
     minAge: 6,
     cost: 12,
     tiers: <double>[1.0, 0.5],
@@ -715,8 +715,7 @@ const List<ActivityDef> kActivities = <ActivityDef>[
     id: 'check_credit_report',
     category: ActivityCategory.money,
     title: 'Check your credit report',
-    blurb:
-        'Free once a year — the one report nobody checks until they need it.',
+    blurb: 'Free once a year: the one report nobody checks until they need it.',
     icon: Icons.fact_check_rounded,
     outcome:
         'On-time bills built it up. The one you missed is still on there too.',

@@ -541,7 +541,7 @@ class LifeSimController extends ChangeNotifier {
           ? '${_paycheckOpener(income)} Needs $needsBudget, wants '
                 '$wantsBudget, savings $savingsBudget.'
                 '${spareNeeds > 0 ? ' Living cost $actualNeeds, so $spareNeeds stayed yours.' : ''}'
-          : '${_paycheckOpener(income)} Split on the default 50/30/20 — '
+          : '${_paycheckOpener(income)} Split on the default 50/30/20: '
                 'open Money to choose your own.'
                 '${spareNeeds > 0 ? ' Living cost $actualNeeds, so $spareNeeds stayed yours.' : ''}',
       kind: LifeLogKind.money,
@@ -554,7 +554,7 @@ class LifeSimController extends ChangeNotifier {
       _health = _clamp(_health - 4);
       _happiness = _clamp(_happiness - 6);
       _setLog(
-        'Your needs budget did not cover the essentials — you went short by '
+        'Your needs budget did not cover the essentials: you went short by '
         '$shortfall this year.',
         kind: LifeLogKind.shock,
       );
@@ -771,7 +771,7 @@ class LifeSimController extends ChangeNotifier {
       _teach(FinanceConcept.emergencyFund);
     } else {
       _setLog(
-        '$reason cost $amount — covered from savings without borrowing.',
+        '$reason cost $amount: covered from savings without borrowing.',
         kind: LifeLogKind.money,
       );
       _teach(FinanceConcept.emergencyFund);
@@ -1608,7 +1608,7 @@ class LifeSimController extends ChangeNotifier {
         'A quiet year of work and rent.',
         'Nothing dramatic. The bills got paid, mostly on time.',
         'You said yes to less and slept more.',
-        'A steady year — the kind that is only obvious later.',
+        'A steady year: the kind that is only obvious later.',
       ],
       LifeStage.adult => const [
         'A steady year. Work, home, the usual.',
@@ -1724,7 +1724,7 @@ class LifeSimController extends ChangeNotifier {
     5 => 'You started school.',
     13 => 'You are officially a teenager.',
     16 => 'Sweet sixteen.',
-    18 => 'You are an adult now — bills are yours from here.',
+    18 => 'You are an adult now: bills are yours from here.',
     21 => 'Twenty-one. The world feels wide open.',
     30 => 'Thirty. Time moves faster than it used to.',
     50 => 'Fifty. Half a century.',
@@ -1787,7 +1787,7 @@ class LifeSimController extends ChangeNotifier {
     const lines = <String>[
       'A tight year. You made it work.',
       'Money was short. Nothing broke.',
-      'A lean year — you got to the end of it.',
+      'A lean year: you got to the end of it.',
       'Everything cost a little more than there was.',
       'You went without a few things and did not mention it.',
       'Close to the line all year, and never over it.',
@@ -2517,7 +2517,7 @@ class LifeSimController extends ChangeNotifier {
       _money = max(0, _money - 20);
     }
     _setLog(
-      'Practised ${skill.label.toLowerCase()}: +$gain ${skill.label} '
+      'Practiced ${skill.label.toLowerCase()}: +$gain ${skill.label} '
       '(now ${_skills[skill]}).',
       kind: LifeLogKind.learning,
     );
@@ -2784,7 +2784,7 @@ class LifeSimController extends ChangeNotifier {
       _happiness = _clamp(_happiness + 6);
       _setLog(
         'You gambled $stake coins and won $stake. It will not always go '
-        'this way — the odds were against you.',
+        'this way: the odds were against you.',
         kind: LifeLogKind.money,
       );
     } else {

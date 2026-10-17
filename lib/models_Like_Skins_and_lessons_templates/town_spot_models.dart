@@ -166,7 +166,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     kind: TownSpotKind.store,
     title: 'Corner Store',
     prompt:
-        'The shelf label says CHIPS — \$4. There is also a bigger bag for '
+        'The shelf label says CHIPS: \$4. There is also a bigger bag for '
         '\$6 that holds three times as much.',
     tileX: 14,
     tileY: 13,
@@ -176,7 +176,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
       TownChoice(
         label: 'Buy the \$4 bag',
         outcome:
-            'Fine — but the big bag was cheaper per chip. That is called '
+            'Fine, but the big bag was cheaper per chip. That is called '
             'unit price, and stores count on you not checking it.',
         gold: -4,
         xp: 4,
@@ -185,7 +185,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         label: 'Buy the \$6 bag',
         outcome:
             'Good call. Triple the chips for 50% more money is a better unit '
-            'price — as long as you actually eat it all.',
+            'price: as long as you actually eat it all.',
         gold: -6,
         xp: 6,
         literacy: 6,
@@ -193,7 +193,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
       TownChoice(
         label: 'Walk out without buying',
         outcome:
-            'You kept all \$4. Not buying is always the cheapest option — the '
+            'You kept all \$4. Not buying is always the cheapest option: the '
             'trick is knowing when that is the right one.',
         xp: 8,
         literacy: 4,
@@ -216,7 +216,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         label: 'Deposit 20 coins',
         outcome:
             'Deposited. Interest means the bank pays *you* for leaving it '
-            'alone — the opposite of how borrowing works.',
+            'alone: the opposite of how borrowing works.',
         gold: -20,
         xp: 10,
         literacy: 12,
@@ -233,7 +233,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         label: 'Keep it all as cash',
         outcome:
             'Cash in your pocket is easy to spend by accident. That is not '
-            'wrong — just know that is the trade you made.',
+            'wrong: just know that is the trade you made.',
         xp: 4,
       ),
     ],
@@ -288,7 +288,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
       TownChoice(
         label: 'Take the quick job (15)',
         outcome:
-            'Paid fast. Quick money is real money — just check what you gave '
+            'Paid fast. Quick money is real money: just check what you gave '
             'up to get it.',
         gold: 15,
         xp: 8,
@@ -345,7 +345,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     title: 'Notice Board',
     prompt:
         'A hand-written note is pinned here: "Whoever keeps track of the '
-        'small stuff ends up with the big stuff. — a neighbor"',
+        'small stuff ends up with the big stuff. a neighbor"',
     tileX: 40,
     tileY: 28,
     tileX2: 31,
@@ -354,7 +354,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
       TownChoice(
         label: 'Take the note',
         outcome:
-            'Pocketed. Small amounts, tracked, turn into big amounts — that '
+            'Pocketed. Small amounts, tracked, turn into big amounts: that '
             'is the whole trick, written on a scrap of paper.',
         xp: 10,
         literacy: 8,
@@ -378,7 +378,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
       TownChoice(
         label: 'Take the \$2 bag',
         outcome:
-            'Cheaper, and you have no idea whether it was better value — '
+            'Cheaper, and you have no idea whether it was better value: '
             'without a weight there is nothing to compare. That is why shops '
             'are made to print a unit price.',
         gold: -2,
@@ -388,7 +388,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
       TownChoice(
         label: 'Pay \$3 for the better-looking ones',
         outcome:
-            'Sometimes right. Quality is a real thing to buy — the trap is '
+            'Sometimes right. Quality is a real thing to buy: the trap is '
             'paying for the *display* and calling it quality.',
         gold: -3,
         xp: 5,
@@ -417,7 +417,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
     tileY2: 42,
     choices: [
       TownChoice(
-        label: 'Get one — it is only \$4.50',
+        label: 'Get one: it is only \$4.50',
         outcome:
             'It is only \$4.50, and four times a week is \$936 a year. Small '
             'repeated spending is the hardest kind to see, because no single '
@@ -430,7 +430,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         label: 'Skip it today',
         outcome:
             'Nothing dramatic happened. That is what most good money '
-            'decisions look like — a thing you did not do, and no story '
+            'decisions look like: a thing you did not do, and no story '
             'afterwards.',
         xp: 8,
         literacy: 6,
@@ -438,7 +438,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
       TownChoice(
         label: 'Work out what the week has cost',
         outcome:
-            'Three visits is \$13.50 — about what a whole meal costs. '
+            'Three visits is \$13.50: about what a whole meal costs. '
             'Counting it is the only way a habit ever becomes a decision.',
         xp: 10,
         literacy: 10,
@@ -470,7 +470,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         label: 'Wait for the free slot',
         outcome:
             'You keep the \$40 and cough for another nine days. A perfectly '
-            'good answer — and the reason free options are worth knowing '
+            'good answer, and the reason free options are worth knowing '
             'about *before* you need one.',
         xp: 8,
         literacy: 8,
@@ -502,7 +502,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         label: 'Sign up for the free one',
         outcome:
             'Eighteen hours of your Saturdays, and \$180 kept. Free never '
-            'means free — it means paid for in time, which is the currency '
+            'means free: it means paid for in time, which is the currency '
             'you have most of when you are young.',
         xp: 10,
         literacy: 10,
@@ -511,7 +511,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         label: 'Buy the online one',
         outcome:
             '\$180 to do it at your own pace. Worth it if your Saturdays are '
-            'already spoken for, and worth nothing if you never open it — '
+            'already spoken for, and worth nothing if you never open it: '
             'which is what happens to most of them.',
         gold: -60,
         xp: 6,
@@ -551,7 +551,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
       TownChoice(
         label: 'Take the \$60 loan',
         outcome:
-            '\$20 to borrow \$60 for a month is a third of it — an enormous '
+            '\$20 to borrow \$60 for a month is a third of it: an enormous '
             'rate, and the reason pawn shops exist. Sometimes it is still the '
             'only door open.',
         gold: 60,
@@ -585,7 +585,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         label: 'Stay in the park',
         outcome:
             'Three hours, nothing spent, and a good afternoon. Not every '
-            'thing worth doing costs money — a budget with no free days in it '
+            'thing worth doing costs money: a budget with no free days in it '
             'is a budget nobody keeps.',
         xp: 9,
         literacy: 7,
@@ -594,7 +594,7 @@ const List<TownSpot> kTownSpots = <TownSpot>[
         label: 'Go to the arcade',
         outcome:
             'Also a good afternoon, for \$12. Spending on something you '
-            'actually enjoy is what the money is for — as long as it was a '
+            'actually enjoy is what the money is for: as long as it was a '
             'choice and not a default.',
         gold: -12,
         xp: 6,
@@ -869,7 +869,7 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
     tileX2: 3,
     tileY2: 11,
     lines: [
-      'Your paycheck is smaller than your pay rate. The gap is taxes — '
+      'Your paycheck is smaller than your pay rate. The gap is taxes: '
           'and it comes out before you ever see the money.',
       'Gross pay is the number on the offer. Net pay is the number that '
           'lands. Budget on the second one.',
@@ -905,7 +905,7 @@ const List<TownNpc> kTownNpcs = <TownNpc>[
     tileX2: 36,
     tileY2: 12,
     lines: [
-      'I pay myself first — a slice goes to savings the day money arrives, '
+      'I pay myself first: a slice goes to savings the day money arrives, '
           'before anything else gets a turn.',
       'The trick was never earning more. It was noticing where it went.',
       'Small amounts, tracked, beat big amounts, ignored.',

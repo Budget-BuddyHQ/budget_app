@@ -889,11 +889,11 @@ class _StatsCard extends StatelessWidget {
   final CompanyProfile? profile;
 
   String _coins(double? usd) => usd == null || usd <= 0
-      ? '—'
+      ? '-'
       : '${(usd * kCoinsPerDollar).toStringAsFixed(1)}g';
 
   String _big(double v) {
-    if (v <= 0) return '—';
+    if (v <= 0) return '-';
     if (v >= 1e12) return '${(v / 1e12).toStringAsFixed(2)}T';
     if (v >= 1e9) return '${(v / 1e9).toStringAsFixed(1)}B';
     if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(1)}M';
@@ -911,7 +911,7 @@ class _StatsCard extends StatelessWidget {
     final has52 = low52 > 0 && high52 > low52 && now > 0;
     final cap = d != null && d.marketCap > 0
         ? '\$${_big(d.marketCap)}'
-        : (profile?.marketCapLabel ?? '—');
+        : (profile?.marketCapLabel ?? '-');
 
     return _Panel(
       title: 'Key stats',
@@ -928,8 +928,8 @@ class _StatsCard extends StatelessWidget {
             ),
             _Fact("Today's high", _coins(q?.high ?? d?.high)),
             _Fact("Today's low", _coins(q?.low ?? d?.low)),
-            _Fact('Volume', d == null ? '—' : _big(d.volume)),
-            _Fact('Average volume', d == null ? '—' : _big(d.averageVolume)),
+            _Fact('Volume', d == null ? '-' : _big(d.volume)),
+            _Fact('Average volume', d == null ? '-' : _big(d.averageVolume)),
             _Fact('Market cap', cap),
             _Fact(
               'Exchange',
@@ -937,7 +937,7 @@ class _StatsCard extends StatelessWidget {
                   ? d!.exchange
                   : (profile?.exchange.isNotEmpty == true
                         ? profile!.exchange
-                        : '—'),
+                        : '-'),
             ),
           ]),
           if (has52) ...[
@@ -1135,8 +1135,8 @@ class _OutlookCard extends StatelessWidget {
       ),
       subtitle:
           'Nobody can know. What we can show is how much $symbol moved over '
-          'the past year — about ${(swing * 100).round()}% either way in a '
-          'typical year — and what that would mean for $unit a year from now.',
+          'the past year (about ${(swing * 100).round()}% either way in a '
+          'typical year) and what that would mean for $unit a year from now.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1348,7 +1348,7 @@ class _AboutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String or(String v) => v.isEmpty ? '—' : v;
+    String or(String v) => v.isEmpty ? '-' : v;
     return _Panel(
       title: 'About ${profile.name.isEmpty ? profile.symbol : profile.name}',
       icon: AppAssets.kitIconStar,

@@ -1583,7 +1583,7 @@ class _AgeBandField extends StatelessWidget {
           // Says what it is for. A personal question with no stated purpose
           // reads as data collection; the same question with a reason reads
           // as setup.
-          'It picks the questions you get — nothing else, and nobody sees it.',
+          'It picks the questions you get: nothing else, and nobody sees it.',
           style: AppTheme.numeric(
             color: AppTheme.textMuted,
             fontSize: 11.5,

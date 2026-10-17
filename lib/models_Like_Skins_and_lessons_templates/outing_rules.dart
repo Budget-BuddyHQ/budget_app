@@ -51,7 +51,7 @@ extension HouseholdStrictnessInfo on HouseholdStrictness {
 
   String get blurb => switch (this) {
     HouseholdStrictness.relaxed =>
-      'Your family is relaxed — you got to roam early.',
+      'Your family is relaxed: you got to roam early.',
     HouseholdStrictness.normal => 'Your family is about average about rules.',
     HouseholdStrictness.strict =>
       'Your family is strict. You will be waiting a while for freedom.',
@@ -155,7 +155,7 @@ class OutingPermission {
         allowed: false,
         reason: OutingBlockReason.strictParents,
         message: strictness == HouseholdStrictness.strict
-            ? 'Your family says no — not until you are '
+            ? 'Your family says no, not until you are '
                   '${strictness.freeRoamAge}.'
             : 'You are not allowed out alone until '
                   '${strictness.freeRoamAge}.',

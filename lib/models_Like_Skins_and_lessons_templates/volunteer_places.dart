@@ -133,7 +133,7 @@ const List<VolunteerPlace> kVolunteerPlaces = <VolunteerPlace>[
     hours: 5,
     outcome:
         'Five hours on a till and a shop floor. Unpaid, and you now know how '
-        'to price stock and handle a queue — which is a job you could be paid '
+        'to price stock and handle a queue, which is a job you could be paid '
         'for.',
     teaches: FinanceConcept.incomeVsWealth,
     minAge: 13,

@@ -70,7 +70,9 @@ class _AgeScalingCardState extends State<AgeScalingCard> {
       decoration: BoxDecoration(
         color: const Color(0xFF1C2A31).withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF6CD34A).withValues(alpha: 0.3)),
+        border: Border.all(
+          color: const Color(0xFF6CD34A).withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -112,7 +114,7 @@ class _AgeScalingCardState extends State<AgeScalingCard> {
                         const SizedBox(height: 2),
                         Text(
                           unset
-                              ? 'No age set — showing a general mix.'
+                              ? 'No age set: showing a general mix.'
                               : '${band.label} · ${facts.length} things '
                                     'change for you',
                           style: GoogleFonts.quicksand(

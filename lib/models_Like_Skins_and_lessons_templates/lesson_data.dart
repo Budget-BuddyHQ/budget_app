@@ -32,7 +32,7 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
     subtitle: 'The very first ideas about money',
     description:
         'What money actually is, why things cost money, and the first idea '
-        'behind saving: a piggy bank. Written for the very youngest players — '
+        'behind saving: a piggy bank. Written for the very youngest players: '
         'best explored together with a grown-up or older sibling.',
     order: 1,
     ageStage: AgeStage.earlyChildhood,
@@ -220,7 +220,7 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
     description:
         'Ads, in-game shops, hype and scams are all designed by adults to '
         'separate you from your money. This unit teaches you to see them '
-        'coming — the earliest money skill worth having.',
+        'coming: the earliest money skill worth having.',
     order: 4,
     ageStage: AgeStage.middleSchool,
     lessons: <Lesson>[
@@ -349,7 +349,7 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
     subtitle: 'Reading data without being fooled by it',
     description:
         'Percentages, averages, and charts decide how money decisions get '
-        'argued. Learn to read them properly — and to notice when a graph is '
+        'argued. Learn to read them properly, and to notice when a graph is '
         'quietly lying to you.',
     order: 6,
     ageStage: AgeStage.highSchool,
@@ -546,7 +546,7 @@ const List<LessonUnit> lessonUnits = <LessonUnit>[
     title: 'Unit 9: Big Purchases',
     subtitle: 'Cars, deposits and your first lease',
     description:
-        'The two biggest cheques most people write before a mortgage. What a '
+        'The two biggest checks most people write before a mortgage. What a '
         'car costs after the sticker, how a loan offer hides its real price '
         'in the monthly payment, and what a landlord actually wants before '
         'handing over keys.',

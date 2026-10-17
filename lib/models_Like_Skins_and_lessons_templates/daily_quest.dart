@@ -118,7 +118,7 @@ class DailyPlanBuilder {
   static const Map<String, String> _arcadeSkillFocus = <String, String>{
     'finance_brawl': 'Recall under pressure',
     'market_board': 'Risk and volatility',
-    'react_challenge': 'Quick judgement',
+    'react_challenge': 'Quick judgment',
   };
 
   static const Map<String, IconData> _arcadeIcons = <String, IconData>{
@@ -180,7 +180,7 @@ class DailyPlanBuilder {
       quests.add(
         DailyQuest(
           id: 'practice_${weakUnit.unitId}',
-          title: 'Practise: ${weakUnit.skillLabel}',
+          title: 'Practice: ${weakUnit.skillLabel}',
           detail: 'A quick set on something you missed',
           surface: QuestSurface.academyPractice,
           icon: Icons.fitness_center_rounded,

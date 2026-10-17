@@ -417,7 +417,7 @@ class _MilestonePip extends StatelessWidget {
     final color = reached ? chip.ink : AppTheme.textMuted;
 
     return Tooltip(
-      message: '${stage.label} — ${stage.xpThreshold} points',
+      message: '${stage.label}: ${stage.xpThreshold} points',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

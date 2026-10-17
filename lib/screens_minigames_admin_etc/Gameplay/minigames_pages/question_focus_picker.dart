@@ -100,11 +100,11 @@ class _QuestionFocusSheet extends StatelessWidget {
             color: const Color(0xFFFFC36B),
             title: QuestionFocus.weakSpots.label,
             body: hasWeak
-                ? 'Practise what you have been missing: ${topics.join(', ')}'
+                ? 'Practice what you have been missing: ${topics.join(', ')}'
                       '${weakSkills.length > topics.length ? ' and more' : ''}.'
                       ' Getting them right clears them from your Coach.'
                 : 'Take a quiz or a lesson first, so we know what to '
-                      'practise.',
+                      'practice.',
             selected: last == QuestionFocus.weakSpots,
             onTap: hasWeak
                 ? () => Navigator.of(context).pop(QuestionFocus.weakSpots)

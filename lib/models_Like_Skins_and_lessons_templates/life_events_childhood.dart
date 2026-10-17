@@ -27,7 +27,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
   LifeEvent(
     id: 'c_first_pocket_money',
     prompt:
-        'You get pocket money for the first time. \$3 a week, and nobody is '
+        'You get allowance for the first time. \$3 a week, and nobody is '
         'telling you what to do with it.',
     icon: Icons.volunteer_activism_rounded,
     minAge: 5,
@@ -47,7 +47,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
         label: 'Keep \$1 back every week',
         outcome:
             'Twelve weeks later you have \$12 and you did not miss the dollar. '
-            'That is the whole trick — a small amount taken off the top before '
+            'That is the whole trick: a small amount taken off the top before '
             'you start spending is the one nobody notices.',
         // The $12 it says you have. It used to say so and add nothing.
         money: 12,
@@ -88,7 +88,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
         teaches: FinanceConcept.needsVsWants,
       ),
       LifeChoice(
-        label: 'Ask how many weeks of pocket money that is',
+        label: 'Ask how many weeks of allowance that is',
         outcome:
             'Four weeks. Suddenly it is not "\$12", it is "a month", and a '
             'month is a thing you can feel. Converting a price into your own '
@@ -99,7 +99,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
       LifeChoice(
         label: 'Ask for it anyway',
         outcome:
-            'You get a no, and it is not a lesson about being greedy — it is '
+            'You get a no, and it is not a lesson about being greedy: it is '
             'the first time you have run into the fact that money runs out '
             'even for grown-ups.',
         happiness: -1,
@@ -123,7 +123,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
         label: 'Wait the ten weeks',
         outcome:
             'Ten weeks is a long time when you are nine, and you got there. '
-            'The thing you waited for is the one you still have in a year — '
+            'The thing you waited for is the one you still have in a year: '
             'that turns out to be true at every age.',
         money: -40,
         happiness: 8,
@@ -134,7 +134,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
         label: 'Buy something smaller now instead',
         outcome:
             'You have something today and the \$40 thing is no closer. Not a '
-            'disaster — but this is the exact move that keeps people from ever '
+            'disaster, but this is the exact move that keeps people from ever '
             'reaching the big thing, and it is worth knowing you made it.',
         money: -11,
         happiness: 4,
@@ -144,8 +144,8 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
       LifeChoice(
         label: 'Ask to do jobs to get there faster',
         outcome:
-            'Six weeks instead of ten. There are two ways to close a gap — '
-            'spend less or earn more — and almost everybody only ever thinks '
+            'Six weeks instead of ten. There are two ways to close a gap ('
+            'spend less or earn more) and almost everybody only ever thinks '
             'of the first one.',
         money: -40,
         happiness: 7,
@@ -186,7 +186,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
         label: 'Save for it yourself',
         outcome:
             'It takes ages and it is yours. Something you bought with your own '
-            'money is treated differently — that is not a moral, it is just '
+            'money is treated differently: that is not a moral, it is just '
             'what everybody does.',
         money: -25,
         happiness: 6,
@@ -221,7 +221,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
       LifeChoice(
         label: 'Ask for \$8',
         outcome:
-            'You settle at \$6.50. Asking cost you nothing and got you 30% — '
+            'You settle at \$6.50. Asking cost you nothing and got you 30%: '
             'the single highest-return thing most people never do.',
         money: 26,
         happiness: -2,
@@ -229,7 +229,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
         teaches: FinanceConcept.incomeVsWealth,
       ),
       LifeChoice(
-        label: 'Say no — your evenings are worth more',
+        label: 'Say no: your evenings are worth more',
         outcome:
             'A completely valid answer, and the reasoning is the point: you '
             'worked out what your time was worth and this was under it. Most '
@@ -264,7 +264,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
       LifeChoice(
         label: 'Charge \$2 and sell 6 cups',
         outcome:
-            '\$12 in against \$9, so \$3 — less money and far less work. Two '
+            '\$12 in against \$9, so \$3: less money and far less work. Two '
             'completely different prices can land close together, which is why '
             'guessing at one is expensive.',
         money: 1,
@@ -275,7 +275,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
         label: 'Give it away free',
         outcome:
             'You are \$9 down and the street likes you. Sometimes that is '
-            'exactly the trade you wanted — it just helps to know you made it '
+            'exactly the trade you wanted: it just helps to know you made it '
             'on purpose.',
         money: -9,
         happiness: 9,
@@ -306,7 +306,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
       LifeChoice(
         label: 'Start keeping it in one place from now on',
         outcome:
-            'The tin, the jar, the account — it does not matter which, only '
+            'The tin, the jar, the account: it does not matter which, only '
             'that there is exactly one of them. Money you cannot find is money '
             'you do not have.',
         money: -10,
@@ -341,7 +341,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
         label: 'Say nothing',
         outcome:
             'It comes out anyway, and the window still costs \$60. The bill '
-            'did not get smaller while you were hoping — that is the part '
+            'did not get smaller while you were hoping: that is the part '
             'worth remembering.',
         // Same $14 as owning up. It used to cost nothing, which made hiding
         // the cheapest option on a card about the bill not going away.
@@ -353,7 +353,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
         label: 'Ask to work it off',
         outcome:
             'Eight weekends of jobs. Long, fair, and the first time you have '
-            'converted a debt into hours — which is what every debt is, '
+            'converted a debt into hours, which is what every debt is, '
             'underneath.',
         happiness: -4,
         smarts: 8,
@@ -387,7 +387,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
         outcome:
             'Same \$5, no week of wondering, no awkward reminder. Half the '
             'time this is what a small loan between friends turns into '
-            'anyway — you just did it on purpose.',
+            'anyway: you just did it on purpose.',
         money: -5,
         happiness: 5,
         smarts: 8,
@@ -414,7 +414,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
     weight: 1.0,
     choices: [
       LifeChoice(
-        label: 'Do the swap — three beats one',
+        label: 'Do the swap: three beats one',
         outcome:
             'By the next week you have worked out that the rare one was worth '
             'more than the three together. Counting things is not the same as '
@@ -433,7 +433,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
         teaches: FinanceConcept.diversification,
       ),
       LifeChoice(
-        label: 'Keep it — you like it',
+        label: 'Keep it: you like it',
         outcome:
             'Also a real reason. Something can be worth keeping because you '
             'want it rather than because of the number, as long as you are not '
@@ -468,7 +468,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
         label: 'Ask about the help quietly',
         outcome:
             'You go, and nobody in the class knows which is which. Asking for '
-            'help you are entitled to is not a smaller version of paying — it '
+            'help you are entitled to is not a smaller version of paying: it '
             'is the thing the fund exists for.',
         happiness: 7,
         smarts: 8,
@@ -476,7 +476,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
       LifeChoice(
         label: 'Skip it',
         outcome:
-            'You keep the \$25 and hear about the trip for a fortnight. Saving '
+            'You keep the \$25 and hear about the trip for two weeks. Saving '
             'has a cost too, and it is worth being honest about what it was.',
         happiness: -3,
         smarts: 5,
@@ -497,7 +497,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
       LifeChoice(
         label: 'Give the lot',
         outcome:
-            'Generous, and the thing to notice is that you felt it — giving '
+            'Generous, and the thing to notice is that you felt it: giving '
             'that costs nothing is a nice gesture, and giving that costs '
             'something is the other kind.',
         money: -4,
@@ -548,7 +548,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
         label: 'Ask where the money actually goes',
         outcome:
             'It comes out of an account somebody filled up by working. A card '
-            'moves money that already exists — knowing that early is most of '
+            'moves money that already exists: knowing that early is most of '
             'what keeps people out of trouble later.',
         smarts: 9,
         teaches: FinanceConcept.creditScore,
@@ -575,7 +575,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
         label: 'Spend the lot this weekend',
         outcome:
             'A very good weekend. By Wednesday it is gone and you can name two '
-            'of the things — which is worth knowing about yourself rather than '
+            'of the things, which is worth knowing about yourself rather than '
             'feeling bad about.',
         // The $50 arrives and leaves: net nothing. It was -50, so the gift
         // never arrived and spending it took fifty out of the player's own
@@ -633,7 +633,7 @@ const List<LifeEvent> kLifeEventsChildhood = <LifeEvent>[
         label: 'Ask what interest means',
         outcome:
             'The bank pays you a little for leaving it there. Small enough to '
-            'ignore at \$40 and the entire reason saving works at \$40,000 — '
+            'ignore at \$40 and the entire reason saving works at \$40,000: '
             'same rule, different zeroes.',
         smarts: 10,
         teaches: FinanceConcept.compoundGrowth,

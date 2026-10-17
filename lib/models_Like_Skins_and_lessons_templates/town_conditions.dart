@@ -126,7 +126,7 @@ const List<TownCondition> kTownConditions = <TownCondition>[
     label: 'Sale at the store',
     note:
         'Everything in the shop is marked down. A sale makes things '
-        'cheaper — it does not make them things you need.',
+        'cheaper: it does not make them things you need.',
     icon: Icons.sell_rounded,
     accent: Color(0xFFFFD45C),
     weight: 1.4,
@@ -148,7 +148,7 @@ const List<TownCondition> kTownConditions = <TownCondition>[
     label: 'Prices have gone up',
     note:
         'Food and fuel cost more this month than last. Nobody decided it '
-        'and nobody announced it — that is what inflation looks like.',
+        'and nobody announced it: that is what inflation looks like.',
     icon: Icons.trending_up_rounded,
     accent: Color(0xFFFF8474),
     weight: 1.3,

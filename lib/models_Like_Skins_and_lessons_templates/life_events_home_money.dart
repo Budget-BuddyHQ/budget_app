@@ -110,7 +110,7 @@ const List<LifeEvent> kLifeEventsHomeMoney = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Buy a second-hand one (90 coins)',
-        outcome: 'Works fine, and it is not the one from the catalogue.',
+        outcome: 'Works fine, and it is not the one from the catalog.',
         money: -90,
         smarts: 3,
         teaches: FinanceConcept.needsVsWants,
@@ -171,7 +171,7 @@ const List<LifeEvent> kLifeEventsHomeMoney = <LifeEvent>[
       LifeChoice(
         label: 'Check it before paying',
         outcome:
-            'There was a small mistake in your favour. Reading the bill '
+            'There was a small mistake in your favor. Reading the bill '
             'saved you 15.',
         money: -45,
         smarts: 4,
@@ -939,7 +939,7 @@ const List<LifeEvent> kLifeEventsHomeMoney = <LifeEvent>[
       ),
       LifeChoice(
         label: 'Ask a colleague to cover for you',
-        outcome: 'A favour owed, and a happy child.',
+        outcome: 'A favor owed, and a happy child.',
         happiness: 7,
       ),
       LifeChoice(

@@ -105,7 +105,7 @@ String rankedGradeBlurb(String grade) => switch (grade) {
     'You got there. There is a lot of room between this and the top, and '
         'most of it is savings.',
   'D' =>
-    'Rough. Look at what was happening the year it went wrong — it is '
+    'Rough. Look at what was happening the year it went wrong: it is '
         'usually one decision, not ten.',
   _ =>
     'A hard run. Try arming a money idea early and setting a budget before '

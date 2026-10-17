@@ -76,7 +76,7 @@ class DailyPlanCard extends StatelessWidget {
                         ),
                         Text(
                           plan.allDone
-                              ? 'All done — see you tomorrow!'
+                              ? 'All done: see you tomorrow!'
                               : '${plan.completedCount} of ${plan.quests.length} done',
                           style: GoogleFonts.quicksand(
                             color: Colors.white.withValues(alpha: 0.64),

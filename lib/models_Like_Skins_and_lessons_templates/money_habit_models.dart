@@ -206,7 +206,7 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
     id: 'no_impulse_buy',
     title: 'Skip an impulse buy',
     category: HabitCategory.cutSpending,
-    blurb: 'Something you almost bought without thinking — and didn\'t.',
+    blurb: 'Something you almost bought without thinking, and didn\'t.',
     impactPerUnit: HabitImpact(moneySavedUsd: 20, choicesKept: 1),
     icon: Icons.remove_shopping_cart_rounded,
     photoUrl:
@@ -268,7 +268,7 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
     title: 'Sell something you don\'t use',
     category: HabitCategory.saveMore,
     blurb:
-        'Clutter is money sitting still — selling it turns it back into cash.',
+        'Clutter is money sitting still: selling it turns it back into cash.',
     impactPerUnit: HabitImpact(moneySavedUsd: 1),
     adjustable: HabitAdjustableParam(
       label: 'Dollars earned',
@@ -317,7 +317,7 @@ const List<HabitTemplate> habitCatalog = <HabitTemplate>[
     title: 'Track every expense today',
     category: HabitCategory.smartHabits,
     blurb:
-        'You can\'t fix what you don\'t see — one full day of tracking shows the leaks.',
+        'You can\'t fix what you don\'t see: one full day of tracking shows the leaks.',
     impactPerUnit: HabitImpact(choicesKept: 1),
     icon: Icons.receipt_long_rounded,
   ),
@@ -421,7 +421,7 @@ const List<HabitChallenge> habitChallenges = <HabitChallenge>[
     title: 'Cut the Spending Leaks',
     subtitle: 'Find the money quietly slipping away',
     description:
-        'A guided first pass at spending — four small habits that plug the '
+        'A guided first pass at spending: four small habits that plug the '
         'most common leaks once they\'re routine.',
     category: HabitCategory.cutSpending,
     tasks: <ChallengeTask>[
@@ -466,7 +466,7 @@ const List<HabitChallenge> habitChallenges = <HabitChallenge>[
     title: 'Build Your Savings',
     subtitle: 'Turn small habits into real savings',
     description:
-        'Saving rarely happens by accident — this path builds four habits '
+        'Saving rarely happens by accident: this path builds four habits '
         'that make it automatic instead.',
     category: HabitCategory.saveMore,
     tasks: <ChallengeTask>[
@@ -510,7 +510,7 @@ const List<HabitChallenge> habitChallenges = <HabitChallenge>[
     title: 'Think Before You Spend',
     subtitle: 'Build the habits behind good decisions',
     description:
-        'The biggest money wins usually come from a pause, not a discount — '
+        'The biggest money wins usually come from a pause, not a discount: '
         'these habits build that pause in.',
     category: HabitCategory.smartHabits,
     tasks: <ChallengeTask>[

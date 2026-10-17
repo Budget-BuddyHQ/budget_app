@@ -81,7 +81,7 @@ _kSymbolStyle = {
     icon: Icons.apple,
     accent: Color(0xFFE1BB72),
     sector: 'Technology',
-    thesis: 'The iPhone and Mac maker — real earnings, real stock.',
+    thesis: 'The iPhone and Mac maker: real earnings, real stock.',
   ),
   'MSFT': (
     icon: Icons.window_rounded,
@@ -111,7 +111,7 @@ _kSymbolStyle = {
     icon: Icons.query_stats_rounded,
     accent: Color(0xFFFFD45C),
     sector: 'Index fund',
-    thesis: 'Tracks the S&P 500 — 500 companies in one share.',
+    thesis: 'Tracks the S&P 500: 500 companies in one share.',
   ),
   'AMZN': (
     icon: Icons.shopping_cart_rounded,
@@ -926,12 +926,12 @@ class _StockMarketPageState extends State<StockMarketPage>
                         GameToast.show(
                           context,
                           title: result.success
-                              ? 'Order cancelled'
+                              ? 'Order canceled'
                               : 'Could not cancel',
                           message: result.success
                               ? '${order.isBuy ? 'Buy' : 'Sell'} ${order.quantity} '
                                     '${order.symbol} limit at ${order.limitPrice}g '
-                                    'was cancelled.'
+                                    'was canceled.'
                               : result.message,
                           icon: result.success
                               ? Icons.cancel_rounded
@@ -1079,7 +1079,7 @@ class _MarketStatusNote extends StatelessWidget {
           Expanded(
             child: Text(
               isNoKey
-                  ? 'Trading needs a Finnhub API key. Ask whoever set up this build to add one — see tool/README.md.'
+                  ? 'Trading needs a Finnhub API key. Ask whoever set up this build to add one: see tool/README.md.'
                   : (errorDetail ?? 'Live prices are unavailable right now.'),
               style: const TextStyle(color: Colors.white70, height: 1.4),
             ),
@@ -1388,7 +1388,7 @@ class _TradeTabState extends State<_TradeTab> {
           textCapitalization: TextCapitalization.characters,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            hintText: 'Search any stock — symbol or company',
+            hintText: 'Search any stock: symbol or company',
             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.45)),
             prefixIcon: const Icon(Icons.search_rounded, color: Colors.white54),
             suffixIcon: _query.isEmpty
@@ -3868,7 +3868,7 @@ class _LiveBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final fetched = lastFetch;
     final label = fetched == null
-        ? '—'
+        ? '-'
         : '${fetched.hour.toString().padLeft(2, '0')}:'
               '${fetched.minute.toString().padLeft(2, '0')}:'
               '${fetched.second.toString().padLeft(2, '0')}';

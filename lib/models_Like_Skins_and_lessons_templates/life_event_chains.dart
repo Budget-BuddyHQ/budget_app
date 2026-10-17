@@ -62,7 +62,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
       LifeChoice(
         label: 'Work out the yearly cost first',
         outcome:
-            'Food, jabs, the odd vet trip — call it 200 a year, every year. '
+            'Food, jabs, the odd vet trip: call it 200 a year, every year. '
             'You took him anyway, but you knew what you were signing up for.',
         money: -60,
         happiness: 12,
@@ -96,7 +96,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         label: 'Pay it',
         outcome:
             'He is groggy for a week and then he is himself again. This is '
-            'the bill an emergency fund exists for — the one you cannot '
+            'the bill an emergency fund exists for: the one you cannot '
             'schedule and would not skip.',
         money: -700,
         happiness: 10,
@@ -105,7 +105,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
       LifeChoice(
         label: 'Put it on a payment plan',
         outcome:
-            'Nine easy payments of 95. That is 855 for a 700 bill — the '
+            'Nine easy payments of 95. That is 855 for a 700 bill: the '
             'extra 155 is what borrowing costs, and "easy" is what it is '
             'sold as.',
         money: -855,
@@ -118,7 +118,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
   LifeEvent(
     id: 'chain_pet_old',
     prompt:
-        'Your dog is grey around the muzzle now and sleeps most of the day.',
+        'Your dog is gray around the muzzle now and sleeps most of the day.',
     icon: Icons.pets_rounded,
     minAge: 9,
     weight: 5.5,
@@ -164,7 +164,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         teaches: FinanceConcept.creditScore,
       ),
       LifeChoice(
-        label: 'Take it — 1,500 coins of breathing room',
+        label: 'Take it: 1,500 coins of breathing room',
         outcome:
             'It does not feel like debt when it is sitting there unused. '
             'That is the design.',
@@ -175,7 +175,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
       LifeChoice(
         label: 'Decline for now',
         outcome:
-            'No card means no interest, and also no credit history — which '
+            'No card means no interest, and also no credit history, which '
             'lenders read as an unknown rather than as a good risk. Both '
             'sides of that are real.',
         smarts: 4,
@@ -197,7 +197,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         label: 'Pay the minimum',
         outcome:
             'Paying 30 on a 1,200 balance at 22% clears about eight coins of '
-            'what you owe — the other 22 is interest. At that rate it takes '
+            'what you owe: the other 22 is interest. At that rate it takes '
             'over seven years and costs you roughly double.',
         money: -30,
         happiness: -3,
@@ -296,7 +296,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
   LifeEvent(
     id: 'chain_index_start',
     prompt:
-        'A friend explains index funds: instead of picking a company you '
+        'A friend explains index funds, instead of picking a company you '
         'buy a slice of hundreds of them, and it costs almost nothing to '
         'hold.',
     icon: Icons.show_chart_rounded,
@@ -308,7 +308,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         label: 'Put 400 in and set up a monthly amount',
         outcome:
             'Boring on purpose. Owning hundreds of companies means no single '
-            'one can sink you — that is diversification, and it is the only '
+            'one can sink you: that is diversification, and it is the only '
             'free lunch in investing.',
         money: -400,
         smarts: 7,
@@ -347,7 +347,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         label: 'Sell before it gets worse',
         outcome:
             'You turned a paper loss into a real one. A fall only costs you '
-            'money at the moment you sell — every recovery in history left '
+            'money at the moment you sell: every recovery in history left '
             'behind the people who got out at the bottom.',
         money: -300,
         happiness: -10,
@@ -371,7 +371,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         label: 'Buy more while it is cheap',
         outcome:
             'The same slice of the same companies for a third less. It felt '
-            'reckless and it was, in fact, the plan working — but only '
+            'reckless and it was, in fact, the plan working, but only '
             'because you had money you did not need this year.',
         money: -500,
         happiness: -4,
@@ -393,7 +393,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         label: 'Look at what the boring option did',
         outcome:
             'Most of it is not money you put in. It is growth on growth on '
-            'growth — the part that only exists because you left it alone '
+            'growth: the part that only exists because you left it alone '
             'long enough for time to do the work.',
         money: 6000,
         happiness: 12,
@@ -449,7 +449,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
   LifeEvent(
     id: 'chain_hustle_start',
     prompt:
-        'People keep asking if you would do it for money — the thing you '
+        'People keep asking if you would do it for money: the thing you '
         'are quietly good at.',
     icon: Icons.handyman_rounded,
     minAge: 15,
@@ -562,7 +562,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         outcome:
             'A business is worth what its future profits are worth today. '
             'You just turned a thing that earns into a lump you have to '
-            'decide about — which is a harder problem than it sounds.',
+            'decide about, which is a harder problem than it sounds.',
         money: 8000,
         happiness: 8,
         clearsFlag: LifeFlag.hustleGrew,
@@ -570,7 +570,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         teaches: FinanceConcept.incomeVsWealth,
       ),
       LifeChoice(
-        label: 'Keep it — it pays every year',
+        label: 'Keep it: it pays every year',
         outcome:
             'Four years of profit for something that pays forever is only a '
             'good deal for the buyer. You kept the goose.',
@@ -687,7 +687,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
       LifeChoice(
         label: 'Move in together',
         outcome:
-            'Rent halved, and you are now jointly liable for all of it — '
+            'Rent halved, and you are now jointly liable for all of it: '
             'which is the part of "splitting" the lease does not split. The '
             'Assets tab shows where you live now.',
         happiness: 9,
@@ -764,9 +764,9 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         label: 'Apply for the course and borrow what you need',
         outcome:
             'Borrowing to buy something that raises what you can earn is the '
-            'one kind of debt that can pay for itself — as long as it '
+            'one kind of debt that can pay for itself: as long as it '
             'actually does. The application opens next, and the loan is only '
-            'real once you enrol.',
+            'real once you enroll.',
         smarts: 4,
         followUp: LifeFollowUp.openCollege,
         teaches: FinanceConcept.incomeVsWealth,
@@ -877,7 +877,7 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
       LifeChoice(
         label: 'Bank the whole raise, live on the old number',
         outcome:
-            'You already knew you could live on the old salary — you were '
+            'You already knew you could live on the old salary: you were '
             'doing it last month. Everything above it is free savings.',
         money: 900,
         smarts: 8,
@@ -887,13 +887,13 @@ const List<LifeEvent> kLifeEventsChains = <LifeEvent>[
         label: 'Upgrade the flat',
         outcome:
             'Nicer place, same amount left at the end of the month. A raise '
-            'that raises your costs is not a raise — that is lifestyle '
+            'that raises your costs is not a raise: that is lifestyle '
             'creep, and it is why earning more so rarely feels like more.',
         happiness: 10,
         teaches: FinanceConcept.lifestyleCreep,
       ),
       LifeChoice(
-        label: 'Split it — half saved, half spent',
+        label: 'Split it: half saved, half spent',
         outcome:
             'You feel the raise and you keep some of it. Boring, workable, '
             'and the version people actually stick to.',

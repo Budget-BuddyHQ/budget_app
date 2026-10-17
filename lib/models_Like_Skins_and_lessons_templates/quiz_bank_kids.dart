@@ -47,7 +47,7 @@ kKidQuizAdditions = <String, List<QuizQuestion>>{
       options: ['Spending', 'Income', 'A bill', 'A price tag'],
       correctIndex: 1,
       explanation:
-          'Income is money coming in, like pocket money or pay. Spending '
+          'Income is money coming in, like allowance or pay. Spending '
           'and bills are money going out.',
     ),
     QuizQuestion(
@@ -234,7 +234,7 @@ kKidQuizAdditions = <String, List<QuizQuestion>>{
     QuizQuestion(
       id: 'kq3a',
       skillId: QuizSkills.payYourself,
-      prompt: 'You get your pocket money. When is the best time to save?',
+      prompt: 'You get your allowance. When is the best time to save?',
       options: [
         'After you spend the rest',
         'Right away, before you spend',
@@ -1184,7 +1184,7 @@ kKidQuizAdditions = <String, List<QuizQuestion>>{
       ],
       correctIndex: 1,
       explanation:
-          'Cancelling stops the charge. A dollar a month you never use is '
+          'Canceling stops the charge. A dollar a month you never use is '
           '12 dollars a year gone.',
     ),
   ],

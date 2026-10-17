@@ -72,7 +72,7 @@ extension AgeStageInfo on AgeStage {
   String get blurb => switch (this) {
     AgeStage.earlyChildhood => 'What money is and where it goes',
     AgeStage.youngKids => 'Earning, saving, and your first choices',
-    AgeStage.middleSchool => 'Pocket money and first choices',
+    AgeStage.middleSchool => 'Allowance and first choices',
     AgeStage.highSchool => 'Earning, saving and first accounts',
     AgeStage.graduating => 'Credit, rent and independence',
     AgeStage.adult => 'Investing and long-term wealth',

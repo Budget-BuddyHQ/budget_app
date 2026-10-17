@@ -474,7 +474,7 @@ class _SchoolCard extends StatelessWidget {
             caption: life.grades < 40
                 ? 'Falling behind. Studying is the fastest way back.'
                 : life.grades >= 85
-                ? 'Honour roll territory.'
+                ? 'Honor roll territory.'
                 : null,
           ),
           if (quote != null) ...[

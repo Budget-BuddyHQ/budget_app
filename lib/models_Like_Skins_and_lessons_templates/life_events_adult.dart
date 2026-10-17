@@ -46,7 +46,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
         teaches: FinanceConcept.emergencyFund,
       ),
       LifeChoice(
-        label: 'Skip it — you do not own much',
+        label: 'Skip it: you do not own much',
         outcome:
             'A fair call if it is true. The test is not what your things cost '
             'you, it is what replacing all of them at once would cost.',
@@ -55,7 +55,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
       LifeChoice(
         label: 'Add up what a full replacement would cost first',
         outcome:
-            'About \$3,400 — more than you guessed, which is the usual answer. '
+            'About \$3,400: more than you guessed, which is the usual answer. '
             'You take the policy knowing why.',
         money: -168,
         smarts: 5,
@@ -66,7 +66,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
   LifeEvent(
     id: 'a_health_deductible',
     prompt:
-        'Open enrolment. The cheaper plan saves \$60 a month and has a '
+        'Open enrollment. The cheaper plan saves \$60 a month and has a '
         '\$4,000 deductible instead of \$1,000.',
     icon: Icons.medical_information_rounded,
     minAge: 22,
@@ -133,7 +133,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
       LifeChoice(
         label: 'Keep renting and keep the savings liquid',
         outcome:
-            'Renting is not throwing money away — it is buying flexibility '
+            'Renting is not throwing money away: it is buying flexibility '
             'and someone else handling the boiler. It is the right answer when '
             'you might move.',
         happiness: 2,
@@ -143,7 +143,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
         label: 'Work out the full cost of owning first',
         outcome:
             'Mortgage plus tax plus insurance plus a repair fund comes to '
-            'noticeably more than the rent. You are not put off — you are just '
+            'noticeably more than the rent. You are not put off: you are just '
             'no longer surprised.',
         smarts: 7,
         teaches: FinanceConcept.budgetRule,
@@ -204,7 +204,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
         label: 'Sell and move somewhere smaller',
         outcome:
             'You release the difference in cash and your monthly costs drop. '
-            'A house is only an asset while you can afford to keep it — '
+            'A house is only an asset while you can afford to keep it: '
             'selling one is a decision, not a defeat.',
         happiness: -2,
         smarts: 6,
@@ -213,7 +213,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
         teaches: FinanceConcept.incomeVsWealth,
       ),
       LifeChoice(
-        label: 'Stay — the space is worth the cost',
+        label: 'Stay: the space is worth the cost',
         outcome:
             'Perfectly valid, as long as it is a choice. What sinks people is '
             'paying for space they stopped using years ago without noticing.',
@@ -225,7 +225,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
         label: 'Rent out the spare room instead',
         outcome:
             'The upkeep is covered and you keep the house. The cost is that '
-            'the space is no longer entirely yours — every income has a price '
+            'the space is no longer entirely yours: every income has a price '
             'somewhere.',
         money: 2600,
         happiness: -3,
@@ -248,7 +248,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
         label: 'Live off the emergency fund while you look',
         outcome:
             'Three months of expenses buys you three months of choosing. That '
-            'is the entire point of the fund — not the money, the not having '
+            'is the entire point of the fund, not the money, the not having '
             'to take the first thing offered.',
         money: -900,
         // Every branch of this card used to leave the job in place at full
@@ -321,7 +321,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
       LifeChoice(
         label: 'Ask what the range is before naming a number',
         outcome:
-            'They tell you. You ask for the upper half of it and get it — the '
+            'They tell you. You ask for the upper half of it and get it: the '
             'person with the information usually does.',
         setJob: 'Analyst',
         setSalary: 370,
@@ -364,7 +364,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
       LifeChoice(
         label: 'Set up a small standing amount instead of a lump sum',
         outcome:
-            'Less dramatic and far more useful — it is money they can plan '
+            'Less dramatic and far more useful: it is money they can plan '
             'around, and it is a number you can afford every month rather '
             'than once.',
         money: -180,
@@ -393,8 +393,8 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
       LifeChoice(
         label: 'Give half, and call it a gift',
         outcome:
-            'No debt, no awkwardness, no waiting for a text. The old advice — '
-            'only lend what you would be willing to give — turns out to be '
+            'No debt, no awkwardness, no waiting for a text. The old advice ('
+            'only lend what you would be willing to give) turns out to be '
             'about the friendship rather than the money.',
         money: -250,
         happiness: 5,
@@ -404,7 +404,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
         label: 'Say no, and say why',
         outcome:
             'Uncomfortable and clean. "I do not lend money" is a policy rather '
-            'than a judgement of them, which is why it is easier to say twice.',
+            'than a judgment of them, which is why it is easier to say twice.',
         happiness: -3,
         smarts: 4,
       ),
@@ -426,7 +426,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
         label: 'Put in \$1,000',
         outcome:
             'It goes quiet after eight months. Guaranteed and 20% cannot both '
-            'be true — a guarantee is worth about 4%, and anything above that '
+            'be true: a guarantee is worth about 4%, and anything above that '
             'is being paid for with risk somebody is not mentioning.',
         money: -1000,
         smarts: 6,
@@ -446,7 +446,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
         label: 'Put in only what you could lose entirely',
         outcome:
             'You risk \$150 with your eyes open. It does not come back, and '
-            'nothing about your year changes — which is the only sane way to '
+            'nothing about your year changes, which is the only sane way to '
             'take a bet like this.',
         money: -150,
         smarts: 7,
@@ -470,7 +470,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
         label: 'File it unopened',
         outcome:
             'Most people do. The default fund is usually fine and its fee '
-            'usually is not — and a fee you never look at is one you pay for '
+            'usually is not, and a fee you never look at is one you pay for '
             'forty years.',
         happiness: 1,
       ),
@@ -536,7 +536,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
         label: 'Work out where it went',
         outcome:
             'A better flat, a better phone, more takeaway. None of it was a '
-            'mistake and all of it was automatic — which is the whole '
+            'mistake and all of it was automatic, which is the whole '
             'mechanism of lifestyle creep.',
         smarts: 7,
         teaches: FinanceConcept.budgetRule,
@@ -552,7 +552,7 @@ const List<LifeEvent> kLifeEventsAdult = <LifeEvent>[
         teaches: FinanceConcept.payYourselfFirst,
       ),
       LifeChoice(
-        label: 'Enjoy it — you earned it',
+        label: 'Enjoy it: you earned it',
         outcome:
             'Fair, and worth doing on purpose rather than by drift. The '
             'difference between the two is whether you could say where the '

@@ -86,7 +86,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
     correctIndex: 0,
     explanation:
         'Gross is the headline number; net is what reaches you. Budget from '
-        'net — budgeting from gross is how people plan to spend money that '
+        'net: budgeting from gross is how people plan to spend money that '
         'was never going to arrive.',
   ),
   BrawlQuestion(
@@ -118,7 +118,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
     ],
     correctIndex: 0,
     explanation:
-        'Brackets are marginal. A raise never leaves you worse off — "it '
+        'Brackets are marginal. A raise never leaves you worse off: "it '
         'pushed me into a higher bracket so I earn less" is not how the '
         'system works.',
   ),
@@ -225,13 +225,13 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
       'A contractor pays both halves of Social Security and Medicare',
       'Contractors are paid less often than employees',
       'Contractor pay is taxed at double the normal rate',
-      'There is no catch — \$18 is simply better',
+      'There is no catch: \$18 is simply better',
     ],
     correctIndex: 0,
     explanation:
         'An employer normally pays half of the 15.3 percent Social Security '
         'and Medicare bill. A contractor pays all of it, plus their own '
-        'insurance and unpaid time off — so the headline rate has to be '
+        'insurance and unpaid time off, so the headline rate has to be '
         'noticeably higher to come out even.',
   ),
   BrawlQuestion(
@@ -242,7 +242,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
         'nothing. What are you giving up?',
     options: [
       'A 50 percent return on the first 6 percent, before any investing',
-      'Nothing — the match is only paid at retirement',
+      'Nothing: the match is only paid at retirement',
       'A small tax refund',
       'Access to the plan for the rest of your career',
     ],
@@ -278,7 +278,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
       'Most months have four paydays, but four of them have five',
       'Weekly pay is taxed more heavily',
       'Rent must legally be paid on a payday',
-      'Nothing — weekly and monthly always line up',
+      'Nothing: weekly and monthly always line up',
     ],
     correctIndex: 0,
     explanation:
@@ -324,14 +324,14 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
         'expect?',
     options: [
       'To owe self-employment tax and income tax on the profit',
-      'Nothing — side income under \$5,000 is tax free',
+      'Nothing: side income under \$5,000 is tax free',
       'To be taxed only if you registered a company',
       'To pay tax on the \$3,000 of revenue, not the profit',
     ],
     correctIndex: 0,
     explanation:
         'Self-employment income is taxable from the first dollar, on profit '
-        'rather than revenue — so what you spent to earn it matters, and so '
+        'rather than revenue, so what you spent to earn it matters, and so '
         'does keeping the receipts.',
   ),
   BrawlQuestion(
@@ -343,7 +343,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
       'Looked up what the role pays at similar employers',
       'Decided the lowest number you would accept',
       'Worked out what you need to cover rent',
-      'Nothing — the employer names the number',
+      'Nothing: the employer names the number',
     ],
     correctIndex: 0,
     explanation:
@@ -358,7 +358,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
       'Time and a half beyond 40 hours a week for covered workers',
       'Double pay for any work after 5pm',
       'Extra pay only for weekend shifts',
-      'Nothing — overtime pay is always voluntary',
+      'Nothing: overtime pay is always voluntary',
     ],
     correctIndex: 0,
     explanation:
@@ -373,13 +373,13 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
         'What does that leave you exposed to?',
     options: [
       'Any single unplanned cost, because \$150 absorbs almost nothing',
-      'Nothing — you are ahead every month',
+      'Nothing: you are ahead every month',
       'Higher taxes next year',
       'A lower credit score automatically',
     ],
     correctIndex: 0,
     explanation:
-        'A 90 percent fixed-cost ratio means one flat tyre is a crisis. The '
+        'A 90 percent fixed-cost ratio means one flat tire is a crisis. The '
         'point of watching the ratio rather than the balance is that the '
         'balance looks fine right up until it does not.',
   ),
@@ -390,7 +390,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
         'Someone claiming to be from your bank asks you to pay a fee '
         'in gift cards. What is this?',
     options: [
-      'A scam — no legitimate organization asks to be paid in gift cards',
+      'A scam: no legitimate organization asks to be paid in gift cards',
       'A normal way banks collect small charges',
       'A limited-time promotional payment method',
       'Standard practice for online-only banks',
@@ -444,7 +444,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
     ],
     correctIndex: 0,
     explanation:
-        'Often around \$35 — sometimes more than the purchase that triggered '
+        'Often around \$35, sometimes more than the purchase that triggered '
         'it. In the US you have to opt in for debit-card overdraft, and you '
         'can opt back out.',
   ),
@@ -470,9 +470,9 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
         'A shop membership costs \$4/month for 10 percent off. You '
         'spend about \$15 a month there. Is it worth it?',
     options: [
-      'No — you would need to spend \$40 a month to break even',
-      'Yes — 10 percent off is always worth having',
-      'Yes — memberships always include extra perks',
+      'No: you would need to spend \$40 a month to break even',
+      'Yes: 10 percent off is always worth having',
+      'Yes: memberships always include extra perks',
       'It depends on the shop\'s opening hours',
     ],
     correctIndex: 0,
@@ -514,12 +514,12 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
     category: kBrawlCategoryFinePrint,
     question:
         'How often can you get your credit report for free from the '
-        'federally authorised site?',
+        'federally authorized site?',
     options: [
       'Regularly, at no cost, from AnnualCreditReport.com',
       'Once in a lifetime',
       'Only after being denied a loan',
-      'Never — reports always cost money',
+      'Never: reports always cost money',
     ],
     correctIndex: 0,
     explanation:
@@ -548,7 +548,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
         'A free trial asks for your card and says "cancel any time". '
         'What actually happens on day 31?',
     options: [
-      'You are charged automatically unless you cancelled first',
+      'You are charged automatically unless you canceled first',
       'You are emailed to ask whether you want to continue',
       'The trial simply ends',
       'The card is charged \$1 as a formality',
@@ -585,7 +585,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
       'Late fees, and losing track of several overlapping plans at once',
       'It always damages your credit score',
       'The retailer can reclaim the item without notice',
-      'There is none — no interest means no risk',
+      'There is none: no interest means no risk',
     ],
     correctIndex: 0,
     explanation:
@@ -602,7 +602,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
       'They are trying to complete a login or transfer that needs that code',
       'Standard bank identity verification',
       'A test of your account security',
-      'Nothing unusual — codes are meant to be shared with staff',
+      'Nothing unusual: codes are meant to be shared with staff',
     ],
     correctIndex: 0,
     explanation:
@@ -625,7 +625,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
     explanation:
         'Unit price is the only honest comparison, and it is printed on the '
         'shelf label in most shops. Bigger is usually but not always cheaper '
-        'per gram — which is exactly why it is worth checking.',
+        'per gram, which is exactly why it is worth checking.',
   ),
   BrawlQuestion(
     category: kBrawlCategoryFinePrint,
@@ -650,7 +650,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
         'A rent-to-own shop offers a \$600 laptop for \$25 a week over '
         '18 months. What does it cost?',
     options: [
-      'About \$1,950 — more than three times the price',
+      'About \$1,950: more than three times the price',
       'About \$700',
       '\$600, spread out',
       'Impossible to work out',
@@ -658,7 +658,7 @@ const List<BrawlQuestion> kBrawlExtraQuestions = <BrawlQuestion>[
     correctIndex: 0,
     explanation:
         '78 weeks at \$25 is \$1,950. Rent-to-own is legal and it is the most '
-        'expensive way to buy anything — the weekly number is small precisely '
+        'expensive way to buy anything: the weekly number is small precisely '
         'so the total is never spoken aloud.',
   ),
   BrawlQuestion(

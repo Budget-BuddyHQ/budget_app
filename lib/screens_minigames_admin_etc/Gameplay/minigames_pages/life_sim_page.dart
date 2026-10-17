@@ -925,7 +925,7 @@ class _LifeSimPageState extends State<LifeSimPage> {
           ),
         ),
         content: Text(
-          '${life.name} is ${life.age}. This run is not saved — quitting '
+          '${life.name} is ${life.age}. This run is not saved: quitting '
           'now loses it, and you keep no gold or XP from it.\n\n'
           'Retire instead to cash out what you have earned.',
           style: GoogleFonts.quicksand(
@@ -2421,7 +2421,7 @@ class _SkillsSheetState extends State<_SkillsSheet> {
               const SizedBox(height: 4),
               Text(
                 life.isDependent
-                    ? 'Practise now and career doors open later.'
+                    ? 'Practice now and career doors open later.'
                     : 'Each session costs 20 coins and a little happiness.',
                 style: GoogleFonts.quicksand(
                   color: Colors.white.withValues(alpha: 0.66),
@@ -2576,7 +2576,7 @@ class _SkillRow extends StatelessWidget {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: Text(
-              'Practise',
+              'Practice',
               style: GoogleFonts.pixelifySans(
                 fontWeight: FontWeight.w700,
                 fontSize: 12,
@@ -2637,7 +2637,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
       return (
         text: diff > 0
             ? 'You have $diff% left to allocate.'
-            : 'You are ${-diff}% over — a budget has to add up to 100%.',
+            : 'You are ${-diff}% over: a budget has to add up to 100%.',
         color: const Color(0xFFFF8FB1),
         icon: Icons.error_outline_rounded,
       );
@@ -2670,7 +2670,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
     if (_needs > 60) {
       return (
         text:
-            'Needs are eating $_needs%. That is the number to attack — '
+            'Needs are eating $_needs%. That is the number to attack: '
             'cheaper rent or more income, not smaller treats.',
         color: const Color(0xFFFFD45C),
         icon: Icons.info_outline_rounded,
@@ -2678,7 +2678,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
     }
     return (
       text:
-          'Workable. Saving $_savings% is a start — push it up when your pay '
+          'Workable. Saving $_savings% is a start: push it up when your pay '
           'does.',
       color: const Color(0xFF69C6FF),
       icon: Icons.info_outline_rounded,
@@ -3245,7 +3245,7 @@ class _ConceptsSheet extends StatelessWidget {
           const SizedBox(height: 12),
           if (concepts.isEmpty)
             Text(
-              'None yet. Keep playing — money ideas show up when your choices '
+              'None yet. Keep playing: money ideas show up when your choices '
               'run into them.',
               style: GoogleFonts.quicksand(
                 color: Colors.white.withValues(alpha: 0.7),
@@ -3686,7 +3686,7 @@ class _PowersSheetState extends State<_PowersSheet> {
                   child: Text(
                     active.isEmpty
                         ? 'You have not met any money ideas yet. They turn up '
-                              'as your choices raise them — in an event, in '
+                              'as your choices raise them: in an event, in '
                               'the town, or in a lesson.'
                         : 'Every idea you have met is already running.',
                     style: GoogleFonts.quicksand(
@@ -3716,7 +3716,7 @@ class _PowersSheetState extends State<_PowersSheet> {
               if (armable.isNotEmpty && !life.canArmPower) ...[
                 const SizedBox(height: 4),
                 Text(
-                  'Both slots are full. Wait for one to run out — choosing '
+                  'Both slots are full. Wait for one to run out: choosing '
                   'which idea to lean on is the point.',
                   style: GoogleFonts.quicksand(
                     color: AppTheme.warningOrange,

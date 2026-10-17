@@ -95,7 +95,7 @@ class PastLivesScreen extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
                     'Only your last ${LifeRecordBook.maxRecords} lives are '
-                    'kept — your best scores above are safe either way.',
+                    'kept: your best scores above are safe either way.',
                     style: GoogleFonts.quicksand(
                       color: Colors.white.withValues(alpha: 0.45),
                       fontSize: 11.5,
@@ -140,7 +140,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Finish a life — retire, or reach the end — and it gets '
+              'Finish a life (retire, or reach the end) and it gets '
               'recorded here with your best scores.',
               textAlign: TextAlign.center,
               style: GoogleFonts.quicksand(
@@ -277,7 +277,7 @@ class _BestTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 FittedLabel(
-                  r == null ? '—' : value(r),
+                  r == null ? '-' : value(r),
                   style: GoogleFonts.pixelifySans(
                     color: accent,
                     fontSize: 17,

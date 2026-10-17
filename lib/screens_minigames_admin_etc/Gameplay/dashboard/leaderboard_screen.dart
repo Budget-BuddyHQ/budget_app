@@ -132,7 +132,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                         ? 'No cloud leaderboard data is available yet, so you are seeing cached progress only.'
                         : switch (_metric) {
                             LeaderboardMetric.gold =>
-                              'Ranked by gold — every trade, quest, and case '
+                              'Ranked by gold: every trade, quest, and case '
                                   'pays off here.',
                             // Says what the score is made of, because a
                             // number nobody can account for is a number
@@ -583,7 +583,7 @@ class _EmptyLeaderboardState extends StatelessWidget {
       ),
       child: Text(
         showingFriends
-            ? 'No friends yet — add one from your Profile using their friend code, and ask them to add yours back.'
+            ? 'No friends yet: add one from your Profile using their friend code, and ask them to add yours back.'
             : 'Once more players start saving scores, rankings will appear here automatically.',
         style: const TextStyle(
           color: Colors.white,
@@ -763,7 +763,7 @@ class _PodiumPlace extends StatelessWidget {
       );
     }
 
-    final value = leader == null ? '—' : leader.headlineFor(metric);
+    final value = leader == null ? '-' : leader.headlineFor(metric);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -824,7 +824,7 @@ class _PodiumPlace extends StatelessWidget {
           // could not answer on the friends board at all, because every row
           // came back with `isCurrentUser: false`.
           leader == null
-              ? '—'
+              ? '-'
               : (leader.isCurrentUser
                     ? '${leader.username} (you)'
                     : leader.username),

@@ -361,7 +361,7 @@ class _LessonScreenState extends State<LessonScreen> {
             children: [
               Text(
                 '${unit.title.split(':').last.trim()} assumes money and choices from '
-                'an older age group — things like a salary, taxes, or a workplace '
+                'an older age group: things like a salary, taxes, or a workplace '
                 'plan. Nothing is stopping you reading it, but the numbers are a '
                 'preview of later, not a description of now.',
                 style: GoogleFonts.quicksand(
@@ -1922,7 +1922,7 @@ class _TooYoungBanner extends StatelessWidget {
                 Text(
                   'This unit is above your age group, so the examples assume '
                   'money and choices you may not have yet. You can still read '
-                  'it — just take the numbers as a preview.',
+                  'it: just take the numbers as a preview.',
                   style: TextStyle(
                     color: accent.withValues(alpha: 0.85),
                     fontSize: 11.5,
@@ -2032,7 +2032,7 @@ class _AcademyAnalyticsCard extends StatelessWidget {
               _AnalyticStat(
                 label: 'Avg accuracy',
                 value: avgAccuracy == null
-                    ? '—'
+                    ? '-'
                     : '${(avgAccuracy * 100).round()}%',
                 color: avgAccuracy == null
                     ? Colors.white54

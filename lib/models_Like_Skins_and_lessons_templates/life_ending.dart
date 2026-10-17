@@ -67,10 +67,10 @@ enum LifeEndingArchetype {
 
   String get blurb => switch (this) {
     LifeEndingArchetype.goneTooSoon =>
-      'Life had other plans — a reminder that health and safety are the '
+      'Life had other plans: a reminder that health and safety are the '
           'foundation everything else is built on.',
     LifeEndingArchetype.cautionaryTale =>
-      'The choices added up the wrong way. A rough one — but every future '
+      'The choices added up the wrong way. A rough one, but every future '
           'life starts smarter for it.',
     LifeEndingArchetype.richButLonely =>
       'The bank account is impressive. The rest of the story is quieter '
@@ -79,10 +79,10 @@ enum LifeEndingArchetype {
       'Never rich, never really worried either. Turns out that counts for '
           'a lot.',
     LifeEndingArchetype.legacyBuilder =>
-      'Wealth, health, and the people who cared about you — all of it, at '
+      'Wealth, health, and the people who cared about you: all of it, at '
           'once. The rare full set.',
     LifeEndingArchetype.comfortableRetiree =>
-      'No fireworks, no scares — just a steady climb and a good landing.',
+      'No fireworks, no scares: just a steady climb and a good landing.',
     LifeEndingArchetype.quietLife =>
       'Not every life is a headline. This one was solid, unremarkable, and '
           'entirely yours.',

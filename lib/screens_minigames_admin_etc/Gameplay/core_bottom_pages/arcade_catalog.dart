@@ -110,7 +110,7 @@ const List<ArcadeGame> _allArcadeGames = <ArcadeGame>[
     id: 'react_challenge',
     title: 'React Challenge',
     tagline: 'Snap decisions on everyday money calls.',
-    teaches: 'Quick judgement',
+    teaches: 'Quick judgment',
     accent: Color(0xFF6CB6DA),
     icon: Icons.bolt_rounded,
     difficulty: ArcadeDifficulty.easy,

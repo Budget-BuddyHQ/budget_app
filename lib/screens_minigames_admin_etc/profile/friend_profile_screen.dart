@@ -297,7 +297,7 @@ class _CompareRow extends StatelessWidget {
     if (gap == 0) return 'Dead level on literacy.';
     if (yours > theirs) {
       return "You are $gap literacy ahead. Their lessons are the same "
-          'lessons — nothing is stopping them catching up.';
+          'lessons: nothing is stopping them catching up.';
     }
     return 'They are $gap literacy ahead of you. Literacy comes from '
         'lessons and quizzes, not from gold.';

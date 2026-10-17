@@ -123,7 +123,7 @@ const List<TownMission> kTownMissions = <TownMission>[
     title: 'Prove you can spot value',
     brief:
         'Anyone can find the cheap one. Come back when you have worked out '
-        'the best *value* three times — the price on the label is not the '
+        'the best *value* three times: the price on the label is not the '
         'number that matters.',
     goal: MissionGoal.solveChallenges,
     target: 3,
@@ -162,7 +162,7 @@ const List<TownMission> kTownMissions = <TownMission>[
     title: 'The first hundred',
     brief:
         'Put a hundred coins away and leave them there. The first hundred is '
-        'the hardest — every one after it is easier, and I will tell you why '
+        'the hardest: every one after it is easier, and I will tell you why '
         'when you have done it.',
     goal: MissionGoal.saveCoins,
     target: 100,
@@ -172,7 +172,7 @@ const List<TownMission> kTownMissions = <TownMission>[
         'Here is why: that hundred now earns on its own. You will never again '
         'be starting from nothing, and that is a different thing to be.',
     onLapse:
-        'The hundred never landed. It is not a race — the offer expires, the '
+        'The hundred never landed. It is not a race: the offer expires, the '
         'idea does not.',
     concept: FinanceConcept.payYourselfFirst,
     minAge: 8,
@@ -210,7 +210,7 @@ const List<TownMission> kTownMissions = <TownMission>[
     rewardGold: 80,
     rewardLiteracy: 5,
     onSuccess:
-        'You made it with money in hand. The habit is the point — the amount '
+        'You made it with money in hand. The habit is the point: the amount '
         'grows on its own from here.',
     onLapse: 'That life is over. The next one starts at zero, same as this.',
     concept: FinanceConcept.compoundGrowth,
@@ -230,10 +230,9 @@ const List<TownMission> kTownMissions = <TownMission>[
     rewardGold: 100,
     rewardLiteracy: 6,
     onSuccess:
-        'Two hundred, kept. Everyone can earn money — keeping it is the rare '
+        'Two hundred, kept. Everyone can earn money: keeping it is the rare '
         'part, and you have just proved you can.',
-    onLapse:
-        'It got spent. That happens, and it is worth noticing what on.',
+    onLapse: 'It got spent. That happens, and it is worth noticing what on.',
     concept: FinanceConcept.emergencyFund,
     minAge: 12,
   ),
@@ -245,7 +244,7 @@ const List<TownMission> kTownMissions = <TownMission>[
     title: 'Work out five before I finish this song',
     brief:
         'Five money puzzles, anywhere in town, all correct. Nobody pays you '
-        'for turning up — they pay you for getting them right.',
+        'for turning up: they pay you for getting them right.',
     goal: MissionGoal.solveChallenges,
     target: 5,
     rewardGold: 70,
@@ -275,7 +274,7 @@ const List<TownMission> kTownMissions = <TownMission>[
     rewardLiteracy: 5,
     onSuccess:
         'Now the number on your payslip will not surprise you. That is the '
-        'whole trick — none of it is hidden, most people just never look.',
+        'whole trick: none of it is hidden, most people just never look.',
     onLapse: 'You will meet me again either way. Better to have looked.',
     concept: FinanceConcept.taxes,
     minAge: 12,

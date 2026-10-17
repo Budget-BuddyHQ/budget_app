@@ -191,7 +191,7 @@ class _CoachReportViewState extends State<CoachReportView> {
         Text(
           // Said out loud, because an app that scores you owes you this.
           'Everything here is worked out from what you have done in this app '
-          '— habits logged, lessons taken, lives played. Nothing is shared.',
+          ',  habits logged, lessons taken, lives played. Nothing is shared.',
           style: GoogleFonts.quicksand(
             color: AppTheme.textMuted,
             fontSize: 11.5,
@@ -1116,7 +1116,7 @@ class _DiagnosisCard extends StatelessWidget {
         icon: Icons.verified_rounded,
         title: 'Nothing is blocking you',
         body: mastered == 0
-            ? 'Keep going — nothing has come up as a gap so far.'
+            ? 'Keep going: nothing has come up as a gap so far.'
             : 'You have $mastered ${mastered == 1 ? 'idea' : 'ideas'} solid '
                   'and nothing underneath them is shaky.',
         chips: const <FinanceConcept>[],
@@ -1318,7 +1318,7 @@ class _FixedCard extends StatelessWidget {
                 : 'You fixed ${fixed.length} things!',
             message:
                 'The Coach is not flagging these any more. That is real '
-                'progress — nice work.',
+                'progress: nice work.',
           ),
           const SizedBox(height: 12),
           for (final f in fixed)

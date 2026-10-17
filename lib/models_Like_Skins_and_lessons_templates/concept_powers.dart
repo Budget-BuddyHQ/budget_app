@@ -160,7 +160,7 @@ const List<ConceptPower> kConceptPowers = <ConceptPower>[
   ConceptPower(
     concept: FinanceConcept.lifestyleCreep,
     name: 'Same Old Coat',
-    blurb: 'A raise stays a raise — living costs drop 20%.',
+    blurb: 'A raise stays a raise: living costs drop 20%.',
     effect: PowerEffect.cheaperLiving,
     years: 9,
     magnitude: 0.20,
@@ -208,7 +208,7 @@ const List<ConceptPower> kConceptPowers = <ConceptPower>[
   ConceptPower(
     concept: FinanceConcept.opportunityCost,
     name: 'The Other Thing',
-    blurb: 'Unexpected bills cost 40% less — you had already chosen.',
+    blurb: 'Unexpected bills cost 40% less: you had already chosen.',
     effect: PowerEffect.softenShocks,
     years: 7,
     magnitude: 0.4,
