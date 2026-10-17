@@ -19,6 +19,7 @@ import '../controllers_that_updates_stats/user_stats_controller.dart';
 import '../services_backend_and_other_services/app_sound_service.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../themes_colors/app_theme.dart';
+import '../widgets_custom_lotties/coach_and_age_popups.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key, this.initialIndex = AppTabIndex.dashboard});
@@ -183,6 +184,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
     _askedForPersonalDetails = true;
     if (controller.stats.hasCompletedPersonalDetails) {
+      _scheduleCoachNudge();
       return;
     }
 
@@ -206,6 +208,23 @@ class _MainNavigationState extends State<MainNavigation> {
     }
     setState(() {
       _currentIndex = index;
+    });
+    if (index == AppTabIndex.dashboard) _scheduleCoachNudge();
+  }
+
+  /// "Your Coach noticed something", or "You fixed something!", when there
+  /// is news, at most once a day. Never over the tour or the first-run age
+  /// question, and a moment after arriving rather than on top of the screen
+  /// appearing. See `coach_nudge.dart`.
+  void _scheduleCoachNudge() {
+    Future<void>.delayed(const Duration(milliseconds: 1200), () {
+      if (!mounted || _touring) return;
+      if (_controller?.isLoading ?? true) return;
+      if (ModalRoute.of(context)?.isCurrent == false) return;
+      maybeShowCoachNudge(
+        context,
+        onOpenCoach: () => _selectTab(AppTabIndex.coach),
+      );
     });
   }
 

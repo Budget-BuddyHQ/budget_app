@@ -330,6 +330,7 @@ class QuizResultsCard extends StatelessWidget {
     required this.correct,
     required this.total,
     required this.missed,
+    this.onAgeHelp,
     this.answers = const <bool>[],
     this.questions = const <QuizQuestion>[],
     this.reward,
@@ -340,6 +341,10 @@ class QuizResultsCard extends StatelessWidget {
   /// The unit the quiz belongs to, so a missed topic points at that unit's
   /// own lesson. See `skill_lessons.dart`.
   final String? unitId;
+
+  /// "Too easy or too hard? Change your age." Explains that questions are
+  /// picked by age group and how to change it.
+  final VoidCallback? onAgeHelp;
 
   /// Opens a lesson from a "Worth revisiting" row. Null shows the lesson's
   /// name without a button.
@@ -611,6 +616,22 @@ class QuizResultsCard extends StatelessWidget {
             const SizedBox(height: 10),
           ],
         ],
+        if (onAgeHelp != null)
+          // Always here, not only after a streak: questions are picked by
+          // age group, and somebody finding them too easy or too hard should
+          // be able to find out why and change it.
+          TextButton.icon(
+            key: const ValueKey('quiz-age-help'),
+            onPressed: onAgeHelp,
+            icon: const Icon(Icons.cake_rounded, size: 18),
+            label: Text(
+              'Too easy or too hard? Change your age',
+              style: GoogleFonts.quicksand(fontWeight: FontWeight.w800),
+            ),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF58C7FF),
+            ),
+          ),
       ],
     );
   }

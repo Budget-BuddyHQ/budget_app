@@ -22,6 +22,7 @@ import '../../../widgets_custom_lotties/confetti_burst.dart';
 import '../../../widgets_custom_lotties/game_toast.dart';
 import '../../../widgets_custom_lotties/market_visuals.dart';
 import 'quiz_widgets.dart';
+import '../../../widgets_custom_lotties/coach_and_age_popups.dart';
 
 class LessonDetailScreen extends StatefulWidget {
   const LessonDetailScreen({
@@ -230,6 +231,21 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         _correctCount / _quiz.length >= 0.7) {
       ConfettiBurst.show(context);
     }
+    // A run of near-perfect quizzes may mean the age group is set too young.
+    // Only for questions picked for that age group: somebody who chose the
+    // older test was not given easy ones.
+    if (justFinished &&
+        _quiz.isNotEmpty &&
+        !widget.quizAboveAgeConfirmed &&
+        !_takingFullTest) {
+      final correct = _correctCount;
+      final total = _quiz.length;
+      Future<void>.delayed(const Duration(milliseconds: 900), () {
+        if (mounted) {
+          recordQuizAndMaybeAskAge(context, correct: correct, total: total);
+        }
+      });
+    }
   }
 
   /// The lesson's own sections plus any [kLessonDeepDives] written for it.
@@ -377,6 +393,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                           answers: _answers,
                           questions: quiz,
                           unitId: widget.unit.id,
+                          onAgeHelp: () => showAgeHelp(context),
                           // On top of the results, not instead of them: the
                           // score is only saved by "Complete Lesson", so the
                           // player comes back here to finish.
