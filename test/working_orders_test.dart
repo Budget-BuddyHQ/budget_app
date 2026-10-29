@@ -11,8 +11,13 @@ void main() {
 
   setUp(() => SharedPreferences.setMockInitialValues(<String, Object>{}));
 
-  UserStatsController freshController() =>
-      UserStatsController(service: SupabaseService.instance);
+  // Enough gold to trade with. A new player starts with `kStartingGold`, and
+  // these tests are about orders, not about what a new player can afford.
+  UserStatsController freshController() {
+    final controller = UserStatsController(service: SupabaseService.instance);
+    controller.seedStatsForTest(controller.stats.copyWith(gold: 5000));
+    return controller;
+  }
 
   test('a buy limit below the ask rests instead of being rejected', () async {
     final controller = freshController();
@@ -44,7 +49,9 @@ void main() {
       companyName: 'Apple',
     );
 
-    final fills = await controller.settleWorkingOrders(<String, int>{'AAPL': 90});
+    final fills = await controller.settleWorkingOrders(<String, int>{
+      'AAPL': 90,
+    });
 
     expect(fills, 1);
     expect(controller.stats.workingOrders, isEmpty);
@@ -146,26 +153,29 @@ void main() {
     expect(controller.stats.holdings['stock_AAPL'], 3);
   });
 
-  test('a stale saved snapshot does not overwrite newer portfolio state', () async {
-    final service = SupabaseService.instance;
-    final userId = 'stale_state_user';
+  test(
+    'a stale saved snapshot does not overwrite newer portfolio state',
+    () async {
+      final service = SupabaseService.instance;
+      final userId = 'stale_state_user';
 
-    final freshStats = UserStats.defaults(userId).copyWith(
-      gold: 2500,
-      holdings: <String, double>{'stock_AAPL': 2.5},
-      updatedAt: DateTime.now().toUtc(),
-    );
-    await service.saveUserStats(freshStats);
+      final freshStats = UserStats.defaults(userId).copyWith(
+        gold: 2500,
+        holdings: <String, double>{'stock_AAPL': 2.5},
+        updatedAt: DateTime.now().toUtc(),
+      );
+      await service.saveUserStats(freshStats);
 
-    final staleStats = UserStats.defaults(userId).copyWith(
-      gold: 0,
-      holdings: const <String, double>{},
-      updatedAt: DateTime.now().toUtc().subtract(const Duration(days: 1)),
-    );
-    await service.saveUserStats(staleStats);
+      final staleStats = UserStats.defaults(userId).copyWith(
+        gold: 0,
+        holdings: const <String, double>{},
+        updatedAt: DateTime.now().toUtc().subtract(const Duration(days: 1)),
+      );
+      await service.saveUserStats(staleStats);
 
-    final latest = await service.loadUserStats(userId);
-    expect(latest.gold, 2500);
-    expect(latest.holdings['stock_AAPL'] ?? 0, 2.5);
-  });
+      final latest = await service.loadUserStats(userId);
+      expect(latest.gold, 2500);
+      expect(latest.holdings['stock_AAPL'] ?? 0, 2.5);
+    },
+  );
 }

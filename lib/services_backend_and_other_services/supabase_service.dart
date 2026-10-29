@@ -135,6 +135,9 @@ class LedgerTransaction {
   }
 }
 
+/// Gold a new player starts with, recorded as a "Welcome gift".
+const int kStartingGold = 500;
+
 @immutable
 class UserStats {
   const UserStats({
@@ -166,14 +169,22 @@ class UserStats {
   final Map<String, double> holdings;
   final DateTime updatedAt;
 
+  /// A brand new player's profile.
+  ///
+  /// **Reported by a tester as:** *"a brand new guest starts at LV 7 with 2000
+  /// coins, which looks like leftover test data."* It was: 850 XP, 2,000 gold,
+  /// three made-up history entries (a daily reward, a market unlock, a boss
+  /// bonus nobody had earned) and a portfolio of index funds and stocks nobody
+  /// had bought. Now a new player is level 1, with a starting gift that is
+  /// said to be one, and nothing in their history they did not do.
   factory UserStats.defaults(String userId) {
     final now = DateTime.now().toUtc();
     return UserStats(
       id: userId,
       username: 'Username3189',
-      gold: 2000,
-      xp: 850,
-      literacyPoints: 850,
+      gold: kStartingGold,
+      xp: 0,
+      literacyPoints: 0,
       personalityType: 'Spender',
       spendingHabits: const <String, dynamic>{
         'risk_tolerance': 'balanced',
@@ -185,32 +196,16 @@ class UserStats {
       },
       transactions: <LedgerTransaction>[
         LedgerTransaction(
-          id: 'txn_reward_daily',
-          title: 'Daily Challenge Reward',
-          description: 'Pocketed bonus gold from a clean budget run.',
-          amount: 120,
-          createdAt: now.subtract(const Duration(minutes: 6)),
-          category: 'challenge',
-        ),
-        LedgerTransaction(
-          id: 'txn_market_unlock',
-          title: 'Market Unlock',
-          description: 'Unlocked the market district tools.',
-          amount: -40,
-          createdAt: now.subtract(const Duration(days: 1, hours: 2)),
-          category: 'unlock',
-        ),
-        LedgerTransaction(
-          id: 'txn_boss_bonus',
-          title: 'Boss Battle Bonus',
-          description: 'Perfect streak reward from yesterday.',
-          amount: 200,
-          createdAt: now.subtract(const Duration(days: 1, hours: 5)),
-          category: 'boss_battle',
+          id: 'txn_welcome_gift',
+          title: 'Welcome gift',
+          description: 'Gold to start with. Spend it, save it or invest it.',
+          amount: kStartingGold,
+          createdAt: now,
+          category: 'welcome',
         ),
       ],
-      portfolioHistory: const <double>[0.24, 0.3, 0.36, 0.41, 0.48, 0.55, 0.61],
-      holdings: const <String, double>{'indexFunds': 3, 'stocks': 2},
+      portfolioHistory: const <double>[],
+      holdings: const <String, double>{},
       updatedAt: now,
     );
   }
@@ -236,19 +231,9 @@ class UserStats {
         'username': (json['username'] ?? 'Username3189').toString(),
         ...spendingHabits,
       },
-      transactions: transactions.isEmpty
-          ? UserStats.defaults(
-              (json['id'] ?? 'user_123').toString(),
-            ).transactions
-          : transactions,
-      portfolioHistory: portfolioHistory.isEmpty
-          ? UserStats.defaults(
-              (json['id'] ?? 'user_123').toString(),
-            ).portfolioHistory
-          : portfolioHistory,
-      holdings: holdings.isEmpty
-          ? UserStats.defaults((json['id'] ?? 'user_123').toString()).holdings
-          : holdings,
+      transactions: transactions,
+      portfolioHistory: portfolioHistory,
+      holdings: holdings,
       updatedAt: _readDate(json['updated_at']) ?? DateTime.now().toUtc(),
     );
   }

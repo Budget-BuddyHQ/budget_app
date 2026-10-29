@@ -54,6 +54,47 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   bool _isCompleted = false;
   bool _isSaving = false;
 
+  /// Whether the reading has been scrolled to its end.
+  ///
+  /// **Reported by a tester as:** *"Complete Lesson works without scrolling
+  /// through the lesson, so it's easy to tick off without reading it."* A
+  /// reading lesson now unlocks its button at the bottom of the page. A
+  /// lesson short enough to fit on screen counts as read straight away, and a
+  /// lesson finished before is never locked again.
+  bool _readToEnd = false;
+  final ScrollController _scroll = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_checkReadToEnd);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkReadToEnd());
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _checkReadToEnd() {
+    if (_readToEnd || !mounted || !_scroll.hasClients) return;
+    final position = _scroll.position;
+    if (position.pixels >= position.maxScrollExtent - 48) {
+      setState(() => _readToEnd = true);
+    }
+  }
+
+  /// A reading lesson the player has not reached the end of, and has never
+  /// finished before.
+  bool _mustReadFirst(List<QuizQuestion> quiz) =>
+      quiz.isEmpty &&
+      !_readToEnd &&
+      !_isCompleted &&
+      !context.read<UserStatsController>().stats.completedLessons.contains(
+        widget.lesson.id,
+      );
+
   /// Whether finishing this time paid the rewards, i.e. it was the first.
   /// Null until saved.
   bool? _rewardedFirstTime;
@@ -311,6 +352,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
               children: [
                 Expanded(
                   child: ListView(
+                    controller: _scroll,
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
                     children: [
                       Text(
@@ -510,11 +552,15 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       );
     }
     if (quiz.isEmpty || inQuizResults) {
+      final locked = _mustReadFirst(quiz);
       return FilledButton(
-        onPressed: () => _completeLesson(quiz: quiz),
+        key: const ValueKey('lesson-complete'),
+        onPressed: locked ? null : () => _completeLesson(quiz: quiz),
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFF3F8F1F),
           foregroundColor: Colors.white,
+          disabledBackgroundColor: const Color(0xFF26363D),
+          disabledForegroundColor: Colors.white70,
           padding: const EdgeInsets.symmetric(vertical: 18),
         ),
         child: Row(
@@ -531,15 +577,21 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
               ),
               const SizedBox(width: 10),
             ],
-            Text(
-              _isCompleted
-                  ? 'Return to Units'
-                  : _isSaving
-                  ? 'Saving Progress...'
-                  : 'Complete Lesson',
-              style: GoogleFonts.pixelifySans(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
+            Flexible(
+              child: Text(
+                _isCompleted
+                    ? 'Return to Units'
+                    : _isSaving
+                    ? 'Saving Progress...'
+                    : locked
+                    ? 'Scroll to the end to finish'
+                    : 'Complete Lesson',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.pixelifySans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
               ),
             ),
           ],

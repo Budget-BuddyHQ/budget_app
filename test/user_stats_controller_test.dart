@@ -46,19 +46,25 @@ void main() {
     await SupabaseService.instance.setLocalGuestMode(false);
   });
 
-  test('a brand-new device with nothing cached still gets the starter profile', () async {
-    final controller = UserStatsController(service: SupabaseService.instance);
-    await controller.initialize();
+  test(
+    'a brand-new device with nothing cached still gets the starter profile',
+    () async {
+      final controller = UserStatsController(service: SupabaseService.instance);
+      await controller.initialize();
 
-    expect(controller.stats.gold, 2000);
-    expect(controller.stats.xp, 850);
-  });
+      expect(controller.stats.gold, kStartingGold);
+      expect(controller.stats.xp, 0);
+    },
+  );
 
   test('local-only progress survives a restart instead of resetting', () async {
     await prefs.setString(
-      '$cacheKeyPrefix' 'user_123',
+      '$cacheKeyPrefix'
+      'user_123',
       jsonEncode(
-        UserStats.defaults('user_123').copyWith(gold: 4321, xp: 77).toStorageMap(),
+        UserStats.defaults(
+          'user_123',
+        ).copyWith(gold: 4321, xp: 77).toStorageMap(),
       ),
     );
 
@@ -68,7 +74,8 @@ void main() {
     expect(
       controller.stats.gold,
       4321,
-      reason: 'a cold start used to always overwrite this with the canned '
+      reason:
+          'a cold start used to always overwrite this with the canned '
           '2000/850 starter profile, even when real progress was cached',
     );
     expect(controller.stats.xp, 77);
@@ -85,33 +92,45 @@ void main() {
     expect(prefs.getBool(guestModeKey), isTrue);
   });
 
-  test('eraseGuestDataAndRestart clears the cache and the guest flag', () async {
-    final controller = UserStatsController(service: SupabaseService.instance);
-    await controller.initialize();
-    await controller.continueAsGuest();
+  test(
+    'eraseGuestDataAndRestart clears the cache and the guest flag',
+    () async {
+      final controller = UserStatsController(service: SupabaseService.instance);
+      await controller.initialize();
+      await controller.continueAsGuest();
 
-    await controller.updateOnboardingProfile(
-      personalityType: 'Saver',
-      spendingHabits: const <String, dynamic>{},
-    );
-    expect(controller.stats.personalityType, 'Saver');
+      await controller.updateOnboardingProfile(
+        personalityType: 'Saver',
+        spendingHabits: const <String, dynamic>{},
+      );
+      expect(controller.stats.personalityType, 'Saver');
 
-    await controller.eraseGuestDataAndRestart();
+      await controller.eraseGuestDataAndRestart();
 
-    expect(controller.isGuest, isFalse);
-    expect(controller.stats.gold, 2000, reason: 'back to the starter profile');
+      expect(controller.isGuest, isFalse);
+      expect(
+        controller.stats.gold,
+        kStartingGold,
+        reason: 'back to the starter profile',
+      );
 
-    expect(prefs.getBool(guestModeKey), isFalse);
-    expect(prefs.getString('$cacheKeyPrefix' 'user_123'), isNull);
-  });
+      expect(prefs.getBool(guestModeKey), isFalse);
+      expect(
+        prefs.getString(
+          '$cacheKeyPrefix'
+          'user_123',
+        ),
+        isNull,
+      );
+    },
+  );
 
   test(
     'migrateGuestStatsToUser carries the guest\'s progress onto the real id',
     () async {
-      final guestStats = UserStats.defaults('user_123').copyWith(
-        gold: 9999,
-        xp: 42,
-      );
+      final guestStats = UserStats.defaults(
+        'user_123',
+      ).copyWith(gold: 9999, xp: 42);
       const fakeUser = User(
         id: '11111111-2222-3333-4444-555555555555',
         appMetadata: <String, dynamic>{},
@@ -121,10 +140,8 @@ void main() {
         email: 'player@example.com',
       );
 
-      final provisioned = await SupabaseService.instance.migrateGuestStatsToUser(
-        guestStats: guestStats,
-        user: fakeUser,
-      );
+      final provisioned = await SupabaseService.instance
+          .migrateGuestStatsToUser(guestStats: guestStats, user: fakeUser);
 
       expect(provisioned.stats.id, fakeUser.id);
       expect(provisioned.stats.gold, 9999);
@@ -155,16 +172,18 @@ void main() {
       'lib/services_backend_and_other_services/supabase_service.dart',
     ).readAsStringSync();
 
-    test('saveUserStats has the same isRealUserId guard loadUserStats does', () {
-      expect(
-        source.contains(
-          '!_isSupabaseConnected || !isRealUserId(stats.id)',
-        ),
-        isTrue,
-        reason: 'without this, a guest\'s local progress tries to sync to '
-            'Supabase on every save and always fails with '
-            '22P02 invalid input syntax for type uuid',
-      );
-    });
+    test(
+      'saveUserStats has the same isRealUserId guard loadUserStats does',
+      () {
+        expect(
+          source.contains('!_isSupabaseConnected || !isRealUserId(stats.id)'),
+          isTrue,
+          reason:
+              'without this, a guest\'s local progress tries to sync to '
+              'Supabase on every save and always fails with '
+              '22P02 invalid input syntax for type uuid',
+        );
+      },
+    );
   });
 }

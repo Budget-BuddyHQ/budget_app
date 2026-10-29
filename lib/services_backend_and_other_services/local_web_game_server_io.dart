@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -49,13 +48,14 @@ class LocalWebGameServer {
       return;
     }
 
-    final manifestRaw = await rootBundle.loadString('AssetManifest.json');
-    final manifestJson = jsonDecode(manifestRaw);
-    final manifest = manifestJson is Map<String, dynamic>
-        ? manifestJson
-        : <String, dynamic>{};
+    // Through Flutter's own manifest reader, not the raw file. Flutter no
+    // longer ships `AssetManifest.json` in phone builds (only the binary
+    // `AssetManifest.bin`), so reading the JSON by name failed on every
+    // Android device with "Unable to load asset: AssetManifest.json" and the
+    // daily budget question opened on a black error screen.
+    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
 
-    for (final assetPath in manifest.keys) {
+    for (final assetPath in manifest.listAssets()) {
       if (!assetPath.startsWith(assetRoot)) {
         continue;
       }

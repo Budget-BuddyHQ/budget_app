@@ -343,20 +343,25 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
   }
 
   Future<bool> _confirmExit() async {
+    // Nothing is running to lose when the challenge failed to load or never
+    // started, so Back just goes back. It used to ask "Exit battle?" over an
+    // error screen.
+    if (_loadError != null || _webViewController == null) return true;
     return await showDialog<bool>(
           context: context,
           builder: (dialogContext) {
             return AlertDialog(
               backgroundColor: AppTheme.panelStrong,
               title: Text(
-                'Exit battle?',
+                'Leave the challenge?',
                 style: GoogleFonts.pixelifySans(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               content: const Text(
-                'Leaving now will close the active Budget Battle session.',
+                'Leaving now ends this challenge. You can start it again '
+                "from today's plan.",
                 style: TextStyle(color: Colors.white70),
               ),
               actions: [
@@ -366,7 +371,7 @@ class _ReactChallengeScreenState extends State<ReactChallengeScreen>
                 ),
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(true),
-                  child: const Text('Exit'),
+                  child: const Text('Leave'),
                 ),
               ],
             );
