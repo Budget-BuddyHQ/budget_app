@@ -522,7 +522,7 @@ class QuizResultsCard extends StatelessWidget {
                                         ? Icons.check_rounded
                                         : Icons.close_rounded,
                                     size: 16,
-                                    color: const Color(0xFF0B1418),
+                                    color: const Color(0xFF09150E),
                                   ),
                                 ),
                             ],

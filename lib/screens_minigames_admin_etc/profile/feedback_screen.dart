@@ -108,7 +108,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           ),
           Positioned.fill(
             child: Container(
-              color: const Color(0xFF111B20).withValues(alpha: 0.72),
+              color: const Color(0xFF0C1D13).withValues(alpha: 0.72),
             ),
           ),
           SafeArea(

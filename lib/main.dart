@@ -24,6 +24,7 @@ import 'services_backend_and_other_services/market_data_service.dart';
 import 'services_backend_and_other_services/supabase_service.dart';
 import 'themes_colors/app_theme.dart';
 import 'widgets_custom_lotties/orientation_scope.dart';
+import 'widgets_custom_lotties/phone_width_frame.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -99,6 +100,9 @@ class MyApp extends StatelessWidget {
       title: 'Budget Buddy - Financial Literacy Gaming',
       theme: AppTheme.getLightTheme(),
       debugShowCheckedModeBanner: false,
+      // Phone-width column on a wide screen. See `PhoneWidthFrame`.
+      builder: (context, child) =>
+          PhoneWidthFrame(child: child ?? const SizedBox.shrink()),
       home: const _AppBootstrapGate(),
       routes: {
         '/welcome': (context) => const WelcomeScreen(),

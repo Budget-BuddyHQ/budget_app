@@ -151,7 +151,7 @@ class _UnitLessonBlock extends StatelessWidget {
       LessonStatus.completed => const _LessonPalette(
         fill: Color(0xFF9BE870),
         border: Color(0xFF2A7D52),
-        foreground: Color(0xFF172328),
+        foreground: Color(0xFF12251A),
       ),
       LessonStatus.available => const _LessonPalette(
         fill: Color(0xFFFFD45C),

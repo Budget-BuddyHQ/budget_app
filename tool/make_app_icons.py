@@ -23,10 +23,11 @@ from PIL import Image, ImageDraw
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOGO = os.path.join(ROOT, 'assets', 'images',
                     'budgetbuddy_official_logo-removebg-preview.png')
-# Warm cream: the green turtle reads on it, and it is not the white of every
-# other app on the shelf.
-BG = (255, 246, 222)
-BG_HEX = '#FFF6DE'
+# Pale sage, chosen by the team: the brand green, light enough that the
+# green turtle and the gold coin stand out on it at the 48px launcher size.
+# The darker sages (#9CAF88, #7FB069) made the turtle muddy.
+BG = (200, 218, 186)
+BG_HEX = '#C8DABA'
 
 
 def turtle():

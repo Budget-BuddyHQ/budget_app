@@ -515,7 +515,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF131F24),
+                      color: const Color(0xFF0E2116),
                       border: Border(
                         top: BorderSide(
                           color: Colors.white.withValues(alpha: 0.08),
@@ -559,7 +559,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFF3F8F1F),
           foregroundColor: Colors.white,
-          disabledBackgroundColor: const Color(0xFF26363D),
+          disabledBackgroundColor: const Color(0xFF1E3929),
           disabledForegroundColor: Colors.white70,
           padding: const EdgeInsets.symmetric(vertical: 18),
         ),
@@ -653,7 +653,7 @@ class _OlderQuestionsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF243440),
+        color: const Color(0xFF1A3827),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFFFB84D), width: 1.5),
         boxShadow: AppTheme.ledgeShadow(const Color(0xFFFFB84D)),

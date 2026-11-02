@@ -506,7 +506,7 @@ class _CoinRushState extends State<_CoinRush>
           child: Container(
             height: _areaHeight,
             width: double.infinity,
-            color: const Color(0xFF18252B),
+            color: const Color(0xFF12271B),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return Stack(

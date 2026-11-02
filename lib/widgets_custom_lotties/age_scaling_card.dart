@@ -68,7 +68,7 @@ class _AgeScalingCardState extends State<AgeScalingCard> {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1C2A31).withValues(alpha: 0.55),
+        color: const Color(0xFF152C1F).withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: const Color(0xFF6CD34A).withValues(alpha: 0.3),

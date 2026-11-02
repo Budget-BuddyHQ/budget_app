@@ -425,7 +425,7 @@ const List<AvatarSkin> budgetBuddySkins = <AvatarSkin>[
     name: 'Slate Investor',
     variantId: 'slate_investor',
     rarity: SkinRarity.rare,
-    accent: Color(0xFF5C6B7A),
+    accent: Color(0xFF4A715A),
     blurb: 'Long horizons, steady hands.',
   ),
   AvatarSkin.villager(

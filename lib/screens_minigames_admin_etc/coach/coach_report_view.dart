@@ -190,8 +190,8 @@ class _CoachReportViewState extends State<CoachReportView> {
         const SizedBox(height: 6),
         Text(
           // Said out loud, because an app that scores you owes you this.
-          'Everything here is worked out from what you have done in this app '
-          ',  habits logged, lessons taken, lives played. Nothing is shared.',
+          'Everything here is worked out from what you have done in this app: '
+          'habits logged, lessons taken, lives played. Nothing is shared.',
           style: GoogleFonts.quicksand(
             color: AppTheme.textMuted,
             fontSize: 11.5,
@@ -280,7 +280,7 @@ class _NextStepCard extends StatelessWidget {
                 key: const ValueKey('coach-next-step-lesson'),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppTheme.greenPrimary,
-                  foregroundColor: const Color(0xFF0B1418),
+                  foregroundColor: const Color(0xFF09150E),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 12,

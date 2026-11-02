@@ -1045,7 +1045,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                                 _isLogin
                                     ? Icons.login_rounded
                                     : Icons.auto_awesome_rounded,
-                                color: const Color(0xFF2B4256),
+                                color: const Color(0xFF1D472F),
                                 size: 18,
                               ),
                               style: const CustomButtonStyle.primary(),
@@ -1102,7 +1102,7 @@ class _AuthHero extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(18, isCompact ? 18 : 24, 18, 18),
       decoration: BoxDecoration(
-        color: const Color(0xFF243440),
+        color: const Color(0xFF1A3827),
         borderRadius: BorderRadius.circular(32),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.16),
@@ -1131,7 +1131,7 @@ class _AuthHero extends StatelessWidget {
                 errorBuilder: (_, _, _) => const Icon(
                   Icons.account_balance_wallet_rounded,
                   size: 42,
-                  color: Color(0xFF1C2B32),
+                  color: Color(0xFF152D1F),
                 ),
               ),
             ),
@@ -1318,7 +1318,7 @@ class _ModeSwitchChip extends StatelessWidget {
             label,
             textAlign: TextAlign.center,
             style: GoogleFonts.quicksand(
-              color: active ? const Color(0xFF1C2B32) : Colors.white70,
+              color: active ? const Color(0xFF152D1F) : Colors.white70,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -1468,7 +1468,7 @@ class _TermsCard extends StatelessWidget {
           Checkbox(
             value: accepted,
             activeColor: const Color(0xFF9BE870),
-            checkColor: const Color(0xFF1C2B32),
+            checkColor: const Color(0xFF152D1F),
             side: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
             onChanged: (value) => onChanged(value ?? false),
           ),

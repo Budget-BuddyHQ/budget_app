@@ -137,7 +137,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF243440),
+        backgroundColor: const Color(0xFF1A3827),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           '${skin.name} is locked',
@@ -491,7 +491,7 @@ class _BodyChip extends StatelessWidget {
           // whatever sat behind it, and on the player row that was light
           // enough to drop the green label to 2.7:1.
           color: selected
-              ? const Color(0xFF22383F)
+              ? const Color(0xFF1A3B28)
               : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
@@ -1018,7 +1018,7 @@ class _SkinTile extends StatelessWidget {
                                 BlendMode.srcOver,
                               )
                             : ColorFilter.mode(
-                                const Color(0xFF111B20).withValues(alpha: 0.82),
+                                const Color(0xFF0C1D13).withValues(alpha: 0.82),
                                 BlendMode.srcATop,
                               ),
                         // The grid tile's size varies with screen width, so
@@ -1257,7 +1257,7 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
                   child: Container(
                     padding: EdgeInsets.all(compact ? 16 : 20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF111B20).withValues(alpha: 0.96),
+                      color: const Color(0xFF0C1D13).withValues(alpha: 0.96),
                       borderRadius: BorderRadius.circular(28),
                       border: Border.all(
                         color: preview.accent.withValues(alpha: 0.34),

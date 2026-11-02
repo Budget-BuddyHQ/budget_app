@@ -916,7 +916,7 @@ class _BonusQuestionDialogState extends State<_BonusQuestionDialog> {
                       key: const ValueKey('cascade-bonus-continue'),
                       style: FilledButton.styleFrom(
                         backgroundColor: AppTheme.greenPrimary,
-                        foregroundColor: const Color(0xFF0B1418),
+                        foregroundColor: const Color(0xFF09150E),
                       ),
                       onPressed: () => Navigator.of(context).pop(_right),
                       child: Text(

@@ -165,7 +165,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                           width: double.infinity,
                           padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF131F24),
+                            color: const Color(0xFF0E2116),
                             border: Border(
                               top: BorderSide(
                                 color: Colors.white.withValues(alpha: 0.08),

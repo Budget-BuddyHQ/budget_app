@@ -17,8 +17,8 @@ class AppTheme {
   //
   // The names are kept so the ~400 call sites did not churn; read
   // `deepForest` as "page" and `panel` as "card".
-  static const Color deepForest = Color(0xFF131F24); // page
-  static const Color darkForest = Color(0xFF1A2830); // page, raised
+  static const Color deepForest = Color(0xFF0E2116); // page
+  static const Color darkForest = Color(0xFF132A1D); // page, raised
   static const Color limeAccent = Color(0xFFB8F28C);
   static const Color greenPrimary = Color(0xFF6CD34A); // act
   static const Color lightGreen = Color(0xFFEFF9E8);
@@ -26,20 +26,20 @@ class AppTheme {
   static const Color successGreen = Color(0xFF46A302);
   static const Color warningOrange = Color(0xFFFFC800); // money, attention
   static const Color errorRed = Color(0xFFFF6B6B); // loss
-  static const Color panel = Color(0xFF202F36); // card
-  static const Color panelStrong = Color(0xFF2A3C45); // raised card
+  static const Color panel = Color(0xFF183223); // card
+  static const Color panelStrong = Color(0xFF203F2D); // raised card
 
   /// The 2px outline game apps put around cards and buttons. A visible edge
   /// is what makes a flat surface read as an object instead of a smudge.
-  static const Color outline = Color(0xFF37464F);
+  static const Color outline = Color(0xFF2C4A39);
 
   /// Inside a card: a chart well, an inset field.
-  static const Color inset = Color(0xFF18252B);
+  static const Color inset = Color(0xFF12271B);
 
   static const Color textPrimary = Color(0xFFF1F7FB);
   // Every secondary label uses this, on cards up to [panelStrong] and on
   // accent-tinted cards, so it is kept light: 7.6:1 on [panel].
-  static const Color textMuted = Color(0xFFB3C4CD);
+  static const Color textMuted = Color(0xFFC3D3C6);
 
   // Spacing constants
   static const double spacingXSmall = 4.0;
@@ -173,7 +173,7 @@ class AppTheme {
   /// page's darkest green, so a mint card sits on a dark mint ledge rather
   /// than on grey.
   static Color ledgeColor(Color accent) =>
-      Color.lerp(accent, const Color(0xFF0B1418), 0.72)!;
+      Color.lerp(accent, const Color(0xFF09150E), 0.72)!;
 
   /// A hard ledge under a card or button: no blur, straight down.
   ///

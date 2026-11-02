@@ -134,7 +134,7 @@ class _GameToastBannerState extends State<_GameToastBanner>
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF202F36),
+                      color: const Color(0xFF183223),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: widget.accent.withValues(alpha: 0.5),

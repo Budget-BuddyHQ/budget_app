@@ -214,7 +214,7 @@ class _AchievementsBanner extends StatelessWidget {
                       color: a.color,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(a.icon, color: const Color(0xFF0B1418)),
+                    child: Icon(a.icon, color: const Color(0xFF09150E)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -402,7 +402,7 @@ class _LifeRecapCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF131F24),
+        color: const Color(0xFF0E2116),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -520,7 +520,7 @@ class _RelationshipsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF131F24),
+        color: const Color(0xFF0E2116),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),

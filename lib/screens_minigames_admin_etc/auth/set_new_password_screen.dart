@@ -95,7 +95,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
           ),
           Positioned.fill(
             child: Container(
-              color: const Color(0xFF111B20).withValues(alpha: 0.82),
+              color: const Color(0xFF0C1D13).withValues(alpha: 0.82),
             ),
           ),
           SafeArea(

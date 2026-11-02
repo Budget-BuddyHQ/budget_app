@@ -24,6 +24,8 @@ import '../../../widgets_custom_lotties/reef_scene.dart';
 import '../../../widgets_custom_lotties/custom_bottom_nav.dart';
 import 'leaderboard_screen.dart';
 import '../../../widgets_custom_lotties/fitted_label.dart';
+import '../../../widgets_custom_lotties/start_here_card.dart';
+import '../../coach/coach_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -141,6 +143,21 @@ class HomeScreen extends StatelessWidget {
                           // Profile should still be reminded before they lose
                           // real progress.
                           const CloudSyncBanner(compact: true),
+                          // Lesson, then a Life, then the Coach: the one path
+                          // that shows how the parts fit. Gone once walked.
+                          StartHereCard(
+                            onLesson: () => onNavSelected != null
+                                ? onNavSelected!(AppTabIndex.academy)
+                                : Navigator.of(context).pushNamed('/lessons'),
+                            onLife: () => _openAdventureWorld(context),
+                            onCoach: () => onNavSelected != null
+                                ? onNavSelected!(AppTabIndex.coach)
+                                : Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => const CoachScreen(),
+                                    ),
+                                  ),
+                          ),
                           _TodayCard(onOpen: () => _openDaily(context)),
                           // The coach, on the screen everybody lands on.
                           //
@@ -277,7 +294,7 @@ class _TodayCard extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: AppTheme.getPuffyDecoration(
           accent: accent,
-          fillColor: const Color(0xFF202F36),
+          fillColor: const Color(0xFF183223),
           restAlpha: 0.18,
         ),
         child: Column(
@@ -432,7 +449,7 @@ class _NextQuestRow extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFF18252B),
+            color: const Color(0xFF12271B),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
               color: const Color(0xFFFFD45C).withValues(alpha: 0.30),
@@ -1431,9 +1448,9 @@ class _SolidPanel extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: const Color(0xFF202F36),
+        color: const Color(0xFF183223),
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: const Color(0xFF37464F), width: 1.5),
+        border: Border.all(color: const Color(0xFF2C4A39), width: 1.5),
         boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary),
       ),
       child: child,

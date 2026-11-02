@@ -239,7 +239,7 @@ void main() {
       expect(find.byType(Image), findsWidgets);
       // The pill reads dark on light, not dark green on dark green.
       final done = tester.widget<Text>(find.text('Done').first);
-      expect(done.style?.color, const Color(0xFF172328));
+      expect(done.style?.color, const Color(0xFF12251A));
     });
   });
 }

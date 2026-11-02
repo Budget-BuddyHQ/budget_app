@@ -5,6 +5,7 @@ import '../../navigation_tools_and_animation/app_tab_index.dart';
 import '../../themes_colors/app_theme.dart';
 import '../../widgets_custom_lotties/custom_bottom_nav.dart';
 import 'coach_report_view.dart';
+import '../../widgets_custom_lotties/start_here_card.dart';
 
 /// The Coach, as a destination of its own.
 ///
@@ -48,6 +49,11 @@ class CoachScreen extends StatelessWidget {
     // route there is no pill above to duplicate and no way back without it,
     // so the real AppBar returns.
     final asTab = onNavSelected != null;
+    // Opened on its own (from a pop-up or the Coach card): somebody is
+    // looking at it, so step three of "Start here" is done. As a tab it is
+    // built at startup whether or not anyone looks, so the tab switch in
+    // `MainNavigation` counts that one instead.
+    if (!asTab) StartHereProgress.instance.mark(StartStep.coach);
     return Scaffold(
       backgroundColor: AppTheme.deepForest,
       appBar: asTab

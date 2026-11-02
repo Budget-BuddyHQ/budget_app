@@ -71,7 +71,7 @@ class BuddySaysCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Color.alphaBlend(
           _accent.withValues(alpha: 0.10),
-          const Color(0xFF202F36),
+          const Color(0xFF183223),
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _accent.withValues(alpha: 0.5), width: 1.5),
@@ -267,7 +267,7 @@ class _SlicePainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = stroke
-        ..color = const Color(0xFF18252B),
+        ..color = const Color(0xFF12271B),
     );
     if (fraction <= 0) return;
     canvas.drawArc(
@@ -336,7 +336,7 @@ class _SplitPainter extends CustomPainter {
       ..strokeWidth = stroke
       ..color = c;
     if (!any) {
-      canvas.drawArc(rect, 0, math.pi * 2, false, p(const Color(0xFF18252B)));
+      canvas.drawArc(rect, 0, math.pi * 2, false, p(const Color(0xFF12271B)));
       return;
     }
     final upSweep = math.pi * 2 * fraction;

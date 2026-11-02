@@ -65,7 +65,7 @@ class _GuestTermsSheetContent extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E2C33),
+            color: const Color(0xFF162F21),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
@@ -116,7 +116,7 @@ class _GuestTermsSheetContent extends StatelessWidget {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF3CCB74),
-                    foregroundColor: const Color(0xFF131F24),
+                    foregroundColor: const Color(0xFF0E2116),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),

@@ -807,7 +807,7 @@ class _UnitQuickChangerBar extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 72),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: const Color(0xFF111B20).withValues(alpha: 0.74),
+        color: const Color(0xFF0C1D13).withValues(alpha: 0.74),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: const Color(0xFF9BE870).withValues(alpha: 0.22),
@@ -1028,7 +1028,7 @@ class _UnitJumpChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected
                 ? accent
-                : Color.lerp(const Color(0xFF1E2C33), accent, 0.12)!,
+                : Color.lerp(const Color(0xFF162F21), accent, 0.12)!,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected
@@ -1140,7 +1140,7 @@ class _HubHeader extends StatelessWidget {
       ),
       padding: EdgeInsets.all(compact ? 18 : 24),
       decoration: BoxDecoration(
-        color: const Color(0xFF27394A),
+        color: const Color(0xFF1A3E29),
         borderRadius: BorderRadius.circular(compact ? 26 : 30),
         border: Border.all(color: Colors.white12, width: 1.5),
         boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary),
@@ -1222,7 +1222,7 @@ class _HubHeader extends StatelessWidget {
                         onPressed: onOpenNext,
                         style: FilledButton.styleFrom(
                           backgroundColor: const Color(0xFFFFD45C),
-                          foregroundColor: const Color(0xFF202F36),
+                          foregroundColor: const Color(0xFF183223),
                         ),
                         icon: const Icon(Icons.play_arrow_rounded),
                         label: Text(
@@ -1342,7 +1342,7 @@ class _NextLessonFocusCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF243440),
+        color: const Color(0xFF1A3827),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: const Color(0x444BD2A3), width: 1.5),
         boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary),
@@ -1392,7 +1392,7 @@ class _NextLessonFocusCard extends StatelessWidget {
             onPressed: onOpenNext,
             style: FilledButton.styleFrom(
               backgroundColor: isComplete
-                  ? const Color(0xFF33444E)
+                  ? const Color(0xFF284835)
                   : const Color(0xFF3F8F1F),
               foregroundColor: isComplete
                   ? const Color(0xFFC3D8CE)
@@ -1554,7 +1554,7 @@ class _MasteryLegend extends StatelessWidget {
       margin: EdgeInsets.symmetric(horizontal: compact ? 0 : 20),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1F2D34),
+        color: const Color(0xFF173022),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: const Color(0xFF6CD34A)),
       ),
@@ -1640,7 +1640,7 @@ class _UnitCard extends StatelessWidget {
         // *above* the backdrop tonally instead of merging into it — the main
         // reason the tab read as one dense block of green. One flat color on
         // a ledge, not a fade with a glow round it.
-        color: Color.lerp(const Color(0xFF2A3C45), accent, 0.16),
+        color: Color.lerp(const Color(0xFF203F2D), accent, 0.16),
         borderRadius: BorderRadius.circular(32),
         border: Border.all(color: accent.withValues(alpha: 0.42), width: 1.5),
         boxShadow: AppTheme.ledgeShadow(accent),
@@ -1994,7 +1994,7 @@ class _AcademyAnalyticsCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(compact ? 16 : 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF111B20).withValues(alpha: 0.55),
+        color: const Color(0xFF0C1D13).withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(26),
         border: Border.all(color: const Color(0x554BD2A3)),
       ),

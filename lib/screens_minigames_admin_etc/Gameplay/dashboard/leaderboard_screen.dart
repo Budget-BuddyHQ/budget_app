@@ -744,7 +744,7 @@ class _PodiumPlace extends StatelessWidget {
           height: avatarSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF2A3C45),
+            color: const Color(0xFF203F2D),
             border: Border.all(color: medalColor, width: 3),
           ),
         );
@@ -801,12 +801,12 @@ class _PodiumPlace extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: medalColor,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: const Color(0xFF18252B), width: 2),
+                  border: Border.all(color: const Color(0xFF12271B), width: 2),
                 ),
                 child: Text(
                   '#$rank',
                   style: AppTheme.numeric(
-                    color: const Color(0xFF18252B),
+                    color: const Color(0xFF12271B),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),

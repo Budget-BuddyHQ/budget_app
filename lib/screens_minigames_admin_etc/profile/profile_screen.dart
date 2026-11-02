@@ -677,7 +677,7 @@ class _ProfileHero extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: const Color(0xFF22323B),
+        color: const Color(0xFF193525),
         borderRadius: BorderRadius.circular(32),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.12),
@@ -703,7 +703,7 @@ class _ProfileHero extends StatelessWidget {
                   child: DecoratedBox(
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xFF111B20),
+                      color: Color(0xFF0C1D13),
                     ),
                     child: ClipOval(
                       child: avatarUrl.isEmpty
@@ -730,7 +730,7 @@ class _ProfileHero extends StatelessWidget {
                       color: const Color(0xFF6CD34A),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: const Color(0xFF111B20),
+                        color: const Color(0xFF0C1D13),
                         width: 3,
                       ),
                     ),

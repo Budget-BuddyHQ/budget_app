@@ -209,7 +209,7 @@ class CustomButtonStyle {
 
   const CustomButtonStyle.secondary({
     this.gradient,
-    this.backgroundColor = const Color(0xFF1E2D34),
+    this.backgroundColor = const Color(0xFF163021),
     this.textColor = const Color(0xFFB7F7D7),
     this.borderRadius = AppTheme.radiusLarge,
     this.border = const Border.fromBorderSide(
@@ -223,7 +223,7 @@ class CustomButtonStyle {
 
   const CustomButtonStyle.tertiary({
     this.gradient,
-    this.backgroundColor = const Color(0xFF1C2A31),
+    this.backgroundColor = const Color(0xFF152C1F),
     this.textColor = Colors.white,
     this.borderRadius = AppTheme.radiusLarge,
     this.border = const Border.fromBorderSide(

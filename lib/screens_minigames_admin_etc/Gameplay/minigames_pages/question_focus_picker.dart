@@ -177,7 +177,7 @@ class _Choice extends StatelessWidget {
                       color: color,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(icon, color: const Color(0xFF0B1418)),
+                    child: Icon(icon, color: const Color(0xFF09150E)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

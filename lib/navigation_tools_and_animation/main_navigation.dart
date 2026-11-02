@@ -20,6 +20,7 @@ import '../services_backend_and_other_services/app_sound_service.dart';
 import '../../../navigation_tools_and_animation/app_tab_index.dart';
 import '../themes_colors/app_theme.dart';
 import '../widgets_custom_lotties/coach_and_age_popups.dart';
+import '../widgets_custom_lotties/start_here_card.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key, this.initialIndex = AppTabIndex.dashboard});
@@ -210,6 +211,10 @@ class _MainNavigationState extends State<MainNavigation> {
       _currentIndex = index;
     });
     if (index == AppTabIndex.dashboard) _scheduleCoachNudge();
+    // Step three of "Start here". See `StartHereCard`.
+    if (index == AppTabIndex.coach) {
+      StartHereProgress.instance.mark(StartStep.coach);
+    }
   }
 
   /// "Your Coach noticed something", or "You fixed something!", when there
@@ -331,7 +336,7 @@ class _TopIconBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onSelected;
 
-  static const _bar = Color(0xFF182429);
+  static const _bar = Color(0xFF13261B);
   static const _activeAccent = Color(0xFFFFC800);
 
   @override

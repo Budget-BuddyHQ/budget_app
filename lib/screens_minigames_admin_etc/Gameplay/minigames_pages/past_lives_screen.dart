@@ -246,7 +246,7 @@ class _BestTile extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: AppTheme.getPuffyDecoration(
         accent: accent,
-        fillColor: const Color(0xFF1E2C33),
+        fillColor: const Color(0xFF162F21),
         borderRadius: AppTheme.radiusLarge,
         restAlpha: 0.14,
       ),

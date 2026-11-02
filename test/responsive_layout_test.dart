@@ -344,6 +344,9 @@ void main() {
       // The hero card's floating turtle decoration was removed by design
       // (2026-08-22 redesign pass — see docs/ARCHITECTURE.md §14); this test
       // now checks a decoration that's still there instead.
+      // Below the "Start here" card on a new account, so scrolled to first.
+      await tester.ensureVisible(find.text('Academy').last);
+      await tester.pump();
       await tester.tap(find.text('Academy').last);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));

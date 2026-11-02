@@ -99,7 +99,7 @@ class _BasicCalculatorDialogState extends State<BasicCalculatorDialog> {
     VoidCallback? onTap,
   }) {
     return Material(
-      color: color ?? const Color(0xFF263743),
+      color: color ?? const Color(0xFF1C3B29),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -198,7 +198,7 @@ class _BasicCalculatorDialogState extends State<BasicCalculatorDialog> {
                   width: 280,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF18252B),
+                    color: const Color(0xFF12271B),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(color: const Color(0x5585EFAC)),
                     boxShadow: [
@@ -253,7 +253,7 @@ class _BasicCalculatorDialogState extends State<BasicCalculatorDialog> {
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF111B20),
+                          color: const Color(0xFF0C1D13),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: const Color(0x3385EFAC)),
                         ),

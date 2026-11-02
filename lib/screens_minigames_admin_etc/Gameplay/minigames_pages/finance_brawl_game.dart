@@ -118,7 +118,7 @@ class BrawlUpgrade {
   }
 }
 
-const Color _brawlInk = Color(0xFF111B20);
+const Color _brawlInk = Color(0xFF0C1D13);
 const Color _brawlPanel = Color(0xFF10281F);
 const Color _brawlPanelDeep = Color(0xFF0A1814);
 const Color _brawlBorder = Color(0xFF1F4D3E);
@@ -3420,7 +3420,7 @@ class _FinanceBrawlScreenState extends State<FinanceBrawlScreen>
                       }
                     } else if (_selectedAnswerIndex == idx) {
                       optionBorderColor = _brawlBlue;
-                      optionBgColor = const Color(0xFF14222B);
+                      optionBgColor = const Color(0xFF0F2418);
                     }
 
                     return Padding(

@@ -59,7 +59,7 @@ class _HabitTaskBlock extends StatelessWidget {
       HabitRowStatus.completed => const _StatusPalette(
         fill: Color(0xFF9BE870),
         border: Color(0xFF2A7D52),
-        foreground: Color(0xFF172328),
+        foreground: Color(0xFF12251A),
         label: 'Done',
         icon: Icons.check_circle_rounded,
       ),
