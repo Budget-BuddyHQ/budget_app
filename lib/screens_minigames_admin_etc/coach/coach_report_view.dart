@@ -280,7 +280,7 @@ class _NextStepCard extends StatelessWidget {
                 key: const ValueKey('coach-next-step-lesson'),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppTheme.greenPrimary,
-                  foregroundColor: const Color(0xFF09150E),
+                  foregroundColor: const Color(0xFF0D1410),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 12,

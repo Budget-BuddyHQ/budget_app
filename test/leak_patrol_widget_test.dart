@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:budget_app/controllers_that_updates_stats/user_stats_controller.dart';
 import 'package:budget_app/screens_minigames_admin_etc/Gameplay/minigames_pages/leak_patrol_page.dart';
@@ -14,6 +15,11 @@ import 'package:budget_app/widgets_custom_lotties/age_scaled_note.dart';
 /// and the clock ends it. A minigame that compiles and never spawns anything
 /// is the shape of bug that has shipped in this repo before.
 void main() {
+  // The round's payout is saved before the play is counted, and the save
+  // waits on device storage. Without the test stand-in it never finished, so
+  // the play count stayed at 0 here (the app itself was fine).
+  setUp(() => SharedPreferences.setMockInitialValues(<String, Object>{}));
+
   Widget host() => ChangeNotifierProvider<UserStatsController>(
     create: (_) => UserStatsController(service: SupabaseService.instance),
     child: const MaterialApp(home: LeakPatrolPage()),

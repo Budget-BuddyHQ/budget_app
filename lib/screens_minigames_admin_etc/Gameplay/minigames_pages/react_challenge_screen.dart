@@ -914,7 +914,7 @@ class _NativeBudgetBattleChallengeState
               onPressed: selectedIndex == null ? null : _advance,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF9BE870),
-                foregroundColor: const Color(0xFF152D1F),
+                foregroundColor: const Color(0xFF1F2B24),
                 disabledBackgroundColor: Colors.white12,
                 disabledForegroundColor: Colors.white38,
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1062,7 +1062,7 @@ class _NativeBudgetBattleChallengeState
                 onPressed: _resetQuiz,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF9BE870),
-                  foregroundColor: const Color(0xFF152D1F),
+                  foregroundColor: const Color(0xFF1F2B24),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -1087,7 +1087,7 @@ class _NativeBudgetBattleChallengeState
                 onPressed: _isSubmitting ? null : _bankRewards,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF9BE870),
-                  foregroundColor: const Color(0xFF152D1F),
+                  foregroundColor: const Color(0xFF1F2B24),
                   disabledBackgroundColor: Colors.white12,
                   disabledForegroundColor: Colors.white38,
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1139,7 +1139,7 @@ class _ChallengeChoiceButton extends StatelessWidget {
     if (hasAnswered && isCorrect) {
       backgroundColor = const Color(0xFF9BE870);
       borderColor = const Color(0xFF9BE870);
-      foregroundColor = const Color(0xFF152D1F);
+      foregroundColor = const Color(0xFF1F2B24);
       icon = Icons.check_circle_rounded;
     } else if (hasAnswered && isSelected) {
       backgroundColor = const Color(0xFFFF8A80);
@@ -1253,7 +1253,7 @@ class _ChallengeLoadingOverlay extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
-        color: const Color(0xFF152D1F).withValues(alpha: 0.94),
+        color: const Color(0xFF1F2B24).withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white12),
       ),
@@ -1312,7 +1312,7 @@ class _CloudSyncBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF152D1F).withValues(alpha: 0.92),
+        color: const Color(0xFF1F2B24).withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: Colors.white12),
       ),

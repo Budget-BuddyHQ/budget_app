@@ -336,7 +336,7 @@ class _TopIconBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onSelected;
 
-  static const _bar = Color(0xFF13261B);
+  static const _bar = Color(0xFF1B241F);
   static const _activeAccent = Color(0xFFFFC800);
 
   @override

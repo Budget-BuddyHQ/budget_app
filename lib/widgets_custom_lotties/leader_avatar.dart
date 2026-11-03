@@ -43,7 +43,7 @@ class LeaderAvatar extends StatelessWidget {
     this.username = '',
     this.borderColor,
     this.borderWidth = 2,
-    this.background = const Color(0xFF203F2D),
+    this.background = const Color(0xFF2D3D34),
   });
 
   /// An uploaded photo. Wins when present.

@@ -147,7 +147,7 @@ class _LifeFinderState extends State<_LifeFinder> {
                                       ),
                                       child: Icon(
                                         e.icon,
-                                        color: const Color(0xFF09150E),
+                                        color: const Color(0xFF0D1410),
                                       ),
                                     ),
                                     const SizedBox(width: 12),

@@ -151,7 +151,7 @@ class _UnitLessonBlock extends StatelessWidget {
       LessonStatus.completed => const _LessonPalette(
         fill: Color(0xFF9BE870),
         border: Color(0xFF2A7D52),
-        foreground: Color(0xFF12251A),
+        foreground: Color(0xFF1A231E),
       ),
       LessonStatus.available => const _LessonPalette(
         fill: Color(0xFFFFD45C),
@@ -185,14 +185,10 @@ class _UnitLessonBlock extends StatelessWidget {
             vertical: compact ? 12 : 14,
           ),
           decoration: BoxDecoration(
-            // Carries the parent unit's accent so a whole unit reads as one
-            // color family instead of every row being the same green. Flat:
-            // it used to fade to plain panel toward one corner.
-            color: Color.lerp(
-              AppTheme.panelStrong,
-              unitAccentFor(unitIndex),
-              0.14,
-            ),
+            // Neutral, like every other card. Tinting the fill with the
+            // unit's color made the violet units purple; the unit's color
+            // already shows on the card's border, bar and icon.
+            color: AppTheme.panelStrong,
             borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
             border: Border.all(color: palette.border.withValues(alpha: 0.32)),
             boxShadow: AppTheme.ledgeShadow(palette.border, restAlpha: 0.20),

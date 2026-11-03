@@ -49,7 +49,7 @@ class DailyPlanCard extends StatelessWidget {
           decoration: BoxDecoration(
             // The middle of the fade this replaced, which is the shade the
             // contrast audit measures the quest icons against.
-            color: const Color(0xFF162F21),
+            color: const Color(0xFF212C26),
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
               color: const Color(0xFF9BE870).withValues(alpha: 0.22),
@@ -275,7 +275,7 @@ class _QuestRow extends StatelessWidget {
                     // are tinted per quest — the same "+15" measured 3.32:1
                     // on the mint row and 4.24:1 on the amber one. An opaque
                     // fill has one contrast ratio instead of five.
-                    color: const Color(0xFF12271B),
+                    color: const Color(0xFF1B251F),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
                       color: const Color(0xFFFFD45C).withValues(alpha: 0.30),

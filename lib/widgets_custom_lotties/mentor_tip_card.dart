@@ -68,7 +68,7 @@ class MentorTipCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: AppTheme.getPuffyDecoration(
           accent: concept.accent,
-          fillColor: const Color(0xFF162F21),
+          fillColor: const Color(0xFF212C26),
           restAlpha: 0.16,
         ),
         child: Row(
@@ -172,7 +172,7 @@ class _MentorTipSheet extends StatelessWidget {
         margin: const EdgeInsets.all(12),
         padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
         decoration: BoxDecoration(
-          color: const Color(0xFF162F21),
+          color: const Color(0xFF212C26),
           borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
           border: Border.all(color: concept.accent.withValues(alpha: 0.35)),
           boxShadow: AppTheme.ledgeShadow(concept.accent, restAlpha: 0.2),

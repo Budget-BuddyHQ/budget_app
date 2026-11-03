@@ -27,10 +27,10 @@ import '../../../navigation_tools_and_animation/pauses_in_background.dart';
 /// to be white at 3-6% over the village map, so every panel picked up the
 /// map's teal and olive patches and read as a gradient wash, which a tester
 /// called "too AI". Shared with [HoldingDetailPage].
-const Color kBoardPanel = Color(0xFF183223);
+const Color kBoardPanel = Color(0xFF232F28);
 
 /// For a panel nested inside another (a chart inside a card).
-const Color kBoardInset = Color(0xFF12271B);
+const Color kBoardInset = Color(0xFF1B251F);
 
 /// Real, tradeable stock: a [LiveQuote] plus the display/trade dressing
 /// (icon, accent, thesis, bid-ask spread) that Finnhub doesn't provide.
@@ -1179,7 +1179,7 @@ class _TrendingPromoCard extends StatelessWidget {
           width: 122,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Color.lerp(const Color(0xFF1A3827), quote.accent, 0.08),
+            color: Color.lerp(const Color(0xFF26352D), quote.accent, 0.08),
             borderRadius: BorderRadius.circular(22),
             border: Border.all(
               color: quote.accent.withValues(alpha: 0.30),
@@ -1986,7 +1986,7 @@ class _EmptyHoldings extends StatelessWidget {
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF9BE870),
-              foregroundColor: const Color(0xFF152D1F),
+              foregroundColor: const Color(0xFF1F2B24),
             ),
             onPressed: onGoToTrade,
             child: Text(
@@ -2292,7 +2292,7 @@ class _TickerTapeState extends State<_TickerTape> with PausesInBackground {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: const Color(0xFF12271B),
+        color: const Color(0xFF1B251F),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
@@ -2708,7 +2708,7 @@ class _StockCardState extends State<_StockCard> {
                   onPressed: widget.onBuy,
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFF9BE870),
-                    foregroundColor: const Color(0xFF152D1F),
+                    foregroundColor: const Color(0xFF1F2B24),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   icon: const Icon(Icons.arrow_upward_rounded),
@@ -3515,7 +3515,7 @@ void _showOrderDetail(
 
   showModalBottomSheet<void>(
     context: context,
-    backgroundColor: const Color(0xFF102117),
+    backgroundColor: const Color(0xFF171F1A),
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),

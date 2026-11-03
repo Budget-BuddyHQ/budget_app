@@ -199,6 +199,8 @@ class _LessonScreenState extends State<LessonScreen> {
     final preferences = await SharedPreferences.getInstance();
     final preferenceKey = 'skip_ahead_warning_hidden_${lesson.unitId}';
     if (preferences.getBool(preferenceKey) ?? false) return true;
+    // The screen may have closed while the preference loaded.
+    if (!mounted) return false;
 
     var dontShowAgain = false;
     final answer = await showDialog<bool>(
@@ -324,6 +326,8 @@ class _LessonScreenState extends State<LessonScreen> {
     final preferences = await SharedPreferences.getInstance();
     final preferenceKey = 'above_age_warning_hidden_${unit.id}';
     if (preferences.getBool(preferenceKey) ?? false) return true;
+    // The screen may have closed while the preference loaded.
+    if (!mounted) return false;
 
     var dontShowAgain = false;
     final answer = await showDialog<bool>(
@@ -552,26 +556,6 @@ class _LessonScreenState extends State<LessonScreen> {
                     ],
                     stops: const [0.0, 0.42, 1.0],
                   ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: -70,
-              right: -50,
-              child: IgnorePointer(
-                child: _AcademyGlowOrb(
-                  color: const Color(0xFF9BE870).withValues(alpha: 0.20),
-                  size: 210,
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 40,
-              left: -60,
-              child: IgnorePointer(
-                child: _AcademyGlowOrb(
-                  color: const Color(0xFF58C7FF).withValues(alpha: 0.14),
-                  size: 190,
                 ),
               ),
             ),
@@ -807,7 +791,7 @@ class _UnitQuickChangerBar extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 72),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: const Color(0xFF0C1D13).withValues(alpha: 0.74),
+        color: const Color(0xFF131B17).withValues(alpha: 0.74),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: const Color(0xFF9BE870).withValues(alpha: 0.22),
@@ -1028,7 +1012,7 @@ class _UnitJumpChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected
                 ? accent
-                : Color.lerp(const Color(0xFF162F21), accent, 0.12)!,
+                : Color.lerp(const Color(0xFF212C26), accent, 0.12)!,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected
@@ -1140,7 +1124,7 @@ class _HubHeader extends StatelessWidget {
       ),
       padding: EdgeInsets.all(compact ? 18 : 24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A3E29),
+        color: const Color(0xFF293B31),
         borderRadius: BorderRadius.circular(compact ? 26 : 30),
         border: Border.all(color: Colors.white12, width: 1.5),
         boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary),
@@ -1222,7 +1206,7 @@ class _HubHeader extends StatelessWidget {
                         onPressed: onOpenNext,
                         style: FilledButton.styleFrom(
                           backgroundColor: const Color(0xFFFFD45C),
-                          foregroundColor: const Color(0xFF183223),
+                          foregroundColor: const Color(0xFF232F28),
                         ),
                         icon: const Icon(Icons.play_arrow_rounded),
                         label: Text(
@@ -1342,7 +1326,7 @@ class _NextLessonFocusCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A3827),
+        color: const Color(0xFF26352D),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: const Color(0x444BD2A3), width: 1.5),
         boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary),
@@ -1392,7 +1376,7 @@ class _NextLessonFocusCard extends StatelessWidget {
             onPressed: onOpenNext,
             style: FilledButton.styleFrom(
               backgroundColor: isComplete
-                  ? const Color(0xFF284835)
+                  ? const Color(0xFF36453C)
                   : const Color(0xFF3F8F1F),
               foregroundColor: isComplete
                   ? const Color(0xFFC3D8CE)
@@ -1554,7 +1538,7 @@ class _MasteryLegend extends StatelessWidget {
       margin: EdgeInsets.symmetric(horizontal: compact ? 0 : 20),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF173022),
+        color: const Color(0xFF222D27),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: const Color(0xFF6CD34A)),
       ),
@@ -1636,13 +1620,13 @@ class _UnitCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(compact ? 18 : 24),
       decoration: BoxDecoration(
-        // Lifted off the near-black end of the palette so the card sits
-        // *above* the backdrop tonally instead of merging into it — the main
-        // reason the tab read as one dense block of green. One flat color on
-        // a ledge, not a fade with a glow round it.
-        color: Color.lerp(const Color(0xFF203F2D), accent, 0.16),
+        // The same solid card as everywhere else (Profile is the model). The
+        // unit's own color stays on the border, progress bar and icon. Mixed
+        // into the fill it turned the violet units into a purple card that
+        // matched nothing else in the app.
+        color: AppTheme.panel,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: accent.withValues(alpha: 0.42), width: 1.5),
+        border: Border.all(color: accent.withValues(alpha: 0.6), width: 2),
         boxShadow: AppTheme.ledgeShadow(accent),
       ),
       child: Column(
@@ -1994,9 +1978,9 @@ class _AcademyAnalyticsCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(compact ? 16 : 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF0C1D13).withValues(alpha: 0.55),
+        color: AppTheme.panel,
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: const Color(0x554BD2A3)),
+        border: Border.all(color: AppTheme.outline, width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2144,28 +2128,3 @@ class _AnalyticStat extends StatelessWidget {
 
 /// A soft ambient glow, same treatment as the one on the Home dashboard —
 /// gives the backdrop some depth instead of reading as a flat tint.
-class _AcademyGlowOrb extends StatelessWidget {
-  const _AcademyGlowOrb({required this.color, required this.size});
-
-  final Color color;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-        boxShadow: [
-          BoxShadow(
-            color: color,
-            blurRadius: size * 0.40,
-            spreadRadius: size * 0.06,
-          ),
-        ],
-      ),
-    );
-  }
-}

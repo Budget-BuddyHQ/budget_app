@@ -322,7 +322,7 @@ class _TourPage extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 13),
             decoration: AppTheme.getPuffyDecoration(
               accent: step.accent,
-              fillColor: const Color(0xFF162F21),
+              fillColor: const Color(0xFF212C26),
               borderRadius: AppTheme.radiusLarge,
               restAlpha: 0.14,
             ),

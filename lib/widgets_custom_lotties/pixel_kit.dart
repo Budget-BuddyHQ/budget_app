@@ -40,8 +40,8 @@ enum PixelFrameStyle {
     AppAssets.kitSlicePanelPaper,
     AppAssets.kitSizePanelPaper,
     Color(0xFFEDE1C2),
-    Color(0xFF112519),
-    Color(0xFF2F4E3C),
+    Color(0xFF19231D),
+    Color(0xFF3C4B43),
     Color(0xFF6B4A05),
   ),
 
@@ -55,7 +55,7 @@ enum PixelFrameStyle {
     // after the recolor. The pack's own value left it at #51655E, a mid
     // tone on which gold body text measured 3.73:1; every color in the
     // app's palette clears AA against #303C38.
-    Color(0xFF2B4536),
+    Color(0xFF36433C),
     Color(0xFFF7FFFB),
     Color(0xFFB9D1C6),
     Color(0xFFE9C46A),
@@ -69,8 +69,8 @@ enum PixelFrameStyle {
     AppAssets.kitSlicePanelBanner,
     AppAssets.kitSizePanelBanner,
     Color(0xFFD9C9A3),
-    Color(0xFF112519),
-    Color(0xFF2F4E3C),
+    Color(0xFF19231D),
+    Color(0xFF3C4B43),
     Color(0xFF6B4A05),
   ),
 
@@ -291,7 +291,7 @@ enum PixelRibbonTone {
   /// Label color. One near-black serves every ribbon: all five are
   /// mid-to-light, so the ink has to be dark, and 0xFF0F181C clears the bar
   /// on the darkest of them (red, the worst case) as well as the lightest.
-  Color get ink => const Color(0xFF0B1911);
+  Color get ink => const Color(0xFF111814);
 }
 
 /// A section heading drawn on a ribbon.
@@ -412,7 +412,7 @@ enum PixelButtonTone {
   final Color surface;
 
   /// Label color, >= 4.5:1 on [surface] (4.85 on primary, 5.52 on danger).
-  Color get ink => const Color(0xFF0B1911);
+  Color get ink => const Color(0xFF111814);
 }
 
 /// A chunky pixel button that actually depresses when you hold it.

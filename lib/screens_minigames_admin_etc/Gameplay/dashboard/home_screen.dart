@@ -294,7 +294,7 @@ class _TodayCard extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: AppTheme.getPuffyDecoration(
           accent: accent,
-          fillColor: const Color(0xFF183223),
+          fillColor: const Color(0xFF232F28),
           restAlpha: 0.18,
         ),
         child: Column(
@@ -449,7 +449,7 @@ class _NextQuestRow extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFF12271B),
+            color: const Color(0xFF1B251F),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
               color: const Color(0xFFFFD45C).withValues(alpha: 0.30),
@@ -1448,9 +1448,9 @@ class _SolidPanel extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: const Color(0xFF183223),
+        color: const Color(0xFF232F28),
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: const Color(0xFF2C4A39), width: 1.5),
+        border: Border.all(color: const Color(0xFF39473F), width: 1.5),
         boxShadow: AppTheme.ledgeShadow(AppTheme.greenPrimary),
       ),
       child: child,

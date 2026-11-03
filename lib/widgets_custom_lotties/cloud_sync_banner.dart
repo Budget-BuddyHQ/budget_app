@@ -100,7 +100,7 @@ class _Banner extends StatelessWidget {
       decoration: BoxDecoration(
         color: Color.alphaBlend(
           accent.withValues(alpha: 0.12),
-          const Color(0xFF183223),
+          const Color(0xFF232F28),
         ),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: accent.withValues(alpha: 0.45), width: 1.5),

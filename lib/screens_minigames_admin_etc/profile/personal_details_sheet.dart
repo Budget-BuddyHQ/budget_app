@@ -96,7 +96,7 @@ class _PersonalDetailsSheetState extends State<PersonalDetailsSheet> {
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: Container(
           decoration: const BoxDecoration(
-            color: Color(0xFF12271B),
+            color: Color(0xFF1B251F),
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: SafeArea(

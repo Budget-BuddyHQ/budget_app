@@ -1027,7 +1027,7 @@ class _HeaderBar extends StatelessWidget {
         if (showAvatar) ...[
           CircleAvatar(
             radius: 18,
-            backgroundColor: const Color(0xFF1A3827),
+            backgroundColor: const Color(0xFF26352D),
             child: Icon(gender.icon, color: const Color(0xFF9BE870), size: 20),
           ),
           const SizedBox(width: 10),
@@ -1790,7 +1790,7 @@ class _EventCard extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: const Color(0xFF102117),
+        color: const Color(0xFF171F1A),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: accent.withValues(alpha: 0.42), width: 1.5),
         boxShadow: [
@@ -1826,7 +1826,7 @@ class _EventCard extends StatelessWidget {
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0E2116).withValues(alpha: 0.55),
+                    color: const Color(0xFF161F1A).withValues(alpha: 0.55),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: accent.withValues(alpha: 0.55),
@@ -1967,7 +1967,7 @@ class _ChoiceRow extends StatelessWidget {
                   // tint over the card read at 3.2 to 1 in the contrast audit.
                   color: AppTheme.tintedChip(
                     accent,
-                    on: const Color(0xFF102117),
+                    on: const Color(0xFF171F1A),
                   ).fill,
                   borderRadius: BorderRadius.circular(9),
                 ),
@@ -1976,7 +1976,7 @@ class _ChoiceRow extends StatelessWidget {
                   style: GoogleFonts.pixelifySans(
                     color: AppTheme.tintedChip(
                       accent,
-                      on: const Color(0xFF102117),
+                      on: const Color(0xFF171F1A),
                     ).ink,
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
@@ -2073,7 +2073,7 @@ class _BottomMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF0E2116),
+        color: Color(0xFF161F1A),
         border: Border(top: BorderSide(color: Colors.white10)),
       ),
       child: SafeArea(
@@ -2391,7 +2391,7 @@ class _SkillsSheetState extends State<_SkillsSheet> {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF0E2116),
+        color: Color(0xFF161F1A),
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SafeArea(
@@ -3615,7 +3615,7 @@ class _PowersSheetState extends State<_PowersSheet> {
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
       decoration: const BoxDecoration(
-        color: Color(0xFF0E2116),
+        color: Color(0xFF161F1A),
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SafeArea(

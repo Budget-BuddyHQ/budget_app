@@ -29,7 +29,7 @@ class _FeedbackPromptSheetContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF12271B),
+        color: Color(0xFF1B251F),
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SafeArea(

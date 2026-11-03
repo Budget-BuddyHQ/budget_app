@@ -313,7 +313,7 @@ class _PopupFrame extends StatelessWidget {
                       color: accent,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(icon, color: const Color(0xFF09150E)),
+                    child: Icon(icon, color: const Color(0xFF0D1410)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -335,7 +335,7 @@ class _PopupFrame extends StatelessWidget {
                 key: const ValueKey('popup-primary'),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppTheme.greenPrimary,
-                  foregroundColor: const Color(0xFF09150E),
+                  foregroundColor: const Color(0xFF0D1410),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 onPressed: onPrimary,
@@ -412,7 +412,7 @@ class _HowTo extends StatelessWidget {
                     child: Text(
                       '${i + 1}',
                       style: GoogleFonts.pixelifySans(
-                        color: const Color(0xFF09150E),
+                        color: const Color(0xFF0D1410),
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),

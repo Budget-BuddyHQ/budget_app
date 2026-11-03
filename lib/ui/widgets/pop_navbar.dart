@@ -9,7 +9,7 @@ import '../../themes_colors/app_theme.dart';
 /// bar, so the eye goes straight to it.
 const _active = Color(0xFFFFC800);
 const _inactive = Color(0xFF8FA3AE);
-const _barColor = Color(0xFF13261B);
+const _barColor = Color(0xFF1B241F);
 
 class PopNavBarItem {
   const PopNavBarItem({required this.label, required this.icon});

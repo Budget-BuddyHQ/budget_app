@@ -136,7 +136,7 @@ class _AchievementDialogState extends State<_AchievementDialog>
           child: Container(
             padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
             decoration: BoxDecoration(
-              color: Color.lerp(const Color(0xFF12271B), widget.accent, 0.12),
+              color: Color.lerp(const Color(0xFF1B251F), widget.accent, 0.12),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
                 color: widget.accent.withValues(alpha: 0.55),

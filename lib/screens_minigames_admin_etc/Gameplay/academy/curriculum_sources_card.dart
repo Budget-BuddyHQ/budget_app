@@ -52,7 +52,7 @@ class CurriculumSourcesCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(compact ? 14 : 18),
       decoration: BoxDecoration(
-        color: chip.fill,
+        color: AppTheme.panel,
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
         border: Border.all(
           color: const Color(0xFF69C6FF).withValues(alpha: 0.3),

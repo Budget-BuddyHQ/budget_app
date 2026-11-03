@@ -137,7 +137,7 @@ class _CustomizeScreenState extends State<CustomizeScreen> {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A3827),
+        backgroundColor: const Color(0xFF26352D),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           '${skin.name} is locked',
@@ -295,10 +295,13 @@ class _CharacterPreviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
+      // Solid, like the Profile cards. A see-through panel over the bright
+      // village map made every line of text fight the art behind it.
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: AppTheme.panel,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        border: Border.all(color: AppTheme.outline, width: 2),
+        boxShadow: AppTheme.ledgeShadow(AppTheme.outline, restAlpha: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -325,10 +328,11 @@ class _CharacterPreviewCard extends StatelessWidget {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
-              // Faint translucent panel instead of an opaque accent-to-dark
-              // gradient, so the village map reads through it.
-              color: Colors.white.withValues(alpha: 0.07),
-              border: Border.all(color: mascot.accent.withValues(alpha: 0.30)),
+              color: AppTheme.inset,
+              border: Border.all(
+                color: mascot.accent.withValues(alpha: 0.5),
+                width: 2,
+              ),
             ),
             child: Column(
               children: [
@@ -380,9 +384,9 @@ class _PlayerSlotRow extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: AppTheme.inset,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: skin.accent.withValues(alpha: 0.28)),
+        border: Border.all(color: skin.accent.withValues(alpha: 0.45)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -491,7 +495,7 @@ class _BodyChip extends StatelessWidget {
           // whatever sat behind it, and on the player row that was light
           // enough to drop the green label to 2.7:1.
           color: selected
-              ? const Color(0xFF1A3B28)
+              ? const Color(0xFF27382E)
               : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
@@ -533,9 +537,10 @@ class _StorePanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: AppTheme.panel,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        border: Border.all(color: AppTheme.outline, width: 2),
+        boxShadow: AppTheme.ledgeShadow(AppTheme.outline, restAlpha: 0.5),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -691,9 +696,9 @@ class _CaseOddsPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF061D16).withValues(alpha: 0.86),
+        color: AppTheme.panel,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        border: Border.all(color: AppTheme.outline, width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -984,21 +989,14 @@ class _SkinTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: AppTheme.panel,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: equipped
-                  ? skin.accent.withValues(alpha: 0.52)
-                  : Colors.white.withValues(alpha: 0.08),
+              color: equipped ? skin.accent : AppTheme.outline,
+              width: 2,
             ),
             boxShadow: equipped
-                ? [
-                    BoxShadow(
-                      color: skin.accent.withValues(alpha: 0.14),
-                      blurRadius: 18,
-                      spreadRadius: 1,
-                    ),
-                  ]
+                ? AppTheme.ledgeShadow(skin.accent, restAlpha: 0.35)
                 : null,
           ),
           child: Column(
@@ -1018,7 +1016,7 @@ class _SkinTile extends StatelessWidget {
                                 BlendMode.srcOver,
                               )
                             : ColorFilter.mode(
-                                const Color(0xFF0C1D13).withValues(alpha: 0.82),
+                                const Color(0xFF131B17).withValues(alpha: 0.82),
                                 BlendMode.srcATop,
                               ),
                         // The grid tile's size varies with screen width, so
@@ -1257,7 +1255,7 @@ class _CaseRollDialogState extends State<_CaseRollDialog>
                   child: Container(
                     padding: EdgeInsets.all(compact ? 16 : 20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0C1D13).withValues(alpha: 0.96),
+                      color: const Color(0xFF131B17).withValues(alpha: 0.96),
                       borderRadius: BorderRadius.circular(28),
                       border: Border.all(
                         color: preview.accent.withValues(alpha: 0.34),
@@ -1648,13 +1646,16 @@ class _CustomizeBackdrop extends StatelessWidget {
         // outer edges for text contrast — so the art reads as a lit place
         // and the character in front of it pops off it.
         Positioned.fill(
+          // Calmed: the panels in front are what the player reads, so the
+          // map sits back behind a deeper wash at its own colors rather
+          // than boosted ones.
           child: VividBackdrop(
             image: AppAssets.villageMapBackground,
-            saturation: 1.55,
-            brightness: 0.06,
-            scrimOpacity: 0.22,
+            saturation: 1.0,
+            brightness: 0.0,
+            scrimColor: AppTheme.deepForest,
+            scrimOpacity: 0.62,
             vignetteOpacity: 0.6,
-            glowColor: const Color(0xFF78E08F),
           ),
         ),
         Positioned(
