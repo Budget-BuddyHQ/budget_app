@@ -1654,7 +1654,7 @@ class _CustomizeBackdrop extends StatelessWidget {
             saturation: 1.0,
             brightness: 0.0,
             scrimColor: AppTheme.deepForest,
-            scrimOpacity: 0.62,
+            scrimOpacity: 0.32,
             vignetteOpacity: 0.6,
           ),
         ),

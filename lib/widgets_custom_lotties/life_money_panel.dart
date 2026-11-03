@@ -197,6 +197,12 @@ class _TileData {
 /// Every use here sits beside a text label that says the same thing, so
 /// they are hidden from screen readers rather than announced as "money
 /// bag" before each heading.
+/// A small picture for a line of the Life screen.
+///
+/// Still called with an emoji, but drawn as one of the app's own line icons
+/// in its palette. A screen full of phone emoji looked generic (and different
+/// on every phone); these match the rest of the app. An emoji with no icon
+/// mapped below still shows as itself, so nothing goes blank.
 class LifeEmoji extends StatelessWidget {
   const LifeEmoji(this.char, {super.key, this.size = 14});
 
@@ -205,11 +211,77 @@ class LifeEmoji extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final icon = char.isEmpty ? null : _kEmojiIcons[char.runes.first];
     return ExcludeSemantics(
-      child: Text(char, style: TextStyle(fontSize: size, height: 1.1)),
+      child: icon == null
+          ? Text(char, style: TextStyle(fontSize: size, height: 1.1))
+          // Lifted toward white so it stays readable on the tinted tiles it
+          // sits on (the contrast audit holds icons to the text standard).
+          : Icon(
+              icon.$1,
+              size: size * 1.15,
+              color: Color.lerp(icon.$2, Colors.white, 0.45),
+            ),
     );
   }
 }
+
+/// Emoji (by first code point) to the icon drawn in its place.
+const Map<int, (IconData, Color)> _kEmojiIcons = <int, (IconData, Color)>{
+  0x1F4B3: (Icons.credit_card_rounded, Color(0xFFFF8474)),
+  0x1F393: (Icons.school_rounded, Color(0xFFB388FF)),
+  0x1F4B5: (Icons.payments_rounded, Color(0xFF9BE870)),
+  0x1F4C8: (Icons.trending_up_rounded, Color(0xFF58C7FF)),
+  0x1F9FE: (Icons.receipt_long_rounded, Color(0xFFFFC36B)),
+  0x1F3E0: (Icons.home_rounded, Color(0xFFFFC36B)),
+  0x1F437: (Icons.savings_rounded, Color(0xFFFF8FB1)),
+  0x1F6A8: (Icons.warning_amber_rounded, Color(0xFFFF8474)),
+  0x1F6E1: (Icons.shield_rounded, Color(0xFF58C7FF)),
+  0x1F476: (Icons.child_care_rounded, Color(0xFFFFC36B)),
+  0x1F9D1: (Icons.person_rounded, Color(0xFFC3D3C6)),
+  0x1F4BC: (Icons.work_rounded, Color(0xFF58C7FF)),
+  0x26A1: (Icons.bolt_rounded, Color(0xFFFFC800)),
+  0x2728: (Icons.auto_awesome_rounded, Color(0xFFFFC800)),
+  0x1F4B0: (Icons.account_balance_wallet_rounded, Color(0xFFFFC800)),
+  0x1F3E6: (Icons.account_balance_rounded, Color(0xFF58C7FF)),
+  0x1F389: (Icons.celebration_rounded, Color(0xFFFF8FB1)),
+  0x26A0: (Icons.warning_amber_rounded, Color(0xFFFFC800)),
+  0x1F50D: (Icons.search_rounded, Color(0xFFC3D3C6)),
+  0x1FA99: (Icons.monetization_on_rounded, Color(0xFFFFC800)),
+  0x1F9D2: (Icons.face_rounded, Color(0xFFFFC36B)),
+  0x1F9D3: (Icons.elderly_rounded, Color(0xFFC3D3C6)),
+  0x1F517: (Icons.link_rounded, Color(0xFF58C7FF)),
+  0x1F9FA: (Icons.shopping_basket_rounded, Color(0xFF9BE870)),
+  0x2696: (Icons.balance_rounded, Color(0xFFFFC36B)),
+  0x1F4CA: (Icons.bar_chart_rounded, Color(0xFF58C7FF)),
+  0x2602: (Icons.umbrella_rounded, Color(0xFF58C7FF)),
+  0x1F331: (Icons.eco_rounded, Color(0xFF9BE870)),
+  0x1F3AF: (Icons.track_changes_rounded, Color(0xFFFF8474)),
+  0x1F388: (Icons.celebration_rounded, Color(0xFFFF8FB1)),
+  0x1F95A: (Icons.egg_rounded, Color(0xFFFFC36B)),
+  0x1F45B: (Icons.account_balance_wallet_rounded, Color(0xFFFF8FB1)),
+  0x1F573: (Icons.water_drop_rounded, Color(0xFF58C7FF)),
+  0x1F6CD: (Icons.shopping_bag_rounded, Color(0xFFFF8FB1)),
+  0x1F4DA: (Icons.menu_book_rounded, Color(0xFFB388FF)),
+  0x2764: (Icons.favorite_rounded, Color(0xFFFF8FB1)),
+  0x1F49E: (Icons.favorite_rounded, Color(0xFFFF8FB1)),
+  0x1F382: (Icons.cake_rounded, Color(0xFFFF8FB1)),
+  0x1F415: (Icons.pets_rounded, Color(0xFFFFC36B)),
+  0x1F528: (Icons.handyman_rounded, Color(0xFFC3D3C6)),
+  0x1F3EA: (Icons.storefront_rounded, Color(0xFF9BE870)),
+  0x1F697: (Icons.directions_car_rounded, Color(0xFF58C7FF)),
+  0x1F3E1: (Icons.house_rounded, Color(0xFF9BE870)),
+  0x1F4DC: (Icons.description_rounded, Color(0xFFFFC36B)),
+  0x2B50: (Icons.star_rounded, Color(0xFFFFC800)),
+  0x2600: (Icons.wb_sunny_rounded, Color(0xFFFFC800)),
+  0x2601: (Icons.cloud_rounded, Color(0xFFC3D3C6)),
+  0x26C5: (Icons.wb_cloudy_rounded, Color(0xFFC3D3C6)),
+  0x1F327: (Icons.water_drop_rounded, Color(0xFF58C7FF)),
+  0x26C8: (Icons.thunderstorm_rounded, Color(0xFFFFC800)),
+  0x2744: (Icons.ac_unit_rounded, Color(0xFF9CDBFF)),
+  0x1F32B: (Icons.foggy, Color(0xFFC3D3C6)),
+  0x1F46A: (Icons.family_restroom_rounded, Color(0xFF9BE870)),
+};
 
 class _MoneyTile extends StatelessWidget {
   const _MoneyTile({

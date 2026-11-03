@@ -314,7 +314,10 @@ List<ContrastFinding> auditContrast(WidgetTester tester, String screen) {
     final size = style?.fontSize ?? 14.0;
     final bold = (style?.fontWeight?.value ?? 3) >= FontWeight.w700.value;
     final large = size >= 18 || (bold && size >= 14);
-    final needed = large ? 3.0 : 4.5;
+    // An icon glyph is a graphic, not text: WCAG 1.4.11 (non-text contrast)
+    // asks 3:1 of it, the same as large text.
+    final icon = style?.fontFamily == 'MaterialIcons';
+    final needed = large || icon ? 3.0 : 4.5;
 
     final effective = _composite(fg, bg);
     final ratio = contrastRatio(effective, bg);

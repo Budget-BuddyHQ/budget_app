@@ -234,8 +234,8 @@ class _NextStepCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.panel,
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        border: Border.all(color: gold, width: 2),
-        boxShadow: AppTheme.ledgeShadow(gold, restAlpha: 0.2),
+        border: Border.all(color: gold.withValues(alpha: 0.45), width: 1.5),
+        boxShadow: AppTheme.ledgeShadow(AppTheme.outline, restAlpha: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -327,13 +327,16 @@ class _CoachHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final weakest = report.weakest;
     final chip = AppTheme.tintedChip(AppTheme.greenPrimary, alpha: 0.14);
+    // Solid like the rest of the app, with a touch of its own green: the
+    // card reads as the Coach's without the old see-through tint.
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: chip.fill,
+        color: Color.lerp(AppTheme.panel, AppTheme.greenPrimary, 0.06),
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
         border: Border.all(
-          color: AppTheme.greenPrimary.withValues(alpha: 0.28),
+          color: AppTheme.greenPrimary.withValues(alpha: 0.3),
+          width: 1.5,
         ),
       ),
       child: Column(
@@ -1432,7 +1435,7 @@ class _ImproveCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.panel,
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        border: Border.all(color: accent, width: 2),
+        border: Border.all(color: accent.withValues(alpha: 0.4), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1532,7 +1535,10 @@ class _GoButton extends StatelessWidget {
       ),
       style: OutlinedButton.styleFrom(
         foregroundColor: AppTheme.greenPrimary,
-        side: const BorderSide(color: AppTheme.greenPrimary, width: 2),
+        side: BorderSide(
+          color: AppTheme.greenPrimary.withValues(alpha: 0.45),
+          width: 1.5,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -1553,7 +1559,9 @@ class _RewardChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.inset,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFFFC800), width: 1.5),
+        border: Border.all(
+          color: const Color(0xFFFFC800).withValues(alpha: 0.35),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
